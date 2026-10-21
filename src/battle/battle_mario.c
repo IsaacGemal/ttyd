@@ -229,17 +229,17 @@ USER_FUNC(_tatsumaki_effect) {
         angle = (f32)(event->userdata[1] * 4);
         c = amp * cosfd(angle);
         s = amp * sinfd(angle);
-        *(f32*)((u8*)((EffectEntry*)event->userdataEx[1])->userdata + 4) =
+        ((effKamekiTornadeData*)((EffectEntry*)event->userdataEx[1])->userdata)->x =
             (f32)event->userdata[2] + c;
-        *(f32*)((u8*)((EffectEntry*)event->userdataEx[1])->userdata + 8) =
+        ((effKamekiTornadeData*)((EffectEntry*)event->userdataEx[1])->userdata)->y =
             (f32)(s32)event->field_84;
-        *(f32*)((u8*)((EffectEntry*)event->userdataEx[1])->userdata + 0xC) =
+        ((effKamekiTornadeData*)((EffectEntry*)event->userdataEx[1])->userdata)->z =
             (f32)event->userdataEx[0] + s;
-        *(f32*)((u8*)((EffectEntry*)event->field_0x90[0])->userdata + 4) =
+        ((effKamekiTornadeData*)((EffectEntry*)event->field_0x90[0])->userdata)->x =
             (f32)event->userdata[2] - c;
-        *(f32*)((u8*)((EffectEntry*)event->field_0x90[0])->userdata + 8) =
+        ((effKamekiTornadeData*)((EffectEntry*)event->field_0x90[0])->userdata)->y =
             (f32)(s32)event->field_84;
-        *(f32*)((u8*)((EffectEntry*)event->field_0x90[0])->userdata + 0xC) =
+        ((effKamekiTornadeData*)((EffectEntry*)event->field_0x90[0])->userdata)->z =
             (f32)event->userdataEx[0] - s;
         if (event->userdata[1] >= 90) {
             psndSFXOff(event->field_0x90[1]);
@@ -417,8 +417,9 @@ USER_FUNC(_mario_fire_ball_controll) {
         effDelete(effect);
         return EVT_RETURN_DONE;
     }
-    BtlUnit_GetPartsPos(part, (f32*)((u8*)effect->userdata + 4), (f32*)((u8*)effect->userdata + 8),
-                        (f32*)((u8*)effect->userdata + 0xC));
+    BtlUnit_GetPartsPos(part, &((effFireData*)effect->userdata)->position.x,
+                        &((effFireData*)effect->userdata)->position.y,
+                        &((effFireData*)effect->userdata)->position.z);
     return EVT_RETURN_BLOCK;
 }
 

@@ -1198,10 +1198,10 @@ static void disp_3D(CameraId cameraId, void* param) {
         BtlUnit_GetHomePos(mario, &x, &y, &z);
         y += 60.0f;
         {
-            f32* ud = (f32*)genki->field_34->userdata;
-            ud[2] = x;
-            ud[3] = y - 10.0f;
-            ud[4] = z + 5.0f;
+            RecoveryData* ud = genki->field_34->userdata;
+            ud->x = x;
+            ud->y = y - 10.0f;
+            ud->z = z + 5.0f;
         }
         {
             s32 frame;
@@ -1234,10 +1234,10 @@ static void disp_3D(CameraId cameraId, void* param) {
             BtlUnit_GetHomePos(party, &px, &py, &pz);
             py += 60.0f;
             {
-                f32* ud = (f32*)genki->field_38->userdata;
-                ud[2] = px;
-                ud[3] = py - 10.0f;
-                ud[4] = pz + 5.0f;
+                RecoveryData* ud = genki->field_38->userdata;
+                ud->x = px;
+                ud->y = py - 10.0f;
+                ud->z = pz + 5.0f;
             }
             {
                 s32 frame;
@@ -1271,10 +1271,10 @@ static void disp_3D(CameraId cameraId, void* param) {
             x = 0.5f * (x + px);
             y += 90.0f;
             {
-                f32* ud = (f32*)genki->field_3C->userdata;
-                ud[2] = x;
-                ud[3] = y - 10.0f;
-                ud[4] = z + 5.0f;
+                RecoveryData* ud = genki->field_3C->userdata;
+                ud->x = x;
+                ud->y = y - 10.0f;
+                ud->z = z + 5.0f;
             }
             {
                 s32 frame;
@@ -1307,10 +1307,10 @@ static void disp_3D(CameraId cameraId, void* param) {
             BtlUnit_GetHomePos(mario, &x, &y, &z);
             y += 90.0f;
             {
-                f32* ud = (f32*)genki->field_3C->userdata;
-                ud[2] = x;
-                ud[3] = y - 10.0f;
-                ud[4] = z + 5.0f;
+                RecoveryData* ud = genki->field_3C->userdata;
+                ud->x = x;
+                ud->y = y - 10.0f;
+                ud->z = z + 5.0f;
             }
             {
                 s32 frame;

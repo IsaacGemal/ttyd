@@ -3879,7 +3879,7 @@ USER_FUNC(kamec_fire_magic_delete) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
     EffectEntry* eff = effNameToPtr(npc->description);
     if (eff != NULL) {
-        *(s32*)((u8*)eff->userdata + 0x30) = 1;
+        ((effMagic1Data*)eff->userdata)->timer = 1;
     }
     return EVT_RETURN_DONE;
 }
@@ -5084,9 +5084,9 @@ USER_FUNC(unk_800ece0c) {
     npc->unitWork[1] = (void*)((s32)npc->unitWork[1] - 1);
     if ((s32)npc->unitWork[1] <= 0x1E) {
         f32 t = intplGetValue(1, 0x1E - (s32)npc->unitWork[1], 0x1E, 1.0f, 0.0f);
-        *(f32*)((u8*)eff->userdata + 0x78) = t;
-        *(f32*)((u8*)eff->userdata + 0x7C) = t;
-        *(u8*)((u8*)eff->userdata + 0x10) =
+        ((effFireData*)eff->userdata)->scaleX = t;
+        ((effFireData*)eff->userdata)->scaleY = t;
+        ((effFireData*)eff->userdata)->alpha =
             (u8)(s32)intplGetValue(0, 0x1E - (s32)npc->unitWork[1], 0x1E, 255.0f, 0.0f);
     }
     if ((s32)npc->unitWork[1] <= 0) {

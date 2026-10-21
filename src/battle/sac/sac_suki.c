@@ -800,7 +800,7 @@ s32 eff_crystal(EventEntry* event) {
     f1 = evtGetFloat(event, args[0]);
     f2 = evtGetFloat(event, args[1]);
     effect = effCrystalN64Entry(6, 0x3C, f1, f2, 30.0f, 1.0f);
-    *(s32*)((u8*)effect->userdata + 0x38) = 7;
+    ((EffCrystalData*)effect->userdata)->camId = 7;
     return EVT_RETURN_DONE;
 }
 #pragma dont_inline reset
