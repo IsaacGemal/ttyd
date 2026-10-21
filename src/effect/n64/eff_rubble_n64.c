@@ -165,14 +165,7 @@ void effRubbleMain(EffectEntry* effect) {
 		}
 	}
 	if (life < 10) {
-		#ifdef MUST_MATCH
-	{
-		f32 k = 0.8f;
-		data->alpha = (s32)((f32)data->alpha * k);
-	}
-#else
-		data->alpha = (s32)((f32)data->alpha * 0.8f);
-#endif
+		data->alpha *= 0.8f;
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effRubbleDisp, effect);
 }

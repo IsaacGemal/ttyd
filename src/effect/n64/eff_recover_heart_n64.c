@@ -10,7 +10,7 @@
 #include <math_ext.h>
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
-// The tables are reached through base pointers, so the linker would drop the unreferenced ones.
+// Nothing in this unit references it by name, so it is kept with force_active.
 #pragma force_active on
 __declspec(section ".data") u32 lbl_803A4A60[2] = { 0xBF800000, 0x3F800000 };
 #pragma force_active reset
@@ -34,14 +34,6 @@ f32 scale_h_dat[7] = { 0.25f, 0.5f, 0.75f, 1.0f, 1.2f, 0.9f, 1.0f };
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u32 unk_80423238;
 
-// .data base the retail effRecoverHeartDisp reaches its vertex arrays from; it is
-// defined in eff_rappa_n64.c (the previous unit's last object) and only its address
-// is used here.
-#ifdef MUST_MATCH
-#define VTX(off, name) ((effVtxArray*)(dataBase + (off)))
-#else
-#define VTX(off, name) ((effVtxArray*)(name))
-#endif
 
 // .data
 #pragma force_active on
@@ -247,9 +239,7 @@ static inline void recoverHeartSetColor(RecoverHeartData* d) {
 // Keep this the last function in the file: MWCC reads global_optimizer when the unit is finalized, so a
 // trailing `global_optimizer reset` drops the setting for this function too (95.5%).
 #pragma global_optimizer off // needed so MWCC keeps the loop-invariant tile-offset arithmetic inside the loop and emits the two independent life/10 and life%10 divisions (without it: 96.9%)
-// The vertex arrays are reached as offsets from the previous unit's last .data object
-// (lbl_803A4A60); the int->float magic is the compiler's own pool entry. See the notes
-// on these at the top of the file.
+// The int->float magic is the compiler's own pool entry.
 void effRecoverHeartDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 stripOffset;
@@ -270,9 +260,6 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 	Mtx work;
 	Mtx mtx;
 	Mtx finalMtx;
-#ifdef MUST_MATCH
-	u8* dataBase = (u8*)lbl_803A4A60;
-#endif
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
@@ -348,7 +335,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx, rot, finalMtx);
 
 		if (i == 1 && type != 2) {
-			effSetVtxDescN64(VTX(0x40, size32x32_tex32x32_heart_vtx));
+			effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_heart_vtx);
 			PSMTXConcat(cam->view, finalMtx, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
@@ -370,9 +357,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64(VTX(0xb0, size24x24_tex32x32_heart_vtx));
+					effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_heart_vtx);
 				} else {
-					effSetVtxDescN64(VTX(0x158, size24x24_tex32x32_flower_vtx));
+					effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_flower_vtx);
 				}
 				PSMTXConcat(cam->view, mtx, trans);
 				GXLoadPosMtxImm(trans, 0);
@@ -388,9 +375,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64(VTX(0x120, size16x24_tex32x32_r_heart_vtx));
+					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_r_heart_vtx);
 				} else {
-					effSetVtxDescN64(VTX(0x1c8, size16x24_tex32x32_r_flower_vtx));
+					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_r_flower_vtx);
 				}
 				PSMTXConcat(cam->view, mtx, trans);
 				GXLoadPosMtxImm(trans, 0);
@@ -403,9 +390,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64(VTX(0xe8, size16x24_tex32x32_l_heart_vtx));
+					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_l_heart_vtx);
 				} else {
-					effSetVtxDescN64(VTX(0x190, size16x24_tex32x32_l_flower_vtx));
+					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_l_flower_vtx);
 				}
 				GXBegin(0x90, 0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -414,7 +401,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 			PSMTXConcat(cam->view, finalMtx, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
-			effSetVtxDescN64(VTX(0x78, size16x16_tex32x32_heart_vtx));
+			effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_heart_vtx);
 			GXBegin(0x90, 0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 		}

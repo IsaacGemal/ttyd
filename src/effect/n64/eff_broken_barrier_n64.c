@@ -258,23 +258,10 @@ void effBrokenBarrierMain(EffectEntry* effect) {
         break;
     }
     i = 1;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: a literal 0.5f keeps the constant in f1, so rangeX's fctiwz takes f2 and rangeY's
-       takes f0 (retail's colouring). The named extern is rematerialised after the first fctiwz, which
-       swaps the two; the load and the arithmetic are identical either way. */
-    {
-    f32 k = 0.5f;
     rangeX = (s32)spreadX;
-    halfX = k * spreadX;
-    rangeY = (s32)spreadY;
-    halfY = k * spreadY;
-    }
-#else
-    rangeX = (s32)spreadX;
-    rangeY = (s32)spreadY;
     halfX = 0.5f * spreadX;
+    rangeY = (s32)spreadY;
     halfY = 0.5f * spreadY;
-#endif
     data++;
     for (; i < effect->count; i++, data++) {
         data->cycle++;
@@ -394,16 +381,8 @@ void effBrokenBarrierDisp(CameraId camId, void* param) {
     PSMTXTrans(mtx, data->x, data->y, data->z);
     PSMTXScale(scale, data->scale, data->scale, data->scale);
     PSMTXConcat(mtx, scale, work);
-#ifdef MUST_MATCH
     color = effBrokenBarrierMakeColor(data->tev1R, data->tev1G, data->tev1B,
                                       data->tev1A);
-#else
-    color = unk_804230b8;
-    color.r = data->tev1R;
-    color.g = data->tev1G;
-    color.b = data->tev1B;
-    color.a = data->tev1A;
-#endif
     GXSetTevColor(GX_TEVREG1, color);
     effGetTexObjN64(0x20, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -432,9 +411,6 @@ void effBrokenBarrierDisp(CameraId camId, void* param) {
     main_dl(effect, view);
 }
 
-// main_dl: build the by-value GXSetTevColor GXColor in an inline so mwcc places the named colour at
-// r1+0x8 and its outgoing copy at r1+0xC (a direct build swaps the two stack slots).
-#ifdef MUST_MATCH
 static inline GXColor effBrokenBarrierBarrierColor(u8 r, u8 g, u8 b, u8 a) {
     GXColor c = unk_804230bc;
     c.r = r;
@@ -443,7 +419,6 @@ static inline GXColor effBrokenBarrierBarrierColor(u8 r, u8 g, u8 b, u8 a) {
     c.a = a;
     return c;
 }
-#endif
 static void main_dl(EffectEntry* effect, Mtx matrix) {
     effBrokenBarrierData* data;
     Mtx mtx, scale, rot;
@@ -473,15 +448,7 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
         PSMTXConcat(matrix, mtx, mtx);
         GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
-#ifdef MUST_MATCH
         color = effBrokenBarrierBarrierColor(c0, c1, c2, (u8)((f32)data->alpha * alphaScale));
-#else
-        color = unk_804230bc;
-        color.r = c0;
-        color.g = c1;
-        color.b = c2;
-        color.a = (u8)((f32)data->alpha * alphaScale);
-#endif
         GXSetTevColor(GX_TEVREG0, color);
         switch (i & 7) {
             case 0:

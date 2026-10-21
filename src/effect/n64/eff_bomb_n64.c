@@ -182,9 +182,6 @@ static void effBombMain(EffectEntry* effect) {
 	dispEntry(camId, dispCalcZ(&position), 2, effBombDisp, effect);
 }
 
-#ifdef MUST_MATCH
-// Calling GXSetTevColor inside each inline places the colour build word and its by-value argument copy
-// in the original's slots (color1 0x10/0x14, color2 0x8/0xc).
 static inline void bombSetColor1(u8 a) {
 	GXColor c = dat_8041e9d0;
 	c.a = a;
@@ -196,7 +193,6 @@ static inline void bombSetColor2(u8 b, u8 a) {
 	c.a = a;
 	GXSetTevColor(GX_TEVREG0, c);
 }
-#endif
 
 // The local declaration order is the shape MWCC needs to colour the callee-saved GPRs like the
 // original (data r29, camera r30, timer r31). The natural order (timer first) makes mwcc put timer in
@@ -241,15 +237,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	if (data->texType != -1) {
 		effGetTexObjN64(0x18, &texObj);
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
-#ifdef MUST_MATCH
 		bombSetColor1(data->alpha);
-#else
-		{
-			GXColor color1 = dat_8041e9d0;
-			color1.a = data->alpha;
-			GXSetTevColor(GX_TEVREG0, color1);
-		}
-#endif
 		PSMTXScale(scaleMtx, data->scale, data->scale, 1.0f);
 		PSMTXConcat(outMtx, scaleMtx, scaleMtx);
 		GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);
@@ -274,14 +262,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	} else {
 		blue = 0xFF;
 	}
-#ifdef MUST_MATCH
 	bombSetColor2(blue, alpha);
-#else
-	color2 = dat_8041e9d4;
-	color2.b = blue;
-	color2.a = alpha;
-	GXSetTevColor(GX_TEVREG0, color2);
-#endif
 
 	PSMTXScale(scaleMtx, data->animScale, data->animScale, data->animScale);
 	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->animRotZ);

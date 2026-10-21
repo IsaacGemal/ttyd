@@ -221,10 +221,6 @@ EffectEntry* effKemuri11N64Entry(s32 type, f32 x, f32 y, f32 z) {
     return effect;
 }
 
-#ifdef MUST_MATCH
-// Setting each TEV colour inside a void inline reproduces the original's
-// per-call by-value colour slots (build/copy pairs 0x20/0x24, 0x18/0x1c,
-// 0x10/0x14, 0x08/0x0c).
 static inline void kemuri11SetColor0(s32 r, s32 g, s32 b, s32 a) {
     GXColor color = unk_80423180;
     color.r = r;
@@ -258,7 +254,6 @@ static inline void kemuri11SetColor3(s32 r, s32 g, s32 b) {
     color.b = b;
     GXSetTevColor(GX_TEVREG1, color);
 }
-#endif
 
 // The original's zero-Vec temp comes from a compound literal, not the named
 // vec3_802faa00: the literal is what keeps the pool load from being scheduled
@@ -493,49 +488,13 @@ void effKemuri11Disp(CameraId camId, void* param) {
     PSMTXConcat(m0, m1, m2);
     PSMTXConcat(cam->view, m2, m2);
 
-#ifdef MUST_MATCH
     alpha = data->alpha;
     kemuri11SetColor0(d0, d1, d2, alpha);
     kemuri11SetColor1(d3, d4, d5);
-#else
-    {
-        GXColor color = unk_80423180;
-        color.r = d0;
-        color.g = d1;
-        color.b = d2;
-        color.a = data->alpha;
-        GXSetTevColor(GX_TEVREG0, color);
-    }
-    {
-        GXColor color = unk_80423184;
-        color.r = d3;
-        color.g = d4;
-        color.b = d5;
-        GXSetTevColor(GX_TEVREG1, color);
-    }
-#endif
     GXSetCullMode(GX_CULL_BACK);
     main_dl(effect, m2);
-#ifdef MUST_MATCH
     kemuri11SetColor2(c0, c1, c2, alpha);
     kemuri11SetColor3(c3, c4, c5);
-#else
-    {
-        GXColor color = unk_80423188;
-        color.r = c0;
-        color.g = c1;
-        color.b = c2;
-        color.a = data->alpha;
-        GXSetTevColor(GX_TEVREG0, color);
-    }
-    {
-        GXColor color = unk_8042318c;
-        color.r = c3;
-        color.g = c4;
-        color.b = c5;
-        GXSetTevColor(GX_TEVREG1, color);
-    }
-#endif
     GXSetCullMode(GX_CULL_FRONT);
     main_dl(effect, m2);
 }

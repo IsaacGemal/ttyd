@@ -136,13 +136,6 @@ EffectEntry* effCoolLeafN64Entry(s32 type, f32 x, f32 y, f32 z) {
 }
 
 
-// Feeding the type-2 loop's sin/cos results through the `trig` temp (a natural shape,
-// guarded by MUST_MATCH below) changes the allocator's global callee-saved FPR
-// assignment so both the type-1 and type-2 loop-constant groups land on the original's
-// registers; the plain straight-into-the-multiply form scores 99.82%. Previously the
-// type-1 group came out f31=double, f30=10.0, f29=0.5, f28=30.0 (original f28=double,
-// f29=10.0, f30=30.0, f31=0.5) and type-2 f28=double, f29=6.2832, f30=360.0, f31=10.0
-// (original f30=double, f31=6.2832, f23=10.0, f24=360.0).
 void effCoolLeafMain(EffectEntry* effect) {
     effCoolLeafData* data = effect->userdata;
     Vec position;
@@ -295,16 +288,10 @@ void effCoolLeafMain(EffectEntry* effect) {
         randIndex = age + 20;
         for (; i < effect->count; randIndex += 20, i++, data++) {
             data->spin += (f32)(s32)(effTblRandN64(50, randIndex) - 25);
-#ifdef MUST_MATCH
-            // Match shape: keeping the call results in `trig` pins the loop-constant FPRs to the original's.
             trig = (f32)sin(float_6p2832_8041ec6c * data->spin / float_360_8041ec74);
             data->rotZ += float_10_8041ec90 * trig;
             trig = (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->spin) / float_360_8041ec74);
             data->rotY += float_10_8041ec90 * trig;
-#else
-            data->rotZ += float_10_8041ec90 * (f32)sin(float_6p2832_8041ec6c * data->spin / float_360_8041ec74);
-            data->rotY += float_10_8041ec90 * (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->spin) / float_360_8041ec74);
-#endif
             data->x += data->velX;
             data->y += data->velY;
         }

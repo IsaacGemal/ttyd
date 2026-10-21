@@ -97,11 +97,9 @@ EffectEntry* effPokopiPipoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32
 }
 
 void effPokopiPipoMain(EffectEntry* effect) {
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
+	/* Retail builds the Vec in a scratch and copies it to a second local before
 	   dispCalcZ; a single local folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 	effPokopiPipoData* data = effect->userdata;
 	s32 frame;
@@ -110,9 +108,7 @@ void effPokopiPipoMain(EffectEntry* effect) {
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -141,12 +137,7 @@ void effPokopiPipoMain(EffectEntry* effect) {
 		data->rotZ += data->spinVel;
 	}
 	if (timer - 1 == data->flightFrames) {
-#ifdef MUST_MATCH
-		f32 k = -1.0f;
-		data->velY = data->velY * k;
-#else
-		data->velY = data->velY * -1.0f;
-#endif
+		data->velY *= -1.0f;
 		data->spinVel = -4.0f;
 		data->scaleFrame = 0;
 	} else if (data->velY < 0.0f && data->y < 14.285715f) {
@@ -159,11 +150,7 @@ void effPokopiPipoMain(EffectEntry* effect) {
 		data->y = 14.285715f;
 		data->spinVel = -20.f;
 	}
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effPokopiPipoDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effPokopiPipoDisp, effect);
-#endif
 }
 
 // The original builds the TEV colour inside an inlined helper; keeping that helper (and

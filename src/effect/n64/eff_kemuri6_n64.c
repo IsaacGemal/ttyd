@@ -97,6 +97,7 @@ void effKemuri6Main(EffectEntry* effect) {
     Vec position;
     s32 i;
     s32 active;
+    f32 t;
 
     e = effect;
     data = e->userdata;
@@ -110,22 +111,10 @@ void effKemuri6Main(EffectEntry* effect) {
             else {
                 active = 1;
                 data->swayAngle = reviseAngle(12.0f + data->swayAngle);
-#ifdef MUST_MATCH
-                {
-                    f32 t = (f32)sin(6.2831855f * data->swayAngle / 360.0f);
-                    data->scaleX = 0.1f * t + data->baseScaleX;
-                }
-#else
-                data->scaleX = 0.1f * (f32)sin(6.2831855f * data->swayAngle / 360.0f) + data->baseScaleX;
-#endif
-#ifdef MUST_MATCH
-                {
-                    f32 t = (f32)cos(6.2831855f * data->swayAngle / 360.0f);
-                    data->scaleY = 0.1f * t + data->baseScaleY;
-                }
-#else
-                data->scaleY = 0.1f * (f32)cos(6.2831855f * data->swayAngle / 360.0f) + data->baseScaleY;
-#endif
+                t = (f32)sin(6.2831855f * data->swayAngle / 360.0f);
+                data->scaleX = 0.1f * t + data->baseScaleX;
+                t = (f32)cos(6.2831855f * data->swayAngle / 360.0f);
+                data->scaleY = 0.1f * t + data->baseScaleY;
                 if (data->type == 0
                     && data->timer > 4
                     && data->timer <= 5

@@ -130,10 +130,6 @@ static u32 size32x32_tex32x32_vtx[18] = {
 
 //.sbss2
 
-#ifdef MUST_MATCH
-// MUST_MATCH: the original builds GXSetTevColor/GXSetTevKColor's by-value GXColor argument in a
-// scratch slot and word-copies it up into the outgoing argument slot (local below the copy).  Keeping
-// the build and the call together in an inline reproduces that layout (AGENT_BRIEF GXColor quirk).
 static inline void snowDustSetTopColor(effSnowDustData* data) {
 	GXColor color = unk_804232c8;
 	color.r = data->topR;
@@ -433,18 +429,14 @@ void effSnowDustMain(EffectEntry* effect) {
 #pragma opt_lifetimes reset
 #pragma opt_common_subs reset
 
-#endif
 
-// 100%.  The GXColor arguments are built in the snowDustSet*Color inlines above (scratch slot below
-// the outgoing copy, the known MWCC GXColor quirk).  The loop walks the single `data` pointer as the
-// original does; the texture offset wraps every 32 items (`(i & 0x1f) * 64`, the target's clrlslwi).
+// The loop walks the single `data` pointer as the original does; the texture offset wraps every 32
+// items (`(i & 0x1f) * 64`, the target's clrlslwi).
 void effSnowDustDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effSnowDustData* data;
 	CameraEntry* cam;
 	u8* base;
-	GXColor color;
-	GXColor kcolor;
 	GXTexObj texObj;
 	Mtx mtx;
 	Mtx scaleMtx;
@@ -461,16 +453,7 @@ void effSnowDustDisp(CameraId camId, void* param) {
 	data = effect->userdata;
 	f31 = (data->alpha / 255.0f) * data->scale;
 	type = data->type;
-#ifdef MUST_MATCH
 	snowDustSetTopColor(data);
-#else
-	color = unk_804232c8;
-	color.r = data->topR;
-	color.g = data->topG;
-	color.b = data->topB;
-	color.a = data->topA;
-	GXSetTevColor(GX_TEVREG1, color);
-#endif
 	switch (type) {
 		case 0:
 		case 6:
@@ -578,23 +561,8 @@ void effSnowDustDisp(CameraId camId, void* param) {
 		PSMTXConcat(cam->view, mtx, mtx);
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-#ifdef MUST_MATCH
 		snowDustSetItemColor(data, f31);
 		snowDustSetItemKColor(data);
-#else
-		color = unk_804232cc;
-		color.r = data->colorR;
-		color.g = data->colorG;
-		color.b = data->colorB;
-		color.a = (u8)(s32)(f31 * (f32)data->alpha);
-		GXSetTevColor(GX_TEVREG0, color);
-		kcolor = unk_804232d0;
-		kcolor.r = 0x50 - data->frame;
-		kcolor.g = 0x50 - data->frame;
-		kcolor.b = 0x50 - data->frame;
-		kcolor.a = 0x50 - data->frame;
-		GXSetTevKColor(GX_KCOLOR0, kcolor);
-#endif
 		GXLoadTexMtxImm(texMtxA, GX_TEXMTX0, GX_MTX2x4);
 		PSMTXTrans(mtx, data->texScrollX, data->texScrollY, 0.0f);
 		PSMTXConcat(texMtxB, mtx, mtx);

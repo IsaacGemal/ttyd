@@ -141,10 +141,6 @@ void effStampMain(EffectEntry* effect) {
     dispEntry(4, dispCalcZ(&position2), 2, effStampDisp, effect);
 }
 
-// The original builds each TEV colour in a helper-style local whose stack slot sits below its
-// outgoing copy; writing the same code inline makes mwcc put the two slots the other way round
-// (see eff_ripple_n64.c).
-#ifdef MUST_MATCH
 static inline void effStampSetTevReg0(effStampData* data) {
     GXColor color = unk_80423270;
     color.r = data->tevReg0R;
@@ -161,7 +157,6 @@ static inline void effStampSetTevReg1(effStampData* data) {
     color.b = data->tevReg1B;
     GXSetTevColor(GX_TEVREG1, color);
 }
-#endif
 
 void effStampDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
@@ -192,30 +187,8 @@ void effStampDisp(CameraId camId, void* param) {
     PSMTXConcat(mtx, rotMtx, mtx);
     PSMTXConcat(cam->view, mtx, viewMtx);
 
-    {
-#ifdef MUST_MATCH
-        effStampSetTevReg0(data);
-        effStampSetTevReg1(data);
-#else
-        GXColor color;
-        GXColor color2;
-        GXColor tmp;
-
-        tmp = unk_80423270;
-        color = tmp;
-        color.r = data->tevReg0R;
-        color.g = data->tevReg0G;
-        color.b = data->tevReg0B;
-        color.a = data->alpha;
-        GXSetTevColor(GX_TEVREG0, color);
-        tmp = unk_80423274;
-        color2 = tmp;
-        color2.r = data->tevReg1R;
-        color2.g = data->tevReg1G;
-        color2.b = data->tevReg1B;
-        GXSetTevColor(GX_TEVREG1, color2);
-#endif
-    }
+    effStampSetTevReg0(data);
+    effStampSetTevReg1(data);
 
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);

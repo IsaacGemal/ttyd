@@ -18,7 +18,7 @@ __declspec(section ".sdata2") u32 dat_8041eecc = 0xFF000000;
 __declspec(section ".data") u8 lbl_8039CA10[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 
 // .data float pairs and vertex arrays, in the original's order.  force_active keeps the
-// unreferenced ones (the MUST_MATCH code reaches them through lbl_8039CA10).
+// unreferenced ones.
 #pragma force_active on
 __declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
 __declspec(section ".data") f32 lbl_8039CA20[2] = { 1.0f, -1.0f };
@@ -46,8 +46,6 @@ static u32 size32x32_tex32x32_vtx[14] = {
 	0x00000400, 0xFFFFFFFF,
 };
 #pragma force_active reset
-
-// The original reaches the three vertex arrays from the address 8 bytes before its .data.
 
 // .sdata scale table indexed by data->timer in state 1 (signed bytes: loaded with extsb).
 static s8 scale_data[] = "27<AFKPUZ_dgigd";
@@ -272,9 +270,6 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 	f32 spriteScale;
 	f32 angle;
 	f32 offsetX;
-#ifdef MUST_MATCH
-	u8* vtx = lbl_8039CA10;
-#endif
 	effect = param;
 	cam = camGetPtr(camId);
 	data = effect->userdata;
@@ -326,17 +321,9 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
 			if (data->type != 0) {
-#ifdef MUST_MATCH
-				effSetVtxDescN64((effVtxArray*)(vtx + 0x78));
-#else
 				effSetVtxDescN64((effVtxArray*)size16x16_tex16x16_vtx);
-#endif
 			} else {
-#ifdef MUST_MATCH
-				effSetVtxDescN64((effVtxArray*)(vtx + 0x40));
-#else
 				effSetVtxDescN64((effVtxArray*)size4x4_tex4x4_vtx);
-#endif
 			}
 			GXBegin(0x90, 0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -381,11 +368,7 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, trans, trans);
 	GXLoadPosMtxImm(trans, 0);
 	GXSetCurrentMtx(0);
-#ifdef MUST_MATCH
-	effSetVtxDescN64((effVtxArray*)(vtx + 0xb0));
-#else
 	effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_vtx);
-#endif
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

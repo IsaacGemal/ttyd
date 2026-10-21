@@ -193,20 +193,10 @@ void effStarPowerMain(EffectEntry* effect) {
         *(f32*)&data->field_0x50 = data->field_0x44;
         *(f32*)&data->field_0x54 = data->field_0x38;
         if (type == 1) {
-#ifdef MUST_MATCH
-            /* MUST_MATCH: the embedded `f7 = ...` is allocator steering, not logic; the natural
-               form under #else rotates the FPRs (fold f3, product f4, counter*4 f3). */
             f32 f7;
             data->field_0x3C = (f32)(counter * 4);
             data->field_0x40 = float_0p4953_8041fe38 * (f7 = float_4_8041fe3c * (f32)counter);
             data->field_0x44 = float_0p2234_8041fe40 * f7;
-#else
-            f32 f7;
-            data->field_0x3C = (f32)(counter * 4);
-            f7 = float_4_8041fe3c * (f32)counter;
-            data->field_0x40 = float_0p4953_8041fe38 * f7;
-            data->field_0x44 = float_0p2234_8041fe40 * f7;
-#endif
             data->color1A = 0xFF;
             data->color2A = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_7p1234_8041fe48 * (f32)counter) / float_360_8041fe4c) + float_128_8041fe50);
             data->color1R = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_1p231_8041fe58 * (f32)counter) / float_360_8041fe4c) + float_215_8041fe5c);

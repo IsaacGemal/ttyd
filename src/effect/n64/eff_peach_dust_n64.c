@@ -144,9 +144,6 @@ EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 ang
 
 void effPeachDustMain(EffectEntry* effect) {
 	PeachDustParticle* particles;
-#ifdef MUST_MATCH
-	f32* scalePtr;
-#endif
 	Vec position2;
 	Vec position;
 	s32 colorIndex;
@@ -173,20 +170,12 @@ void effPeachDustMain(EffectEntry* effect) {
 		else {
 			particles->counter++;
 			colorIndex = particles->counter;
-#ifdef MUST_MATCH
-			scalePtr = &particles->scale;
-#endif
 			if (colorIndex - 1 < 25) {
 				particles->scale = 0.01f * (f32)scale_data[colorIndex - 1] * 0.4f;
 			}
 			else {
 				f32 k = 0.1f;
-#ifdef MUST_MATCH
-				// Match-only: reading the old scale through a pointer taken earlier keeps the load order of the original.
-				particles->scale = k * (k - particles->scale) + *scalePtr;
-#else
-				particles->scale = k * (k - particles->scale) + particles->scale;
-#endif
+				particles->scale += k * (k - particles->scale);
 			}
 			particles->x += particles->vx;
 			particles->y += particles->vy;

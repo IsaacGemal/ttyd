@@ -317,7 +317,6 @@ void effStardust2Main(EffectEntry* effect) {
     dispEntry(drawCam, dispCalcZ(&dispPosition), 2, effStardust2Disp, effect);
 }
 
-#ifdef MUST_MATCH
 static inline GXColor stardustColor(u8 r, u8 g, u8 b) {
     GXColor c = dat_8041fe88;
     c.r = r;
@@ -325,7 +324,6 @@ static inline GXColor stardustColor(u8 r, u8 g, u8 b) {
     c.b = b;
     return c;
 }
-#endif
 void effStardust2Disp(CameraId camId, void* param) {
     EffectEntry* entry = param;
     CameraEntry* cam;
@@ -427,14 +425,7 @@ void effStardust2Disp(CameraId camId, void* param) {
         if (colorBByte > 0xFF) {
             colorBByte = 0xFF;
         }
-#ifdef MUST_MATCH
         color = stardustColor(colorRByte, colorGByte, colorBByte);
-#else
-        color = dat_8041fe88;
-        color.r = colorRByte;
-        color.g = colorGByte;
-        color.b = colorBByte;
-#endif
         GXSetTevColor(GX_TEVREG0, color);
 
         switch (vtxIndex & 7) {

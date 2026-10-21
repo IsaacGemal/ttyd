@@ -102,10 +102,6 @@ void effOpukuWcurtainMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effOpukuWcurtainDisp, effect);
 }
 
-// Building the colour inside an inline that returns it makes mwcc lay the local and the outgoing argument
-// slot out the way the original does; building them inline in the caller puts them the wrong way round
-// (same quirk as eff_akari_charge_n64.c).
-#ifdef MUST_MATCH
 static inline GXColor opukuWcurtainColor(s32 r, s32 g, s32 b, s32 a) {
 	GXColor c = unk_804231e0;
 	c.r = r;
@@ -114,7 +110,6 @@ static inline GXColor opukuWcurtainColor(s32 r, s32 g, s32 b, s32 a) {
 	c.a = a;
 	return c;
 }
-#endif
 
 // Builds the curtain's 24 vertices (two per column), transforms them through the effect's matrix with the
 // packed s16<->f32 fast casts, and draws them as triangle strips through effSetVtxDescN64. The s texture
@@ -128,7 +123,6 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	GXTexObj texObj;
 	Mtx transMtx;
 	Mtx scaleMtx;
-	GXColor color;
 	Vec v;
 	f32 scale;
 	s32 i;
@@ -140,16 +134,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	s32 counter = data->counter;
 
 	scale = 0.1f * data->scale;
-#ifdef MUST_MATCH
 	GXSetTevColor(GX_TEVREG0, opukuWcurtainColor(data->field_0x18, data->field_0x1C, data->field_0x20, data->field_0x24));
-#else
-	color = unk_804231e0;
-	color.r = data->field_0x18;
-	color.g = data->field_0x1C;
-	color.b = data->field_0x20;
-	color.a = data->field_0x24;
-	GXSetTevColor(GX_TEVREG0, color);
-#endif
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTevStages(1);

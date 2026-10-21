@@ -64,11 +64,6 @@ static inline Vec effSnowfallMakeVec(f32 x, f32 y, f32 z) {
 }
 
 
-// MUST_MATCH: the original builds GXSetTevColor's by-value GXColor argument in a scratch slot and word-copies
-// it up into the outgoing argument slot.  Building it in a plain local makes mwcc put the build in the higher of
-// the two slots (the known GXColor quirk); when the build and the call both live in an inline, mwcc keeps the
-// scratch below the outgoing copy, as the original does.  Natural form under #else.
-#ifdef MUST_MATCH
 static inline void effSnowfallSetBlendColor(GXColor* blend, s32 alpha) {
 	GXColor c = unk_80423268;
 	c.r = blend->r * 0xFF;
@@ -214,11 +209,7 @@ void effSnowfallMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 10, effSnowfallDisp, effect);
 }
 
-#endif
 
-// (1) The original builds the blend/flat GXColor in a scratch slot and copies it to the outgoing argument slot
-//     (local below the copy); a plain local lands the other way round.  The effSnowfallSet*Color inlines fix it.
-// (2) The rest of the function matches the original instruction for instruction.
 void effSnowfallDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effSnowfallData* data;
@@ -236,7 +227,6 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 	s32 j;
 	s32 k;
 	GXColor blend;
-	GXColor color;
 
 	cam = camGetPtr(cameraId);
 	data = effect->userdata;
@@ -267,24 +257,9 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	if (mapGetWork()->entries[0].flags & 2) {
 		mapGetBlend(&blend);
-#ifdef MUST_MATCH
 		effSnowfallSetBlendColor(&blend, alpha);
-#else
-		color = unk_80423268;
-		color.r = blend.r * 0xFF;
-		color.g = blend.g * 0xFF;
-		color.b = blend.b * 0xFF;
-		color.a = alpha * blend.a;
-		GXSetTevColor(GX_TEVREG0, color);
-#endif
 	} else {
-#ifdef MUST_MATCH
 		effSnowfallSetPlainColor(alpha);
-#else
-		color = dat_8041fd10;
-		color.a = alpha;
-		GXSetTevColor(GX_TEVREG0, color);
-#endif
 	}
 	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)eff_snowfall_v);

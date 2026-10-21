@@ -75,20 +75,14 @@ EffectEntry* effCoinN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale) {
 
 void effCoinMain(EffectEntry* effect) {
 	effCoinData* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-	   dispCalcZ; a single local folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 	s32 i;
 
 	disp.x = data->position.x;
 	disp.y = data->position.y;
 	disp.z = data->position.z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	data->counter--;
 	data->frame++;
@@ -110,11 +104,7 @@ void effCoinMain(EffectEntry* effect) {
 		}
 	}
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effCoinDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effCoinDisp, effect);
-#endif
 }
 
 void effCoinDisp(CameraId camId, void* param) {

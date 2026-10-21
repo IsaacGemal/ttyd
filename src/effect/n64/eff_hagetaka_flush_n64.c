@@ -73,20 +73,14 @@ EffectEntry* effHagetakaFlushN64Entry(s32 type, s32 unused, f32 x, f32 y, f32 z,
 
 void effHagetakaFlushMain(EffectEntry* effect) {
 	effHagetakaFlushData* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
-	   dispCalcZ; a single local folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = { 0 };
 	s32 frame;
 
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -111,11 +105,7 @@ void effHagetakaFlushMain(EffectEntry* effect) {
 		data->field_0x2C = frame * 0.2f + 0.3f;
 	}
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effHagetakaFlushDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effHagetakaFlushDisp, effect);
-#endif
 }
 
 // The color index is computed here with `%=` rather than `% 24` at the call site:
@@ -161,11 +151,7 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, 0);
 
 	colorIndex = data->field_0x14 * 3;
-#ifdef MUST_MATCH
 	colorIndex %= 24;
-#else
-	colorIndex = colorIndex % 24;
-#endif
 	hagetakaFlushSetColor(colorIndex, alpha);
 
 	GXSetCullMode(0);

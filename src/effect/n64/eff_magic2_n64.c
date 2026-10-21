@@ -179,27 +179,18 @@ void effMagic2Main(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMagic2Disp, effect);
 }
 
-#ifdef MUST_MATCH
-// Match-only: building color2 through an inline return puts its local at 0x8 and its
-// by-value argument copy at 0xc, as the original does (a plain local lands at 0x14/0x8).
 static inline GXColor magic2Color2(s32 alpha) {
 	GXColor c = unk_804231b4;
 	c.a = alpha / 2;
 	return c;
 }
-#endif
 
-#ifdef MUST_MATCH
-// Match-only: building each colour through an inline return puts its local and its
-// by-value argument copy where the original does (a plain local lands in the other
-// slot). color1's helper takes the base colour by value, as the original's shape does.
 static inline GXColor magic2Color1(GXColor c, u8* ptr, s32 alpha) {
 	c.r = ptr[0];
 	c.b = ptr[2];
 	c.a = alpha;
 	return c;
 }
-#endif
 
 // The declaration order below is tuned so MWCC assigns the original's callee-saved registers
 // (data=r29, i=r28, idx=r27, alpha=r26, type=r25, rot=r24, vOffset=r23, rot2=r22,
@@ -251,26 +242,12 @@ void effMagic2Disp(CameraId camId, void* param) {
 	for (i = 0; i < effect->count; i++, data++) {
 		u8* ptr;
 		GXColor color2;
-		GXColor color1;
 
 		idx += 30;
 		idx %= 24;
 		ptr = (u8*)color_rotation_data + idx;
-#ifdef MUST_MATCH
 		GXSetTevColor(1, magic2Color1(unk_804231b0, ptr, alpha));
-#else
-		color1 = unk_804231b0;
-		color1.r = ptr[0];
-		color1.b = ptr[2];
-		color1.a = alpha;
-		GXSetTevColor(1, color1);
-#endif
-#ifdef MUST_MATCH
 		color2 = magic2Color2(alpha);
-#else
-		color2 = unk_804231b4;
-		color2.a = alpha / 2;
-#endif
 		GXSetTevColor(2, color2);
 		uOffset = data->uOffset;
 		rot = data->rot;

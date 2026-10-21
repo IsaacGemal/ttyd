@@ -126,9 +126,6 @@ void effThunderflareMain(EffectEntry* effect) {
 	s32 phase;
 	s32 i;
 	s32 counter;
-#ifdef MUST_MATCH
-	// MWCC assigns FPRs partly by declaration order; this order plus the
-	// angle2raw temp reproduce the original's f18-f23 allocation.
 	f32 sin1;
 	f32 cos1;
 	f32 sin2;
@@ -137,7 +134,6 @@ void effThunderflareMain(EffectEntry* effect) {
 	f32 angle2raw;
 	f32 radius;
 	f32 angle1;
-#endif
 
 	data = effect->userdata;
 	pos = thunderflareMakeVec(data->x, data->y, data->z);
@@ -163,9 +159,6 @@ void effThunderflareMain(EffectEntry* effect) {
 	phase = data->counter & 1;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-#ifdef MUST_MATCH
-		// Loading angle2 early (angle2raw) schedules its 2*pi multiply into the
-		// sin/cos call's latency slot, as in the original.
 		angle1 = float_6p2832_80420090 * data->angle1 / float_360_80420094;
 		radius = data->radius;
 		angle2raw = data->angle2;
@@ -174,15 +167,6 @@ void effThunderflareMain(EffectEntry* effect) {
 		angle2 = float_6p2832_80420090 * angle2raw / float_360_80420094;
 		sin2 = sin(angle2);
 		cos2 = cos(angle2);
-#else
-		f32 angle1 = float_6p2832_80420090 * data->angle1 / float_360_80420094;
-		f32 radius = data->radius;
-		f32 angle2 = float_6p2832_80420090 * data->angle2 / float_360_80420094;
-		f32 sin1 = sin(angle1);
-		f32 cos1 = cos(angle1);
-		f32 sin2 = sin(angle2);
-		f32 cos2 = cos(angle2);
-#endif
 
 		data->x = cos2 * (radius * sin1);
 		data->y = cos2 * (radius * cos1);

@@ -106,9 +106,7 @@ inline Vec initializeVec(Vec* input) {
 
 // Matching notes: the zero vector, the int->float magic and the two mode-1 doubles are all compiler-
 // generated anonymous pool constants here, which puts .rodata exactly at vec+0, magic+0x10, 0.008+0x18,
-// 0.3+0x20 (the given named definitions emitted first and shifted every base+offset load). Under MUST_MATCH
-// the speed term is `float_4 * (f32)... / float_10` (rather than `(f32)... * float_4`), which makes mwcc
-// hoist the float_4 load into f3 first, matching the original's schedule.
+// 0.3+0x20 (the given named definitions emitted first and shifted every base+offset load).
 #pragma opt_common_subs off
 void effBreathFireMain(EffectEntry* effect) {
 	s32 life;
@@ -118,11 +116,7 @@ void effBreathFireMain(EffectEntry* effect) {
 	Vec position = initializeVec((Vec*)&data->posX);
 	EffectEntry* newEffect;
 
-#ifdef MUST_MATCH
 	data->texPos = float_4_8041ea94 * (f32)data->age / float_10_8041ea98;
-#else
-	data->texPos = (f32)data->age * float_4_8041ea94 / float_10_8041ea98;
-#endif
 	data->life--;
 	data->age++;
 	life = data->life;
@@ -168,10 +162,6 @@ void effBreathFireMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effBreathFireDisp, effect);
 }
 
-#ifdef MUST_MATCH
-// Match-only: building each colour in its own inline (the shape eff_rubble_n64 uses) makes mwcc
-// place the by-value GXSetTevColor GXColor temporaries in the original's stack slots. The plain
-// form under #else reverses the first colour's home and outgoing slots (the known mwcc quirk).
 static inline void breathSetColor0(effBreathFireData* data) {
 	GXColor color = unk_804230b0;
 	color.r = data->color0R;
@@ -189,14 +179,12 @@ static inline void breathSetColor1(effBreathFireData* data, f32 s, s32 frame) {
 	color.a = (u8)(float_256_8041ea80 * (s - (f32)frame));
 	GXSetTevColor(GX_TEVREG1, color);
 }
-#endif
 
 void effBreathFireDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	effBreathFireData* data;
 	CameraEntry* cam;
 	GXTexObj texObj;
-	GXColor color;
 	Mtx trans;
 	Mtx scale;
 	Mtx rot;
@@ -227,24 +215,8 @@ void effBreathFireDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
-#ifdef MUST_MATCH
 	breathSetColor0(data);
 	breathSetColor1(data, s, frame);
-#else
-	color = unk_804230b0;
-	color.r = data->color0R;
-	color.g = data->color0G;
-	color.b = data->color0B;
-	color.a = data->alpha;
-	GXSetTevColor(GX_TEVREG0, color);
-
-	color = unk_804230b4;
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = (u8)(float_256_8041ea80 * (s - (f32)frame));
-	GXSetTevColor(GX_TEVREG1, color);
-#endif
 
 	effGetTexObjN64(0x77, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);

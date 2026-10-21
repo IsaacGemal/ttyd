@@ -112,11 +112,7 @@ EffectEntry* effWhirlwindN64Entry(s32 type, s32 mario, s32 life, f32 size) {
 			p->rotXVel = (f32)(((rand() % 2) * 2 - 1) * 4);
 			p->rotYVel = 0.0f;
 			p->rotZVel = (f32)(((rand() % 2) * 2 - 1) * 4);
-#ifdef MUST_MATCH
 			p->scale = ((f32)(i - 1) / 4.0f) * 0.5f + 0.5f;
-#else
-			p->scale = 0.5f * ((f32)(i - 1) * 0.25f) + 0.5f;
-#endif
 			p->rotX = (f32)v29;
 			p->rotY = (f32)((i - 1) * 360 / 4);
 			p->rotZ = (f32)(360 - v28);

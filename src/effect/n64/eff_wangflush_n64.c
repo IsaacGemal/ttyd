@@ -66,24 +66,20 @@ EffectEntry* effWangFlushN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) {
 	return effect;
 }
 
+static inline Vec initializeVec(Vec* input) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
+}
+
 void effWangFlushMain(EffectEntry* effect) {
 	s32 duration;
 	s32 frame;
 	effWangFlushData* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
-	   local before dispCalcZ; a single local folds the copy away (same idiom as
-	   effGlassMain). */
-	Vec position;
-#endif
-	Vec disp = { 0 };
-
-	disp.x = data->position.x;
-	disp.y = data->position.y;
-	disp.z = data->position.z;
-#ifdef MUST_MATCH
-	position = disp;
-#endif
+	Vec disp = initializeVec(&data->position);
 
 	data->duration--;
 	data->frame++;
@@ -108,11 +104,7 @@ void effWangFlushMain(EffectEntry* effect) {
 	data->alphaScale = float_0p5_80420120 * (f32)sin(float_6p2832_80420130 * (f32)(duration * 50) / float_360_80420134) + 0.9f;
 	data->field_0x28 = 64.0f * (f32)sin(float_6p2832_80420130 * (f32)(duration * 40) / float_360_80420134) + 144.0f;
 
-#ifdef MUST_MATCH
-	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effWangFlushDisp, effect);
-#else
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effWangFlushDisp, effect);
-#endif
 }
 
 

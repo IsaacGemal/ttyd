@@ -115,11 +115,7 @@ void effFireSparkMain(EffectEntry* effect) {
     s32 rangeX;
     s32 rangeY;
     effFireSparkData* data = effect->userdata;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
-       local before dispCalcZ; a single local folds the copy away (same idiom as effBushMain). */
     Vec position;
-#endif
     Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
     s32 i;
     s32 life;
@@ -131,9 +127,7 @@ void effFireSparkMain(EffectEntry* effect) {
     disp.x = data->posX;
     disp.y = data->posY;
     disp.z = data->posZ;
-#ifdef MUST_MATCH
     position = disp;
-#endif
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
@@ -202,11 +196,7 @@ void effFireSparkMain(EffectEntry* effect) {
         data->velZ += 0.04f * (data->velZTarget - data->velZ);
     }
 
-#ifdef MUST_MATCH
-    dispEntry(4, dispCalcZ(&position), 2, effFireSparkDisp, effect);
-#else
-    dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effFireSparkDisp, effect);
-#endif
+    dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFireSparkDisp, effect);
 }
 
 // Building each TEV colour in a small void helper (same shape as bushSetColor) makes the by-value

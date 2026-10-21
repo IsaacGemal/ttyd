@@ -67,11 +67,7 @@ EffectEntry* effBushN64Entry(s32 type, f32 x, f32 y, f32 z) {
 
 void effBushMain(EffectEntry* effect) {
 	BushN64Data* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
-	   local before dispCalcZ; a single local folds the copy away. */
 	Vec position;
-#endif
 	Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
 	s32 type;
 	s32 life;
@@ -82,9 +78,7 @@ void effBushMain(EffectEntry* effect) {
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	type = data->type;
 	if (data->age >= 5 && data->age < 15) {
@@ -114,14 +108,7 @@ void effBushMain(EffectEntry* effect) {
 		data->alpha = (s32)(0.3f * (255 - data->alpha) + data->alpha);
 	}
 	if (life < 10) {
-#ifdef MUST_MATCH
-		{
-			f32 fadeScale = 0.8f;
-			data->alpha = (s32)((f32)data->alpha * fadeScale);
-		}
-#else
-		data->alpha = (s32)((f32)data->alpha * 0.8f);
-#endif
+		data->alpha *= 0.8f;
 	}
 
 	data++;
@@ -144,11 +131,7 @@ void effBushMain(EffectEntry* effect) {
 		data->x += data->velX;
 		data->y += data->velY;
 	}
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effBushDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effBushDisp, effect);
-#endif
 }
 
 void effBushDisp(CameraId camId, void* param) {

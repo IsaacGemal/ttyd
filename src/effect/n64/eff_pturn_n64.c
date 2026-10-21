@@ -135,12 +135,10 @@ void effPturnMain(EffectEntry* effect) {
     f32 f31;
     f32 f30;
     f32 scaleFactor;
-#ifdef MUST_MATCH
-    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
+    /* Retail builds the Vec in a scratch slot and copies it into a second
        local before dispCalcZ; a single local folds the copy away (same idiom as
        eff_bush_n64.c). */
     Vec position;
-#endif
     Vec disp;
 
     data = effect->userdata;
@@ -148,9 +146,7 @@ void effPturnMain(EffectEntry* effect) {
     disp.x = data->x;
     disp.y = data->y;
     disp.z = data->z;
-#ifdef MUST_MATCH
     position = disp;
-#endif
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
@@ -225,11 +221,7 @@ void effPturnMain(EffectEntry* effect) {
         data->life++;
     }
 
-#ifdef MUST_MATCH
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effPturnDisp, effect);
-#else
-    dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effPturnDisp, effect);
-#endif
 }
 
 void effPturnDisp(CameraId camId, void* param) {

@@ -253,9 +253,8 @@ void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f
 #pragma opt_common_subs reset
 
 // MWCC's default lifetime analysis coalesces the cosine accumulator into the square's
-// register (f2) instead of f5; opt_lifetimes off restores the original colouring. Reusing
-// `rad` as the quadrant base keeps it in f6 and squares into f1 as the original does
-// (rad is dead after this point); the natural form is under #else.
+// register (f2) instead of f5; opt_lifetimes off restores the original colouring. Each
+// quadrant folds `rad` into range and squares it, which keeps it in f6 and the square in f1.
 #pragma opt_lifetimes off // default lifetime analysis loses f1/f5, this fixes the FPR colouring
 void effSmallStarMain(EffectEntry* effect) {
     effSmallStarN64Data* data;
@@ -299,37 +298,22 @@ void effSmallStarMain(EffectEntry* effect) {
                     wave = wave * sq - cosC2;
                     wave = wave * sq + cosC0;
                 } else {
-#ifdef MUST_MATCH
                     rad = float_1p5708_8041fc9c - (rad - float_1p5708_8041fc9c);
                     sq = rad * rad;
-#else
-                    sq = float_1p5708_8041fc9c - (rad - float_1p5708_8041fc9c);
-                    sq = sq * sq;
-#endif
                     wave = wave * sq - cosC2;
                     wave = wave * sq + cosC0;
                     wave = -wave;
                 }
             } else {
                 if (rad < float_4p7124_8041fca0) {
-#ifdef MUST_MATCH
                     rad = rad - float_3p1416_8041fc98;
                     sq = rad * rad;
-#else
-                    sq = rad - float_3p1416_8041fc98;
-                    sq = sq * sq;
-#endif
                     wave = wave * sq - cosC2;
                     wave = wave * sq + cosC0;
                     wave = -wave;
                 } else {
-#ifdef MUST_MATCH
                     rad = float_1p5708_8041fc9c - (rad - float_4p7124_8041fca0);
                     sq = rad * rad;
-#else
-                    sq = float_1p5708_8041fc9c - (rad - float_4p7124_8041fca0);
-                    sq = sq * sq;
-#endif
                     wave = wave * sq - cosC2;
                     wave = wave * sq + cosC0;
                 }

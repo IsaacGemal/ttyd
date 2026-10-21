@@ -106,21 +106,12 @@ void effRippleMain(EffectEntry* effect) {
 	}
 
 	if ((type == 1 || type == 2 || type == 3) && timer == 15) {
-#ifdef MUST_MATCH
-		/* MUST_MATCH: the original loads the new effect's userdata into r3 before reading
-		   data->rz, so rz lands in f1; the natural one-liner reads userdata first and reuses f0. */
 		EffectEntry* subEffect = effRippleN64Entry(type * 10, data->x, data->y, data->z, float_0_8041fba0);
+		EffRippleData* subData;
 		f32 rz = data->rz;
-		EffRippleData* subData = subEffect->userdata;
-		f32 rx = data->rx;
-		subData->rx = rx;
-		subData->rz = rz;
-#else
-		EffRippleData* subData =
-			effRippleN64Entry(type * 10, data->x, data->y, data->z, float_0_8041fba0)->userdata;
+		subData = subEffect->userdata;
 		subData->rx = data->rx;
-		subData->rz = data->rz;
-#endif
+		subData->rz = rz;
 	}
 
 	if (type == 2 || type == 20) {

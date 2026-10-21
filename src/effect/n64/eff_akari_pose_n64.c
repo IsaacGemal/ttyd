@@ -111,11 +111,7 @@ EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 
     effAkariPosePart* part;
     s32 i;
     f32 seqStep;
-#ifdef MUST_MATCH
-    // Two statements instead of one: the original loads the 0.5 constant into f0 and the converted
-    // seq length into f1; a single expression makes this compiler swap them.
-    f32 seqF;
-#endif
+    s32 seqNum;
 
     effect = effEntry();
     effect->type = "AkariPoseN64";
@@ -138,12 +134,8 @@ EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 
     data->z = z;
     data->scale = scale;
 
-#ifdef MUST_MATCH
-    seqF = (f32)max_seq_num[type];
-    seqStep = seqF * float_0p5_8041e8f8;
-#else
-    seqStep = (f32)max_seq_num[type] * float_0p5_8041e8f8;
-#endif
+    seqNum = max_seq_num[type];
+    seqStep = seqNum * float_0p5_8041e8f8;
     for (i = 1, part = data->part; i < count + 1; i++, part++) {
         part->seqIndex = (s32)(-1.0f - seqStep * (f32)(i & 1));
     }
@@ -244,20 +236,16 @@ void effAkariPoseMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effAkariPoseDisp, effect);
 }
 
-#ifdef MUST_MATCH
 static inline GXColor akariColor(u8 alpha) {
     GXColor c = unk_80423098;
     c.a = alpha;
     return c;
 }
-#endif
 
 // The original reuses the header pointer as the parts cursor: `data++` steps it past the 0x38-byte
 // header and the loop steps it once per part, so the `part` cursor is `data` cast to the part type.
 // With a separate `part = data->part` pointer mwcc schedules the preheader `addi r30,r30,0x38`
 // before `li r31,1` (99.25%); reusing `data` reproduces the original's `li`-then-`addi` order.
-// The MUST_MATCH `akariColor` inline above fixes the GXColor stack slot the natural assignment
-// produces (local at r1+0xc vs the target's r1+0x8; the same quirk as eff_booboo_n64.c).
 void effAkariPoseDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effAkariPoseData* data;
@@ -306,12 +294,7 @@ void effAkariPoseDisp(CameraId camId, void* param) {
         PSMTXConcat(viewMtx, mtx, mtx);
         GXLoadPosMtxImm(mtx, 0);
         GXSetCurrentMtx(0);
-#ifdef MUST_MATCH
         color = akariColor((alpha * part->alpha) >> 8);
-#else
-        color = unk_80423098;
-        color.a = (alpha * part->alpha) >> 8;
-#endif
         GXSetTevColor(1, color);
         GXBegin(0x90, 0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);

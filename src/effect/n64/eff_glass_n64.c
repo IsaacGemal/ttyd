@@ -85,20 +85,13 @@ EffectEntry* effGlassN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale
 
 void effGlassMain(EffectEntry* effect) {
 	effGlassData* data = effect->userdata;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
-	   local before dispCalcZ; a single local folds the copy away (same idiom as
-	   effFlameMain). */
 	Vec position;
-#endif
 	Vec disp = { 0 };
 
 	disp.x = data->position.x;
 	disp.y = data->position.y;
 	disp.z = data->position.z;
-#ifdef MUST_MATCH
 	position = disp;
-#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -133,11 +126,7 @@ void effGlassMain(EffectEntry* effect) {
 	data->position.z += data->velZ;
 	data->rot += data->rotVel;
 
-#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effGlassDisp, effect);
-#else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effGlassDisp, effect);
-#endif
 }
 
 /* effGlassDisp matches with the colour writes and the frame conversion in inlines. */

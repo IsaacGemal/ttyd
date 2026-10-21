@@ -179,16 +179,7 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
             break;
         case 1:
         case 2:
-#ifdef MUST_MATCH
-            /* MUST_MATCH: the comma makes MWCC materialise the `(f32)i` conversion before the
-               `(f32)count` one, which lands the two int->float scratch pairs in the original's
-               slots (count 0x2c/0x28, i 0x24/0x20); the natural form below puts them the other
-               way round. The result is unchanged (the first `(f32)i` is discarded). */
-            angle = (360.f / (f32)count) * ((f32)i, (f32)i)
-                + (f32)(rand() % 360);
-#else
-            angle = 360.f / (f32)count * (f32)i + (f32)(rand() % 360);
-#endif
+            angle = (f32)(rand() % 360) + 360.f / (f32)count * (f32)i;
             if (i & 1) {
                 vy = -((f32)(rand() % 50 / 1000) + 0.05f);
             } else {
@@ -209,13 +200,7 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
         case 3:
         case 4:
         default:
-#ifdef MUST_MATCH
-            /* MUST_MATCH: same comma as the case 1/2 arm above (int->float scratch slots). */
-            angle = (360.f / (f32)count) * ((f32)i, (f32)i)
-                + (f32)(rand() % 360);
-#else
-            angle = 360.f / (f32)count * (f32)i + (f32)(rand() % 360);
-#endif
+            angle = (f32)(rand() % 360) + 360.f / (f32)count * (f32)i;
             vy = -((f32)(rand() % 50 / 1000) + 0.05f);
             angle = 6.2831855f * angle / 360.f;
             ptr->gravity = vy;

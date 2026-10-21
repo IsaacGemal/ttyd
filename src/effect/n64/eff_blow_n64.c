@@ -63,12 +63,6 @@ typedef struct effBlowParticle {
 	s32 delay;       // 0x64
 } effBlowParticle;
 
-#ifdef MUST_MATCH
-// Reads of the unit's own .sdata2 constants through the object, so the loads point at it instead of a new pool word.
-#define VL(x) (*(volatile const f32*)&(x))
-#else
-#define VL(x) (x)
-#endif
 extern const f32 float_0p03125_8041e984;
 extern const f32 float_0p03_8041e9a0;
 extern const f32 lbl_8041E9A4;
@@ -412,7 +406,7 @@ void effBlowDisp(CameraId camId, void* param) {
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
     {
-		f32 s = VL(float_0p03125_8041e984);
+		f32 s = float_0p03125_8041e984;
 		PSMTXScale(scale, s, s, float_0_8041e988);
 	}
     GXLoadTexMtxImm(scale, 0x1E, 1);

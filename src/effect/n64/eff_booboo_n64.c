@@ -659,7 +659,6 @@ u32 boo_dl_2_31[8] ATTRIBUTE_ALIGN(32) = {
 };
 
 u8 anime_data_walk[8] = { 0x01, 0x01, 0x02, 0x02, 0x01, 0x01, 0x00, 0x00 };
-#ifdef MUST_MATCH
 static inline GXColor boobooColor(u8 v) {
 	GXColor c = unk_804230a8;
 	c.r = v;
@@ -667,7 +666,6 @@ static inline GXColor boobooColor(u8 v) {
 	c.b = v;
 	return c;
 }
-#endif
 
 void boo_polygon_0(void) {
 	GXClearVtxDesc();
@@ -1098,12 +1096,7 @@ void effBoobooDisp(CameraId camId, void* param) {
 				if (data->tex[i] == 8 || data->tex[i] == 9) {
 					f32 s = (f32)sin(6.2831855f * phase / 360.0f);
 					u8 bright = (u8)(63.0f + 63.0f * s);
-#ifdef MUST_MATCH
 					color = boobooColor(bright);
-#else
-					color = unk_804230a8;
-					color.r = color.g = color.b = bright;
-#endif
 					GXSetTevColor(GX_TEVREG0, color);
 				}
 				boo_polygon(data->poly[i]);
