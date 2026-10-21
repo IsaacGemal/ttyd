@@ -12308,3 +12308,73 @@ cleanup index counts it (`rels/common/include/` is outside its scope, so code mo
 - For a reviewer: battleGetBarriernSatelliteInitPos carries a function-local `static const Vec VecData[]`, which
   moved into its header with the function (the bytes and their place are unchanged). gon's two `#pragma
   dont_inline` pairs now wrap the lect_mario_ido.h and lect_map_cam_chg.h includes (same pragma lines, no new ones).
+
+## MUST_MATCH source shapes outside battle: effect, driver, mario, party, window, event, manager, top-level src (2026-10-20, Claude Opus 5.5 orchestrating eight Claude Opus 5.5 workers, n9-q-o-mmsrc)
+
+Task (Isaac): for each remaining `MUST_MATCH` block outside src/battle/, find the natural C the original most likely
+had (statement/declaration order, an inline the duplicated body came from, an honest type, an early return, another
+loop shape) and make it the only version; leave the block, and record what was tried, where nothing matches.
+Volatile, puns, int round trips, dead stores, redundant ternaries and function-pointer casts stay guarded. Data layout
+(strings, gap_/force_active, section declspecs, data definitions, .sbss2 templates) was out of bounds.
+
+- Method: each candidate compiled with its object's exact ninja flags and compared with the pre-branch object by
+  tools/obj_equiv.py (all allocated sections and relocations), plus a compile without -DMUST_MATCH. Harness (scratch,
+  untracked): build/mmwork/try.py, resolve.py, blocks.py, dump.py; the eight workers' reports are in
+  build/mmwork/agent1..8/REPORT.md (per block: the form that matched, or every shape tried). 206 files, split into
+  eight disjoint groups.
+- Result: 754 -> 417 MUST_MATCH regions in scope (545 -> 260 inside functions). Index (tools/cleanup_index.py)
+  16.392 -> 15.748 per kLOC (11570 -> 11080 weighted): must_match 1300 -> 963, goto 238 -> 224, opt_pragma
+  1457 -> 1451, fn_ptr_cast 131 -> 125, field_0x 3645 -> 3624, address_name 2687 -> 2654, unk_name 722 -> 679.
+- Shapes that turned out to be the original's:
+  - statusWinCheck's body as `if (...) return TRUE; return FALSE;`: every `!(statusWinCheck() ? 1 : 0)` and every
+    `switch (statusWinCheck())` dispatch in statuswindow.c becomes a plain test.
+  - `int`, not `s32`, for the intplGetValue step counters (evt_damage, evt_item, evt_nannpc, as evt_npc.c's `int
+    elapsed`); with it two unguarded pragma pairs (evt_item, evt_nannpc) were unnecessary.
+  - fontmgr's always-false compare is a multi-character constant: `arg1[0] == '/' && arg1[0] == '/r'` (0x2f72,
+    unsigned in MWCC), the cmplwi in retail.
+  - Duplicated bodies come from inlines: chkTreasureBox (mario_balloon; its discarded marioGetPtr() is the inline's
+    own fetch), marioPartyKillSlot, bomhei_chkBombRock, uranai_table_search, hitHasAttr (party_motion's dead inner
+    NULL test), toge_flush's seven colour setters as one, starstone's and horao_spell's twins merged, romfont's
+    twin lookup merged. These helper names are new (no symbol exists for an inline); they describe their bodies.
+  - The Vec built in one local and copied to another before dispCalcZ is a `makeVec`-style inline (eff_bomb,
+    eff_energy, as eff_batten/eff_particle/eff_spirit/camdrv); elsewhere the copy itself was made the only version.
+  - Footmark (include/party/party_move.h) holds a `Vec pos`, not x/y/z floats: every word-copy pun in party_move and
+    party_motion becomes a struct assignment (MWCC copies a Vec with lwz/stw). New member name `pos`, from the
+    existing x/y/z and the positions written into it.
+  - FontDrawColor declared by value in evt_twoddisp (as fontmgr.c defines it); winIconSetV/winFontSetV inlines out of
+    their guards in win_badge/win_mario/win_party/win_root.
+  - Many guards were simply no longer needed (the #else arm matches now, mostly after #1091's prototype fixes):
+    volatile reads in eff_recovery/eff_funemizu/party_nokonoko, eff_kemutest's dead store, eff_toiki's (u32) round
+    trip, `#pragma opt_common_subs` in party_cloud, `#pragma pool_data` in eff_particle/evt_mobj/win_root.
+- Made the only version unchanged (already plain C, no hack marker; listed per block in the reports): colour-building
+  inlines without puns, the extra Vec copies, empty `case N: break;` labels, a one-case switch, yoda compares,
+  declaration orders, named temporaries. Two keep a retail uninitialised read in the natural build too: win_root's
+  `s32 row` and mario_balloon's `balloonType`.
+- Left, by kind (each with its attempts in the reports): data layout; FIFO per-store reloads (`volatile` 0.0/1.0);
+  colour helpers that read a u32 object through `*(GXColor*)&`; int round trips that pin address materialisation
+  (eff_fall, eff_nice, npcdrv); pool-order helper functions and their pragmas; function-pointer casts on variadic
+  font calls and by-value GXSetFog; a few gotos (windowdrv, mario, opuku_wgun) and redundant tests (eff_break's
+  language test, cardmgr, evt_win) whose only EQUIV alternatives are themselves redundant.
+- Leads, not applied because they touch data definitions or shared headers:
+  - Literal `0.0f`/`1.0f` in plain GXPosition3f32/GXTexCoord2f32 calls reproduce the volatile FIFO reloads exactly in
+    .text (shadowdrv, eff_break, eff_funemizu, evt_telop, eff_sunlight); only .sdata2 differs (two anonymous pool words
+    beside the named float_0/float_1). Removing the named definitions in the same change may make them match.
+  - Named zero Vecs and strings that are really the compiler's own templates: eff_peach_fukidashi (`char buf[0x20] =
+    "\x81\x7E";` replaces eight punned word copies), eff_pointget, eff_stageclear, eff_syuryou (strings as literals),
+    eff_mahorn2, eff_sweat_n64, mario_motion (strings by name, no force_active). All EQUIV at object level and the
+    linked build was not affected, but each deletes or un-forces named data, so they were reverted; diffs in
+    build/mmwork/proposals/.
+  - Retyping u32 colour objects as GXColor frees the pun blocks: eff_nozle, eff_spark, eff_starstone, eff_batten,
+    eff_funemizu, eff_thruhammer, evt_map, kameki, kumokumo, opuku_wgun, pokopi_thunder, sstar, recover_heart,
+    butterfly, confetti. eff_teresa: its float definitions after the code (the eff_mahorn layout) remove READ_RODATA.
+  - Header changes tested with a header copy: spline_getvalue with pointer parameters (himo, mapdrv); MarioWork.poseTime
+    u16 (koopa_motion); SmartWork.waitsync s32 (memory); searchUnder2 returning HitEntry* with f32* out (evt_mario,
+    evt_party; mario_hit unchanged); mariost.h `language` u32 (evt_telop, msgdrv, evt_shop, effdrv, battle_menu_disp
+    cast it); arammgr's callback-written flags as volatile fields.
+  - eff_release's vertex arrays by name match at object level but leave lbl_803A4C60 unreferenced outside
+    force_active (deadstrip risk); untried in the link.
+- Verified: `ninja` recreates build/G8MJ01/ok; all 136 changed C files are obj_equiv-equivalent to the pre-branch
+  objects and compile with `configure.py --non-matching`; fncast_lint and local_prototypes pass; tools/ci.py passes
+  every step (lint, build, natural, data, ratchet: no regressions) with its tools/tests step skipped, which fails in
+  this worktree for environmental reasons (test_wave_launch's systemd scopes; pyelftools missing for the system
+  python, so ci ran under `uv run --with pyelftools`).
