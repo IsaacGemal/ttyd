@@ -2801,12 +2801,7 @@ void BattleAudienceDispItem(CameraId camId, void* param) {
 		PSMTXScaleApply(mtx, mtx, item->scale, item->scale, 1.0f);
 		PSMTXTransApply(mtx, mtx, item->pos.x, item->pos.y,
 		                item->pos.z);
-#ifdef MUST_MATCH
-		// iconDispGx2's header says s16 but the original reads a zero-extended u16 (no extsh).
-		((void (*)(Mtx, s16, u16))iconDispGx2)(mtx, 0, iconId);
-#else
 		iconDispGx2(mtx, 0, iconId);
-#endif
 	}
 }
 #pragma dont_inline reset

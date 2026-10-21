@@ -333,18 +333,9 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
         iconId = 0x18B;
     }
     if (entry->enabled == 1) {
-#ifdef MUST_MATCH
-        // iconDispGx2's header says s16 but the original reads a zero-extended u16 (no extsh).
-        ((void (*)(Mtx, s16, u16))iconDispGx2)(resultMtx, 0x10, iconId);
-#else
         iconDispGx2(resultMtx, 0x10, iconId);
-#endif
     } else {
-#ifdef MUST_MATCH
-        ((void (*)(Mtx, s16, u16))iconDispGx2)(resultMtx, 0x30, iconId);
-#else
         iconDispGx2(resultMtx, 0x30, iconId);
-#endif
     }
 
     msg = entry->label;

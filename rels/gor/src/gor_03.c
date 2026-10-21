@@ -5510,12 +5510,7 @@ void goryuugijo_disp_slot(CameraId cameraId, void* param) {
             iconDispGx2(mtx, 0x10, 0x1f2);
             PSMTXTrans(trans, -304.0f + sx, 31.35f + (240.0f - sy), 0.0f);
             PSMTXConcat(trans, scale, mtx);
-#ifdef MUST_MATCH
-            // iconDispGx2's header says s16 but the original reads a zero-extended u16 (no extsh).
-            ((void (*)(Mtx, s16, u16))iconDispGx2)(mtx, 0x10, (u16)tbl.v[i]);
-#else
-            iconDispGx2(mtx, 0x10, (u16)tbl.v[i]);
-#endif
+            iconDispGx2(mtx, 0x10, tbl.v[i]);
         }
     }
 }

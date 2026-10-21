@@ -436,7 +436,7 @@ void iconDispGx(f32 scale, Vec* position, s16 flags, s32 iconId) {
     iconDispGxAlpha(position, flags, iconId, 0xFF, scale);
 }
 
-void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
+void iconDispGx2(Mtx mtx, s16 flags, u16 iconId) {
     CameraEntry* camera;
     IconBinaryEntry* data;
     IconEntry entry;
