@@ -239,25 +239,6 @@ __declspec(section ".data") u32 doku_kinoko_effect[65] = {
 
 #ifdef MUST_MATCH
 // Returning the colour from an inline (rather than writing the channels in place) makes MWCC lay the
-// local/outgoing GXColor pair out the way the original does; the direct build puts the two slots the
-// other way round.
-static inline GXColor slotColorA(u8 a) {
-    GXColor c = *(GXColor*)&dat_80420528;
-
-    c.a = a;
-    return c;
-}
-
-static inline GXColor slotColorB(u8 a) {
-    GXColor c = *(GXColor*)&dat_8042052c;
-
-    c.a = a;
-    return c;
-}
-#endif
-
-#ifdef MUST_MATCH
-// Returning the colour from an inline (rather than writing the channels in place) makes MWCC lay the
 // local/outgoing GXColor pair out the way the original does; passing the alpha first is what makes the
 // second call's scratch slots come out adjacent to its local (with the colour first the compiler groups
 // the two by-value colours' locals together and the second call's copy lands 4 bytes high).
@@ -283,17 +264,9 @@ void BattleBreakSlot_Init(void) {
 
     memset(slot, 0, 0x134);
     slot->state = 0;
-#ifdef MUST_MATCH
-    i = 0;
-    reel = BattleBreakSlotReelGetPtr(0);
-    for (; i < 3; i++) {
-#else
-    reel = BattleBreakSlotReelGetPtr(0);
-    for (i = 0; i < 3; i++) {
-#endif
+    for (i = 0, reel = BattleBreakSlotReelGetPtr(0); i < 3; i++, reel++) {
         reel->type = i;
         reel->state = 0;
-        reel++;
     }
     reel = BattleBreakSlotReelGetPtr(0);
     reel->count = 8;
