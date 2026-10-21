@@ -337,7 +337,7 @@ static inline void winLogAddTab0(LogWin* w, s32 tabType, const char** msg_help, 
 #define LOG_ADD_3(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
 #define LOG_ADD_4(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
 #endif
-#define LOG_TEXPAL() (**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0))
+#define LOG_TEXPAL() (*(TEXPalette**)work->winTpl->data)
 extern const GXColor unk_80423050;
 #define HALF_FOV_TAN 0.21816615760326385
 typedef struct TattleCamEntry {
