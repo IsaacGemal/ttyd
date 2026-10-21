@@ -47,6 +47,28 @@ void marioBalloonOff(void) {
     }
 }
 
+// -1 unless the hit is a treasure box; then 1 if mobjCheckItemboxOpen returns 1, else 0.
+static inline s32 chkTreasureBox(HitEntry* hit) {
+    MarioWork* mario;
+    MapObjectEntry* obj;
+    s32 valid;
+
+    valid = -1;
+    mario = marioGetPtr();
+    if (!((u32)hitGetAttr(hit) & 0x80000000)) {
+        valid = -1;
+    } else {
+        obj = mobjHitObjPtrToPtr(hit);
+        if (strcmp(obj->animName, "MOBJ_TreasureBox") == 0 || strcmp(obj->animName, "MOBJ_BigTreasureBox") == 0) {
+            valid = 1;
+            if (mobjCheckItemboxOpen(obj) != 1) {
+                valid = 0;
+            }
+        }
+    }
+    return valid;
+}
+
 void marioBalloonMain(void) {
     MarioWork* mario = marioGetPtr();
     s32 valid;
@@ -56,16 +78,10 @@ void marioBalloonMain(void) {
     void* hit3;
     void* hit4;
     // Not set on the item-box path, yet read after it: the original does the same (it compares r29, which
-    // only the hit and NPC paths assign). Initializing it changes the code, so only the matching build
-    // leaves it unset.
-#ifdef MUST_MATCH
+    // only the hit and NPC paths assign).
     s32 balloonType;
-#else
-    s32 balloonType = 0;
-#endif
     BOOL ret;
     CaseEntry* ce;
-    MapObjectEntry* obj;
     s32 attr;
 
     if (mario->dispFlags & 0x04000000) {
@@ -171,43 +187,8 @@ void marioBalloonMain(void) {
     }
 
     hit4 = mario->hitobjFront;
-    if (hit4 != NULL) {
-        valid = -1;
-#ifdef MUST_MATCH
-        // The original calls marioGetPtr() and discards the result here (the pointer already lives in r31).
-        marioGetPtr();
-#endif
-        if (!((u32)hitGetAttr((HitEntry*)hit4) & 0x80000000)) {
-            valid = -1;
-        } else {
-            obj = mobjHitObjPtrToPtr((HitEntry*)hit4);
-            if (strcmp(obj->animName, "MOBJ_TreasureBox") == 0 || strcmp(obj->animName, "MOBJ_BigTreasureBox") == 0) {
-                valid = 1;
-                if (mobjCheckItemboxOpen(obj) != 1) {
-                    valid = 0;
-                }
-            }
-        }
-        if (valid >= 0) {
-            hit4 = mario->hitobjFront;
-            valid = -1;
-#ifdef MUST_MATCH
-            // Second copy: the original again calls marioGetPtr() and discards the result.
-            marioGetPtr();
-#endif
-            if (!((u32)hitGetAttr((HitEntry*)hit4) & 0x80000000)) {
-                valid = -1;
-            } else {
-                obj = mobjHitObjPtrToPtr((HitEntry*)hit4);
-                if (strcmp(obj->animName, "MOBJ_TreasureBox") == 0 || strcmp(obj->animName, "MOBJ_BigTreasureBox") == 0) {
-                    valid = 1;
-                    if (mobjCheckItemboxOpen(obj) != 1) {
-                        valid = 0;
-                    }
-                }
-            }
-            ret = (BOOL)valid;
-        }
+    if (hit4 != NULL && chkTreasureBox((HitEntry*)hit4) >= 0) {
+        ret = (BOOL)chkTreasureBox((HitEntry*)mario->hitobjFront);
     }
 
     hit = fbatNpcTalkCheck();

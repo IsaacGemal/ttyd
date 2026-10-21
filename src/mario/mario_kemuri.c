@@ -148,12 +148,8 @@ void mario_kemuri_landon(void) {
         cnt492 = 10;
     }
 
-    #ifdef MUST_MATCH
-    // `== 0` next to `== 1` merges into `cmplwi 1; ble`, and after `13` swaps the last two tests; `!x` keeps the order.
+    // `!x`, not `== 0`: next to `== 1` that merges into `cmplwi 1; ble`.
     if (mario->currMotionId == 2 || mario->currMotionId == 1 || !mario->currMotionId || mario->currMotionId == 13) {
-#else
-    if (mario->currMotionId == 2 || mario->currMotionId == 1 || mario->currMotionId == 0 || mario->currMotionId == 13) {
-#endif
         if (mario->currMotionId == 13) {
             cnt491 = 0;
         }

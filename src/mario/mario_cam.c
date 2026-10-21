@@ -169,16 +169,9 @@ void marioUpdateCam(void) {
         sincosf(&sin, &cos, camera->viewYaw - 90.0f);
 
         if (!(mario->dispFlags & 0x20000)) {
-#ifdef MUST_MATCH
-            // The original emits the .x, .z, .y stores in this order; the natural .x, .y, .z order schedules differently.
             mario->field_EC.x = mario->position.x + sin * mario->unk13C;
             mario->field_EC.z = mario->position.z + cos * mario->unk13C;
             mario->field_EC.y = mario->position.y + mario->dispOfs.y + mario->unk144;
-#else
-            mario->field_EC.x = mario->position.x + sin * mario->unk13C;
-            mario->field_EC.y = mario->position.y + mario->dispOfs.y + mario->unk144;
-            mario->field_EC.z = mario->position.z + cos * mario->unk13C;
-#endif
             if (mario->currMotionId == MARIO_MOTION_SHIP) {
                 mario->field_EC.y += 10.0f;
             }

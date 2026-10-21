@@ -1641,13 +1641,8 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
     return NULL;
 }
 
-// The sin/cos colouring and the hit-check join now match. The ROUND_MILLI register colours are
-// reproduced with volatile reads of the float constants (marked MUST_MATCH): the original reloads
-// float_0 per component and float_1000 for the y component, which MW only does if the loads are
-// not CSE-able. The dead out2 copy and the `hit=0` join are also under MUST_MATCH.
-// Matches 100%. The p read is forced volatile (cast below) so the compiler re-loads it each
-// iteration like the original; `dir` is built as a compound literal so its first word is not
-// scheduled one slot early (the named-vector read was).
+// The probe is marioHitCheckVecRound inlined (its distance result is unused). `dir` is built as a
+// compound literal so its first word is not scheduled one slot early (the named-vector read was).
 void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
     MarioWork* wp = marioGetPtr();
     f32 ox;
@@ -1662,6 +1657,7 @@ void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
     HitEntry* hit;
     f32 y;
     f32 dist;
+    f32 hitDist;
     s32 i;
 
     *outY = -1.0f;
@@ -1717,51 +1713,8 @@ void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
         query.targetDir = dir;
         query.targetDistance = dist;
 
-        if (marioGetPtr()->currMotionId == 0x1C) {
-            hit = hitCheckVecFilter(&query, chkfilterVecVivian);
-        } else if (marioGetPtr()->flags & 0x1000000) {
-            hit = hitCheckVecFilter(&query, chkfilterVecRoll);
-        } else {
-            hit = hitCheckVecFilter(&query, chkfilterVec);
-        }
-#ifdef MUST_MATCH
-        // The original re-materialises hit=0 at the join of the two null checks and keeps a dead
-        // out2 copy guarded by a null test on the local's address; reproduce both.
-        if (hit == NULL) {
-            hit = NULL;
-            goto check_hit2;
-        }
-        out1 = query.hitPos;
-        out1.x = (f32)(s32)(1000.f * out1.x +
-                            (out1.x >= 0.0f ? 0.5f : -0.5f)) /
-                  1000.f;
-        out1.y = (f32)(s32)(1000.f * out1.y +
-                            (out1.y >= 0.0f ? 0.5f : -0.5f)) /
-                  1000.f;
-        out1.z = (f32)(s32)(1000.f * out1.z +
-                            (out1.z >= 0.0f ? 0.5f : -0.5f)) /
-                  1000.f;
-        if (&out2 != NULL) {
-            out2 = query.hitNormal;
-        }
-    check_hit2:
+        hit = marioHitCheckVecRound(&query, &out1, &out2, &hitDist);
         if (hit != NULL) {
-#else
-        if (hit != NULL) {
-            out1 = query.hitPos;
-            out1.x = (f32)(s32)(1000.f * out1.x +
-                                (out1.x >= 0.0f ? 0.5f : -0.5f)) /
-                      1000.f;
-            out1.y = (f32)(s32)(1000.f * out1.y +
-                                (out1.y >= 0.0f ? 0.5f : -0.5f)) /
-                      1000.f;
-            out1.z = (f32)(s32)(1000.f * out1.z +
-                                (out1.z >= 0.0f ? 0.5f : -0.5f)) /
-                      1000.f;
-            out2 = query.hitNormal;
-        }
-        if (hit != NULL) {
-#endif
             if (pos->y + y >= out1.y) {
                 pos->y = out1.y - y - 1.0f;
                 *outY = 0.0f;
@@ -2793,6 +2746,7 @@ s32 marioSlitChkWallAround(void) {
     angle = 0.0f;
     {
         HitCheckQuery query;
+        f32 dist;
 
         for (i = 0; i < 8; i++) {
             Vec dir;
@@ -2804,16 +2758,7 @@ s32 marioSlitChkWallAround(void) {
             query.targetPos = pos;
             query.targetDir = dir;
             query.targetDistance = 13.0f;
-            if (marioGetPtr()->currMotionId == 0x1C) {
-                hit = hitCheckVecFilter(&query, chkfilterVecVivian);
-            } else if (marioGetPtr()->flags & 0x1000000) {
-                hit = hitCheckVecFilter(&query, chkfilterVecRoll);
-            } else {
-                hit = hitCheckVecFilter(&query, chkfilterVec);
-            }
-#ifdef MUST_MATCH
-            hit = (hit == NULL) ? NULL : hit;
-#endif
+            hit = marioHitCheckVecRound(&query, NULL, NULL, &dist);
             if (hit != NULL) {
                 if (marioChkBero(hit) == 0) {
                     flags[i] = 1;
@@ -2827,6 +2772,7 @@ s32 marioSlitChkWallAround(void) {
     angle = 0.0f;
     {
         HitCheckQuery query;
+        f32 dist;
 
         for (i = 0; i < 8; i++) {
             Vec dir;
@@ -2838,16 +2784,7 @@ s32 marioSlitChkWallAround(void) {
                 query.targetPos = pos;
                 query.targetDir = dir;
                 query.targetDistance = 13.0f;
-                if (marioGetPtr()->currMotionId == 0x1C) {
-                    hit = hitCheckVecFilter(&query, chkfilterVecVivian);
-                } else if (marioGetPtr()->flags & 0x1000000) {
-                    hit = hitCheckVecFilter(&query, chkfilterVecRoll);
-                } else {
-                    hit = hitCheckVecFilter(&query, chkfilterVec);
-                }
-#ifdef MUST_MATCH
-                hit = (hit == NULL) ? NULL : hit;
-#endif
+                hit = marioHitCheckVecRound(&query, NULL, NULL, &dist);
                 if (hit != NULL) {
                     if (marioChkBero(hit) == 0) {
                         flags[i] = 1;
@@ -2862,6 +2799,7 @@ s32 marioSlitChkWallAround(void) {
     angle = 0.0f;
     {
         HitCheckQuery query;
+        f32 dist;
 
         for (i = 0; i < 8; i++) {
             Vec dir;
@@ -2873,16 +2811,7 @@ s32 marioSlitChkWallAround(void) {
                 query.targetPos = pos;
                 query.targetDir = dir;
                 query.targetDistance = 13.0f;
-                if (marioGetPtr()->currMotionId == 0x1C) {
-                    hit = hitCheckVecFilter(&query, chkfilterVecVivian);
-                } else if (marioGetPtr()->flags & 0x1000000) {
-                    hit = hitCheckVecFilter(&query, chkfilterVecRoll);
-                } else {
-                    hit = hitCheckVecFilter(&query, chkfilterVec);
-                }
-#ifdef MUST_MATCH
-                hit = (hit == NULL) ? NULL : hit;
-#endif
+                hit = marioHitCheckVecRound(&query, NULL, NULL, &dist);
                 if (hit != NULL) {
                     if (marioChkBero(hit) == 0) {
                         flags[i] = 1;

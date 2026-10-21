@@ -582,9 +582,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
 // Every call, constant, branch, stack slot and store order matches. The (f32)int conversion double
 // is pooled at .rodata+0x468 by select_disp_luigi's native conversion. The outer loop
 // keeps one induction variable and writes the row as `i * 0x18`, so the compiler strength-reduces
-// both offsets from one base and initialises the row offset with a copy (`mr r27,r28`). The
-// `if (x == width) { x = x; }` guards after the two title x computations are dead (x is not
-// changed) but keep those divisions scheduled before the following winFontInit, as in the target.
+// both offsets from one base and initialises the row offset with a copy (`mr r27,r28`).
 // The target's dead `lwz r0,0x38(r24); cmpwi r0,0` before the first winFontInit is reproduced by
 // `if (select->firstItem) { zero = zero; }` (the dead store is removed, the compare stays).
 void select_disp_mario(WinMgrEntry* entry) {
@@ -612,7 +610,6 @@ void select_disp_mario(WinMgrEntry* entry) {
     GXColor colorTitle;
     GXColor fogColor;
     const char* msg;
-    u16 width;
     u16 x;
     f32 zero;
     s32 status;
@@ -751,15 +748,7 @@ void select_disp_mario(WinMgrEntry* entry) {
     GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
 
     msg = msgSearch("msg_window_title_9");
-    width = FontGetMessageWidth(msg);
-    x = (0x78 - width) / 2;
-#ifdef MUST_MATCH
-    // Dead guard (x is unchanged): it keeps this division scheduled before winFontInit, as the
-    // target has it; without it select_disp_mario/select_disp_party drop to ~92-94%.
-    if (x == width) {
-        x = x;
-    }
-#endif
+    x = (0x78 - FontGetMessageWidth(msg)) / 2;
     winFontInit();
     {
         GXColor color = colorTitle;
@@ -773,15 +762,7 @@ void select_disp_mario(WinMgrEntry* entry) {
     }
 
     msg = msgSearch("msg_window_title_10");
-    width = FontGetMessageWidth(msg);
-    x = (0x55 - width) / 2;
-#ifdef MUST_MATCH
-    // Dead guard (x is unchanged): it keeps this division scheduled before winFontInit, as the
-    // target has it; without it select_disp_mario/select_disp_party drop to ~92-94%.
-    if (x == width) {
-        x = x;
-    }
-#endif
+    x = (0x55 - FontGetMessageWidth(msg)) / 2;
     winFontInit();
     {
         GXColor color = colorTitle;
@@ -835,9 +816,7 @@ void select_disp_mario(WinMgrEntry* entry) {
 // target.
 // The outer loop keeps one induction variable (`for (i = 0; ...)`) and writes the row as `i * 0x18`;
 // that is what makes the compiler strength-reduce both offsets from one base and initialise the item
-// offset with a copy (`mr r28,r27`) instead of a shift. The `if (x == width) { x = x; }` guards
-// after the two title x computations are dead (x is not changed) but keep those divisions scheduled
-// before the following winFontInit, as in the target. The target's dead `lwz r0,0x38(r30); cmpwi
+// offset with a copy (`mr r28,r27`) instead of a shift. The target's dead `lwz r0,0x38(r30); cmpwi
 // r0,0x0` before the first winFontInit is reproduced by `if (select->firstItem) { zero = zero; }`
 // (the dead store is removed, the compare stays).
 void select_disp_party(WinMgrEntry* entry) {
@@ -862,7 +841,6 @@ void select_disp_party(WinMgrEntry* entry) {
     GXColor colorWhite2;
     GXColor fogColor;
     const char* msg;
-    u16 width;
     u16 x;
     f32 zero;
     f32 scale;
@@ -1088,15 +1066,7 @@ void select_disp_party(WinMgrEntry* entry) {
     GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
 
     msg = msgSearch("msg_window_title_7");
-    width = FontGetMessageWidth(msg);
-    x = (0x78 - width) / 2;
-#ifdef MUST_MATCH
-    // Dead guard (x is unchanged): it keeps this division scheduled before winFontInit, as the
-    // target has it; without it select_disp_mario/select_disp_party drop to ~92-94%.
-    if (x == width) {
-        x = x;
-    }
-#endif
+    x = (0x78 - FontGetMessageWidth(msg)) / 2;
     winFontInit();
     {
         GXColor color = colorWhite2;
@@ -1110,15 +1080,7 @@ void select_disp_party(WinMgrEntry* entry) {
     }
 
     msg = msgSearch("msg_window_title_8");
-    width = FontGetMessageWidth(msg);
-    x = (0x55 - width) / 2;
-#ifdef MUST_MATCH
-    // Dead guard (x is unchanged): it keeps this division scheduled before winFontInit, as the
-    // target has it; without it select_disp_mario/select_disp_party drop to ~92-94%.
-    if (x == width) {
-        x = x;
-    }
-#endif
+    x = (0x55 - FontGetMessageWidth(msg)) / 2;
     winFontInit();
     {
         GXColor color = colorWhite2;
