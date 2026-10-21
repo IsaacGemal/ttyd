@@ -409,18 +409,13 @@ void smartFree(smartEntry* entry) {
 	wp->waitsync++;
 }
 
-// 100%: the heap-tail expression needs explicit grouping for mwcc's reassociation.
 smartEntry* smartAlloc(u32 size, u8 type) {
 	smartEntry* entry1, * entry2;
 	u32 size2;
 	int i;
 
 	size2 = size;
-#ifdef MUST_MATCH
-	if (g_bFirstSmartAlloc == 0) { // `!g_bFirstSmartAlloc` scores 97.47% instead of 97.76%
-#else
 	if (!g_bFirstSmartAlloc) {
-#endif
 		g_bFirstSmartAlloc = TRUE;
 		smartAutoFree(3);
 	}
@@ -475,12 +470,7 @@ smartEntry* smartAlloc(u32 size, u8 type) {
 		}
 		wp->usedHead = entry2;
 		if (!entry2->next) {
-#ifdef MUST_MATCH
-			// Grouping that makes mwcc pool heapEnd-heapStart before adding wp->ptr (-32 first).
-			entry2->freeAfter = ((u32)heapEnd[5] - (u32)heapStart[5]) - 32 + (u32)wp->ptr - (u32)entry2->address - entry2->size;
-#else
-			entry2->freeAfter = (u32)wp->ptr + (u32)heapEnd[5] - (u32)heapStart[5] - 32 - (u32)entry2->address - entry2->size;
-#endif
+			entry2->freeAfter = (u32)heapEnd[5] - (u32)heapStart[5] - 32 + (u32)wp->ptr - (u32)entry2->address - entry2->size;
 			wp->usedTail = entry2;
 		}
 		return entry2;
@@ -505,17 +495,14 @@ smartEntry* smartAlloc(u32 size, u8 type) {
 		}
 		for (i = 0; i < 3; i++) {
 			switch (i) {
+				case 0:
+					break;
 				case 1:
 					_fileGarbage(1);
 					break;
 				case 2:
 					_fileGarbage(0);
 					break;
-#ifdef MUST_MATCH
-				// redundant with default; makes mwcc pick 1 as the search-tree pivot.
-				case 0:
-#endif
-				default: break;
 			}
 			smartGarbage();
 			entry1 = wp->usedTail;

@@ -27,23 +27,14 @@ static s32 _sort(const void* a, const void* b);
 // decay_tbl defined after lightMain (rodata named objects land at their declaration point).
 void lightInit(void) {
 	Mtx scale;
-#ifdef MUST_MATCH
 	LightWork* wp;
-#endif
 
 	work[0].count = LIGHT_ENTRY_COUNT;
 	work[0].entries = __memAlloc(HEAP_DEFAULT, work[0].count * sizeof(LightEntry));
 
-#ifdef MUST_MATCH
-	// MUST_MATCH: without the named pointer MWCC rematerializes &work[1] after the second
-	// __memAlloc instead of holding it in a callee-saved register (the target uses r29).
 	wp = &work[1];
 	wp->count = LIGHT_ENTRY_COUNT;
 	wp->entries = __memAlloc(HEAP_DEFAULT, wp->count * sizeof(LightEntry));
-#else
-	work[1].count = LIGHT_ENTRY_COUNT;
-	work[1].entries = __memAlloc(HEAP_DEFAULT, work[1].count * sizeof(LightEntry));
-#endif
 
 	paperLight3D.flags = LIGHT_NO_DIST_ATTEN | LIGHT_POINT;
 	strcpy(paperLight3D.name, "PAPER");
@@ -217,11 +208,7 @@ typedef struct LightNearObj {
 } LightNearObj;
 
 s32 _sort(const void* a, const void* b) {
-#ifdef MUST_MATCH
-	f32 value2, value1; // declaration order controls float-register allocation
-#else
-	f32 value1, value2;
-#endif
+	f32 value2, value1;
 
 	value1 = ((const LightNearObj*)a)->distance;
 	value2 = ((const LightNearObj*)b)->distance;

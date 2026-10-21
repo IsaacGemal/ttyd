@@ -114,15 +114,7 @@ void countDownMain(void) {
 	}
 }
 
-// The MUST_MATCH body reproduces the original's stack layout: retail keeps three copies of the white
-// colour (one never read) at 0x8/0x20/0x1c, and the `flags`/`msRaw` locals and `sec %= 100` shape the register
-// allocation. The #else body is the same function written naturally.
 void countDownDisp(CameraId camId, void* param) {
-#ifdef MUST_MATCH
-	// MUST_MATCH: colDigit must be declared before colColon but initialised after it, so the digit copy gets slot
-	// 0x20 and the colon copy 0x1c, matching the original's store order (declaration order sets the slots,
-	// assignment order sets the stores). col0 is the third copy retail keeps; it is never read.
-	GXColor col0;
 	GXColor colDigit;
 	GXColor colColon;
 	u16 flags;
@@ -136,7 +128,6 @@ void countDownDisp(CameraId camId, void* param) {
 	Mtx scale;
 	Mtx base;
 
-	col0 = COUNTDOWN_WHITE;
 	colColon = COUNTDOWN_WHITE;
 	colDigit = COUNTDOWN_WHITE;
 	flags = work->flags;
@@ -174,50 +165,6 @@ void countDownDisp(CameraId camId, void* param) {
 		PSMTXConcat(base, mtx, mtx);
 		iconDispGxCol(mtx, 0x10, (u16)(digits[i] + 0x1F7), colDigit);
 	}
-#else
-	s32 sec;
-	s32 ms;
-	s32 i;
-	s32 digits[3];
-	Mtx mtx;
-	CountdownWork* work = wp;
-	Mtx scale;
-	Mtx base;
-
-	ms = (s32)(work->limit - OSTicksToMilliseconds(work->elapsed));
-	if (work->flags & 4) {
-		return;
-	}
-	if (work->flags & 2) {
-		ms = 0;
-	}
-	sec = ms / 1000;
-	ms = ms % 1000;
-	PSMTXTrans(base, work->x + work->dx, work->y + work->dy, 0.0f);
-	PSMTXScale(scale, 2.5f, 1.0f, 1.0f);
-	PSMTXConcat(base, scale, mtx);
-	iconDispGxCol(mtx, 0x10, 0x1F6, COUNTDOWN_YELLOW);
-	digits[0] = sec / 100;
-	digits[1] = (sec % 100) / 10;
-	digits[2] = (sec % 100) % 10;
-	for (i = 0; i < 3; i++) {
-		PSMTXTrans(mtx, (f32)(-50 + i * 30), 8.0f, 0.0f);
-		PSMTXConcat(base, mtx, mtx);
-		iconDispGxCol(mtx, 0x10, digits[i] + 0x1F7, COUNTDOWN_WHITE);
-	}
-	PSMTXTrans(mtx, 28.0f, 10.0f, 0.0f);
-	PSMTXConcat(base, mtx, mtx);
-	iconDispGxCol(mtx, 0x10, 0x201, COUNTDOWN_WHITE);
-	digits[0] = ms / 100;
-	digits[1] = (ms % 100) / 10;
-	for (i = 0; i < 2; i++) {
-		PSMTXTrans(mtx, (f32)(40 + i * 15), 8.0f, 0.0f);
-		PSMTXScale(scale, 0.5f, 0.5f, 0.5f);
-		PSMTXConcat(mtx, scale, mtx);
-		PSMTXConcat(base, mtx, mtx);
-		iconDispGxCol(mtx, 0x10, digits[i] + 0x1F7, COUNTDOWN_WHITE);
-	}
-#endif
 }
 
 s32 countDownGetStatus(void) {

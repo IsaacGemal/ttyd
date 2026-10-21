@@ -159,10 +159,8 @@ CamRoadWork* camRoadGetWorkPtr(void) {
     return wp;
 }
 
-// The clamp's literal (see #ifdef below) restores the original's f0 constant / f2 accumulator / f1 result;
-// the named `1.0f` instead puts the constant in f2. The extra `w` alias in the final else keeps
-// the original's `wp` in r7 across the state-copy loops; without it MWCC reloads wp into r4 and the copies
-// shift registers.
+// The clamp's literal restores the original's f0 constant / f2 accumulator / f1 result;
+// the named `1.0f` instead puts the constant in f2.
 void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank) {
     u32 result;
 
@@ -238,15 +236,7 @@ void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank
             wp->hokanActive = 0;
         }
     } else {
-#ifdef MUST_MATCH
-        // Match-only: the local alias keeps wp in r7 across the copy loops (see the comment above the function).
-        CamRoadWork* w = wp;
-        w->previous = w->current;
-        wp->blended = w->previous;
-#else
-        wp->previous = wp->current;
-        wp->blended = wp->previous;
-#endif
+        wp->blended = wp->previous = wp->current;
     }
 
     calcCurrentCamState(dst);
@@ -290,13 +280,8 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
         out->y = b->y;
         out->z = b->z;
     }
-#ifdef MUST_MATCH
-    // the original converts the first atan2 result in a scratch then copies it to angle
     t0 = (f32)atan2(a->dirX, a->dirZ);
     angle = t0;
-#else
-    angle = (f32)atan2(a->dirX, a->dirZ);
-#endif
     angleB = (f32)atan2(b->dirX, b->dirZ);
     while (angle - angleB > 3.1415927f) {
         angle -= 6.2831855f;
@@ -405,12 +390,7 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     if (cur->onRoad == 0 && prev->flags == 1) {
         flags |= 0x4;
     }
-#ifdef MUST_MATCH
-    // the compiler materialises the negated `<=` here; the natural `> 1.0` emits a plain branch.
     if (!(__fabsf(cur->segment - prev->segment) <= 1.0)) {
-#else
-    if (__fabsf(cur->segment - prev->segment) > 1.0) {
-#endif
         flags |= 0x8;
     }
     dot = cur->dirX * prev->dirX + cur->dirZ * prev->dirZ;

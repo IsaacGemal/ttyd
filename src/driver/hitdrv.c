@@ -260,18 +260,12 @@ void hitDelete(const char* name) {
     }
 }
 
-#ifdef MUST_MATCH
-// The element pointer goes in as void* and the name is loaded inside the inlined search. Handing the
-// name straight to the search leaves the inlined body's name/map temporaries in r26/r27 where retail
-// has r27/r26; the extra indirection gives the name local the higher web. The natural form below
-// passes the dereferenced name to hitNameToPtr.
-static inline HitEntry* hitFindElem(void* elem) {
+// The search hitNameToPtr does, by the joint's name; retail inlines it into hitMain.
+static inline HitEntry* hitFindElem(MapFileJoint* joint) {
     MapEntry* map;
-    const char* name = *(char**)elem;
+    const char* name = joint->name;
     MapWork* wp = mapGetWork();
     int j;
-    MapEntry* new_var;
-    MapEntry* new_var2;
     int i;
     HitEntry* hit;
 
@@ -279,9 +273,7 @@ static inline HitEntry* hitFindElem(void* elem) {
         return NULL;
     }
     map = wp->entries;
-    new_var = map;
-    new_var2 = new_var;
-    for (i = 0; i < new_var2->count; map++, i++) {
+    for (i = 0; i < wp->entries->count; map++, i++) {
         hit = map->hitEntries;
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
             if (!(hit->flags & HIT_FLAG_DELETED) && !strcmp(hit->joint->name, name)) {
@@ -291,7 +283,6 @@ static inline HitEntry* hitFindElem(void* elem) {
     }
     return NULL;
 }
-#endif
 
 // Main animation pass. The active-list zero-init split and the inner-loop `p += 4, k++` order are
 // retail's. The declaration order below (p, map, wp, j, k, i, anim, anyScale, then found/mtx) is what
@@ -320,11 +311,7 @@ void hitMain(void) {
             if ((animFlags & 1) && !((animFlags & 2) && (animFlags & 0x1000)) && childList != NULL) {
                 p = childList;
                 for (k = 0; k < *(s32*)childList; p += 4, k++) {
-#ifdef MUST_MATCH
-                    found = hitFindElem(*(void**)(p + 4));
-#else
-                    found = hitNameToPtr(*(char**)(*(void**)(p + 4)));
-#endif
+                    found = hitFindElem(*(MapFileJoint**)(p + 4));
                     if (found != NULL) {
                         mapCalcAnimMatrix(found->animMtx, found->localMtx, anim, *(void**)(p + 4));
                         anyScale = 1;
@@ -1148,7 +1135,6 @@ HitEntry* hitCheckAttr(s32 user0, f32* hitX, f32* hitY, f32* hitZ, f32* distance
 // The declaration order is tuned so that extra variable still leaves wp/i/var_r31 in r30/r29/r31.
 HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
                                f32 distance) { // 1:1
-    MapEntry* map;
     MapWork* wp;
     MapEntry* var_r31;
     int i;
@@ -1201,14 +1187,7 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
     if (var_f28 < (0.5f * var_f31)) {
         return &wp->entries[entryId].hitEntries[objectId];
     }
-#ifdef MUST_MATCH
-    // MUST_MATCH: in-place base update makes MWCC reuse wp's register (r30) for the map, as retail does.
-    wp = (MapWork*)&wp->entries[entryId];
-    temp_r27 = &wp->entries[0].hitEntries[objectId];
-#else
-    map = &wp->entries[entryId];
-    temp_r27 = &map->hitEntries[objectId];
-#endif
+    temp_r27 = &wp->entries[entryId].hitEntries[objectId];
     PSVECSubtract(&temp_r27->centerWorld, &sp68, &query->targetDir);
     PSVECNormalize(&query->targetDir, &query->targetDir);
     var_f30 = -1.0f;
@@ -1235,19 +1214,13 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
     if (var_r29 < 0) {
         return 0;
     }
-#ifdef MUST_MATCH
-    return &wp->entries[0].hitEntries[objectId];
-#else
-    return &map->hitEntries[objectId];
-#endif
+    return &wp->entries[entryId].hitEntries[objectId];
 }
 
 HitEntry* hitNameToPtr(const char* name) { // 1:1
     MapEntry* map;
     MapWork* wp = mapGetWork();
     int j;
-    MapEntry* new_var;
-    MapEntry* new_var2;
     int i;
     HitEntry* hit;
 
@@ -1255,9 +1228,7 @@ HitEntry* hitNameToPtr(const char* name) { // 1:1
         return NULL;
     }
     map = wp->entries;
-    new_var = map;
-    new_var2 = new_var;
-    for (i = 0; i < new_var2->count; map++, i++) {
+    for (i = 0; i < wp->entries->count; map++, i++) {
         hit = map->hitEntries;
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
             if (!(hit->flags & HIT_FLAG_DELETED) && !strcmp(hit->joint->name, name)) {

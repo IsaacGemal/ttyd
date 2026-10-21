@@ -737,15 +737,7 @@ void iconGX(Mtx mtx, IconEntry* entry) {
     }
     top = height;
     bottom = -height;
-#ifdef MUST_MATCH
-    // MUST_MATCH: the local pins the 0.5 load and the FP register allocation.
-    {
-        f32 half = 0.5f;
-        left = -width * half;
-    }
-#else
-    left = -width * 0.5f;
-#endif
+    left = -width / 2;
     if (!(entry->flags & 0x10)) {
         left *= 0.6f;
         top *= 0.6f;

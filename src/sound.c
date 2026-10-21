@@ -1172,7 +1172,7 @@ void SoundEfxMain(void) {
 }
 #pragma optimize_for_size reset
 
-inline void SoundDVDStopCh(s32 chan) {
+inline void SoundDVDStopCh(u32 chan) {
     SoundDVD* dvd = &sound.dvds[chan];
     if (dvd->flags & 3) {
         AISetStreamPlayState(0);
@@ -1183,7 +1183,7 @@ inline void SoundDVDStopCh(s32 chan) {
     }
 }
 
-inline void SoundDVDSetPanCh(s32 chan, u8 pan) { // I think this is the correct func name
+inline void SoundDVDSetPanCh(u32 chan, u8 pan) { // I think this is the correct func name
     SoundDVD* dvd;
     f32 left, right;
 
@@ -1202,10 +1202,9 @@ inline void SoundDVDSetPanCh(s32 chan, u8 pan) { // I think this is the correct 
 }
 
 #ifdef MUST_MATCH
-// MUST_MATCH: the original passes the channel to the inlined SoundDVD*Ch helpers as an unsigned
-// value. Returning it through this u32 inline is a no-op in the code but makes MWCC home the
-// helpers' strength-reduced `chan` induction in r27 and the loop counter in r29; passing the plain
-// s32 `i` swaps those two (99.71%). Declaring `i` before `dvd` similarly homes the dvd pointer in r28.
+// MUST_MATCH: SoundSSMain passes the channel to its inlined SOUND_SS_* macros as an unsigned value
+// (the SoundDVD*Ch helpers above take a u32 channel). Returning it through this u32 inline is a no-op
+// in the code but changes MWCC's register homes for the strength-reduced channel and the loop counter.
 static inline u32 SoundDVDChan(s32 chan) {
     return (u32)chan;
 }
@@ -1223,7 +1222,7 @@ void SoundDVDMain(void) {
             if (dvd->flags & 0x40) {
                 if (dvd->unk8 == 0.0f) {
                     dvd->samples = AIGetStreamSampleCount();
-                    SoundDVDStopCh(SoundDVDChan(i));
+                    SoundDVDStopCh(i);
                     dvd->flags |= 0x2;
                     dvd->flags &= ~0x40;
                     continue;
@@ -1232,19 +1231,19 @@ void SoundDVDMain(void) {
                 if (dvd->unk8 <= 0.0f) {
                     dvd->unk8 = 0.0f;
                 }
-                SoundDVDSetPanCh(SoundDVDChan(i), (u8)dvd->unk2);
+                SoundDVDSetPanCh(i, (u8)dvd->unk2);
             }
             if (dvd->flags & 0x20) {
                 if (dvd->unk8 == 0.0f) {
                     dvd->flags &= ~0x20;
-                    SoundDVDStopCh(SoundDVDChan(i));
+                    SoundDVDStopCh(i);
                     continue;
                 }
                 dvd->unk8 -= dvd->unkC;
                 if (dvd->unk8 <= 0.0f) {
                     dvd->unk8 = 0.0f;
                 }
-                SoundDVDSetPanCh(SoundDVDChan(i), (u8)dvd->unk2);
+                SoundDVDSetPanCh(i, (u8)dvd->unk2);
             }
             if (dvd->flags & 0x10) {
                 dvd->unk8 += dvd->unkC;
@@ -1253,7 +1252,7 @@ void SoundDVDMain(void) {
                     dvd->unkC = 0.0f;
                     dvd->flags &= ~0x10;
                 }
-                SoundDVDSetPanCh(SoundDVDChan(i), (u8)dvd->unk2);
+                SoundDVDSetPanCh(i, (u8)dvd->unk2);
             }
         }
     }
@@ -2116,7 +2115,6 @@ void SoundSSMuteOff(s32 chan) {
     }
 }
 
-// SoundDVDChan: as in SoundDVDMain, the channel reaches the helpers as an unsigned value.
 void SoundSSMain(void) {
     SoundStream* ch;
     int i;

@@ -172,9 +172,6 @@ void statusWinReInit(void) {
     }
 }
 
-// The three negated statusWinCheck() tests materialise the boolean and branch `bne skip` in the
-// original; a plain `!statusWinCheck()` folds the materialisation, so they use the `(x ? 1 : 0)` shape.
-// The close-if-open tests are `switch (statusWinCheck())`: a plain if changes the code size.
 // The cos()/lerp tail keeps the original's temporaries for its FPR colouring.
 void statusWinMain(void) {
     MarioWork* mario;
@@ -196,13 +193,9 @@ void statusWinMain(void) {
 
                     notCtrl = !marioChkCtrl();
                     if (notCtrl || (notKey = !marioChkKey(), notKey) || !(mario->flags & 1)) {
-                        switch (statusWinCheck()) {
-                        default:
+                        if (statusWinCheck()) {
                             wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                             wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
-                            break;
-                        case 0:
-                            break;
                         }
                         valueCheck();
                         wp->idleFrames = 0;
@@ -212,11 +205,7 @@ void statusWinMain(void) {
                             wp->idleFrames++;
                             if (wp->idleFrames > gp->framerate * STATUS_WIN_IDLE_SECONDS) {
                                 wp->idleFrames = gp->framerate * STATUS_WIN_IDLE_SECONDS;
-#ifdef MUST_MATCH
-                                if (wp->manualToggle == 0 && wp->toggleCooldown == 0 && !(statusWinCheck() ? 1 : 0)) {
-#else
                                 if (wp->manualToggle == 0 && wp->toggleCooldown == 0 && !statusWinCheck()) {
-#endif
                                     wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                                     wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                                     wp->flags |= STATUS_WIN_BADGES;
@@ -226,22 +215,14 @@ void statusWinMain(void) {
                             wp->idleFrames = 0;
                             wp->manualToggle = 0;
                             if (wp->toggleCooldown == 0) {
-                                switch (statusWinCheck()) {
-                                default:
+                                if (statusWinCheck()) {
                                     wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                                     wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
-                                    break;
-                                case 0:
-                                    break;
                                 }
                             }
                         }
                         if (mario->buttonNew & 0x10) {
-#ifdef MUST_MATCH
-                            if (!(statusWinCheck() ? 1 : 0)) {
-#else
                             if (!statusWinCheck()) {
-#endif
                                 wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                                 wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                                 wp->toggleCooldown = gp->framerate * STATUS_WIN_IDLE_SECONDS;
@@ -257,11 +238,7 @@ void statusWinMain(void) {
                         }
                         if (valueCheck() != 0) {
                             wp->toggleCooldown = gp->framerate * STATUS_WIN_CHANGE_SECONDS;
-#ifdef MUST_MATCH
-                            if (!(statusWinCheck() ? 1 : 0)) {
-#else
                             if (!statusWinCheck()) {
-#endif
                                 wp->flags &= ~(STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                                 wp->flags |= (STATUS_WIN_OPEN | STATUS_WIN_OPENING);
                             }
@@ -282,13 +259,9 @@ void statusWinMain(void) {
             case SEQ_BATTLE:
                 break;
             default:
-                switch (statusWinCheck()) {
-                default:
+                if (statusWinCheck()) {
                     wp->flags |= (STATUS_WIN_CLOSED | STATUS_WIN_CLOSING);
                     wp->flags &= ~(STATUS_WIN_OPEN | STATUS_WIN_OPENING);
-                    break;
-                case 0:
-                    break;
                 }
                 break;
         }
@@ -338,16 +311,9 @@ void statusWinMain(void) {
         }
 
         {
-#ifdef MUST_MATCH
-            // The original materialises `t = 1.0f` (f1) and then `t = 1.0f - x` (result f2); with a
-            // plain `t -= x` MWCC reuses one register and the 1.0 load lands in f2. Codegen-only.
-            f32 t = float_1_8041c904;
+            f32 t;
             f32 x = wp->openAmount;
             t = float_1_8041c904 - x;
-#else
-            f32 x = wp->openAmount;
-            f32 t = float_1_8041c904 - x;
-#endif
             wp->originX = wp->openX * x + wp->closedX * t;
             wp->originY = wp->openY * x + wp->closedY * t;
         }
@@ -397,6 +363,7 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
     y = 12.0f + y;
     for (i = 0; i < 8u; i++) {
         Vec pos;
+        u16 id;
 
         if (!(pouchGetPtr()->mStarPowersObtained & (1 << i))) {
             break;
@@ -404,12 +371,8 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
         pos.x = x + i * 32;
         pos.y = y;
         pos.z = float_0_8041c900;
-#ifdef MUST_MATCH
-        // Match-only: the original zero-extends the id (clrlwi) though both arms are u16 values.
-        iconDispGx(float_1_8041c904, &pos, 0x10, (u16)((i < hundreds) ? gauge_back[i] : 0x1BF));
-#else
-        iconDispGx(float_1_8041c904, &pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF);
-#endif
+        id = (i < hundreds) ? gauge_back[i] : 0x1BF;
+        iconDispGx(float_1_8041c904, &pos, 0x10, id);
     }
 }
 
@@ -695,10 +658,9 @@ void valueUpdate(void) {
     if (count & 1) {
         return;
     }
-    // The original materialises the statusWinCheck() result; a plain
-    // if (!statusWinCheck()) folds the boolean away, so dispatch on it.
-    switch (statusWinCheck()) {
-    default:
+    if (!statusWinCheck()) {
+        return;
+    }
     curCoin = wp->coin;
     if (valueMoveAmount(curCoin, values.coin) != 0) {
         if (count % 8 == 0) {
@@ -725,10 +687,6 @@ void valueUpdate(void) {
     }
     if (wp->coin > STATUS_WIN_MAX_COIN) {
         wp->coin = STATUS_WIN_MAX_COIN;
-    }
-        break;
-    case 0:
-        return;
     }
 }
 
@@ -786,7 +744,10 @@ void statusWinDispOff(void) {
 }
 
 BOOL statusWinCheck(void) {
-    return (wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN)) != 0;
+    if (wp->flags & (STATUS_WIN_OPEN | STATUS_WIN_FORCE_OPEN)) {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 BOOL statusWinCheckUpdate(void) {
