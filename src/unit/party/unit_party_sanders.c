@@ -23,13 +23,12 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
+#include "battle/battle_weapon_power.h"
 
 extern s32 btldefaultevt_avoid_counter_event[];
 extern s32 evt_audience_acrobat_notry[];
 extern s32 subset_attack_ready_jump_event[];
 extern s32 unit_bomzou[];
-extern s32 weaponGetACOutputParam[];
-extern s32 weaponGetPowerFromPartyAttackLv[];
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
 static s32 init_event[63];
 static s32 damage_event[16];

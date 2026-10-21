@@ -16,7 +16,7 @@ extern PosterWork* poster;
 void nok_stg2_013_cb(s32 type, smartEntry* smart);
 USER_FUNC(pposter_nok_on);
 USER_FUNC(pposter_init);
-void draw_poster(void* userdata, s32 group, void* mtx);
+void draw_poster(void* userdata, s32 group, Mtx mtx);
 EVT_DEF(nokonoko_A_init);
 EVT_DEF(nokonoko_A_regl);
 EVT_DEF(nokonoko_A_talk);

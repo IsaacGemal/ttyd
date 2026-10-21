@@ -478,28 +478,33 @@ void pouchHiraganaToKatakana(char* src, char* dst) {
 	dst[i * 2] = 0;
 }
 
-// 100%: `const` on the first parameter is the whole difference. The compiler hoists the id_a load
-// (`lha r0,0x0(r3)`) above the itemDataTable address computation only when `a` is `const`; with that
-// read first MWCC's scheduler emits the target's prologue: each callee-save store sinks next to its
+// 100%: reading `a` through a `const s16*` is the whole difference. The compiler hoists the id_a load
+// (`lha r0,0x0(r3)`) above the itemDataTable address computation only when that read is `const`; with
+// it first MWCC's scheduler emits the target's prologue: each callee-save store sinks next to its
 // register's first definition (`stw r31` after the address `lis`, `stw r30` before `addi r30`,
-// `stw r29` before `lha r29`) and `id_b` loads after `addi r30`. With a plain `s16* a` the load is
+// `stw r29` before `lha r29`) and `id_b` loads after `addi r30`. With a plain `s16*` read the load is
 // sunk to just before the address computation and all three stores cluster at the top (90.24%).
 // The `base` local and the MUST_MATCH `base + id*sizeof(ItemData)` access are still needed: written
 // as itemDataTable[id].name MWCC colours the base r31 and the msgSearch result r30, the reverse of
-// the target. The two conversion loops already matched. The `b` parameter is deliberately not
-// `const`: making both const (or only b) puts id_b, not str, in r31.
-s32 comp_aiueo(const s16* a, s16* b) {
+// the target. The two conversion loops already matched. Under MUST_MATCH `b` is read through a plain
+// `s16*`: a `const` read of both (or only b) puts id_b, not str, in r31.
+int comp_aiueo(const void* a, const void* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
 	const char* str;
-	s16 id_a = *a;
+	s16 id_a = *(const s16*)a;
 #ifdef MUST_MATCH
 	// Match-only: spelling the access as itemDataTable[id].name lets MWCC colour the base r31 and
 	// the msgSearch result r30; the explicit base local gives the original's r30/r31. MUST_MATCH
 	// only because the original compiler CSE'd the same base itself.
 	const char* base = (const char*)&itemDataTable[0].name;
 #endif
-	s16 id_b = *b;
+#ifdef MUST_MATCH
+	// Match-only: the non-const read of `b` (see above); a const read puts id_b in r31.
+	s16 id_b = *(s16*)b;
+#else
+	s16 id_b = *(const s16*)b;
+#endif
 	{
 		s32 i;
 		u32 c;
@@ -571,17 +576,22 @@ int comp_kind(const void* a, const void* b) {
 	return 0;
 }
 
-// comp_aiueo with the strcmp operands swapped; the same `const` first parameter gives its prologue.
-s32 comp_aiueo_r(const s16* a, s16* b) {
+// comp_aiueo with the strcmp operands swapped; the same `const` read of `a` gives its prologue.
+int comp_aiueo_r(const void* a, const void* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
 	const char* str;
-	s16 id_a = *a;
+	s16 id_a = *(const s16*)a;
 #ifdef MUST_MATCH
 	// Match-only: see comp_aiueo.
 	const char* base = (const char*)&itemDataTable[0].name;
 #endif
-	s16 id_b = *b;
+#ifdef MUST_MATCH
+	// Match-only: see comp_aiueo.
+	s16 id_b = *(s16*)b;
+#else
+	s16 id_b = *(const s16*)b;
+#endif
 	{
 		s32 i;
 		u32 c;
@@ -681,13 +691,13 @@ void pouchSortItem(s32 type) {
 			holdList[i] = 0;
 		}
 		if (type == 0) {
-			qqsort(holdList, count, 2, (int (*)(const void*, const void*))comp_aiueo);
+			qqsort(holdList, count, 2, comp_aiueo);
 		}
 		else if (type == 1) {
 			qqsort(holdList, count, 2, comp_kind);
 		}
 		else if (type == 7) {
-			qqsort(holdList, count, 2, (int (*)(const void*, const void*))comp_aiueo_r);
+			qqsort(holdList, count, 2, comp_aiueo_r);
 		}
 		else if (type == 8) {
 			qqsort(holdList, count, 2, comp_kind_r);
@@ -705,13 +715,13 @@ void pouchSortItem(s32 type) {
 			keyList[i] = 0;
 		}
 		if (type == 2) {
-			qqsort(keyList, count, 2, (int (*)(const void*, const void*))comp_aiueo);
+			qqsort(keyList, count, 2, comp_aiueo);
 		}
 		else if (type == 3) {
 			qqsort(keyList, count, 2, comp_kind);
 		}
 		else if (type == 9) {
-			qqsort(keyList, count, 2, (int (*)(const void*, const void*))comp_aiueo_r);
+			qqsort(keyList, count, 2, comp_aiueo_r);
 		}
 		else if (type == 10) {
 			qqsort(keyList, count, 2, comp_kind_r);

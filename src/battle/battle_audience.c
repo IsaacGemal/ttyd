@@ -4721,7 +4721,7 @@ void BattleAudience_Case_ActionCommandBad(BattleWeapon* weapon) {
 	if (count != 0) {
 		BattleAudienceSoundBooing();
 		BattleAudienceJoy(0);
-		if ((u32)weapon->hpDamageFn == (u32)weaponGetPowerFromMarioHammerLv) {
+		if (weapon->hpDamageFn == weaponGetPowerFromMarioHammerLv) {
 			BattleAudienceAddPhaseEvtList(7);
 		}
 	}

@@ -303,7 +303,7 @@ BOOL BtlUnit_Delete(BattleUnit* unit) {
     BattleStatusIconDelete(unit);
     if (unit->mExtraWork) {
         if (unit->mExtraWorkFree) {
-            ((void (*)(BattleUnit*)) unit->mExtraWorkFree)(unit);
+            unit->mExtraWorkFree(unit);
         } else {
             BattleFree(unit->mExtraWork);
         }

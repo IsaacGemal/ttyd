@@ -540,7 +540,7 @@ s32 tess(f32* points, s32 count) {
     }
 }
 
-s32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {
+u32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {
     ScissorWork* work = GetScissorPtr();
     s32 i;
 
@@ -1147,22 +1147,12 @@ void scissor_capture(void) {
 }
 
 #ifdef MUST_MATCH
-#define SCISSOR_HSV2RGB(h) ((GXColor (*)(GXColor*))HSV2RGB)(h)
-#else
-static inline GXColor SCISSOR_HSV2RGB(GXColor* h) {
-    GXColor c;
-
-    *(u32*)&c = HSV2RGB(h);
-    return c;
-}
-#endif
-#ifdef MUST_MATCH
 // Inline locals are allocated after call argument temporaries: this puts the
 // copied HSV input at r1+0x8 and the RGB argument at r1+0xC, matching retail.
 static inline void scissorSetHSVColor(GXColor* hsv) {
     GXColor tmp = *hsv;
 
-    GXSetChanMatColor(GX_COLOR0A0, SCISSOR_HSV2RGB(&tmp));
+    GXSetChanMatColor(GX_COLOR0A0, HSV2RGB(&tmp));
 }
 #endif
 
@@ -1202,7 +1192,7 @@ void scissor_disp_control(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
         scissorSetHSVColor(&hsv);
 #else
-        GXSetChanMatColor(GX_COLOR0A0, SCISSOR_HSV2RGB(&hsv));
+        GXSetChanMatColor(GX_COLOR0A0, HSV2RGB(&hsv));
 #endif
         GXBegin(GX_LINES, GX_VTXFMT0, 2);
         GXPosition3f32(points[i * 2], points[i * 2 + 1], 0.0f);

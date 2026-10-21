@@ -126,4 +126,4 @@ void FontDrawScaleVec(Vec scale);
 int sscanf(const char* str, const char* format, ...);
 void FontDrawStringCenterMtx(Mtx mtx, const char* msg);
 void FontDrawStringPitch(const char* str, f32 x, f32 y, f32 pitch);
-u32 HSV2RGB(GXColor* hsv);
+GXColor HSV2RGB(GXColor* hsv);

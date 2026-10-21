@@ -19,9 +19,11 @@ typedef struct BattleWeapon {
     s8 field_0x19;                    // 0x19
     u8 mBingoSlotChance;              // 0x1A
     s8 field_0x1B;                    // 0x1B
-    void* hpDamageFn;                 // 0x1C
+    u32 (*hpDamageFn)(struct BattleUnit* unit1, struct BattleWeapon* weapon, struct BattleUnit* unit2,
+                      struct BattleWorkUnitPart* part); // 0x1C, weaponGetPower*; BattleCalculateDamage's base damage
     u32 hpDamageWork[8];              // 0x20
-    void* fpDamageFn;                 // 0x40, TODO rename
+    u32 (*fpDamageFn)(struct BattleUnit* unit1, struct BattleWeapon* weapon, struct BattleUnit* unit2,
+                      struct BattleWorkUnitPart* part); // 0x40, weaponGetFPPower*; BattleCalculateFpDamage's base damage
     u32 fpDamageWork[8];              // 0x44
     u32 targetClassFlags;             // 0x64
     u32 targetPropertyFlags;          // 0x68

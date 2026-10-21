@@ -26,6 +26,9 @@
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
 #include "battle/battle_database_common.h"
+#include "battle/sac/sac_deka.h"
+#include "battle/sac/sac_scissor.h"
+#include "battle/sac/sac_zubastar.h"
 static s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 
 // Prototypes for helpers that have no header yet. See REPORT.md.
@@ -44,12 +47,6 @@ extern s32 marioAttackEvent_Muki[];
 extern s32 marioAttackEvent_Scissor[];
 extern s32 marioAttackEvent_Suki[];
 extern s32 marioAttackEvent_ZubaStar[];
-extern s32 weaponGetPowerFromMarioJumpLv[];
-extern s32 weaponGetPowerOverlapHammer1[];
-extern s32 weaponGetPowerOverlapJump1[];
-extern s32 weaponGetPower_Deka[];
-extern s32 weaponGetPower_Scissor[];
-extern s32 weaponGetPower_ZubaStar[];
 static s32 marioAttackEvent_NormalJump[889];
 static s32 marioAttackEvent_KururinJump[1210];
 s32 marioAttackEvent_JyabaraJump[1675];

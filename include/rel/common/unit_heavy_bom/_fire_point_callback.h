@@ -5,7 +5,8 @@
 #include "driver/animdrv.h"
 #include <string.h>
 
-static void _fire_point_callback(BattleUnitPart* part, s32 group, Mtx mtx) {
+static void _fire_point_callback(void* userData, s32 group, Mtx mtx) {
+    BattleUnitPart* part = userData;
     BattleUnit* unit;
     const char* name;
     s32 pose;

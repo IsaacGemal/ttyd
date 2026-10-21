@@ -28,6 +28,7 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
+#include "battle/battle_weapon_power.h"
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_8037EC10[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };

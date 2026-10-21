@@ -23,4 +23,3 @@ extern s32 lbl_80003500[];
 extern s32 evt_audience_acrobat_notry[];
 extern s32 subset_attack_ready_jump_event[];
 extern s32 unk_evt_803510ec[];
-extern s32 weaponGetACOutputParam[];

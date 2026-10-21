@@ -370,7 +370,7 @@ USER_FUNC(hakari_color) {
 
         hsv.r = (u8)gp->retraceCount;
         tmp = hsv;
-        *(u32*)&color = HSV2RGB(&tmp);
+        color = HSV2RGB(&tmp);
         HAKARI_SET_COLOR(name, color);
     } else {
         GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};

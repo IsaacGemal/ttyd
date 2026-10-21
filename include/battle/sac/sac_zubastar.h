@@ -3,6 +3,10 @@
 #include <dolphin/mtx.h>
 #include <dolphin/types.h>
 
+typedef struct BattleUnit BattleUnit;
+typedef struct BattleWeapon BattleWeapon;
+typedef struct BattleWorkUnitPart BattleUnitPart;
+
 typedef struct ZubaStarWork ZubaStarWork;
 
 typedef struct ZubaStarPoints4 { Vec v[4]; } ZubaStarPoints4;
@@ -34,3 +38,4 @@ void zubaStarDispStar(CameraId cameraId, void* param);
 void zubastar_capture(CameraId cameraId, void* param);
 void zubastar_disp_bomb(CameraId cameraId, void* param);
 void zubastar_disp2D(CameraId cameraId, void* param);
+u32 weaponGetPower_ZubaStar(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part);

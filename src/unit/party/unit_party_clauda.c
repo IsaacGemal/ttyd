@@ -18,6 +18,7 @@
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
 #include "battle/battle_attack_audience.h"
+#include "battle/battle_weapon_power.h"
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 
@@ -38,8 +39,6 @@ extern s32 evt_audience_acrobat_notry[];
 extern s32 negone_one[];
 extern s32 one_negone[];
 extern s32 subset_attack_ready_jump_event[];
-extern s32 weaponGetACOutputParam[];
-extern s32 weaponGetPowerFromPartyAttackLv[];
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
 static s32 _clauda_breath_effect_ready(EventEntry* event, BOOL isFirstCall);
 static s32 _clauda_breath_effect_fire(EventEntry* event, BOOL isFirstCall);

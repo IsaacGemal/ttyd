@@ -1307,7 +1307,7 @@ scan:
 }
 
 // .text:0x25C | 0x80243254 | size: 0x28
-s32 weaponGetPower_Deka(void) {
+u32 weaponGetPower_Deka(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {
     DekaWork* p = get_ptr();
     return p->combo + 1;
 }

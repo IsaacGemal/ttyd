@@ -2972,7 +2972,8 @@ USER_FUNC(_set_draw_callback) {
     return EVT_RETURN_DONE;
 }
 
-void _light_point_callback(struct BattleWorkUnitPart* part, s32 group, void* mtx) {
+void _light_point_callback(void* userData, s32 group, Mtx mtx) {
+    BattleUnitPart* part = userData;
     BattleUnit* unit = part->mOwner;
     s32 pose = part->poseId;
     s32 idx;

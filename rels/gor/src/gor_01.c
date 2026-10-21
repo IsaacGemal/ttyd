@@ -4063,7 +4063,7 @@ static USER_FUNC(starstone_entry) {
         ((effStarStoneData*)eff->userdata)->flags &= ~4;
         ((effStarStoneData*)eff->userdata)->flags |= 0x20;
         ((MahojinWork*)effNameToPtr("mahojin")->userdata)[i + 2].drawArg = eff;
-        ((MahojinWork*)effNameToPtr("mahojin")->userdata)[i + 2].drawFunc = (void (*)(CameraId, void*))effStarStoneDraw;
+        ((MahojinWork*)effNameToPtr("mahojin")->userdata)[i + 2].drawFunc = effStarStoneDraw;
     }
     return EVT_RETURN_DONE;
 }

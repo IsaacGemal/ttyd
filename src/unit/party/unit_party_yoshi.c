@@ -49,7 +49,6 @@ extern u32 lbl_80379A00[2];
 #pragma force_active on
 extern s32 negone_one[];
 extern s32 one_negone[];
-extern s32 weaponGetPowerFromPartyAttackLv[];
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
 static s32 init_event[54];
 static s32 damage_event[16];

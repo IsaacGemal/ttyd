@@ -704,7 +704,7 @@ typedef struct BattleUnit {
     u8 mMoveColorCur;                            // 0x30E, eases toward mMoveColorLv each frame; btlUnitPartsDisp scales the parts' evtColor by it
     u8 pad_0x30F;                                // 0x30F
     void* mExtraWork;                            // 0x310, BattleAlloc(0x44) for UNIT_UNUSED_UFO, freed on delete
-    void* mExtraWorkFree;                        // 0x314, called with the unit on delete when set
+    void (*mExtraWorkFree)(struct BattleUnit* unit); // 0x314, called with the unit on delete when set
     struct smartEntry* mSmartEntry;              // 0x318, smartFree'd on delete
     u8 pad_0x31C[0x320 - 0x31C];                 // 0x31C
     EffectEntry* mSleepEff;                      // 0x320

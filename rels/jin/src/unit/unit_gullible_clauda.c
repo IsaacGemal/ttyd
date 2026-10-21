@@ -8,11 +8,11 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "battle/battle_disp.h"
+#include "battle/battle_weapon_power.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
 extern BattleDispPose pose_table_clauda_stay[];
-extern s32 weaponGetPowerFromGulliblePartyAttackLv[];
 static BattleVulnerableStatus regist_clauda;
 static BattleDataEntry data_table_clauda[2];
 static BattleUnitKindPart parts_clauda;

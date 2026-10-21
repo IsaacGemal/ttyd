@@ -15,9 +15,9 @@ extern void* DemoCurrentBuffer, * DemoFrameBuffer1, * DemoFrameBuffer2;
 //local prototypes
 
 void setupErrorHandler(void) {
-	OSSetErrorHandler(OS_ERROR_DSI, (void (*)(u16, OSContext*, ...))systemErrorHandler);
-	OSSetErrorHandler(OS_ERROR_ISI, (void (*)(u16, OSContext*, ...))systemErrorHandler);
-	OSSetErrorHandler(OS_ERROR_PROGRAM, (void (*)(u16, OSContext*, ...))systemErrorHandler);
+	OSSetErrorHandler(OS_ERROR_DSI, (OSErrorHandler)systemErrorHandler);
+	OSSetErrorHandler(OS_ERROR_ISI, (OSErrorHandler)systemErrorHandler);
+	OSSetErrorHandler(OS_ERROR_PROGRAM, (OSErrorHandler)systemErrorHandler);
 }
 
 void systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {

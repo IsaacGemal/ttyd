@@ -5309,7 +5309,6 @@ caller, keeping a change only if the whole linked build stays byte-identical, ca
   `configure.py --non-matching`; fncast_lint and local_prototypes pass (tools/local_prototype_exceptions.json
   unchanged: no entry went stale); tools/ci.py PASS with its tools/tests step stubbed (the 9 test_wave_launch
   environment errors, as in the chapters above), ratchet baseline `--init`ed on the clean HEAD.
-
 ## Placeholder fields named from outside evidence (2026-10-21, Claude Opus 5.5, n9-q-o-names)
 
 Pass over the ~3,800 `field_0xNN` members, renaming only those that outside evidence names. Candidates came from six
@@ -5385,3 +5384,102 @@ BadgeShopWork 0x19 was `bargain_table`; badgeShop_getBargainTable proves 0xF8 is
   `uv run --with pyelftools`.
 - Index (tools/cleanup_index.py, same script both sides): 15.026 -> 14.730 per kLOC (10494 -> 10287 weighted);
   field_0x 3821 -> 3622, raw_offset 452 -> 448.
+
+## The last function-pointer casts: callbacks typed, the rest are needed (2026-10-21, Claude Opus 5.5, n9-q-o-fncast2)
+
+Task (Isaac): the 66 function-pointer casts `tools/cleanup_index.py` still counted after #1091, #1110 and #1111. Calls
+through a cast of a named function: find the prototype every caller can use, checked against every caller's and the
+callee's asm, and keep it only if the linked build stays byte-identical. Casts that are not calls (callback fields,
+comparators, evtGetValue results): declare the field or variable with its function-pointer type so the cast goes. The
+casts that are really needed stay, guarded where the rules say so.
+
+- **Method.** Untracked scratch in /tmp: var.py applies OLD/NEW edits (unit or header), compiles the touched units,
+  runs `tools/obj_equiv.py` against objects saved from 436e5a2c and prints a normalised per-function asm diff, then
+  restores; natural_all.py compiles every game unit without `-DMUST_MATCH` in parallel. Every commit: `ninja`
+  recreates build/G8MJ01/ok, all 1,228 compiled units build without MUST_MATCH, fncast_lint and local_prototypes
+  clean, tools/ci.py PASS with `--allow-protected` and its tools/tests step stubbed (`~/ci_notests.py`; the same 9
+  environment errors as the chapters above), ratchet baseline `--init`ed on a build byte-identical to 436e5a2c. At the
+  end, a full `configure.py --non-matching` ninja (only the dol link fails, as usual), then reconfigured and rebuilt
+  to `ok`. error_handler.c is NonMatching and built in neither configuration; it was compiled by hand with and without
+  MUST_MATCH.
+- **Counts** (tools/cleanup_index.py, 436e5a2c -> this branch): index 15.158 -> 15.113 per kLOC (10569 -> 10538
+  weighted); fn_ptr_cast **66 -> 51**; must_match 788 -> 787; every other category unchanged. Of the 15 the index
+  stops counting, 12 are removed and 3 (error_handler) are the same cast in the typedef spelling the index skips.
+  `tools/fncast_allowlist.json` unchanged (its one entry, system.c, still matches; `--stale` lists nothing).
+- **Removed (12):**
+  - Fields typed with the one signature their caller uses: BattleUnit.mExtraWorkFree `void (*)(BattleUnit*)` (only
+    ever NULLed in our code; the delete path calls it with the unit); AnimationPose.dispCallback `void (*)(void*
+    userData, s32 groupId, Mtx mtx)`; CaseSetup/CaseEntry.activeFunc `s32 (*)(CaseEntry*)` (caseMain's condition 17
+    calls it with the entry); MahojinWork.drawArg/drawFunc `EffectEntry*` and `void (*)(CameraId, EffectEntry*)`:
+    gor_01 and tik_05 store effStarStoneDraw and its star stone entry, and nothing else writes them (2 casts).
+  - BattleWeapon.hpDamageFn/fpDamageFn are `u32 (*)(BattleUnit*, BattleWeapon*, BattleUnit*, BattleUnitPart*)`, the
+    type of all 13 weaponGetPower*/weaponGetFPPower* functions in battle_weapon_power.c, so BattleCalculateDamage and
+    BattleCalculateFpDamage call them plainly (2) and BattleAudience compares the pointer without its two `(u32)`
+    casts. weaponGetPower_Scissor and _ZubaStar returned s32 and _Deka was `(void)`: all three now return u32, Deka
+    takes the four parameters it ignores, and each is declared in its sac header (the bodies compile the same).
+    battle_weapon_power.h declares all 13 functions. 22 `extern s32 weaponGet...[];` declarations (battle_mario,
+    seven party units, chuchurina's header, five REL units) stood in for those prototypes, so data tables could name
+    the functions; they are gone, and the `(u32)weaponGetACOutputParam` words in the raw weapon tables are unchanged.
+  - mario_pouch's comp_aiueo/comp_aiueo_r take qqsort's `(const void*, const void*)`: 4 casts. Their codegen device
+    (#1110: `const s16* a, s16* b`) moves into the loads: `*(const s16*)a`, and `*(s16*)b` under MUST_MATCH with
+    `*(const s16*)b` in `#else` (two new regions, review). Reading b through `const s16*` puts id_b in r31, as the
+    old comment said for a `const` b.
+  - HSV2RGB returns GXColor. MWCC returns a 4-byte struct in r3 (`lwz r3` from the local), so the body compiles the
+    same with `return out;` in place of the `*(u32*)&out` pun. sac_scissor's SCISSOR_HSV2RGB cast and its punning
+    `#else` inline go (the one MUST_MATCH region removed), mri's hakari_color assigns the result without a u32 store
+    pun, and fontmgr's fontHSV2RGB stores straight into the caller's colour (`fontHSV2RGB(&rgb, hsv)`): returning
+    the struct through the inline adds a temporary per call (+16 bytes of frame); calling HSV2RGB directly drops the
+    by-value copies.
+- **Still a cast, respelled (3), not a removal:** setupErrorHandler's three `(void (*)(u16, OSContext*, ...))` casts
+  are spelled `(OSErrorHandler)`, the SDK's own typedef. The cast remains and is needed: systemErrorHandler takes
+  dsisr/dar as fixed parameters and the handler type is variadic. The index doesn't count the typedef form, so 54
+  casts are really left: the 51 below and these 3.
+- **Also typed, not counted by the index:** animPoseSetDispCallBack's parameter has dispCallback's type, so it no
+  longer converts a `void*` to a function pointer (MWCC accepts that silently; ISO C doesn't), and its three callbacks
+  that disagreed now have the exact signature: _light_point_callback and _fire_point_callback take `void* userData`
+  with `BattleUnitPart* part = userData;` as their first local, and nok_00's draw_poster takes `Mtx` and is passed
+  without its `(void*)` cast. All compile the same.
+- **Left (51), each tried:**
+  - Values used as functions, plain C (17): evt_nannpc (6), evt_ext (3) and mri_puni (3) evtGetValue results;
+    msgdrv's msgWindow_Entry `a`, an s32 that evt_msg fills from evtGetValue, so typing the parameter would only move
+    the cast into evt_msg; seq_mapchange's REL prolog/epilog (2; OSModuleHeader's fields are `u32` in the SDK);
+    battle_seq_command's BtlUnit_GetData result (a `void*`: MWCC would convert it implicitly, but ISO C needs the
+    cast); system.c's intplGetValue `mode` (allowlisted).
+  - A colour local's address passed where the prototype takes GXColor by value (25, guarded): Waku_col in
+    battle_message, battle_seq, battle_status_effect and battle_attack_audience; sac_genki (4 iconNumberDispGx3D, 1
+    iconDispGxCol); statuswindow (2 macros), both evt_yuuranking (3 macros each), shadowdrv (3), winmgr's block (4),
+    mri's HAKARI_SET_COLOR. What MWCC does, measured here:
+    - battle_message's `_disp`, by value (colour local, compound literal in the call, colour assigned before or
+      after the width, `*&color`, or a by-value int-first prototype `(u16, GXColor, f32...)`): the colour word lands in
+      the same slot and only r6/r7 swap between it and the second 0x43300000 constant. The by-value copy makes a new
+      register for the colour at the call, after that constant; retail's colour register comes from the assignment
+      statement, before it. No ordering of C statements puts a by-value copy before the float arguments, which
+      include width conversions. The other three Waku_col sites carry the same comment and the same swap.
+    - mri's hakari_color (8 shapes: declaration orders, a named result passed by value, the HSV2RGB result passed
+      straight in): a by-value argument either adds a copy slot, or, passed straight from the call, takes the lowest
+      slot. Named locals get slots in declaration order, first declared highest, with compiler temporaries below them.
+      Retail has the result at the top, so a named local's address is passed without a copy.
+    - sac_genki: passing the named colours by value does drop the copy, but the five icon colours then sit 8 bytes
+      lower, under the two address-taken colours of the final btlDispTex4 blocks; retail has those two at the bottom.
+      The same holds with block-scoped colour locals and with the plain `*(GXColor*)&dat_...` arguments.
+    A by-pointer prototype doesn't fit either: 58 Waku_col, 38 iconDispGxCol, 21 iconNumberDispGx and 11
+    mapGrpSetColor call sites outside these files pass by value and match through the by-value copy.
+  - Cross-TU prototype mismatches the callee's body rules out (6, guarded): btlDispGXQuads2D (3; the only callers):
+    the callee's alpha is u8 (s32 adds a clrlwi in it) and DrawSubIconSub passes its s32 `ca` unextended; with ca
+    u8 or s8 the assignment from alpha gains a clrlwi/extsb, with alpha u8/s16/u16 its loads do. iconDispGxCol's
+    u16 `b` (2): retail tests `b == 0` with `clrlwi.` and passes the register unextended; with b s32, u32 or int the
+    test becomes cmpwi/cmplwi, and with u16 the call gains clrlwi. envGlareFilter (eki_03, 1): s16 parameters make the
+    callee sign-extend (#1111).
+  - Scheduling or inlining only (3, guarded): ac_signal_timing's ICON_DISP_B (5 shapes: the u16 local, the
+    `(u16)(0x92 + i)` argument, the assignment after the Vec fields, an s32 local, the bare sum; 16-46 lines);
+    rsh_05's moamoa_pose_change/main casts stop inlining: plain, pose_main inlines into ext_moamoa_main (+0x110
+    bytes), while retail inlines pose_change in the evt_moamoa_* functions but calls it from ext_moamoa_main. Only a
+    pragma could say that.
+- **For a reviewer.** The weapon-power return
+  type is u32 (13 of the 16 definitions and the header already said so; the only caller keeps an s32). fontHSV2RGB's
+  signature changed (an existing inline). The field types name no new typedefs. The header changes are
+  battle_database_common.h, battle_unit.h, animdrv.h, casedrv.h, eff_mahojin.h, fontmgr.h, battle_weapon_power.h and
+  the three sac headers.
+- **Lead.** A `*(u32*)&colour` pun on a function's return is often a GXColor return in the original: MWCC returns
+  small structs in r3, so the callee's code doesn't change, and only callers that copy the result through an inline
+  need care. The same may hold for other u32-returning colour helpers.
