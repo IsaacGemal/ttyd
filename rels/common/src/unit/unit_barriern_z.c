@@ -37,7 +37,7 @@ static USER_FUNC(outSplineTableSet);
 static USER_FUNC(barriernSatelliteToOutside);
 static USER_FUNC(barriernSatelliteToInside);
 static u8 barriernSatelliteTo_Main(BattleUnit* unit, s32 index);
-static u8 barriernSatelliteTo_Init(BattleUnit* unit, s32 index, s32 id);
+static u8 barriernSatelliteTo_Init(BattleUnit* unit, s32 index, u32* table);
 static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* sat, BarriernZanzouScale scale,
                                          s32 index, s32 mode);
 static USER_FUNC(barriern_satellite_zanzou2);

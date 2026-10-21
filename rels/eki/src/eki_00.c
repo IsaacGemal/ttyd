@@ -1680,6 +1680,7 @@ static inline Vec moaSoundVec(ExtPose* ep, const Vec* base) {
     return v;
 }
 
+#ifdef MUST_MATCH
 // Keeping both sound vectors in inline scopes reproduces their stack-slot order.
 static inline void moaPlayHit(ExtPose* ep) {
     Vec w = vec3_eki_00008920;
@@ -1688,6 +1689,7 @@ static inline void moaPlayHit(ExtPose* ep) {
     w.z = ep->matrix[0][2][3];
     psndSFXOn_3D((const char*)0x6C3, &w);
 }
+#endif
 
 static inline f32 ekiSinfM(f32 rad) {
     f32 sinv = 0.00761f;
@@ -2108,7 +2110,17 @@ static void ext_moamoa_main(void) {
             f = (f32)rand() / 32767.0f * randRange(5.0f, 6.0f) + 5.0f;
             grav = (f32)rand() / 32767.0f * randRange(0.2f, 0.3f) + 0.2f;
             if (voicePlayed == 0) {
+#ifdef MUST_MATCH
                 moaPlayHit(ep);
+#else
+                Vec w;
+
+                w = vec3_eki_00008920;
+                w.x = ep->matrix[0][0][3];
+                w.y = ep->matrix[0][1][3];
+                w.z = ep->matrix[0][2][3];
+                psndSFXOn_3D((const char*)0x6C3, &w);
+#endif
                 voicePlayed = 1;
             }
             moamoa_jump(ep, pose, tx, -100.0f, ty, f, grav, 0x31, 0);

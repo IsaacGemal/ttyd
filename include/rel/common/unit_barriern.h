@@ -18,7 +18,7 @@ typedef struct BarriernZanzouScale {
 
 typedef struct BarriernSatelliteTo {
     s32 type;         // 0x00
-    s32 unitId;       // 0x04
+    u32* field_0x4;   // 0x04, the spline table spline_maketable builds from
     s32 points[5];    // 0x08
     s32 field_1C[15]; // 0x1C
     s32 field_58;     // 0x58

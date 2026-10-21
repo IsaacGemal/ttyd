@@ -1727,16 +1727,9 @@ s32 qrnd(s32 max) {
     Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
     Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
     v = Punigp->randSeedB;
-#ifdef MUST_MATCH
-    // the cast keeps MWCC from folding this into its branchless abs idiom
-    if (v < 0) {
-        v = -(s32)(u32)v;
-    }
-#else
-    if (v < 0) {
+    if (Punigp->randSeedB < 0) {
         v = -v;
     }
-#endif
     return v % max;
 }
 
@@ -2463,12 +2456,7 @@ static inline s32 puniQrnd2(s32 range) {
     Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
     Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
     v = Punigp->randSeedB;
-#ifdef MUST_MATCH
-    // `v ^ 0` is v; the xor changes the object.
-    if ((s32)(v ^ 0) < 0) {
-#else
-    if (v < 0) {
-#endif
+    if (Punigp->randSeedB < 0) {
         v = -v;
     }
     return v % range;
@@ -2485,12 +2473,7 @@ PuniData* puniSearchRandom(s32 start, s32 count) {
     Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
     Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
     v = Punigp->randSeedB;
-#ifdef MUST_MATCH
-    // `v ^ 0` is v; the xor changes the object.
-    if ((s32)(v ^ 0) < 0) {
-#else
-    if (v < 0) {
-#endif
+    if (Punigp->randSeedB < 0) {
         v = -v;
     }
     idx = start + v % (count - 1);
@@ -2523,12 +2506,7 @@ PuniData* puniSearchRandom_Mikata(void) {
     Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
     Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
     r = Punigp->randSeedB;
-#ifdef MUST_MATCH
-    // `r ^ 0` is r; the xor changes the object.
-    if ((s32)(r ^ 0) < 0) {
-#else
-    if (r < 0) {
-#endif
+    if (Punigp->randSeedB < 0) {
         r = -r;
     }
     idx = r % range + 1;
@@ -2566,12 +2544,7 @@ PuniData* puniSearchRandom_Teki(void) {
     Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
     Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
     r = Punigp->randSeedB;
-#ifdef MUST_MATCH
-    // `r ^ 0` is r; the xor changes the object.
-    if ((s32)(r ^ 0) < 0) {
-#else
-    if (r < 0) {
-#endif
+    if (Punigp->randSeedB < 0) {
         r = -r;
     }
     idx = r % range + 110;
