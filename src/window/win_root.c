@@ -903,14 +903,8 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     char buf[0x400];
     GXColor iconColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
     GXColor fontColor = (GXColor){0x00, 0x00, 0x00, 0xFF};
-#ifdef MUST_MATCH
-    // Semantically x - 250.0f; the original computes it as +10 then -10 (MUST_MATCH codegen shaping).
     f32 fx = (10.0f + (x - 250.0f)) - 10.0f;
     f32 fy = 40.0f + y;
-#else
-    f32 fx = x - 250.0f;
-    f32 fy = 40.0f + y;
-#endif
     f32 ty;
     f32 ix;
     f32 width;
@@ -926,12 +920,7 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         winTexInit(*(TEXPalette**)work->winTpl->data);
         winTexSet(0x25, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
         winIconInit();
-#ifdef MUST_MATCH
-        // (0, x) is x; the comma only changes when the table address is materialised.
-        winIconSet(((0, (ItemDataView*)itemDataTable)[work->field_0x138]).icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
-#else
-        winIconSet(((ItemDataView*)itemDataTable)[work->field_0x138].icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
-#endif
+        winIconSet(itemDataTable[work->field_0x138].icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
     }
 
     if (work->field_0x140 != NULL) {
@@ -2390,22 +2379,27 @@ void sort_7_3_func(WindowWork* work) {
     LOGWIN(work)->charPage = LOGWIN(work)->charSel / 16;
 }
 
+// The mail list (work->field_26E) holds byte pairs: display number, then mail id.
 // 1:1 (the `const` parameters reproduce the target's hoisted `lbz r3,0x1(r3)` prologue load).
 int compare_func4(const void* a, const void* b) {
-    void* ma = mailGetPtr(((u8*)a)[1]);
-    void* mb = mailGetPtr(((u8*)b)[1]);
-    const char* sa = (const char*)msgSearch(((WinMailEntry*)ma)->name);
-    const char* sb = (const char*)msgSearch(((WinMailEntry*)mb)->name);
+    const u8* pa = a;
+    const u8* pb = b;
+    WinMailEntry* ma = mailGetPtr(pa[1]);
+    WinMailEntry* mb = mailGetPtr(pb[1]);
+    const char* sa = msgSearch(ma->name);
+    const char* sb = msgSearch(mb->name);
 
     return strcmp(sa, sb);
 }
 
 // 1:1 (same `const`-parameter prologue hoist as compare_func4).
 int compare_func4_r(const void* a, const void* b) {
-    void* ma = mailGetPtr(((u8*)a)[1]);
-    void* mb = mailGetPtr(((u8*)b)[1]);
-    const char* sa = (const char*)msgSearch(((WinMailEntry*)ma)->name);
-    const char* sb = (const char*)msgSearch(((WinMailEntry*)mb)->name);
+    const u8* pa = a;
+    const u8* pb = b;
+    WinMailEntry* ma = mailGetPtr(pa[1]);
+    WinMailEntry* mb = mailGetPtr(pb[1]);
+    const char* sa = msgSearch(ma->name);
+    const char* sb = msgSearch(mb->name);
 
     return strcmp(sb, sa);
 }
