@@ -4958,13 +4958,13 @@ redundant tests and steering temps stay guarded: a pragma beats an unguarded hac
   step stubbed (the same 9 environment errors in test_wave_launch as the chapters above). After the two header
   changes, every object was also built under `configure.py --non-matching` (all compile; only the link fails).
 - **Counts** (build/pr2/kinds.py, same regex and files as tools/cleanup_index.py; da911753 -> this branch):
-  opt_pragma **892 -> 775**. opt_propagation 176 -> 126, opt_lifetimes 109 -> 89, opt_common_subs 99 -> 71,
+  opt_pragma **892 -> 777**. opt_propagation 176 -> 126, opt_lifetimes 109 -> 90, opt_common_subs 99 -> 71,
   opt_dead_assignments 30 -> 26, opt_loop_invariants 16 -> 6, opt_strength_reduction 4 -> 0, global_optimizer 1 -> 0;
   dont_inline 371, defer_codegen 37, optimize_for_size 30, inline_max_size 6, inline_max_total_size 6, fp_contract 2,
-  auto_inline 2, optimization_level 2, inline_depth 1 unchanged. Index (tools/cleanup_index.py) 15.506 -> 15.316 per
-  kLOC (10819 -> 10683 weighted): opt_pragma 892 -> 775, must_match 810 -> 803, raw_offset 357 -> 351
+  auto_inline 2, optimization_level 2, inline_depth 1 unchanged. Index (tools/cleanup_index.py) 15.506 -> 15.325 per
+  kLOC (10819 -> 10689 weighted): opt_pragma 892 -> 777, must_match 810 -> 807, raw_offset 357 -> 351
   (eff_opuku_jetw_n64's byte-offset casts); address_name, field_0x, unk_name, goto, fn_ptr_cast unchanged.
-  `git grep -c MUST_MATCH` over src/rels/include 957 -> 948.
+  `git grep -c MUST_MATCH` over src/rels/include 957 -> 953.
 - **Shapes that matched** (each EQUIV with the pragma gone):
   - Half sizes as divisions: `half = one / 2.0f; negHalf = -one / 2.0f` (eff_bomb), `min = -size / 2.0f; max = size / 2.0f`
     (eff_kemutest), replacing `0.5f` constant locals and opt_loop_invariants, as #1103's eff_ibuki/eff_recovery.
@@ -4989,8 +4989,8 @@ redundant tests and steering temps stay guarded: a pragma beats an unguarded hac
     _set_confetti_control_evtid, battle_stage_object _set_mobj_rotate_x. In single-argument functions the last
     increment is dead; recorded as house style, not as a dead-store trick (reviewer to confirm).
   - One local per value, or one value per local: sac_zubastar zubastar_get_kouten (if/else for the ternaries and copy
-    blocks), database setupDataBase (battleInfoId), envdrv envGlare (a second counter), ac_button_down, gor_00
-    gundan1000tai_init and eff_stardust (split; their declaration orders came from tools/rasim.py search), and the
+    blocks), database setupDataBase (battleInfoId), envdrv envGlare (a second counter), ac_button_down, and
+    eff_stardust (split; its declaration order came from tools/rasim.py search), and the
     reverse in evt_npc _intplGetFloat (clamp the parameter), evt_sub (one `t`), evt_party, tik_05 (write back into
     `angle`), party.c partyMakeDispDir and partyGoodbyeMain (reuse `angle`/`py`).
   - An existing helper instead of its hand expansion: party.c party_damage_return calls partyChgPoseId(party, 8/9).
@@ -5004,12 +5004,14 @@ redundant tests and steering temps stay guarded: a pragma beats an unguarded hac
   - Also: evt_yuutitle's blends written `to * t + from * (1 - t)` drop a MUST_MATCH region of no-op casts (its pragma
     stays). Stale comments fixed beside kept pragmas: evt_item, eff_release_n64, eff_ripple_n64.
 - **Rejected in review (EQUIV, not applied):** party_motion_homing_fly's opt_loop_invariants with `u32 id` plus a
-  `s32 sid = id` copy (a register-steering temp; its sibling homing_walk has the same unguarded `sid`, for a reviewer);
+  `s32 sid = id` copy (a register-steering temp; homing_walk's existing `sid` copy is now under MUST_MATCH);
   partyPreDisp with `(s32)party->field_2A` or an s32 local; battle_stage getSpline with a `0.0f` literal (adds a pool
   entry); effBreakDisp only with the volatile MATCH_F32 read widened; mapSearchDmdJointSub2 returning the recursive
-  call (drops retail's result test); party_move's four target-distance functions calling the existing L_getTargetPos
-  (exact instructions, one callee-saved register too many: strong evidence the original called it).
-- **Left: 163 regions,** one line each with what was tried in [docs/PRAGMAS_KEPT.md](PRAGMAS_KEPT.md). By cause:
+  call (drops retail's result test); gor_00 gundan1000tai_init without opt_lifetimes, whose only matching
+  declaration order (rasim) interleaves the two halves' locals; party_move's four target-distance functions calling
+  the existing L_getTargetPos (exact instructions, one callee-saved register too many: strong evidence the original
+  called it).
+- **Left: 164 regions,** one line each with what was tried in [docs/PRAGMAS_KEPT.md](PRAGMAS_KEPT.md). By cause:
   - The sin/cos polynomial (about 51 regions in some 19 files: bom_01, eki_00, gor_10, hei_10, pik_02, rsh_05, rsh_06,
     tik_05, tou_02, envdrv, npcdrv, evt_item, evt_sub, eff_damage_star, eff_fall, eff_gonbaba_breath, eff_starpoint,
     eff_mobj_broken): retail holds the coefficients in callee-saved FPRs (propagation off) and each Horner accumulator in
@@ -5018,7 +5020,7 @@ redundant tests and steering temps stay guarded: a pragma beats an unguarded hac
   - Named pool constants (about 27): a function reads a named .sdata2 constant twice and CSE keeps the first load
     (eff_kemuri, eff_mist, eff_mugi, eff_funemizu, kemuri4, kemuri10, butterfly, blow, breath_fire, koopa_motion,
     chuchurina mono_disp, ...). A literal gives the code but adds a pool entry; data layout, out of scope (lead).
-  - Register colouring with no natural order (about 39; rasim searched where it mattered), large functions that reshuffle
+  - Register colouring with no natural order (about 40; rasim searched where it mattered), large functions that reshuffle
     wholesale without the pragma (12: msgAnalize, mapMain, envDisp_DepthOfField, BattleSetStatusDamage, btlseqEnd's
     lifetimes, ...), and 5 that a guarded MUST_MATCH trick depends on.
   - eff_pointget effPointGetDisp: with the outer-loop invariants moved before the loop, one f25/f27 swap remains:

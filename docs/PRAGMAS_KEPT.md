@@ -27,6 +27,10 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 - `ext_moamoa_main` (opt_propagation, line 1766): sin/cos polynomial family (1569-line diff); only per-pair removal tried.
 - `ext_moamoa_main` (opt_lifetimes, line 1768): sin/cos polynomial family (1346-line diff); only per-pair removal tried.
 
+## rels/gor/src/gor_00.c
+
+- `gundan1000tai_init` (opt_lifetimes, line 4988): without it the second half's angle/s swap to f22/f21; tried: per-half radius/angle/sine locals in natural declaration orders (only a search-found interleaved order matched, not applied).
+
 ## rels/gor/src/gor_01.c
 
 - `cook_chk` (opt_dead_assignments, line 5085): inlined itemNameToID tails put subfe after mr r3, r30 (retail keeps the dead id copy); tried: direct call args; if/return; ternary return; `i = 0; return i;`; id1/id2.
@@ -434,11 +438,11 @@ build/pr2/v1..v8/REPORT.txt in that worktree).
 
 ## Tally
 
-163 remaining regions.
+164 remaining regions.
 
 By kind:
 - opt_propagation: 64
-- opt_lifetimes: 45
+- opt_lifetimes: 46
 - opt_common_subs: 36
 - opt_dead_assignments: 13
 - opt_loop_invariants: 3
@@ -447,7 +451,7 @@ By kind:
 By cause family:
 - sin/cos polynomial: 51
 - named pool constants: 27
-- register colouring: 39
+- register colouring: 40
 - large-function reshuffle: 12
 - guarded trick depends on it: 5
 - other: 29
