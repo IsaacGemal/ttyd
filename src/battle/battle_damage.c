@@ -444,7 +444,7 @@ s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* 
         damage = ((s32(*)(BattleUnit*, BattleWeapon*, BattleUnit*, BattleUnitPart*))weapon->hpDamageFn)(
             unit1, weapon, unit2, part);
     }
-    if (wp->field_18FE1[0] == 1 && (weapon->special & 2)) {
+    if (wp->field_18FE1 == 1 && (weapon->special & 2)) {
         damage += 3;
     }
     if ((u32)weapon->special & 1) {
@@ -566,7 +566,7 @@ calculate_defense:
                 defense = 0;
             }
         }
-        if (wp->field_18FE1[0] == 2 && unit2->currentKind == 0xde) {
+        if (wp->field_18FE1 == 2 && unit2->currentKind == 0xde) {
             defense += 3;
         }
         if (part->attributes & 0x20) {
@@ -1611,7 +1611,7 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
     if (BtlUnit_CheckStatus(attacker, 3)) {
         rate = rate * 0x32 / 100;
     }
-    if (*(u32*)(wp->field_180C0 + 0x1E0)) {
+    if (wp->field_180C0.field_0x1E0 != NULL) {
         rate = (s32)((f32)rate * MATCH_F32(float_0p5_8041bedc));
     }
     if (irand(100) >= rate) {

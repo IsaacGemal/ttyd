@@ -156,7 +156,7 @@ USER_FUNC(_jump_star_effect) {
 
 USER_FUNC(_bgset_iron_frame_check) {
     s32* args = event->args;
-    u8 flags = _battleWorkPointer->stageFlags;
+    u8 flags = _battleWorkPointer->field_180C0.stageFlags;
     s32 value = args[0];
 
     if (flags & 0x20) {
@@ -447,7 +447,7 @@ USER_FUNC(_majinai_powerup_check) {
         evtSetValue(event, var, 0);
     } else {
         evtSetValue(event, var, 1);
-        wp->field_18FE1[0] = 1;
+        wp->field_18FE1 = 1;
         BattleMajinaiDone();
         BattleMajinaiEndCheck();
     }

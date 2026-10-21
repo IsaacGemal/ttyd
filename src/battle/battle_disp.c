@@ -1380,10 +1380,10 @@ void _btlDispTex4(s32 id, Vec trans, Vec scale, Vec rot, Vec pos2, Vec scale2, G
 void BattleStockExpDisp(void) {
 	BattleWork* wp = _battleWorkPointer;
 
-	if (*(s32*)((char*)wp + 0xf00) > *(s32*)((char*)wp + 0xf04)) {
-		*(s32*)((char*)wp + 0xf08) += 1;
-		if (*(s32*)((char*)wp + 0xf08) >= 4) {
-			*(s32*)((char*)wp + 0xf04) += 1;
+	if (wp->stockExp > wp->field_F04) {
+		wp->field_F08 += 1;
+		if (wp->field_F08 >= 4) {
+			wp->field_F04 += 1;
 		}
 	}
 	if (wp->dispFlags & 2) {
@@ -1402,7 +1402,7 @@ void _btlStockExpDisp(CameraId cameraId, void* param) {
 	s32 ones;
 	s32 i;
 
-	exp = *(s32*)((char*)wp + 0xf04);
+	exp = wp->field_F04;
 	if (exp <= 0) {
 		return;
 	}

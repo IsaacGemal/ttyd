@@ -188,9 +188,53 @@ typedef struct BattleWorkPartyInfo {
     s32 field_24;             // 0x24
 } BattleWorkPartyInfo;
 
+// BattleWork.field_180C0: the stage-object work of battle_stage_object.c (layer events, nozzles, fog, falling
+// frames and objects). The code indexes it from 0x180C0 (_nozzle_turn, _nozzle_work_wait, _Nozzle_Change_Check),
+// and the original reaches the other fields through one pointer to it: wp->field_180C0.x recomputes the address
+// for each access, where a BattleWorkField180C0 pointer gives the original's single addis.
+typedef struct BattleWorkField180C0 {
+    u8 field_0x0[0x4 - 0x0];       // 0x0 (BattleWork 0x180C0)
+    Vec field_0x4;                 // 0x4, rotation of the layer 2 objects (_set_mobj_rotate_x sets x)
+    Vec field_0x10;                // 0x10, field_0x4 as last applied by BattleStageObjectMain
+    u8 stageFlags;                 // 0x1C, bits 0x2/0x4/0x8 set by the layer switches, 0x10 by
+                                   // BattleStage_WallCloseCheck, 0x20 by BattleStage_IronFrameFallCheck, init_ceil
+                                   // and _disable_enemy_unit_disp (read by ceil_exist); BattleStage_IronFrameFallCheck
+                                   // does nothing while 0x20 or 0x40 is set
+    u8 field_0x1D[0x20 - 0x1D];    // 0x1D
+    s32 field_0x20;                // 0x20, event id of the object turn event (BattleStage_DestroyA1/B)
+    s32 field_0x24;                // 0x24, event ids of the stage's layerEvents[0]-[3] (BattleStageObjectInit)
+    s32 field_0x28;                // 0x28
+    s32 field_0x2C;                // 0x2C
+    s32 field_0x30;                // 0x30
+    u8* field_0x34;                // 0x34, this rank's block of battle_stage_nozzle_data, NULL at rank 0
+    u8* field_0x38;                // 0x38, this rank's block of battle_stage_fall_object_data
+    BattleWeapon* weaponAddr[2];   // 0x3C, _nozzle_work_get_weapon_address; points into field_0x44
+    BattleWeapon field_0x44[2];    // 0x44, nozzle weapons combined by _nozzle_work_attack_set
+    u8 field_0x1C4[3];             // 0x1C4, direction of each nozzle (0-3)
+    u8 field_0x1C7[3];             // 0x1C7, direction each nozzle is turning to
+    s8 field_0x1CA;                // 0x1CA, nozzle type (-1 until _nozzle_type_init picks one)
+    u8 field_0x1CB;                // 0x1CB
+    s32 field_0x1CC[3];            // 0x1CC, event id of each nozzle's _nozzle_turn_event
+    s32 field_0x1D8;               // 0x1D8, event id of the nozzle work event (BattleStage_NozzleWorkCheck)
+    s32 field_0x1DC;               // 0x1DC, fog frames left (BattleFogEndCheck)
+    EffectEntry* field_0x1E0;      // 0x1E0, the fog effect (effNozleEntry), deleted when the fog ends
+    s32 field_0x1E4;               // 0x1E4, event id of _close_wall_event (BattleStage_WallCloseCheck)
+    s32 field_0x1E8;               // 0x1E8, event id of _fall_frame_event (BattleStage_IronFrameFallCheck)
+    s32 field_0x1EC;               // 0x1EC, event id of _object_fall_event (BattleStage_ObjectFallCheck)
+} BattleWorkField180C0;
+
+// BattleWork.field_18C70: the battle announce message (battle_message.c). btlevtcmd_AnnounceSetParam indexes it from
+// 0x18C70, and the original reaches all of it through one pointer.
+typedef struct BattleWorkField18C70 {
+    s16 field_0x0;                 // 0x0 (BattleWork 0x18C70), btlevtcmd_AnnounceMessage's x
+    s16 field_0x2;                 // 0x2, and y
+    s32 field_0x4[4];              // 0x4, btlevtcmd_AnnounceSetParam; [0] is the item index of message kind 1
+    char field_0x14[0x118 - 0x14]; // 0x14, the formatted message
+} BattleWorkField18C70;
+
 struct BattleWork {
     s16 turnCount;                      // 0x0
-    u8 field_2[0x4 - 0x2];              // 0x2
+    u16 field_2;                        // 0x2, step counter of battle_seq's SEQ_TURN 0x3000009 (burn effects)
     s32 seqUnknownValue;                // 0x4
     BattleAlliance alliances[3];        // 0x8
     BattleUnit* units[64];              // 0x20
@@ -201,9 +245,10 @@ struct BattleWork {
     BattleSampling sampling;            // 0x428, enemy target sampling (battle_detect.c)
     u32 flags;                          // 0xEF4
     s32 dispFlags;                      // 0xEF8
-    u8 field_EFC[0xF00 - 0xEFC];        // 0xEFC
+    s32 field_EFC;                      // 0xEFC, frame countdown (btlseqFirstAct, btlseqTurn)
     s32 stockExp;                       // 0xF00, BattleStoreExp / BattleGetStockExp
-    u8 field_F04[0xF0C - 0xF04];        // 0xF04
+    s32 field_F04;                      // 0xF04, exp shown by _btlStockExpDisp; BattleStockExpDisp counts it up to stockExp
+    s32 field_F08;                      // 0xF08, BattleStockExpDisp's frame counter for that count
     s32 seqInitValue;                   // 0xF0C
     s32 seqFirstActValue;               // 0xF10
     s32 seqTurnValue;                   // 0xF14
@@ -241,32 +286,26 @@ struct BattleWork {
     u8 field_16F1C[0x16F40 - 0x16F1C];  // 0x16F1C
     BattleAfterReactionWork afterReaction[64]; // 0x16F40
     BattleStageObject stageObjects[32]; // 0x17140
-    u8 field_180C0[0x180DC - 0x180C0];  // 0x180C0
-    u8 stageFlags;                      // 0x180DC, bits 0x2/0x4/0x8 set by the layer switches (battle_stage_object.c),
-                                        // 0x20 set by init_ceil, _disable_enemy_unit_disp and read by ceil_exist
-    u8 field_180DD[0x180E0 - 0x180DD];  // 0x180DD
-    s32 field_180E0;                    // 0x180E0
-    s32 field_180E4;                    // 0x180E4
-    s32 field_180E8;                    // 0x180E8
-    s32 field_180EC;                    // 0x180EC
-    s32 field_180F0;                    // 0x180F0
-    u8 field_180F4[0x18298 - 0x180F4];  // 0x180F4, pointer slots read with several pointer types
-    s32 field_18298;                    // 0x18298
-    s32 field_1829C;                    // 0x1829C
-    u8 field_182A0[0x182A4 - 0x182A0];  // 0x182A0, pointer or s32 depending on the user
-    s32 field_182A4;                    // 0x182A4
-    s32 field_182A8;                    // 0x182A8
-    s32 field_182AC;                    // 0x182AC
+    BattleWorkField180C0 field_180C0;   // 0x180C0
     BattleIcon icons[16];               // 0x182B0
-    u8 field_18C70[0x18D88 - 0x18C70];  // 0x18C70
+    BattleWorkField18C70 field_18C70;   // 0x18C70
     BattleStatusChangeMsgWork statusChangeMsg; // 0x18D88
     s8 alertTick;                       // 0x18FE0
-    u8 field_18FE1[0x18FE4 - 0x18FE1];  // 0x18FE1
+    u8 field_18FE1;                     // 0x18FE1, Merlee's mMerleeNextCurseType once it fires: 1 +3 attack (cleared
+                                        // at the end of the attack), 2 +3 defense for Mario (this phase), 3 double exp
+    u16 field_18FE2;                    // 0x18FE2, frames in battle_seq's 0x200000B wait, capped at 300
     StarPowerInfo impendingBonuses;     // 0x18FE4
-    u8 field_18FF0[0x19050 - 0x18FF0];  // 0x18FF0
+    const char* field_18FF0;            // 0x18FF0, BattleAcHelpSetHelp's message
+    s32 field_18FF4;                    // 0x18FF4, BattleAcHelpSetDispType's type
+    u8 field_18FF8[0x19038 - 0x18FF8];  // 0x18FF8
+    s32 field_19038[5];                 // 0x19038, turn counts; while one is > 0 the command menu disables Mario's jump,
+                                        // hammer or item, or the partner's tech or item ([0]-[4]); battle_seq counts
+                                        // each down, recover_cmd_disable clears all five
+    s32 field_1904C;                    // 0x1904C, nanika_luck_event's event id
     u32 reserveItems[4];                // 0x19050
     s32 field_19060;                    // 0x19060
-    u8 field_19064[0x19068 - 0x19064];  // 0x19064
+    u8 field_19064;                     // 0x19064, 1 when the last btlevtcmd_AudienceDeclareACResult succeeded, else 0
+    u8 field_19065[0x19068 - 0x19065];  // 0x19065
     u32 forceFlags;                     // 0x19068, no writer here; each bit forces a random outcome:
                                         // 0x1 object fall, 0x2 the audience gets the falling object,
                                         // 0x10/0x20/0x40 stage destroy A1/A2/B, 0x80 iron frame fall,
@@ -278,7 +317,8 @@ struct BattleWork {
     s32 forceAudienceCount;             // 0x19074, starting audience (capped at the max) under 0x10000
     s32 forceAudienceKind;              // 0x19078, 1-12 fills the audience with one kind; 0 = off
     s32 forceSlotValue;                 // 0x1907C, reel value forced under 0x80000
-    u8 field_19080[0x19088 - 0x19080];  // 0x19080
+    u32 field_19080;                    // 0x19080, bit 0 set by the gor lecture's aud_attack_init/aud_attack_end
+    s32 field_19084;                    // 0x19084, aud_attack_init's message window id (msgWindow_Continue)
 };
 extern BattleWork* _battleWorkPointer;
 

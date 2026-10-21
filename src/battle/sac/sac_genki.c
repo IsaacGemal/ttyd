@@ -1645,7 +1645,7 @@ USER_FUNC(star_stone_appear) {
 }
 
 USER_FUNC(recover_cmd_disable) {
-    u32* p = (u32*)((u8*)_battleWorkPointer + 0x19038);
+    s32* p = _battleWorkPointer->field_19038;
 
     p[0] = 0;
     p[1] = 0;

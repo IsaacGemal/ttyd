@@ -16,11 +16,10 @@ extern f32 float_498_80420d78;
 
 const char str_802FE1D8[28] = "\202\337\202\301\202\271\201[\202\266\202\252\202\335\202\302\202\251\202\350\202\334\202\271\202\361";
 void BattleAcHelpSetHelp(const char* msg) {
-    // field_18FF0 is where the move-described help message pointer is kept.
-    *(const char**)&_battleWorkPointer->field_18FF0 = msg;
+    _battleWorkPointer->field_18FF0 = msg;
 }
 void BattleAcHelpSetDispType(s32 type) {
-    *(s32*)&_battleWorkPointer->field_18FF0[4] = type;
+    _battleWorkPointer->field_18FF4 = type;
     switch (type) {
     case 0:
         BattleAudience_WinSetActive(1);
@@ -35,7 +34,8 @@ void BattleAcHelpInit(void) {
 }
 void BattleAcHelpMain(void) {
     BattleWork* wp = _battleWorkPointer;
-    u8* field = wp->field_18FF0;
+    // field_18FF0/field_18FF4 through one byte pointer: reading them as wp->field swaps the wp and pointer registers.
+    u8* field = (u8*)&wp->field_18FF0;
 
     if (*(const char**)field != NULL
         && *(s32*)(field + 4) != 0
@@ -65,8 +65,8 @@ static inline const char* acHelpResolve(const char* m) {
 #endif
 void _ac_help_disp(CameraId camera, void* param) {
     BattleWork* wp = _battleWorkPointer;
-    const char** helpMsg = (const char**)&wp->field_18FF0;
-    s32* dispType = (s32*)&wp->field_18FF0[4];
+    const char** helpMsg = &wp->field_18FF0;
+    s32* dispType = &wp->field_18FF4;
     u16 lines;
     GXColor color;
     s32 width;

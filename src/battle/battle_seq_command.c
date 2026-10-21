@@ -86,7 +86,7 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 			cmd->actionTable[0].mEnabled = 0;
 			cmd->actionTable[0].mDisableReason = 3;
 		}
-		if (*(s32*)&wp->field_18FF0[0x48] /* 0x19038 */ > 0) {
+		if (wp->field_19038[0] > 0) {
 			cmd->actionTable[0].mEnabled = 0;
 			cmd->actionTable[0].mDisableReason = 3;
 		}
@@ -121,7 +121,7 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 			cmd->actionTable[count].mEnabled = 1;
 			cmd->actionTable[count].mDisableReason = 0;
 		}
-		if (*(s32*)&wp->field_18FF0[0x54] /* 0x19044 */ > 0) {
+		if (wp->field_19038[3] > 0) {
 			cmd->actionTable[count].mEnabled = 0;
 			cmd->actionTable[count].mDisableReason = 3;
 		}
@@ -148,7 +148,7 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 			cmd->actionTable[count].mEnabled = 0;
 			cmd->actionTable[count].mDisableReason = 3;
 		}
-		if (*(s32*)&wp->field_18FF0[0x4C] /* 0x1903C */ > 0) {
+		if (wp->field_19038[1] > 0) {
 			cmd->actionTable[count].mEnabled = 0;
 			cmd->actionTable[count].mDisableReason = 3;
 		}
@@ -184,12 +184,12 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 			cmd->actionTable[count].mDisableReason = 0;
 		}
 		if (mario->currentKind == 0xDE) {
-			if (*(s32*)&wp->field_18FF0[0x50] /* 0x19040 */ > 0) {
+			if (wp->field_19038[2] > 0) {
 				cmd->actionTable[count].mEnabled = 0;
 				cmd->actionTable[count].mDisableReason = 3;
 			}
 		} else {
-			if (*(s32*)&wp->field_18FF0[0x58] /* 0x19048 */ > 0) {
+			if (wp->field_19038[4] > 0) {
 				cmd->actionTable[count].mEnabled = 0;
 				cmd->actionTable[count].mDisableReason = 3;
 			}
@@ -2465,8 +2465,8 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		} else {
 			BtlActRec_AddCount((u8*)wp + 0x16F2C);
 		}
-		if (*(u32*)&wp->field_19080[0] & 1) {
-			msgWindow_Continue(*(s32*)&wp->field_19080[4]);
+		if (wp->field_19080 & 1) {
+			msgWindow_Continue(wp->field_19084);
 		}
 		break;
 	case 12:

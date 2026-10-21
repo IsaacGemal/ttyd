@@ -632,7 +632,7 @@ void btlseqEnd(BattleWork* wp) {
         pouch = pouchGetPtr();
         unit = BattleGetMarioPtr(wp);
         if (pouch->mMerleeNextCurseType == 3) {
-            wp->field_18FE1[0] = 3;
+            wp->field_18FE1 = 3;
             BattleMajinaiDone();
             BattleMajinaiEndCheck();
             event = evtEntry(marioAttackEvent_MajinaiExpUp, 0xA, 0);
@@ -654,7 +654,7 @@ void btlseqEnd(BattleWork* wp) {
         BattleFogForceStop();
         work->lvupPending = 0;
         work->stockExp = BattleGetStockExp(wp);
-        if (wp->field_18FE1[0] == 3) {
+        if (wp->field_18FE1 == 3) {
             work->stockExp *= 2;
         }
         if (pouch->level >= 0x63) {
@@ -1461,7 +1461,7 @@ s32 _disable_enemy_unit_disp(EventEntry* event, BOOL isFirstCall) {
         BattleStageObject* obj = BattleSearchObjectPtr("if_body");
 
         if (obj != NULL) {
-            wp->stageFlags |= 0x20;
+            wp->field_180C0.stageFlags |= 0x20;
             obj->mFlags |= BSO_FLAG_HIDDEN;
             mapGrpFlagOn("if_body", 1);
             mapGrpFlagOn("if_wire", 1);

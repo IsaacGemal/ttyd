@@ -251,7 +251,7 @@ USER_FUNC(get_actkind) {
 }
 
 USER_FUNC(get_ac_result) {
-    evtSetValue(event, event->args[0], _battleWorkPointer->field_19064[0]);
+    evtSetValue(event, event->args[0], _battleWorkPointer->field_19064);
     return EVT_RETURN_DONE;
 }
 
@@ -286,13 +286,13 @@ USER_FUNC(hammer_on) {
 USER_FUNC(aud_attack_init) {
     BattleWork* wp = _battleWorkPointer;
 
-    *(s32*)&wp->field_19080[0] |= 1;
-    *(s32*)&wp->field_19080[4] = event->printWindowId;
+    wp->field_19080 |= 1;
+    wp->field_19084 = event->printWindowId;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(aud_attack_end) {
-    *(s32*)&_battleWorkPointer->field_19080[0] |= 1;
+    _battleWorkPointer->field_19080 |= 1;
     return EVT_RETURN_DONE;
 }
 

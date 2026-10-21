@@ -5206,13 +5206,13 @@ USER_FUNC(btlevtcmd_AudienceDeclareACResult) {
         if (counter[0] < 0xC8) {
             counter[0]++;
         }
-        wp->field_19064[0] = 1;
+        wp->field_19064 = 1;
     }
     else {
         if (counter[1] < 0xC8) {
             counter[1]++;
         }
-        wp->field_19064[0] = 0;
+        wp->field_19064 = 0;
     }
     BattleActionCommandDeclareACResult(wp, weapon, result);
     return EVT_RETURN_DONE;
@@ -6171,17 +6171,17 @@ USER_FUNC(btlevtcmd_WeaponAftereffect) {
             }
         }
     }
-    if (wp->field_180C0[0x1C] & 0x4) {
+    if (wp->field_180C0.stageFlags & 0x4) {
         a2 = 0;
     }
-    if (wp->field_180C0[0x1C] & 0x2) {
+    if (wp->field_180C0.stageFlags & 0x2) {
         a1 = 0;
     }
-    if ((wp->field_180C0[0x1C] & 0x2) && !(wp->field_180C0[0x1C] & 0x8)) {
+    if ((wp->field_180C0.stageFlags & 0x2) && !(wp->field_180C0.stageFlags & 0x8)) {
         if (irand(100) < weapon->field_B4[4] ||
             (wp->forceFlags & 0x40)) {
             b = 1;
-            if (!(wp->field_180C0[0x1C] & 0x4)) {
+            if (!(wp->field_180C0.stageFlags & 0x4)) {
                 a2 = 1;
             }
         }
@@ -6204,7 +6204,7 @@ USER_FUNC(btlevtcmd_WeaponAftereffect) {
     if (irand(100) < weapon->field_B4[7] || (wp->forceFlags & 0x80)) {
         BattleStage_IronFrameFallCheck();
     }
-    if (wp->field_180C0[0x1C] & 0x20) {
+    if (wp->field_180C0.stageFlags & 0x20) {
         if (wp->forceFlags & 0x1) {
             BattleStage_ObjectFallCheck();
         } else if (irand(100) < weapon->field_B4[8]) {
