@@ -18,7 +18,8 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ALLOWLIST = os.path.join(ROOT, "tools", "fncast_allowlist.json")
 DIRS = ("src", "rels", "include")
-CAST = re.compile(r"\(\(\w[\w\s\*]*\(\*\)\([^)]*\)\)\s*\w+\)")
+# ((T (*)(...))fn) and the dereferenced form (*(T (*)(...))fn)
+CAST = re.compile(r"\(\*?\(\w[\w\s\*]*\(\*\)\([^)]*\)\)\s*\w+\)")
 COND = re.compile(r"^\s*#\s*(if|ifdef|ifndef|elif|else|endif)\b(.*)")
 
 
