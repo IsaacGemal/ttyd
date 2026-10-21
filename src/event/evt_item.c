@@ -334,7 +334,7 @@ USER_FUNC(evt_item_set_alpha) {
 }
 
 
-#pragma opt_propagation off // needed: without it evt_item_move_3d_position 99.85%
+#pragma opt_propagation off // needed by evt_item_get_important_item: keeps the sin/cos approximation constants in registers
 USER_FUNC(evt_item_move_3d_position) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);

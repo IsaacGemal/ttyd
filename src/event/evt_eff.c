@@ -461,9 +461,6 @@ USER_FUNC(evt_eff_delete_ptr) {
 	return EVT_RETURN_DONE;
 }
 
-// Matching shape from theKidOfArcrania's decomp.me scratch NwWJP (opt_propagation off, the height kept in f2 and
-// 2/3 of it computed into f3 before the call, literal 0.0f arguments).
-#pragma opt_propagation off
 USER_FUNC(evt_eff_fukidashi) {
 	s32* args = event->args;
 	s32 type;
@@ -472,7 +469,7 @@ USER_FUNC(evt_eff_fukidashi) {
 	s32 int3, int4, int10;
 	f32 float5, float6, float7, float8, float9;
 	EffectEntry* entry;
-	f32 f2, f3;
+	f32 f2;
 
 	type = evtGetValue(event, args[0]);
 	effName = (const char*)evtGetValue(event, args[1]);
@@ -489,9 +486,9 @@ USER_FUNC(evt_eff_fukidashi) {
 
 	switch (type) {
 		case 0: {
-			f2 = marioGetPtr()->wPlayerCollisionBox.y;
-			f3 = (f2 * 2.0f) / 3.0f;
-			entry = effFukidashiEntry(int3, int4, -1, int10, 0.0f, f3, 0.0f, f2 / 3.0f, float9);
+			MarioWork* mario = marioGetPtr();
+			f2 = (2.0f * mario->wPlayerCollisionBox.y) / 3.0f;
+			entry = effFukidashiEntry(int3, int4, -1, int10, 0.0f, f2, 0.0f, mario->wPlayerCollisionBox.y / 3.0f, float9);
 			break;
 		}
 		case 1: {
@@ -532,4 +529,3 @@ USER_FUNC(evt_eff_fukidashi) {
 	}
 	return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset

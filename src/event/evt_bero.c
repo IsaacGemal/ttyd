@@ -871,11 +871,10 @@ USER_FUNC(bero_set_disp_position_pipe) {
 	return EVT_RETURN_DONE;
 }
 
-#pragma opt_propagation off // needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r4 for the table, r5 for event->args)
 USER_FUNC(evt_bero_switch_on) {
 	BeroEntry** temp, **table = BeroINFOARR;
 	s32* args = event->args;
-	s32 id = evtGetValue(event, args[0]);
+	s32 id = evtGetValue(event, *args++);
 	s32 newId = id;
 	const char *string, *test;
 
@@ -906,11 +905,10 @@ USER_FUNC(evt_bero_switch_on) {
 	return EVT_RETURN_DONE;
 }
 
-// `opt_propagation off` is needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r5 for event->args, r4 for the table)
 USER_FUNC(evt_bero_switch_off) {
 	BeroEntry** temp, **table = BeroINFOARR;
 	s32* args = event->args;
-	s32 id = evtGetValue(event, args[0]);
+	s32 id = evtGetValue(event, *args++);
 	s32 newId = id;
 	const char *string, *test;
 
@@ -941,12 +939,11 @@ USER_FUNC(evt_bero_switch_off) {
 	return EVT_RETURN_DONE;
 }
 
-// `opt_propagation off` is needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r4 for the table, r5 for event->args)
 	// NONMATCHING (99.58%): register allocation / branch layout differs from the original
 USER_FUNC(evt_bero_get_number) {
 	BeroEntry** temp, **table = BeroINFOARR;
 	s32* args = event->args;
-	s32 id = evtGetValue(event, args[0]);
+	s32 id = evtGetValue(event, *args++);
 	s32 newId = id;
 	const char *string, *test;
 
@@ -970,7 +967,6 @@ USER_FUNC(evt_bero_get_number) {
 	event->lwData[1] = newId;
 	return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 
 USER_FUNC(evt_bero_case_id_save) {
 	s32* args = event->args;
