@@ -330,16 +330,12 @@ void unitwin_help_main(WinMgrEntry* entry) {
 	winMgrHelpMain(entry);
 }
 
-// The original keeps the byte offset (index*4) in a register across winMgrAction
-// and indexes with lwzx; writing `list[wp->index]` makes the compiler defer the
-// shift past the call, so compute the byte offset explicitly.
 void unitwin_help_disp(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
-	s32 offset = wp->index * 4;
-	s32* list = wp->items;
+	s32* item = &wp->items[wp->index];
 
 	if (!winMgrAction(wp->winId[1])) {
-		entry->message = msgSearch(itemDataTable[*(s32*)((u8*)list + offset)].description);
+		entry->message = msgSearch(itemDataTable[*item].description);
 		winMgrHelpDraw(entry);
 	}
 }
@@ -1684,26 +1680,15 @@ USER_FUNC(unitwin_getpartylank) {
 	return EVT_RETURN_DONE;
 }
 
-// The original keeps the byte offset (id * sizeof(PouchPartyData)) in r30 and
-// recomputes the final `pouch + id * sizeof` in a volatile register after the
-// pouchRevisePartyParam call, rather than caching a single element pointer.
 USER_FUNC(unitwin_setpartylank) {
-	s32 id;
-	s32 offset;
-	s32 lank;
 	s32* args = event->args;
 	PouchData* pouch = pouchGetPtr();
+	s32 id = evtGetValue(event, args[0]);
 
-	id = evtGetValue(event, args[0]);
-	offset = id * sizeof(PouchPartyData);
-	lank = evtGetValue(event, args[1]);
-
-	((PouchPartyData*)((u8*)pouch + offset))->techLevel = lank;
-	((PouchPartyData*)((u8*)pouch + offset))->attackLevel = lank;
-	((PouchPartyData*)((u8*)pouch + offset))->HPLevel = lank;
+	pouch->partyData[id].HPLevel = pouch->partyData[id].attackLevel = pouch->partyData[id].techLevel =
+	    evtGetValue(event, args[1]);
 	pouchRevisePartyParam();
-	((PouchPartyData*)((u8*)pouch + id * sizeof(PouchPartyData)))->currentHP =
-	    ((PouchPartyData*)((u8*)pouch + id * sizeof(PouchPartyData)))->maximumHP;
+	pouch->partyData[id].currentHP = pouch->partyData[id].maximumHP;
 	return EVT_RETURN_DONE;
 }
 
