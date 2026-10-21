@@ -8,7 +8,7 @@
 #include "driver/icondrv.h"
 #include "driver/windowdrv.h"
 #include "manager/fontmgr.h"
-void FontDrawColor(GXColor* color);
+void FontDrawColor(GXColor color);
 #include "sdk/texPalette.h"
 #include "win/win_main.h"
 #include "window/win_mario.h"
@@ -952,13 +952,6 @@ static inline Vec loadDrawVecY(f32 y, Vec base) {
     return base;
 }
 
-// Retail passes these colours by value (MWCC copies the GXColor to a stack temp and passes its
-// address to FontDrawColor); this file declares it with a pointer, so a plain FontDrawColor(&global) does
-// not copy. Taking the colour by value forces the copy in both builds.
-static inline void loadDrawColor(GXColor color) {
-    FontDrawColor(&color);
-}
-
 void loadDraw(void) {
     CameraEntry* cam = camGetPtr(CAMERA_2D);
     GXColor white = dat_8041bd84;
@@ -1073,12 +1066,12 @@ void loadDraw(void) {
 
         FontDrawStart();
 #ifdef MUST_MATCH
-        loadDrawColor(*(volatile GXColor*)&dat_8041bd98); // volatile read: retail reloads the colour at each call
+        FontDrawColor(*(volatile GXColor*)&dat_8041bd98); // volatile read: retail reloads the colour at each call
 #else
-        loadDrawColor(dat_8041bd98);
+        FontDrawColor(dat_8041bd98);
 #endif
         if (i == wp->cursor) {
-            loadDrawColor(dat_8041bd9c);
+            FontDrawColor(dat_8041bd9c);
         }
         FontDrawScale(0.6f);
         FontDrawEdge();
@@ -1087,12 +1080,12 @@ void loadDraw(void) {
         FontDrawEdgeOff();
         FontDrawScale(1.0f);
 #ifdef MUST_MATCH
-        loadDrawColor(*(volatile GXColor*)&dat_8041bda0); // volatile read: retail reloads the colour at each call
+        FontDrawColor(*(volatile GXColor*)&dat_8041bda0); // volatile read: retail reloads the colour at each call
 #else
-        loadDrawColor(dat_8041bda0);
+        FontDrawColor(dat_8041bda0);
 #endif
         if (i == wp->cursor) {
-            loadDrawColor(dat_8041bda4);
+            FontDrawColor(dat_8041bda4);
         }
 
         if (flags & 2) {
