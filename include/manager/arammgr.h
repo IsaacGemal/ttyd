@@ -15,7 +15,7 @@ typedef struct ARAMWorkNode {
 } ARAMWorkNode;
 
 typedef struct ARAMWork {
-	u8 field_0x0[0x20 - 0x0]; //0x0, scratch stack for ARInit
+	u32 stackIndex[8]; //0x0, ARInit's stack_index_addr
 	u32 aramCursor; //0x20
 	u32 aramStart; //0x24
 	u32 aramSize; //0x28

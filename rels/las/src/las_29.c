@@ -2463,9 +2463,7 @@ USER_FUNC(all_hikari_change_kuro) {
     return EVT_RETURN_DONE;
 }
 
-void map_color_tev(void* work) {
-    MapColorTevWork* w = work;
-
+void map_color_tev(MapTevCallback* w) {
     GXSetTevOrder(0, 0xff, 0xff, 4);
     GXSetTevColorOp(0, 0, 0, 0, 1, 0);
     GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
@@ -2476,9 +2474,9 @@ void map_color_tev(void* work) {
     } else {
         GXSetTevColor(1, dat_las_00015a50);
     }
-    w->field_0xC = 1;
-    w->field_0x14 = 0;
-    w->field_0x10 = 0;
+    w->tevStage = 1;
+    w->texCoord = 0;
+    w->texMap = 0;
 }
 
 USER_FUNC(all_hikari_onoff) {

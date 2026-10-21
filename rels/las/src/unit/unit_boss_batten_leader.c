@@ -586,7 +586,7 @@ BattleUnitKind unit_boss_batten_leader = {
     0,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     6,                          // field_0x14
     68,                         // width
     66,                         // height
@@ -2581,7 +2581,7 @@ typedef struct BattenEffUserdata {
     u8 pad_0x0[0x8];
     f32 field_0x8;
     f32 field_0xC;
-    f32 field_0x10;
+    f32 barrierSize;
     u8 pad_0x14[0x4];
     s32 field_0x18;
     s32 field_0x1C;
@@ -2611,7 +2611,7 @@ USER_FUNC(evt_eff_colorchange00) {
 USER_FUNC(evt_eff_barriersizechange) {
     s32* args = event->args;
     EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, args[0]));
-    ((BattenEffUserdata*)effect->userdata)->field_0x10 = evtGetFloat(event, args[1]);
+    ((BattenEffUserdata*)effect->userdata)->barrierSize = evtGetFloat(event, args[1]);
     return EVT_RETURN_DONE;
 }
 

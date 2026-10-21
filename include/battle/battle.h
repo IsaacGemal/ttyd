@@ -245,7 +245,7 @@ typedef struct BattleWorkField180C0 {
 typedef struct BattleWorkField18C70 {
     s16 field_0x0;                 // 0x0 (BattleWork 0x18C70), btlevtcmd_AnnounceMessage's x
     s16 field_0x2;                 // 0x2, and y
-    s32 field_0x4[4];              // 0x4, btlevtcmd_AnnounceSetParam; [0] is the item index of message kind 1
+    s32 param[4];                  // 0x4, btlevtcmd_AnnounceSetParam; [0] is the item index of message kind 1
     char field_0x14[0x118 - 0x14]; // 0x14, the formatted message
 } BattleWorkField18C70;
 
@@ -268,8 +268,8 @@ typedef struct BattleWorkField19068 {
 // BattleWork.field_18FF0: the action-command help (battle_ac_help.c). BattleAcHelpMain reads it through one pointer
 // (one addis), so the original has a struct here; it is at least these 8 bytes and starts at or before 0x18FF0.
 typedef struct BattleWorkField18FF0 {
-    const char* field_0x0;         // 0x0 (BattleWork 0x18FF0), BattleAcHelpSetHelp's message
-    s32 field_0x4;                 // 0x4, BattleAcHelpSetDispType's type; 0 hides the help
+    const char* help;              // 0x0 (BattleWork 0x18FF0), BattleAcHelpSetHelp's message
+    s32 dispType;                  // 0x4, BattleAcHelpSetDispType's type; 0 hides the help
 } BattleWorkField18FF0;
 
 struct BattleWork {

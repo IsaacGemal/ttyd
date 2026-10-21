@@ -81,7 +81,7 @@ BattleUnitKind unit_boss_macho_gance = {
     0,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     6,                          // field_0x14
     116,                        // width
     124,                        // height

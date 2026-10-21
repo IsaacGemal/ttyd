@@ -75,7 +75,7 @@ BattleUnitKind unit_chorobon_gundan = {
     5,                              // bonusCoinRolls
     100,                            // bonusCoinRate
     0,                              // baseCoin
-    50,                             // field_0x13
+    50,                             // escapeRate
     5,                              // field_0x14
     260,                            // width
     50,                             // height

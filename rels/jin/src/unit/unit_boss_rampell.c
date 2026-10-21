@@ -95,7 +95,7 @@ BattleUnitKind unit_boss_rampell = {
     0,                             // bonusCoinRolls
     100,                           // bonusCoinRate
     0,                             // baseCoin
-    70,                            // field_0x13
+    70,                            // escapeRate
     7,                             // field_0x14
     50,                            // width
     48,                            // height

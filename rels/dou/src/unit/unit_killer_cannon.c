@@ -59,7 +59,7 @@ BattleUnitKind unit_killer_cannon = {
     3,                               // bonusCoinRolls
     70,                              // bonusCoinRate
     3,                               // baseCoin
-    60,                              // field_0x13
+    60,                              // escapeRate
     9999,                            // field_0x14
     52,                              // width
     38,                              // height

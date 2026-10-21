@@ -43,7 +43,7 @@ BattleUnitKind unit_system = {
     0,                                                          // bonusCoinRolls
     0,                                                          // bonusCoinRate
     0,                                                          // baseCoin
-    0,                                                          // field_0x13
+    0,                                                          // escapeRate
     9,                                                          // field_0x14
     24,                                                         // width
     24,                                                         // height

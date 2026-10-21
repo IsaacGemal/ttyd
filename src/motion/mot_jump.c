@@ -68,7 +68,7 @@ void marioPreJump(void) {
 f32 marioGetJumpHeight(void) {
     MarioWork* mario = marioGetPtr();
 
-    return mario->field_0x2B8;
+    return mario->jumpHeight;
 }
 
 void mot_jumpStand(void) {
@@ -120,7 +120,7 @@ void mot_jumpStand(void) {
         case 6:
             mario->position.y += mario->jumpVelY;
             mario->field_0x2B0 += mario->jumpVelY;
-            if (mario->field_0x2B0 >= mario->field_0x2B8 * marioJumpStandData[9]) {
+            if (mario->field_0x2B0 >= mario->jumpHeight * marioJumpStandData[9]) {
                 mario->currSubMotionId = 8;
             }
             if (mario->jumpVelY <= float_0_8041abb8) {

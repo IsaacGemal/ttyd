@@ -74,7 +74,7 @@ typedef struct MoamoaPose {
     s16 groupIndex;     // 0x3C, index into MoamoaWork.groups
     u16 field_0x3E;     // 0x3E
     OSTime poseTime;    // 0x40
-    u32 field_0x48;     // 0x48
+    u32 poseId;         // 0x48
     u8 kind;            // 0x4C, index into group_tbl
     u8 pad_0x4D[3];     // 0x4D
 } MoamoaPose;

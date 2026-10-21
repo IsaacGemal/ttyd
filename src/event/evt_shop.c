@@ -47,7 +47,7 @@ extern GlobalWork* gp;
 
 //.sbss (uninitialised globals are laid out last-declared-first)
 u8 gap_08_80418944_sbss[4];
-static evt_shop_work* _wp;
+static struct ShopWork* _wp;
 char mapname[16];
 
 typedef struct ItemDbEntry {
@@ -196,7 +196,7 @@ __declspec(section ".sdata2") const f32 shop_price_digit_width = 12.0f;
 s32 evtShopIsActive(void) {
 	s32 active;
 
-	if (strcmp(gp->currentMapName, mapname) == 0 && ((ShopWork*)_wp)->flags != 0) {
+	if (strcmp(gp->currentMapName, mapname) == 0 && _wp->flags != 0) {
 		active = 1;
 	} else {
 		active = 0;
@@ -353,7 +353,7 @@ USER_FUNC(keep_pouchcheck_func) {
 }
 
 s32 item_data_db_restore(void) {
-	ItemDbEntry* p = ((ShopWork*)_wp)->itemDbOverrides;
+	ItemDbEntry* p = _wp->itemDbOverrides;
 	s32 id;
 
 	if (p != NULL) {
@@ -366,7 +366,7 @@ s32 item_data_db_restore(void) {
 }
 
 s32 item_data_db_arrange(void) {
-	ItemDbEntry* p = ((ShopWork*)_wp)->itemDbOverrides;
+	ItemDbEntry* p = _wp->itemDbOverrides;
 	s32 id;
 
 	if (p != NULL) {
@@ -395,7 +395,7 @@ USER_FUNC(name_price) {
 }
 
 USER_FUNC(get_fook_evt) {
-	evtSetValue(event, event->args[0], ((ShopWork*)_wp)->shopper->fookEvt);
+	evtSetValue(event, event->args[0], _wp->shopper->fookEvt);
 	return EVT_RETURN_DONE;
 }
 
@@ -405,12 +405,12 @@ USER_FUNC(get_ptr) {
 }
 
 USER_FUNC(set_buy_item_id) {
-	((ShopWork*)_wp)->buyItemId = evtGetValue(event, event->args[0]);
+	_wp->buyItemId = evtGetValue(event, event->args[0]);
 	return EVT_RETURN_DONE;
 }
 
 USER_FUNC(get_buy_evt) {
-	evtSetValue(event, event->args[0], ((ShopWork*)_wp)->shopper->buyEvt);
+	evtSetValue(event, event->args[0], _wp->shopper->buyEvt);
 	return EVT_RETURN_DONE;
 }
 
@@ -444,7 +444,7 @@ USER_FUNC(disp_off) {
 }
 
 USER_FUNC(shopper_name) {
-	evtSetValue(event, event->args[0], (s32)((ShopWork*)_wp)->shopper->name);
+	evtSetValue(event, event->args[0], (s32)_wp->shopper->name);
 	return EVT_RETURN_DONE;
 }
 
@@ -568,7 +568,7 @@ USER_FUNC(shop_flag_onoff) {
 	s32* args = event->args;
 	s32 a = evtGetValue(event, args[0]);
 	s32 b = evtGetValue(event, args[1]);
-	ShopWork* wp = (ShopWork*)_wp;
+	ShopWork* wp = _wp;
 
 	if (a != 0) {
 		wp->flags |= b;
@@ -580,7 +580,7 @@ USER_FUNC(shop_flag_onoff) {
 }
 
 USER_FUNC(point_wait) {
-	ShopWork* wp = (ShopWork*)_wp;
+	ShopWork* wp = _wp;
 	PouchData* pouch = pouchGetPtr();
 
 	if (wp->shownPoints != pouch->mShopPoints) {
@@ -593,7 +593,7 @@ USER_FUNC(point_wait) {
 USER_FUNC(point_disp_onoff) {
 	s32 value = evtGetValue(event, event->args[0]);
 	PouchData* pouch = pouchGetPtr();
-	ShopWork* wp = (ShopWork*)_wp;
+	ShopWork* wp = _wp;
 
 	wp->shownPoints = pouch->mShopPoints;
 	if (value != 0) {
@@ -623,7 +623,7 @@ USER_FUNC(evt_shop_setup) {
 
 	wp = (ShopWork*)_mapAlloc(0xD8);
 	memset(wp, 0, 0xD8);
-	_wp = (evt_shop_work*)wp;
+	_wp = wp;
 	strncpy(mapname, gp->currentMapName, 15);
 	wp->objs = (ShopObj*)v0;
 	wp->items = (s32*)v1;
@@ -800,7 +800,7 @@ void title_disp(WinMgrEntry* entry) {
 }
 
 void point_disp(WinMgrEntry* entry) {
-	ShopWork* wp = (ShopWork*)_wp;
+	ShopWork* wp = _wp;
 	PouchData* pouch = pouchGetPtr();
 
 	if (!(entry->flags & 4)) {
@@ -833,7 +833,7 @@ void point_disp(WinMgrEntry* entry) {
 }
 
 void help_disp(WinMgrEntry* entry) {
-	ShopWork* wp = (ShopWork*)_wp;
+	ShopWork* wp = _wp;
 	s32 offset = wp->selectedItem * 8;
 	s32* items = wp->items;
 
@@ -849,7 +849,7 @@ void help_main(WinMgrEntry* entry) {
 }
 
 void name_disp(WinMgrEntry* entry) {
-	ShopWork* wp = (ShopWork*)_wp;
+	ShopWork* wp = _wp;
 	GXColor titleColor;
 	Vec pos;
 	Mtx mtx;
@@ -857,7 +857,7 @@ void name_disp(WinMgrEntry* entry) {
 	const char* msg;
 	s32 i;
 
-	msg = msgSearch(itemDataTable[((ShopWork*)_wp)->items[((ShopWork*)_wp)->selectedItem * 2]].name);
+	msg = msgSearch(itemDataTable[_wp->items[_wp->selectedItem * 2]].name);
 	if (winMgrAction(wp->nameWin) == 0) {
 		FontDrawStart();
 		FontDrawEdge();

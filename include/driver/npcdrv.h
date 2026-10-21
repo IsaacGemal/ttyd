@@ -91,7 +91,7 @@ typedef struct NpcBattleInfo {
     ItemDropData* itemDropLists[8];    // 0x3C
     ItemType stolenItems[8];           // 0x5C
     ItemType recoveredItems[8];        // 0x7C
-    void* field_0x9C[4];               // 0x9C
+    void* btlSetupWork[4];             // 0x9C
     s32 audienceMode;                  // 0xAC, copied from BattleSetupData.audienceMode; battle_audience switches on it
     s8 audienceWeights[16];            // 0xB0, rolled from BattleSetupData.audienceRanges; battle_audience reads kinds 0-11
     const char* music;                 // 0xC0, copied from BattleSetupData.music
@@ -259,7 +259,7 @@ typedef struct FieldBattleInfo {
     u32 partyId;             // 0x8
     NpcBattleInfo* setup;    // 0xC
     s32 result;              // 0x10
-    s32 field_0x14;          // 0x14, coins added by BattleStoreCoin; npcdrv copies it to NpcEntry.btlCoinDropCount
+    s32 storeCoin;           // 0x14, coins added by BattleStoreCoin; npcdrv copies it to NpcEntry.btlCoinDropCount
     u8 field_0x18;           // 0x18, battleRules[0] (seq_battle), the rule kind battle_actrecord judges
     u8 ruleKeepResult;       // 0x19, written by battle_actrecord, read by evt_npc_get_battle_rule_keep_result
     u8 field_0x1A;           // 0x1A, battleRules[1] (seq_battle)
@@ -287,7 +287,7 @@ typedef struct FieldBattleData {
     s32 majinaiEvtId;            // 0x48, event waited on in state 3 (the Merlee curse coin-up effect)
     NpcDeadInfo deadInfo[64];    // 0x4C
     u8 field_0x54C;              // 0x54C
-    u8 field_0x54D;              // 0x54D
+    u8 sandersBombTrigger;       // 0x54D
     u8 field_54E[0x550 - 0x54E]; // 0x54E
     FirstStrikeInfo firstStrike; // 0x550
     u8 field_570[0x574 - 0x570]; // 0x570

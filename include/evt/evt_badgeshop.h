@@ -5,12 +5,12 @@
 
 typedef struct BadgeShopWork {
 	u8 special_table[0x19]; //0x0, Lovely Howz of Badges
-	u8 bargain_table[0x19]; //0x19, Lovely Howz of Badges Discount
+	u8 field_0x19[0x19]; //0x19, per-badge stock for the evt_badgeShop_throw_* functions
 	u8 starmaniac_table[0x19]; //0x32, Dazzle's Badges
 	u8 bottakuru_table[0x55]; //0x4B, Charlieton's Items
 	u8 bteresa_table[0x55]; //0xA0, Pianta Parlor
 	u8 align[3];
-	s32 field_0xF8[5]; //0xF8
+	s32 bargainTable[5]; //0xF8, badgeShop_getBargainTable returns it
 	s32 field_0x10C; //0x10C
 	u32 field_0x110; //0x110
 	u16 field_0x114; //0x114

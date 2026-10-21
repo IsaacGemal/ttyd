@@ -54,7 +54,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     1,                          // bonusCoinRolls
     70,                         // bonusCoinRate
     0,                          // baseCoin
-    60,                         // field_0x13
+    60,                         // escapeRate
     9999,                       // field_0x14
     28,                         // width
     32,                         // height

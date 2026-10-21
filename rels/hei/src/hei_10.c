@@ -460,7 +460,7 @@ USER_FUNC(wait_anim_frame) {
     f32 frame = evtGetFloat(event, event->args[0]);
     AnimationPose* pose = animPoseGetAnimPosePtr(npcNameToPtr("ゴールドチョロボン")->poseId);
 
-    if (((AnimPoseField24*)pose)->field_0x24 < frame) {
+    if (pose->clipTime < frame) {
         return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_DONE;

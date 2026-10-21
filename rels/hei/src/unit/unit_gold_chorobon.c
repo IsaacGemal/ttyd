@@ -64,7 +64,7 @@ BattleUnitKind unit_gold_chorobon = {
     10,                          // bonusCoinRolls
     100,                         // bonusCoinRate
     0,                           // baseCoin
-    50,                          // field_0x13
+    50,                          // escapeRate
     5,                           // field_0x14
     28,                          // width
     32,                          // height

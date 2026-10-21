@@ -354,7 +354,7 @@ s32 msgMain(smartEntry* smart) {
 			}
 			break;
 		case 0xFFFA:
-			data->field_0x7A28 = entry->arg;
+			data->se = entry->arg;
 			break;
 		case 0xFFF9:
 			data->sfxVolume = entry->arg;
@@ -1436,7 +1436,7 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	data->callback = (void (*)(s32, smartEntry*))a;
 	data->lastFrameTime = gp->renderTime;
 	data->effectStart = gp->renderTime;
-	data->field_0x7A28 = 0;
+	data->se = 0;
 	data->sfxVolume = 0x7f;
 	data->timeCursor = 0;
 	data->penX = 0;

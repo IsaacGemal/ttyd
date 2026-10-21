@@ -136,7 +136,7 @@ BattleUnitKind unit_boss_batten_satellite = {
     1,                             // bonusCoinRolls
     100,                           // bonusCoinRate
     0,                             // baseCoin
-    50,                            // field_0x13
+    50,                            // escapeRate
     9,                             // field_0x14
     16,                            // width
     16,                            // height

@@ -271,7 +271,7 @@ USER_FUNC(evt_bero_get_info_length) {
 
 	args = event->args;
 	bero = BeroINFOARR[evtGetValue(event, args[0])];
-	length = bero->field_0x18;
+	length = bero->length;
 	if (length != -1) {
 		evtSetFloat(event, args[1], (f32)length);
 		return EVT_RETURN_DONE;

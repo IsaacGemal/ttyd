@@ -16,7 +16,7 @@ typedef struct BeroEntry {
 	s32 field_0xC; //0xC
 	s32 unknown1; //0x10
 	s32 unknown2; //0x14
-	s32 field_0x18; //0x18
+	s32 length; //0x18
 	s32* enterEvent; //0x1C;
 	s32 field_0x20; //0x20
 	s32* exitEvent; //0x24

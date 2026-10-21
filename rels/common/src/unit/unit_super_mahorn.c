@@ -94,7 +94,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     2,                          // bonusCoinRolls
     70,                         // bonusCoinRate
     2,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     9999,                       // field_0x14
     48,                         // width
     44,                         // height
@@ -142,7 +142,7 @@ static BattleUnitKind unit_super_mahorn_bunsin = {
     0,                            // bonusCoinRolls
     70,                           // bonusCoinRate
     0,                            // baseCoin
-    50,                           // field_0x13
+    50,                           // escapeRate
     9999,                         // field_0x14
     48,                           // width
     44,                           // height

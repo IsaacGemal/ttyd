@@ -55,7 +55,7 @@ BattleUnitKind unit_barriern_custom_satellite = {
     0,                                  // bonusCoinRolls
     70,                                 // bonusCoinRate
     0,                                  // baseCoin
-    50,                                 // field_0x13
+    50,                                 // escapeRate
     9999,                               // field_0x14
     16,                                 // width
     16,                                 // height

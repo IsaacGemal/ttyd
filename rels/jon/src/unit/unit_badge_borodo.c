@@ -66,7 +66,7 @@ BattleUnitKind unit_badge_borodo = {
     1,                          // bonusCoinRolls
     70,                         // bonusCoinRate
     2,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     9999,                       // field_0x14
     26,                         // width
     34,                         // height

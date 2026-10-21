@@ -21,20 +21,6 @@
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 
-typedef struct ClaudaBreathEffectData {
-    u8 pad_0x0[0x18];
-    s32 field_0x18;
-    s32 field_0x1C;
-    s32 field_0x20;
-    u8 pad_0x24[0x4];
-    s32 field_0x28;
-    s32 field_0x2C;
-    s32 field_0x30;
-    u8 pad_0x34[0x24];
-    f32 field_0x58;
-} ClaudaBreathEffectData;
-
-
 #define TECH_MENU_ENTRY(table)                                                        \
     cmd->mWeaponTable[*count].mIndex = -1;                                            \
     cmd->mWeaponTable[*count].mItem = 0;                                              \
@@ -142,12 +128,12 @@ static s32 _clauda_breath_effect_ready(EventEntry* event, BOOL isFirstCall) {
         effect = effKumokumoN64Entry(0, 0x3C, pos.x, pos.y, pos.z, 180.0f, 2.0f,
                                      1.0f);
     }
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x18 = 0x4C;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x1C = 0xA7;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x20 = 0xCA;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x28 = 0x7D;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x2C = 0x1B;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x30 = 0xF5;
+    ((effKumokumoData*)effect->userdata)->color1R = 0x4C;
+    ((effKumokumoData*)effect->userdata)->color1G = 0xA7;
+    ((effKumokumoData*)effect->userdata)->color1B = 0xCA;
+    ((effKumokumoData*)effect->userdata)->color2R = 0x7D;
+    ((effKumokumoData*)effect->userdata)->color2G = 0x1B;
+    ((effKumokumoData*)effect->userdata)->color2B = 0xF5;
     return EVT_RETURN_DONE;
 }
 
@@ -175,13 +161,13 @@ static s32 _clauda_breath_effect_fire(EventEntry* event, BOOL isFirstCall) {
         effect = effKumokumoN64Entry(0, 0, pos.x, pos.y, pos.z, 180.0f, -2.0f,
                                      1.0f);
     }
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x18 = 0x4C;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x1C = 0xA7;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x20 = 0xCA;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x28 = 0x7D;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x2C = 0x1B;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x30 = 0xF5;
-    ((ClaudaBreathEffectData*)effect->userdata)->field_0x58 = -10.0f;
+    ((effKumokumoData*)effect->userdata)->color1R = 0x4C;
+    ((effKumokumoData*)effect->userdata)->color1G = 0xA7;
+    ((effKumokumoData*)effect->userdata)->color1B = 0xCA;
+    ((effKumokumoData*)effect->userdata)->color2R = 0x7D;
+    ((effKumokumoData*)effect->userdata)->color2G = 0x1B;
+    ((effKumokumoData*)effect->userdata)->color2B = 0xF5;
+    ((effKumokumoData*)effect->userdata)->rotation = -10.0f;
     evtSetValue(event, arg0, (s32)effect);
     return EVT_RETURN_DONE;
 }

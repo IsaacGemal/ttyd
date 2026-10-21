@@ -85,7 +85,7 @@ typedef struct WindowWork {
     f32 field_0x170;            // 0x170
     s32 field_0x174;            // 0x174
     s32 field_0x178;            // 0x178
-    s32 field_0x17C;            // 0x17C
+    s32 sortWait;               // 0x17C
     s32 sortReverseNext;        // 0x180, win_root's sorts: 0 = next press uses the ascending comparator, 1 = the _r one (flipped by each press, cleared by winSortEntry)
     s32 field_0x184;            // 0x184, win_root: sort_data index
     s32 marioPose;              // 0x188, win_mario's Mario pose (mario_change rebuilds it; mapGX reads its anim)

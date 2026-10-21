@@ -55,7 +55,7 @@ BattleUnitKind unit_hyper_kuriboo = {
     2,                          // bonusCoinRolls
     70,                         // bonusCoinRate
     1,                          // baseCoin
-    70,                         // field_0x13
+    70,                         // escapeRate
     9999,                       // field_0x14
     23,                         // width
     25,                         // height

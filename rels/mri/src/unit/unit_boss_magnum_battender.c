@@ -95,7 +95,7 @@ BattleUnitKind unit_boss_magnum_battender = {
     0,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     6,                          // field_0x14
     120,                        // width
     160,                        // height
@@ -1049,7 +1049,7 @@ BattleUnitKind unit_boss_rocket_punch = {
     0,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     10,                         // field_0x14
     50,                         // width
     34,                         // height

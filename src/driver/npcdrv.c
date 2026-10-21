@@ -1262,7 +1262,7 @@ void npcMain(void) {
         case 6:
             break;
     }
-    fbat->field_0x54D = 0;
+    fbat->sandersBombTrigger = 0;
 }
 
 NpcEntry* npcNameToPtr(const char* name) {
@@ -2482,7 +2482,7 @@ void fbatBattleMode(void) {
                 if (result == 1 || result == 2) {
                     mult = 1;
                     if (BattleInformationGetResult(info4) == 1) {
-                        entry->btlCoinDropCount = info4->field_0x14;
+                        entry->btlCoinDropCount = info4->storeCoin;
                     } else if (result == 1) {
                         entry->btlCoinDropCount = entry->baseCoin;
                     } else {
@@ -3074,7 +3074,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 break;
             }
             if (!(flags & 1) || party == NULL || party->field_33 != 3
-                || gp->fbatData->field_0x54D == 0) {
+                || gp->fbatData->sandersBombTrigger == 0) {
                 break;
             }
             flag8 = flags & 0x1000;
@@ -3491,11 +3491,11 @@ void npcBlurOff(const char* name) {
 }
 
 void* npcGetBtlSetupWork(NpcEntry* npc, s32 index) {
-    return npc->battleInfo.field_0x9C[index];
+    return npc->battleInfo.btlSetupWork[index];
 }
 
 void npcSetBtlSetupWork(NpcEntry* npc, s32 index, void* work) {
-    npc->battleInfo.field_0x9C[index] = work;
+    npc->battleInfo.btlSetupWork[index] = work;
 }
 
 void npcSetSlave(NpcEntry* npc, NpcEntry* slave, s32 id) {
@@ -3789,7 +3789,7 @@ s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
 }
 
 void fbatSandersBombTriggerOn(void) {
-    gp->fbatData->field_0x54D = TRUE;
+    gp->fbatData->sandersBombTrigger = TRUE;
 }
 
 s32 npcCalcScore(NpcEntry* entry) {

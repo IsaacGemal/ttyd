@@ -164,7 +164,7 @@ USER_FUNC(_get_escape_rate) {
     FieldBattleInfo* info = wp->fbatInfo;
 
     evtSetValue(event, event->args[0],
-                info->setup->groupSetup->enemyData->mUnitKindParams->field_0x13);
+                info->setup->groupSetup->enemyData->mUnitKindParams->escapeRate);
     return EVT_RETURN_DONE;
 }
 

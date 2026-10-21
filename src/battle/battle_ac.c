@@ -21,7 +21,7 @@ void BattleActionCommandManagerInit(BattleWork* wp) {
 	wp->actionCommands.resultcb = NULL;
 	wp->actionCommands.dispcb = NULL;
 	wp->actionCommands.deletecb = NULL;
-	wp->actionCommands.field_0x288 = -1;
+	wp->actionCommands.gaugeSe = -1;
 }
 
 void BattleActionCommandManager(BattleWork* wp) {
@@ -611,7 +611,7 @@ void BattleAcDrawGauge(s32 x, s32 y, f32 ratio, s32 type, s32 count, s32 t0, s32
 void BattleAcGaugeSeInit(void) {
 	BattleWork* work = _battleWorkPointer;
 
-	work->actionCommands.field_0x288 = psndSFXOn("SFX_AC_POWER_GAUGE1");
+	work->actionCommands.gaugeSe = psndSFXOn("SFX_AC_POWER_GAUGE1");
 	*(f32*)&work->actionCommands.field_0x28C[0] = 0.0f;
 }
 
@@ -625,16 +625,16 @@ void BattleAcGaugeSeUpdate(f32 value) {
 		value = 100.0f;
 	}
 	*(f32*)&work->actionCommands.field_0x28C[0] = value;
-	if ((u32)work->actionCommands.field_0x288 != -1) {
-		psndSFX_pit(work->actionCommands.field_0x288, (s32)(4092.0f * *(f32*)&work->actionCommands.field_0x28C[0] * 0.01f));
+	if ((u32)work->actionCommands.gaugeSe != -1) {
+		psndSFX_pit(work->actionCommands.gaugeSe, (s32)(4092.0f * *(f32*)&work->actionCommands.field_0x28C[0] * 0.01f));
 	}
 }
 
 void BattleAcGaugeSeDelete(void) {
 	BattleWork* work = _battleWorkPointer;
 
-	if ((u32)work->actionCommands.field_0x288 != -1) {
-		psndSFXOff(work->actionCommands.field_0x288);
-		work->actionCommands.field_0x288 = -1;
+	if ((u32)work->actionCommands.gaugeSe != -1) {
+		psndSFXOff(work->actionCommands.gaugeSe);
+		work->actionCommands.gaugeSe = -1;
 	}
 }

@@ -60,7 +60,7 @@ BattleUnitKind unit_met = {
     2,                          // bonusCoinRolls
     70,                         // bonusCoinRate
     1,                          // baseCoin
-    60,                         // field_0x13
+    60,                         // escapeRate
     9999,                       // field_0x14
     28,                         // width
     20,                         // height

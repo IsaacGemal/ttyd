@@ -60,7 +60,7 @@ BattleUnitKind unit_giant_bomb = {
     5,                          // bonusCoinRolls
     70,                         // bonusCoinRate
     0,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     9999,                       // field_0x14
     54,                         // width
     70,                         // height

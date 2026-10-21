@@ -5309,3 +5309,79 @@ caller, keeping a change only if the whole linked build stays byte-identical, ca
   `configure.py --non-matching`; fncast_lint and local_prototypes pass (tools/local_prototype_exceptions.json
   unchanged: no entry went stale); tools/ci.py PASS with its tools/tests step stubbed (the 9 test_wave_launch
   environment errors, as in the chapters above), ratchet baseline `--init`ed on the clean HEAD.
+
+## Placeholder fields named from outside evidence (2026-10-21, Claude Opus 5.5, n9-q-o-names)
+
+Pass over the ~3,800 `field_0xNN` members, renaming only those that outside evidence names. Candidates came from six
+read-only Claude Opus 5.5 searches (one per area: window, mario/motion/party, battle, driver/event/manager, effect,
+RELs) and a scan for short original-named functions that touch one placeholder. Every name below was checked by hand
+before it went in. "Original" means a function name in the fork-point (2df569d) symbol maps, dol or REL. Names added
+to symbols.txt on this fork don't count.
+
+**Renamed** (evidence: accessor = an original function that only reads or writes that field; same struct = a name the
+repo already uses at that offset of the same memory; SDK; string):
+
+| struct | off | name | evidence |
+|---|---|---|---|
+| EffRippleData (ripple_n64 setter) | 0x2C/0x30 | rx, rz | accessor effRippleN64SetRxRz; EffRippleData already names both, so the effRippleN64Data overlay is gone |
+| EffRippleData | 0x14 | rippleScale | accessor tik_02 ripple_scale_func (stores its float); 0x10 is already `scale` |
+| BattleWorkField18FF0 | 0x0/0x4 | help, dispType | accessors BattleAcHelpSetHelp, BattleAcHelpSetDispType |
+| BattleActions | 0x288 | gaugeSe | BattleAcGaugeSeInit/Update/Delete are its only users; Delete reads and clears only it |
+| WindowWork | 0x17C | sortWait | accessor winSortWait (`return field != 0`) |
+| MarioWork (0x2B8 union) | 0x2B8 | jumpHeight (new member) | accessors marioGetJumpHeight, marioChgJumpStandMotion; only the jump-stand users moved, mot_jumpSw/Npc and marioDispBlurSub keep field_0x2B8 |
+| unit_party_clauda overlay | 0x18-0x30, 0x58 | color1R/G/B, color2R/G/B, rotation | same struct: effKumokumoN64Entry's effKumokumoData; overlay gone |
+| rsh_05, eki_00 MoamoaWork | 0x48 | poseId | same struct as rsh_06 (unused in both) |
+| las_29 map_color_tev arg | 0xC/0x10/0x14 | tevStage, texMap, texCoord | a TEV callback (evt_map_set_tevcallback), so MapTevCallback; overlay gone |
+| hei_10 wait_anim_frame | 0x24 | clipTime | the overlay is AnimationPose; overlay gone |
+| BattenEffUserdata (batten_leader) | 0x10 | barrierSize | accessor evt_eff_barriersizechange |
+| BattleUnitPart | 0x78 | shadowScale | shadow_scale_memory copies only it; shadow_scale_small/return only interpolate it |
+| BattleUnitPart | 0x208 | animeSpeed | setter btlDispAnimeSpeed |
+| BattleUnitKind | 0x13 | escapeRate | accessor _get_escape_rate; the 191 `// field_0x13` data labels follow |
+| BattleWorkField18C70 | 0x4 | param[4] | setter btlevtcmd_AnnounceSetParam |
+| FieldBattleInfo | 0x14, 0x19 | storeCoin, ruleKeepResult | BattleStoreCoin adds only to the 0x14 word; FieldBattleInfo is FieldBattleData+0x20, whose 0x39 is ruleKeepResult (evt_npc_get_battle_rule_keep_result) |
+| NpcBattleInfo | 0x9C | btlSetupWork[4] | accessors npcGetBtlSetupWork / npcSetBtlSetupWork |
+| FieldBattleData | 0x54D | sandersBombTrigger | setter fbatSandersBombTriggerOn |
+| BeroEntry | 0x18 | length | accessor evt_bero_get_info_length |
+| MovingFloorWork | 0x74 | stmsec | accessor moving_floor_get_stmsec |
+| BadgeShopWork | 0xF8 | bargainTable[5] | accessor badgeShop_getBargainTable |
+| ARAMWork | 0x0 | stackIndex (u32[8]) | SDK: ARInit(u32* stack_index_addr, 8) |
+| MapObject | 0xEC | bboxLeft/Top/Right/Bottom (u16, from #1102) | SDK: GXReadBoundingBox(left, top, right, bottom) from mapDispMapObj_bbox |
+| MessageData | 0x7A28 | se | string: msgAnalize's "se" tag sets it (0xFFFA entries) |
+| evt_shop.h evt_shop_work | 0x0-0x20 | gone; `_wp` is a ShopWork* | same struct: evt_shop_setup allocates a ShopWork and every user casts _wp back |
+
+Structure changes that came with a name: the FieldBattleInfo u8[8] band split into an s32 and four u8 members (its s32
+casts go), ARAMWork.stackIndex gets its SDK element type (the u32 casts go). Each built
+to an identical object.
+
+**Rejected, too weak** (kept as placeholders): WindowWork 0x164-0x184 (winSortEntry writes all of them), 0x128-0x14C
+(winMsgEntry writes six at once); BattleActions 0x28C (BattleAcGaugeSeUpdate's value; "GaugeSe" already went to
+0x288); BattleUnitPart 0x1A6/0x1A8 (getGravityDispOffset/getFloatDispOffset compute from them, not return them);
+MarioWork 0x260/0x264 (balloon effect, but marioBalloonOn/Off are not accessors); WinEquipRec 0x0-0x8 (one builder
+writes all three); AnimationWork 0xD8/0xDC (animSetPaperTexObj's eighth argument, named only by our parameter);
+battle_stage_object's event-id fields (Destroy/Fog/Nozzle functions do more); ParseWork 0x54 (parsePop only
+decrements it); tou_02 PoseGroup 0x18 (not provably the moamoa group struct); eki_00 MoamoaWork 0x0C/0x10 (rsh_05's
+train/prevTrainY, but the types disagree); filemgr FileType1 (AnimationPoseData's offsets, but a different file type);
+effNozleEntryData vs effNozleData (the head's names describe entry 0 only); NanNpcEntry jump terms (gor_00 uses the
+same slots differently); BattleUnit 0x2A8/0x2C8/0x280 and the other BattleUnit placeholders (no single-field
+accessor); every effect Entry parameter copied into a field (our parameter names); rsh_06 MoamoaWork 0x40/0x558, rsh_00 MoamoaPose 0x18
+and mri MagnumBattenderWork 0x0-0x1C (their rsh_05/eki_00 and aji ArmWork source names were inferred from behaviour
+in #885, #980, #983 and #977, with no outside evidence).
+
+**Leads outside the `field_0xNN` spelling**, same standard of evidence, not applied here: MarioWork `unk1A8` dispDir
+(evt_mario_get_dispdir), PartyEntry `field_10C` dispDir (evt_party_get_dispdir), MarioWork `unk4C` mutekiTime
+(marioSetMutekiTime), MarioWork `field_F8` camCollision (marioUpdateCamCollision), PartyCloud `unk8` breathDist
+(cloudGetBreathDist), PartyEntry `field_34`/`field_3B`/`field_36`/`field_18`/`field_1C` runMode/moveMode/mot/pose/paper
+(partyChgRunMode, partyChgMoveMode, partyChgMot, partyChgPose, partyChgPaper; each also sets a flag), BattleWork
+`field_1616C` breakSlot (BattleBreakSlotGetPtr), `field_19064` acResult (gor get_ac_result), `field_19038` cmdDisable
+(recover_cmd_disable clears it), `field_16F1C` bytes 0x20/0x21 (_mario_ac_success_check / _mario_ac_failed_check),
+rsh.h RshWindowTevParam `field_4`-`field_18` (a MapTevCallback).
+
+BadgeShopWork 0x19 was `bargain_table`; badgeShop_getBargainTable proves 0xF8 is the bargain table, so 0x19 is
+`field_0x19` again. Its only users are evt_badgeShop_throw_inc/dec/get_kind_cnt (lead: a throw-sale stock table).
+
+- Verified at every commit: `ninja` recreates build/G8MJ01/ok; a full `configure.py --non-matching` compile of every
+  C object passes; fncast_lint and local_prototypes pass; tools/ci.py passes (lint, build, natural, data, ratchet: no
+  regressions) with its tools/tests step skipped for the environment failures recorded above, under
+  `uv run --with pyelftools`.
+- Index (tools/cleanup_index.py, same script both sides): 15.026 -> 14.730 per kLOC (10494 -> 10287 weighted);
+  field_0x 3821 -> 3622, raw_offset 452 -> 448.

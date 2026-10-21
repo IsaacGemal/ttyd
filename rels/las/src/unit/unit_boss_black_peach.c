@@ -127,7 +127,7 @@ BattleUnitKind unit_boss_black_peach = {
     0,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     6,                          // field_0x14
     40,                         // width
     54,                         // height
@@ -1281,7 +1281,7 @@ BattleUnitKind unit_boss_shadow_queen = {
     0,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     6,                          // field_0x14
     40,                         // width
     54,                         // height
@@ -1724,7 +1724,7 @@ BattleUnitKind unit_boss_shadow_hand_1 = {
     0,                                 // bonusCoinRolls
     100,                               // bonusCoinRate
     0,                                 // baseCoin
-    50,                                // field_0x13
+    50,                                // escapeRate
     7,                                 // field_0x14
     90,                                // width
     110,                               // height
@@ -1836,7 +1836,7 @@ BattleUnitKind unit_boss_shadow_hand_2 = {
     0,                                 // bonusCoinRolls
     100,                               // bonusCoinRate
     0,                                 // baseCoin
-    50,                                // field_0x13
+    50,                                // escapeRate
     7,                                 // field_0x14
     90,                                // width
     110,                               // height
@@ -1948,7 +1948,7 @@ BattleUnitKind unit_boss_shadow_hand_small = {
     0,                            // bonusCoinRolls
     100,                          // bonusCoinRate
     0,                            // baseCoin
-    50,                           // field_0x13
+    50,                           // escapeRate
     7,                            // field_0x14
     220,                          // width
     45,                           // height

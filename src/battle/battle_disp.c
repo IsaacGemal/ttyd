@@ -553,7 +553,7 @@ void btlDispMain(void) {
 					}
 					f *= (f32)part->field_0x1A2 * unit->mScale.x *
 					     part->mScale.x * unit->mSizeMultiplier;
-					f *= part->field_0x78;
+					f *= part->shadowScale;
 					if (unit->flags & 0x10000) {
 						if (f < 16.0f) {
 							f = 16.0f;
@@ -1294,8 +1294,8 @@ void _pose_two_pattern(BattleUnitPart* part) {
 
 #pragma dont_inline on // the original keeps calls to this function out of line
 void btlDispAnimeSpeed(BattleUnitPart* part, f32 speed) {
-	part->field_0x208 = speed;
-	animPoseSetLocalTimeRate(part->poseId, part->field_0x208 * part->motionSpeed);
+	part->animeSpeed = speed;
+	animPoseSetLocalTimeRate(part->poseId, part->animeSpeed * part->motionSpeed);
 }
 #pragma dont_inline reset
 

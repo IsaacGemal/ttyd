@@ -45,7 +45,7 @@ BattleUnitKind unit_boss_honeduka = {
     0,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     9,                          // field_0x14
     100,                        // width
     100,                        // height

@@ -99,7 +99,7 @@ typedef struct MoamoaWork {
     s16 hammerFrames; // 0x40, frames Mario has stayed in MARIO_MOTION_HAMMER
     s16 idleFrames;     // 0x42, frames Mario has stood still (capped at 1000)
     u32 escapeEvt;      // 0x44, event id of evt_moamoa_escape once started
-    s32 field_0x48;     // 0x48
+    s32 poseId;         // 0x48
     s32 groupCount;     // 0x4C
     MoamoaGroup groups[32]; // 0x50
     f32 angleToMario;   // 0x550, angle from Mario to the moamoa in the current pose
