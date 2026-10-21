@@ -5185,21 +5185,19 @@ colour and Vec templates (`dat_`, `vec3_`), which stay by the naming rules, so t
   strength reduction gives retail's running offset, and the one difference left (the later sound-cursor copy
   moved r25 -> r24) goes when `i`, not the old offset local, holds the previous sound cursor. win_root
   compare_func4/_r read the mail list's byte pairs through `const u8*` locals and type mailGetPtr's result.
-- **MUST_MATCH regions that went.** win_root winMsgDisp's `(10.0f + (x - 250.0f)) - 10.0f`: it is the arithmetic
-  retail runs (the old `#else`, `x - 250.0f`, is a different float computation), written like the file's other
-  unguarded position sums. Its comma-form icon read is `itemDataTable[n].icon_id` (plain matches since the call no
+- **MUST_MATCH regions that went.** win_root winMsgDisp's comma-form icon read is `itemDataTable[n].icon_id` (plain matches since the call no
   longer goes through the wrapper). The five window-file by-value cast blocks, winmgr's four GXSetFog regions.
   evt_win's FontDrawColorV and seq_load's loadDrawColor existed only to copy the colour under a pointer prototype:
   both files declare FontDrawColor by value as fontmgr.c defines it (the documented exception allows it), and
   evt_win's title colour is passed straight from its .sdata2 word, which drops a local and a u32 store pun.
-- **Counts** (tools/cleanup_index.py, c9183558 -> this branch): index 15.315 -> 15.156 per kLOC (10682 -> 10568
-  weighted); fn_ptr_cast 103 -> 66, must_match 800 -> 789, raw_offset 351 -> 337, field_0x 4627 -> 4626;
+- **Counts** (tools/cleanup_index.py, c9183558 -> this branch): index 15.315 -> 15.163 per kLOC (10682 -> 10573
+  weighted); fn_ptr_cast 103 -> 66, must_match 800 -> 792, raw_offset 351 -> 338, field_0x 4627 -> 4626;
   opt_pragma 777, goto 115, address_name 2635 unchanged. Per file (`--top`, per kLOC; raw / must_match / pragma /
   fn_ptr_cast, gotos 0 throughout):
   - evt_win 134.543 -> 128.076 (215 -> 203 weighted): 6/2/0/0 -> 0/2/0/0
-  - win_root 87.438 -> 74.189 (229 -> 192): 4/6/0/12 -> 0/2/0/0
+  - win_root 87.438 -> 74.460 (229 -> 193): 4/6/0/12 -> 0/3/0/0
   - winmgr 82.700 -> 79.821 (185 -> 178): 0/13/3/6 -> 0/10/3/4
-  - mot_hammer 166.480 -> 166.480 (149): 10/6/6/0 unchanged
+  - mot_hammer 166.480 -> 169.811 (149 -> 153): 10/6/6/0 -> 11/8/6/0 (clampHammerType guarded, plain `#else`)
   - win_item 136.531 -> 132.004 (148 -> 139): 2/2/0/4 -> 2/1/0/0
   - seq_load 102.484 -> 97.179 (132 -> 124): 7/2/0/0 -> 3/2/0/0
   Outside the six: win_party 14 -> 5, win_mario 61 -> 52, win_badge 23 -> 18, mario_pouch 24 -> 16, evt_nannpc,
@@ -5208,7 +5206,8 @@ colour and Vec templates (`dat_`, `vec3_`), which stay by the naming rules, so t
   - evt_win: the `notCtrl || (notKey = !marioChkKey(), notKey)` comma (15 shapes; the closest, a `BOOL ng` set from
     both calls and tested once, is 3 lines off: `srwi` + `cmpwi` for retail's `srwi.`), and the `unitwin_icon_delete`
     stripped-function placeholder (data).
-  - win_root: the redundant `!= 0 &&` before `> 0` (1 line off plain) and winHakoGX's retail uninitialised `row`.
+  - win_root: winMsgDisp's `(10.0f + (x - 250.0f)) - 10.0f` (`x - 250.0f` in `#else`), the redundant `!= 0 &&`
+    before `> 0` (1 line off plain) and winHakoGX's retail uninitialised `row`.
   - winmgr: WINMGR_F32 (pool), the by-value block above, three guarded `defer_codegen` pragmas (emission order), three
     volatile `firstItem` dead compares, the anti-hoist Vec reloads, and case 13's `(s16)badgeShop_get`: with any local
     type (s16, u16, s32, int) and declaration placement only `v`'s register differs (r25 for r26).
@@ -5227,9 +5226,7 @@ colour and Vec templates (`dat_`, `vec3_`), which stay by the naming rules, so t
 - **For a reviewer.** winmgr's macros shadow the four function names under MUST_MATCH (the cast family, guarded,
   moved from five files to the one caller that differs). The header changes are prototypes only: window/win_main.h
   and win/win_main.h (six each), system.h, win_root.h, winmgr.h, evt_nannpc.h, evt_badgeshop.h; no WindowWork field
-  was touched. mot_hammer's `clampHammerType` is an unguarded register-steering inline with an invented name (from
-  before this branch). mario_pouch's comp_aiueo_r still carries a `NONMATCHING (90.24%)` comment although the build
-  is 100% (not touched).
+  was touched. mot_hammer's `clampHammerType` (an invented name) is a MUST_MATCH-only register-steering inline.
 - **Leads.** seq_load's volatile colour reads might go plain if its colours were writable `.sdata2` words like
   evt_win's (a data-definition change, out of scope here). winmgr's tmp/pos/scale copies read like compound literals
   passed by value, which would need its vec3 templates as anonymous .rodata (data layout). Converting every site in a
