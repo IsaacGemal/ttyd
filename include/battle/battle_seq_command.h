@@ -115,7 +115,7 @@ s32 _btlcmd_CheckWeaponTargetNum(BattleWork* wp, BattleUnit* unit, BattleWeapon*
 void _cursor_init(BattleCursor* cursor);
 void BattleCommandDisplay(BattleWork* wp);
 void BattleCommandDisplay_ActMenuEnd(BattleWork* wp);
-void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp);
+void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, void* param);
 void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWork* wp);
 BOOL BattleCommandCheckChangePositionEnable(BattleWork* wp);
 void BattleDrawEnemyHPBar(Vec pos, BattleUnit* unit, GXColor color);

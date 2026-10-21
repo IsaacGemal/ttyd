@@ -2739,22 +2739,12 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 	for (i = 0; i < 3; i++) {
 		alliance = (BattleAlliance*)((u8*)wp->alliances + i * sizeof(BattleAlliance));
 		alliance->clearConditionMet = 0;
-#ifdef MUST_MATCH
-		// The original reads allianceId as an unsigned halfword (`lhz`/`cmplwi`); the header
-		// declares the field s16, whose sign-extending load compiles to `lha`. Natural form in #else.
-		if (*(u16*)&alliance->allianceId == 0) {
-#else
 		if (alliance->allianceId == 0) {
-#endif
 			count++;
 			alliance->clearConditionMet = 1;
 			continue;
 		}
-#ifdef MUST_MATCH
-		if (*(u16*)&alliance->allianceId & 1) {
-#else
 		if (alliance->allianceId & 1) {
-#endif
 			for (j = 0; j < 64; j++) {
 				unit = BattleGetUnitPtr(wp, j);
 				if (unit != NULL && unit->mAlliance == i &&
@@ -2771,11 +2761,7 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 				continue;
 			}
 		}
-#ifdef MUST_MATCH
-		if (*(u16*)&alliance->allianceId & 2) {
-#else
 		if (alliance->allianceId & 2) {
-#endif
 			for (j = 0; j < 64; j++) {
 				unit = BattleGetUnitPtr(wp, j);
 				if (unit != NULL && unit->mAlliance == i &&

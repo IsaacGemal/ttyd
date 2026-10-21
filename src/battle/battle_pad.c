@@ -125,12 +125,7 @@ void BtlPad_WorkUpdate(BattleWorkPad* pad, s32 chan) {
 	}
 	else {
 		pad->mHoldRepeatFrameCounter++;
-		// MUST_MATCH: the header types these counters u8, but retail sign-extends them.
-#ifdef MUST_MATCH
-		if ((s8)pad->mHoldRepeatFrameCounter >= ((s8)pad->mHoldRepeatState == 1 ? 16 : 8)) {
-#else
 		if (pad->mHoldRepeatFrameCounter >= (pad->mHoldRepeatState == 1 ? 16 : 8)) {
-#endif
 			pad->mButtonsHeldHistory[0] |= pad->mButtonsHistory[0] & 0xFFFF0000;
 			pad->mHoldRepeatState = 2;
 			pad->mHoldRepeatFrameCounter = 0;
