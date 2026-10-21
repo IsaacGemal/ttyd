@@ -74,7 +74,7 @@ u8 enemy_monoshiri_sort_table[0xE8] = {
         f32 xs; \
         f64 hh; \
         f64 ww; \
-        TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, (id_)); \
+        TEXGetGXTexObjFromPalette(*(TEXPalette**)work->winTpl->data, &texObj, (id_)); \
         GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0); \
         GXLoadTexObj(&texObj, 0); \
         GXSetNumTexGens(1); \
@@ -109,7 +109,7 @@ static inline void winMailLabelV(Vec pos, Vec scale, GXColor color, const char* 
 static inline void winMailIconV(s32 id, Vec pos, Vec scale, GXColor color) {
     winIconSet(id, &pos, &scale, &color);
 }
-#define WIN_MAIL_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
+#define WIN_MAIL_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
 
 // The loop both comparators run: find `tag` in the 26-entry table, formatting each
 // candidate into `buf`. Written as an inlined helper because inlining it twice is
@@ -189,7 +189,7 @@ static inline void winMsgFontV(Vec pos, Vec scale, GXColor color, const char* ms
     winFontSet(&pos, &scale, &color, msg);
 }
 
-#define WIN_BOOK_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
+#define WIN_BOOK_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
 extern const char** luigi_book_list[];
 // winFontSetLabel takes its Vec and GXColor arguments by value (each call copies them); win_main.h declares
 // pointers, which compiles to the same callee.
@@ -222,9 +222,7 @@ static inline void winRootTabMain(WindowWork* work) {
 
 // Main menu. Builds the visible tab set into the work block, then runs the
 // per-state logic and the common per-tab animation. The string array is the
-// unit's static msg_help object; the byte-pointer casts reproduce the original
-// `add base,base,idx; lwz disp(base)` reads of tabs[]/recs[].
-#pragma opt_common_subs off // keep each field load's own `add base,base,idx` instead of hoisting &work->tabs
+// unit's static msg_help object.
 s32 winRootMain(WindowWork* work) {
     static const char* msg_help[5] = {
         "msg_menu_mario", "msg_menu_nakama", "msg_menu_mochimono", "msg_menu_badge", "msg_menu_kiroku",
@@ -305,7 +303,7 @@ s32 winRootMain(WindowWork* work) {
         work->recs[0].c = 1000.0f;
         work->recs[0].b = 1000.0f;
         work->recs[0].d = 0;
-        work->recs[0].a = ((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->id;
+        work->recs[0].a = work->tabs[work->tabSel].id;
         work->field_0x130 = 0;
         work->field_0x12C = 1000.0f;
         work->field_0x128 = 1000.0f;
@@ -329,7 +327,7 @@ s32 winRootMain(WindowWork* work) {
         work->field_0x164 = -1000.0f;
         work->field_0x170 = -1000.0f;
         work->field_0x168 = -1000.0f;
-        str = ((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->str;
+        str = work->tabs[work->tabSel].str;
         winMsgEntry(work, 0, str, NULL);
         work->rootState = 0xA;
         switch (work->openTabId) {
@@ -379,10 +377,10 @@ s32 winRootMain(WindowWork* work) {
             break;
         }
         if (work->buttonTrg & 0x100) {
-            if (((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->id != 1 || work->partyCount != 0) {
+            if (work->tabs[work->tabSel].id != 1 || work->partyCount != 0) {
                 psndSFXOn((const char*)0x20012);
-                work->rootState = ((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->id + 0xB;
-                switch (((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->id) {
+                work->rootState = work->tabs[work->tabSel].id + 0xB;
+                switch (work->tabs[work->tabSel].id) {
                 case 0:
                     winMarioInit2(work);
                     break;
@@ -415,9 +413,9 @@ s32 winRootMain(WindowWork* work) {
             work->recs[0].c = 1000.0f;
             work->recs[0].b = 1000.0f;
             work->recs[0].d = 0x1E;
-            work->recs[0].a = ((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->id;
+            work->recs[0].a = work->tabs[work->tabSel].id;
             work->targetX = (f32)(work->tabSel * 0x69 - 0x10E);
-            str = ((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->str;
+            str = work->tabs[work->tabSel].str;
             winMsgEntry(work, 0, str, NULL);
         } else if (work->dirRep & 0x8000) {
             psndSFXOn((const char*)0x20032);
@@ -432,14 +430,14 @@ s32 winRootMain(WindowWork* work) {
             work->recs[0].c = 1000.0f;
             work->recs[0].b = 1000.0f;
             work->recs[0].d = 0x14;
-            work->recs[0].a = ((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->id;
+            work->recs[0].a = work->tabs[work->tabSel].id;
             work->targetX = (f32)(work->tabSel * 0x69 - 0x10E);
-            str = ((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->str;
+            str = work->tabs[work->tabSel].str;
             winMsgEntry(work, 0, str, NULL);
         }
         break;
     case 100:
-        if (((WinRootRec*)((u8*)work->recs + work->tabSel * 0x14))->d == 0x64) {
+        if (work->recs[work->tabSel].d == 0x64) {
             work->rootState = 0xA;
         }
         break;
@@ -472,7 +470,7 @@ s32 winRootMain(WindowWork* work) {
             work->targetX = (f32)(work->tabSel * 0x69 - 0x10E);
             work->targetY = 185.0f;
             work->rootState = 0xA;
-            str = ((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->str;
+            str = work->tabs[work->tabSel].str;
             winMsgEntry(work, 0, str, NULL);
             work->flags &= ~0x4000;
         } else if (result == -2) {
@@ -539,11 +537,11 @@ s32 winRootMain(WindowWork* work) {
             work->posY += (work->targetY - work->posY) / 4.0f;
         } else {
             work->posX += (work->targetX - work->posX) / 4.0f;
-            work->posY += (work->targetY + (((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->y - 185.0f) - work->posY) / 4.0f;
+            work->posY += (work->targetY + (work->tabs[work->tabSel].y - 185.0f) - work->posY) / 4.0f;
         }
     } else if (work->posY > 180.0f) {
             work->posX += (work->targetX - work->posX) / 4.0f;
-            work->posY += (work->targetY + (((WinRootTab*)((u8*)work->tabs + work->tabSel * 0x18))->y - 185.0f) - work->posY) / 4.0f;
+            work->posY += (work->targetY + (work->tabs[work->tabSel].y - 185.0f) - work->posY) / 4.0f;
     } else {
             work->posX += (work->targetX + work->recs[0].b - work->posX) / 4.0f;
             work->posY += (work->targetY - work->posY) / 4.0f;
@@ -556,7 +554,6 @@ s32 winRootMain(WindowWork* work) {
     return 0;
 }
 
-#pragma opt_common_subs reset
 
 
 // The tab slide-in/out animation run every frame.
@@ -687,83 +684,82 @@ static inline void winRootTabDisp(WindowWork* work) {
     }
 }
 
-// 5-page switch over work->0xcc. The explicit empty case -1 below (a redirect
+// Switch over each of the 5 recs[i].d. The explicit empty case -1 below (a redirect
 // target of cases 11 and 41) is what makes MWCC pick 0 as the [0,10) search-tree
 // pivot; without it the tree pivots on 1.
 void winBgMain(WindowWork* work) {
-    WindowWork* p = work;
     s32 i;
 
     for (i = 0; i < 5; i++) {
-        switch (p->recs[0].d) {
+        switch (work->recs[i].d) {
             case 0:
-                p->recs[0].b = 800.0f;
-                p->recs[0].c = 0.0f;
-                p->recs[0].e = 0;
-                p->recs[0].d = p->recs[0].d + 1;
+                work->recs[i].b = 800.0f;
+                work->recs[i].c = 0.0f;
+                work->recs[i].e = 0;
+                work->recs[i].d = work->recs[i].d + 1;
                 break;
             case 1: {
-                s32 step = p->recs[0].e;
-                p->recs[0].e = step + 1;
-                p->recs[0].b = intplGetValue(0xB, step, 0x10, 800.0f, 0.0f);
-                if (p->recs[0].e > 0x10) {
-                    p->recs[0].d = 0x64;
+                s32 step = work->recs[i].e;
+                work->recs[i].e = step + 1;
+                work->recs[i].b = intplGetValue(0xB, step, 0x10, 800.0f, 0.0f);
+                if (work->recs[i].e > 0x10) {
+                    work->recs[i].d = 0x64;
                 }
                 break;
             }
             case 10:
-                p->recs[0].c = 0.0f;
-                p->recs[0].e = 0;
-                p->recs[0].d = p->recs[0].d + 1;
+                work->recs[i].c = 0.0f;
+                work->recs[i].e = 0;
+                work->recs[i].d = work->recs[i].d + 1;
                 break;
             case 11: {
-                s32 step = p->recs[0].e;
-                p->recs[0].e = step + 1;
-                p->recs[0].b = intplGetValue(0xB, step, 0x10, 0.0f, 800.0f);
-                if (p->recs[0].e > 0x10) {
-                    p->recs[0].d = -1;
+                s32 step = work->recs[i].e;
+                work->recs[i].e = step + 1;
+                work->recs[i].b = intplGetValue(0xB, step, 0x10, 0.0f, 800.0f);
+                if (work->recs[i].e > 0x10) {
+                    work->recs[i].d = -1;
                 }
                 break;
             }
             case 20:
-                p->recs[0].c = 0.0f;
-                p->recs[0].e = 0;
-                p->recs[0].d = p->recs[0].d + 1;
+                work->recs[i].c = 0.0f;
+                work->recs[i].e = 0;
+                work->recs[i].d = work->recs[i].d + 1;
                 break;
             case 21: {
-                s32 step = p->recs[0].e;
-                p->recs[0].e = step + 1;
-                p->recs[0].b = intplGetValue(0xB, step, 0x18, 640.0f, 0.0f);
-                if (p->recs[0].e > 0x18) {
-                    p->recs[0].d = 0x64;
+                s32 step = work->recs[i].e;
+                work->recs[i].e = step + 1;
+                work->recs[i].b = intplGetValue(0xB, step, 0x18, 640.0f, 0.0f);
+                if (work->recs[i].e > 0x18) {
+                    work->recs[i].d = 0x64;
                 }
                 break;
             }
             case 30:
-                p->recs[0].c = 0.0f;
-                p->recs[0].e = 0;
-                p->recs[0].d = p->recs[0].d + 1;
+                work->recs[i].c = 0.0f;
+                work->recs[i].e = 0;
+                work->recs[i].d = work->recs[i].d + 1;
                 break;
             case 31: {
-                s32 step = p->recs[0].e;
-                p->recs[0].e = step + 1;
-                p->recs[0].b = intplGetValue(0xB, step, 0x18, -640.0f, 0.0f);
-                if (p->recs[0].e > 0x18) {
-                    p->recs[0].d = 0x64;
+                s32 step = work->recs[i].e;
+                work->recs[i].e = step + 1;
+                work->recs[i].b = intplGetValue(0xB, step, 0x18, -640.0f, 0.0f);
+                if (work->recs[i].e > 0x18) {
+                    work->recs[i].d = 0x64;
                 }
                 break;
             }
             case 40:
-                p->recs[0].c = 0.0f;
-                p->recs[0].e = 0;
-                p->recs[0].d = p->recs[0].d + 1;
+                work->recs[i].c = 0.0f;
+                work->recs[i].e = 0;
+                work->recs[i].d = work->recs[i].d + 1;
                 break;
             case 41: {
-                s32 step = p->recs[0].e;
-                p->recs[0].e = step + 1;
-                p->recs[0].b = intplGetValue(0xB, step, 0x18, 0.0f, -640.0f);
-                if (p->recs[0].e > 0x18) {
-                    p->recs[0].d = -1;
+                s32 step = work->recs[i].e;
+                work->recs[i].e = step + 1;
+                work->recs[i].b = intplGetValue(0xB, step, 0x18, 0.0f, -640.0f);
+                if (work->recs[i].e > 0x18) {
+                    work->recs[i].d = -1;
                 }
                 break;
             }
@@ -777,7 +773,6 @@ void winBgMain(WindowWork* work) {
             default:
                 break;
         }
-        p = (WindowWork*)((u8*)p + 0x14);
     }
 }
 
@@ -2120,15 +2115,14 @@ void sort_5_2_func(WindowWork* work) {
     LOGWIN(work)->cardPage = LOGWIN(work)->cardSel / 28;
 }
 
-// Same bubble sort as sort_4_3 but over the s16 array at work+0xEB8 (index +0xF0).
-// Writing the two record addresses as indices (`work + i*2`) rather than the raw
-// `pa`/`pb` pointers lets MWCC strength-reduce them to the same pa=r7/pb=r6
+// Same bubble sort as sort_4_3 but over LogWin.cardIcon (itemDataTable index = entry + 0xF0).
+// Indexing the array (`cardIcon[i]`) rather than walking `pa`/`pb` pointers
+// lets MWCC strength-reduce them to the same pa=r7/pb=r6
 // induction variables the target uses. The per-branch declaration order of the
 // locals reproduces the target's register colours (j=r31/swap=r30 in the ascending
 // branch, swap=r30/j=r31 in the descending one); the orders differ between the two
 // branches only for that reason.
 void sort_5_3_func(WindowWork* work) {
-    u8* base = (u8*)work;
     if (work->sortReverseNext == 0) {
         s16 la;
         s16 lb;
@@ -2141,8 +2135,8 @@ void sort_5_3_func(WindowWork* work) {
         for (i = 0; i < LOGWIN(work)->cardCnt - 1; i++) {
             j = i + 1;
             while (j < LOGWIN(work)->cardCnt) {
-                la = *(s16*)(base + i * 2 + 0xEB8);
-                lb = *(s16*)(base + j * 2 + 0xEB8);
+                la = LOGWIN(work)->cardIcon[i];
+                lb = LOGWIN(work)->cardIcon[j];
                 ia = (s16)((s32)la + 0xF0);
                 ib = (s16)((s32)lb + 0xF0);
                 swap = 0;
@@ -2153,8 +2147,8 @@ void sort_5_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    *(s16*)(base + i * 2 + 0xEB8) = lb;
-                    *(s16*)(base + j * 2 + 0xEB8) = la;
+                    LOGWIN(work)->cardIcon[i] = lb;
+                    LOGWIN(work)->cardIcon[j] = la;
                 }
                 j++;
             }
@@ -2171,8 +2165,8 @@ void sort_5_3_func(WindowWork* work) {
         for (i = 0; i < LOGWIN(work)->cardCnt - 1; i++) {
             j = i + 1;
             while (j < LOGWIN(work)->cardCnt) {
-                la = *(s16*)(base + i * 2 + 0xEB8);
-                lb = *(s16*)(base + j * 2 + 0xEB8);
+                la = LOGWIN(work)->cardIcon[i];
+                lb = LOGWIN(work)->cardIcon[j];
                 ia = (s16)((s32)la + 0xF0);
                 ib = (s16)((s32)lb + 0xF0);
                 swap = 0;
@@ -2183,8 +2177,8 @@ void sort_5_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    *(s16*)(base + i * 2 + 0xEB8) = lb;
-                    *(s16*)(base + j * 2 + 0xEB8) = la;
+                    LOGWIN(work)->cardIcon[i] = lb;
+                    LOGWIN(work)->cardIcon[j] = la;
                 }
                 j++;
             }
@@ -2292,9 +2286,9 @@ int compare_func1_r(void* a, void* b) {
 
 void sort_7_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort((u8*)work + 0x1050, LOGWIN(work)->charCnt, 2, compare_func1);
+        qqsort(LOGWIN(work)->chars, LOGWIN(work)->charCnt, 2, compare_func1);
     } else {
-        qqsort((u8*)work + 0x1050, LOGWIN(work)->charCnt, 2, compare_func1_r);
+        qqsort(LOGWIN(work)->chars, LOGWIN(work)->charCnt, 2, compare_func1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     LOGWIN(work)->charSel = 0;

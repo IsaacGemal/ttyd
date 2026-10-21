@@ -353,7 +353,7 @@ static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
 }
 #endif
 
-#define WIN_BADGE_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
+#define WIN_BADGE_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
 
 // Draws the badge screen: the "all"/"equipped" tabs, the BP panel with one pip per BP, then the list.
 void winBadgeDisp(CameraId camId, void* param, s32 idx) {
