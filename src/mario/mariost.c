@@ -572,7 +572,7 @@ void gcRumbleCheck(void) {
 		if (gp->dvdError) {
 			array[i] = TRUE;
 		}
-		if ((u32)gp->systemLevelFlags != 0) {
+		if (gp->systemLevelFlags != 0) {
 			array[i] = TRUE;
 		}
 		if (array[i]) {
