@@ -12,7 +12,7 @@ typedef struct CoinFukidashiData {
     s32 field_0x20;   // 0x20
     s32 field_0x24;   // 0x24
 } CoinFukidashiData;
-EffectEntry* effCoinFukidashiEntry(s32 type, s32 coinNum, s32 count, f32 x, f32 y, f32 z);
+EffectEntry* effCoinFukidashiEntry(s32 type, f32 x, f32 y, f32 z, s32 coinNum, s32 count);
 void effCoinFukidashiMain(EffectEntry* effect);
 #include "driver/camdrv.h"
 void effCoinFukidashiDisp(CameraId cameraId, void* param);

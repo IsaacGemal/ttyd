@@ -16,7 +16,7 @@ const u32 dat_80420468 = 0xFFFFFF00;
 const Vec vec3_802fd498 = { 0.0f, 0.0f, 0.0f };
 
 
-EffectEntry* effCoinFukidashiEntry(s32 type, s32 coinNum, s32 count, f32 x, f32 y, f32 z) {
+EffectEntry* effCoinFukidashiEntry(s32 type, f32 x, f32 y, f32 z, s32 coinNum, s32 count) {
     EffectEntry* entry;
     CoinFukidashiData* data;
 

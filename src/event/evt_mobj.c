@@ -2530,29 +2530,14 @@ s32 evt_mobj_arrow(EventEntry* event, BOOL isFirstCall) {
 #endif
 
 // Recovery block (heart / coin-taken). The coin count stays in the padding and is read through the array:
-// *(s32*)&obj->unk1A0[4] (0x1A4 coinNeeded); msgWindowId, timer and effect are named fields. The
-// effCoinFukidashiEntry calls pass the header's (type, coinNum, count, x, y, z) order; y is accumulated
-// through a local (`f32 y2 = float_25; y2 += obj->position.y;`). opt_propagation off keeps the z and x
-// loads as separate webs so mwcceppc colours them like retail (x/y in f1, z-10 in f3) and schedules the
-// coin load last.
-#pragma opt_propagation off
+// *(s32*)&obj->unk1A0[4] (0x1A4 coinNeeded); msgWindowId, timer and effect are named fields.
 s32 mobj_recovery_blk(MapObjectEntry* obj) {
     s32 i;
 
     switch (obj->state) {
         case -1:
-            {
-                f32 y2 = 25.0f;
-                f32 z2;
-                f32 x;
-                z2 = obj->position.z;
-                y2 += obj->position.y;
-                z2 = z2 - 10.0f;
-                x = obj->position.x;
-                obj->effect = effCoinFukidashiEntry(
-                    0, *(s32*)&obj->unk1A0[4], 0,
-                    x, y2, z2);
-            }
+            obj->effect = effCoinFukidashiEntry(0, obj->position.x, obj->position.y + 25.0f, obj->position.z - 10.0f,
+                                                *(s32*)&obj->unk1A0[4], 0);
             obj->state++;
             break;
         case 0:
@@ -2665,16 +2650,8 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             break;
         case 6:
             if (obj->effect == NULL) {
-                f32 y2 = 25.0f;
-                f32 z2;
-                f32 x;
-                z2 = obj->position.z;
-                y2 += obj->position.y;
-                z2 = z2 - 10.0f;
-                x = obj->position.x;
-                obj->effect = effCoinFukidashiEntry(
-                    0, *(s32*)&obj->unk1A0[4], 0,
-                    x, y2, z2);
+                obj->effect = effCoinFukidashiEntry(0, obj->position.x, obj->position.y + 25.0f, obj->position.z - 10.0f,
+                                                    *(s32*)&obj->unk1A0[4], 0);
             }
             if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
@@ -2710,8 +2687,6 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
     }
     return 0;
 }
-
-#pragma opt_propagation reset
 
 s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
