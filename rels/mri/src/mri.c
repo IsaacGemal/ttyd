@@ -191,7 +191,6 @@ EVT_BEGIN(evt_mri_door_close)
     RETURN
 EVT_END()
 
-#pragma opt_propagation off // propagation coalesces curStep into elapsed's register; the target keeps them in separate registers
 USER_FUNC(evt_mri_door_naname_func) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -201,8 +200,7 @@ USER_FUNC(evt_mri_door_naname_func) {
     f32 endZ = evtGetFloat(event, args[4]);
     s32 steps = evtGetValue(event, args[5]);
     s32 mode = evtGetValue(event, args[6]);
-    s32 elapsed;
-    s32 curStep;
+    int elapsed;
     f32 x;
     f32 z;
 
@@ -211,15 +209,8 @@ USER_FUNC(evt_mri_door_naname_func) {
     }
     elapsed = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime);
     if (elapsed < steps) {
-#ifdef MUST_MATCH
-        // MUST_MATCH: assigning curStep inside the argument makes mwcc materialise it in r4 and copy it to r28 at
-        // the call (the target); a plain assignment on its own line schedules the copy before the branch instead.
-        x = intplGetValue(mode, curStep = elapsed, steps, startX, endX);
-#else
-        curStep = elapsed;
-        x = intplGetValue(mode, curStep, steps, startX, endX);
-#endif
-        z = intplGetValue(mode, curStep, steps, startZ, endZ);
+        x = intplGetValue(mode, elapsed, steps, startX, endX);
+        z = intplGetValue(mode, elapsed, steps, startZ, endZ);
         mapObjTranslate(name, x, 0.0f, z);
         return EVT_RETURN_BLOCK;
     }
@@ -227,7 +218,6 @@ USER_FUNC(evt_mri_door_naname_func) {
     return EVT_RETURN_DONE;
 }
 
-#pragma opt_propagation reset
 
 EVT_BEGIN(evt_mri_door_naname_open_pure)
     BEGIN_INLINE_EVENT

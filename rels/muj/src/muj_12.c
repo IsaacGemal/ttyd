@@ -383,7 +383,7 @@ USER_FUNC(muj_item_move_3d_position) {
     s32 mode = evtGetValue(event, args[5]);
     f32 yOffset = evtGetFloat(event, args[6]);
     ItemEntry* item = itemNameToPtr((char*)name);
-    s32 curStep;
+    int curStep;
 
     if (isFirstCall) {
         if (item == NULL) {
@@ -396,17 +396,9 @@ USER_FUNC(muj_item_move_3d_position) {
     }
     curStep = (s32)OSTicksToMilliseconds((u32)gp->renderTime - (u32)event->savedTime);
     if (curStep < steps) {
-#ifdef MUST_MATCH
-        // The (s32) casts make MWCC materialise the elapsed-step division in r4 and copy it to r27
-        // for the calls, matching the original's register allocation.
-        item->position.x = intplGetValue(mode, (s32)curStep, steps, event->userdataf[1], targetX);
-        item->position.y = intplGetValue(mode, (s32)curStep, steps, event->userdataf[2], targetY);
-        item->position.z = intplGetValue(mode, (s32)curStep, steps, *(f32*)&event->field_84, targetZ);
-#else
         item->position.x = intplGetValue(mode, curStep, steps, event->userdataf[1], targetX);
         item->position.y = intplGetValue(mode, curStep, steps, event->userdataf[2], targetY);
         item->position.z = intplGetValue(mode, curStep, steps, *(f32*)&event->field_84, targetZ);
-#endif
         item->position.y += yOffset;
         return EVT_RETURN_BLOCK;
     }
