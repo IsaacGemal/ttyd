@@ -1,11 +1,5 @@
 [
   {
-    "file": "rels/mri/src/event/evt_lect_mri.c",
-    "context": "((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x50, (u16)b->iconId, (u8)b->alpha, 1.0f);",
-    "reason": "Prototype disagreement with the header declaration of iconDispGxAlpha: fix the header, or guard under MUST_MATCH.",
-    "date": "2026-10-05"
-  },
-  {
     "file": "rels/rsh/src/rsh_05.c",
     "context": "#define MOAMOA_POSE_CHANGE(e, a, b) (((void (*)(MoamoaPose*, char*, char*))moamoa_pose_change)((e), (a), (b)))",
     "reason": "Prototype disagreement with the header declaration of moamoa_pose_change: fix the header, or guard under MUST_MATCH.",

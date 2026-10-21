@@ -713,22 +713,7 @@ u32 btl_moo_setup_no_tbl[34] = {
     0x00000000, 0x00000000,
 };
 
-USER_FUNC(_space_rotate) {
-    s32* args = event->args;
-    s32 name = evtGetValue(event, args[0]);
-    s32 index = args[1];
-    s32 angle = evtGetValue(event, index);
-    s32 total = evtGetValue(event, args[2]);
-    BattleStageObject* object = BattleSearchObjectPtr((const char*)name);
-
-    object->mRotation.z = 360.0f * (f32)angle / (f32)total;
-    angle++;
-    if (angle >= total) {
-        angle = 0;
-    }
-    evtSetValue(event, index, angle);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/_space_rotate.h"
 
 EVT_BEGIN(bgset_moo_space_event)
     SET_VALUE(LW(0), 0)

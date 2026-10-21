@@ -64,47 +64,9 @@ extend_data(53,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-static USER_FUNC(setmertn) {
-    event->ownerNPC = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(effect_stardust) {
-    s32* args = event->args;
-    s32 type = evtGetValue(event, args[0]);
-    f32 c = evtGetFloat(event, args[1]);
-    f32 d = evtGetFloat(event, args[2]);
-    f32 e = evtGetFloat(event, args[3]);
-    f32 f = evtGetFloat(event, args[4]);
-    f32 g = evtGetFloat(event, args[5]);
-    s32 a = evtGetValue(event, args[6]);
-    s32 b = evtGetValue(event, args[7]);
-
-    effStardustEntry(type, a, b, c, d, e, f, g);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(wariai_enzan_1) {
-    s32* args = event->args;
-    f32 a = evtGetFloat(event, args[0]) - 1.0f;
-    f32 b = evtGetFloat(event, args[1]);
-    f32 c = evtGetFloat(event, args[2]);
-    f32 d = evtGetFloat(event, args[3]);
-
-    evtSetValue(event, args[4], (s32)((a * c + d * (b - a)) / b));
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(wariai_enzan_1f) {
-    s32* args = event->args;
-    f32 a = evtGetFloat(event, args[0]) - 1.0f;
-    f32 b = evtGetFloat(event, args[1]);
-    f32 c = evtGetFloat(event, args[2]);
-    f32 d = evtGetFloat(event, args[3]);
-
-    evtSetFloat(event, args[4], (a * c + d * (b - a)) / b);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/setmertn.h"
+#include "rel/common/effect_stardust.h"
+#include "rel/common/wariai_enzan_1.h"
 
 static USER_FUNC(wariai_enzan_0) {
     s32* args = event->args;

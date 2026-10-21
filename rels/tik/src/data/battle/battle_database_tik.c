@@ -1684,38 +1684,7 @@ u32 btl_tik_setup_no_tbl[60] = {
     (u32)"BTLNO_TIK_20_06", 0x0000001C, 0x00000000, 0x00000000,
 };
 
-static USER_FUNC(_wave_offset) {
-    s32* args = event->args;
-    s32 name = evtGetValue(event, args[0]);
-    s32 a1 = args[1];
-    s32 v1 = evtGetValue(event, a1);
-    s32 v2 = evtGetValue(event, args[2]);
-    s32 v3 = evtGetValue(event, args[3]);
-    s32 a4 = args[4];
-    s32 v4 = evtGetValue(event, a4);
-    s32 v5 = evtGetValue(event, args[5]);
-    s32 v6 = evtGetValue(event, args[6]);
-    BattleStageObject* obj = BattleSearchObjectPtr((const char*)name);
-    s32 next1;
-    s32 next4;
-
-    obj->mPositionOffset1.x = v3 * sinfd((f32)(v1 * 360 / v2));
-    obj->mPositionOffset1.y = v6 * sinfd((f32)(v4 * 360 / v5 + 270)) + v6;
-
-    next1 = v1 + 1;
-    if (next1 >= v2) {
-        next1 = 0;
-    }
-    evtSetValue(event, a1, next1);
-
-    next4 = v4 + 1;
-    if (next4 >= v5) {
-        next4 = 0;
-    }
-    evtSetValue(event, a4, next4);
-
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/_wave_offset.h"
 
 EVT_BEGIN(bgset_tik_wave_event)
     SET_VALUE(LW(0), 0)

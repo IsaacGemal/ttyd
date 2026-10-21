@@ -797,22 +797,5 @@ EVT_BEGIN(hei_01_init_evt)
     RETURN
 EVT_END()
 
-static USER_FUNC(set_dir) {
-    s32* args;
-    s32 dir;
-    s32 base;
-    PartyEntry* party;
-
-    args = event->args;
-    dir = evtGetValue(event, args[0]);
-    party = partyGetPtr(0);
-    if (party) {
-        base = 90;
-        if (dir > 180) {
-            base = 270;
-        }
-        party->field_110 = party->field_10C = (f32)(270 - base);
-    }
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/set_dir.h"
 

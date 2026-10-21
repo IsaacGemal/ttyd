@@ -48,30 +48,8 @@ static s32 marioAttackEvent_NormalHammer[299];
 static s32 marioAttackEvent_KaitenHammer[299];
 static s32 wait_event_fmario[6];
 
-static USER_FUNC(eff_scanning) {
-    s32* args;
-    s32 id;
-    f32 x;
-    f32 y;
-    f32 z;
-    BattleUnit* unit;
-    EffectEntry* entry;
-
-    args = event->args;
-    id = BattleTransID(event, evtGetValue(event, args[0]));
-    x = evtGetFloat(event, args[1]);
-    y = evtGetFloat(event, args[2]);
-    z = evtGetFloat(event, args[3]);
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    entry = effScanningEntry(0, x, y, z);
-    ((effScanningData*)entry->userdata)->scale = unit->mSizeMultiplier;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(vivian_comeback) {
-    pouchGetPtr()->partyData[PARTNER_VIVIAN].flags &= ~2;
-    return EVT_RETURN_YIELD;
-}
+#include "rel/common/eff_scanning.h"
+#include "rel/common/vivian_comeback.h"
 
 static USER_FUNC(_mario_makkuro_set) {
     BattleWork* work;

@@ -541,12 +541,7 @@ EVT_END()
 // Source order of the six functions is the reverse of their order in the asm
 // (-inline auto,deferred emits functions in reverse source order).
 
-static USER_FUNC(vivian_comeback) {
-    PouchData* pouch = pouchGetPtr();
-
-    pouch->partyData[6].flags &= ~2;
-    return EVT_RETURN_YIELD;
-}
+#include "rel/common/vivian_comeback.h"
 
 USER_FUNC(_gullible_party_info_init) {
     PouchData* pouch = pouchGetPtr();

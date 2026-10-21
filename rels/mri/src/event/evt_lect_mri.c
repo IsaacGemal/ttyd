@@ -1,4 +1,5 @@
 #include "evt_lect_mri.h"
+#include "rel/common/evt_lect.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
@@ -21,7 +22,6 @@
 #include "driver/effdrv.h"
 #include "driver/hitdrv.h"
 #include "driver/icondrv.h"
-#include "driver/icondrv_gx.h"
 #include "driver/itemdrv.h"
 #include "driver/mapdrv.h"
 #include "driver/mobjdrv.h"
@@ -58,7 +58,7 @@ static USER_FUNC(lecture_button_set_seq);
 static USER_FUNC(lecture_button_get_icon_id);
 static USER_FUNC(lecture_button_seq_wait);
 static USER_FUNC(lecture_button_set_pos);
-static void lect_map_cam_chg_sub(MapObject*, s32, s32);
+static void lect_map_cam_chg_sub(MapObject* obj, s32 camId, BOOL recurse);
 static USER_FUNC(lect_map_cam_chg);
 static USER_FUNC(effitemgetchange_cam);
 static USER_FUNC(effitemgetchange_cam_ptr);
@@ -74,16 +74,6 @@ static USER_FUNC(lect_mobj_set_nosysblend);
 static USER_FUNC(lect_push_a_check);
 static USER_FUNC(lect_push_b_check);
 static USER_FUNC(bgm_start_wait);
-
-typedef struct LectureButton {
-    u8 flag;       // 0x0
-    u8 seq;        // 0x1
-    u8 pad_2[0xA]; // 0x2
-    Vec pos;       // 0xC
-    u8 pad_18[0x28]; // 0x18
-    s16 iconId;    // 0x40
-    s16 alpha;     // 0x42
-} LectureButton;
 
 static OSTime wwstart;
 static s32 x_flag_data[2];
@@ -107,412 +97,20 @@ extend_data(145,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
-static f32 lect_mario_ido_sub(f32 a, f32 b, f32 c, f32 d) {
-    f32 t = b - a;
 
-    return (t * c + a * d) / b;
-}
-
-static USER_FUNC(lect_mario_ido_sum) {
-    s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    s32 total = evtGetValue(event, args[0]);
-    s32 count;
-
-    if (isFirstCall) {
-        wwstart = event->lifetime;
-        evtSetFloat(event, LW(0), mario->position.x);
-        evtSetFloat(event, LW(1), mario->position.y);
-        evtSetFloat(event, LW(2), mario->position.z);
-    }
-    count = (s32)((u64)((s32)event->lifetime - (s32)wwstart) / (OS_TIMER_CLOCK / 1000));
-    if (count > total) {
-        count = total;
-    }
-    mario->position.x = lect_mario_ido_sub(count, total, evtGetFloat(event, LW(3)), evtGetFloat(event, LW(0)));
-    mario->position.y = lect_mario_ido_sub(count, total, evtGetFloat(event, LW(4)), evtGetFloat(event, LW(1)));
-    mario->position.z = lect_mario_ido_sub(count, total, evtGetFloat(event, LW(5)), evtGetFloat(event, LW(2)));
-    if (count >= total) {
-        return EVT_RETURN_DONE;
-    }
-    return EVT_RETURN_BLOCK;
-}
-
-static USER_FUNC(lect_status_off) {
-    statusWinForceClose();
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lect_status_on) {
-    statusWinForceCloseClear();
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_set) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-
-    x_flag_data[idx] = evtGetValue(event, args[1]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_add) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-
-    x_flag_data[idx] += evtGetValue(event, args[1]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_get) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-
-    evtSetValue(event, args[1], x_flag_data[idx]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_wait) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-    s32 target = evtGetValue(event, args[1]);
-
-    return (target == x_flag_data[idx]) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
-}
-
-// The iconId 0x75..0x7D range test is a switch: MWCC lowers the grouped cases to the
-// original's `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain. Writing it as
-// `if (a < 0x7E && a >= 0x75)` instead makes MWCC invert the second branch (`blt zero`).
-static void lecture_button_disp(CameraId camId, void* param) {
-    s32 i;
-    for (i = 0; i < 2; i++) {
-        LectureButton* b = &lbtn[i];
-#ifdef MUST_MATCH
-        u8* ppos = (u8*)b + 8;
-#endif
-        f32 dy;
-        Vec pos;
-
-        if (b->flag & 1) {
-            continue;
-        }
-        switch (b->iconId) {
-            case 0x75: case 0x76: case 0x77: case 0x78: case 0x79:
-            case 0x7A: case 0x7B: case 0x7C: case 0x7D:
-                dy = -15.0f;
-                break;
-            default:
-                dy = 0.0f;
-                break;
-        }
-#ifdef MUST_MATCH
-        // The original addresses the button position Vec off &lbtn[i] + 8 with a +4 displacement;
-        // matching MWCC's base register needs the pointer built the same way.
-        pos = *(Vec*)(ppos + 4);
-#else
-        pos = b->pos;
-#endif
-        pos.y += dy;
-        // iconDispGxAlpha's header declares iconId `s16`, but the original passes a zero-extended
-        // u16 (`clrlwi`, no `extsh`); the function-pointer cast makes the call site zero-extend.
-        ((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x50, (u16)b->iconId, (u8)b->alpha, 1.0f);
-    }
-}
-
-static USER_FUNC(lecture_button_rtn) {
-    LectureButton* btn;
-    s32 i;
-    s32 count;
-
-    if (isFirstCall) {
-        memset(lbtn, 0, sizeof(lbtn));
-        for (i = 0; i < 2; i++) {
-            lbtn[i].pos = (Vec){200.0f, -25.0f, 0.0f};
-        }
-    }
-    count = 0;
-    for (i = 0; i < 2; i++) {
-        btn = &lbtn[i];
-        switch (btn->seq) {
-        case 0:
-            btn->iconId = 0x68;
-            btn->seq = 1;
-            break;
-        case 2:
-            btn->alpha += 7;
-            if (btn->alpha >= 0xff) {
-                btn->alpha = 0xff;
-                btn->seq = 1;
-            }
-            break;
-        case 3:
-            btn->alpha -= 7;
-            if (btn->alpha <= 0) {
-                btn->alpha = 0;
-                btn->seq = 1;
-            }
-            break;
-        case 4:
-            btn->flag |= 1;
-            count++;
-            break;
-        }
-    }
-    if (count >= 2) {
-        return EVT_RETURN_DONE;
-    }
-    dispEntry(8, 0.0f, 1, lecture_button_disp, NULL);
-    return EVT_RETURN_BLOCK;
-}
-
-static USER_FUNC(lecture_button_set_icon_id) {
-    s32* args = event->args;
-    LectureButton* btn;
-    s32 idx = evtGetValue(event, args[0]);
-
-    btn = &lbtn[idx];
-    btn->iconId = evtGetValue(event, args[1]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lecture_button_set_alpha) {
-    s32* args = event->args;
-    LectureButton* btn;
-    s32 idx = evtGetValue(event, args[0]);
-
-    btn = &lbtn[idx];
-    btn->alpha = evtGetValue(event, args[1]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lecture_button_flag_on_off) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-    u8 flag = evtGetValue(event, args[1]);
-    s32 on = evtGetValue(event, args[2]);
-    u8* base = (u8*)lbtn;
-    s32 off = idx * 0x44;
-
-    if (on != 0) {
-        base[off] |= flag;
-    } else {
-        base[off] &= ~flag;
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lecture_button_set_seq) {
-    s32* args = event->args;
-    LectureButton* btn;
-    s32 idx = evtGetValue(event, args[0]);
-
-    btn = &lbtn[idx];
-    btn->seq = evtGetValue(event, args[1]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lecture_button_get_icon_id) {
-    s32* args = event->args;
-    LectureButton* btn;
-    s32 idx = evtGetValue(event, args[0]);
-
-    btn = &lbtn[idx];
-    evtSetValue(event, args[1], btn->seq);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lecture_button_seq_wait) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-    s32 target = evtGetValue(event, args[1]);
-    LectureButton* btn = &lbtn[idx];
-
-    return (btn->seq != target) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lecture_button_set_pos) {
-    s32* args = event->args;
-    LectureButton* btn;
-    s32 idx = evtGetValue(event, args[0]);
-    f32 x = evtGetFloat(event, args[1]);
-    f32 y = evtGetFloat(event, args[2]);
-    f32 z = evtGetFloat(event, args[3]);
-    Vec pos = (Vec){0.0f, 0.0f, 0.0f};
-
-    pos.x = x;
-    pos.y = y;
-    pos.z = z;
-    btn = &lbtn[idx];
-    btn->pos = pos;
-    return EVT_RETURN_DONE;
-}
-
-static void lect_map_cam_chg_sub(MapObject* obj, s32 flag, s32 recurse) {
-    obj->cameraId = flag;
-    if (obj->child) {
-        lect_map_cam_chg_sub(obj->child, flag, 1);
-    }
-    if (recurse && obj->next) {
-        lect_map_cam_chg_sub(obj->next, flag, 1);
-    }
-}
-
-static USER_FUNC(lect_map_cam_chg) {
-    s32* args = event->args;
-    const char* name = (const char*)evtGetValue(event, args[0]);
-    s32 flag = evtGetValue(event, args[1]);
-    MapObject* obj;
-
-    obj = mapGetMapObj(name);
-    if (obj != NULL) {
-        lect_map_cam_chg_sub(obj, flag, 0);
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(effitemgetchange_cam) {
-    s32* args = event->args;
-    s32 name = evtGetValue(event, args[0]);
-    s32 cam = evtGetValue(event, args[1]);
-    EffectEntry* eff = effNameToPtr((const char*)name);
-
-    ((effItemGetData*)eff->userdata)->camId = cam;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(effitemgetchange_cam_ptr) {
-    s32* args = event->args;
-    EffectEntry* eff = (EffectEntry*)evtGetValue(event, args[0]);
-    s32 cam = evtGetValue(event, args[1]);
-
-    ((effItemGetData*)eff->userdata)->camId = cam;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(effitemget_open) {
-    EffectEntry* eff = effNameToPtr((const char*)evtGetValue(event, event->args[0]));
-
-    ((effItemGetData*)eff->userdata)->scaleMode = 1;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(effitemget_open_ptr) {
-    EffectEntry* eff = (EffectEntry*)evtGetValue(event, event->args[0]);
-
-    ((effItemGetData*)eff->userdata)->scaleMode = 1;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(effitemget_busaiku) {
-    s32 arg = evtGetValue(event, event->args[0]);
-    CameraEntry* cam = camGetPtr(CAMERA_3D);
-    Vec offset;
-
-    if (arg != 0) {
-        offset = (Vec){0.0f, 2016.0f, 0.0f};
-    } else {
-        offset = (Vec){0.0f, -2016.0f, 0.0f};
-    }
-    cam->presetPos = cam->cameraPos;
-    cam->presetAt = cam->cameraAt;
-    PSVECAdd(&cam->cameraPos, &offset, &cam->storedPos);
-    PSVECAdd(&cam->cameraAt, &offset, &cam->storedAt);
-    cam->startTimeA = gp->renderTime;
-    cam->durationA = 0;
-    cam->stateA = 3;
-    cam->curveA = 0xB;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lect_mobj_hit_nasi) {
-    const char* name = (const char*)evtGetValue(event, event->args[0]);
-    MapObjectEntry* obj;
-    s32 i;
-
-    if (strcmp(name, "me") != 0) {
-        obj = mobjNameToPtr(name);
-    } else {
-        obj = event->thisMapObj;
-    }
-    for (i = 0; i < 2; i++) {
-        if (obj->hitObj[i].name != NULL && strcmp(obj->hitObj[i].name, "") != 0) {
-            hitGrpFlagOn(obj->hitObj[i].name, 1);
-        }
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(juyoitem_get_no) {
-    ItemEntry* item = (ItemEntry*)event->lwData[8];
-
-    evtSetValue(event, event->args[0], item->itemId);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(juyoitem_end) {
-    ItemEntry* item = (ItemEntry*)event->lwData[8];
-
-    effSoftDelete((EffectEntry*)event->lwData[9]);
-    marioSetCamId(4);
-    iconFlagOff(item->name, 0x200);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(juyoitem_gogo) {
-    ItemEntry* item = (ItemEntry*)event->lwData[8];
-
-    iconFlagOff(item->name, 0x200);
-    itemSetPosition(item, 0.0f, -1000.0f, 0.0f);
-    marioChgStayMotion();
-    marioStSystemLevel(0);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(juyoitem_goato) {
-    ItemEntry* item = (ItemEntry*)event->lwData[8];
-
-    iconFlagOn(item->name, 2);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lect_mobj_set_nosysblend) {
-    const char* name = (const char*)evtGetValue(event, event->args[0]);
-    MapObjectEntry* obj;
-
-    if (strcmp(name, "me") != 0) {
-        obj = mobjNameToPtr(name);
-    } else {
-        obj = event->thisMapObj;
-    }
-    animPoseSetMaterialFlagOn(obj->poseId, 0x1800);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lect_push_a_check) {
-    s32* args = event->args;
-
-    if (keyGetButton(0) & PAD_BUTTON_A) {
-        evtSetValue(event, args[0], 1);
-    } else {
-        evtSetValue(event, args[0], 0);
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lect_push_b_check) {
-    s32* args = event->args;
-
-    if (keyGetButton(0) & PAD_BUTTON_B) {
-        evtSetValue(event, args[0], 1);
-    } else {
-        evtSetValue(event, args[0], 0);
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(bgm_start_wait) {
-    return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
-}
+#include "rel/common/evt_lect/lect_mario_ido.h"
+#include "rel/common/evt_lect/lect_status.h"
+#include "rel/common/x_flag.h"
+#include "rel/common/evt_lect/lecture_button_disp.h"
+#include "rel/common/evt_lect/lecture_button_rtn.h"
+#include "rel/common/evt_lect/lecture_button_set_icon_id.h"
+#include "rel/common/evt_lect/lecture_button_set_pos.h"
+#include "rel/common/evt_lect/lect_map_cam_chg.h"
+#include "rel/common/evt_lect/effitemget.h"
+#include "rel/common/evt_lect/effitemget_busaiku.h"
+#include "rel/common/evt_lect/lect_mobj_hit_nasi.h"
+#include "rel/common/evt_lect/juyoitem_lecture.h"
+#include "rel/common/bgm_start_wait.h"
 
 EVT_BEGIN(boots_lv2_juyoitem_lecture_init)
     CALL(evt_mario_get_pos, 0, LW(3), LW(4), LW(5))

@@ -62,25 +62,8 @@ EVT_BEGIN(suisyou_kirakira)
     RETURN
 EVT_END()
 
-static USER_FUNC(effect_stardust) {
-    s32* args = event->args;
-    s32 type = evtGetValue(event, args[0]);
-    f32 c = evtGetFloat(event, args[1]);
-    f32 d = evtGetFloat(event, args[2]);
-    f32 e = evtGetFloat(event, args[3]);
-    f32 f = evtGetFloat(event, args[4]);
-    f32 g = evtGetFloat(event, args[5]);
-    s32 a = evtGetValue(event, args[6]);
-    s32 b = evtGetValue(event, args[7]);
-
-    effStardustEntry(type, a, b, c, d, e, f, g);
-    return 2;
-}
-
-static USER_FUNC(setmertn) {
-    event->ownerNPC = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
-    return 2;
-}
+#include "rel/common/effect_stardust.h"
+#include "rel/common/setmertn.h"
 
 USER_FUNC(majinaisi_ryokin_kaisu) {
     s32* args = event->args;

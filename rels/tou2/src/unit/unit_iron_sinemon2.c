@@ -253,31 +253,7 @@ static BattleDataEntry data_table[3] = {
     { 0x00, NULL },
 };
 
-// The original object's functions are emitted in reverse source order
-// (objdiff metadata `reverse_fn_order`): get_id is defined first here, so it
-// lands second in .text, after yoshi_exist.
-USER_FUNC(get_id) {
-    s32* args = event->args;
-    BattleUnit* unit;
-    s32 i;
-    s32 idRed;
-    s32 idGreen;
-
-    for (i = 0; i < 64; i++) {
-        unit = BattleGetUnitPtr(_battleWorkPointer, i);
-        if (unit != NULL) {
-            if (unit->currentKind == UNIT_IRON_CLEFT_RED) {
-                idRed = i;
-            }
-            if (unit->currentKind == UNIT_IRON_CLEFT_GREEN) {
-                idGreen = i;
-            }
-        }
-    }
-    evtSetValue(event, args[0], idRed);
-    evtSetValue(event, args[1], idGreen);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/unit_iron_sinemon/get_id.h"
 
 static EVT_BEGIN(init_event1)
     CALL(btlevtcmd_SetUnitWork, -2, 0, 0)
@@ -367,19 +343,7 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-USER_FUNC(yoshi_exist) {
-    s32* args = event->args;
-    PouchData* pouch;
-    s32 yoshi;
-
-    pouch = pouchGetPtr();
-    yoshi = 0;
-    if (pouch->partyData[PARTNER_YOSHI].flags & 1) {
-        yoshi = 1;
-    }
-    evtSetValue(event, args[0], yoshi);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/unit_iron_sinemon/yoshi_exist.h"
 
 static EVT_BEGIN(phase_event)
     CALL(btlevtcmd_GetUnitWork, -2, 0, LW(0))

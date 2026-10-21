@@ -948,11 +948,6 @@ static EVT_BEGIN(wait_event_fmario)
     RETURN
 EVT_END()
 
-static USER_FUNC(vivian_comeback) {
-    PouchData* pouch = pouchGetPtr();
-
-    pouch->partyData[PARTNER_VIVIAN].flags &= ~2;
-    return EVT_RETURN_YIELD;
-}
+#include "rel/common/vivian_comeback.h"
 
 // clang-format on

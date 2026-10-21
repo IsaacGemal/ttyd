@@ -115,22 +115,7 @@ EVT_BEGIN(aji_19_init_evt)
     RETURN
 EVT_END()
 
-static s32 _hitIsGroupSub(HitEntry* group, HitEntry* hit, s32 recurse) {
-    if (strcmp(group->joint->name, hit->joint->name) == 0) {
-        return TRUE;
-    }
-    if (hit->child != NULL) {
-        return _hitIsGroupSub(group, hit->child, TRUE);
-    }
-    if (recurse != 0 && hit->sibling != NULL) {
-        return _hitIsGroupSub(group, hit->sibling, TRUE);
-    }
-    return FALSE;
-}
-
-static s32 hitIsGroup(HitEntry* group, HitEntry* hit) {
-    return _hitIsGroupSub(group, hit, FALSE);
-}
+#include "rel/common/hitIsGroup.h"
 
 static USER_FUNC(mario_chk) {
     MarioWork* mario = marioGetPtr();

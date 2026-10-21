@@ -19,27 +19,8 @@
 #include "eff/eff_n64.h"
 #include "eff/eff_syuryou.h"
 #include "memory.h"
+#include "rel/common/unit_barriern.h"
 #include "system.h"
-
-typedef struct BarriernZanzouScale {
-    f32 value[5];
-} BarriernZanzouScale;
-
-typedef struct BarriernSatelliteTo {
-    s32 type;         // 0x00
-    s32 unitId;       // 0x04
-    s32 points[5];    // 0x08
-    s32 field_1C[15]; // 0x1C
-    s32 field_58;     // 0x58
-} BarriernSatelliteTo;
-
-typedef struct BarriernSatelliteToData {
-    s32 field_0; // 0x00
-    f32 x;       // 0x04
-    f32 y;       // 0x08
-    f32 z;       // 0x0C
-    f32 scale;   // 0x10
-} BarriernSatelliteToData;
 
 #pragma pool_data off // match the original: float literals are emitted as separate constants
 
@@ -709,32 +690,8 @@ static u32 splineTableOut4_4[15] = {
     0xC1C80000, 0xC1C80000, 0x00000000,
 };
 
-static USER_FUNC(barriern_zanzou) {
-    BattleUnit* unit;
-    s32 id;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    barriern_zanzou_sub(isFirstCall, unit, zanzou_scale, 0);
-}
-
-static USER_FUNC(barriern_zanzou2) {
-    BattleUnit* unit;
-    s32 id;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    barriern_zanzou_sub(isFirstCall, unit, zanzou2_scale, 1);
-}
-
-static USER_FUNC(barriern_zanzou3) {
-    BattleUnit* unit;
-    s32 id;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    barriern_zanzou_sub(isFirstCall, unit, zanzou3_scale, 2);
-}
+#include "rel/common/unit_barriern/barriern_zanzou.h"
+#include "rel/common/unit_barriern/barriern_zanzou3.h"
 
 static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale, s32 mode) {
     BattleUnitPart* part;

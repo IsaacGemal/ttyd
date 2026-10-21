@@ -18,7 +18,7 @@
 #include "manager/evtmgr_cmd.h"
 #include "memory.h"
 #include "system.h"
-#include "unit_piders.h"
+#include "rel/common/unit_piders.h"
 #include <dolphin/gx.h>
 
 #pragma pool_data off
@@ -1196,29 +1196,6 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-static void piders_get_target(s32* outUnit, s32* outPart) {
-    BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)&wp->sampling;
-    s32 idx = (s8)sampling[0xAB7];
-    s16* entry = (s16*)(sampling + (s8)sampling[0xA6D + idx] * 0x24 + 4);
+#include "rel/common/unit_piders/piders_get_target.h"
 
-    *outUnit = entry[0];
-    *outPart = entry[1];
-}
-
-static void piders_get_next_target(s32* outUnit, s32* outPart) {
-    BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)&wp->sampling;
-    s16* entry;
-
-    sampling[0xAB7]++;
-    if ((s8)sampling[0xAB7] < (s8)sampling[0xA6C]) {
-        entry = (s16*)(sampling + (s8)sampling[0xA6D + (s8)sampling[0xAB7]] * 0x24 + 4);
-        *outUnit = entry[0];
-        *outPart = entry[1];
-    } else {
-        *outUnit = -1;
-        *outPart = 0;
-    }
-}
 // clang-format on

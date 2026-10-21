@@ -323,17 +323,7 @@ static BattleUnitSetup entry_majolyne[1] = {
     { &unit_boss_majolyne_las, 1, 0x04000004, { 1000.0f, 0.0f, 1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-static USER_FUNC(eff_scanning) {
-    s32* args = event->args;
-    s32 id = BattleTransID(event, evtGetValue(event, args[0]));
-    f32 f31 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f29 = evtGetFloat(event, args[3]);
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    EffectEntry* entry = effScanningEntry(0, f31, f30, f29);
-    ((effScanningData*)entry->userdata)->scale = unit->mSizeMultiplier;
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/eff_scanning.h"
 
 EVT_BEGIN(mutate_event)
     CALL(btlevtcmd_GetUnitWork, -2, 12, LW(0))

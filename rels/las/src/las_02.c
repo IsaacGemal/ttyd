@@ -93,14 +93,7 @@ static BeroEntry bero_entry_data[3] = {
     },
 };
 
-static USER_FUNC(make_name) {
-    s32* args = event->args;
-    s32 value = evtGetValue(event, args[0]);
-
-    sprintf(name, "hi%d", value);
-    evtSetValue(event, args[1], (s32)name);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/make_name.h"
 
 static EVT_BEGIN(rousoku_init)
     SET_VALUE(LW(0), 1)

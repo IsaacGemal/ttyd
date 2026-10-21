@@ -1,4 +1,6 @@
 #include "evt_lect_eki.h"
+
+#include "rel/common/evt_lect.h"
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
@@ -6,7 +8,6 @@
 #include "eff/eff_itemget.h"
 #include "driver/hitdrv.h"
 #include "driver/icondrv.h"
-#include "driver/icondrv_gx.h"
 #include "driver/itemdrv.h"
 #include "driver/mapdrv.h"
 #include "driver/mobjdrv.h"
@@ -104,129 +105,10 @@ extend_data(57,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-
-static f32 lect_mario_ido_sub(f32 a, f32 b, f32 c, f32 d) {
-    f32 diff = b - a;
-
-    return (diff * c + a * d) / b;
-}
-
-static USER_FUNC(lect_mario_ido_sum) {
-    s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    s32 total = evtGetValue(event, args[0]);
-    s32 progress;
-
-    if (isFirstCall) {
-        wwstart = event->lifetime;
-        evtSetFloat(event, LW(0), mario->position.x);
-        evtSetFloat(event, LW(1), mario->position.y);
-        evtSetFloat(event, LW(2), mario->position.z);
-    }
-    progress = (s32)((u64)((s32)event->lifetime - (s32)wwstart) / (OS_TIMER_CLOCK / 1000));
-    if (progress > total) {
-        progress = total;
-    }
-    {
-        f32 start = evtGetFloat(event, LW(0));
-        f32 target = evtGetFloat(event, LW(3));
-        f32 t = (f32)total - (f32)progress;
-        mario->position.x = (t * target + (f32)progress * start) / (f32)total;
-    }
-    {
-        f32 start = evtGetFloat(event, LW(1));
-        f32 target = evtGetFloat(event, LW(4));
-        f32 t = (f32)total - (f32)progress;
-        mario->position.y = (t * target + (f32)progress * start) / (f32)total;
-    }
-    {
-        f32 start = evtGetFloat(event, LW(2));
-        f32 target = evtGetFloat(event, LW(5));
-        f32 t = (f32)total - (f32)progress;
-        mario->position.z = (t * target + (f32)progress * start) / (f32)total;
-    }
-    if (progress >= total) {
-        return EVT_RETURN_DONE;
-    }
-    return EVT_RETURN_BLOCK;
-}
-
-static USER_FUNC(lect_status_off) {
-    statusWinForceClose();
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lect_status_on) {
-    statusWinForceCloseClear();
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_set) {
-    s32* args = event->args;
-    s32 index = evtGetValue(event, args[0]);
-
-    x_flag_data[index] = evtGetValue(event, args[1]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_add) {
-    s32* args = event->args;
-    s32 index = evtGetValue(event, args[0]);
-
-    x_flag_data[index] += evtGetValue(event, args[1]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_get) {
-    s32* args = event->args;
-    s32 index = evtGetValue(event, args[0]);
-
-    evtSetValue(event, args[1], x_flag_data[index]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_wait) {
-    s32* args = event->args;
-    s32 index = evtGetValue(event, args[0]);
-    s32 val = evtGetValue(event, args[1]);
-
-    return (val == x_flag_data[index]) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
-}
-
-// The iconId 0x75..0x7D range test must be a switch: MWCC lowers the grouped cases to the original's
-// `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain. An `if (a < 0x7E && a >= 0x75)` makes
-// MWCC invert the second branch (`blt zero`).
-static void lecture_button_disp(CameraId cameraId, void* param) {
-    s32 i;
-
-    for (i = 0; i < 2; i++) {
-        LectureButtonVec* p = (LectureButtonVec*)((u8*)&lbtn[i] + 8);
-        LectureButton* btn = &lbtn[i];
-        if (!(btn->flags & 1)) {
-            Vec pos;
-            f32 yOff;
-
-            switch (btn->iconId) {
-            case 0x75: case 0x76: case 0x77: case 0x78: case 0x79:
-            case 0x7A: case 0x7B: case 0x7C: case 0x7D:
-                yOff = -15.0f;
-                break;
-            default:
-                yOff = 0.0f;
-                break;
-            }
-            pos = p->position;
-            pos.y += yOff;
-#ifdef MUST_MATCH
-            // iconDispGxAlpha's header says s16 but the original passes a zero-extended u16 (clrlwi, no extsh).
-            ((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x50, (u16)btn->iconId, (u8)btn->alpha,
-                                                                 1.0f);
-#else
-            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, 1.0f);
-#endif
-        }
-    }
-}
+#include "rel/common/evt_lect/lect_mario_ido.h"
+#include "rel/common/evt_lect/lect_status.h"
+#include "rel/common/x_flag.h"
+#include "rel/common/evt_lect/lecture_button_disp.h"
 
 static USER_FUNC(lecture_button_rtn) {
     s32 i;

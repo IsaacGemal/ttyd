@@ -1932,10 +1932,7 @@ f32 montemedalzpos[2] = {
     -235.0f, -160.0f,
 };
 
-static USER_FUNC(setmertn) {
-    event->ownerNPC = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/setmertn.h"
 
 USER_FUNC(gor_npc_fuwafuwa) {
     s32* args = event->args;

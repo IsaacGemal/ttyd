@@ -42,15 +42,7 @@ static BeroEntry bero_entry_data[] = {
     {NULL},
 };
 
-static USER_FUNC(npc_set_me) {
-    event->ownerNPC = npcNameToPtr("チョロボン");
-    return 2;
-}
-
-static USER_FUNC(npc_dead) {
-    npcGroupDead(npcNameToPtr("チョロボン"), 0);
-    return 2;
-}
+#include "rel/common/npc_set_me.h"
 
 static EVT_BEGIN(evt_chorobon)
     SET_VALUE(GSWF(1775), 1)

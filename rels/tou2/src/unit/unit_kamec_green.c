@@ -959,22 +959,7 @@ static EVT_BEGIN(alpha_up_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(kamec_get_live_num) {
-    s32 i;
-    s32* args = event->args;
-    s32 count = 0;
-    BattleWork* wp = _battleWorkPointer;
-
-    for (i = 0; i < 64; i++) {
-        BattleUnit* unit = wp->units[i];
-
-        if (unit != NULL && unit->mAlliance == 1 && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
-            count++;
-        }
-    }
-    evtSetValue(event, args[0], count);
-    return 2;
-}
+#include "rel/common/kamec_get_live_num.h"
 
 static USER_FUNC(kamec_get_bunsin) {
     s32* args = event->args;

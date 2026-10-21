@@ -39,86 +39,9 @@ extend_data(1,
 extern s32 subsetevt_confuse_flustered[];
 #pragma force_active off
 
-USER_FUNC(teresa_check_trans) {
-    s32* args = event->args;
-    s32 teresaCount = 0;
-    s32 battleId;
-    s32 unitId;
-    int i;
-    BattleUnit* unit;
-
-    battleId = evtGetValue(event, *args++);
-    unitId = BattleTransID(event, battleId);
-
-    for (i = 0; i < 64; i++) {
-        unit = BattleGetUnitPtr(_battleWorkPointer, i);
-        if (unit) {
-            if (unit->currentKind == UNIT_BOO && !BtlUnit_CheckStatus(unit, STATUS_INVISIBLE) && i != unitId) {
-                teresaCount++;
-            }
-            if (unit->currentKind == UNIT_DARK_BOO && !BtlUnit_CheckStatus(unit, STATUS_INVISIBLE) && i != unitId) {
-                teresaCount++;
-            }
-        }
-    }
-
-    if (teresaCount >= 1) {
-        evtSetValue(event, *args, TRUE);
-    } else {
-        evtSetValue(event, *args, FALSE);
-    }
-    return EVT_RETURN_DONE;
-}
-USER_FUNC(teresa_check_move) {
-    s32* args = event->args;
-    BattleUnit* unit;
-    BattleUnitType currentKind;
-    s32 teresaCount = 0;
-    int i;
-
-    for (i = 0; i < 64; i++) {
-        unit = BattleGetUnitPtr(_battleWorkPointer, i);
-        if (unit) {
-            currentKind = unit->currentKind;
-            if (currentKind == UNIT_BOO && !unit->work[0]) {
-                teresaCount++;
-            }
-            if (currentKind == UNIT_DARK_BOO && !unit->work[0]) {
-                teresaCount++;
-            }
-        }
-    }
-
-    if (teresaCount >= 1) {
-        evtSetValue(event, *args, TRUE);
-    } else {
-        evtSetValue(event, *args, FALSE);
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(teresa_check_teresa) {
-    s32* args = event->args;
-    s32 unitId = evtGetValue(event, *args++);
-    BOOL isTeresa = FALSE;
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
-    BattleUnitType currentKind;
-
-    if (!unit) {
-        evtSetValue(event, *args, FALSE);
-        return EVT_RETURN_DONE;
-    }
-
-    currentKind = unit->currentKind;
-    if (currentKind == UNIT_BOO) {
-        isTeresa = TRUE;
-    }
-    if (currentKind == UNIT_DARK_BOO) {
-        isTeresa = TRUE;
-    }
-    evtSetValue(event, *args, isTeresa);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/teresa_check/teresa_check_trans.h"
+#include "rel/common/teresa_check/teresa_check_move.h"
+#include "rel/common/teresa_check/teresa_check_teresa.h"
 
 
 /* ==== generated strings (.rodata) ==== */

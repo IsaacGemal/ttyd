@@ -1542,26 +1542,7 @@ static EVT_BEGIN(dai3_shurai_after)
     RETURN
 EVT_END()
 
-
-
-static BOOL _hitIsGroupSub(HitEntry* hit, HitEntry* group, BOOL rec) {
-    if (strcmp(hit->joint->name, group->joint->name) == 0) {
-        return TRUE;
-    }
-    if (group->child != NULL) {
-        return _hitIsGroupSub(hit, group->child, TRUE);
-    }
-    if (rec) {
-        if (group->sibling != NULL) {
-            return _hitIsGroupSub(hit, group->sibling, TRUE);
-        }
-    }
-    return FALSE;
-}
-
-static BOOL hitIsGroup(HitEntry* hit, HitEntry* group) {
-    return _hitIsGroupSub(hit, group, FALSE);
-}
+#include "rel/common/hitIsGroup.h"
 
 USER_FUNC(dou_mario_kaiten_hosei) {
     MarioWork* mario;

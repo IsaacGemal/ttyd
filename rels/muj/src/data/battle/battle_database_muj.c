@@ -1241,33 +1241,7 @@ u32 btl_muj_setup_no_tbl[32] = {
     (u32)"BTLNO_MUJ_03_04", 0x0000000E, 0x00000000, 0x00000000,
 };
 
-USER_FUNC(_wave_offset) {
-    s32* args = event->args;
-    s32 name = evtGetValue(event, args[0]);
-    s32 arg1 = args[1];
-    s32 frame1 = evtGetValue(event, arg1);
-    s32 period1 = evtGetValue(event, args[2]);
-    s32 amp1 = evtGetValue(event, args[3]);
-    s32 arg4 = args[4];
-    s32 frame2 = evtGetValue(event, arg4);
-    s32 period2 = evtGetValue(event, args[5]);
-    s32 amp2 = evtGetValue(event, args[6]);
-    BattleStageObject* obj = BattleSearchObjectPtr((const char*)name);
-
-    obj->mPositionOffset1.x = amp1 * sinfd((f32)((frame1 * 360) / period1));
-    obj->mPositionOffset1.y = amp2 + amp2 * sinfd((f32)((frame2 * 360) / period2 + 270));
-    frame1++;
-    if (frame1 >= period1) {
-        frame1 = 0;
-    }
-    evtSetValue(event, arg1, frame1);
-    frame2++;
-    if (frame2 >= period2) {
-        frame2 = 0;
-    }
-    evtSetValue(event, arg4, frame2);
-    return 2;
-}
+#include "rel/common/_wave_offset.h"
 
 EVT_BEGIN(bgset_muj_wave_event)
     SET_VALUE(LW(0), 0)

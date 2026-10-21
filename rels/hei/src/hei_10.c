@@ -103,11 +103,7 @@ static inline f32 randRange(f32 min, f32 max) {
     return max - min;
 }
 
-static f32 randf(f32 min, f32 max) {
-    f32 r = (f32)rand() / 32767.0f;
-
-    return r * (max - min) + min;
-}
+#include "rel/common/randf.h"
 
 static void ext_init(void) {
     s32 i;

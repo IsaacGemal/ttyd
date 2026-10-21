@@ -466,17 +466,7 @@ static EVT_BEGIN(attack_event)
     RETURN
 EVT_END()
 
-static s32 killer_copy_status(EventEntry* event, BOOL isFirstCall) {
-    s32* args = event->args;
-    s32 id1 = BattleTransID(event, evtGetValue(event, args[0]));
-    s32 id2 = BattleTransID(event, evtGetValue(event, args[1]));
-    BattleWork* work = _battleWorkPointer;
-    BattleUnit* unit1 = BattleGetUnitPtr(work, id1);
-    BattleUnit* unit2 = BattleGetUnitPtr(work, id2);
-    unit2->mSizeChangeTurns = unit1->mSizeChangeTurns;
-    unit2->mSizeChangeStrength = unit1->mSizeChangeStrength;
-    return 2;
-}
+#include "rel/common/killer_copy_status.h"
 
 static EVT_BEGIN(friend_event)
     IF_INT_EQUAL(LW(12), 1)
@@ -534,16 +524,7 @@ static EVT_BEGIN(friend_event)
     RETURN
 EVT_END()
 
-static s32 killer_get_angle(EventEntry* event, BOOL isFirstCall) {
-    s32* args = event->args;
-    f32 x1 = evtGetFloat(event, args[0]);
-    f32 y1 = evtGetFloat(event, args[1]);
-    f32 x2 = evtGetFloat(event, args[2]);
-    f32 y2 = evtGetFloat(event, args[3]);
-    f32 angle = atan((y2 - y1) / (x2 - x1));
-    evtSetFloat(event, args[4], 360.0f * angle / 6.283184f);
-    return 2;
-}
+#include "rel/common/killer_get_angle.h"
 
 static EVT_BEGIN(friend_event_sky)
     CALL(btlevtcmd_GetPos, -2, LW(7), LW(8), LW(9))

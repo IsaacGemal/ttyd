@@ -396,12 +396,8 @@ EVT_END()
 
 // The reverse-source-order placement of the file's functions starts here: these are the last
 // four functions in .text, so they are the first four defined in the original source.
-static USER_FUNC(getYoshiColor) {
-    s32* args = event->args;
-    s32 color = pouchGetPartyColor(PARTY_MEMBER_YOSHI);
-    evtSetValue(event, args[0], color);
-    return EVT_RETURN_DONE;
-}
+
+#include "rel/common/getYoshiColor.h"
 
 USER_FUNC(party_tev) {
     animPoseSetMaterialFlagOff(partyGetPtr(0)->paperAnimGroup, 0x0F000000);

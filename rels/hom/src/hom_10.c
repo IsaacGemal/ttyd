@@ -566,14 +566,7 @@ EVT_BEGIN(hom_10_evt_resha_stop_13_data_3548)
     RETURN
 EVT_END()
 
-static USER_FUNC(ramp_r) {
-    f32 val = evtGetFloat(event, GW(0));
-    f32 absVal = __fabsf(val);
-    f32 s = sin((f32)gp->retraceCount / 15.0f);
-
-    evtSetFloat(event, LW(10), 1.8f * absVal * s);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/ramp_r.h"
 
 
 static EVT_BEGIN(evt_ramp)
@@ -602,9 +595,7 @@ static char* pika_tbl_rsh_06[10] = {
     "pika_6", NULL,
 };
 
-static void resha_tev(void* param) {
-    envAddTev(7, param);
-}
+#include "rel/common/resha_tev.h"
 
 
 static EVT_BEGIN(hom_10_evt_resha_sub)

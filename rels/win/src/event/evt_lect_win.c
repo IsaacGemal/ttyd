@@ -1,4 +1,6 @@
 #include "evt_lect_win.h"
+
+#include "rel/common/evt_lect.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
@@ -36,17 +38,6 @@
 
 #pragma force_active on
 
-// TODO: type
-typedef struct LectureButton {
-    u8 flags;                   // 0x0
-    u8 seq;                     // 0x1
-    u8 pad_2[0xC - 0x2];        // 0x2
-    Vec position;               // 0xC
-    u8 pad_18[0x40 - 0x18];     // 0x18
-    s16 iconId;                 // 0x40
-    s16 alpha;                  // 0x42
-} LectureButton;                // 0x44
-
 extern const Vec vec3_win_00006060;
 extern const Vec vec3_win_0000606c;
 
@@ -82,10 +73,6 @@ static USER_FUNC(lecture_button_set_alpha);
 static USER_FUNC(lecture_button_set_icon_id);
 static USER_FUNC(lecture_button_rtn);
 static void lecture_button_disp(CameraId cameraId, void* param);
-// iconDispGxAlpha's definition takes the icon id as s16, but this unit's original passes it
-// zero-extended (u16); declare it with the width this file's asm passes (see
-// tools/local_prototype_exceptions.json).
-void iconDispGxAlpha(Vec* position, s16 flags, u16 iconId, u8 alpha, f32 scale);
 static USER_FUNC(x_flag_wait);
 static USER_FUNC(x_flag_get);
 static USER_FUNC(x_flag_add);
@@ -113,120 +100,10 @@ extend_data(77,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-
-static f32 lect_mario_ido_sub(f32 a, f32 b, f32 c, f32 d) {
-    f32 t = b - a;
-    return (t * c + a * d) / b;
-}
-
-static USER_FUNC(lect_mario_ido_sum) {
-    s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    s32 duration = evtGetValue(event, args[0]);
-    s32 elapsed;
-
-    if (isFirstCall) {
-        wwstart = event->lifetime;
-        evtSetFloat(event, LW(0), mario->position.x);
-        evtSetFloat(event, LW(1), mario->position.y);
-        evtSetFloat(event, LW(2), mario->position.z);
-    }
-    elapsed = (s32)((u64)((s32)event->lifetime - (s32)wwstart) / (OS_TIMER_CLOCK / 1000));
-    if (elapsed > duration) {
-        elapsed = duration;
-    }
-    mario->position.x = lect_mario_ido_sub(elapsed, duration, evtGetFloat(event, LW(3)), evtGetFloat(event, LW(0)));
-    mario->position.y = lect_mario_ido_sub(elapsed, duration, evtGetFloat(event, LW(4)), evtGetFloat(event, LW(1)));
-    mario->position.z = lect_mario_ido_sub(elapsed, duration, evtGetFloat(event, LW(5)), evtGetFloat(event, LW(2)));
-    if (elapsed >= duration) {
-        return EVT_RETURN_DONE;
-    }
-    return EVT_RETURN_BLOCK;
-}
-
-static USER_FUNC(lect_status_off) {
-    statusWinForceClose();
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(lect_status_on) {
-    statusWinForceCloseClear();
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_set) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-    s32 val = evtGetValue(event, args[1]);
-    x_flag_data[idx] = val;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_add) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-    s32 val = evtGetValue(event, args[1]);
-    x_flag_data[idx] += val;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_get) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-    evtSetValue(event, args[1], x_flag_data[idx]);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(x_flag_wait) {
-    s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-    s32 val = evtGetValue(event, args[1]);
-    return ((u32)(val - x_flag_data[idx]) <= 0) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
-}
-
-// The iconId 0x75..0x7D range is a switch: MWCC lowers the grouped cases to the original's
-// `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain. Writing it as
-// `if (a < 0x7E && a >= 0x75)` instead makes MWCC invert the second branch (`blt zero`).
-// `ppos` reproduces the original's separate `addi r4, r9, 0x8` position base (see MUST_MATCH).
-static void lecture_button_disp(CameraId cameraId, void* param) {
-    s32 i;
-
-    for (i = 0; i < 2; i++) {
-        LectureButton* b = &lbtn[i];
-#ifdef MUST_MATCH
-        u8* ppos = (u8*)b + 8;
-#endif
-        f32 yoff;
-        Vec pos;
-
-        if (b->flags & 1) {
-            continue;
-        }
-        switch (b->iconId) {
-            case 0x75:
-            case 0x76:
-            case 0x77:
-            case 0x78:
-            case 0x79:
-            case 0x7A:
-            case 0x7B:
-            case 0x7C:
-            case 0x7D:
-                yoff = -15.0f;
-                break;
-            default:
-                yoff = 0.0f;
-                break;
-        }
-#ifdef MUST_MATCH
-        pos = *(Vec*)(ppos + 4);
-#else
-        pos = b->position;
-#endif
-        pos.y += yoff;
-        iconDispGxAlpha(&pos, 0x50, (u16)b->iconId, (u8)b->alpha, 1.0f);
-    }
-}
+#include "rel/common/evt_lect/lect_mario_ido.h"
+#include "rel/common/evt_lect/lect_status.h"
+#include "rel/common/x_flag.h"
+#include "rel/common/evt_lect/lecture_button_disp.h"
 
 static USER_FUNC(lecture_button_rtn) {
     LectureButton* btn;

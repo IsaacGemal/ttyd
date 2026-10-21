@@ -934,18 +934,7 @@ static EVT_BEGIN(link_attack_event_sub)
     RETURN
 EVT_END()
 
-static USER_FUNC(honenoko_copy_status) {
-    s32* args = event->args;
-    s32 fromId = BattleTransID(event, evtGetValue(event, args[0]));
-    s32 toId = BattleTransID(event, evtGetValue(event, args[1]));
-    BattleWork* wp = _battleWorkPointer;
-    BattleUnit* from = BattleGetUnitPtr(wp, fromId);
-    BattleUnit* to = BattleGetUnitPtr(wp, toId);
-
-    to->mSizeChangeTurns = from->mSizeChangeTurns;
-    to->mSizeChangeStrength = from->mSizeChangeStrength;
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/honenoko_copy_status.h"
 
 static EVT_BEGIN(call_friend_event)
     CALL(evt_btl_camera_set_mode, 0, 7)

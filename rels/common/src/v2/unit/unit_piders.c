@@ -9,7 +9,7 @@
 #include "manager/evtmgr_cmd.h"
 #include "memory.h"
 #include "system.h"
-#include "unit_piders.h"
+#include "rel/common/unit_piders.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
@@ -1052,13 +1052,7 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(piders_yarn_init) {
-    s32 id = BattleTransID(event, -2);
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
-
-    unit->mExtraWork = __memAlloc(HEAP_BATTLE, 0x1c);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/unit_piders/piders_yarn_init.h"
 
 static inline GXColor piders_getMatColor(PidersYarnWork* yarn) {
     GXColor color = dat_tou2_0000e830;

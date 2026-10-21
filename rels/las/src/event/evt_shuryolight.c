@@ -1,4 +1,5 @@
 #include "evt_shuryolight.h"
+#include "rel/common/evt_shuryolight.h"
 #include "driver/animdrv.h"
 #include "driver/npcdrv.h"
 #include "evt/evt_cmd.h"
@@ -13,22 +14,6 @@
 static USER_FUNC(evt_shuryolight_wait_anim_end);
 static USER_FUNC(evt_shuryolight_set_anim);
 
-// Per-light state owned by evt_shuryolight_init and handed to shuryolight_callback as its display user data.
-typedef struct ShuryolightEntry {
-    NpcEntry* npc;    // 0x0
-    char** animTable; // 0x4
-    s32 animIdx;      // 0x8
-    s32 groupIdx;     // 0xC
-    s32 shapeIdx;     // 0x10
-} ShuryolightEntry;
-
-// The 0x70-byte block allocated by evt_shuryolight_init; slhp points at it.
-typedef struct ShuryolightWork {
-    s32 powerEvtId;               // 0x0
-    s32 headEvtId;                // 0x4
-    s32 tueEvtId;                 // 0x8
-    ShuryolightEntry entries[5];  // 0xC
-} ShuryolightWork;
 
 static ShuryolightWork* slhp;
 
@@ -149,35 +134,7 @@ EVT_END()
 
 // clang-format on
 
-// Display callback for the light pose: find the entry whose group is being drawn and draw its plane shape.
-static void shuryolight_callback(void* userData, s32 groupId, Mtx mtx) {
-    ShuryolightEntry* entries = userData;
-    s32 i;
-
-    for (i = 0; i < 5; i++) {
-        if (groupId == entries[i].groupIdx) {
-            break;
-        }
-    }
-    if (i != 5) {
-        animPoseMain(entries[i].npc->poseId);
-        animPoseDrawShape(entries[i].npc->poseId, entries[i].shapeIdx);
-    }
-}
-
-static void shuryolightSetAnim(s32 index, s32 anim) {
-    ShuryolightEntry* entry = &slhp->entries[index];
-
-    entry->animIdx = anim;
-    animPoseSetAnim(entry->npc->poseId, entry->animTable[anim], TRUE);
-}
-
-static s32 shuryolightRunEvt(void* evtCode, s32 id) {
-    if (evtCheckID(id)) {
-        evtDeleteID(id);
-    }
-    return evtEntryType(evtCode, 0, 0, 0)->eventId;
-}
+#include "rel/common/shuryolight.h"
 
 USER_FUNC(evt_shuryolight_init_17_text_10B60) {
     NpcEntry* mainNpc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));

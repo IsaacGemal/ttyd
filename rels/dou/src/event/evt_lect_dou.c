@@ -1,4 +1,6 @@
 #include "evt_lect_dou.h"
+
+#include "rel/common/evt_lect.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
@@ -58,50 +60,8 @@ extend_data(93,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
-static f32 lect_mario_ido_sub(f32 a, f32 b, f32 c, f32 d) {
-    f32 t = b - a;
-    return (t * c + a * d) / b;
-}
 
-static USER_FUNC(lect_mario_ido_sum) {
-    EventEntry* evt = event;
-    s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    s32 value = evtGetValue(event, args[0]);
-    s32 min;
-    if (isFirstCall) {
-        wwstart = evt->lifetime;
-        evtSetFloat(event, LW(0), mario->position.x);
-        evtSetFloat(event, LW(1), mario->position.y);
-        evtSetFloat(event, LW(2), mario->position.z);
-    }
-    min = (s32)((s64)((s32)evt->lifetime - (s32)wwstart) / (u64)OSMillisecondsToTicks(1));
-    if (min > value) {
-        min = value;
-    }
-    {
-        f32 start = evtGetFloat(event, LW(0));
-        f32 target = evtGetFloat(event, LW(3));
-        f32 t = (f32)value - (f32)min;
-        mario->position.x = (t * target + (f32)min * start) / (f32)value;
-    }
-    {
-        f32 start = evtGetFloat(event, LW(1));
-        f32 target = evtGetFloat(event, LW(4));
-        f32 t = (f32)value - (f32)min;
-        mario->position.y = (t * target + (f32)min * start) / (f32)value;
-    }
-    {
-        f32 start = evtGetFloat(event, LW(2));
-        f32 target = evtGetFloat(event, LW(5));
-        f32 t = (f32)value - (f32)min;
-        mario->position.z = (t * target + (f32)min * start) / (f32)value;
-    }
-    if (min >= value) {
-        return EVT_RETURN_DONE;
-    }
-    return EVT_RETURN_BLOCK;
-}
+#include "rel/common/evt_lect/lect_mario_ido.h"
 
 static USER_FUNC(lect_status_on) {
     statusWinForceClose();
@@ -197,23 +157,23 @@ static USER_FUNC(lecture_button_rtn) {
     count = 0;
     for (i = 0; i < 2; i++) {
         btn = &lbtn[i];
-        switch (btn->state) {
+        switch (btn->seq) {
             case 0:
                 btn->iconId = 0x68;
-                btn->state = 1;
+                btn->seq = 1;
                 break;
             case 2:
                 btn->alpha += 7;
                 if (btn->alpha >= 0xff) {
                     btn->alpha = 0xff;
-                    btn->state = 1;
+                    btn->seq = 1;
                 }
                 break;
             case 3:
                 btn->alpha -= 7;
                 if (btn->alpha <= 0) {
                     btn->alpha = 0;
-                    btn->state = 1;
+                    btn->seq = 1;
                 }
                 break;
             case 4:
@@ -263,7 +223,7 @@ static USER_FUNC(lecture_button_set_seq) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
     LectureButton* btn = &lbtn[index];
-    btn->state = evtGetValue(event, args[1]);
+    btn->seq = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
 
@@ -271,7 +231,7 @@ static USER_FUNC(lecture_button_get_icon_id) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
     LectureButton* btn = &lbtn[index];
-    evtSetValue(event, args[1], btn->state);
+    evtSetValue(event, args[1], btn->seq);
     return EVT_RETURN_DONE;
 }
 
@@ -279,7 +239,7 @@ static USER_FUNC(lecture_button_seq_wait) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
     LectureButton* btn = &lbtn[index];
-    if (btn->state != evtGetValue(event, args[1])) {
+    if (btn->seq != evtGetValue(event, args[1])) {
         return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_DONE;

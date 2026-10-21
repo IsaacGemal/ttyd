@@ -1,7 +1,9 @@
 #pragma once
 
-#include <dolphin/gx.h>
-#include "evt/evt_cmd.h"
+#include <dolphin/types.h>
+
+// Shared by the Pider units (unit_piders, all three versions) and unit_churantalar, with the functions in
+// rel/common/unit_piders/.
 
 // Work block allocated for a pider's yarn display (unit + 0x310).
 typedef struct PidersYarnWork {

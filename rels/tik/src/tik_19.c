@@ -56,21 +56,7 @@ static u32 key_tbl[2] = {
     0x00000021, 0xFFFFFFFF,
 };
 
-static void majin_callback(s32 msg) {
-    MapObjectEntry* box = mobjNameToPtr("box");
-
-    if (msg == 0) {
-        animPoseSetAnim(box->poseId, "A_2", 1);
-    }
-    else if (msg == 5) {
-        if (animPoseGetLoopTimes(box->poseId) >= 1.0f) {
-            animPoseSetAnim(box->poseId, "A_2", 1);
-        }
-    }
-    else if (msg == 2) {
-        animPoseSetAnim(box->poseId, "S_1", 1);
-    }
-}
+#include "rel/common/majin_callback.h"
 
 static EVT_BEGIN(evt_majin)
     CALL(evt_mario_key_onoff, 0)
@@ -202,9 +188,7 @@ static EVT_BEGIN(evt_majin)
     RETURN
 EVT_END()
 
-static USER_FUNC(bgm_start_wait) {
-    return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
-}
+#include "rel/common/bgm_start_wait.h"
 
 static EVT_BEGIN(evt_majin2)
     CALL(evt_mario_key_onoff, 0)
