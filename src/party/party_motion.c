@@ -702,10 +702,8 @@ void partyFollowHeight(PartyEntry* party) {
             f0 = 1.0f;
         }
         f2 = f2 + f0;
-        f0 = 5.0f;
-        f1 = party->position.y;
-        f1 = f2 - f1;
-        if (f1 > f0 || 0.0f > f1) {
+        f1 = f2 - party->position.y;
+        if (f1 > 5.0f || 0.0f > f1) {
             party->position.y += f1 * f3;
         }
     } else {
@@ -728,11 +726,9 @@ void partyFollowHeight(PartyEntry* party) {
             f0 = 1.0f;
         }
         f2 = f2 + f0;
-        f0 = 5.0f;
-        f1 = party->position.y;
-        f2 = f2 - f1;
+        f2 = f2 - party->position.y;
         f1 = 0.05f;
-        if (f2 > f0 || 0.0f > f2) {
+        if (f2 > 5.0f || 0.0f > f2) {
             party->position.y += f2 * f1;
         }
     }
