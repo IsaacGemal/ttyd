@@ -324,7 +324,6 @@ void battleAcDelete_ShotTarget(BattleWork* work) {
 
 // don't_inline: battleAcMain_ShotTarget calls this through the original `bl`.
 #pragma dont_inline on
-// The s8 casts on `field_0x10[1..2]` keep MWCC emitting `li r0, -0x10` (a plain byte store).
 static void _ac_disp_init(BattleWork* work) {
     BattleACDispParams* disp = &work->actionCommands.dispParams;
 
@@ -340,10 +339,10 @@ static void _ac_disp_init(BattleWork* work) {
     disp->counter = 0x14;
     disp->field_0xC = dat_804218f8;
 #endif
-    disp->field_0x10[0] = 0;
-    *(s8*)&disp->field_0x10[1] = -0x10;
-    *(s8*)&disp->field_0x10[2] = -0x10;
-    disp->field_0x10[3] = 0;
+    disp->field_0x10 = 0;
+    disp->dg = -0x10;
+    disp->db = -0x10;
+    disp->field_0x13 = 0;
     disp->value = float_0_80421918;
 }
 #pragma dont_inline reset

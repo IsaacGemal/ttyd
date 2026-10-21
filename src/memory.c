@@ -165,7 +165,7 @@ void* _mapAlloc(u32 size) {
 		entry = entry->next;
 	}
 	if (maxSize) {
-		usableData = (void*)((u32)currEntry + 0x20);
+		usableData = currEntry + 1;
 
 		currEntry->next = (void*)((u32)currEntry + fullSize);
 		currEntry->size = usableSize;
@@ -225,7 +225,7 @@ void* _mapAllocTail(u32 size) {
 
 		nextptr = currEntry->next;
 		nextptr->next = tailEntry;
-		tailEntry = (void*)((u32)nextptr + 0x20);
+		tailEntry = nextptr + 1;
 		nextptr->size = usableSize;
 		nextptr->inuse = 1;
 		nextptr->currId = count++;
@@ -246,7 +246,7 @@ void _mapFree(void* alloc) {
 	MapAllocEntry* entry;
 
 	if (!alloc) return;
-	entry = (MapAllocEntry*)((u32)alloc - 0x20);
+	entry = (MapAllocEntry*)alloc - 1;
 	if (!entry->inuse) return;
 	nextEntry = entry->next;
 	newSize = entry->size;

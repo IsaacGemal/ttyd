@@ -190,20 +190,20 @@ void BattleStageMain(void) {
 			}
 
 			if (light->flags & 4) {
-				s32* spline = (s32*)light->spline;
+				BattleStageLightSpline* spline = light->spline;
 
-				light->targetCur.x = getSpline((f32*)(spline + 9), (f32*)(spline + 17), (f32*)(spline + 25),
-					(f32*)(spline + 33), spline + 1, spline[0], light->targetFrames);
-				light->targetCur.y = getSpline((f32*)(spline + 41), (f32*)(spline + 49), (f32*)(spline + 57),
-					(f32*)(spline + 65), spline + 1, spline[0], light->targetFrames);
-				light->targetCur.z = getSpline((f32*)(spline + 73), (f32*)(spline + 81), (f32*)(spline + 89),
-					(f32*)(spline + 97), spline + 1, spline[0], light->targetFrames);
+				light->targetCur.x = getSpline(spline->field_0x24[0][0], spline->field_0x24[0][1], spline->field_0x24[0][2],
+					spline->field_0x24[0][3], spline->field_0x4, spline->field_0x0, light->targetFrames);
+				light->targetCur.y = getSpline(spline->field_0x24[1][0], spline->field_0x24[1][1], spline->field_0x24[1][2],
+					spline->field_0x24[1][3], spline->field_0x4, spline->field_0x0, light->targetFrames);
+				light->targetCur.z = getSpline(spline->field_0x24[2][0], spline->field_0x24[2][1], spline->field_0x24[2][2],
+					spline->field_0x24[2][3], spline->field_0x4, spline->field_0x0, light->targetFrames);
 				light->targetFrames++;
-				if (light->targetFrames >= spline[spline[0]]) {
+				if (light->targetFrames >= spline->field_0x4[spline->field_0x0 - 1]) {
 					if (light->flags & 8) {
-						light->targetFrames -= spline[spline[0]];
+						light->targetFrames -= spline->field_0x4[spline->field_0x0 - 1];
 					} else {
-						light->targetFrames = spline[spline[0]];
+						light->targetFrames = spline->field_0x4[spline->field_0x0 - 1];
 					}
 				}
 			} else {
@@ -461,19 +461,14 @@ void BattleStageOffLightEnemyInCommand(void) {
 }
 
 s32 BattleStageGetLightNumberByName(const char* name) {
-	s32 offset;
 	BattleStage* stage = &_battleWorkPointer->stage;
 	s32 i;
 
-	i = 0;
-	offset = 0;
-	for (; i < 12; i++) {
-		u8* p = (u8*)stage + offset;
-		BattleStageLight* light = (BattleStageLight*)(p + 4);
+	for (i = 0; i < 12; i++) {
+		BattleStageLight* light = &stage->lights[i];
 		if ((light->flags & 1) && strcmp(light->name, name) == 0) {
 			return i;
 		}
-		offset += 0xe8;
 	}
 
 	return -1;

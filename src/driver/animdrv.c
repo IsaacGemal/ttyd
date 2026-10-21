@@ -969,109 +969,79 @@ u32 animPoseGetMaterialEvtColor(s32 poseId) {
 
 // animPoseMain
 #include <dolphin/os/OSFastCast.h>
-// The frame and delta tables of an animation record are walked by byte count: a frame record
-// is 0x2C bytes, and the position, normal, texture, visibility and node deltas are indexed by
-// the frame's byte offsets.
+// Each AnimFrame names, per delta stream, the first record and the record count its keyframe applies.
 
-typedef struct AnimFrame {
-    f32 time;      // 0x0
-    s32 posOff;    // 0x4
-    s32 posCount;  // 0x8
-    s32 nrmOff;    // 0xC
-    s32 nrmCount;  // 0x10
-    s32 texOff;    // 0x14
-    s32 texCount;  // 0x18
-    s32 visOff;    // 0x1C
-    s32 visCount;  // 0x20
-    s32 nodeOff;   // 0x24
-    s32 nodeCount; // 0x28
-} AnimFrame;
-
-#define ANIM_FRAME_TIME(f) (((AnimFrame*)(f))->time)
-#define ANIM_FRAME_POS_OFF(f) (((AnimFrame*)(f))->posOff)
-#define ANIM_FRAME_POS_COUNT(f) (((AnimFrame*)(f))->posCount)
-#define ANIM_FRAME_NRM_OFF(f) (((AnimFrame*)(f))->nrmOff)
-#define ANIM_FRAME_NRM_COUNT(f) (((AnimFrame*)(f))->nrmCount)
-#define ANIM_FRAME_TEX_OFF(f) (((AnimFrame*)(f))->texOff)
-#define ANIM_FRAME_TEX_COUNT(f) (((AnimFrame*)(f))->texCount)
-#define ANIM_FRAME_VIS_OFF(f) (((AnimFrame*)(f))->visOff)
-#define ANIM_FRAME_VIS_COUNT(f) (((AnimFrame*)(f))->visCount)
-#define ANIM_FRAME_NODE_OFF(f) (((AnimFrame*)(f))->nodeOff)
-#define ANIM_FRAME_NODE_COUNT(f) (((AnimFrame*)(f))->nodeCount)
-
-#define ANIM_FRAME_SIZE 0x2C
-
-// One position/normal delta run: [u8 index][s8 dx][s8 dy][s8 dz]; the index walks the
+// One position/normal delta run of AnimPoseVecDelta records; each record's index steps the
 // destination array from the previous record.
-static inline void animPoseAddVecDelta(Vec* dst, u8* src, s32 size, f32 scale) {
-    u8* end = src + size;
+static inline void animPoseAddVecDelta(Vec* dst, AnimPoseVecDelta* src, s32 count, f32 scale) {
+    AnimPoseVecDelta* end = src + count;
     while (src < end) {
-        dst += *src;
+        dst += src->field_0x0;
         {
-            f32 dx = __OSs8tof32((s8*)src + 1);
-            f32 dy = __OSs8tof32((s8*)src + 2);
-            f32 dz = __OSs8tof32((s8*)src + 3);
+            f32 dx = __OSs8tof32(&src->field_0x1);
+            f32 dy = __OSs8tof32(&src->field_0x2);
+            f32 dz = __OSs8tof32(&src->field_0x3);
             dst->x += scale * dx;
             dst->y += scale * dy;
             dst->z += scale * dz;
         }
-        src += 4;
+        src++;
     }
 }
 
 // The same runs given as [src, end): the reset path walks its frames with these.
-static inline void animPoseAddVecDeltaRange(Vec* dst, u8* src, u8* end, f32 scale) {
+static inline void animPoseAddVecDeltaRange(Vec* dst, AnimPoseVecDelta* src, AnimPoseVecDelta* end, f32 scale) {
     while (src < end) {
-        dst += *src;
+        dst += src->field_0x0;
         {
-            f32 dx = __OSs8tof32((s8*)src + 1);
-            f32 dy = __OSs8tof32((s8*)src + 2);
-            f32 dz = __OSs8tof32((s8*)src + 3);
+            f32 dx = __OSs8tof32(&src->field_0x1);
+            f32 dy = __OSs8tof32(&src->field_0x2);
+            f32 dz = __OSs8tof32(&src->field_0x3);
             dst->x += scale * dx;
             dst->y += scale * dy;
             dst->z += scale * dz;
         }
-        src += 4;
+        src++;
     }
 }
 
-// Visibility delta run: [u8 index][u8 delta].
-static inline void animPoseAddVisDelta(u8* src, u8* dst, s32 size) {
-    u8* end = src + size;
+// Visibility delta run.
+static inline void animPoseAddVisDelta(AnimPoseVisDelta* src, u8* dst, s32 count) {
+    AnimPoseVisDelta* end = src + count;
     while (src < end) {
-        dst += src[0];
-        *dst += src[1];
-        src += 2;
+        dst += src->field_0x0;
+        *dst += src->field_0x1;
+        src++;
     }
 }
 
-// Node scalar delta run: [u8 index][s8 delta][u8][u8].
-static inline void animPoseAddNodeDelta(f32* dst, u8* src, s32 size, f32 scale) {
-    u8* end = src + size;
+// Node scalar delta run.
+static inline void animPoseAddNodeDelta(f32* dst, AnimPoseNodeDelta* src, s32 count, f32 scale) {
+    AnimPoseNodeDelta* end = src + count;
     while (src < end) {
-        dst += src[0];
-        *dst += scale * __OSs8tof32((s8*)src + 1);
-        src += 4;
+        dst += src->field_0x0;
+        *dst += scale * __OSs8tof32(&src->field_0x1);
+        src++;
     }
 }
 
-static inline void animPoseAddNodeDeltaRange(f32* dst, u8* src, u8* end, f32 scale) {
+static inline void animPoseAddNodeDeltaRange(f32* dst, AnimPoseNodeDelta* src, AnimPoseNodeDelta* end, f32 scale) {
     while (src < end) {
-        dst += src[0];
-        *dst += scale * __OSs8tof32((s8*)src + 1);
-        src += 4;
+        dst += src->field_0x0;
+        *dst += scale * __OSs8tof32(&src->field_0x1);
+        src++;
     }
 }
 
-// Texture-animation delta run: [u8 index][u8 delta][f32 s][f32 t], index in 0x18-byte entries.
-static inline void animPoseAddTexDelta(AnimTexMtx* dst, u8* src, s32 size) {
-    u8* end = src + size;
+// Texture-animation delta run, index in AnimTexMtx entries.
+static inline void animPoseAddTexDelta(AnimTexMtx* dst, AnimPoseTexDelta* src, s32 count) {
+    AnimPoseTexDelta* end = src + count;
     while (src < end) {
-        dst += src[0];
-        dst->mTexBindIdx += src[1];
-        dst->mTransS += *(f32*)(src + 4);
-        dst->mTransT += *(f32*)(src + 8);
-        src += 0xC;
+        dst += src->field_0x0;
+        dst->mTexBindIdx += src->field_0x1;
+        dst->mTransS += src->field_0x4;
+        dst->mTransT += src->field_0x8;
+        src++;
     }
 }
 
@@ -1083,20 +1053,20 @@ static inline void animPoseAddTexDelta(AnimTexMtx* dst, u8* src, s32 size) {
 #define ANIM_POSE_ADD_FRAME(pose, anim, frame, scale)                                               \
     do {                                                                                            \
         animPoseAddVecDelta((pose)->mpBufferVtxPos,                                                 \
-                            (anim)->posData + ANIM_FRAME_POS_OFF(frame) * 4,                        \
-                            ANIM_FRAME_POS_COUNT(frame) * 4, scale);                                \
+                            (anim)->posData + (frame)->posOff,                                      \
+                            (frame)->posCount, scale);                                              \
         animPoseAddVecDelta((pose)->mpBufferVtxNrm,                                                 \
-                            (anim)->nrmData + ANIM_FRAME_NRM_OFF(frame) * 4,                        \
-                            ANIM_FRAME_NRM_COUNT(frame) * 4, scale);                                \
-        animPoseAddVisDelta((anim)->visData + ANIM_FRAME_VIS_OFF(frame) * 2,                        \
+                            (anim)->nrmData + (frame)->nrmOff,                                      \
+                            (frame)->nrmCount, scale);                                              \
+        animPoseAddVisDelta((anim)->visData + (frame)->visOff,                                      \
                             (pose)->mpBufferGroupVisibility,                                        \
-                            ANIM_FRAME_VIS_COUNT(frame) * 2);                                       \
+                            (frame)->visCount);                                                     \
         animPoseAddNodeDelta((f32*)(pose)->mpBufferNode,                                            \
-                             (anim)->nodeData + ANIM_FRAME_NODE_OFF(frame) * 4,                     \
-                             ANIM_FRAME_NODE_COUNT(frame) * 4, scale);                              \
+                             (anim)->nodeData + (frame)->nodeOff,                                   \
+                             (frame)->nodeCount, scale);                                            \
         animPoseAddTexDelta((pose)->mpBufferTexAnimEntries,                                         \
-                            (anim)->texData + ANIM_FRAME_TEX_OFF(frame) * 0xC,                      \
-                            ANIM_FRAME_TEX_COUNT(frame) * 0xC);                                     \
+                            (anim)->texData + (frame)->texOff,                                      \
+                            (frame)->texCount);                                                     \
     } while (0)
 
 // The unit's own .sdata2 constants referenced by name from the assembly below.
@@ -1220,12 +1190,12 @@ void animPoseMain(s32 poseId) {
     {
     f32 frameTime = pose->clipTime;
     {
-    u8* fp = anim->frames;
+    AnimFrame* fp = anim->frames;
     for (i = 0; i < anim->frameCount; i++) {
-        if (*(f32*)fp > frameTime) {
+        if (fp->time > frameTime) {
             break;
         }
-        fp += ANIM_FRAME_SIZE;
+        fp++;
     }
     }
     pose->keyFrame1 = i - 1;
@@ -1233,9 +1203,9 @@ void animPoseMain(s32 poseId) {
 
     {
     f32 frameTime2 = pose->clipTime;
-    u8* fp2 = anim->frames2;
-    for (i = 0; i < anim->frame2Count; fp2 += 8, i++) {
-        if (*(f32*)fp2 > frameTime2) {
+    AnimFrame2* fp2 = anim->frames2;
+    for (i = 0; i < anim->frame2Count; fp2++, i++) {
+        if (fp2->time > frameTime2) {
             break;
         }
     }
@@ -1252,25 +1222,22 @@ void animPoseMain(s32 poseId) {
         }
     }
 
-    {
-        s32* p = (s32*)anim->frames2;
-        pose->evtValue = p[pose->evtFrame1 * 2 + 1];
-    }
+    pose->evtValue = anim->frames2[pose->evtFrame1].field_0x4;
 
     {
-        f32 num = pose->clipTime - *(f32*)(anim->frames + pose->keyFrame1 * ANIM_FRAME_SIZE);
+        f32 num = pose->clipTime - anim->frames[pose->keyFrame1].time;
         f32 den;
         if (canLoop) {
             if (pose->keyFrame2 >= anim->frameCount) {
                 pose->keyFrame2 = 0;
-                den = anim->clip->field_0x8 - *(f32*)(anim->frames + pose->keyFrame1 * ANIM_FRAME_SIZE);
+                den = anim->clip->field_0x8 - anim->frames[pose->keyFrame1].time;
             } else {
-                den = *(f32*)(anim->frames + pose->keyFrame2 * ANIM_FRAME_SIZE)
-                    - *(f32*)(anim->frames + pose->keyFrame1 * ANIM_FRAME_SIZE);
+                den = anim->frames[pose->keyFrame2].time
+                    - anim->frames[pose->keyFrame1].time;
             }
         } else {
-            den = *(f32*)(anim->frames + pose->keyFrame2 * ANIM_FRAME_SIZE)
-                - *(f32*)(anim->frames + pose->keyFrame1 * ANIM_FRAME_SIZE);
+            den = anim->frames[pose->keyFrame2].time
+                - anim->frames[pose->keyFrame1].time;
         }
         if (0.0f == den) {
             pose->keyAlpha = 0.0f;
@@ -1290,8 +1257,8 @@ void animPoseMain(s32 poseId) {
 
     if (pose->lastFrameZero != frame1) {
         if (pose->lastFrameZero == -1 || pose->lastFrameZero > frame1) {
-            u8* f = anim->frames;
-            u8* fend = anim->frames + frame1 * ANIM_FRAME_SIZE + ANIM_FRAME_SIZE;
+            AnimFrame* f = anim->frames;
+            AnimFrame* fend = anim->frames + frame1 + 1;
             if (posNum) {
                 memcpy_as4(pose->mpBufferVtxPos, data->bufferVtxPos, posNum * 0xC);
             }
@@ -1310,28 +1277,28 @@ void animPoseMain(s32 poseId) {
             if (pose->lastFrameZero == -1) {
                 pose->lastFrameZero = 0;
             }
-            for (; f < fend; f += ANIM_FRAME_SIZE) {
+            for (; f < fend; f++) {
                 {
-                    u8* p = anim->posData + ANIM_FRAME_POS_OFF(f) * 4;
-                    animPoseAddVecDeltaRange(pose->mpBufferVtxPos, p, p + ANIM_FRAME_POS_COUNT(f) * 4, 0.0625f);
+                    AnimPoseVecDelta* p = anim->posData + f->posOff;
+                    animPoseAddVecDeltaRange(pose->mpBufferVtxPos, p, p + f->posCount, 0.0625f);
                 }
                 {
-                    u8* p = anim->nrmData + ANIM_FRAME_NRM_OFF(f) * 4;
-                    animPoseAddVecDeltaRange(pose->mpBufferVtxNrm, p, p + ANIM_FRAME_NRM_COUNT(f) * 4, 0.0625f);
+                    AnimPoseVecDelta* p = anim->nrmData + f->nrmOff;
+                    animPoseAddVecDeltaRange(pose->mpBufferVtxNrm, p, p + f->nrmCount, 0.0625f);
                 }
-                animPoseAddVisDelta(anim->visData + ANIM_FRAME_VIS_OFF(f) * 2, pose->mpBufferGroupVisibility,
-                                    ANIM_FRAME_VIS_COUNT(f) * 2);
+                animPoseAddVisDelta(anim->visData + f->visOff, pose->mpBufferGroupVisibility,
+                                    f->visCount);
                 {
-                    u8* p = anim->nodeData + ANIM_FRAME_NODE_OFF(f) * 4;
-                    animPoseAddNodeDeltaRange((f32*)pose->mpBufferNode, p, p + ANIM_FRAME_NODE_COUNT(f) * 4, 0.0625f);
+                    AnimPoseNodeDelta* p = anim->nodeData + f->nodeOff;
+                    animPoseAddNodeDeltaRange((f32*)pose->mpBufferNode, p, p + f->nodeCount, 0.0625f);
                 }
-                animPoseAddTexDelta(pose->mpBufferTexAnimEntries, anim->texData + ANIM_FRAME_TEX_OFF(f) * 0xC,
-                                    ANIM_FRAME_TEX_COUNT(f) * 0xC);
+                animPoseAddTexDelta(pose->mpBufferTexAnimEntries, anim->texData + f->texOff,
+                                    f->texCount);
             }
         } else if (pose->lastFrameZero < frame1) {
-            u8* f = anim->frames + (pose->lastFrameZero + 1) * ANIM_FRAME_SIZE;
-            u8* fend = anim->frames + (frame1 + 1) * ANIM_FRAME_SIZE;
-            for (; f < fend; f += ANIM_FRAME_SIZE) {
+            AnimFrame* f = &anim->frames[pose->lastFrameZero + 1];
+            AnimFrame* fend = &anim->frames[frame1 + 1];
+            for (; f < fend; f++) {
                 ANIM_POSE_ADD_FRAME(pose, anim, f, 0.0625f);
             }
         }
@@ -1352,76 +1319,76 @@ void animPoseMain(s32 poseId) {
             memcpy_as4(pose->mpNodes, pose->mpBufferNode, nodeNum * 4);
         }
     } else if (frame1 <= frame2) {
-        u8* key2 = anim->frames + frame2 * ANIM_FRAME_SIZE;
+        AnimFrame* key2 = &anim->frames[frame2];
         f32 blend = 0.0625f * alpha;
 
         {
-            u8* posSrc = anim->posData + ANIM_FRAME_POS_OFF(key2) * 4;
-            u8* posEnd = posSrc + ANIM_FRAME_POS_COUNT(key2) * 4;
+            AnimPoseVecDelta* posSrc = anim->posData + key2->posOff;
+            AnimPoseVecDelta* posEnd = posSrc + key2->posCount;
             Vec* d = vtxPos;
             Vec* vc = pose->mpBufferVtxPos;
             if (posNum) {
                 memcpy_as4(d, vc, posNum * 0xC);
             }
             while (posSrc < posEnd) {
-                d += *posSrc;
+                d += posSrc->field_0x0;
                 {
-                    f32 dx = __OSs8tof32((s8*)posSrc + 1);
-                    f32 dy = __OSs8tof32((s8*)posSrc + 2);
-                    f32 dz = __OSs8tof32((s8*)posSrc + 3);
+                    f32 dx = __OSs8tof32(&posSrc->field_0x1);
+                    f32 dy = __OSs8tof32(&posSrc->field_0x2);
+                    f32 dz = __OSs8tof32(&posSrc->field_0x3);
                     d->x += dx * blend;
                     d->y += dy * blend;
                     d->z += dz * blend;
                 }
-                posSrc += 4;
+                posSrc++;
             }
         }
 
         {
-            u8* nrmSrc = anim->nrmData + ANIM_FRAME_NRM_OFF(key2) * 4;
-            u8* nrmEnd = nrmSrc + ANIM_FRAME_NRM_COUNT(key2) * 4;
+            AnimPoseVecDelta* nrmSrc = anim->nrmData + key2->nrmOff;
+            AnimPoseVecDelta* nrmEnd = nrmSrc + key2->nrmCount;
             Vec* d = vtxNrm;
             Vec* nc = pose->mpBufferVtxNrm;
             if (nrmNum) {
                 memcpy_as4(d, nc, nrmNum * 0xC);
             }
             while (nrmSrc < nrmEnd) {
-                d += *nrmSrc;
+                d += nrmSrc->field_0x0;
                 {
-                    f32 dx = __OSs8tof32((s8*)nrmSrc + 1);
-                    f32 dy = __OSs8tof32((s8*)nrmSrc + 2);
-                    f32 dz = __OSs8tof32((s8*)nrmSrc + 3);
+                    f32 dx = __OSs8tof32(&nrmSrc->field_0x1);
+                    f32 dy = __OSs8tof32(&nrmSrc->field_0x2);
+                    f32 dz = __OSs8tof32(&nrmSrc->field_0x3);
                     d->x += dx * blend;
                     d->y += dy * blend;
                     d->z += dz * blend;
                 }
-                nrmSrc += 4;
+                nrmSrc++;
             }
         }
 
         {
-            u8* src = anim->nodeData + ANIM_FRAME_NODE_OFF(key2) * 4;
-            u8* srcEnd = src + ANIM_FRAME_NODE_COUNT(key2) * 4;
+            AnimPoseNodeDelta* src = anim->nodeData + key2->nodeOff;
+            AnimPoseNodeDelta* srcEnd = src + key2->nodeCount;
             void* nodeSrc = pose->mpBufferNode;
             f32* dst = (f32*)pose->mpNodes;
-            f32 timedelta = *(f32*)(anim->frames + frame2 * ANIM_FRAME_SIZE)
-                          - *(f32*)(anim->frames + frame1 * ANIM_FRAME_SIZE);
+            f32 timedelta = anim->frames[frame2].time
+                          - anim->frames[frame1].time;
 
             if (nodeNum) {
                 memcpy_as4(dst, nodeSrc, nodeNum * 4);
             }
             {
                 while (src < srcEnd) {
-                    s32 t1 = (s8)src[3];
-                    dst += src[0];
+                    s32 t1 = (s8)src->field_0x3;
+                    dst += src->field_0x0;
                     if (t1 < 0x59 && t1 > -0x59) {
-                        f32 step = 0.0625f * __OSs8tof32((s8*)src + 1);
-                        f32 tan0 = tanfTbl[(s8)src[2] + 0x59];
+                        f32 step = 0.0625f * __OSs8tof32(&src->field_0x1);
+                        f32 tan0 = tanfTbl[(s8)src->field_0x2 + 0x59];
                         f32 tan1 = tanfTbl[t1 + 0x59];
 
                         *dst += animHermite(alpha, step, timedelta * tan0, timedelta * tan1);
                     }
-                    src += 4;
+                    src++;
                 }
             }
         }

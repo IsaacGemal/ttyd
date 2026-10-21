@@ -94,7 +94,7 @@ void yuuminigame4_entry_disp(CameraId cameraId, void* param) {
         // The icon bobs during the first 9 frames of each 32-frame cycle.
         for (i = 0; i < entries->count; i++) {
             if (entries[i].unk0 == 0) {
-                Vec iconPos = entries[i].position;
+                Vec iconPos = entries[i].field_0x8.position;
                 if ((gp->retraceCount & 0x1F) < 9) {
                     iconPos.y += 5.0f;
                 }
@@ -109,15 +109,15 @@ void yuuminigame4_entry_disp(CameraId cameraId, void* param) {
 // work global inside the loop condition keeps its reload per iteration (and the base pointer in r5).
 static inline void yuu4_init_work(MarioWork* mario) {
     s32 i;
-    f32* entryFields;
+    Yuuminigame4WorkField8* entryFields;
     Yuuminigame4Work* entries;
     MarioWork* marioData;
     marioData = mario;
     for (i = 0; i < (entries = yuuminigame4_entries)->count; i++) {
-        entryFields = (f32*)((u8*)&entries[i] + 8);
-        *(Vec*)&entryFields[1] = marioData->position;
-        entryFields[2] += 40.0f;
-        entryFields[4] = 1.0f;
+        entryFields = &entries[i].field_0x8;
+        entryFields->position = marioData->position;
+        entryFields->position.y += 40.0f;
+        entryFields->field_0x10 = 1.0f;
     }
 }
 #endif
@@ -142,9 +142,9 @@ USER_FUNC(yuuminigame4_entry_init) {
 #else
         for (i = 0; i < yuuminigame4_entries->count; i++) {
             Yuuminigame4Work* entry = &yuuminigame4_entries[i];
-            entry->position = mario->position;
-            entry->position.y += 40.0f;
-            entry->unk18 = 1.0f;
+            entry->field_0x8.position = mario->position;
+            entry->field_0x8.position.y += 40.0f;
+            entry->field_0x8.field_0x10 = 1.0f;
         }
 #endif
     }
@@ -154,8 +154,8 @@ USER_FUNC(yuuminigame4_entry_init) {
             Yuuminigame4Work* entry = &yuuminigame4_entries[i];
             switch (entry->unk4) {
             case 0:
-                entry->position = mario->position;
-                entry->position.y += 40.0f;
+                entry->field_0x8.position = mario->position;
+                entry->field_0x8.position.y += 40.0f;
                 break;
             case 1:
                 break;

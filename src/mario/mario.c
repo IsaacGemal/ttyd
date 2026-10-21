@@ -647,7 +647,7 @@ s16 marioSetMutekiTime(s32 msec) {
 	wp->unk4C = sysMsec2Frame(msec);
 	party = partyGetPtr(marioGetPartyId());
 	if (party != NULL) {
-		*(s16*)(party->field_22 + 8) = wp->unk4C;
+		party->field_2A = wp->unk4C;
 	}
 	return wp->unk4C;
 }

@@ -809,7 +809,7 @@ void effFireDisp3(CameraId camId, void* param) {
 
 	leftX = -width * half;
 	rowHeight = 13.333333f;
-	colorEntry = (u8*)col_tbl + (type - 5) * 0x20;
+	colorEntry = (u8*)&col_tbl[(type - 5) * 8];
 
 	for (i = 0; i < 2; i++) {
 		switch (i) {

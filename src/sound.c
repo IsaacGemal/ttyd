@@ -168,14 +168,14 @@ void SoundInit(void) { // 1:1, assuming sndMalloc inlines
             while (1)
                 ;
         } // infinite loop
-        stream->entries[0].loadBuffer = (u32)ptr;
+        stream->entries[0].loadBuffer[0] = ptr;
 
         ptr = sndMalloc(0x8000);
         if (ptr == 0) {
             while (1)
                 ;
         } // infinite loop
-        stream->entries[0].unk30 = ptr;
+        stream->entries[0].loadBuffer[1] = ptr;
 
         size = sndStreamAllocLength(0xE00, 0);
         ptr = sndMalloc(size);
@@ -190,14 +190,14 @@ void SoundInit(void) { // 1:1, assuming sndMalloc inlines
             while (1)
                 ;
         } // infinite loop
-        stream->entries[1].loadBuffer = (u32)ptr;
+        stream->entries[1].loadBuffer[0] = ptr;
 
         ptr = sndMalloc(0x8000);
         if (ptr == 0) {
             while (1)
                 ;
         } // infinite loop
-        stream->entries[1].unk30 = ptr;
+        stream->entries[1].loadBuffer[1] = ptr;
 
         size = sndStreamAllocLength(0xE00, 0);
         ptr = sndMalloc(size);
@@ -1292,12 +1292,11 @@ void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
             goto unlock; // a read error also skips the activation loop below
         }
         entry->bytesLoaded += entry->requestLength;
-        // entry->unk38[4]: the pair of u32 buffer pointers toggled by the u16 index at entry->unk4C.
-        arr = (u32*)&entry->unk38[4];
-        arr[1 - *(u16*)entry->unk4C] = entry->requestLength;
-        *(u16*)&entry->unk4C[8] = 1;
-        if (entry->bytesLoaded >= *(u32*)&entry->unk4C[0x14]) {
-            entry->bytesLoaded = *(u32*)&entry->unk4C[0x18];
+        arr = entry->field_0x3C;
+        arr[1 - entry->field_0x4C] = entry->requestLength;
+        entry->field_0x54 = 1;
+        if (entry->bytesLoaded >= entry->field_0x60) {
+            entry->bytesLoaded = entry->field_0x64;
             if (stream->flags & 0x200) {
                 if (j == 0) {
                     stream->flags &= ~0x1000;
@@ -1313,10 +1312,10 @@ void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
             stream->flags &= ~0x2000;
         }
         if (stream->count == 2) {
-            if (sound.unk214 == 2 && *(s16*)&stream->entries[0].unk4C[8] == 1 && *(s16*)&stream->entries[1].unk4C[8] == 1) {
+            if (sound.unk214 == 2 && stream->entries[0].field_0x54 == 1 && stream->entries[1].field_0x54 == 1) {
                 sound.unk214 = 0;
             }
-        } else if (sound.unk214 == 2 && *(s16*)&stream->entries[0].unk4C[8] == 1) {
+        } else if (sound.unk214 == 2 && stream->entries[0].field_0x54 == 1) {
             sound.unk214 = 0;
         }
         break;
@@ -1331,22 +1330,22 @@ void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
             continue;
         }
         if (&stream->entries[0].dvd->info == fileInfo) {
-            *(u16*)&stream->entries[0].unk4C[0xA] = 1;
+            stream->entries[0].field_0x56 = 1;
         }
         if (&stream->entries[1].dvd->info == fileInfo) {
-            *(u16*)&stream->entries[1].unk4C[0xA] = 1;
+            stream->entries[1].field_0x56 = 1;
         }
         if (stream->count == 2) {
-            if (*(s16*)&stream->entries[0].unk4C[0xA] == 0 || *(s16*)&stream->entries[1].unk4C[0xA] == 0) {
+            if (stream->entries[0].field_0x56 == 0 || stream->entries[1].field_0x56 == 0) {
                 continue;
             }
-        } else if (*(s16*)&stream->entries[0].unk4C[0xA] == 0) {
+        } else if (stream->entries[0].field_0x56 == 0) {
             continue;
         }
-        *(u16*)stream->entries[0].unk4C = 0;
-        *(u16*)stream->entries[1].unk4C = 0;
-        *(u16*)&stream->entries[0].unk4C[8] = 0;
-        *(u16*)&stream->entries[1].unk4C[8] = 0;
+        stream->entries[0].field_0x4C = 0;
+        stream->entries[1].field_0x4C = 0;
+        stream->entries[0].field_0x54 = 0;
+        stream->entries[1].field_0x54 = 0;
         sndStreamActivate(stream->entries[0].streamId);
         if (stream->count == 2) {
             sndStreamActivate(stream->entries[1].streamId);
@@ -1376,27 +1375,27 @@ static inline void _ssPlayChRead(SoundStream* stream, SoundStreamEntry* entry, u
     SoundStreamEntry* e = entry;
 
     len = 0x8000;
-    if (e->bytesLoaded + 0x8000 > *(u32*)&e->unk4C[0x14]) {
-        len = *(u32*)&e->unk4C[0x14] - e->bytesLoaded;
+    if (e->bytesLoaded + 0x8000 > e->field_0x60) {
+        len = e->field_0x60 - e->bytesLoaded;
     } else {
         for (n = 2; n < 6; n++) {
-            if (e->bytesLoaded + n * 0x8000 <= *(u32*)&e->unk4C[0x14]) {
+            if (e->bytesLoaded + n * 0x8000 <= e->field_0x60) {
                 continue;
             }
-            len -= (0x8000 - (*(u32*)&e->unk4C[0x14] - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
+            len -= (0x8000 - (e->field_0x60 - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
             len += 0x20 - (len & 0x1F);
             break;
         }
     }
     aligned = (len + 0x1F) & ~0x1F;
     if (!(stream->flags & 0x400)) {
-        DVDMgrReadAsync(e->dvd, (void*)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), aligned,
+        DVDMgrReadAsync(e->dvd, e->loadBuffer[1 - e->field_0x4C], aligned,
                         stream->unk4 + e->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
     } else {
-        u32 dest = ((u32*)sound.unk21C)[stream->unk2] + (offset + (stream->unk4 + (e->bytesLoaded)));
-        DCInvalidateRange((void*)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), 0x8000);
+        u32 dest = sound.unk21C[stream->unk2] + (offset + (stream->unk4 + (e->bytesLoaded)));
+        DCInvalidateRange(e->loadBuffer[1 - e->field_0x4C], 0x8000);
         ARQPostRequest(&e->request, (u32)e, 1, 0,
-                       dest, (u32)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), aligned, cache_flush);
+                       dest, (u32)e->loadBuffer[1 - e->field_0x4C], aligned, cache_flush);
     }
     e->requestLength = len;
 }
@@ -1408,19 +1407,19 @@ void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
     u32 len;
 
     length = DVDMgrGetLength(stream->entries[0].dvd);
-    if (*(u32*)stream->entries[0].unk38 >= length) {
+    if (stream->entries[0].field_0x38 >= length) {
         stream->entries[0].bytesLoaded = 0;
-        *(u32*)stream->entries[0].unk38 = 0;
+        stream->entries[0].field_0x38 = 0;
         stream->entries[1].bytesLoaded = 0;
-        *(u32*)stream->entries[1].unk38 = 0;
-        *(u16*)stream->entries[0].unk4C = 1;
+        stream->entries[1].field_0x38 = 0;
+        stream->entries[0].field_0x4C = 1;
 
         _ssPlayChRead(stream, &stream->entries[0], 0);
 
         if (stream->count == 2) {
-            *(u16*)stream->entries[1].unk4C = 1;
+            stream->entries[1].field_0x4C = 1;
             entry = &stream->entries[1];
-            _ssPlayChRead(stream, entry, *(u32*)&entry->unk4C[0x14] + (0x20 - (*(u32*)&entry->unk4C[0x14] & 0x1F)));
+            _ssPlayChRead(stream, entry, entry->field_0x60 + (0x20 - (entry->field_0x60 & 0x1F)));
         }
     } else {
         length = DVDMgrGetLength(stream->entries[0].dvd);
@@ -1429,7 +1428,7 @@ void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
         } else {
             len = 0x8000;
         }
-        DVDMgrReadAsync(stream->entries[0].dvd, (void*)stream->entries[0].loadBuffer,
+        DVDMgrReadAsync(stream->entries[0].dvd, stream->entries[0].loadBuffer[0],
                         (len + 0x1F) & ~0x1F, stream->entries[0].bytesLoaded,
                         _ssDVDReadAsync_cache_next);
         stream->entries[0].requestLength = len;
@@ -1458,89 +1457,88 @@ void _ssDVDReadAsync_cache_next(s32 result, DVDFileInfo* fileInfo) {
         }
         entry = &stream->entries[0];
         entry->bytesLoaded += entry->requestLength;
-        aramAddr = ((u32*)entry->unk38)[0] + ((u32*)sound.unk21C)[stream->unk2];
-        DCFlushRange((void*)entry->loadBuffer, 0x8000);
+        aramAddr = entry->field_0x38 + sound.unk21C[stream->unk2];
+        DCFlushRange(entry->loadBuffer[0], 0x8000);
         owner = owner_no++;
-        ARQPostRequest(&entry->request, (owner << 16) | i, 0, 0, entry->loadBuffer, aramAddr, 0x8000,
+        ARQPostRequest(&entry->request, (owner << 16) | i, 0, 0, (u32)entry->loadBuffer[0], aramAddr, 0x8000,
                        _ssDVDReadAsync_cache_aram);
-        ((u32*)entry->unk38)[0] += entry->requestLength;
+        entry->field_0x38 += entry->requestLength;
         break;
     }
 }
 
 u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 count, u8* in) {
-    u8* e = (u8*)entry;
     s8 delta;
     u8 byte;
     s32 index;
 
     while (count != 0) {
         byte = *in;
-        if (*(u16*)(e + 0x5c) != 0) {
-            if (*(u16*)(e + 0x5a) & 1) {
+        if (entry->field_0x5C != 0) {
+            if (entry->field_0x5A & 1) {
                 delta = byte & 0xF;
             } else {
                 delta = (byte >> 4) & 0xF;
             }
-            index = *(u16*)(e + 0x58);
+            index = entry->field_0x58;
             delta <<= 4;
             delta >>= 4;
-            *(u16*)(e + 0x5a) += 1;
-            if (*(u16*)(e + 0x5a) >= *(u16*)(e + 0x5c)) {
+            entry->field_0x5A += 1;
+            if (entry->field_0x5A >= entry->field_0x5C) {
                 in++;
-                *(u16*)(e + 0x5c) = 0;
-                *(u32*)(e + 0x44) += 1;
-            } else if ((*(u16*)(e + 0x5a) & 1) == 0) {
+                entry->field_0x5C = 0;
+                entry->field_0x44 += 1;
+            } else if ((entry->field_0x5A & 1) == 0) {
                 in++;
-                *(u32*)(e + 0x44) += 1;
+                entry->field_0x44 += 1;
             }
         } else {
             in++;
-            *(u32*)(e + 0x44) += 1;
+            entry->field_0x44 += 1;
             index = byte & 0xF;
             if (index == 8) {
-                *(u16*)(e + 0x5c) = ((byte >> 4) & 0xF) + 4;
-                *(u16*)(e + 0x5a) = 0;
+                entry->field_0x5C = ((byte >> 4) & 0xF) + 4;
+                entry->field_0x5A = 0;
                 continue;
             }
             delta = index;
             index = (byte >> 4) & 0xF;
-            *(u16*)(e + 0x58) = index;
+            entry->field_0x58 = index;
             delta <<= 4;
             delta >>= 4;
         }
 
         {
-            s32 val = *(s16*)(e + 0x52) + delta * (s32)dtbl[index];
+            s32 val = entry->field_0x52 + delta * (s32)dtbl[index];
             if (val > 0x7fff) {
                 val = 0x7fff;
             }
             if (val < -0x8000) {
                 val = -0x8000;
             }
-            *(s16*)(e + 0x52) = val;
+            entry->field_0x52 = val;
             *out++ = val;
         }
         count--;
-        *(u32*)&stream->unk1C[0x24 - 0x1C] += 1;
+        stream->field_0x24 += 1;
 
-        if (*(u32*)(e + 0x44) >= *(u32*)(e + 0x3c + (*(u16*)(e + 0x4c) << 2))) {
-            if (*(s16*)(e + 0x54) == 0 && !(stream->flags & 0x4000)) {
-                *(u32*)(e + 0x38) -= *(u32*)(e + 0x44);
-                *(u32*)(e + 0x44) = 0;
-                in = (u8*)*(u32*)(e + 0x2c + (*(u16*)(e + 0x4c) << 2));
+        if (entry->field_0x44 >= entry->field_0x3C[entry->field_0x4C]) {
+            if (entry->field_0x54 == 0 && !(stream->flags & 0x4000)) {
+                entry->field_0x38 -= entry->field_0x44;
+                entry->field_0x44 = 0;
+                in = entry->loadBuffer[entry->field_0x4C];
                 continue;
             } else {
-                *(s16*)(e + 0x54) = 0;
-                *(u32*)(e + 0x44) = 0;
-                *(u16*)(e + 0x4c) = 1 - *(u16*)(e + 0x4c);
-                in = (u8*)*(u32*)(e + 0x2c + (*(u16*)(e + 0x4c) << 2));
+                entry->field_0x54 = 0;
+                entry->field_0x44 = 0;
+                entry->field_0x4C = 1 - entry->field_0x4C;
+                in = entry->loadBuffer[entry->field_0x4C];
             }
         }
-        *(u32*)(e + 0x38) += 2;
-        if (*(u32*)(e + 0x38) >= *(u32*)&stream->unk1C[0x1C - 0x1C]) {
-            *(u32*)(e + 0x38) = *(u32*)&stream->unk1C[0x20 - 0x1C];
-            *(s16*)(e + 0x52) = *(s16*)(e + 0x50);
+        entry->field_0x38 += 2;
+        if (entry->field_0x38 >= stream->field_0x1C) {
+            entry->field_0x38 = stream->field_0x20;
+            entry->field_0x52 = entry->field_0x50;
             if (!(stream->flags & 0x200)) {
                 stream->flags |= 4;
                 break;
@@ -1550,29 +1548,27 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
     return in;
 }
 
-// SoundStream has no write-position field; it lives at +0x24 and is written raw. SoundStreamEntry at
-// +0x2c is loadBuffer[?] and +0x38..0x60 is unk38/unk4C; all accessed raw here.
-static inline u8* ssCopyPCM8(SoundStream* stream, u8* ep, u8* out, u32 count, u8* in) {
+static inline u8* ssCopyPCM8(SoundStream* stream, SoundStreamEntry* ep, u8* out, u32 count, u8* in) {
     while (count != 0) {
         *out++ = *in++;
         count--;
-        *(u32*)(ep + 0x44) += 1;
-        if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
-            if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
-                *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
-                *(u32*)(ep + 0x44) = 0;
-                in = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+        ep->field_0x44 += 1;
+        if (ep->field_0x44 >= ep->field_0x3C[ep->field_0x4C]) {
+            if (ep->field_0x54 == 0 && !(stream->flags & 0x4000)) {
+                ep->field_0x38 -= ep->field_0x44;
+                ep->field_0x44 = 0;
+                in = ep->loadBuffer[ep->field_0x4C];
                 continue;
             } else {
-                *(s16*)(ep + 0x54) = 0;
-                *(u32*)(ep + 0x44) = 0;
-                *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
-                in = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                ep->field_0x54 = 0;
+                ep->field_0x44 = 0;
+                ep->field_0x4C = 1 - ep->field_0x4C;
+                in = ep->loadBuffer[ep->field_0x4C];
             }
         }
-        *(u32*)(ep + 0x38) += 1;
-        if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
-            *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
+        ep->field_0x38 += 1;
+        if (ep->field_0x38 >= stream->field_0x1C) {
+            ep->field_0x38 = stream->field_0x20;
             if (!(stream->flags & 0x200)) {
                 stream->flags |= 4;
                 break;
@@ -1582,29 +1578,29 @@ static inline u8* ssCopyPCM8(SoundStream* stream, u8* ep, u8* out, u32 count, u8
     return in;
 }
 
-static inline u8* ssCopyPCM16(SoundStream* stream, u8* ep, s16* out, u32 count, u8* in) {
+static inline u8* ssCopyPCM16(SoundStream* stream, SoundStreamEntry* ep, s16* out, u32 count, u8* in) {
     while (count != 0) {
         *out++ = *(s16*)in;
         in += 2;
         count--;
-        *(u32*)(stream->unk1C + 8) += 1;
-        *(u32*)(ep + 0x44) += 2;
-        if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
-            if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
-                *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
-                *(u32*)(ep + 0x44) = 0;
-                in = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+        stream->field_0x24 += 1;
+        ep->field_0x44 += 2;
+        if (ep->field_0x44 >= ep->field_0x3C[ep->field_0x4C]) {
+            if (ep->field_0x54 == 0 && !(stream->flags & 0x4000)) {
+                ep->field_0x38 -= ep->field_0x44;
+                ep->field_0x44 = 0;
+                in = ep->loadBuffer[ep->field_0x4C];
                 continue;
             } else {
-                *(s16*)(ep + 0x54) = 0;
-                *(u32*)(ep + 0x44) = 0;
-                *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
-                in = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                ep->field_0x54 = 0;
+                ep->field_0x44 = 0;
+                ep->field_0x4C = 1 - ep->field_0x4C;
+                in = ep->loadBuffer[ep->field_0x4C];
             }
         }
-        *(u32*)(ep + 0x38) += 2;
-        if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
-            *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
+        ep->field_0x38 += 2;
+        if (ep->field_0x38 >= stream->field_0x1C) {
+            ep->field_0x38 = stream->field_0x20;
             if (!(stream->flags & 0x200)) {
                 stream->flags |= 4;
                 break;
@@ -1618,7 +1614,7 @@ static inline u8* ssCopyPCM16(SoundStream* stream, u8* ep, s16* out, u32 count, 
 u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
     SoundStream* stream;
     s16* out1;
-    u8* ep;
+    SoundStreamEntry* ep;
     u8* in;
     u32 size2;
     u32 i;
@@ -1629,19 +1625,19 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
     out1 = buffer1;
     out2 = buffer2;
 
-    *(u32*)(stream->unk1C + 8) = 0;
+    stream->field_0x24 = 0;
 
     if ((stream->flags & 0x8006) || sound.unk214) {
         if (!(stream->flags & 0x100)) {
             for (i = 0; i != len1; i++) {
                 *out1++ = 0;
-                *(u32*)(stream->unk1C + 8) += 1;
+                stream->field_0x24 += 1;
             }
             for (i = 0; i != size2; i++) {
                 *out2++ = 0;
-                *(u32*)(stream->unk1C + 8) += 1;
+                stream->field_0x24 += 1;
             }
-            return *(u32*)(stream->unk1C + 8);
+            return stream->field_0x24;
         }
         {
             s32 n;
@@ -1661,26 +1657,26 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
         return len1 + size2;
     }
 
-    ep = (u8*)((user & 0x100) ? &stream->entries[1] : &stream->entries[0]);
+    ep = (user & 0x100) ? &stream->entries[1] : &stream->entries[0];
 
     if (stream->flags & 0x80) {
-        in = (u8*)((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)];
-        in += *(u32*)(ep + 0x44);
-        in = ssDecodeDPCM(stream, (SoundStreamEntry*)ep, out1, len1, in);
-        ssDecodeDPCM(stream, (SoundStreamEntry*)ep, out2, size2, in);
+        in = ep->loadBuffer[ep->field_0x4C];
+        in += ep->field_0x44;
+        in = ssDecodeDPCM(stream, ep, out1, len1, in);
+        ssDecodeDPCM(stream, ep, out2, size2, in);
     } else if (stream->flags & 0x100) {
-        in = (u8*)((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)];
-        in += *(u32*)(ep + 0x44);
+        in = ep->loadBuffer[ep->field_0x4C];
+        in += ep->field_0x44;
         in = ssCopyPCM8(stream, ep, (u8*)out1, (len1 + 13) / 7 * 4 & ~7, in);
         ssCopyPCM8(stream, ep, (u8*)out2, (size2 + 13) / 7 * 4 & ~7, in);
-        *(u32*)(stream->unk1C + 8) = len1 + size2;
+        stream->field_0x24 = len1 + size2;
     } else {
-        in = (u8*)((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)];
-        in += *(u32*)(ep + 0x44) & ~1;
+        in = ep->loadBuffer[ep->field_0x4C];
+        in += ep->field_0x44 & ~1;
         in = ssCopyPCM16(stream, ep, out1, len1, in);
         ssCopyPCM16(stream, ep, out2, size2, in);
     }
-    return *(u32*)(stream->unk1C + 8);
+    return stream->field_0x24;
 }
 #pragma opt_propagation reset
 
@@ -1699,7 +1695,6 @@ static inline char* SoundSSPlayChEx_getPath(void) {
 #endif
 void SoundSSPlayChEx(s32 chan, u32 name, u32 useAram) {
     SoundStream* stream = &sound.streams[chan];
-    u8* e = (u8*)stream;
     char* path;
     int i;
 
@@ -1721,24 +1716,24 @@ void SoundSSPlayChEx(s32 chan, u32 name, u32 useAram) {
     }
 
     sound.unk104 = chan;
-    *(u16*)(e + 0x74) = 0;
-    *(u32*)(e + 0x6c) = 0;
-    *(u32*)(e + 0x5c) = 0;
-    *(u32*)(e + 0x60) = 0;
-    *(u16*)(e + 0x7c) = 0;
-    *(u16*)(e + 0x7e) = 0;
-    *(u16*)(e + 0x80) = 0;
-    *(u16*)(e + 0x82) = 0;
-    *(u16*)(e + 0x84) = 0;
-    *(u16*)(e + 0xfc) = 0;
-    *(u32*)(e + 0xf4) = 0;
-    *(u32*)(e + 0xe4) = 0;
-    *(u32*)(e + 0xe8) = 0;
-    *(u16*)(e + 0x104) = 0;
-    *(u16*)(e + 0x106) = 0;
-    *(u16*)(e + 0x108) = 0;
-    *(u16*)(e + 0x10a) = 0;
-    *(u16*)(e + 0x10c) = 0;
+    stream->entries[0].field_0x4C = 0;
+    stream->entries[0].field_0x44 = 0;
+    stream->entries[0].bytesLoaded = 0;
+    stream->entries[0].field_0x38 = 0;
+    stream->entries[0].field_0x54 = 0;
+    stream->entries[0].field_0x56 = 0;
+    stream->entries[0].field_0x58 = 0;
+    stream->entries[0].field_0x5A = 0;
+    stream->entries[0].field_0x5C = 0;
+    stream->entries[1].field_0x4C = 0;
+    stream->entries[1].field_0x44 = 0;
+    stream->entries[1].bytesLoaded = 0;
+    stream->entries[1].field_0x38 = 0;
+    stream->entries[1].field_0x54 = 0;
+    stream->entries[1].field_0x56 = 0;
+    stream->entries[1].field_0x58 = 0;
+    stream->entries[1].field_0x5A = 0;
+    stream->entries[1].field_0x5C = 0;
     stream->pan = 0x40;
     stream->span = 0;
     stream->unk10 = 0.0f;
@@ -1795,46 +1790,46 @@ void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
     type = hdr->field_0x0;
     stream->freq = hdr->freq;
     stream->count = hdr->count;
-    *(u32*)&stream->unk1C[0] = hdr->field_0x8;
-    *(u32*)&stream->unk1C[4] = hdr->field_0xC;
-    *(u32*)&stream->entries[0].unk4C[0x14] = hdr->field_0x10;
-    *(u32*)&stream->entries[1].unk4C[0x14] = hdr->field_0x14;
-    *(u32*)&stream->entries[0].unk4C[0x18] = hdr->field_0x18;
-    *(u32*)&stream->entries[1].unk4C[0x18] = hdr->field_0x1C;
-    *(u16*)&stream->entries[0].unk4C[2] = hdr->field_0x20;
-    *(u16*)&stream->entries[1].unk4C[2] = hdr->field_0x22;
-    *(u16*)&stream->entries[0].unk4C[4] = hdr->field_0x24;
-    *(u16*)&stream->entries[1].unk4C[4] = hdr->field_0x26;
+    stream->field_0x1C = hdr->field_0x8;
+    stream->field_0x20 = hdr->field_0xC;
+    stream->entries[0].field_0x60 = hdr->field_0x10;
+    stream->entries[1].field_0x60 = hdr->field_0x14;
+    stream->entries[0].field_0x64 = hdr->field_0x18;
+    stream->entries[1].field_0x64 = hdr->field_0x1C;
+    stream->entries[0].field_0x4E = hdr->field_0x20;
+    stream->entries[1].field_0x4E = hdr->field_0x22;
+    stream->entries[0].field_0x50 = hdr->field_0x24;
+    stream->entries[1].field_0x50 = hdr->field_0x26;
 
-    if (*(u32*)&stream->unk1C[4] != 0xFFFFFFFF) {
+    if (stream->field_0x20 != 0xFFFFFFFF) {
         stream->flags |= 0x200;
     } else {
-        *(u32*)&stream->unk1C[4] = 0;
+        stream->field_0x20 = 0;
     }
 
     switch (type) {
     case 0:
-        *(u32*)&stream->entries[0].unk4C[0x14] = *(u32*)&stream->unk1C[0];
-        *(u32*)&stream->entries[1].unk4C[0x14] = *(u32*)&stream->unk1C[0];
-        *(u32*)&stream->entries[0].unk4C[0x18] = *(u32*)&stream->unk1C[4];
-        *(u32*)&stream->entries[1].unk4C[0x18] = *(u32*)&stream->unk1C[4];
+        stream->entries[0].field_0x60 = stream->field_0x1C;
+        stream->entries[1].field_0x60 = stream->field_0x1C;
+        stream->entries[0].field_0x64 = stream->field_0x20;
+        stream->entries[1].field_0x64 = stream->field_0x20;
         stream->unk4 = 0x40;
         break;
     case 1:
         stream->flags |= 0x80;
-        *(s16*)&stream->entries[0].unk4C[6] = *(s16*)&stream->entries[0].unk4C[2];
-        *(s16*)&stream->entries[1].unk4C[6] = *(s16*)&stream->entries[1].unk4C[2];
+        stream->entries[0].field_0x52 = stream->entries[0].field_0x4E;
+        stream->entries[1].field_0x52 = stream->entries[1].field_0x4E;
         stream->unk4 = 0x40;
         break;
     case 2:
-        src = (u8*)hdr + 0x5C;
+        src = (u8*)&hdr->field_0x5C;
         dst = (u8*)&stream->entries[0].info;
         stream->flags |= 0x100;
         for (j = 0x20; j != 0; j--) {
             *dst++ = *src++;
         }
         if (stream->count == 2) {
-            src2 = (u8*)hdr + 0xBC;
+            src2 = (u8*)&hdr->field_0xBC;
             dst2 = (u8*)&stream->entries[1].info;
             for (j = 0x20; j != 0; j--) {
                 *dst2++ = *src2++;
@@ -1844,35 +1839,35 @@ void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
         break;
     }
 
-    *(u16*)&stream->entries[0].unk4C[0] = 0;
-    *(u32*)&stream->entries[0].unk38[0xC] = 0;
+    stream->entries[0].field_0x4C = 0;
+    stream->entries[0].field_0x44 = 0;
     stream->entries[0].bytesLoaded = 0;
-    *(u32*)&stream->entries[0].unk38[0] = 0;
-    *(u16*)&stream->entries[0].unk4C[8] = 0;
-    *(u16*)&stream->entries[0].unk4C[0xA] = 0;
-    *(u16*)&stream->entries[0].unk4C[0xC] = 0;
-    *(u16*)&stream->entries[0].unk4C[0xE] = 0;
-    *(u16*)&stream->entries[0].unk4C[0x10] = 0;
-    *(u16*)&stream->entries[1].unk4C[0] = 0;
-    *(u32*)&stream->entries[1].unk38[0xC] = 0;
+    stream->entries[0].field_0x38 = 0;
+    stream->entries[0].field_0x54 = 0;
+    stream->entries[0].field_0x56 = 0;
+    stream->entries[0].field_0x58 = 0;
+    stream->entries[0].field_0x5A = 0;
+    stream->entries[0].field_0x5C = 0;
+    stream->entries[1].field_0x4C = 0;
+    stream->entries[1].field_0x44 = 0;
     stream->entries[1].bytesLoaded = 0;
-    *(u32*)&stream->entries[1].unk38[0] = 0;
-    *(u16*)&stream->entries[1].unk4C[8] = 0;
-    *(u16*)&stream->entries[1].unk4C[0xA] = 0;
-    *(u16*)&stream->entries[1].unk4C[0xC] = 0;
-    *(u16*)&stream->entries[1].unk4C[0xE] = 0;
-    *(u16*)&stream->entries[1].unk4C[0x10] = 0;
+    stream->entries[1].field_0x38 = 0;
+    stream->entries[1].field_0x54 = 0;
+    stream->entries[1].field_0x56 = 0;
+    stream->entries[1].field_0x58 = 0;
+    stream->entries[1].field_0x5A = 0;
+    stream->entries[1].field_0x5C = 0;
 
     if (!(stream->flags & 0x400)) {
-        *(u16*)&stream->entries[0].unk4C[0] = 1;
+        stream->entries[0].field_0x4C = 1;
         _ssPlayChRead(stream, &stream->entries[0], 0);
         stream->flags |= 0x1000;
         if (stream->count == 2) {
-            *(u16*)&stream->entries[1].unk4C[0] = 1;
+            stream->entries[1].field_0x4C = 1;
             entry1 = &stream->entries[1];
             _ssPlayChRead(
                 stream, entry1,
-                *(u32*)&entry1->unk4C[0x14] + (0x20 - (*(u32*)&entry1->unk4C[0x14] & 0x1F)));
+                entry1->field_0x60 + (0x20 - (entry1->field_0x60 & 0x1F)));
             stream->flags |= 0x2000;
         }
     }
@@ -1927,7 +1922,7 @@ void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
         } else {
             len = 0x8000;
         }
-        DVDMgrReadAsync(stream->entries[0].dvd, (void*)stream->entries[0].loadBuffer,
+        DVDMgrReadAsync(stream->entries[0].dvd, stream->entries[0].loadBuffer[0],
                         (len + 0x1F) & ~0x1F, stream->entries[0].bytesLoaded,
                         _ssDVDReadAsync_cache_next);
         stream->entries[0].requestLength = len;
@@ -2181,27 +2176,27 @@ static inline void _ssDVDReadAsync_cache_entry_ss(SoundStream* stream, SoundStre
     SoundStreamEntry* e = entry;
 
     len = 0x8000;
-    if (e->bytesLoaded + 0x8000 > *(u32*)&e->unk4C[0x14]) {
-        len = *(u32*)&e->unk4C[0x14] - e->bytesLoaded;
+    if (e->bytesLoaded + 0x8000 > e->field_0x60) {
+        len = e->field_0x60 - e->bytesLoaded;
     } else {
         for (n = 2; n < 6; n++) {
-            if (e->bytesLoaded + n * 0x8000 <= *(u32*)&e->unk4C[0x14]) {
+            if (e->bytesLoaded + n * 0x8000 <= e->field_0x60) {
                 continue;
             }
-            len -= (0x8000 - (*(u32*)&e->unk4C[0x14] - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
+            len -= (0x8000 - (e->field_0x60 - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
             len += 0x20 - (len & 0x1F);
             break;
         }
     }
     aligned = (len + 0x1F) & ~0x1F;
     if (!(stream->flags & 0x400)) {
-        DVDMgrReadAsync(e->dvd, (void*)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), aligned,
+        DVDMgrReadAsync(e->dvd, e->loadBuffer[1 - e->field_0x4C], aligned,
                         stream->unk4 + e->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
     } else {
-        u32 dest = stream->unk4 + e->bytesLoaded + offset + *(u32*)(sound.unk21C + stream->unk2 * 4);
-        DCInvalidateRange((void*)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), 0x8000);
+        u32 dest = stream->unk4 + e->bytesLoaded + offset + sound.unk21C[stream->unk2];
+        DCInvalidateRange(e->loadBuffer[1 - e->field_0x4C], 0x8000);
         ARQPostRequest(&e->request, (u32)e, 1, 0,
-                       dest, (&e->loadBuffer)[1 - *(u16*)e->unk4C], aligned, cache_flush);
+                       dest, (u32)e->loadBuffer[1 - e->field_0x4C], aligned, cache_flush);
     }
     e->requestLength = len;
 }
@@ -2223,23 +2218,23 @@ void SoundSSMainInt(void) {
             continue;
         }
 
-        if (*(u32*)&stream->entries[0].unk38[0xC] && *(s16*)&stream->entries[0].unk4C[8] == 0 &&
+        if (stream->entries[0].field_0x44 && stream->entries[0].field_0x54 == 0 &&
             !(stream->flags & 0x1000)) {
             _ssDVDReadAsync_cache_entry_ss(stream, &stream->entries[0], 0);
             stream->flags |= 0x1000;
             if (stream->flags & 0x400) {
-                *(u16*)&stream->entries[0].unk4C[8] = 1;
+                stream->entries[0].field_0x54 = 1;
             }
         }
 
-        if (stream->count == 2 && *(u32*)&stream->entries[1].unk38[0xC] &&
-            *(s16*)&stream->entries[1].unk4C[8] == 0 && !(stream->flags & 0x2000)) {
+        if (stream->count == 2 && stream->entries[1].field_0x44 &&
+            stream->entries[1].field_0x54 == 0 && !(stream->flags & 0x2000)) {
             entry = &stream->entries[1];
             _ssDVDReadAsync_cache_entry_ss(stream, entry,
-                                           *(u32*)&entry->unk4C[0x14] + (0x20 - (*(u32*)&entry->unk4C[0x14] & 0x1F)));
+                                           entry->field_0x60 + (0x20 - (entry->field_0x60 & 0x1F)));
             stream->flags |= 0x2000;
             if (stream->flags & 0x400) {
-                *(u16*)&stream->entries[1].unk4C[8] = 1;
+                stream->entries[1].field_0x54 = 1;
             }
         }
     }
@@ -2250,7 +2245,7 @@ void SoundSSMainInt(void) {
 void SoundAIDMACallback(void) {
     s32 length;
     u8* address;
-    u16* dest;
+    s16* dest;
     s16* src;
     u32 sel;
 
@@ -2260,8 +2255,8 @@ void SoundAIDMACallback(void) {
     address = sound.dmaAddress;
     sound.dmaLength = length;
 
-    src = (s16*)&sound.unk33C[0];
-    dest = (u16*)src;
+    src = sound.unk33C;
+    dest = src;
     for (; length != 0; length -= 2) {
         *dest = (address[0] << 8) | address[1];
         dest++;
@@ -2269,7 +2264,7 @@ void SoundAIDMACallback(void) {
     }
 
     sel = sound.unk330;
-    dest = (u16*)(sound.unk5C0 + (sel << 11));
+    dest = sound.unk5C0[sel];
     dest += sound.unk15C0;
     for (length = sound.dmaLength >> 1; length != 0; length -= 2) {
         *dest = *src;
@@ -2278,7 +2273,7 @@ void SoundAIDMACallback(void) {
         if ((u32)++sound.unk15C0 >= 0x400) {
             sound.unk15C0 = 0;
             sound.unk330 = 1 - sound.unk330;
-            dest = (u16*)(sound.unk5C0 + (sound.unk330 << 11));
+            dest = sound.unk5C0[sound.unk330];
         }
     }
 }

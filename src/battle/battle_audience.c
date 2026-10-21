@@ -446,7 +446,7 @@ void BattleAudience_PerAct(void) {
 	info = audience->impendingBonuses;
 	if (info != NULL && ((flag2 = audience->flags & 0x100) || (audience->flags & 0x200))) {
 		if (flag2) {
-			value = (f32)(*(u8*)&info->mStylishCommandMultiplier * (audience->mNumStylishCommandsThisAttack * 2));
+			value = (f32)(info->mStylishCommandMultiplier * (audience->mNumStylishCommandsThisAttack * 2));
 			delta += value;
 			if (value >= 30.0f) {
 				BattleAudienceAddPhaseEvtList(0);
@@ -3484,17 +3484,16 @@ BOOL BattleAudience_GetPPAudienceNum_Sub(s32 id) {
 #pragma dont_inline reset
 
 #pragma opt_lifetimes off // needed: keep the loop accumulator in f31 and the i2f double in f30 (see below)
-// Four levers got this from 93.45% to 99.82%: (a) reaching the 0x137C8 store/memcpy through a `u8*` view (audlocal) makes MWCC recompute `audience + 0x10000` with addis and a fresh
-// register instead of CSEing an addis result across BattleAlloc; (b) writing the two `> 0.0f`
+// Levers that matched this function: (a) writing the two `> 0.0f`
 // comparisons and the `crowdKindSum = 0.0f` reset as float literals keeps each
-// a separate load instead of being CSE'd; (c) the declaration order below (crowdKindSum first, then
-// partyMultiplier) puts the multiplier count in f31 to match the original. (d) `opt_lifetimes off`
+// a separate load instead of being CSE'd; (b) the declaration order below (crowdKindSum first, then
+// partyMultiplier) puts the multiplier count in f31 to match the original. (c) `opt_lifetimes off`
 // resolves the loop's FPR tie: with lifetimes on MWCC kept the pooled i2f double in f31 and the
 // accumulator in f30; with it off the accumulator keeps f31 and the double takes f30 like the
-// original, which also fixes the FMUL and `add` operand orders that followed from that tie. (e) in the
+// original, which also fixes the FMUL and `add` operand orders that followed from that tie. (d) in the
 // slot branch, an initialized accumulator (`s32 delta = 0; delta += (s32)(...)`) before the
-// `*(...0x137C4) += delta;` store makes MWCC load the running count into r0 instead of r3, matching
-// the original's count/delta registers. (f) the slot factor read straight off the
+// `audience->apGauge += delta;` store makes MWCC load the running count into r0 instead of r3, matching
+// the original's count/delta registers. (e) the slot factor read straight off the
 // `BattleBreakSlotGetPtr()` call inside the product (no `slot` local) gives the original's final
 // `fmuls f0, f0, f2` operand order.
 void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
@@ -3511,13 +3510,10 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	f32 marioMultiplier;
 	f32 rate = 1.0f;
 
-	{
-		u8* audlocal = (u8*)audience;
-		if (*(void**)(audlocal + 0x137C8) == NULL) {
-			*(void**)(audlocal + 0x137C8) = BattleAlloc(0xC);
-		}
-		memcpy(*(void**)(audlocal + 0x137C8), info, 0xC);
+	if (audience->impendingBonuses == NULL) {
+		audience->impendingBonuses = BattleAlloc(0xC);
 	}
+	memcpy(audience->impendingBonuses, info, 0xC);
 	mario = BattleGetMarioPtr(wp);
 	party = BattleGetPartyPtr(wp);
 	crowdKindSum = 0.0f;
@@ -3526,7 +3522,7 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	}
 	sqrtWeight = (f32)sqrt(crowdKindSum);
 	spAcMultiplier = info->mSpAcSuccessMultiplier;
-	stylishMultiplier = (f32)(u8)info->mStylishCommandMultiplier;
+	stylishMultiplier = (f32)info->mStylishCommandMultiplier;
 	crowdKindSum = 0.0f;
 	if (spAcMultiplier > 0.0f) {
 		crowdKindSum += 1.0f;

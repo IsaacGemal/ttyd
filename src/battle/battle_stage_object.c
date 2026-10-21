@@ -83,8 +83,7 @@ extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 
 // _object_fall_attack: spawns and updates the "falling object" hazard. Each
 // spawned object gets a BattleWeapon copied from the battle's fall-object data
 // table and either targets a unit (BattlePreCheckDamage/BattleCheckDamage) or is
-// thrown by the audience. Data offsets used because the structs don't declare
-// the fields are marked inline.
+// thrown by the audience.
 // ---------------------------------------------------------------------------
 
 typedef struct FallObjectEntry {
@@ -104,6 +103,13 @@ typedef struct FallObjectEntry {
 	EffectEntry* effect;  // 0x24
 	BattleWeapon weapon;  // 0x28
 } FallObjectEntry;        // size 0xE8
+
+// _object_fall_attack's work (event->userdata[0]), BattleAlloc(0xEC).
+typedef struct ObjectFallAttackWork {
+	u8 count;                 // 0x00, number of entries
+	s8 types[3];              // 0x01, fall-object types picked so far (-1 = free)
+	FallObjectEntry entries[1]; // 0x04
+} ObjectFallAttackWork;     // size 0xEC
 
 
 // .data: tables, event scripts and compiler constants, in the original order.
@@ -174,13 +180,13 @@ void BattleStageObjectInit(void) {
 	case 1:
 	case 2:
 	case 3:
-		base->field_0x34 = (u8*)battle_stage_nozzle_data + pouchGetPtr()->rank * 0x310;
+		base->field_0x34 = (BattleStageNozzleData*)battle_stage_nozzle_data + pouchGetPtr()->rank;
 		break;
 	default:
 		base->field_0x34 = NULL;
 		break;
 	}
-	base->field_0x38 = (u8*)battle_stage_fall_object_data + pouchGetPtr()->rank * 0x78C;
+	base->field_0x38 = (BattleStageFallObjectData*)battle_stage_fall_object_data + pouchGetPtr()->rank;
 	base->field_0x1CA = -1;
 	base->field_0x1DC = 0;
 	base->field_0x1E0 = NULL;
@@ -1783,7 +1789,7 @@ void BattleStage_NozzleDirChangeCheck(void) {
 
 	if (w->field_0x34 != NULL) {
 		for (i = 0; i < 3; i++) {
-			_Nozzle_Change_Check(i, w->field_0x34 + i * 4);
+			_Nozzle_Change_Check(i, w->field_0x34->field_0x0[i]);
 		}
 	}
 }
@@ -2085,18 +2091,18 @@ void BattleStage_NozzleWorkCheck(s32 flag) {
 #pragma dont_inline on
 void _nozzle_type_init(void) {
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
-	u8* data = w->field_0x34;
+	BattleStageNozzleData* data = w->field_0x34;
 	s8 i;
 	s32 sum;
 
 	if (w->field_0x1CA == -1) {
 		sum = 0;
 		for (i = 0; i < 4; i++) {
-			sum += data[i + 0xC];
+			sum += data->field_0xC[i];
 		}
 		sum = irand(sum);
 		for (i = 0; i < 4; i++) {
-			sum -= data[i + 0xC];
+			sum -= data->field_0xC[i];
 			if (sum < 0) {
 				break;
 			}
@@ -2306,7 +2312,7 @@ s32 _nozzle_work_attack_set(void) {
 			if (base->weaponAddr[idx] == NULL) {
 				base->weaponAddr[idx] = &base->field_0x44[idx];
 			}
-			_combine_nozzle_weapon(0, base->weaponAddr[idx], base->field_0x34 + base->field_0x1CA * 0xC0 + 0x10);
+			_combine_nozzle_weapon(0, base->weaponAddr[idx], &base->field_0x34->field_0x10[base->field_0x1CA]);
 		}
 	}
 	return 2;
@@ -2522,7 +2528,7 @@ USER_FUNC(_object_fall_attack) {
 	FallObjectEntry* preEntry;
 	s32 hitFlags;
 	s32 i;
-	u8* typeTable;
+	BattleStageFallObjectData* typeTable;
 	FallObjectEntry* entry;
 	BattleUnit* unit;
 	BattleWeapon* newWeapon;
@@ -2533,67 +2539,65 @@ USER_FUNC(_object_fall_attack) {
 	FallObjectEntry* newEntry;
 	s16 rand;
 	BattleWeapon* weapon;
-	s8* alloc;
+	ObjectFallAttackWork* alloc;
 	s32 k;
-	s32 off;
 	// Stack objects are declared so MWCC lays them out at the original offsets.
-	u8 samplingA[0xACC];
-	u8 samplingB[0xACC];
+	BattleSampling samplingA;
+	BattleSampling samplingB;
 	Vec floorPos;
 	Vec spawnPos;
 	Vec hitPos;
 	Vec pos;
 
-	// `wp` is the BattleWork base; typeTable is its fall-object data table (weights at +0xC0, stats at +0xCC).
+	// `wp` is the BattleWork base; typeTable is this rank's fall-object data.
 	wp = _battleWorkPointer;
 	typeTable = wp->field_180C0.field_0x38;
 	dst = *args++;
 	flag = 0;
 	if (isFirstCall) {
-		alloc = (s8*)BattleAlloc(0xEC);
+		alloc = (ObjectFallAttackWork*)BattleAlloc(0xEC);
 		event->userdata[0] = (s32)alloc;
 		event->userdata[1] = 0;
 		memset(alloc, 0, 0xEC);
-		alloc[4] = -1;
+		alloc->entries[0].no = -1;
 		for (idx = 0; idx < 3; idx++) {
-			alloc[idx + 1] = -1;
+			alloc->types[idx] = -1;
 		}
 		if (BattleCheckConcluded(wp)) {
 			evtSetValue(event, dst, event->userdata[1]);
 			return EVT_RETURN_DONE;
 		}
-		alloc[0] = 1;
+		alloc->count = 1;
 		i = 0;
-		off = 0;
-		while (i < (u8)alloc[0]) {
-			newEntry = (FallObjectEntry*)(alloc + 4 + off);
+		while (i < alloc->count) {
+			newEntry = &alloc->entries[i];
 			newEntry->no = i;
 			for (slot = 0; slot < 3; slot++) {
-				if ((s8)alloc[slot + 1] == -1) {
+				if (alloc->types[slot] == -1) {
 					break;
 				}
 			}
 			if (slot >= 3) {
-				newEntry->type = (s8)alloc[irand(3) + 1];
+				newEntry->type = alloc->types[irand(3)];
 			} else {
 				sum = 0;
 				for (j = 0; j < 9; j++) {
-					sum += typeTable[0xC0 + j];
+					sum += typeTable->field_0xC0[j];
 				}
 				sum = irand(sum);
 				newEntry->type = 0;
 				while (newEntry->type < 8) {
-					sum -= typeTable[0xC0 + (s8)newEntry->type];
+					sum -= typeTable->field_0xC0[(s8)newEntry->type];
 					if (sum < 0) {
 						break;
 					}
 					newEntry->type++;
 				}
-				alloc[slot + 1] = newEntry->type;
+				alloc->types[slot] = newEntry->type;
 			}
 			{
 				s32 t = newEntry->type;
-				newEntry->weapon = *(BattleWeapon*)(typeTable + 0xCC + t * 0xC0);
+				newEntry->weapon = typeTable->field_0xCC[t];
 			}
 			if (newEntry->type == 6) {
 				if (irand(100) < 0x32) {
@@ -2618,35 +2622,34 @@ USER_FUNC(_object_fall_attack) {
 			}
 			if (newEntry->mode == 0) {
 				// BattleWork.alliances[1].attackDirection (0x12).
-				BattleSamplingEnemy(samplingA, newWeapon, BattleGetSystemPtr(wp)->unitId, 1,
+				BattleSamplingEnemy((u8*)&samplingA, newWeapon, BattleGetSystemPtr(wp)->unitId, 1,
 				                    newWeapon->targetClassFlags, newWeapon->targetPropertyFlags,
 				                    (s8)-wp->alliances[1].attackDirection);
-				if ((s8)samplingA[0xA6C] <= 0) {
+				if (samplingA.count <= 0) {
 					evtSetValue(event, dst, event->userdata[1]);
 					return EVT_RETURN_DONE;
 				}
 				flag = 1;
-				BattleChoiceSamplingEnemy(samplingA, newWeapon->targetWeightingFlags, &outId,
+				BattleChoiceSamplingEnemy((u8*)&samplingA, newWeapon->targetWeightingFlags, &outId,
 				                          &outPartId);
 				newEntry->unitId = outId;
 				newEntry->partId = outPartId;
 				newEntry->flag14 = 1;
 				for (j = i; j >= 0; j--) {
-					FallObjectEntry* prev = (FallObjectEntry*)(alloc + 4 + j * 0xE8);
+					FallObjectEntry* prev = &alloc->entries[j];
 					if (newEntry != prev && prev->mode == 0 && newEntry->unitId == prev->unitId) {
 						prev->flag14 = 0;
 					}
 				}
 			}
 			i++;
-			off += 0xE8;
 		}
 		if (flag == 0) {
 			evtSetValue(event, dst, event->userdata[1]);
 			return EVT_RETURN_DONE;
 		}
-		for (i = 0; i < (u8)alloc[0]; i++) {
-			preEntry = (FallObjectEntry*)(alloc + 4 + i * 0xE8);
+		for (i = 0; i < alloc->count; i++) {
+			preEntry = &alloc->entries[i];
 			preWeapon = &preEntry->weapon;
 			if (preEntry->mode != 0) {
 				continue;
@@ -2664,7 +2667,7 @@ USER_FUNC(_object_fall_attack) {
 			if (preEntry->index == 1 && preEntry->flag14 == 0) {
 				rand = irand(0);
 				for (k = 0; k < i; k++) {
-					FallObjectEntry* prev = (FallObjectEntry*)(alloc + 4 + k * 0xE8);
+					FallObjectEntry* prev = &alloc->entries[k];
 					if (preEntry->unitId == prev->unitId) {
 						prev->timer = rand;
 						rand = (s16)((s32)irand(0x16) + (s32)rand + 0x14);
@@ -2677,10 +2680,10 @@ USER_FUNC(_object_fall_attack) {
 		}
 	}
 
-	alloc = (s8*)event->userdata[0];
+	alloc = (ObjectFallAttackWork*)event->userdata[0];
 	active = 1;
-	for (i = 0; i < (u8)alloc[0]; i++) {
-		entry = (FallObjectEntry*)(alloc + 4 + i * 0xE8);
+	for (i = 0; i < alloc->count; i++) {
+		entry = &alloc->entries[i];
 		if (entry->no == -1) {
 			continue;
 		}
@@ -2841,23 +2844,23 @@ USER_FUNC(_object_fall_attack) {
 				}
 			} else {
 				psndSFXOff(entry->sfxId);
-				BattleSamplingEnemy(samplingB, weapon, BattleGetSystemPtr(wp)->unitId, 1,
+				BattleSamplingEnemy((u8*)&samplingB, weapon, BattleGetSystemPtr(wp)->unitId, 1,
 				                    weapon->targetClassFlags, weapon->targetPropertyFlags,
 				                    (s8)-wp->alliances[1].attackDirection);
-				if ((s8)samplingB[0xA6C] > 0)
+				if (samplingB.count > 0)
 				for (;;) {
 					s32 si;
-					u8* se;
+					BattleSamplingEntry* se;
 					s32 res;
 					BattleUnit* target;
-					if ((s8)samplingB[0xAB7] >= (s8)samplingB[0xA6C]) {
+					if (samplingB.selectIdx >= samplingB.count) {
 						break;
 					}
-					si = (s8)samplingB[0xA6D + (s8)samplingB[0xAB7]];
-					se = samplingB + 4 + si * 0x24;
-					target = BattleGetUnitPtr(wp, *(s16*)(se + 0));
+					si = samplingB.order[samplingB.selectIdx];
+					se = &samplingB.entries[si];
+					target = BattleGetUnitPtr(wp, se->unitId);
 					res = BattlePreCheckDamage(BattleGetSystemPtr(wp), target,
-					                           BattleGetUnitPartsPtr(*(s16*)(se + 0), *(s16*)(se + 2)),
+					                           BattleGetUnitPartsPtr(se->unitId, se->partId),
 					                           weapon, 0x100);
 					switch (res) {
 					case 2:
@@ -2888,11 +2891,11 @@ USER_FUNC(_object_fall_attack) {
 							check++;
 						}
 						BattleCheckDamage(BattleGetSystemPtr(wp), target,
-						                  BattleGetUnitPartsPtr(*(s16*)(se + 0), *(s16*)(se + 2)),
+						                  BattleGetUnitPartsPtr(se->unitId, se->partId),
 						                  weapon, 0x100);
 						break;
 					}
-					samplingB[0xAB7]++;
+					samplingB.selectIdx++;
 				}
 			}
 		}

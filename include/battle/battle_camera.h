@@ -17,10 +17,13 @@ typedef struct BattleCameraWork {
     f32 zoom;               // 0x24
     s16 moveSpeedLv;        // 0x28
     s16 zoomSpeedLv;        // 0x2A
-    u8 unk2C[0x5C - 0x2C];  // 0x2C
+    Vec field_0x2C;         // 0x2C, cameraPos as battleCameraMain last set it
+    Vec field_0x38;         // 0x38, cameraPos at the start of battleCameraMain (restored per axis by flags 4/8/0x10)
+    Vec field_0x44;         // 0x44, cameraAt as battleCameraMain last set it
+    Vec field_0x50;         // 0x50, cameraAt at the start of battleCameraMain (restored with field_0x38)
     Vec position;           // 0x5C
     Vec unk68;              // 0x68 (speed / delta)
-    u8 unk74[0x80 - 0x74];  // 0x74
+    Vec field_0x74;         // 0x74, battleCameraMain's o4-o6 (unk68 gets o1-o3)
     s32 unk80;              // 0x80
     s32 unk84;              // 0x84
     s32 unk88;              // 0x88

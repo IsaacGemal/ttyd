@@ -15,8 +15,11 @@ typedef void (*BattleACDeleteCallback)(BattleWork* work);
 
 typedef struct BattleACDispParams {
     u8 field_0x0[0xC - 0x0];    // 0x0
-    s32 field_0xC;              // 0xC
-    u8 field_0x10[0x14 - 0x10]; // 0x10
+    s32 field_0xC;              // 0xC, RGBA tint of the gauge (BattleAcDrawGauge flag 1), stored whole from each AC's constant
+    u8 field_0x10;              // 0x10
+    s8 dg;                      // 0x11, step added to field_0xC's g byte while the gauge flashes (-0x10 or 0x10)
+    s8 db;                      // 0x12, and to its b byte
+    u8 field_0x13;              // 0x13
     f32 iconX;                  // 0x14, see actionCommandDisp
     f32 iconY;                  // 0x18, see actionCommandDisp
     u8 field_0x1C[0x20 - 0x1C]; // 0x1C

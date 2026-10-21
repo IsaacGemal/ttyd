@@ -127,10 +127,10 @@ extend_data(13,
 
 void _door_color_tev(MapTevCallback* param) {
     s32 stage = param->tevStage;
-    u8* door = (u8*)_door[0];
+    GXColor* door = (GXColor*)_door[0];
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    GXSetTevColor(GX_TEVREG0, *(GXColor*)door);
+    GXSetTevColor(GX_TEVREG0, door[0]);
     GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C0, GX_CC_ZERO);
@@ -140,10 +140,10 @@ void _door_color_tev(MapTevCallback* param) {
 
 void _door_color2_tev(MapTevCallback* param) {
     s32 stage = param->tevStage;
-    u8* door = (u8*)_door[0];
+    GXColor* door = (GXColor*)_door[0];
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    GXSetTevColor(GX_TEVREG0, *(GXColor*)(door + 4));
+    GXSetTevColor(GX_TEVREG0, door[1]);
     GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C0, GX_CC_ZERO);
@@ -152,39 +152,39 @@ void _door_color2_tev(MapTevCallback* param) {
 }
 
 USER_FUNC(_door_color_init_func) {
-    u8* door = _mapAlloc(8);
+    GXColor* door = _mapAlloc(8);
 
     _door[0] = (u32)door;
-    ((u8*)_door[0])[0] = 0xFF;
-    ((u8*)_door[0])[1] = 0xFF;
-    ((u8*)_door[0])[2] = 0xFF;
-    ((u8*)_door[0])[3] = 0xFF;
-    ((u8*)_door[0])[4] = 0xFF;
-    ((u8*)_door[0])[5] = 0xFF;
-    ((u8*)_door[0])[6] = 0xFF;
-    ((u8*)_door[0])[7] = 0xFF;
+    ((GXColor*)_door[0])[0].r = 0xFF;
+    ((GXColor*)_door[0])[0].g = 0xFF;
+    ((GXColor*)_door[0])[0].b = 0xFF;
+    ((GXColor*)_door[0])[0].a = 0xFF;
+    ((GXColor*)_door[0])[1].r = 0xFF;
+    ((GXColor*)_door[0])[1].g = 0xFF;
+    ((GXColor*)_door[0])[1].b = 0xFF;
+    ((GXColor*)_door[0])[1].a = 0xFF;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(_door_color_main_func) {
     s32* args = event->args;
-    u8* door = (u8*)_door[0];
+    GXColor* door = (GXColor*)_door[0];
 
-    door[0] = evtGetValue(event, args[0]);
-    door[1] = evtGetValue(event, args[1]);
-    door[2] = evtGetValue(event, args[2]);
-    door[3] = evtGetValue(event, args[3]);
+    door[0].r = evtGetValue(event, args[0]);
+    door[0].g = evtGetValue(event, args[1]);
+    door[0].b = evtGetValue(event, args[2]);
+    door[0].a = evtGetValue(event, args[3]);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(_door_color2_main_func) {
     s32* args = event->args;
-    u8* door = (u8*)_door[0];
+    GXColor* door = (GXColor*)_door[0];
 
-    door[4] = evtGetValue(event, args[0]);
-    door[5] = evtGetValue(event, args[1]);
-    door[6] = evtGetValue(event, args[2]);
-    door[7] = evtGetValue(event, args[3]);
+    door[1].r = evtGetValue(event, args[0]);
+    door[1].g = evtGetValue(event, args[1]);
+    door[1].b = evtGetValue(event, args[2]);
+    door[1].a = evtGetValue(event, args[3]);
     return EVT_RETURN_DONE;
 }
 

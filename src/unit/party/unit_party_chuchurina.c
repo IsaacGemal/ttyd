@@ -49,9 +49,9 @@ USER_FUNC(_chuchu_make_extra_work_area) {
     cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                 \
     cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
     cmd->mWeaponTable[*count].mIcon =                                                 \
-        *(u16*)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 4);                    \
+        cmd->mWeaponTable[*count].mWeaponParams->icon;                                \
     cmd->mWeaponTable[*count].mName =                                                 \
-        (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0)); \
+        (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);               \
     (*count)++;
 
 // The original addresses the four weapons from one base register (addi r30, r5, lbl_8037EC10@l, then

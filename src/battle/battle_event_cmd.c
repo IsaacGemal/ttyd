@@ -3614,15 +3614,12 @@ USER_FUNC(btlevtcmd_GetConsumeItem) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
     s32 idx = wp->commandMenu.cursor[11].field_0;
-    u8* tbl = (u8*)&wp->commandMenu;
+    BattleCommand* tbl = &wp->commandMenu;
     s32 index;
-    u8* base;
     s32 value;
 
     index = args[0];
-    base = tbl;
-    base += idx * 0x1C;
-    value = *(s32*)(base + 0x94);
+    value = tbl->weaponTable[idx].mItem;
     evtSetValue(event, index, value);
     return EVT_RETURN_DONE;
 }
@@ -3655,7 +3652,7 @@ USER_FUNC(btlevtcmd_DispItemIcon) {
 //s32* battleId, s32* count
 USER_FUNC(btlevtcmd_CommandFlyItem) {
     s32* args = event->args;
-    u8* tbl;
+    BattleCommand* tbl;
     s32 btlId;
     s32 rawId;
     BattleWork* wp;
@@ -3670,14 +3667,12 @@ USER_FUNC(btlevtcmd_CommandFlyItem) {
     btlId = BattleTransID(event, rawId);
     if (isFirstCall) {
         wp = _battleWorkPointer;
-        tbl = (u8*)&wp->commandMenu;
+        tbl = &wp->commandMenu;
         unit = BattleGetUnitPtr(wp, btlId);
         kind = unit->currentKind;
         if (kind == UNIT_MARIO || (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX)) {
-            u8* base2 = tbl;
-            s32 idx = *(s32*)(tbl + 0x51C);
-            base2 += idx * 0x1C;
-            itemId = *(s32*)(base2 + 0x94);
+            s32 idx = tbl->cursor[11].field_0;
+            itemId = tbl->weaponTable[idx].mItem;
         } else {
             itemId = unit->heldItem;
         }

@@ -1194,7 +1194,7 @@ static USER_FUNC(piders_renzoku_attack_set_target) {
     s32 i = 0;
     s32 count = 0;
 
-    ((s8*)_battleWorkPointer)[0xEDF] = 0;
+    _battleWorkPointer->sampling.selectIdx = 0;
     piders_get_target(&ids[0], &parts[0]);
     while (1) {
         if (ids[i] == -1) {
@@ -1216,24 +1216,24 @@ static USER_FUNC(piders_renzoku_attack_set_target) {
 #pragma dont_inline on // the pider target walkers are calls, not inlined, in the original
 static void piders_get_target(s32* outUnit, s32* outPart) {
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)&wp->sampling;
-    s32 idx = (s8)sampling[0xAB7];
-    s16* entry = (s16*)(sampling + (s8)sampling[0xA6D + idx] * 0x24 + 4);
+    BattleSampling* sampling = &wp->sampling;
+    s32 idx = sampling->selectIdx;
+    BattleSamplingEntry* entry = &sampling->entries[sampling->order[idx]];
 
-    *outUnit = entry[0];
-    *outPart = entry[1];
+    *outUnit = entry->unitId;
+    *outPart = entry->partId;
 }
 
 static void piders_get_next_target(s32* outUnit, s32* outPart) {
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)&wp->sampling;
-    s16* entry;
+    BattleSampling* sampling = &wp->sampling;
+    BattleSamplingEntry* entry;
 
-    sampling[0xAB7]++;
-    if ((s8)sampling[0xAB7] < (s8)sampling[0xA6C]) {
-        entry = (s16*)(sampling + (s8)sampling[0xA6D + (s8)sampling[0xAB7]] * 0x24 + 4);
-        *outUnit = entry[0];
-        *outPart = entry[1];
+    sampling->selectIdx++;
+    if (sampling->selectIdx < sampling->count) {
+        entry = &sampling->entries[sampling->order[sampling->selectIdx]];
+        *outUnit = entry->unitId;
+        *outPart = entry->partId;
     } else {
         *outUnit = -1;
         *outPart = 0;

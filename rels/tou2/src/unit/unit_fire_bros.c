@@ -935,7 +935,7 @@ USER_FUNC(fire_bros_nagemakuri_set_target) {
     s32 i = 0;
     s32 count = 0;
 
-    ((s8*)wp)[0xEDF] = 0;
+    wp->sampling.selectIdx = 0;
     fire_bros_get_target(&ids[0], &parts[0]);
     while (1) {
         if (ids[i] == -1) { count = i; break; }
@@ -1089,24 +1089,24 @@ EVT_END()
 #pragma dont_inline on  // the original keeps these as real calls in fire_bros_nagemakuri_set_target, not inlined
 void fire_bros_get_target(s32* outUnit, s32* outPart) {
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)&wp->sampling;
-    s32 idx = (s8)sampling[0xAB7];
-    s16* entry = (s16*)(sampling + (s8)sampling[0xA6D + idx] * 0x24 + 4);
+    BattleSampling* sampling = &wp->sampling;
+    s32 idx = sampling->selectIdx;
+    BattleSamplingEntry* entry = &sampling->entries[sampling->order[idx]];
 
-    *outUnit = entry[0];
-    *outPart = entry[1];
+    *outUnit = entry->unitId;
+    *outPart = entry->partId;
 }
 
 void fire_bros_get_next_target(s32* outUnit, s32* outPart) {
     BattleWork* wp = _battleWorkPointer;
-    u8* sampling = (u8*)&wp->sampling;
-    s16* entry;
+    BattleSampling* sampling = &wp->sampling;
+    BattleSamplingEntry* entry;
 
-    sampling[0xAB7]++;
-    if ((s8)sampling[0xAB7] < (s8)sampling[0xA6C]) {
-        entry = (s16*)(sampling + (s8)sampling[0xA6D + (s8)sampling[0xAB7]] * 0x24 + 4);
-        *outUnit = entry[0];
-        *outPart = entry[1];
+    sampling->selectIdx++;
+    if (sampling->selectIdx < sampling->count) {
+        entry = &sampling->entries[sampling->order[sampling->selectIdx]];
+        *outUnit = entry->unitId;
+        *outPart = entry->partId;
     } else {
         *outUnit = -1;
         *outPart = 0;

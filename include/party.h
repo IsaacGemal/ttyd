@@ -121,7 +121,8 @@ typedef struct PartyEntry {
     f32 velZ;                    // 0xA8, z of the push velocity (partyMarioHosei: f30 * -cos)
     Vec moveDelta;               // 0xAC, per-frame offset added to position: set by evt_party_set_hosei_xyz, mario->riderDelta in yoshi_use, zeroed in driveParty
     Vec field_B8;                // 0xB8
-    u8 field_C4[0xE0 - 0xC4];    // 0xC4
+    Vec field_C4;                // 0xC4
+    u8 field_D0[0xE0 - 0xD0];    // 0xD0
     f32 groundSlope;             // 0xE0, partyGroundSlope result (party_hit.c), compared with 30.0f
     f32 groundY;                 // 0xE4, floor height saved by partySearchGround
     f32 field_E8;                // 0xE8, partySearchGround sets it (-1, the floor gap, or 0); party_move tests it against 0

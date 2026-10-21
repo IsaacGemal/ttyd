@@ -1,10 +1,11 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "memory.h"
 
 USER_FUNC(kuzi_bomb_bomb_eff);
 USER_FUNC(kuzi_get_keihin);
-void kuji_bomb_055_callback(s32 type, s32* param);
+void kuji_bomb_055_callback(s32 type, smartEntry* smart);
 USER_FUNC(dummy_shadow);
 USER_FUNC(get_mario_dispReqDir);
 USER_FUNC(desk_talk_func);

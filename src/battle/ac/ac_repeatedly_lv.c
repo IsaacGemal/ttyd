@@ -173,10 +173,10 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
         disp->iconY = 0.0f;
         disp->counter = 0x14;
         disp->field_0xC = dat_8041e7f0;
-        disp->field_0x10[0] = 0;
-        *(s8*)&disp->field_0x10[1] = -0x10;
-        *(s8*)&disp->field_0x10[2] = -0x10;
-        disp->field_0x10[3] = 0;
+        disp->field_0x10 = 0;
+        disp->dg = -0x10;
+        disp->db = -0x10;
+        disp->field_0x13 = 0;
         disp->value = 0.0f;
         ac->result = 1;
         _init_param(work);
@@ -532,15 +532,15 @@ static void actionCommandDisp(f32 x, f32 y) {
     flags = 0;
     if ((s8)dec->fillState == 1 && disp->value >= float_1_8041e800) {
         flags |= 1;
-        p[0xD] += p[0x11];
-        p[0xE] += p[0x12];
-        if (p[0xD] <= 0x80 && (s8)p[0x11] < 0) {
-            p[0x12] = 0x10;
-            p[0x11] = 0x10;
+        p[0xD] += disp->dg;
+        p[0xE] += disp->db;
+        if (p[0xD] <= 0x80 && disp->dg < 0) {
+            disp->db = 0x10;
+            disp->dg = 0x10;
         }
-        if (p[0xD] >= 0xF5 && (s8)p[0x11] > 0) {
-            *(s8*)&p[0x12] = -0x10;
-            *(s8*)&p[0x11] = -0x10;
+        if (p[0xD] >= 0xF5 && disp->dg > 0) {
+            disp->db = -0x10;
+            disp->dg = -0x10;
         }
     }
     if ((s8)dec->fillState == -1) {

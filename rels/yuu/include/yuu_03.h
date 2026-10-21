@@ -17,15 +17,20 @@ typedef struct Yuuminigame4Data {
     EventEntry* subEvent;          // 0x24
 } Yuuminigame4Data;
 
+typedef struct Yuuminigame4WorkField8 {
+    f32 field_0x0;              // 0x00
+    Vec position;               // 0x04
+    f32 field_0x10;             // 0x10
+    u8 pad_14[0x38 - 0x14];     // 0x14
+} Yuuminigame4WorkField8;       // 0x38
+
 typedef struct Yuuminigame4Work {
     u8 unk0;                    // 0x00
     u8 pad_01;                  // 0x01
     s16 count;                  // 0x02
     u8 unk4;                    // 0x04
-    u8 pad_05[0x0C - 0x05];     // 0x05
-    Vec position;               // 0x0C
-    f32 unk18;                  // 0x18
-    u8 pad_1C[0x40 - 0x1C];     // 0x1C
+    u8 pad_05[0x08 - 0x05];     // 0x05
+    Yuuminigame4WorkField8 field_0x8; // 0x08
     YuuminigameWork* work;      // 0x40
 } Yuuminigame4Work;
 

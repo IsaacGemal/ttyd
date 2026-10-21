@@ -188,6 +188,23 @@ typedef struct BattleWorkPartyInfo {
     s32 field_24;             // 0x24
 } BattleWorkPartyInfo;
 
+// One rank's block of battle_stage_nozzle_data (four 0x310-byte blocks, one per stage rank; BattleStageObjectInit
+// points BattleWorkField180C0.field_0x34 at the current rank's).
+typedef struct BattleStageNozzleData {
+    u8 field_0x0[3][4];            // 0x0, per nozzle, the weight of each direction (_Nozzle_Change_Check)
+    u8 field_0xC[4];               // 0xC, weight of each nozzle type (_nozzle_type_init)
+    BattleWeapon field_0x10[4];    // 0x10, the weapon of each nozzle type (_nozzle_work_attack_set)
+} BattleStageNozzleData;
+
+// One rank's block of battle_stage_fall_object_data (four 0x78C-byte blocks, one per stage rank; BattleStageObjectInit
+// points BattleWorkField180C0.field_0x38 at the current rank's).
+typedef struct BattleStageFallObjectData {
+    u8 field_0x0[0xC0];            // 0x0, laid out as a BattleWeapon in the data; no reader
+    u8 field_0xC0[9];              // 0xC0, weight of each fall-object type (_object_fall_wait)
+    u8 pad_0xC9[3];                // 0xC9
+    BattleWeapon field_0xCC[9];    // 0xCC, the weapon of each fall-object type
+} BattleStageFallObjectData;
+
 // BattleWork.field_180C0: the stage-object work of battle_stage_object.c (layer events, nozzles, fog, falling
 // frames and objects). The code indexes it from 0x180C0 (_nozzle_turn, _nozzle_work_wait, _Nozzle_Change_Check),
 // and the original reaches the other fields through one pointer to it: wp->field_180C0.x recomputes the address
@@ -206,8 +223,8 @@ typedef struct BattleWorkField180C0 {
     s32 field_0x28;                // 0x28
     s32 field_0x2C;                // 0x2C
     s32 field_0x30;                // 0x30
-    u8* field_0x34;                // 0x34, this rank's block of battle_stage_nozzle_data, NULL at rank 0
-    u8* field_0x38;                // 0x38, this rank's block of battle_stage_fall_object_data
+    BattleStageNozzleData* field_0x34; // 0x34, this rank's block of battle_stage_nozzle_data, NULL at rank 0
+    BattleStageFallObjectData* field_0x38; // 0x38, this rank's block of battle_stage_fall_object_data
     BattleWeapon* weaponAddr[2];   // 0x3C, _nozzle_work_get_weapon_address; points into field_0x44
     BattleWeapon field_0x44[2];    // 0x44, nozzle weapons combined by _nozzle_work_attack_set
     u8 field_0x1C4[3];             // 0x1C4, direction of each nozzle (0-3)

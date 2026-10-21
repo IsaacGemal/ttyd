@@ -19,19 +19,23 @@
 typedef void (*ReverbCallback)(u8 reason, SND_AUX_INFO* info, void* user);
 
 typedef struct StreamHeader {
-    u8 field_0x0;   // 0x0
-    u16 freq;       // 0x2
-    u32 count;      // 0x4
-    u32 field_0x8;  // 0x8
-    u32 field_0xC;  // 0xC
-    u32 field_0x10; // 0x10
-    u32 field_0x14; // 0x14
-    u32 field_0x18; // 0x18
-    u32 field_0x1C; // 0x1C
-    u16 field_0x20; // 0x20
-    u16 field_0x22; // 0x22
-    u16 field_0x24; // 0x24
-    u16 field_0x26; // 0x26
+    u8 field_0x0;                      // 0x0
+    u16 freq;                          // 0x2
+    u32 count;                         // 0x4
+    u32 field_0x8;                     // 0x8
+    u32 field_0xC;                     // 0xC
+    u32 field_0x10;                    // 0x10
+    u32 field_0x14;                    // 0x14
+    u32 field_0x18;                    // 0x18
+    u32 field_0x1C;                    // 0x1C
+    u16 field_0x20;                    // 0x20
+    u16 field_0x22;                    // 0x22
+    u16 field_0x24;                    // 0x24
+    u16 field_0x26;                    // 0x26
+    u8 pad_0x28[0x5C - 0x28];          // 0x28
+    SND_ADPCMSTREAM_INFO field_0x5C;   // 0x5C, copied to entries[0].info
+    u8 pad_0x7C[0xBC - 0x7C];          // 0x7C
+    SND_ADPCMSTREAM_INFO field_0xBC;   // 0xBC, copied to entries[1].info
 } StreamHeader;
 
 typedef struct SoundGroup {  // TODO: rename
@@ -82,12 +86,24 @@ typedef struct SoundStreamEntry {
     ARQRequest request;        // 0x4
     SND_STREAMID streamId;     // 0x24
     void* unk28;               // 0x28, TODO: re-type? buffer
-    u32 loadBuffer;            // 0x2C
-    void* unk30;               // 0x30, TODO: re-type?
+    u8* loadBuffer[2];         // 0x2C, the two 0x8000-byte read buffers, selected by field_0x4C
     u32 bytesLoaded;           // 0x34, number of bytes already loaded from the file
-    u8 unk38[0x48 - 0x38];     // 0x38
+    u32 field_0x38;            // 0x38
+    u32 field_0x3C[2];         // 0x3C, bytes read into each loadBuffer
+    u32 field_0x44;            // 0x44, read offset in the current loadBuffer
     u32 requestLength;         // 0x48, number of bytes to load next ARQPostRequest
-    u8 unk4C[0x68 - 0x4C];     // 0x4C
+    u16 field_0x4C;            // 0x4C, current loadBuffer index (0/1)
+    s16 field_0x4E;            // 0x4E
+    s16 field_0x50;            // 0x50
+    s16 field_0x52;            // 0x52
+    s16 field_0x54;            // 0x54
+    s16 field_0x56;            // 0x56
+    u16 field_0x58;            // 0x58
+    u16 field_0x5A;            // 0x5A
+    u16 field_0x5C;            // 0x5C
+    u8 pad_0x5E[2];            // 0x5E
+    u32 field_0x60;            // 0x60
+    u32 field_0x64;            // 0x64
     SND_ADPCMSTREAM_INFO info; // 0x68
 } SoundStreamEntry;
 
@@ -103,7 +119,9 @@ typedef struct SoundStream {
     f32 unk14;                   // 0x14, some other volume setting
     u16 freq;                    // 0x18
     u16 count;                   // 0x1A
-    u8 unk1C[0x28 - 0x1C];       // 0x1C
+    u32 field_0x1C;              // 0x1C
+    u32 field_0x20;              // 0x20
+    u32 field_0x24;              // 0x24
     SoundStreamEntry entries[2]; // 0x28
 } SoundStream;
 
@@ -151,7 +169,7 @@ typedef struct SoundWork {
     u16 unk214;                // 0x214, some "mute" thing
     u8 pad216[2];              // 0x216
     SND_OUTPUTMODE outputMode; // 0x218
-    u8 unk21C[0x224 - 0x21C];  // 0x21C
+    u32 unk21C[2];             // 0x21C, ARAM address of each stream cache slot (unk226 marks it in use)
     u16 unk224;                // 0x224
     u16 unk226[2];             // 0x226
     char filepath[0x100];      // 0x22A
@@ -161,9 +179,9 @@ typedef struct SoundWork {
     u8 pad332[2];              // 0x332
     u8* dmaAddress;            // 0x334
     u32 dmaLength;             // 0x338
-    u8 unk33C[0x5BC - 0x33C];  // 0x33C
+    s16 unk33C[0x140];         // 0x33C
     AIDCallback callback;      // 0x5BC
-    u8 unk5C0[0x15C0 - 0x5C0]; // 0x5C0
+    s16 unk5C0[2][0x400];      // 0x5C0
     s32 unk15C0;               // 0x15C0
 } SoundWork;
 

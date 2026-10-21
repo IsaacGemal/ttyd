@@ -1525,10 +1525,10 @@ f32 _get_target_dir(EventEntry* event, NpcEntry* npc, const char* target) {
     Vec npcPos;
     Vec delta;
     if (strcmp(target, "mario") == 0) {
-        u8* mario = (u8*)marioGetPtr();
-        targetPos.x = *(f32*)(mario + 0x8c);
-        targetPos.y = *(f32*)(mario + 0x90);
-        targetPos.z = *(f32*)(mario + 0x94);
+        MarioWork* mario = marioGetPtr();
+        targetPos.x = mario->position.x;
+        targetPos.y = mario->position.y;
+        targetPos.z = mario->position.z;
     } else {
         NpcEntry* targetNpc = evtNpcNameToPtr(event, target);
         targetPos.x = targetNpc->position.x;

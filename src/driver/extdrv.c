@@ -122,11 +122,11 @@ void extInit(void) {
 void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void), void (*cb1)(void)) {
 	ExtWork* wp = extGetWork();
 	s32 texCount = 0;
-	void* p = param;
+	ExtMakeTextureEntry* p = param;
 	s32 i;
 
-	while (*(u32*)p != 0) {
-		p = (u8*)p + 0xC;
+	while (p->name != NULL) {
+		p++;
 		texCount++;
 	}
 
@@ -161,7 +161,7 @@ void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void),
 
 void extMakeTexture(CameraId camId, void* param) {
 	ExtWork* wp = extGetWork();
-	void* p = param;
+	const ExtMakeTextureEntry* p = param;
 	ExtTexture* tex = wp->textures;
 	f32 backup[4];
 	f32 half = 0.5f;
@@ -174,17 +174,15 @@ void extMakeTexture(CameraId camId, void* param) {
 	queen_uv[1] = -2.0f / (f32)wp->texCount;
 	queen_uv[3] = -1.0f / (f32)wp->texCount;
 
-	for (i = 0; i < wp->texCount; i++, p = (u8*)p + 0xC, tex++) {
+	for (i = 0; i < wp->texCount; i++, p++, tex++) {
 		s32 out0;
 		s32 out1;
 		s32 out2;
 		s32 out3;
 		s32 j;
 		s32 k;
-		const ExtMakeTextureEntry* q;
 
-		q = (const ExtMakeTextureEntry*)p;
-		animPoseDisp_MakeExtTexture(q->name, q->animName, q->field_0x8, &tex->texObj, tex, 4.0f, &out0, &out1, &out2,
+		animPoseDisp_MakeExtTexture(p->name, p->animName, p->field_0x8, &tex->texObj, tex, 4.0f, &out0, &out1, &out2,
 		                            &out3);
 		j = i * 12;
 		wp->vertices[j++] = (f32)out0 * half;

@@ -81,10 +81,10 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
             disp->counter = 0x14;
             disp->value = 0.0f;
             disp->field_0xC = dat_80421c20;
-            ((u8*)disp)[0x10] = 0;
-            ((s8*)disp)[0x11] = -0x10;
-            ((s8*)disp)[0x12] = -0x10;
-            ((u8*)disp)[0x13] = 0;
+            disp->field_0x10 = 0;
+            disp->dg = -0x10;
+            disp->db = -0x10;
+            disp->field_0x13 = 0;
             dec->frame = 0;
             work->actionCommands.outputParams[0] = 0;
             work->actionCommands.mAcState = 0x63;
@@ -312,19 +312,19 @@ static void actionCommandDisp(f32 x, f32 y) {
         disp->value = ratio;
 
         if (dec->flag != 0) {
-            ((u8*)ac)[0x29D] = (u8)(((u8*)ac)[0x29D] + ((u8*)ac)[0x2A1]);
-            ((u8*)ac)[0x29E] = (u8)(((u8*)ac)[0x29E] + ((u8*)ac)[0x2A2]);
+            ((u8*)ac)[0x29D] = (u8)(((u8*)ac)[0x29D] + disp->dg);
+            ((u8*)ac)[0x29E] = (u8)(((u8*)ac)[0x29E] + disp->db);
 
             if (disp->value >= 1.0f) {
                 flags |= 1;
             }
-            if (((u8*)ac)[0x29D] <= 0x80 && (s8)((u8*)ac)[0x2A1] < 0) {
-                ((s8*)ac)[0x2A2] = 0x10;
-                ((s8*)ac)[0x2A1] = 0x10;
+            if (((u8*)ac)[0x29D] <= 0x80 && disp->dg < 0) {
+                disp->db = 0x10;
+                disp->dg = 0x10;
             }
-            if (((u8*)ac)[0x29D] >= 0xF5 && (s8)((u8*)ac)[0x2A1] > 0) {
-                ((s8*)ac)[0x2A2] = -0x10;
-                ((s8*)ac)[0x2A1] = -0x10;
+            if (((u8*)ac)[0x29D] >= 0xF5 && disp->dg > 0) {
+                disp->db = -0x10;
+                disp->dg = -0x10;
             }
         }
 

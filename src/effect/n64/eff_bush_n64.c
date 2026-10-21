@@ -179,8 +179,8 @@ void effBushDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
 	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xc);
 	GXSetArray(9, size12x12_tex64x64_vtx, 0xe);
-	GXSetArray(0xb, (u8*)size12x12_tex64x64_vtx + 0xa, 0xe);
-	GXSetArray(0xd, (u8*)size12x12_tex64x64_vtx + 6, 0xe);
+	GXSetArray(0xb, ((effVtxArray*)size12x12_tex64x64_vtx)->clr0, 0xe);
+	GXSetArray(0xd, ((effVtxArray*)size12x12_tex64x64_vtx)->tex0, 0xe);
 
 	deg2rad = 0.017453292f;
 	for (i = 1; i < effect->count; i++, data++) {

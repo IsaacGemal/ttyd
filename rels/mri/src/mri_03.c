@@ -818,12 +818,11 @@ s32 JailAwayTable_New[15] = {
 
 void puniModeEventparent(PuniData* punidat) {
     s32* table = JailAwayTable_New;
-    u8* p = (u8*)punidat;
     Vec v;
     Vec target;
     f32 dist;
 
-    switch (*(u16*)(p + 0x114)) {
+    switch (punidat->state) {
         case 0: {
             f32 best = 1000000.0f;
             s32 i;
@@ -833,42 +832,42 @@ void puniModeEventparent(PuniData* punidat) {
                 target.x = (f32)table[i * 2];
                 target.y = 0.0f;
                 target.z = (f32)table[i * 2 + 1];
-                dist = PSVECSquareDistance(&target, (Vec*)(p + 0x12C));
+                dist = PSVECSquareDistance(&target, &punidat->pos);
                 if (best > dist) {
                     best = dist;
                     bestIdx = i;
                 }
             }
-            *(s32*)(p + 0x1E0) = bestIdx;
-            *(u16*)(p + 0x11E) = 2;
-            *(u16*)(p + 0x114) = 1;
+            punidat->subState = bestIdx;
+            punidat->prevAnimIdx = 2;
+            punidat->state = 1;
             // fallthrough
         }
         case 1: {
-            target.x = (f32)table[*(s32*)(p + 0x1E0) * 2];
+            target.x = (f32)table[punidat->subState * 2];
             target.y = 0.0f;
-            target.z = (f32)table[*(s32*)(p + 0x1E0) * 2 + 1];
-            dist = PSVECSquareDistance(&target, (Vec*)(p + 0x12C));
+            target.z = (f32)table[punidat->subState * 2 + 1];
+            dist = PSVECSquareDistance(&target, &punidat->pos);
             if (dist > 100.0f) {
-                PSVECSubtract(&target, (Vec*)(p + 0x12C), &v);
+                PSVECSubtract(&target, &punidat->pos, &v);
                 PSVECNormalize(&v, &v);
                 v.y = 0.0f;
                 PSVECScale(&v, &v, 1.5f);
-                PSVECAdd((Vec*)(p + 0x15C), &v, (Vec*)(p + 0x15C));
-            } else if (*(s32*)(p + 0x1E0) == *(s32*)(p + 0x1E4) + 5) {
-                *(Vec*)(p + 0x15C) = (Vec){ 0.0f, 0.0f, 0.0f };
-                *(u16*)(p + 0x114) = 2;
-            } else if (table[*(s32*)(p + 0x1E0) * 2 + 2] != 0x2710) {
-                *(s32*)(p + 0x1E0) = *(s32*)(p + 0x1E0) + 1;
+                PSVECAdd(&punidat->vel, &v, &punidat->vel);
+            } else if (punidat->subState == punidat->counter + 5) {
+                punidat->vel = (Vec){ 0.0f, 0.0f, 0.0f };
+                punidat->state = 2;
+            } else if (table[punidat->subState * 2 + 2] != 0x2710) {
+                punidat->subState = punidat->subState + 1;
             } else {
-                *(Vec*)(p + 0x15C) = (Vec){ 0.0f, 0.0f, 0.0f };
-                *(u16*)(p + 0x114) = 2;
+                punidat->vel = (Vec){ 0.0f, 0.0f, 0.0f };
+                punidat->state = 2;
             }
             break;
         }
         case 2:
-            *(u16*)(p + 0x11E) = 0;
-            *(u16*)(p + 0x114) = 3;
+            punidat->prevAnimIdx = 0;
+            punidat->state = 3;
             break;
         case 3:
         case 4:
@@ -883,71 +882,69 @@ void puniModeEventparent(PuniData* punidat) {
             Vec pos;
 
             target = (Vec){ -160.0f, 0.0f, 40.0f };
-            if (PSVECSquareDistance(&target, (Vec*)(p + 0x12C)) < 4900.0f) {
-                PSVECSubtract((Vec*)(p + 0x12C), &target, &v);
+            if (PSVECSquareDistance(&target, &punidat->pos) < 4900.0f) {
+                PSVECSubtract(&punidat->pos, &target, &v);
                 PSVECNormalize(&v, &v);
                 v.y = 0.0f;
                 PSVECScale(&v, &v, 0.7f);
-                PSVECAdd((Vec*)(p + 0x15C), &v, (Vec*)(p + 0x15C));
-                *(f32*)(p + 0x174) = 2.1f;
+                PSVECAdd(&punidat->vel, &v, &punidat->vel);
+                punidat->maxSpeed = 2.1f;
                 {
-                    f32 mag = PSVECMag((Vec*)(p + 0x15C));
+                    f32 mag = PSVECMag(&punidat->vel);
 
-                    pos = *(Vec*)(p + 0x12C);
+                    pos = punidat->pos;
                     pos.y += 1.0f;
                     if (mag != 0.0f) {
-                        PSVECNormalize((Vec*)(p + 0x15C), &v);
+                        PSVECNormalize(&punidat->vel, &v);
                     } else {
                         v = (Vec){ 0.0f, 0.0f, 0.0f };
                     }
                     puniMoveAtari(punidat, pos, v, 0, mag);
                 }
             } else {
-                *(u16*)(p + 0x114) = 11;
+                punidat->state = 11;
             }
             break;
         }
         case 11:
-            *(Vec*)(p + 0x15C) = (Vec){ 0.0f, 0.0f, 0.0f };
-            if (*(f32*)(p + 0x12C) < -160.0f) {
-                *(f32*)(p + 0x180) = 90.0f;
+            punidat->vel = (Vec){ 0.0f, 0.0f, 0.0f };
+            if (punidat->pos.x < -160.0f) {
+                punidat->direction = 90.0f;
             } else {
-                *(f32*)(p + 0x180) = 270.0f;
+                punidat->direction = 270.0f;
             }
-            *(u16*)(p + 0x114) = 12;
+            punidat->state = 12;
             break;
     }
 }
 
 USER_FUNC(puni_parent) {
     PuniData* punidat = &puniGetPunidat()[evtGetValue(event, event->args[0])];
-    u8* p = (u8*)punidat;
-    u16 dir;
+    s16 tree;
 
-    if (*(f32*)(p + 0x12C) > -180.0f) {
-        *(s32*)(p + 0x1E4) = event->lwData[11] % 2;
+    if (punidat->pos.x > -180.0f) {
+        punidat->counter = event->lwData[11] % 2;
         event->lwData[11]++;
-        dir = 1;
+        tree = 1;
     } else {
-        *(s32*)(p + 0x1E4) = event->lwData[12] % 2;
+        punidat->counter = event->lwData[12] % 2;
         event->lwData[12]++;
-        dir = 2;
+        tree = 2;
     }
-    *(s32*)(p + 0x4) |= 0x100000;
-    *(u16*)(p + 0x118) = dir;
-    *(u16*)(p + 0xC) = 0x1D;
-    *(u16*)(p + 0x114) = 0;
-    *(u16*)(p + 0x11E) = 1000;
-    *(void**)(p + 0x56C) = (void*)puniModeEventparent;
-    *(void**)(p + 0x570) = (void*)puniMoveDecel;
+    punidat->flags |= 0x100000;
+    punidat->treeId = tree;
+    punidat->mode = PUNI_MODE_CUSTOM;
+    punidat->state = 0;
+    punidat->prevAnimIdx = 1000;
+    punidat->modeFunc = puniModeEventparent;
+    punidat->moveFunc = puniMoveDecel;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(puni_away) {
     PuniData* punidat = &puniGetPunidat()[evtGetValue(event, event->args[0])];
-    u8* p = (u8*)punidat;
 
-    *(u16*)(p + 0x114) = 10;
+    punidat->state = 10;
     return EVT_RETURN_DONE;
 }
 

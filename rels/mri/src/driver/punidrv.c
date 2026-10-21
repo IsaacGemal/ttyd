@@ -184,13 +184,13 @@ void puniEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void)
     static GXColor Colors = { 0xFF, 0xFF, 0xFF, 0xFF };
     static f32 UVs[11] = { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f };
     PuniDrvWork* wp = work;
-    void* p = param;
+    PuniTexInfo* p = param;
     s32 texCount = 0;
     s32 i;
 
-    while (*(u32*)p != 0) {
+    while (p->unk0 != NULL) {
         texCount++;
-        p = (u8*)p + 0xC;
+        p++;
     }
 
     wp->poses = __memAlloc(2, count * sizeof(PuniPose));

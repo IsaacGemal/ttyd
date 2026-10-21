@@ -76,21 +76,21 @@ void* BattleEnemyUseItemCheck(BattleUnit* unit) {
 void* _check_hp_recover_item(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;
     s32 item;
-    u8* sampling;
+    BattleSampling* sampling;
     BattleWeapon* weapon;
     s32 i;
 
     item = unit->heldItem;
-    sampling = (u8*)&wp->sampling;
+    sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
-    for (i = 0; i < (s8)sampling[0xa6c]; i++) {
+    for (i = 0; i < sampling->count; i++) {
         BattleUnit* target =
-            BattleGetUnitPtr(wp, *(s16*)(sampling + (s8)sampling[0xa6d + i] * 0x24 + 4));
+            BattleGetUnitPtr(wp, sampling->entries[sampling->order[i]].unitId);
 
         if (unit->mAttributeFlags & kInactive) {
             continue;
@@ -106,21 +106,21 @@ void* _check_hp_recover_item(BattleUnit* unit) {
 void* _check_fp_recover_item(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;
     s32 item;
-    u8* sampling;
+    BattleSampling* sampling;
     BattleWeapon* weapon;
     s32 i;
 
     item = unit->heldItem;
-    sampling = (u8*)&wp->sampling;
+    sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
-    for (i = 0; i < (s8)sampling[0xa6c]; i++) {
+    for (i = 0; i < sampling->count; i++) {
         BattleUnit* target =
-            BattleGetUnitPtr(wp, *(s16*)(sampling + (s8)sampling[0xa6d + i] * 0x24 + 4));
+            BattleGetUnitPtr(wp, sampling->entries[sampling->order[i]].unitId);
         s32 maxFp;
 
         if (unit->mAttributeFlags & kInactive) {
@@ -138,26 +138,26 @@ void* _check_fp_recover_item(BattleUnit* unit) {
 void* _check_attack_item(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;
     s32 item;
-    u8* sampling;
+    BattleSampling* sampling;
     BattleWeapon* weapon;
     s32 i;
 
     item = unit->heldItem;
-    sampling = (u8*)&wp->sampling;
+    sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
-    if ((s8)sampling[0xa6c] <= 0) {
+    if (sampling->count <= 0) {
         return 0;
     }
 
     if (item == 0x8b || item == 0x85) {
-        for (i = 0; i < (s8)sampling[0xa6c]; i++) {
+        for (i = 0; i < sampling->count; i++) {
             BattleUnit* target =
-                BattleGetUnitPtr(wp, *(s16*)(sampling + (s8)sampling[0xa6d + i] * 0x24 + 4));
+                BattleGetUnitPtr(wp, sampling->entries[sampling->order[i]].unitId);
             if (target->currentKind != 0xe1) {
                 continue;
             }
@@ -179,25 +179,25 @@ void* _check_attack_item(BattleUnit* unit) {
 void* _check_status_attack_item(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;
     s32 item;
-    u8* sampling;
+    BattleSampling* sampling;
     BattleWeapon* weapon;
     s32 i;
 
     item = unit->heldItem;
-    sampling = (u8*)&wp->sampling;
+    sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
-    if ((s8)sampling[0xa6c] <= 0) {
+    if (sampling->count <= 0) {
         return 0;
     }
 
-    for (i = 0; i < (s8)sampling[0xa6c]; i++) {
+    for (i = 0; i < sampling->count; i++) {
         BattleUnit* target =
-            BattleGetUnitPtr(wp, *(s16*)(sampling + (s8)sampling[0xa6d + i] * 0x24 + 4));
+            BattleGetUnitPtr(wp, sampling->entries[sampling->order[i]].unitId);
         if (unit->mAttributeFlags & kInactive) {
             continue;
         }
@@ -236,25 +236,25 @@ void* _check_status_attack_item(BattleUnit* unit) {
 void* _check_status_support_item(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;
     s32 item;
-    u8* sampling;
+    BattleSampling* sampling;
     BattleWeapon* weapon;
     s32 i;
 
     item = unit->heldItem;
-    sampling = (u8*)&wp->sampling;
+    sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
-    if ((s8)sampling[0xa6c] <= 0) {
+    if (sampling->count <= 0) {
         return 0;
     }
 
-    for (i = 0; i < (s8)sampling[0xa6c]; i++) {
+    for (i = 0; i < sampling->count; i++) {
         BattleUnit* target =
-            BattleGetUnitPtr(wp, *(s16*)(sampling + (s8)sampling[0xa6d + i] * 0x24 + 4));
+            BattleGetUnitPtr(wp, sampling->entries[sampling->order[i]].unitId);
         if (unit->mAttributeFlags & kInactive) {
             continue;
         }
@@ -295,25 +295,25 @@ void* _check_status_support_item(BattleUnit* unit) {
 void* _check_status_recover_item(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;
     s32 item;
-    u8* sampling;
+    BattleSampling* sampling;
     BattleWeapon* weapon;
     s32 i;
 
     item = unit->heldItem;
-    sampling = (u8*)&wp->sampling;
+    sampling = &wp->sampling;
     weapon = itemDataTable[item].battle_params;
 
-    BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
+    BattleSamplingEnemy((u8*)sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
-    if ((s8)sampling[0xa6c] <= 0) {
+    if (sampling->count <= 0) {
         return 0;
     }
 
-    for (i = 0; i < (s8)sampling[0xa6c]; i++) {
+    for (i = 0; i < sampling->count; i++) {
         BattleUnit* target =
-            BattleGetUnitPtr(wp, *(s16*)(sampling + (s8)sampling[0xa6d + i] * 0x24 + 4));
+            BattleGetUnitPtr(wp, sampling->entries[sampling->order[i]].unitId);
         if (unit->mAttributeFlags & kInactive) {
             continue;
         }

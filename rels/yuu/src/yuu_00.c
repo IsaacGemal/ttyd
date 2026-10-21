@@ -50,16 +50,21 @@ static USER_FUNC(re_fall_rtn);
 static USER_FUNC(fall_rtn);
 static void monte_disp(CameraId cameraId, void* param);
 
+typedef struct YuuMonteField8 {
+    f32 field_0x0;            // 0x00
+    Vec pos;                  // 0x04
+    f32 field_0x10;           // 0x10
+    u8 pad_14[0x24];          // 0x14
+} YuuMonteField8;             // 0x38
+
 // One monte (chip) entry, stride 0x44.
 typedef struct YuuMonte {
     u8 flag;                  // 0x00
     u8 pad_01;
     s16 count;                // 0x02
     u8 state;                 // 0x04
-    u8 pad_05[7];             // 0x05
-    Vec pos;                  // 0x0C
-    f32 unk18;                // 0x18
-    u8 pad_1C[0x24];          // 0x1C
+    u8 pad_05[3];             // 0x05
+    YuuMonteField8 field_0x8; // 0x08
     YuuminigameWork* work;    // 0x40
 } YuuMonte;
 
@@ -568,13 +573,13 @@ static void monte_disp(CameraId cameraId, void* param) {
     if (monte != NULL) {
         for (i = 0; i < monte->count; i++) {
             if (monte[i].flag == 0) {
-                iconDispGx(1.0f, &monte[i].pos, 0, 0x13F);
+                iconDispGx(1.0f, &monte[i].field_0x8.pos, 0, 0x13F);
             }
         }
     }
 }
 
-// Setting base[3]=0.0f before the do-while (not at its top) matched the target's store layout, and
+// Setting base->pos.z = 0.0f before the do-while (not at its top) matched the target's store layout, and
 // expanding the y-range monte_rand with `max -= min` (MUST_MATCH) made its subtraction reuse max's
 // register (f1), as the target does. The sfx string uses yuu_01's union shape (see the MUST_MATCH
 // blocks): a plain `const char*` adds an `mr`, and the union member alone colours it r29, not r26.
@@ -619,11 +624,11 @@ static USER_FUNC(fall_rtn) {
         pointIdx = 0;
         for (i = 0; i < monte_p->count; i++) {
             s32 j;
-            f32* base = (f32*)((u8*)&monte_p[i] + 8);
+            YuuMonteField8* base = &monte_p[i].field_0x8;
             f32 min;
             f32 max;
 
-            base[3] = 0.0f;
+            base->pos.z = 0.0f;
             do {
                 if (montetable[tableIdx].xMin < montetable[tableIdx].xMax) {
                     min = montetable[tableIdx].xMin;
@@ -632,7 +637,7 @@ static USER_FUNC(fall_rtn) {
                     min = montetable[tableIdx].xMax;
                     max = montetable[tableIdx].xMin;
                 }
-                base[1] = monte_rand(min, max);
+                base->pos.x = monte_rand(min, max);
                 if (montetable[tableIdx].yMin < montetable[tableIdx].yMax) {
                     min = montetable[tableIdx].yMin;
                     max = montetable[tableIdx].yMax;
@@ -643,13 +648,14 @@ static USER_FUNC(fall_rtn) {
 #ifdef MUST_MATCH
                 // match-only: the in-place range makes MWCC keep it in max's register (f1)
                 max -= min;
-                base[2] = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
+                base->pos.y = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
 #else
-                base[2] = monte_rand(min, max);
+                base->pos.y = monte_rand(min, max);
 #endif
                 for (j = 0; j < pointIdx; j++) {
                     Vec diff;
-                    PSVECSubtract((Vec*)(base + 1), (Vec*)((u8*)base - (j + 1) * 0x38 + 4), &diff);
+                    // steps back by the 0x38-byte field_0x8, not by the 0x44-byte entry
+                    PSVECSubtract(&base->pos, &(base - (j + 1))->pos, &diff);
                     if (PSVECMag(&diff) < 20.0f) {
                         break;
                     }
@@ -660,7 +666,7 @@ static USER_FUNC(fall_rtn) {
                 pointIdx = 0;
                 tableIdx++;
             }
-            base[4] = 1.0f;
+            base->field_0x10 = 1.0f;
         }
     }
 
@@ -674,7 +680,7 @@ static USER_FUNC(fall_rtn) {
             YuuMonte* p = &monte_p[i];
             switch (p->state) {
                 case 0:
-                    if (get_monte_check(&p->pos, &marioGetPtr()->position) == 1) {
+                    if (get_monte_check(&p->field_0x8.pos, &marioGetPtr()->position) == 1) {
                         data->count++;
 #ifdef MUST_MATCH
                         psndSFXOn_3D((const char*)(u32)sfx.p, &marioGetPtr()->position);

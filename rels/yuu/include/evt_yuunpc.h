@@ -63,7 +63,7 @@ typedef struct YuunpcWp {
     u16 flags;                     //0x0
     u16 pad_02;                    //0x2
     s32 count;                     //0x4
-    u8 pad_08[0xC];                //0x8
+    s32 field_08[3];               //0x8
     YuunpcEntry* entries;          //0x14
     s32 field_18;                  //0x18
     s32 field_1C;                  //0x1C

@@ -95,9 +95,9 @@ static inline f32 camShakeSqrtf(f32 x) {
     return x;
 }
 
-// The original treats wInterpRelatedTime as two 32-bit words: it stores the halves through the
-// s32* cast (the u64 store schedules the two words in the opposite order) and reads them back
-// joined into a u64 (a plain u64 load colours start, event and camId differently).
+// The original treats 0x88 as the two words of userdataEx, not as wInterpRelatedTime: it stores
+// the halves separately (the u64 store schedules the two words in the opposite order) and reads
+// them back joined into a u64 (a plain u64 load colours start, event and camId differently).
 USER_FUNC(evt_cam_shake) {
     s32* args = event->args;
     CameraId camId = evtGetValue(event, args[0]);
@@ -111,8 +111,8 @@ USER_FUNC(evt_cam_shake) {
         event->userdata[1] = (start >> 32) & 0xFFFFFFFF;
         event->userdata[2] = start & 0xFFFFFFFF;
         event->field_84 = 0;
-        ((s32*)&event->wInterpRelatedTime)[0] = (start >> 32) & 0xFFFFFFFF;
-        ((s32*)&event->wInterpRelatedTime)[1] = start & 0xFFFFFFFF;
+        event->userdataEx[0] = (start >> 32) & 0xFFFFFFFF;
+        event->userdataEx[1] = start & 0xFFFFFFFF;
     }
     event->userdata[0]++;
     event->userdata[0] = event->userdata[0] % 4;
@@ -133,23 +133,23 @@ USER_FUNC(evt_cam_shake) {
         f32 mag = camShakeSqrtf(ampX * ampX + ampY * ampY);
         s32 onTime = (s32)(13000.0f * mag);
         s32 offTime = (s32)(50.0f * (1.0f - mag));
-        u64 wInterp = ((u64)((u32*)&event->wInterpRelatedTime)[0] << 32) |
-                      ((u32*)&event->wInterpRelatedTime)[1];
+        u64 wInterp = ((u64)(u32)event->userdataEx[0] << 32) |
+                      (u32)event->userdataEx[1];
 
         if (onTime != 0 && offTime != 0) {
             if ((s32)event->field_84 == 0) {
                 padRumbleOn(0);
                 if (OSTicksToMilliseconds(start - wInterp) > onTime) {
                     event->field_84 = 1 - event->field_84;
-                    ((s32*)&event->wInterpRelatedTime)[0] = (start >> 32) & 0xFFFFFFFF;
-                    ((s32*)&event->wInterpRelatedTime)[1] = start & 0xFFFFFFFF;
+                    event->userdataEx[0] = (start >> 32) & 0xFFFFFFFF;
+                    event->userdataEx[1] = start & 0xFFFFFFFF;
                 }
             } else {
                 padRumbleOff(0);
                 if (OSTicksToMilliseconds(start - wInterp) > offTime) {
                     event->field_84 = 1 - event->field_84;
-                    ((s32*)&event->wInterpRelatedTime)[0] = (start >> 32) & 0xFFFFFFFF;
-                    ((s32*)&event->wInterpRelatedTime)[1] = start & 0xFFFFFFFF;
+                    event->userdataEx[0] = (start >> 32) & 0xFFFFFFFF;
+                    event->userdataEx[1] = start & 0xFFFFFFFF;
                 }
             }
         }

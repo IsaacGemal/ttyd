@@ -33,16 +33,20 @@
 #include <dolphin/mtx.h>
 #include <string.h>
 
+typedef struct MonteEntryField8 {
+    f32 field_0x0;              // 0x00
+    Vec position;               // 0x04
+    f32 field_0x10;             // 0x10
+    u8 pad_14[0x38 - 0x14];     // 0x14
+} MonteEntryField8;             // 0x38
+
 typedef struct MonteEntry {
     u8 unk0;                    // 0x00
     u8 unk1;                    // 0x01
     s16 count;                  // 0x02
     u8 unk4;                    // 0x04
     u8 pad_05[0x08 - 0x05];     // 0x05
-    f32 unk8;                   // 0x08
-    Vec position;               // 0x0C
-    f32 unk18;                  // 0x18
-    u8 pad_1C[0x40 - 0x1C];     // 0x1C
+    MonteEntryField8 field_0x8; // 0x08
     void* work;                 // 0x40
 } MonteEntry;                   // 0x44
 
@@ -637,7 +641,7 @@ static void monte_disp(CameraId cameraId, void* param) {
     if (param != NULL) {
         for (i = 0; i < entries->count; i++) {
             if (entries[i].unk0 == 0) {
-                iconDispGx(1.0f, &entries[i].position, 0, 0x13f);
+                iconDispGx(1.0f, &entries[i].field_0x8.position, 0, 0x13f);
             }
         }
     }
@@ -647,7 +651,7 @@ static inline f32 monte_rand(f32 min, f32 max) {
     return min + (f32)irand((s32)(100.0f * (max - min))) / 100.0f;
 }
 
-// base[2]=0.0f is set before the do-while and base[4]=1.0f after it, matching the target's store layout.
+// base->position.y = 0.0f is set before the do-while and base->field_0x10 = 1.0f after it, matching the target's store layout.
 // Reading the bounds straight from the montetable fields (no lo/hi copies) puts the z min/max pointers in the
 // target's r26/r27, and writing the z range back into `max` (then 100.0f * max) keeps the subtraction in f1.
 //
@@ -698,11 +702,11 @@ static USER_FUNC(fall_rtn) {
         pointIdx = 0;
         for (i = 0; i < monte_p->count; i++) {
             s32 j;
-            f32* base = (f32*)((u8*)&monte_p[i] + 8);
+            MonteEntryField8* base = &monte_p[i].field_0x8;
             f32 min;
             f32 max;
 
-            base[2] = 0.0f;
+            base->position.y = 0.0f;
             do {
                 if (montetable[tableIdx].xmin < montetable[tableIdx].xmax) {
                     min = montetable[tableIdx].xmin;
@@ -711,7 +715,7 @@ static USER_FUNC(fall_rtn) {
                     min = montetable[tableIdx].xmax;
                     max = montetable[tableIdx].xmin;
                 }
-                base[1] = monte_rand(min, max);
+                base->position.x = monte_rand(min, max);
                 if (montetable[tableIdx].zmin < montetable[tableIdx].zmax) {
                     min = montetable[tableIdx].zmin;
                     max = montetable[tableIdx].zmax;
@@ -720,10 +724,11 @@ static USER_FUNC(fall_rtn) {
                     max = montetable[tableIdx].zmin;
                 }
                 max = max - min;
-                base[3] = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
+                base->position.z = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
                 for (j = 0; j < pointIdx; j++) {
                     Vec tmp;
-                    PSVECSubtract((Vec*)(base + 1), (Vec*)((u8*)base - (j + 1) * 0x38 + 4), &tmp);
+                    // steps back by the 0x38-byte field_0x8, not by the 0x44-byte entry
+                    PSVECSubtract(&base->position, &(base - (j + 1))->position, &tmp);
                     if (PSVECMag(&tmp) < 20.0f) {
                         break;
                     }
@@ -734,7 +739,7 @@ static USER_FUNC(fall_rtn) {
                 pointIdx = 0;
                 tableIdx++;
             }
-            base[4] = 1.0f;
+            base->field_0x10 = 1.0f;
         }
     }
 
@@ -748,7 +753,7 @@ static USER_FUNC(fall_rtn) {
             MonteEntry* p = &monte_p[i];
             switch (p->unk4) {
             case 0:
-                if (get_monte_check(&p->position, &marioGetPtr()->position) == 1) {
+                if (get_monte_check(&p->field_0x8.position, &marioGetPtr()->position) == 1) {
                     data->unk34++;
                     psndSFXOn_3D(
 #ifdef MUST_MATCH

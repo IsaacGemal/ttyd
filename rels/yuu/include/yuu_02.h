@@ -4,15 +4,20 @@
 #include "driver/camdrv.h"
 #include <dolphin/mtx.h>
 
+typedef struct MonteEntryField8 {
+    f32 field_0x0;                 // 0x00
+    Vec pos;                       // 0x04
+    f32 scale;                     // 0x10
+    u8 pad_14[0x38 - 0x14];        // 0x14
+} MonteEntryField8;                // 0x38
+
 typedef struct MonteEntry {
     u8 active;                     // 0x00
     u8 pad_01;                     // 0x01
     s16 count;                     // 0x02
     u8 hit;                        // 0x04
-    u8 pad_05[0x0C - 0x05];        // 0x05
-    Vec pos;                       // 0x0C
-    f32 scale;                     // 0x18
-    u8 pad_1C[0x40 - 0x1C];        // 0x1C
+    u8 pad_05[0x08 - 0x05];        // 0x05
+    MonteEntryField8 field_0x8;    // 0x08
     void* work;                    // 0x40
 } MonteEntry;
 

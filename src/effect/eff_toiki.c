@@ -10,12 +10,12 @@
 __declspec(section ".sdata") GXColor unk_80423338;
 
 
-// First object of this unit's .data (the float pair that used to end the previous unit's .data).
-extern u32 lbl_803B2FA0[2];
-
 const Vec vec3_80300230 = { 0.0f, 0.0f, 0.0f };
 
 
+extern u32 queen_toiki_vertex_tbl[96];
+extern u32 queen_toiki_texcoord0_tbl[48];
+extern u32 queen_toiki_dl_0_tbl[14];
 extern u32 queen_toiki_normal_tbl[8];
 extern u32 queen_toiki_color0_tbl[8];
 extern u8 queen_toiki_dl_0_size_tbl[16];
@@ -53,8 +53,8 @@ static inline void toikiSetColor(u8 a, u8 b, u8 g, u8 r) {
 // With the loop inlined at its call site MWCC colours dl/i/sz r28/r29/r30; splitting it into
 // this inline function gives the original's r29/r30/r31. The size table and the increment order are also
 // part of the colouring: `sz` must be initialised in the for-init and incremented before `dl`.
-static inline void toikiDrawDL(u8* base) {
-	u8** dl = (u8**)(base + 0x360);
+static inline void toikiDrawDL(void) {
+	u8** dl = (u8**)queen_toiki_dl_0_tbl;
 	u8* sz;
 	u32 j;
 
@@ -152,14 +152,12 @@ void effToikiDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	ToikiData* data = effect->userdata;
 	CameraEntry* cam;
-	u8* tbl;
 	Mtx mtx;
 	Mtx rot;
 	Mtx scale;
 	GXTexObj texObj;
 	s32 type;
 
-	tbl = (u8*)lbl_803B2FA0;
 	cam = camGetPtr(camId);
 	type = data->type;
 
@@ -192,7 +190,7 @@ void effToikiDisp(CameraId camId, void* param) {
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 6);
-	GXSetArray(GX_VA_POS, tbl + 0x40, 6); // queen_toiki_vertex_tbl
+	GXSetArray(GX_VA_POS, queen_toiki_vertex_tbl, 6);
 	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 	GXSetArray(GX_VA_NRM, queen_toiki_normal_tbl, 3);
@@ -201,11 +199,11 @@ void effToikiDisp(CameraId camId, void* param) {
 	GXSetArray(GX_VA_CLR0, queen_toiki_color0_tbl, 4);
 	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
-	GXSetArray(GX_VA_TEX0, tbl + 0x1c0, 4); // queen_toiki_texcoord0_tbl
-	toikiDrawDL(tbl);
+	GXSetArray(GX_VA_TEX0, queen_toiki_texcoord0_tbl, 4);
+	toikiDrawDL();
 }
 
-// The tables are reached through one base pointer (tbl), so the linker would drop the others.
+// No code references these float pairs; without this the linker would drop them.
 #pragma force_active on
 // TODO: type
 __declspec(section ".data") u32 lbl_803B2FA0[2] = {

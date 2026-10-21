@@ -781,7 +781,7 @@ void mobjMain(void) {
                 continue;
 
             if (entry->offscreenId == -1) {
-                if ((animPoseGetMaterialFlag(entry->poseId) & 0x40) && ((u8*)&color)[3] != 0xff) {
+                if ((animPoseGetMaterialFlag(entry->poseId) & 0x40) && color.a != 0xff) {
                     dispEntry(entry->camId, dispCalcZ(&entry->position), 2, mobjDispXLU, entry);
                 } else {
                     dispEntry(entry->camId, dispCalcZ(&entry->position), 0, mobjDisp, entry);
@@ -789,7 +789,7 @@ void mobjMain(void) {
                     dispEntry(entry->camId, dispCalcZ(&entry->position), 2, mobjDisp, entry);
                 }
             } else {
-                if ((animPoseGetMaterialFlag(entry->poseId) & 0x40) && ((u8*)&color)[3] != 0xff) {
+                if ((animPoseGetMaterialFlag(entry->poseId) & 0x40) && color.a != 0xff) {
                     dispEntry(CAMERA_OFFSCREEN2, dispCalcZ(&entry->position), 2, mobjDisp_OffscreenXLU, entry);
                 } else {
                     dispEntry(CAMERA_OFFSCREEN2, dispCalcZ(&entry->position), 0, mobjDisp_OffscreenXLU, entry);

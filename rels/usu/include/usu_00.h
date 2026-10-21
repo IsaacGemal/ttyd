@@ -1,6 +1,7 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "memory.h"
 
 typedef struct KpaSenEntry {
     s8 state;      // 0x0
@@ -33,7 +34,7 @@ void kpaSen_ext_disp(void);  // TODO: real signature
 void kpaSen_ext_main(void);  // TODO: real signature
 s32 calcPose(s32 a, s32 b, s32 c, s32 d);
 void kpaSen_ext_init(void);
-void kpa_stg5_009_7_cb(s32 type, void* param);
+void kpa_stg5_009_7_cb(s32 type, smartEntry* smart);
 USER_FUNC(party_tev);
 EVT_DEF(villagerA_init);
 EVT_DEF(villagerA_pig_init);

@@ -79,6 +79,34 @@ DRAW(3); DRAW(4);
         # three offset macro calls, plus the accessor's and DRAW's #define bodies once each
         self.assertEqual(cleanup_index.count_text(text)[1]["raw_offset"], 3 + 2)
 
+    def test_other_offset_spellings(self):
+        text = """u8* p = (u8*)puni;
+s32 a = *(s32*)(p + 0x1E0);
+f32 b = *(f32*)((char*)work + 0x10);
+s8 c = *((s8*)src + 2);
+u8 d = ((u8*)ac)[0x29D];
+void* e = (u8*)_battleWorkPointer + 0x16F24;
+Footmark* f = (Footmark*)(footmarkBuf + 0x500);
+"""
+        self.assertEqual(cleanup_index.count_text(text)[1]["raw_offset"], 6)
+
+    def test_what_the_other_spellings_leave_alone(self):
+        text = """const char* s = (char*)msg + 1;
+BinaryFontBlock* b = (BinaryFontBlock*)(pfh + 1);
+u8 r = ((u8*)&color)[0];
+*(u8*)p += 1;
+AnimData* a = (AnimData*)(off + (u32)data);
+s16 v = (s16)(*(s16*)a + 0xF0);
+"""
+        self.assertNotIn("raw_offset", cleanup_index.count_text(text)[1])
+
+    def test_offset_macro_in_another_spelling(self):
+        text = """#define EM_VEC(off, sym) (*(Vec*)(base + (off)))
+Vec v = EM_VEC(0x10, a);
+Vec w = EM_VEC(0x1C, b);
+"""
+        self.assertEqual(cleanup_index.count_text(text)[1]["raw_offset"], 2)
+
     def test_macro_defined_twice_is_not_an_offset_macro(self):
         text = """#define WW_S32(p, off) (*(s32*)((u8*)(p) + (off)))
 #define WW_S32(p, off) (*(s32*)((u8*)(p) + (off)))

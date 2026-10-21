@@ -1020,7 +1020,7 @@ void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind) {
 		member->motionTimer++;
 		member->colorB = member->colorB + member->field_0x18;
 		if (member->colorB >= 0xc8) {
-			*(s8*)&member->field_0x18 = -4;
+			member->field_0x18 = -4;
 		}
 		else if (member->colorB <= 5) {
 			member->field_0x18 = 4;

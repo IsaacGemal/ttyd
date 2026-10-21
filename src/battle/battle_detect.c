@@ -35,7 +35,7 @@ void _btlSamplingEnemy(u8* sampling) {
     BattleUnitKindPart* kindPart;
     BattleUnit* unit;
     s32 count = 0;
-    BattleSamplingEntry* entries = (BattleSamplingEntry*)(sampling + 4);
+    BattleSamplingEntry* entries = ((BattleSampling*)sampling)->entries;
     BattleSamplingEntry* esort;
     BattleSampling* s = (BattleSampling*)sampling;
     s32 j;
@@ -138,7 +138,7 @@ void _btlSamplingEnemy(u8* sampling) {
     s->selectIdx = 0;
     s->count = count;
     count = s->count;
-    entries = (BattleSamplingEntry*)(sampling + 4);
+    entries = s->entries;
 
     for (i = 0; i < count; i++) {
         s32 keep;
@@ -373,7 +373,7 @@ void _btlSamplingEnemy(u8* sampling) {
 
     order = s->order;
     {
-        esort = (BattleSamplingEntry*)(sampling + 4);
+        esort = s->entries;
         for (i = 0; i < count; i++) {
             order[i] = i;
         }

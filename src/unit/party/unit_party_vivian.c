@@ -1231,7 +1231,7 @@ USER_FUNC(_vivian_make_extra_work_area) {
     cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                      \
     cmd->mWeaponTable[*count].field_0x4 = 0;                                               \
     cmd->mWeaponTable[*count].mIcon =                                                      \
-        *(u16*)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 4);                         \
+        cmd->mWeaponTable[*count].mWeaponParams->icon;                                     \
     cmd->mWeaponTable[*count].mName =                                                      \
         (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                   \
     (*count)++;

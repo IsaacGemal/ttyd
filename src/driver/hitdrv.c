@@ -261,13 +261,13 @@ void hitDelete(const char* name) {
 }
 
 #ifdef MUST_MATCH
-// The element pointer goes in as void* and the name is loaded inside the inlined search. Handing the
+// The track pointer goes in and the name is loaded inside the inlined search. Handing the
 // name straight to the search leaves the inlined body's name/map temporaries in r26/r27 where retail
 // has r27/r26; the extra indirection gives the name local the higher web. The natural form below
 // passes the dereferenced name to hitNameToPtr.
-static inline HitEntry* hitFindElem(void* elem) {
+static inline HitEntry* hitFindElem(MapAnimData* elem) {
     MapEntry* map;
-    const char* name = *(char**)elem;
+    const char* name = elem->name;
     MapWork* wp = mapGetWork();
     int j;
     MapEntry* new_var;
@@ -293,11 +293,9 @@ static inline HitEntry* hitFindElem(void* elem) {
 }
 #endif
 
-// Main animation pass. The active-list zero-init split and the inner-loop `p += 4, k++` order are
-// retail's. The declaration order below (p, map, wp, j, k, i, anim, anyScale, then found/mtx) is what
-// puts wp/i/p on retail's r23/r20/r25.
+// Main animation pass. The active-list zero-init split is retail's. The declaration order below (map,
+// wp, j, k, i, anim, anyScale, then found/mtx) is what puts wp/i on retail's r23/r20.
 void hitMain(void) {
-    u8* p;
     MapEntry* map;
     MapWork* wp = mapGetWork();
     s32 j, k, i;
@@ -315,18 +313,17 @@ void hitMain(void) {
         for (j = 0; j < map->animCount; j++, anim++) {
             u16 animFlags = anim->flags;
             MapAnimTableEntry* list = anim->data;
-            u8* childList = list->field_0xC;
+            MapAnimJointList* childList = list->field_0xC;
 
             if ((animFlags & 1) && !((animFlags & 2) && (animFlags & 0x1000)) && childList != NULL) {
-                p = childList;
-                for (k = 0; k < *(s32*)childList; p += 4, k++) {
+                for (k = 0; k < childList->count; k++) {
 #ifdef MUST_MATCH
-                    found = hitFindElem(*(void**)(p + 4));
+                    found = hitFindElem(childList->entries[k]);
 #else
-                    found = hitNameToPtr(*(char**)(*(void**)(p + 4)));
+                    found = hitNameToPtr(childList->entries[k]->name);
 #endif
                     if (found != NULL) {
-                        mapCalcAnimMatrix(found->animMtx, found->localMtx, anim, *(void**)(p + 4));
+                        mapCalcAnimMatrix(found->animMtx, found->localMtx, anim, childList->entries[k]);
                         anyScale = 1;
                         found->flags |= HIT_FLAG_ANIMATED;
                         found->flags |= HIT_FLAG_MTX_DIRTY;
@@ -532,7 +529,7 @@ static inline void hitSetGQR5(u32 shift) {
 #endif
 
 // The map file's vertex fraction shift for this hit's map.
-#define HIT_VTX_FRAC(mw, hit) (*(u32*)((u8*)(mw)->entries[(hit)->mapIndex].vcdTable + 0x44))
+#define HIT_VTX_FRAC(mw, hit) ((mw)->entries[(hit)->mapIndex].vcdTable->field_0x44)
 
 // The packed s16 vertex reads use the SDK __OSs16tof32 fast-cast inline, so they lower to retail's psq_lx
 // through GQR5, which retail reprograms per vertex from the map file's fraction shift (hitSetGQR5, MUST_MATCH;

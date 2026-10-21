@@ -1,8 +1,9 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "memory.h"
 
-void iri_08_msg(s32 type, void* param);
+void iri_08_msg(s32 type, smartEntry* smart);
 EVT_DEF(nokonoko_G_regl);
 EVT_DEF(nokonoko_G_talk);
 EVT_DEF(nokonoko_H_regl);

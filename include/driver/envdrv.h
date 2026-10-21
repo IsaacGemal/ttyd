@@ -47,7 +47,12 @@ typedef struct EnvironmentWork {
     GXTexObj captureObj2; //0x2C
     void* envBlur; //0x4C, see envBlurOn
     GXTexObj envBlurObj; //0x50
-    u8 unk70[0x88 - 0x70]; //0x70
+    MtxPtr field_0x70; //0x70, envAddTev stores the current camera view; envTevLoadTexMtxImm reads it
+    MtxPtr field_0x74; //0x74, envAddTev stores EnvironmentYami.unk4
+    MtxPtr field_0x78; //0x78, envAddTev stores view * unk4; envTevLoadTexMtxImm reads it
+    f32 field_0x7C; //0x7C, set per type by envAddTev, read by envTevLoadTexMtxImm
+    f32 field_0x80; //0x80
+    f32 field_0x84; //0x84
     EnvironmentUnk88 unk88; //0x88
     u8 unk94[0x98 - 0x94]; //0x94
     u16 unk98; //0x98, some substruct

@@ -1375,9 +1375,9 @@ void ext_yuunpc_minigame4_init_sub(void) {
     yuunpc_maphit_init();
     yuunpc_wp->flags |= 1;
     pose = extGetPosePtr();
-    ((s32*)yuunpc_wp->pad_08)[2] = -1;
-    ((s32*)yuunpc_wp->pad_08)[1] = -1;
-    ((s32*)yuunpc_wp->pad_08)[0] = -1;
+    yuunpc_wp->field_08[2] = -1;
+    yuunpc_wp->field_08[1] = -1;
+    yuunpc_wp->field_08[0] = -1;
     {
         Vec v;
         v = (Vec){ 0.0f, -1000.0f, 0.0f };
@@ -1411,20 +1411,20 @@ void ext_yuunpc_minigame4_init_sub(void) {
             s32 a1, a2;
             do {
                 slot = irand(3);
-            } while (((s32*)yuunpc_wp)[slot + 2] != -1);
+            } while (yuunpc_wp->field_08[slot] != -1);
             while (1) {
                 n16 = irand(0x2BC) + 0xC8;
-                a1 = ((s32*)yuunpc_wp)[(slot + 1) % 3 + 2];
+                a1 = yuunpc_wp->field_08[(slot + 1) % 3];
                 if (a1 == n16) {
                     continue;
                 }
-                a2 = ((s32*)yuunpc_wp)[(slot + 2) % 3 + 2];
+                a2 = yuunpc_wp->field_08[(slot + 2) % 3];
                 if (a2 == n16) {
                     continue;
                 }
                 break;
             }
-            ((s32*)yuunpc_wp)[slot + 2] = n16;
+            yuunpc_wp->field_08[slot] = n16;
         }
     }
     entry = yuunpc_wp->entries;
@@ -1492,7 +1492,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
             r25 = idx / r24;
             r23 = idx % r24;
             for (k = 0; k < 3; k++) {
-                ev = ((s32*)yuunpc_wp)[k + 2];
+                ev = yuunpc_wp->field_08[k];
                 if (ev == i) {
                     switch (k) {
                         case 0:

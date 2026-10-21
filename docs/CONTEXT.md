@@ -4686,3 +4686,160 @@ steering helpers stay guarded.
     const volatile Vec reads; cardmgr's dead timeout test (the constant stays in r30 only with it); filemgr CLUT pun (11
     shapes); arammgr volatile node flags (header lead).
   - Data layout regions (declspec objects, pool helpers, padded strings, force_active, defer_codegen) were skipped.
+
+## Raw offsets the cleanup index didn't see (2026-10-21, Claude Opus 5.5 orchestrating five Claude Opus 5.5 workers, n9-q-o-hidden)
+
+Task (Isaac): the raw3 pass found pointer-plus-constant spellings `tools/cleanup_index.py` doesn't count. Survey
+them, type them where an honest form matches, leave the rest raw with a reason, and widen the index so it stops
+under-reporting.
+
+- **Survey.** A one-off regex (`build/raw_survey.py`, not committed) over the index's scope, minus what the index
+  already counted. On fd6a9b00 it found 1,395 candidate sites:
+  - 907 `(T*)(p + N)` through `u8*` locals or byte bands;
+  - 200 `((T*)p)[N]` (104 byte-typed);
+  - 92 `(u8*)p + N` without the outer paren, 41 `(s8*)`, 37 `(char*)`, 6 `(void*)`, 1 each `unsigned`/`signed char`;
+  - 65 `(T*)p + N`, 23 `(T*)((u32)p + N)`, 22 offset-macro calls (evt_mario's EM_VEC/EM_STR, hitdrv).
+  Six files held 60%: pmario_sound 232, mri_puni 170, sound 112, mapdrv 95, mri 95, filemgr 91. Some candidates are
+  false positives: `->` read as `-`, value adds, real record or vertex arrays, string cursors.
+- **Method.**
+  - Five workers each had a disjoint file group and their headers, in nested worktrees under `build/wt/`: sound,
+    mri, drivers/managers, battle/window/unit, events/effects/party/rels. Each change was compared with a snapshot
+    of the pre-branch objects (`build/base_obj`, `tools/obj_equiv.py`), and the whole tree after each header change.
+  - The orchestrator reviewed and cherry-picked the five branches, sent four fixes back (below), and did the last
+    unit itself.
+  - On the merged branch: `build/G8MJ01/ok` recreated, `obj_equiv --tree` equivalent for all 1,230 objects, and the
+    full `--non-matching` ninja compiles every object (only the dol link fails, as usual). fncast_lint and
+    local_prototypes pass.
+  - `tools/ci.py` passed before each commit with its tools/tests step stubbed (the same 9 environment errors as
+    above), and `--base fd6a9b00` passes over every merge.
+- **Counts.**
+  - Survey sites: 1,395 -> 281, judged against the old index. Of the 281, about 130 are survey false positives,
+    and the rest are below or were already recorded.
+  - Old script (`cleanup_index.py` as on fd6a9b00): index 14.203 -> 15.196 per kLOC (9913 -> 10607 weighted).
+    raw_offset 230 -> 235, field_0x 3936 -> 4625, address_name 2653 -> 2648. The rise is the old blind spot: the
+    typed reads now spell `field_0xNN`, which the old script counts, while the offsets they replaced counted
+    nothing.
+  - New script: index 17.415 -> 15.546 per kLOC (12155 -> 10851 weighted), **raw_offset 1351 -> 357**.
+- **The index change** (`--allow-protected`). `raw_offset` is one pattern with four branches; the docstring and
+  `tools/tests/test_cleanup_index.py` describe and test them:
+  - `(u8*)p + off` with or without the outer paren;
+  - the s8/char/unsigned char/signed char casts (a char cast's `+ 1` is a string cursor and doesn't count);
+  - `((u8*)p)[N]` with a constant N > 0;
+  - `(T*)(p + N)` with N not 1 (`+ 1` there is a step past a header record, as in fontmgr's `pfh + 1`).
+  `+=`/`++` and `(T*)(off + (u32)data)` relocations don't count. Offset macros reuse the pattern, but evt_mario's
+  EM_VEC/EM_STR are defined in both MUST_MATCH arms, so only their two #defines count (the defined-twice rule).
+  Known over-counts: n64 vertex tables offset by an element count (`(effVtxArray*)(flowers_v + 0xb6)`, 3 sites)
+  and file-relative offsets (`(u8*)header->data + chunk.offset`), which the old pattern also counted in its own
+  spelling. Not counted: `((T*)p)[N]` for a non-byte T, and `band + N` with no cast.
+- **sound (w1).**
+  - `SoundStreamEntry` 0x38-0x64 are `field_0xNN`, `loadBuffer` is `u8*[2]` (the old `unk30` is `loadBuffer[1]`),
+    `SoundStream` gets 0x1C-0x24, `StreamHeader` its two ADPCM infos, and `SoundWork` its arrays. The `u8* e/ep`
+    walks are typed.
+  - pmario_sound: `PaperSoundEnvWork` moved into the header (name kept) and types the env slots, the SFX fade and
+    the BGM fade. `PaperSoundEffect` absorbed its `PaperSoundEffectDetail` view, which is gone.
+  - Left raw:
+    - SoundEfxSetPan/SetSrndPan (the folded index, as recorded);
+    - psndENVOn_f_d's `psnd + ofs` with `lhzu`;
+    - psndENVOff_f_d/psndENV_vol's `(u16*)&psnd.unk18 + i` (only the no-op cast matches);
+    - BGMListEntry `params` bytes (a packed u32 in data initialisers);
+    - calc3D's `((u8*)&res)[N]` (bytes of a packed return);
+    - psndPushGroup's `tbl` (retyping the static is a data definition).
+- **mri (w2).**
+  - Every `u8* p = (u8*)puni` alias in mri_puni, mri, mri_03, mri_13 and mri_16 is gone; functions read through
+    `PuniData*`.
+  - PuniData `field_0x1E8` (s32) and `Vec field_0x2AC`; `effect` is an `EffectEntry*` (the s32 gave cmpwi where
+    retail has cmplwi); `healIconTime` is s8.
+  - `*(Vec*)(unk21C + 0x344)` is `hitNormal`. punidrv walks `PuniTexInfo*`.
+  - mri_03's `dir` local is s16 (it is stored to `treeId`; a u16 moves a `lis`). **Reviewer: a local's signedness.**
+  - Left raw: Hagure's `(s32)((u8*)puni + 0x220)`, a fake MarioWork base for effFukidashiEntry (its position lands
+    on `field_0x2AC`). The container-of form `&field_0x2AC - offsetof(MarioWork, position)` also matches and was
+    not used.
+- **Drivers (w3).**
+  - fileGarbageDataAdrClear uses the FileType views and AnimData like its inverse.
+  - mapdrv: mapMain's `u8* anim` walk is `MapEntryAnimData*`; the animation_table track lists, tracks and keys are
+    types in mapdrv.h; MapEntry.vcdTable is `MapVtxFmt*`.
+  - animdrv: AnimData's delta streams and frames are typed records (`AnimFrame` moved into the header, the
+    `ANIM_FRAME_*` macros are gone, and `__OSs8tof32(&src->field_0x1)` replaces the s8 delta reads).
+  - EnvironmentWork 0x70 is split. memory, extdrv, parse and mobjdrv: offsets through their structs.
+  - New types, named after the inline or member that consumes them:
+    - `MapAnimTexMtxKey/Item`, `MapAnimAlphaKey/Item`, `MapAnimLightPosKey/Item`, `MapAnimLightColorKey/Item` and the
+      five `MapAnim*List`;
+    - `AnimPoseVecDelta/VisDelta/NodeDelta/TexDelta` (after `animPoseAdd*Delta`) and `AnimFrame2` (after
+      `frames2`).
+  - mapAnimColorObj animates the material's texture matrices, so its types are `MapAnimTexMtx*`, after the
+    MapMatTexMtx they write.
+  - Sent back in review: mapAnimColorObj's `(&entries[idx].transX)[k]` (indexing past a member into its
+    neighbours) is the raw `(u8*)obj + idx * 0x1C + 0x2C + k * 4` again. Retail indexes transX..rotation as five
+    channels, and four other typed forms differ.
+  - Left raw:
+    - mapSearchAnimObj's pair walk (r28/r29 swap);
+    - _mapDispMapObj's packed-list walk (r24/r25);
+    - the `vcd[N] + 4` count-word skips;
+    - `+0x178` past MapEntry;
+    - the biased MapVtx walks;
+    - hitdrv's display-list byte stream;
+    - envGlare's 8-byte walk;
+    - effdrv's `count[1]` track array;
+    - mobjdrv's MUST_MATCH base reads;
+    - error_handler/unk_0x8025de70's stack-frame walk;
+    - seq_demo's THP buffer.
+- **Battle and windows (w4).**
+  - Sampling buffers are `BattleSampling` in battle_detect, battle_stage_object, battle_item_data, the barriern,
+    piders and bros units, and (orchestrator) battle_enemy_item's six item checks.
+  - battle_stage_object's rank data are `BattleStageNozzleData`/`BattleStageFallObjectData` (named after the data
+    symbols; definitions untouched), and `ObjectFallAttackWork` (after `_object_fall_attack`) types its
+    BattleAlloc(0xEC).
+  - Other new members: BattleCameraWork `Vec field_0x2C..0x74`, `BattleStageLightSpline` (after `spline`), and
+    BattleACDispParams' 0x10-0x13 bytes as `field_0x10`, `dg`, `db` and `field_0x13` (`dg`/`db` from the old
+    BakuGameGaugeColor).
+  - Black peach's pose matrices are indexed as Mtx.
+  - Retypes from their loads:
+    - `BattleWeapon.icon` u16 and `field_0x6D` u8;
+    - `blurColor` u8[8];
+    - `mStylishCommandMultiplier` u8;
+    - `BattleAudienceMember.field_0x18` s8.
+  - Stale recorded lever: battle_audience's `audlocal` matches as `impendingBonuses`.
+  - Sent back in review: `(GXColor*)&dispParams.field_0xC` views (a pun on an s32 outside MUST_MATCH). The colour
+    bytes are back to their original raw reads: a packed RGBA s32 the ACs store as constants.
+  - Left raw:
+    - _Nozzle_Change_Check and the act-record band (skipped);
+    - _combine_nozzle_weapon's MUST_MATCH `+0x80` bytes;
+    - sac_zubastar's `b18` (MUST_MATCH);
+    - win_badge/win_log as recorded;
+    - win_item's `entry + 0x2E8` (retested `skipList[i]`, differs);
+    - win_root's `field_40[0x1010]` (recorded) and its mail comparators' `((u8*)a)[1]` (u8 pairs in `field_26E`);
+    - battle_event_cmd's `BattleCommand* tbl` local (needed).
+- **Events, effects, party, rels (w5).**
+  - mot_roll indexes `rollData`. mario_sbr, mot_slit and mot_stay read wStickDir1/2 as the s8 members they are.
+  - gor_02's door work is two GXColors.
+  - evt_cam keeps its rumble time in `userdataEx[0/1]`, read back as `(u32)` (a zero-extending value conversion).
+    **Reviewer: this is a deliberate value conversion, not a pun.**
+  - eff_pokopi_thunder indexes its rows, and eff_snow_dust/eff_toiki pass their vertex tables by name (the shared
+    `lbl_` bases are gone; the definitions are untouched). eff_bush reads `clr0`/`tex0`.
+  - PartyEntry `Vec field_C4`; party_vivian/bomhei/mario read `timer` and `field_2A` instead of `field_22[2]`.
+  - nok_01, usu_00 and gor_03's message callbacks take the smartEntry (the jon precedent). YuunpcWp `s32 field_08[3]`.
+  - The 0x38-byte block at 0x8 of the Monte entries in gor_03 and yuu_00..03 is a sub-struct (`MonteField8`,
+    `YuuMonteField8`, `MonteEntryField8`, `Yuuminigame4WorkField8`, after the `BattleWorkField18C70` precedent).
+    Retail holds `entry + 8`, and the parent-member forms differ. LectureButton has the same block, not touched.
+    **Reviewer: names derived from placeholders.**
+  - Sent back in review:
+    - the `upsidegara` (s32[2][3][8]) and `footmarkBuf` (Footmark[2][0x50]) retypes: both matched with the bytes
+      unchanged, but data definitions are off-limits, so their sites stay raw;
+    - eff_kiss's GXColor view of a u32 (a pun);
+    - evt_movefloor's `(s32)` read of an OSTime low word (an int cast).
+  - Left raw:
+    - evt_mario's EM_VEC/EM_STR (MUST_MATCH, a base over separate .rodata objects). Lead: they look like anonymous
+      local-initialiser objects, a data-layout change;
+    - evt_mobj's shared-base reads (recorded);
+    - eff_splash's bytes of a u32 scalar;
+    - party.c's partyPoseTbl (folded index, retested);
+    - end_unknown, evt_lect_dou and party_yoshi as recorded.
+- **Stale recorded reasons** (retested, now matching):
+  - n9-rd-puni's "five functions can't be retyped";
+  - n9-q-puni2's Hagure and `p + 0x56C/0x570` notes, and the `PuniData.effect` s32 note;
+  - mapMain's `u8* anim` walk;
+  - mapSetPolygonVtxDesc's `+ 0xA4` base;
+  - mapSetTevCallback's indexed store (through a `MapWork*` local);
+  - animdrv's "no struct" for the s8 deltas;
+  - battle_audience's `audlocal`;
+  - gor_03's kuji callback "unknown object".
