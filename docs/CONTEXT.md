@@ -12015,3 +12015,91 @@ commit with its `tools/tests` step stubbed (the same 9 environment failures as t
     gon_03's sfx array.
   - Contrived copy chains kept as hacks rather than promoted: eki_03, hom_00 and jon's `q = q * 32; row = q`, and
     gor_03's `t0`/`t1` copies.
+
+## mmbattle: original source shapes for src/battle MUST_MATCH blocks (2026-10-20, Claude Opus 5.5, n9-q-o-mmbattle)
+
+Pass over the 231 `#if*MUST_MATCH` regions in src/battle/** looking for the source shape that gives the same object
+without steering. Six Opus 5.5 sub-agents took disjoint file groups (ac1, ac2, audience, misc, seq, sac). They
+compiled single units into scratch dirs and compared with tools/obj_equiv.py against a saved baseline. Then the
+orchestrator (Opus 5.5) reviewed each diff and made the header changes. Every commit passed ci.py's lint, build,
+natural-compile, data and ratchet steps; the tests step was skipped because it times out in worktrees, as in the
+chapter above. Each header change was also checked with `obj_equiv.py --tree` over all 1,230 compiled objects (src and
+rels). The full `--non-matching` ninja compiles every object, and only the link fails, as usual.
+
+- **Counts:** src/battle regions 231 -> 143. `tools/cleanup_index.py` 16.392 -> 16.216 per kLOC (11570 -> 11439
+  weighted); must_match 1300 -> 1212, fn_ptr_cast 131 -> 115, field_0x 3645 -> 3640, raw_offset 500 -> 498.
+- **Header types from the asm** (each field has a single reader; all callers in the tree are equivalent):
+  - `BtlUnit_GetStatus`/`SetStatus`/`CheckRecoveryStatus`/`CheckStatus` take `s8 type`. The bodies switched on
+    `(s8)type`, and the battle_status_icon/disp/damage callers sign-extend at the call. With all four changed together
+    and the body casts dropped, the callees are identical. This supersedes the chapter above, which changed them one
+    at a time and kept the casts. 14 function-pointer casts and btlseqEnd's `s32 i`/`(s8)i` loop go.
+  - `BattleWorkPad.mHoldRepeatState/FrameCounter` s8, `BattleWorkIcon.flags/iconId` u16,
+    `BattleAlliance.allianceId` u16. These remove the `*(u16*)&` and `(s8)` reinterprets.
+  - `_CalcRollDir` returns s8 (bare `lbz` in the callee, `extsb` at each use).
+  - `BattleCommandDisplay_TargetSelectMenuDisp(CameraId, void* param)` has the DispCallback shape, so its dispEntry
+    cast goes too.
+- **Source shapes that matched:**
+  - Several volatile reads had gone stale since the prototype fixes and the plain form now matches: ac_air_gauge,
+    ac_power_gauge_lv/lv2, crane_timing's MATCH_F64.
+  - The `BattleActions* ac` intermediate (the ac units' common opening) is now the only form in crane_timing,
+    gauge_timing, power_gauge, stick_rotate and pendulum_crane_timing.
+  - `id = BattleTransID(event, id)` (event_default) and `mask = args[1]; mask = unit->mTokenFlags & mask`
+    (CheckToken, as OnToken/OffToken do).
+  - _attack_aud's x/y/z are one `Vec pos` (consecutive slots, already passed as one).
+  - yuka_disp's one-pass wrapper loop is a real row loop over the [2][0x81] mesh.
+  - Simpler forms: `for (i = 0, reel = ...; ; i++, reel++)` in break_slot, and a `(GXColor){alpha, alpha, alpha, 0xFF}`
+    literal in menu_disp.
+  - Declaration order instead of temps: battleCameraMain case 8 and _set_haikei_entry_scale (which also loses its
+    obj2).
+  - battleCameraMoveTo adds one (0, -z/4, z) offset to eye and target.
+  - The permuter mask in end_muki, the SC_P macro and the `one` temps in sac_scissor, and the comma nudges in
+    ac_signal_timing and star_disp2D_sub all go.
+  - ac_lst_rc_keep and ac_stick_keep_left declare iconDispGx locally with their u16 id, the documented
+    local_prototype_exceptions route the lecture units use, instead of a function-pointer cast.
+- **Judgment calls, for review:**
+  - Already-plain MUST_MATCH forms promoted:
+    - KinopioIgnite's empty `case 3: break;`
+    - zubastar_bomb's one-case `switch (work->phase)`, which zubastar_main also switches on (s-mmeff2 had called it
+      steering)
+    - DrawMainMenu's zero-on-left `==`
+    - timing_a's unrotated `for (;;) { if (...) break; }`
+  - KinopioFire grows both axes by one `f32 step` local, the idiom of the Boo bob in the same file.
+  - ac_crane_timing's two `const f64` pool definitions became literals that MWCC pools into the same .rodata slots
+    (obj_equiv EQUIV; CLEANUP_GUIDE section 6 allows it).
+  - _set_mobj_rotate_x writes through the function's existing `base = wp + 0x20000` pointer.
+  - bakuGameMain's uninitialised `neg2` (retail reads it on counts 0x1B-0x1E) stays under MUST_MATCH, with a
+    well-defined `#else`, like battle_camera's `yc` and break_slot's `j`.
+- **Tried and dropped:** `static inline float fabsf(float x) { return __fabsf(x); }` in math_ext.h (as the SDK's
+  fake_tgmath.h has it) makes sac_scissor's `scissor_abs` plain, but party_move.c, which `#define`s fabsf itself,
+  then hits an MWCC internal error (Intrinsics.c:6190).
+- **Left, with what was tried** (the sub-agents' reports, in `build/mmwork/` while the worktree lives):
+  - Data definitions, out of scope for this pass. Each would remove its regions, and each was checked EQUIV on a
+    scratch copy:
+    - battle_audience: `vec3_802f9750`/`975c` as non-const `.rodata` Vecs like their siblings remove ApSrcEntry's 3
+      volatile copies.
+    - battle_seq_end `_lvup_spot_on`: dropping `dat_80420c28` for a `(GXColor){0xFF x4}` literal removes the
+      volatile stores.
+    - ac_shot_target: a writable `.sdata2` `dat_804218f8`, as ac_repeatedly and ac_shot already have.
+    - ac_signal_timing: four zero Vecs as literals.
+    - ac_monosiri_target: eleven separate `const Vec`s, matching symbols.txt's 0xC sizes.
+    - ac_repeatedly: literals instead of the pool-order constants.
+  - Declspec objects, pool helpers, string-layout macros (ACSE_STR, BSO_SFX, GT2_SFX, SFX comma initialisers) and
+    `defer_codegen`.
+  - Still steering after real attempts:
+    - three volatile Vec loop copies (gauge_timing, gauge_timing2, button_down)
+    - gauge_timing's `(A || A) && B` goto pair
+    - event_cmd's GetRGB/JumpPosition/JumpPartsPosition/CheckDamage volatiles (5-20 variants each)
+    - information's irand temps
+    - the Waku_col/iconDispGxCol/iconNumberDispGx3D/btlDispGXQuads2D by-pointer and width casts
+    - kinopio's dead-`step` reuse and Tbl pun
+    - break_slot's colour inline
+    - battle_damage's `s32 rate` with (s8) casts (an `s8 rate` is off by one compare)
+    - status_effect's loop `+ 0`
+    - stage's MATCH_F32 FIFO writes and tou_gamen_screen_tev
+    - battle_unit's lhax read and UnitStatusBlock copies
+    - seq/luck/ice comma pointers (MWCC never hoists `&weapon` or the string without them)
+    - bakugame's +/-0x80 pointer and volatile args
+    - deka/muki/scissor colour inlines and the HSV2RGB cast
+    - zubastar's create_takaku volatile and b18 base
+    - seq_end's in-argument `halfWidth =` assignment
+    - seq_command's `(s32)(s8)` cast
