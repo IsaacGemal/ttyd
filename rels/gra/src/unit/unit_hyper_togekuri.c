@@ -20,7 +20,7 @@
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
 static USER_FUNC(krb_get_dir);
-static u16 krb_comp_dir(f32 x, f32 y);
+static s32 krb_comp_dir(f32 x, f32 y);
 static USER_FUNC(get_attacker);
 static BattleVulnerableStatus regist;
 static BattleUnitKindPart parts[1];
@@ -637,7 +637,7 @@ static USER_FUNC(get_attacker) {
     }
     return EVT_RETURN_DONE;
 }
-static u16 krb_comp_dir(f32 x, f32 y) {
+static s32 krb_comp_dir(f32 x, f32 y) {
     u16 i;
     u16 low;
     u16 high;
@@ -671,12 +671,7 @@ static u16 krb_comp_dir(f32 x, f32 y) {
     if (x >= 0.0f && y < 0.0f) {
         mid = 360 - mid;
     }
-#ifdef MUST_MATCH
-    // No-op cast: the value is already u16, but the cast changes the object.
-    return (u16)mid;
-#else
     return mid;
-#endif
 }
 static USER_FUNC(krb_get_dir) {
     s32* args = event->args;

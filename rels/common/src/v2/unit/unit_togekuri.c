@@ -21,7 +21,7 @@
 
 #pragma force_active on
 static USER_FUNC(get_attacker);
-static u16 krb_comp_dir(f32 dx, f32 dz);
+static s32 krb_comp_dir(f32 dx, f32 dz);
 static f32 SinTable[91];
 static USER_FUNC(krb_get_dir);
 static BattleVulnerableStatus regist;
@@ -285,7 +285,7 @@ static USER_FUNC(get_attacker) {
     return EVT_RETURN_DONE;
 }
 
-static u16 krb_comp_dir(f32 dx, f32 dz) {
+static s32 krb_comp_dir(f32 dx, f32 dz) {
     u16 i;
     f32 ratio;
     f32 len;
@@ -319,12 +319,7 @@ static u16 krb_comp_dir(f32 dx, f32 dz) {
     if (dx >= 0.0f && dz < 0.0f) {
         mid = 360 - mid;
     }
-#ifdef MUST_MATCH
-    // No-op cast: the value is already u16, but the cast changes the object.
-    return (u16)mid;
-#else
     return mid;
-#endif
 }
 
 static USER_FUNC(krb_get_dir) {
