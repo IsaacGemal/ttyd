@@ -679,26 +679,12 @@ static inline GXColor starStoneTevColor2(GXColor c, effStarStoneData* data) {
 }
 #endif
 
-// The original strength-reduces these indexed walks to pointer increments; `ctr = 0; for (;...)`
-// and the `(s32)` cast are what make MWCC allocate the counter and pick cmpwi like the original.
-#ifdef MUST_MATCH
-#define STARSTONE_DL_LOOP2(off, sztbl, n, ctr) \
-	{ \
-		ctr = 0; \
-		for (; ctr < (n); ctr++) { \
-			if ((data->flags & 1) || (s32)ctr != 0) { \
-				GXCallDisplayList(((void**)(base + (off)))[ctr], (sztbl)[ctr] << 5); \
-			} \
-		} \
-	}
-#else
 #define STARSTONE_DL_LOOP2(off, sztbl, n, ctr) \
 	for ((ctr) = 0; (ctr) < (n); (ctr)++) { \
 		if ((data->flags & 1) || (ctr) != 0) { \
 			GXCallDisplayList(((void**)(base + (off)))[ctr], (sztbl)[ctr] << 5); \
 		} \
 	}
-#endif
 
 // The original walks each display-list table with a small inline helper.  With the loop written as
 // an inlined helper (its parameters become the induction variables), MWCC colours the first loop's

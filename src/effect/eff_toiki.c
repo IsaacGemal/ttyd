@@ -38,12 +38,11 @@ u32 queen_toiki_dl_0_13[8];
 
 // clang-format off
 
-#ifdef MUST_MATCH
-// MUST_MATCH: building the colour inside an inline that also issues GXSetTevColor makes MWCC allocate the
+// Building the colour inside an inline that also issues GXSetTevColor makes MWCC allocate the
 // temp and the by-value argument copy together in retail's stack slots (0x8/0xc). The parameter order is
 // deliberate: it also lines up the field evaluation so r/g/b/a land in the original's registers.
 static inline void toikiSetColor(u8 a, u8 b, u8 g, u8 r) {
-	GXColor c = *(GXColor*)&unk_80423338;
+	GXColor c = unk_80423338;
 	c.r = r;
 	c.g = g;
 	c.b = b;
@@ -51,10 +50,7 @@ static inline void toikiSetColor(u8 a, u8 b, u8 g, u8 r) {
 	GXSetTevColor(1, c);
 }
 
-#endif
-
-#ifdef MUST_MATCH
-// MUST_MATCH: with the loop inlined at its call site MWCC colours dl/i/sz r28/r29/r30; splitting it into
+// With the loop inlined at its call site MWCC colours dl/i/sz r28/r29/r30; splitting it into
 // this inline function gives the original's r29/r30/r31. The size table and the increment order are also
 // part of the colouring: `sz` must be initialised in the for-init and incremented before `dl`.
 static inline void toikiDrawDL(u8* base) {
@@ -152,8 +148,6 @@ void effToikiMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effToikiDisp, effect);
 }
 
-#endif
-
 void effToikiDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	ToikiData* data = effect->userdata;
@@ -163,9 +157,6 @@ void effToikiDisp(CameraId camId, void* param) {
 	Mtx rot;
 	Mtx scale;
 	GXTexObj texObj;
-#ifndef MUST_MATCH
-	GXColor color;
-#endif
 	s32 type;
 
 #ifdef MUST_MATCH
@@ -182,16 +173,7 @@ void effToikiDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
-#ifdef MUST_MATCH
 	toikiSetColor(data->field_0x28, color_tbl[type].b, color_tbl[type].g, color_tbl[type].r);
-#else
-	color = *(GXColor*)&unk_80423338;
-	color.r = color_tbl[type].r;
-	color.g = color_tbl[type].g;
-	color.b = color_tbl[type].b;
-	color.a = data->field_0x28;
-	GXSetTevColor(1, color);
-#endif
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXTrans(mtx, data->field_0x24, 0.0f, 0.0f);
@@ -226,19 +208,7 @@ void effToikiDisp(CameraId camId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
 	GXSetArray(GX_VA_TEX0, tbl + 0x1c0, 4); // queen_toiki_texcoord0_tbl
-#ifdef MUST_MATCH
 	toikiDrawDL(tbl);
-#else
-	{
-		u8** dl = (u8**)(tbl + 0x360);
-		u8* sz = queen_toiki_dl_0_size_tbl;
-		u32 i;
-
-		for (i = 0; i < 0xe; i++, dl++, sz++) {
-			GXCallDisplayList(*dl, *sz << 5);
-		}
-	}
-#endif
 }
 
 // The tables are reached through one base pointer (tbl), so the linker would drop the others.
