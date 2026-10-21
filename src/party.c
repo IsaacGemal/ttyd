@@ -1272,7 +1272,7 @@ void partyHello(PartyEntry* party) {
 void partyHelloInit(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
 
-    if (P16(mario, 0x2E) == 0x16 || P16(mario, 0x2E) == 0x18 || P16(mario, 0x2E) == 0x19) {
+    if (mario->currMotionId == 0x16 || mario->currMotionId == 0x18 || mario->currMotionId == 0x19) {
         party->motionStep = 0x1e;
     } else if (party->field_34 == 4 || party->field_34 == 5) {
         party->flags2 |= 0x10;
@@ -2354,7 +2354,7 @@ s32 partyRideYoshiMain(PartyEntry* party) {
             party->position = pos;
             party->field_110 = player->dispReqDir;
             party->field_FC = toMovedir(party->field_110);
-            if (P16(player, 0x2E) != 0x1A) {
+            if (player->currMotionId != 0x1A) {
                 partyGetAppearPos(party, &appearPos);
                 party->position.x = appearPos.x;
                 party->position.z = appearPos.z;
@@ -3069,7 +3069,7 @@ void L_partyClearCont(PartyEntry* party) {
 }
 
 void partyUpdateKeyData(PartyEntry* party) {
-    s32 member = PS8(party, 0x30);
+    s32 member = party->field_30;
 
     if (party->flags & 0x60000000) {
         party->stickX = 0;

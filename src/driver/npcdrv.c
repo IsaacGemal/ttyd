@@ -1256,7 +1256,7 @@ void npcMain(void) {
         case 6:
             break;
     }
-    fbat->field_54C[1] = 0;
+    fbat->field_0x54D = 0;
 }
 
 NpcEntry* npcNameToPtr(const char* name) {
@@ -2215,7 +2215,7 @@ void fbatEncountCheck(void) {
                 }
             }
         }
-        ENC(mario, NpcEntry*, 0x1D4) = best;
+        mario->touchNpc = best;
         if (wk->talkCheckNpc != NULL && (keyGetButtonTrg(0) & 0x100)) {
             NpcEntry* tgt = wk->talkCheckNpc;
             FieldBattleData* fb3 = gp->fbatData;
@@ -2410,12 +2410,12 @@ void fbatBattleMode(void) {
                 NpcEntry* npc2;
                 s32 total2;
                 s32 i2;
-                fbatData->field_54C[0] = 0;
+                fbatData->field_0x54C = 0;
                 info2 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
                 result = BattleInformationGetResult(info2);
                 if (pouch->mMerleeNextCurseType == 4 && result == 1) {
                     fbatData->state = 3;
-                    fbatData->field_54C[0] = 1;
+                    fbatData->field_0x54C = 1;
                     evt = evtEntry(_evt_majinai_coin_up_effect, 0, 0);
                     fbatData->majinaiEvtId = evt->eventId;
                     BattleMajinaiDone();
@@ -2484,7 +2484,7 @@ void fbatBattleMode(void) {
                         entry->btlCoinDropCount = 0;
                         goto after;
                     }
-                    if (fbatData->field_54C[0]) {
+                    if (fbatData->field_0x54C) {
                         mult = 3;
                     }
                     if (pouchEquipCheckBadge(ITEM_MONEY_MONEY)) {
@@ -3074,7 +3074,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 break;
             }
             if (!(flags & 1) || party == NULL || party->field_33 != 3
-                || *((u8*)gp->fbatData + 0x54D) == 0) { // fbatData 0x54D: no name yet
+                || gp->fbatData->field_0x54D == 0) {
                 break;
             }
             flag8 = flags & 0x1000;
@@ -3493,11 +3493,11 @@ void npcBlurOff(const char* name) {
 }
 
 void* npcGetBtlSetupWork(NpcEntry* npc, s32 index) {
-    return ((void**)((u8*)npc + 0x2CC))[index];
+    return npc->battleInfo.field_0x9C[index];
 }
 
 void npcSetBtlSetupWork(NpcEntry* npc, s32 index, void* work) {
-    ((void**)((u8*)npc + 0x2CC))[index] = work;
+    npc->battleInfo.field_0x9C[index] = work;
 }
 
 void npcSetSlave(NpcEntry* npc, NpcEntry* slave, s32 id) {
@@ -3791,7 +3791,7 @@ s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
 }
 
 void fbatSandersBombTriggerOn(void) {
-    gp->fbatData->field_54C[1] = TRUE;
+    gp->fbatData->field_0x54D = TRUE;
 }
 
 s32 npcCalcScore(NpcEntry* entry) {

@@ -83,7 +83,7 @@ typedef struct PartyEntry {
     s8 field_2D;                 // 0x2D
     u8 field_2E;                 // 0x2E
     s8 currentSlotId;            // 0x2F
-    u8 field_30;                 // 0x30
+    s8 field_30;                 // 0x30
     s8 currentMemberId;          // 0x31, PartyMembers
     u8 field_32;                 // 0x32
     u8 field_33;                 // 0x33

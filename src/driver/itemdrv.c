@@ -1149,7 +1149,7 @@ void itemseq_GetItem(ItemEntry* item) {
         mario->riderDelta.x = 0.0f;
         mario->riderDelta.z = 0.0f;
         mario->baseSpeed = 0.0f;
-        *(f32*)((u8*)mario + 0x18C) = 0.0f;
+        mario->field_0x18C = 0.0f;
         id = item->itemId;
         if (id == ITEM_SUPER_BOOTS) {
             goto itemseq_setFlag;
@@ -1217,13 +1217,13 @@ void itemseq_GetItem(ItemEntry* item) {
         if (item->status & 0x2000) {
             EffectEntry* eff = wp->getEffect;
 
-            *(s32*)((u8*)eff->userdata + 0x38) = 5;
+            ((effItemGetData*)eff->userdata)->camId = 5;
             iconFlagOn(item->name, 0x200);
             marioSetCamId(CAMERA_3D_EFFECTB);
         } else {
             EffectEntry* eff = wp->getEffect;
 
-            *(s32*)((u8*)eff->userdata + 0x38) = 5;
+            ((effItemGetData*)eff->userdata)->camId = 5;
             iconFlagOn(item->name, 0x100);
             if (effType == 0 || effType == 3) {
                 marioSetCamId(CAMERA_3D_EFFECTA);
@@ -1445,8 +1445,8 @@ void itemseq_GetItem(ItemEntry* item) {
 
     case 6:
         wp->getEvent = evtEntryType(all_juyoitem_lecture, 0, 0, 0);
-        *(ItemEntry**)((u8*)wp->getEvent + 0xBC) = item;
-        *(EffectEntry**)((u8*)wp->getEvent + 0xC0) = wp->getEffect;
+        wp->getEvent->lwData[8] = (s32)item;
+        wp->getEvent->lwData[9] = (s32)wp->getEffect;
         psndClearFlag(0x80);
         item->subMode = 7;
         break;
