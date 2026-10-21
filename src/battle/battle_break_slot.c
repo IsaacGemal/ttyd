@@ -971,7 +971,7 @@ void BattleBreakSlot_Start(void) {
     }
 }
 
-s32 BattleBreakSlot_CheckReaction(void) {
+u8 BattleBreakSlot_CheckReaction(void) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
 
     BattleBreakSlot_Start();

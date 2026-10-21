@@ -378,7 +378,7 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
         flag = 0;
         for (i = 0; i < 0xC8; i++) {
             if (bakuGameAudienceCanThrowPos(i) == 1) {
-                if ((u8)BattleAudience_GetWaiting(i) == 1) {
+                if (BattleAudience_GetWaiting(i) == 1) {
                     flag = 1;
                 }
             }
@@ -1421,7 +1421,7 @@ void bakuGameAudienceSurprise(void) {
     for (i = 0; i < 200; i++) {
         BattleAudienceMember* member = BattleAudienceGetPtr(i);
 
-        if ((u8)BattleAudience_GetWaiting(i)) {
+        if (BattleAudience_GetWaiting(i)) {
             member->flags |= 0x10;
             memset(&member->interpFramesLeft, 0, 0x34);
             if (!bakuGameAudienceCanThrowPos(i)) {

@@ -474,7 +474,7 @@ void BattleAudience_PerAct(void) {
 	BattleAudience_ActInit();
 }
 
-BOOL BattleAudience_CheckReaction(void) {
+u8 BattleAudience_CheckReaction(void) {
 	BattleAudience* audience;
 	EventEntry* evt;
 
@@ -491,7 +491,7 @@ BOOL BattleAudience_CheckReaction(void) {
 // check_exe_phase_evt_status must be called out of line (26 bl), not inlined: the
 // retail callers use its byte result.
 #pragma dont_inline on
-BOOL check_exe_phase_evt_status(s32 index, s32 type) {
+u8 check_exe_phase_evt_status(s32 index, s32 type) {
 	BattleAudienceMember* member;
 
 	member = BattleAudienceGetPtr(index);
@@ -552,7 +552,7 @@ void BattleAudience_PerPhase(u32 value) {
 	}
 }
 
-BOOL BattleAudience_CheckReactionPerPhase(void) {
+u8 BattleAudience_CheckReactionPerPhase(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
 	s32 evtList[200];
@@ -644,7 +644,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			switch (phaseList[i]) {
 			case 0:
 				for (j = 0; j <= 59; j++) {
-					if ((u8)check_exe_phase_evt_status(j, 0)) {
+					if (check_exe_phase_evt_status(j, 0)) {
 						BattleAudienceAddPhaseEvtList(0);
 						break;
 					}
@@ -652,7 +652,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				break;
 			case 1:
 				for (j = 0; j <= 59; j++) {
-					if ((u8)check_exe_phase_evt_status(j, 8)) {
+					if (check_exe_phase_evt_status(j, 8)) {
 						if (BattleAudienceGetPtr(j)->status != 0x11) {
 							BattleAudienceAddPhaseEvtList(1);
 							break;
@@ -662,7 +662,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				break;
 			case 2:
 				for (j = 0; j <= 59; j++) {
-					if ((u8)check_exe_phase_evt_status(j, 4)) {
+					if (check_exe_phase_evt_status(j, 4)) {
 						BattleAudienceAddPhaseEvtList(2);
 						break;
 					}
@@ -687,7 +687,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				break;
 			case 4:
 				for (j = 0; j <= 59; j++) {
-					if ((u8)check_exe_phase_evt_status(j, 2)) {
+					if (check_exe_phase_evt_status(j, 2)) {
 						BattleAudienceAddPhaseEvtList(4);
 						break;
 					}
@@ -695,7 +695,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				break;
 			case 5:
 				for (j = 0; j <= 59; j++) {
-					if ((u8)check_exe_phase_evt_status(j, 1)) {
+					if (check_exe_phase_evt_status(j, 1)) {
 						BattleAudienceAddPhaseEvtList(5);
 						break;
 					}
@@ -703,7 +703,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				break;
 			case 6:
 				for (j = 0; j <= 59; j++) {
-					if ((u8)check_exe_phase_evt_status(j, 1)) {
+					if (check_exe_phase_evt_status(j, 1)) {
 						BattleAudienceAddPhaseEvtList(6);
 						break;
 					}
@@ -711,7 +711,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				break;
 			case 7:
 				for (j = 0; j <= 59; j++) {
-					if ((u8)check_exe_phase_evt_status(j, 3)) {
+					if (check_exe_phase_evt_status(j, 3)) {
 						BattleAudienceAddPhaseEvtList(7);
 						break;
 					}
@@ -719,7 +719,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				break;
 			case 8:
 				for (j = 0; j <= 59; j++) {
-					if ((u8)check_exe_phase_evt_status(j, 5)) {
+					if (check_exe_phase_evt_status(j, 5)) {
 						BattleAudienceAddPhaseEvtList(8);
 						break;
 					}
@@ -728,7 +728,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			case 9:
 				if (!(audience->flags & 0x4000)) {
 					for (j = 0; j <= 59; j++) {
-						if ((u8)check_exe_phase_evt_status(j, 5)) {
+						if (check_exe_phase_evt_status(j, 5)) {
 							BattleAudienceAddPhaseEvtList(9);
 							break;
 						}
@@ -737,7 +737,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				break;
 			case 10:
 				for (j = 0; j <= 59; j++) {
-					if ((u8)check_exe_phase_evt_status(j, 6)) {
+					if (check_exe_phase_evt_status(j, 6)) {
 						BattleAudienceAddPhaseEvtList(0xA);
 						break;
 					}
@@ -746,7 +746,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			case 11:
 				if (!(audience->flags & 0x4000)) {
 					for (j = 0; j <= 59; j++) {
-						if ((u8)check_exe_phase_evt_status(j, 9) &&
+						if (check_exe_phase_evt_status(j, 9) &&
 								BattleAudienceGetPtr(j)->status != 0x12) {
 							BattleAudienceAddPhaseEvtList(0xB);
 							break;
@@ -757,7 +757,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			case 12:
 				if (!(audience->flags & 0x4000)) {
 					for (j = 0; j <= 59; j++) {
-						if ((u8)check_exe_phase_evt_status(j, 0xB) &&
+						if (check_exe_phase_evt_status(j, 0xB) &&
 								BattleAudienceDetectPakkunEatTarget(j) != -1) {
 							BattleAudienceAddPhaseEvtList(0xC);
 							break;
@@ -767,7 +767,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 				break;
 			case 13:
 				for (j = 0; j <= 59; j++) {
-					if ((u8)check_exe_phase_evt_status(j, 0xC)) {
+					if (check_exe_phase_evt_status(j, 0xC)) {
 						BattleAudienceAddPhaseEvtList(0xD);
 						break;
 					}
@@ -791,7 +791,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 		case 0:
 			k = 0;
 			for (i = 0; i <= 59; i++) {
-				if ((u8)check_exe_phase_evt_status(i, 0)) {
+				if (check_exe_phase_evt_status(i, 0)) {
 					evtList[k++] = i;
 				}
 			}
@@ -800,7 +800,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			break;
 		case 1:
 			for (i = 0; i < 200; i++) {
-				if ((u8)check_exe_phase_evt_status(i, 8)) {
+				if (check_exe_phase_evt_status(i, 8)) {
 					if (BattleAudienceGetPtr(i)->status != 0x11) {
 						BattleAudience_ChangeStatus(i, 0x11);
 						BattleAudienceGetPtr(i)->timer = 5;
@@ -811,7 +811,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			break;
 		case 2:
 			for (i = 0; i <= 59; i++) {
-				if ((u8)check_exe_phase_evt_status(i, 4)) {
+				if (check_exe_phase_evt_status(i, 4)) {
 					BattleAudienceItemOn(i, 0xEE, 0x64);
 				}
 			}
@@ -850,7 +850,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			case 0:
 				count = 0;
 				for (i = 0; i <= 59; i++) {
-					if ((u8)check_exe_phase_evt_status(i, 2)) {
+					if (check_exe_phase_evt_status(i, 2)) {
 						evtList[count++] = i;
 					}
 				}
@@ -876,7 +876,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			break;
 		case 5:
 			for (i = 0; i <= 59; i++) {
-				if ((u8)check_exe_phase_evt_status(i, 1)) {
+				if (check_exe_phase_evt_status(i, 1)) {
 					BattleAudienceItemOn(i, 0xED, 0x64);
 				}
 			}
@@ -885,7 +885,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 		case 6:
 			count = 0;
 			for (i = 0; i <= 59; i++) {
-				if ((u8)check_exe_phase_evt_status(i, 1)) {
+				if (check_exe_phase_evt_status(i, 1)) {
 					evtList[count++] = i;
 				}
 			}
@@ -895,7 +895,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 		case 7:
 			count = 0;
 			for (i = 0; i <= 59; i++) {
-				if ((u8)check_exe_phase_evt_status(i, 3)) {
+				if (check_exe_phase_evt_status(i, 3)) {
 					evtList[count++] = i;
 				}
 			}
@@ -905,7 +905,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 		case 8:
 			count = 0;
 			for (i = 0; i <= 59; i++) {
-				if ((u8)check_exe_phase_evt_status(i, 5)) {
+				if (check_exe_phase_evt_status(i, 5)) {
 					evtList[count++] = i;
 				}
 			}
@@ -917,7 +917,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			case 0:
 				count = 0;
 				for (i = 0; i <= 59; i++) {
-					if ((u8)check_exe_phase_evt_status(i, 5)) {
+					if (check_exe_phase_evt_status(i, 5)) {
 						evtList[count++] = i;
 					}
 				}
@@ -946,7 +946,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			case 0:
 				count = 0;
 				for (i = 0; i <= 59; i++) {
-					if ((u8)check_exe_phase_evt_status(i, 6)) {
+					if (check_exe_phase_evt_status(i, 6)) {
 						evtList[count++] = i;
 					}
 				}
@@ -978,7 +978,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 		case 11:
 			count = 0;
 			for (i = 0; i <= 59; i++) {
-				if ((u8)check_exe_phase_evt_status(i, 9) &&
+				if (check_exe_phase_evt_status(i, 9) &&
 						BattleAudienceGetPtr(i)->status != 0x12) {
 					evtList[count++] = i;
 				}
@@ -994,7 +994,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			case 0:
 				count = 0;
 				for (i = 0; i <= 59; i++) {
-					if ((u8)check_exe_phase_evt_status(i, 0xB) &&
+					if (check_exe_phase_evt_status(i, 0xB) &&
 							BattleAudienceDetectPakkunEatTarget(i) != -1) {
 						evtList[count++] = i;
 					}
@@ -1021,7 +1021,7 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 			break;
 		case 13:
 			for (i = 0; i <= 59; i++) {
-				if ((u8)check_exe_phase_evt_status(i, 0xC)) {
+				if (check_exe_phase_evt_status(i, 0xC)) {
 					BattleAudienceItemOn(i, 0, 1);
 					break;
 				}
@@ -3222,7 +3222,7 @@ BOOL BattleAudience_GetSysCtrl(s32 index) {
 	return !(member->flags & 0x10);
 }
 
-BOOL BattleAudience_GetWaiting(s32 index) {
+u8 BattleAudience_GetWaiting(s32 index) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
 	member = BattleAudienceGetPtr(index);
@@ -3232,7 +3232,7 @@ BOOL BattleAudience_GetWaiting(s32 index) {
 	if (member->itemId != -1) {
 		return FALSE;
 	}
-	return (u8)(member->status <= 3);
+	return member->status <= 3;
 }
 
 BOOL BattleAudience_GetEscapeChangeOK(s32 index) {
@@ -3892,7 +3892,7 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 	i = 0;
 	member = BattleAudienceGetPtr(0);
 	for (; i < 200; i++, member++) {
-		if ((u8)BattleAudience_GetWaiting(i)) {
+		if (BattleAudience_GetWaiting(i)) {
 			if (member->type == AUDIENCE_PIRANHA_PLANT) {
 				BattleAudience_ChangeStatus(i, 4);
 				if (d == 3) {
@@ -4243,7 +4243,7 @@ void BattleAudienceSoundWhistleKind(s32 kind) {
 	BattleAudienceSound* sound;
 
 	for (i = 0; i < 200; i++) {
-		if ((u8)BattleAudience_GetWaiting(i) == 1) {
+		if (BattleAudience_GetWaiting(i) == 1) {
 			waiting[count++] = i;
 		}
 	}
@@ -4699,7 +4699,7 @@ void BattleAudience_Case_ActionCommandGood(BattleWeapon* weapon) {
 	s32 i;
 	s32 count = 0;
 	for (i = 0; i < 200; i++) {
-		if ((u8)BattleAudience_GetWaiting(i) == 1) {
+		if (BattleAudience_GetWaiting(i) == 1) {
 			count++;
 		}
 	}
@@ -4715,7 +4715,7 @@ void BattleAudience_Case_ActionCommandBad(BattleWeapon* weapon) {
 	s32 count = 0;
 	s32 i;
 	for (i = 0; i < 200; i++) {
-		if ((u8)BattleAudience_GetWaiting(i) == 1) {
+		if (BattleAudience_GetWaiting(i) == 1) {
 			count++;
 		}
 	}
@@ -4742,7 +4742,7 @@ void BattleAudience_Case_AcrobatGood(void) {
 	s32 count = 0;
 	s32 i;
 	for (i = 0; i < 200; i++) {
-		if ((u8)BattleAudience_GetWaiting(i) == 1) {
+		if (BattleAudience_GetWaiting(i) == 1) {
 			count++;
 		}
 	}
@@ -4763,7 +4763,7 @@ void BattleAudience_Case_AcrobatBad(void) {
 	s32 count = 0;
 	s32 i;
 	for (i = 0; i < 200; i++) {
-		if ((u8)BattleAudience_GetWaiting(i) == 1) {
+		if (BattleAudience_GetWaiting(i) == 1) {
 			count++;
 		}
 	}
