@@ -80,12 +80,9 @@ extern const f32 float_1_80422088;
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// dont_inline: the original keeps _getmaxcount as a real call (`bl _getmaxcount`), not an inline.
-#pragma dont_inline on
 s32 _getmaxcount(void) {
 	return _frame_table[BattleActionCommandGetDifficulty(_battleWorkPointer)];
 }
-#pragma dont_inline reset
 
 // The `ac` local below makes MWCC keep two separate base pointers (r31=mt, r28=disp) the way the
 // original does. The `unit`/`part` declaration order also matters: MWCC assigns `part` to r26 and `unit`
