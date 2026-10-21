@@ -2220,21 +2220,8 @@ void _btlYoshiDisp(CameraId cameraId, void* param) {
 
     x_scale = (work->velX < 0.0f) ? 0.4f : -0.4f;
     color = white;
-#ifdef MUST_MATCH
-    // btlDispTexPlane's real signature is
-    // (f32 x, f32 y, f32 z, f32 sx, f32 sy, s32 frame, GXColor* color, s32 unused);
-    // include/battle/battle_disp.h declares it with the decomp's (u32 id, GXColor color, ...)
-    // order and omits the trailing unused s32. Call through the real signature so the original's
-    // argument setup (color pointer in r4, `li r5, 0`) is emitted. The natural decomp-form call
-    // is under #else.
-    ((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-        work->posX, 20.f + work->posY, work->posZ, x_scale,
-        0.4f, _yoshig_tpl_no_tbl[work->tplIndex], &color, 0);
-#else
-    btlDispTexPlane(_yoshig_tpl_no_tbl[work->tplIndex], color, work->posX,
-                    20.f + work->posY, work->posZ, x_scale,
-                    0.4f);
-#endif
+    btlDispTexPlane(work->posX, 20.f + work->posY, work->posZ, x_scale, 0.4f, _yoshig_tpl_no_tbl[work->tplIndex],
+                    color, 0);
 }
 
 // TODO: type

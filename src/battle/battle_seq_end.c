@@ -1905,16 +1905,9 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
         PSMTXConcat(mtxRotY, mtxMain, mtxMain);
         PSMTXConcat(mtxTrans, mtxMain, mtxMain);
         btlDispTexPlane2(mtxMain, 0x24, work->objs[0].color, 0);
-#ifdef MUST_MATCH
-        ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-            work->objs[0].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[0].pos.y,
-            float_2_80420c4c + work->objs[0].pos.z, work->objs[0].scale.x, work->objs[0].scale.y,
-            0x27, work->objs[0].color, 0);
-#else
-        btlDispTexPlane(0x27, work->objs[0].color, work->objs[0].pos.x - float_16_80420c44,
-                        float_20_80420c48 + work->objs[0].pos.y, float_2_80420c4c + work->objs[0].pos.z,
-                        work->objs[0].scale.x, work->objs[0].scale.y);
-#endif
+        btlDispTexPlane(work->objs[0].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[0].pos.y,
+                        float_2_80420c4c + work->objs[0].pos.z, work->objs[0].scale.x, work->objs[0].scale.y, 0x27,
+                        work->objs[0].color, 0);
     }
 
     if (work->objs[1].visible != 0) {
@@ -1930,16 +1923,9 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
         PSMTXConcat(mtxRotY, mtxMain, mtxMain);
         PSMTXConcat(mtxTrans, mtxMain, mtxMain);
         btlDispTexPlane2(mtxMain, 0x25, work->objs[1].color, 0);
-#ifdef MUST_MATCH
-        ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-            work->objs[1].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[1].pos.y,
-            float_2_80420c4c + work->objs[1].pos.z, work->objs[1].scale.x, work->objs[1].scale.y,
-            0x28, work->objs[1].color, 0);
-#else
-        btlDispTexPlane(0x28, work->objs[1].color, work->objs[1].pos.x - float_16_80420c44,
-                        float_20_80420c48 + work->objs[1].pos.y, float_2_80420c4c + work->objs[1].pos.z,
-                        work->objs[1].scale.x, work->objs[1].scale.y);
-#endif
+        btlDispTexPlane(work->objs[1].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[1].pos.y,
+                        float_2_80420c4c + work->objs[1].pos.z, work->objs[1].scale.x, work->objs[1].scale.y, 0x28,
+                        work->objs[1].color, 0);
     }
 
     if (work->objs[2].visible != 0) {
@@ -1955,16 +1941,9 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
         PSMTXConcat(mtxRotY, mtxMain, mtxMain);
         PSMTXConcat(mtxTrans, mtxMain, mtxMain);
         btlDispTexPlane2(mtxMain, 0x26, work->objs[2].color, 0);
-#ifdef MUST_MATCH
-        ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-            work->objs[2].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[2].pos.y,
-            float_2_80420c4c + work->objs[2].pos.z, work->objs[2].scale.x, work->objs[2].scale.y,
-            0x29, work->objs[2].color, 0);
-#else
-        btlDispTexPlane(0x29, work->objs[2].color, work->objs[2].pos.x - float_16_80420c44,
-                        float_20_80420c48 + work->objs[2].pos.y, float_2_80420c4c + work->objs[2].pos.z,
-                        work->objs[2].scale.x, work->objs[2].scale.y);
-#endif
+        btlDispTexPlane(work->objs[2].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[2].pos.y,
+                        float_2_80420c4c + work->objs[2].pos.z, work->objs[2].scale.x, work->objs[2].scale.y, 0x29,
+                        work->objs[2].color, 0);
     }
 
     for (i = 0; i < 3; i++) {

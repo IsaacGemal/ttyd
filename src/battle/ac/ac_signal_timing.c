@@ -612,19 +612,8 @@ static void actionCommandDisp(f32 x, f32 y) {
                 iconDispGx(0.8f, &t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0));
             } else if (bd->signalCount <= t0) {
                 if (i >= num - 1) {
-                    // Match-only: the original sets r5=0 before every btlDispTexPlane call (the
-                    // callee's GXColor is the 2nd GPR); the extra trailing s32 reproduces it, as in
-                    // battle_seq_end.c. The natural 7-argument call is under #else.
-#ifdef MUST_MATCH
-                    ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-                        x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))),
-                        f28, 0.0f, 0.8f, 0.8f,
-                        0x40, *(GXColor*)&dat_804216d4, 0);
-#else
-                    btlDispTexPlane(0x40, *(GXColor*)&dat_804216d4,
-                                    x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))),
-                                    f28, 0.0f, 0.8f, 0.8f);
-#endif
+                    btlDispTexPlane(x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28, 0.0f, 0.8f, 0.8f,
+                                    0x40, *(GXColor*)&dat_804216d4, 0);
                 }
             } else {
                 Vec t = (Vec){0.0f, 0.0f, 0.0f};
@@ -638,27 +627,11 @@ static void actionCommandDisp(f32 x, f32 y) {
     f28 = f31 - 25.0f;
     for (i = 0; i < num; i++) {
         if (bd->states[i] == 1) {
-#ifdef MUST_MATCH
-            ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-                x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
-                0.0f, 1.0f, 1.0f,
-                0x3E, *(GXColor*)&dat_804216d8, 0);
-#else
-            btlDispTexPlane(0x3E, *(GXColor*)&dat_804216d8,
-                            x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
-                            0.0f, 1.0f, 1.0f);
-#endif
+            btlDispTexPlane(x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28, 0.0f, 1.0f, 1.0f, 0x3E,
+                            *(GXColor*)&dat_804216d8, 0);
         } else if (bd->states[i] == -1) {
-#ifdef MUST_MATCH
-            ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
-                x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
-                0.0f, 1.0f, 1.0f,
-                0x3F, *(GXColor*)&dat_804216dc, 0);
-#else
-            btlDispTexPlane(0x3F, *(GXColor*)&dat_804216dc,
-                            x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28,
-                            0.0f, 1.0f, 1.0f);
-#endif
+            btlDispTexPlane(x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28, 0.0f, 1.0f, 1.0f, 0x3F,
+                            *(GXColor*)&dat_804216dc, 0);
         }
     }
 }

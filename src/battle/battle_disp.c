@@ -197,7 +197,7 @@ void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, G
 	GXTexCoord2f32(0.0f, 1.0f);
 }
 
-void btlDispTexPlane(u32 id, GXColor color, f32 tX, f32 tY, f32 tZ, f32 sX, f32 sY) {
+void btlDispTexPlane(f32 tX, f32 tY, f32 tZ, f32 sX, f32 sY, u32 id, GXColor color, s32 unused) {
 	CameraEntry* camera;
 	Mtx scale, trans, mtx;
 
@@ -226,7 +226,7 @@ void btlDispTexPlane2(Mtx mtx, u32 id, GXColor color, s32 unused) {
 }
 #pragma dont_inline reset
 
-void btlDispTexPlane3(Mtx mtx, u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3) {
+void btlDispTexPlane3(Mtx mtx, u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3, s32 unused) {
 	CameraEntry* camera;
 	Mtx mtx2;
 

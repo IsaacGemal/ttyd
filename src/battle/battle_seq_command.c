@@ -2655,8 +2655,7 @@ void BattleDrawEnemyHPBar(Vec pos, BattleUnit* unit, GXColor color) {
 	btlDispGXInit2DRasta();
 	GXLoadPosMtxImm(camera->view, 0);
 	pos.x -= 10.0f;
-	((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-	    0xA, color, 0, 19.0f + pos.x, pos.y - 3.0f, 0.0f, 1.0f, 1.0f);
+	btlDispTexPlane(19.0f + pos.x, pos.y - 3.0f, 0.0f, 1.0f, 1.0f, 0xA, color, 0);
 	switch ((s32)*(u16*)gauge->field_0x0) {
 	case 1:
 		if (gauge->field_0x4 > 0) {
@@ -2667,14 +2666,12 @@ void BattleDrawEnemyHPBar(Vec pos, BattleUnit* unit, GXColor color) {
 			btlDispGXInit2DRasta();
 			GXLoadPosMtxImm(camera->view, 0);
 		}
-		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-		    0xB, color, 0, 19.0f + pos.x - 20.0f * (1.0f - gauge->field_0x14), pos.y - 3.0f, 0.0f,
-		    gauge->field_0x14, 1.0f);
+		btlDispTexPlane(19.0f + pos.x - 20.0f * (1.0f - gauge->field_0x14), pos.y - 3.0f, 0.0f, gauge->field_0x14, 1.0f,
+		                0xB, color, 0);
 		break;
 	default: {
 		f32 w = gauge->field_0x14;
-		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-		    0xB, color, 0, 19.0f + pos.x - 20.0f * (1.0f - w), pos.y - 3.0f, 0.0f, w, 1.0f);
+		btlDispTexPlane(19.0f + pos.x - 20.0f * (1.0f - w), pos.y - 3.0f, 0.0f, w, 1.0f, 0xB, color, 0);
 		break;
 	}
 	}

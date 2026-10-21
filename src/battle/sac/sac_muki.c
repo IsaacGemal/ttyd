@@ -918,13 +918,11 @@ static inline Vec mukiScreenVec1(MukiWork* work) {
 
 // .text:0x908 | 0x802475F4 | size: 0x6EC
 // The by-value colour pair goes through a `GXColor argv[4]` filled in reverse index order, which
-// gives the target's 0x6c,0x68,0x74,0x70 stores, and `btlDispTexPlane3` is called through the
-// original's 7-argument signature (the target sets `r9 = 0`, which the 6-parameter header prototype
-// cannot express). `frac` is block-local so `left` coalesces into `sx`'s register. The gauge
-// offsets `w`/`len` are locals: as literals MWCC puts the constant first in `sx + 32` and
-// `frac * 80` and folds `sx - 32 - 8` across the calls; the locals keep the original's operand
-// order. Block 1 reads the screen point in the first call's arguments, so `sx` is loaded straight
-// into its callee-saved register.
+// gives the target's 0x6c,0x68,0x74,0x70 stores. `frac` is block-local so `left` coalesces into
+// `sx`'s register. The gauge offsets `w`/`len` are locals: as literals MWCC puts the constant first
+// in `sx + 32` and `frac * 80` and folds `sx - 32 - 8` across the calls; the locals keep the
+// original's operand order. Block 1 reads the screen point in the first call's arguments, so `sx`
+// is loaded straight into its callee-saved register.
 #pragma dont_inline on
 static void disp_2D(CameraId cameraId, void* param) {
     MukiWork* work = get_ptr();
@@ -985,8 +983,7 @@ static void disp_2D(CameraId cameraId, void* param) {
             argv[0] = argv[1];
             argv[3] = (GXColor){0xFE, 0xE6, 0x3E, 0xFF};
             argv[2] = argv[3];
-            ((void (*)(Mtx, u32, GXColor, GXColor, GXColor, GXColor, s32))btlDispTexPlane3)(
-                mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
+            btlDispTexPlane3(mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
             PSMTXScale(mtx, 0.7f, 0.7f, 0.7f);
             PSMTXTransApply(mtx, mtx, left - 35.0f, sy - 14.0f, 0.0f);
             iconDispGx2(mtx, 0x10, 0x1ED);
@@ -1039,8 +1036,7 @@ static void disp_2D(CameraId cameraId, void* param) {
             argv[0] = argv[1];
             argv[3] = (GXColor){0x74, 0xC9, 0xFF, 0xFF};
             argv[2] = argv[3];
-            ((void (*)(Mtx, u32, GXColor, GXColor, GXColor, GXColor, s32))btlDispTexPlane3)(
-                mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
+            btlDispTexPlane3(mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
             PSMTXScale(mtx, 0.7f, 0.7f, 0.7f);
             PSMTXTransApply(mtx, mtx, left - 35.0f, sy - 14.0f, 0.0f);
             iconDispGx2(mtx, 0x10, 0x1ED);
@@ -1147,8 +1143,7 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 // reverse-order fill, each colour's two copies written together, so MWCC emits
                 // the original's grouped colour stores; the call then takes the array in order.
                 argv[1] = cA; argv[0] = cA; argv[3] = cB; argv[2] = cB;
-                ((void (*)(Mtx, u32, GXColor, GXColor, GXColor, GXColor, s32))btlDispTexPlane3)(
-                    mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
+                btlDispTexPlane3(mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
                 break;
             case 1:
                 PSMTXRotRad(mtx, 'y', 0.017453292f * entry->rot);
@@ -1170,8 +1165,7 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 cB.a = entry->alpha;
 #endif
                 argv[1] = cA; argv[0] = cA; argv[3] = cB; argv[2] = cB;
-                ((void (*)(Mtx, u32, GXColor, GXColor, GXColor, GXColor, s32))btlDispTexPlane3)(
-                    mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
+                btlDispTexPlane3(mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
                 break;
             case 2:
                 PSMTXRotRad(mtx, 'y', 0.017453292f * entry->rot);

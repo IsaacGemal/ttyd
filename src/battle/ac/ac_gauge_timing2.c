@@ -382,8 +382,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 
 	{
 		GXColor color = *(GXColor*)&dat_80421adc;
-		((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-		    f31, f27, 0.0f, 1.0f, 1.0f, 0x43, &color, 0);
+		btlDispTexPlane(f31, f27, 0.0f, 1.0f, 1.0f, 0x43, color, 0);
 	}
 
 	f26 = 2.0f + (8.0f + f31);
@@ -393,13 +392,11 @@ static void actionCommandDisp(f32 x, f32 y) {
 		s32 off = i * 4;
 		if (i != n - 1) {
 			GXColor color = *(GXColor*)&dat_80421ae0;
-			((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-			    f26 + (f32)off, f27, 0.0f, 1.0f, 1.0f, 0x44, &color, 0);
+			btlDispTexPlane(f26 + (f32)off, f27, 0.0f, 1.0f, 1.0f, 0x44, color, 0);
 		}
 		else {
 			GXColor color = *(GXColor*)&dat_80421ae4;
-			((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-			    f26 + (f32)off + (f32)rem, f27, 0.0f, 1.0f, 1.0f, 0x44, &color, 0);
+			btlDispTexPlane(f26 + (f32)off + (f32)rem, f27, 0.0f, 1.0f, 1.0f, 0x44, color, 0);
 		}
 	}
 	}
@@ -407,8 +404,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	{
 		f32 t16 = 16.0f + (-288.0f + x);
 		GXColor color = *(GXColor*)&dat_80421ae8;
-		((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-		    t16 + (f32)count, f27, 0.0f, -1.0f, 1.0f, 0x43, &color, 0);
+		btlDispTexPlane(t16 + (f32)count, f27, 0.0f, -1.0f, 1.0f, 0x43, color, 0);
 	}
 
 	{
@@ -510,9 +506,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 			}
 			if (icon != 0x45) {
 				GXColor color = *(GXColor*)&dat_80421aec;
-				((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-				    f31 + (f32)dec->total * dec->value[i] / 100.f, ty, 0.0f,
-				    1.0f, 1.0f, icon, &color, 0);
+				btlDispTexPlane(f31 + (f32)dec->total * dec->value[i] / 100.f, ty, 0.0f, 1.0f, 1.0f, icon, color, 0);
 			}
 		}
 
