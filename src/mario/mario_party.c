@@ -95,18 +95,9 @@ s32 unk_8013be14(void) {
     return 0;
 }
 
-// Kills the party member in one of Mario's two party slots; marioPartyKill is this for both slots.
-static inline void marioPartyKillSlot(s32 slot) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->currPartySlotId[slot] >= 0) {
-        partyKill(mario->currPartySlotId[slot]);
-        mario->currPartySlotId[slot] = -1;
-    }
-}
-
 s32 marioPartyEntry(s32 memberId) {
     MarioWork* wp;
+    MarioWork* mario;
     s32 id;
 
     wp = marioGetPtr();
@@ -114,18 +105,41 @@ s32 marioPartyEntry(s32 memberId) {
         if (!partyChkJoin(memberId)) {
             return -1;
         }
+#ifdef MUST_MATCH
+        // The original has the outer and inner slot check of an expanded kill.
         if (wp->currPartySlotId[0] >= 0) {
-            marioPartyKillSlot(0);
+            mario = marioGetPtr();
+            if (mario->currPartySlotId[0] >= 0) {
+                partyKill(mario->currPartySlotId[0]);
+                mario->currPartySlotId[0] = -1;
+            }
         }
+#else
+        if (wp->currPartySlotId[0] >= 0) {
+            partyKill(wp->currPartySlotId[0]);
+            wp->currPartySlotId[0] = -1;
+        }
+#endif
         id = partyEntry(memberId);
         if (id >= 0) {
             wp->currPartySlotId[0] = id;
             partyHello(partyGetPtr(id));
         }
     } else {
+#ifdef MUST_MATCH
         if (wp->currPartySlotId[1] >= 0) {
-            marioPartyKillSlot(1);
+            mario = marioGetPtr();
+            if (mario->currPartySlotId[1] >= 0) {
+                partyKill(mario->currPartySlotId[1]);
+                mario->currPartySlotId[1] = -1;
+            }
         }
+#else
+        if (wp->currPartySlotId[1] >= 0) {
+            partyKill(wp->currPartySlotId[1]);
+            wp->currPartySlotId[1] = -1;
+        }
+#endif
         id = partyEntry2(memberId);
         if (id >= 0) {
             wp->currPartySlotId[1] = id;
@@ -174,8 +188,18 @@ s32 marioPartyGoodbye(void) {
 }
 
 void marioPartyKill(void) {
-    marioPartyKillSlot(0);
-    marioPartyKillSlot(1);
+    MarioWork* wp;
+
+    wp = marioGetPtr();
+    if (wp->currPartySlotId[0] >= 0) {
+        partyKill(wp->currPartySlotId[0]);
+        wp->currPartySlotId[0] = -1;
+    }
+    wp = marioGetPtr();
+    if (wp->currPartySlotId[1] >= 0) {
+        partyKill(wp->currPartySlotId[1]);
+        wp->currPartySlotId[1] = -1;
+    }
 }
 
 s32 marioGetParty(void) {

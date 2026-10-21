@@ -179,8 +179,31 @@ TubuDt tubuDt[0x5D] = {
     { -33, -74, 0x01, 0x00, 0x017E, "las" },};
 s32 stone_tbl[7] = {0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78};
 extern const u8 enemy_monoshiri_sort_table[];
-// Appends a tab to the menu and re-centres every tab row.
-static inline void winLogAddTab(LogWin* w, s32 tabType, const char** msg_help, s32 msgIdx) {
+#define LOG_ADD_TAB(w, tabType, msg)                                                  \
+    do {                                                                              \
+        LogRow* r_ = &(w)->rows[(w)->count];                                          \
+        r_->type = (tabType);                                                         \
+        r_->timer = 0;                                                                \
+        r_->phase = 0;                                                                \
+        r_->name = (msg);                                                             \
+        (w)->count++;                                                                 \
+        for (k_ = 0; k_ < (w)->count; k_++) {                                         \
+            (w)->rows[k_].curX = 0.0f;                                    \
+            (w)->rows[k_].targetX = 0.0f;                                 \
+            {                                                                         \
+                f32 a_ = 45.0f * winLogI2F((w)->count, base, &e7cScratch);   \
+                f32 b_ = 45.0f * winLogI2F(k_, base, &macScratch);           \
+                f32 y_ = a_ / 2.0f - b_;                                 \
+                (w)->rows[k_].curY = y_;                                              \
+                (w)->rows[k_].targetY = y_;                                           \
+            }                                                                         \
+        }                                                                             \
+    } while (0)
+#ifdef MUST_MATCH
+// Match-only: the loop counter is a helper local, so the backend numbers it as a temp and can
+// fold its zero into the one already materialised for the header stores (the original keeps the
+// counter and that zero in r5). The msg is read through msg_help so the name pointer stays r0.
+static inline void winLogAddTab0(LogWin* w, s32 tabType, const char** msg_help, s32 msgIdx) {
     LogRow* r = &w->rows[w->count];
     s32 k;
     r->type = tabType;
@@ -200,6 +223,18 @@ static inline void winLogAddTab(LogWin* w, s32 tabType, const char** msg_help, s
         }
     }
 }
+#define LOG_ADD_TAB_0(w, tabType, msg) winLogAddTab0(w, tabType, msg_help, 0)
+#define LOG_ADD_1(w, tabType, msg) winLogAddTab0(w, tabType, msg_help, 1)
+#define LOG_ADD_2(w, tabType, msg) winLogAddTab0(w, tabType, msg_help, 2)
+#define LOG_ADD_3(w, tabType, msg) winLogAddTab0(w, tabType, msg_help, 3)
+#define LOG_ADD_4(w, tabType, msg) winLogAddTab0(w, tabType, msg_help, 4)
+#else
+#define LOG_ADD_TAB_0(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
+#define LOG_ADD_1(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
+#define LOG_ADD_2(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
+#define LOG_ADD_3(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
+#define LOG_ADD_4(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
+#endif
 #define LOG_TEXPAL() (*(TEXPalette**)work->winTpl->data)
 extern const GXColor unk_80423050;
 #define HALF_FOV_TAN 0.21816615760326385
@@ -210,6 +245,9 @@ typedef struct TattleCamEntry {
     f32 scale;
 } TattleCamEntry;
 
+// Appends a tab to the menu and re-centres every tab row.
+
+
 #define winLogI2F(v, base, scratch) ((f32)(v))
 
 #pragma opt_common_subs off // keeps MWCC from CSE-ing the map/base addresses across the load loops
@@ -218,23 +256,25 @@ void winLogInit(WindowWork* work) {
     static const char* msg_help[5] = {"msg_menu_kiroku_map", "msg_menu_kiroku_stone", "msg_menu_kiroku_badge", "msg_menu_kiroku_ryori", "msg_menu_kiroku_mono"};
     const char* area;
     s32 i;
+    s32 k_;
     f64 e7cScratch;
+    f64 macScratch;
 
     ((LogWin*)work)->state = 0;
     w->sel = 0;
     w->count = 0;
-    winLogAddTab(w, 0, msg_help, 0);
+    LOG_ADD_TAB_0(w, 0, msg_help[0]);
     if (swByteGet(0) >= 0x13) {
-        winLogAddTab(w, 1, msg_help, 1);
+        LOG_ADD_1(w, 1, msg_help[1]);
     }
     if (swByteGet(0) >= 7) {
-        winLogAddTab(w, 4, msg_help, 4);
+        LOG_ADD_4(w, 4, msg_help[4]);
     }
     if (swByteGet(0) >= 0x14) {
-        winLogAddTab(w, 2, msg_help, 2);
+        LOG_ADD_2(w, 2, msg_help[2]);
     }
     if (swGet(0x40) != 0) {
-        winLogAddTab(w, 3, msg_help, 3);
+        LOG_ADD_3(w, 3, msg_help[3]);
     }
     w->stoneNum = 0;
     for (i = 0; i < 7; i++) {
@@ -1575,11 +1615,18 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, 4.0f + (230.f + x), y), (Vec){1.0f, 32.0f, 1.0f}, c1);
         winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, 4.0f + top), (Vec){59.5f, 1.0f, 1.0f}, c1);
         winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, (y - 120.f) - 4.0f), (Vec){59.5f, 1.0f, 1.0f}, c1);
+#ifdef MUST_MATCH
+        // Match-only: keep __fabs's double result in f0 (the original does
+        // `fabs f0, f0; frsp f29, f0`); without the explicit f64 temp MWCC
+        // folds the abs into the callee-saved f29 (`fabs f29, f0`).
         {
             f32 b = 2.0f * (f32)sin((f32)gp->retraceCount / 8.0f);
-            f64 c = __fabs(b);
-            bounce = c;
+            f64 c = __fabs((f64)b);
+            bounce = (f32)c;
         }
+#else
+        bounce = (f32)__fabs(2.0f * (f32)sin((f32)gp->retraceCount / 8.0f));
+#endif
         winTexInit(LOG_TEXPAL());
         if (-240.f == w->mapScrollY) {
             d = 0.0f;

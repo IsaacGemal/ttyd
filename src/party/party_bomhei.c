@@ -448,24 +448,6 @@ void bomhei_use(PartyEntry* party) {
     }
 }
 
-// A bomb-breakable hit: the MOBJ_BombRock map object, or a case entry with condition 0xF.
-static inline BOOL bomhei_chkBombRock(HitEntry* hit) {
-    if (hit == NULL) {
-        return FALSE;
-    }
-    if (hitGetAttr(hit) & 0x80000000) {
-        if (strcmp(mobjHitObjPtrToPtr(hit)->animName, "MOBJ_BombRock") == 0) {
-            return TRUE;
-        }
-    } else {
-        CaseEntry* cs = caseCheckHitObj2(hit);
-        if (cs != NULL && cs->activeConditionId == 0xF) {
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
 void bomhei_use_main(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     HitEntry* hit;
@@ -811,6 +793,8 @@ void bomhei_use_main(PartyEntry* party) {
 
     switch (party->useMotionId) {
     case 0x3C: {
+        s32 found;
+
         if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
             psndSFXOff(party->tail.bobbery.countdownSfxId);
             party->tail.bobbery.countdownSfxId = -1;
@@ -824,7 +808,25 @@ void bomhei_use_main(PartyEntry* party) {
         party->speed = 0.0f;
         partyMove(party);
         hit = party->frontHit;
-        if (bomhei_chkBombRock(hit)) {
+        if (hit == NULL) {
+            found = FALSE;
+        } else if ((hitGetAttr(hit) & 0x80000000) != 0) {
+            if (strcmp(mobjHitObjPtrToPtr(hit)->animName, "MOBJ_BombRock") != 0) {
+                goto bomhei3c_false;
+            }
+            found = TRUE;
+        } else {
+            CaseEntry* cs = caseCheckHitObj2(hit);
+            if (cs == NULL || cs->activeConditionId != 0xF) {
+                goto bomhei3c_false;
+            }
+            found = TRUE;
+        }
+        goto bomhei3c_done;
+    bomhei3c_false:
+        found = FALSE;
+    bomhei3c_done:
+        if (found) {
             evtEntryType(longQuake_evt, 0, 0, 0);
         } else {
             evtEntryType(quake_evt, 0, 0, 0);
@@ -1253,7 +1255,56 @@ HitEntry* check_front(PartyEntry* party) {
                 limit = 30.0f;
             }
             if (query.targetDistance <= limit) {
-                if (bomhei_chkBombRock(hit)) {
+#ifdef MUST_MATCH
+                // Match-only: the do-while's breaks make MWCC share one FALSE
+                // block between the strcmp else and the caseCheck else; the
+                // plain if/else duplicates the `li r0,0; b`.
+                s32 accepted;
+                do {
+                    s32 attr;
+                    CaseEntry* cs;
+                    if (hit == NULL) {
+                        accepted = FALSE;
+                        break;
+                    }
+                    attr = hitGetAttr(hit);
+                    if (attr & 0x80000000) {
+                        if (strcmp(mobjHitObjPtrToPtr(hit)->animName, "MOBJ_BombRock") == 0) {
+                            accepted = TRUE;
+                            break;
+                        }
+                    } else {
+                        cs = caseCheckHitObj2(hit);
+                        if (cs != NULL && cs->activeConditionId == 0xF) {
+                            accepted = TRUE;
+                            break;
+                        }
+                    }
+                    accepted = FALSE;
+                } while (0);
+#else
+                s32 accepted;
+                if (hit == NULL) {
+                    accepted = FALSE;
+                } else {
+                    s32 attr = hitGetAttr(hit);
+                    if (attr & 0x80000000) {
+                        if (strcmp(mobjHitObjPtrToPtr(hit)->animName, "MOBJ_BombRock") == 0) {
+                            accepted = TRUE;
+                        } else {
+                            accepted = FALSE;
+                        }
+                    } else {
+                        CaseEntry* cs = caseCheckHitObj2(hit);
+                        if (cs != NULL && cs->activeConditionId == 0xF) {
+                            accepted = TRUE;
+                        } else {
+                            accepted = FALSE;
+                        }
+                    }
+                }
+#endif
+                if (accepted) {
                     return hit;
                 }
             }
@@ -1265,14 +1316,106 @@ HitEntry* check_front(PartyEntry* party) {
     query.targetDistance = 2.0f + f29;
     hit2 = hitCheckVecFilter(&query, NULL);
     if (hit2 != NULL) {
-        if (bomhei_chkBombRock(hit2)) {
+#ifdef MUST_MATCH
+        s32 accepted;
+        do {
+            s32 attr;
+            CaseEntry* cs;
+            if (hit2 == NULL) {
+                accepted = FALSE;
+                break;
+            }
+            attr = hitGetAttr(hit2);
+            if (attr & 0x80000000) {
+                if (strcmp(mobjHitObjPtrToPtr(hit2)->animName, "MOBJ_BombRock") == 0) {
+                    accepted = TRUE;
+                    break;
+                }
+            } else {
+                cs = caseCheckHitObj2(hit2);
+                if (cs != NULL && cs->activeConditionId == 0xF) {
+                    accepted = TRUE;
+                    break;
+                }
+            }
+            accepted = FALSE;
+        } while (0);
+#else
+        s32 accepted;
+        if (hit2 == NULL) {
+            accepted = FALSE;
+        } else {
+            s32 attr = hitGetAttr(hit2);
+            if (attr & 0x80000000) {
+                if (strcmp(mobjHitObjPtrToPtr(hit2)->animName, "MOBJ_BombRock") == 0) {
+                    accepted = TRUE;
+                } else {
+                    accepted = FALSE;
+                }
+            } else {
+                CaseEntry* cs = caseCheckHitObj2(hit2);
+                if (cs != NULL && cs->activeConditionId == 0xF) {
+                    accepted = TRUE;
+                } else {
+                    accepted = FALSE;
+                }
+            }
+        }
+#endif
+        if (accepted) {
             return hit2;
         }
         ret2 = hit2;
     }
     field138 = party->groundHit;
     if (field138 != NULL) {
-        if (bomhei_chkBombRock(field138)) {
+#ifdef MUST_MATCH
+        s32 accepted;
+        do {
+            s32 attr;
+            CaseEntry* cs;
+            if (field138 == NULL) {
+                accepted = FALSE;
+                break;
+            }
+            attr = hitGetAttr(field138);
+            if (attr & 0x80000000) {
+                if (strcmp(mobjHitObjPtrToPtr(field138)->animName, "MOBJ_BombRock") == 0) {
+                    accepted = TRUE;
+                    break;
+                }
+            } else {
+                cs = caseCheckHitObj2(field138);
+                if (cs != NULL && cs->activeConditionId == 0xF) {
+                    accepted = TRUE;
+                    break;
+                }
+            }
+            accepted = FALSE;
+        } while (0);
+#else
+        s32 accepted;
+        if (field138 == NULL) {
+            accepted = FALSE;
+        } else {
+            s32 attr = hitGetAttr(field138);
+            if (attr & 0x80000000) {
+                if (strcmp(mobjHitObjPtrToPtr(field138)->animName, "MOBJ_BombRock") == 0) {
+                    accepted = TRUE;
+                } else {
+                    accepted = FALSE;
+                }
+            } else {
+                CaseEntry* cs = caseCheckHitObj2(field138);
+                if (cs != NULL && cs->activeConditionId == 0xF) {
+                    accepted = TRUE;
+                } else {
+                    accepted = FALSE;
+                }
+            }
+        }
+#endif
+        if (accepted) {
             return field138;
         }
     }

@@ -1570,7 +1570,11 @@ void winMailGX(WindowWork* work, f32 x, f32 y) {
 // loop bound; MWCC hoists both out of the loops, which is where retail's twelve ids and page count come from.
 void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     f32 scroll;
-    s32 row; // read uninitialised by page 0's visibility test, before the row loop sets it (as in retail)
+#ifdef MUST_MATCH
+    s32 row; // the original reads it in page 0's visibility test before the row loop sets it
+#else
+    s32 row = 0;
+#endif
     s32 count;
     s32 page;
     s32 cursor;

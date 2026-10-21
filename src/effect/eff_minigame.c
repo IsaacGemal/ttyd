@@ -384,14 +384,26 @@ void effMiniGameMain(EffectEntry* effect) {
 	}
 }
 
-// Returning the colour from an inline instead of building it in the caller puts the by-value
-// temporary and its outgoing copy in the original's stack slots.
-static inline GXColor makeMiniGameColor(u8 alpha, GXColor color) {
+#ifdef MUST_MATCH
+// Match-only: returning the colour from an inline instead of building it in the caller puts the
+// by-value temporary and its outgoing copy in the original's stack slots. The start helper takes
+// the base colour as its second parameter so the division operands stay in r0/r6 and the temporary
+// lands at 0x10; the finish helper builds its own local at 0x8.
+static inline GXColor makeMiniGameStartColor(u8 alpha, GXColor color) {
 	color.a = alpha;
 	return color;
 }
+#endif
 
-// Matched with the colour helper above, by reloading `effect->userdata` into the
+#ifdef MUST_MATCH
+static inline GXColor makeMiniGameFinishColor(u8 alpha) {
+	GXColor color = *(GXColor*)&dat_804212b0;
+	color.a = alpha;
+	return color;
+}
+#endif
+
+// Matched with the MUST_MATCH colour helpers above, by reloading `effect->userdata` into the
 // outer-loop entry pointer and holding the three texture tables as base pointers, and by keeping
 // `f29 = -f30` inside the inner loop.
 void effMiniGameDisp(CameraId camId, void* param) {
@@ -489,11 +501,23 @@ void effMiniGameDisp(CameraId camId, void* param) {
 				GXInitTexObjLOD(&tex, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
 			}
 			GXLoadTexObj(&tex, GX_TEXMAP0);
+#ifdef MUST_MATCH
 			if (i == 0) {
-				GXSetChanMatColor(GX_COLOR0A0, makeMiniGameColor(entry->alpha * 140 / 255, unk_80423308));
+				GXSetChanMatColor(GX_COLOR0A0, makeMiniGameStartColor(entry->alpha * 140 / 255, unk_80423308));
 			} else {
-				GXSetChanMatColor(GX_COLOR0A0, makeMiniGameColor(entry->alpha * 255 / 255, dat_804212b0));
+				GXSetChanMatColor(GX_COLOR0A0, makeMiniGameFinishColor(entry->alpha * 255 / 255));
 			}
+#else
+			if (i == 0) {
+				GXColor color = unk_80423308;
+				color.a = entry->alpha * 140 / 255;
+				GXSetChanMatColor(GX_COLOR0A0, color);
+			} else {
+				GXColor color = dat_804212b0;
+				color.a = entry->alpha * 255 / 255;
+				GXSetChanMatColor(GX_COLOR0A0, color);
+			}
+#endif
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			f27 = 0.5f;
 			f28 = 20.0f;

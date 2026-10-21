@@ -2760,17 +2760,9 @@ void party_motion_upstairs(PartyEntry* party) {
     }
 }
 
-// Callers test `hit != NULL` before calling it too; retail keeps both NULL tests.
-static inline BOOL hitHasAttr(HitEntry* hit, s32 attr) {
-    if (hit == NULL) {
-        return FALSE;
-    }
-    if (hitGetAttr(hit) & attr) {
-        return TRUE;
-    }
-    return FALSE;
-}
-
+// The original re-tests `hit` inside the `hit != NULL` guard (the compiler kept the
+// dead inner test and a dead `li r0,0`); the MUST_MATCH body reproduces that
+// materialisation, and the natural short-circuit form is under #else.
 void party_motion_damage(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     f32 x, y, z;
@@ -2839,10 +2831,29 @@ void party_motion_damage(PartyEntry* party) {
         }
         {
             HitEntry* hit = party->groundHit;
-            if (hit != NULL && !hitHasAttr(hit, 0x200)) {
+#ifdef MUST_MATCH
+            // MUST_MATCH: retail re-tests the same pointer inside the guard, so the
+            // boolean is materialised into r0 with a dead `li r0,0`.
+            if (hit != NULL) {
+                s32 hitFlag;
+                if (hit == NULL) {
+                    hitFlag = 0;
+                } else if (hitGetAttr(hit) & 0x200) {
+                    hitFlag = 1;
+                } else {
+                    hitFlag = 0;
+                }
+                if (hitFlag == 0) {
+                    party->motionStep = 0xC;
+                    party->timer = 0x1E;
+                }
+            }
+#else
+            if (hit != NULL && !(hitGetAttr(hit) & 0x200)) {
                 party->motionStep = 0xC;
                 party->timer = 0x1E;
             }
+#endif
         }
         break;
     case 12:
@@ -3437,13 +3448,31 @@ void party_force_reset_outofscreen(PartyEntry* party) {
             tmp = cur;
             tmp.y += range;
             hit = partyHitCheck(party, &tmp, &dir, &hitPos, &hitNormal, &dist);
+#ifdef MUST_MATCH
+            // MUST_MATCH: retail re-tests hit inside the guard, materialising the
+            // boolean into r0 with a dead `li r0,0` branch.
             if (hit != NULL) {
-                if (!hitHasAttr(hit, 0x200)) {
+                s32 hitFlag;
+                if (hit == NULL) {
+                    hitFlag = 0;
+                } else if (hitGetAttr(hit) & 0x200) {
+                    hitFlag = 1;
+                } else {
+                    hitFlag = 0;
+                }
+                if (hitFlag == 0) {
                     y = hitPos.y;
                 }
             } else {
                 y = mario->position.y;
             }
+#else
+            if (hit == NULL) {
+                y = mario->position.y;
+            } else if (!(hitGetAttr(hit) & 0x200)) {
+                y = hitPos.y;
+            }
+#endif
             tmp.y = y;
             marioGetScreenPos(tmp, &sx, &sy, &sz);
             if (sy > 100.0f) {
@@ -3452,9 +3481,26 @@ void party_force_reset_outofscreen(PartyEntry* party) {
                 if (cur.y + 74.0f > y) {
                     tmp.y += 74.0f;
                     hit = partyHitCheck(party, &tmp, &dir, &hitPos, &hitNormal, &dist);
-                    if (hit != NULL && !hitHasAttr(hit, 0x200)) {
+#ifdef MUST_MATCH
+                    // MUST_MATCH: same redundant pointer re-test as above.
+                    if (hit != NULL) {
+                        s32 hitFlag;
+                        if (hit == NULL) {
+                            hitFlag = 0;
+                        } else if (hitGetAttr(hit) & 0x200) {
+                            hitFlag = 1;
+                        } else {
+                            hitFlag = 0;
+                        }
+                        if (hitFlag == 0) {
+                            y = hitPos.y;
+                        }
+                    }
+#else
+                    if (hit != NULL && !(hitGetAttr(hit) & 0x200)) {
                         y = hitPos.y;
                     }
+#endif
                 }
                 break;
             }
