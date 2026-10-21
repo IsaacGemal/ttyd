@@ -307,77 +307,8 @@ static BattleDataEntry data_table[15] = {
     { 0x00, NULL },
 };
 
-static USER_FUNC(pakkun_ceil_exist) {
-    s32* args;
-
-    args = event->args;
-    if (_battleWorkPointer->field_180C0.stageFlags & 0x20) {
-        evtSetValue(event, args[0], 0);
-    } else {
-        evtSetValue(event, args[0], 1);
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(shadow_scale_memory) {
-    BattleUnit* unit;
-    BattleUnitPart* part;
-    s32 id;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    part = BtlUnit_GetPartsPtr(unit, 1);
-    unit->work[0] = (s32)part->field_0x78;
-    return EVT_RETURN_DONE;
-}
-
-// The natural form of this function schedules the pooled constants in the wrong slots. Casting
-// `intplGetValue` to an ABI-identical float-first signature `(s32, f32, f32, s32, s32)` (= r3,
-// f1, f2, r4, r5 on PowerPC) makes MWCC evaluate the integer arguments right-to-left and
-// materialise the pooled constants before the int->float conversion, reproducing the retail
-// bytes. The call is the same function; the natural order is under #else (same fix as
-// unit_pakkun_flower.c's shadow_scale_small).
-static USER_FUNC(shadow_scale_small) {
-    BattleUnit* unit;
-    BattleUnitPart* part;
-    s32 id;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    part = BtlUnit_GetPartsPtr(unit, 1);
-    if (isFirstCall) {
-        unit->work[1] = 0;
-    }
-    part->field_0x78 = intplGetValue(0, unit->work[1], 15, (f32)unit->work[0], 0.0f);
-    if (unit->work[1] >= 15) {
-        return EVT_RETURN_DONE;
-    }
-    unit->work[1]++;
-    return EVT_RETURN_BLOCK;
-}
-
-static USER_FUNC(shadow_scale_return) {
-    BattleUnit* unit;
-    BattleUnitPart* part;
-    s32 id;
-    f32 start;
-    f32 end;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    part = BtlUnit_GetPartsPtr(unit, 1);
-    if (isFirstCall) {
-        unit->work[1] = 0;
-    }
-    start = 0.0f;
-    end = (f32)unit->work[0];
-    part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
-    if (unit->work[1] >= 15) {
-        return EVT_RETURN_DONE;
-    }
-    unit->work[1]++;
-    return EVT_RETURN_BLOCK;
-}
+#include "rel/common/pakkun_ceil_exist.h"
+#include "rel/common/shadow_scale_small.h"
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
