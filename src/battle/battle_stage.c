@@ -148,17 +148,6 @@ void BattleStageInit(void) {
 	batSpotInit();
 }
 
-// The original translation unit called intplGetValue through a prototype listing the two float
-// bounds before the step/steps words, so MWCC evaluates the two int->float conversions first and
-// colours them r0/r4 as retail does; the ABI is unchanged (ints r3-r5, floats f1-f2).
-static inline f32 intplGetValueMain(s32 mode, f32 start, f32 end, s32 currStep, s32 steps) {
-#ifdef MUST_MATCH
-	return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, currStep, steps);
-#else
-	return intplGetValue(mode, currStep, steps, start, end);
-#endif
-}
-
 void BattleStageMain(void) {
 	BattleStage* stage = &_battleWorkPointer->stage;
 	s32 offset;
@@ -175,15 +164,12 @@ void BattleStageMain(void) {
 		if (light->flags & 1) {
 			if (light->colorFrames > 0) {
 				light->colorFrames--;
-				light->colorCur.r = intplGetValueMain(light->colorEase,
-					light->colorFrom.r, light->colorTo.r,
-					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal);
-				light->colorCur.g = intplGetValueMain(light->colorEase,
-					light->colorFrom.g, light->colorTo.g,
-					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal);
-				light->colorCur.b = intplGetValueMain(light->colorEase,
-					light->colorFrom.b, light->colorTo.b,
-					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal);
+				light->colorCur.r = intplGetValue(light->colorEase, light->colorFramesTotal - light->colorFrames,
+				                                  light->colorFramesTotal, light->colorFrom.r, light->colorTo.r);
+				light->colorCur.g = intplGetValue(light->colorEase, light->colorFramesTotal - light->colorFrames,
+				                                  light->colorFramesTotal, light->colorFrom.g, light->colorTo.g);
+				light->colorCur.b = intplGetValue(light->colorEase, light->colorFramesTotal - light->colorFrames,
+				                                  light->colorFramesTotal, light->colorFrom.b, light->colorTo.b);
 				if ((light->flags & 2) && light->colorCur.r == 0 && light->colorCur.g == 0 && light->colorCur.b == 0) {
 					light->flags = 0;
 					continue;
@@ -192,22 +178,18 @@ void BattleStageMain(void) {
 
 			if (light->widthFrames > 0) {
 				light->widthFrames--;
-				light->widthCur = intplGetValueMain(light->widthEase,
-					light->widthFrom, light->widthTo,
-					light->widthFramesTotal - light->widthFrames, light->widthFramesTotal);
+				light->widthCur = intplGetValue(light->widthEase, light->widthFramesTotal - light->widthFrames,
+				                                light->widthFramesTotal, light->widthFrom, light->widthTo);
 			}
 
 			if (light->posFrames > 0) {
 				light->posFrames--;
-				light->posCur.x = intplGetValueMain(light->posEase,
-					light->posFrom.x, light->posTo.x,
-					light->posFramesTotal - light->posFrames, light->posFramesTotal);
-				light->posCur.y = intplGetValueMain(light->posEase,
-					light->posFrom.y, light->posTo.y,
-					light->posFramesTotal - light->posFrames, light->posFramesTotal);
-				light->posCur.z = intplGetValueMain(light->posEase,
-					light->posFrom.z, light->posTo.z,
-					light->posFramesTotal - light->posFrames, light->posFramesTotal);
+				light->posCur.x = intplGetValue(light->posEase, light->posFramesTotal - light->posFrames,
+				                                light->posFramesTotal, light->posFrom.x, light->posTo.x);
+				light->posCur.y = intplGetValue(light->posEase, light->posFramesTotal - light->posFrames,
+				                                light->posFramesTotal, light->posFrom.y, light->posTo.y);
+				light->posCur.z = intplGetValue(light->posEase, light->posFramesTotal - light->posFrames,
+				                                light->posFramesTotal, light->posFrom.z, light->posTo.z);
 			}
 
 			if (light->flags & 4) {
@@ -230,15 +212,18 @@ void BattleStageMain(void) {
 			} else {
 				if (light->targetFrames > 0) {
 					light->targetFrames--;
-					light->targetCur.x = intplGetValueMain(light->targetEase,
-						light->targetFrom.x, light->targetTo.x,
-						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal);
-					light->targetCur.y = intplGetValueMain(light->targetEase,
-						light->targetFrom.y, light->targetTo.y,
-						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal);
-					light->targetCur.z = intplGetValueMain(light->targetEase,
-						light->targetFrom.z, light->targetTo.z,
-						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal);
+					light->targetCur.x = intplGetValue(light->targetEase,
+					                                   light->targetFramesTotal - light->targetFrames,
+					                                   light->targetFramesTotal, light->targetFrom.x,
+					                                   light->targetTo.x);
+					light->targetCur.y = intplGetValue(light->targetEase,
+					                                   light->targetFramesTotal - light->targetFrames,
+					                                   light->targetFramesTotal, light->targetFrom.y,
+					                                   light->targetTo.y);
+					light->targetCur.z = intplGetValue(light->targetEase,
+					                                   light->targetFramesTotal - light->targetFrames,
+					                                   light->targetFramesTotal, light->targetFrom.z,
+					                                   light->targetTo.z);
 				}
 				if (light->spline != NULL) {
 					__memFree(HEAP_BATTLE, light->spline);
@@ -248,15 +233,12 @@ void BattleStageMain(void) {
 
 			if (light->upFrames > 0) {
 				light->upFrames--;
-				light->upCur.x = intplGetValueMain(light->upEase,
-					light->upFrom.x, light->upTo.x,
-					light->upFramesTotal - light->upFrames, light->upFramesTotal);
-				light->upCur.y = intplGetValueMain(light->upEase,
-					light->upFrom.y, light->upTo.y,
-					light->upFramesTotal - light->upFrames, light->upFramesTotal);
-				light->upCur.z = intplGetValueMain(light->upEase,
-					light->upFrom.z, light->upTo.z,
-					light->upFramesTotal - light->upFrames, light->upFramesTotal);
+				light->upCur.x = intplGetValue(light->upEase, light->upFramesTotal - light->upFrames,
+				                               light->upFramesTotal, light->upFrom.x, light->upTo.x);
+				light->upCur.y = intplGetValue(light->upEase, light->upFramesTotal - light->upFrames,
+				                               light->upFramesTotal, light->upFrom.y, light->upTo.y);
+				light->upCur.z = intplGetValue(light->upEase, light->upFramesTotal - light->upFrames,
+				                               light->upFramesTotal, light->upFrom.z, light->upTo.z);
 			}
 		} else {
 			if (light->spline != NULL) {
@@ -268,27 +250,31 @@ void BattleStageMain(void) {
 
 	if (stage->stgDark.alphaFrames > 0) {
 		stage->stgDark.alphaFrames--;
-		stage->stgDark.alpha = intplGetValueMain(stage->stgDark.alphaEase,
-			stage->stgDark.alphaFrom, stage->stgDark.alphaTo,
-			stage->stgDark.alphaFramesTotal - stage->stgDark.alphaFrames, stage->stgDark.alphaFramesTotal);
+		stage->stgDark.alpha = intplGetValue(stage->stgDark.alphaEase,
+		                                     stage->stgDark.alphaFramesTotal - stage->stgDark.alphaFrames,
+		                                     stage->stgDark.alphaFramesTotal, stage->stgDark.alphaFrom,
+		                                     stage->stgDark.alphaTo);
 	}
 	if (stage->stgDark.baseFrames > 0) {
 		stage->stgDark.baseFrames--;
-		stage->stgDark.baseAlpha = intplGetValueMain(stage->stgDark.baseEase,
-			stage->stgDark.baseFrom, stage->stgDark.baseTo,
-			stage->stgDark.baseFramesTotal - stage->stgDark.baseFrames, stage->stgDark.baseFramesTotal);
+		stage->stgDark.baseAlpha = intplGetValue(stage->stgDark.baseEase,
+		                                         stage->stgDark.baseFramesTotal - stage->stgDark.baseFrames,
+		                                         stage->stgDark.baseFramesTotal, stage->stgDark.baseFrom,
+		                                         stage->stgDark.baseTo);
 	}
 	if (stage->audDark.alphaFrames > 0) {
 		stage->audDark.alphaFrames--;
-		stage->audDark.alpha = intplGetValueMain(stage->audDark.alphaEase,
-			stage->audDark.alphaFrom, stage->audDark.alphaTo,
-			stage->audDark.alphaFramesTotal - stage->audDark.alphaFrames, stage->audDark.alphaFramesTotal);
+		stage->audDark.alpha = intplGetValue(stage->audDark.alphaEase,
+		                                     stage->audDark.alphaFramesTotal - stage->audDark.alphaFrames,
+		                                     stage->audDark.alphaFramesTotal, stage->audDark.alphaFrom,
+		                                     stage->audDark.alphaTo);
 	}
 	if (stage->audDark.baseFrames > 0) {
 		stage->audDark.baseFrames--;
-		stage->audDark.baseAlpha = intplGetValueMain(stage->audDark.baseEase,
-			stage->audDark.baseFrom, stage->audDark.baseTo,
-			stage->audDark.baseFramesTotal - stage->audDark.baseFrames, stage->audDark.baseFramesTotal);
+		stage->audDark.baseAlpha = intplGetValue(stage->audDark.baseEase,
+		                                         stage->audDark.baseFramesTotal - stage->audDark.baseFrames,
+		                                         stage->audDark.baseFramesTotal, stage->audDark.baseFrom,
+		                                         stage->audDark.baseTo);
 	}
 }
 

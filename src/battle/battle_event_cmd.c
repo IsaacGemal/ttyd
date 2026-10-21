@@ -3150,9 +3150,7 @@ USER_FUNC(btlevtcmd_GetMoveFrame) {
 // MATCHING. A dive from the start position to the target through intpl_sub (interp >= 100 keeps the unit
 // above the floor); curve 0 offsets the height by a sine, otherwise the offset follows the direction of
 // travel. The non-obvious bits: the sqrt inputs are assigned dx-first (MWCC's deferred inliner emits the
-// second variable's subtraction/square first); the
-// intpl_sub calls are made through a floats-first prototype (see the MUST_MATCH block) so mwcc evaluates
-// start/end before the `steps` argument.
+// second variable's subtraction/square first).
 USER_FUNC(btlevtcmd_DivePosition) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -3210,26 +3208,12 @@ USER_FUNC(btlevtcmd_DivePosition) {
         }
         BtlUnit_LoadSeMode(3, a, &unit->seModeSrc, &unit->seMode);
     }
-#ifdef MUST_MATCH
-    // intpl_sub is ABI-identical declared floats-first; this order makes mwcc evaluate the floats before
-    // `steps`, matching the target (see src/battle/battle_stage_object.c _fall_frame).
-    unit->mMoveCurrentPos.x = ((f32 (*)(s32, s32, f32, f32, s32))intpl_sub)(
-        interp, (s32)unit->moveProgress, unit->mMoveStartPos.x, unit->mMoveTargetPos.x,
-        unit->moveFrames);
-    unit->mMoveCurrentPos.y = ((f32 (*)(s32, s32, f32, f32, s32))intpl_sub)(
-        interp, (s32)unit->moveProgress, unit->mMoveStartPos.y, unit->mMoveTargetPos.y,
-        unit->moveFrames);
-    unit->mMoveCurrentPos.z = ((f32 (*)(s32, s32, f32, f32, s32))intpl_sub)(
-        interp, (s32)unit->moveProgress, unit->mMoveStartPos.z, unit->mMoveTargetPos.z,
-        unit->moveFrames);
-#else
     unit->mMoveCurrentPos.x = intpl_sub(interp, (s32)unit->moveProgress, unit->moveFrames,
                                         unit->mMoveStartPos.x, unit->mMoveTargetPos.x);
     unit->mMoveCurrentPos.y = intpl_sub(interp, (s32)unit->moveProgress, unit->moveFrames,
                                         unit->mMoveStartPos.y, unit->mMoveTargetPos.y);
     unit->mMoveCurrentPos.z = intpl_sub(interp, (s32)unit->moveProgress, unit->moveFrames,
                                         unit->mMoveStartPos.z, unit->mMoveTargetPos.z);
-#endif
     if (aboveFloor) {
         floor = BattleGetFloorHeight(_battleWorkPointer, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y,
                                      unit->mMoveCurrentPos.z);
@@ -4853,8 +4837,7 @@ USER_FUNC(btlevtcmd_FallPartsPosition) {
 
 //s32* battleId, s32* partNo, s32* tx, s32* ty, s32* tz, s32* frame, s32* height, s32* interp, s32* curve, s32* a
 // MATCHING. All callee-saved GPRs land where the target has them (id r28, partNo r27, part r27, aboveFloor
-// r28) because of the within-statement declarator order below. The intpl_sub calls go through an ABI-identical reordered
-// prototype (the original source declared the floats before the ints), the 0.0f literals give the compares the
+// r28) because of the within-statement declarator order below. The 0.0f literals give the compares the
 // constant FPRs the target uses, and the block-scoped `dist2` in the curve != 0 branch keeps the sqrt result in
 // f4 for the zero test with a copy in f3 for the division (`fmr f3, f4`).
 USER_FUNC(btlevtcmd_DivePartsPosition) {
@@ -4916,27 +4899,12 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
         }
         BtlUnit_LoadSeMode(3, a, &part->seModeSrc, &part->seMode);
     }
-#ifdef MUST_MATCH
-    // ABI-identical cast: the original declaration ordered the parameters (mode, start, currStep, end, steps),
-    // so mwcc evaluates start before the currStep fctiwz and end before steps, as the target does. The header
-    // keeps the natural (mode, currStep, steps, start, end).
-    part->mMoveCurrentPos.x = ((f32 (*)(s32, f32, s32, f32, s32))intpl_sub)(
-        interp, part->mMoveStartPos.x, (s32)part->moveProgress, part->mMoveTargetPos.x,
-        part->moveFrames);
-    part->mMoveCurrentPos.y = ((f32 (*)(s32, f32, s32, f32, s32))intpl_sub)(
-        interp, part->mMoveStartPos.y, (s32)part->moveProgress, part->mMoveTargetPos.y,
-        part->moveFrames);
-    part->mMoveCurrentPos.z = ((f32 (*)(s32, f32, s32, f32, s32))intpl_sub)(
-        interp, part->mMoveStartPos.z, (s32)part->moveProgress, part->mMoveTargetPos.z,
-        part->moveFrames);
-#else
     part->mMoveCurrentPos.x = intpl_sub(interp, (s32)part->moveProgress, part->moveFrames,
                                         part->mMoveStartPos.x, part->mMoveTargetPos.x);
     part->mMoveCurrentPos.y = intpl_sub(interp, (s32)part->moveProgress, part->moveFrames,
                                         part->mMoveStartPos.y, part->mMoveTargetPos.y);
     part->mMoveCurrentPos.z = intpl_sub(interp, (s32)part->moveProgress, part->moveFrames,
                                         part->mMoveStartPos.z, part->mMoveTargetPos.z);
-#endif
     if (aboveFloor) {
         floor = BattleGetFloorHeight(_battleWorkPointer, part->mMoveCurrentPos.x, part->mMoveCurrentPos.y,
                                      part->mMoveCurrentPos.z);

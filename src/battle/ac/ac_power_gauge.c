@@ -37,19 +37,9 @@ typedef struct PowerGaugeDecWork {
     s32 countdown;    // 0x18
 } PowerGaugeDecWork;
 
-// The original called intplGetValue through a prototype that lists the two float bounds
-// before the step/duration words. The ABI is identical (ints->r3-r5, floats->f1-f2); only the
-// source argument order differs, and MWCC then schedules the float loads first as retail does.
-#ifdef MUST_MATCH
-#define intplGetValueFM(mode, start, end, currStep, steps) \
-    ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, currStep, steps)
-#else
-#define intplGetValueFM(mode, start, end, currStep, steps) intplGetValue(mode, currStep, steps, start, end)
-#endif
 
-// The two near-misses this function had: MWCC hoists `lwz dat_80421588` above the disp stores
-// (fixed by the mutable dat declaration above) and schedules `lwz dec->counter` before
-// intplGetValue's `lfs` pair (fixed by intplGetValueFM above).
+// The near-miss this function had: MWCC hoists `lwz dat_80421588` above the disp stores
+// (fixed by the mutable dat declaration above).
 s32 battleAcMain_PowerGauge(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     PowerGaugeDecWork* dec = (PowerGaugeDecWork*)&ac->field_0x2BC[0];
@@ -189,7 +179,8 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
             }
         }
         if (dec->frame <= work->actionCommands.acParams[1]) {
-            dec->gaugePercent = intplGetValueFM(work->actionCommands.acParams[3], 0.0f, 100.f, dec->counter, work->actionCommands.acParams[1]);
+            dec->gaugePercent = intplGetValue(work->actionCommands.acParams[3], dec->counter,
+                                              work->actionCommands.acParams[1], 0.0f, 100.f);
         }
         else {
             dec->gaugePercent = 100.f;
