@@ -80,7 +80,7 @@ static USER_FUNC(wariai_enzan_1);
 static USER_FUNC(effect_stardust);
 static USER_FUNC(alpha_set_func);
 static USER_FUNC(alpha_init_func);
-static void alpha_tev(TevCallbackParam* param);
+static void alpha_tev(MapTevCallback* param);
 static u32 door_data_01[18];
 u32 door_data_06[18];
 s32 evt_gor_door_open_sanders[80];
@@ -125,8 +125,8 @@ extend_data(13,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-void _door_color_tev(struct TevCallbackParam* param) {
-    s32 stage = param->field_C;
+void _door_color_tev(MapTevCallback* param) {
+    s32 stage = param->tevStage;
     u8* door = (u8*)_door[0];
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -135,11 +135,11 @@ void _door_color_tev(struct TevCallbackParam* param) {
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C0, GX_CC_ZERO);
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
-    param->field_C++;
+    param->tevStage++;
 }
 
-void _door_color2_tev(struct TevCallbackParam* param) {
-    s32 stage = param->field_C;
+void _door_color2_tev(MapTevCallback* param) {
+    s32 stage = param->tevStage;
     u8* door = (u8*)_door[0];
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -148,7 +148,7 @@ void _door_color2_tev(struct TevCallbackParam* param) {
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C0, GX_CC_ZERO);
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
-    param->field_C++;
+    param->tevStage++;
 }
 
 USER_FUNC(_door_color_init_func) {
@@ -195,8 +195,8 @@ USER_FUNC(_door_color2_main_func) {
 
 
 
-static void alpha_tev(TevCallbackParam* param) {
-    s32 stage = param->field_C;
+static void alpha_tev(MapTevCallback* param) {
+    s32 stage = param->tevStage;
     u8* ap = (u8*)_ap[0];
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -205,7 +205,7 @@ static void alpha_tev(TevCallbackParam* param) {
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
-    param->field_C++;
+    param->tevStage++;
 }
 
 static USER_FUNC(alpha_init_func) {

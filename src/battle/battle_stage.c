@@ -11,6 +11,7 @@
 #include "matching.h"
 #include "manager/evtmgr_cmd.h"
 #include <stdlib.h>
+#include "driver/mapdrv.h"
 
 // Data objects defined later in this file or in other units, declared before their first use.
 extern const f32 float_neg1_8041c818;
@@ -99,12 +100,6 @@ typedef struct ScreenWork {
 	s32 noiseMode;        //0x24, 1 builds the noise texture, 0 uses the captured screen
 	f32 field_0x28;       //0x28, set to -1.0 in tou_gamen_screen_tev_init and never read
 } ScreenWork;
-typedef struct ScreenTevParam {
-	u8 pad[0xC];
-	s32 field_C;  // 0xC
-	s32 field_10; // 0x10
-	s32 field_14; // 0x14
-} ScreenTevParam;
 
 // forward declarations
 
@@ -1026,10 +1021,6 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 	return 2;
 }
 
-// Event param struct: the original passes the event pointer as a typed struct
-// with 32-bit fields at 0xC/0x10/0x14 (same shape as battle/sac/sac_suki.c's
-// SukiTevParam).
-
 // The original keeps i/4 (r31) and i%4 (r30) live across the rand() calls. The
 // second loop's `sgrow`/`sgcol` are precomputed with shifts before the count loop so
 // they land in the callee-saved registers the original uses. The first loop assigns
@@ -1057,11 +1048,11 @@ void tou_gamen_screen_tev(void* param) {
 	s32 j;
 	s32 k;
 	s32 zero = 0;
-	ScreenTevParam* tev = (ScreenTevParam*)((u8*)param + zero);
+	MapTevCallback* tev = (MapTevCallback*)((u8*)param + zero);
 #else
 	// Natural form: the counters live in the block that uses them and the pointer is
 	// the parameter itself.
-	ScreenTevParam* tev = (ScreenTevParam*)param;
+	MapTevCallback* tev = (MapTevCallback*)param;
 #endif
 
 	if (screen_wp->captured == 0) {
@@ -1188,9 +1179,9 @@ void tou_gamen_screen_tev(void* param) {
 	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
 	GXLoadTexMtxImm(mtx, 0x21, 1);
 
-	tev->field_C = 2;
-	tev->field_14 = 2;
-	tev->field_10 = 2;
+	tev->tevStage = 2;
+	tev->texCoord = 2;
+	tev->texMap = 2;
 }
 #pragma opt_propagation reset
 

@@ -7,8 +7,8 @@ void N__disp_2D(s32 type, s32 index);
 void main_button(s32 index);
 s32 main_suki(EventEntry* event, BOOL isFirstCall);
 
-typedef struct SukiTevParam SukiTevParam;
-void set_tev(SukiTevParam* param);
+typedef struct MapTevCallback MapTevCallback;
+void set_tev(MapTevCallback* param);
 extern u32 weapon_words[48];
 s32 end_suki(EventEntry* event, BOOL isFirstCall);
 s32 wait_star_stone_up_end(EventEntry* event, BOOL isFirstCall);

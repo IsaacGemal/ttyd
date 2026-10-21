@@ -31,14 +31,14 @@ Vec pos_tbl[7] = {
 // .sbss
 s32 mahojin_rate;
 
-static void callback(TevCallbackParam* param);
+static void callback(MapTevCallback* param);
 
 // TEV colour callback: blends the colour toward purple (E8,00,E8) by mahojin_rate/255; alpha passes through
-static void callback(TevCallbackParam* param) {
-    s32 stage = param->field_C;
-    s32 field_10 = param->field_10;
-    s32 field_14 = param->field_14;
-    s32 field_18 = param->field_18;
+static void callback(MapTevCallback* param) {
+    s32 stage = param->tevStage;
+    s32 texMap = param->texMap;
+    s32 texCoord = param->texCoord;
+    s32 numIndStage = param->numIndStage;
     GXSetTevColor(GX_TEVREG0, (GXColor){ 0xE8, 0x00, 0xE8, mahojin_rate });
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
     GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -47,10 +47,10 @@ static void callback(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
     GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
-    param->field_C = stage + 1;
-    param->field_14 = field_14;
-    param->field_18 = field_18;
-    param->field_10 = field_10;
+    param->tevStage = stage + 1;
+    param->texCoord = texCoord;
+    param->numIndStage = numIndStage;
+    param->texMap = texMap;
 }
 
 

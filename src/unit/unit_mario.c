@@ -28,16 +28,7 @@ static s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);  // local 
 #define ANIM_W "b_mario_w"
 #define ANIM_WL "b_mario_wl"
 
-//param block passed to the TEV callback registered by _mario_makkuro_set
-typedef struct TevCallbackParam {
-    u8 pad[0xC];
-    s32 field_C;  // 0xC
-    s32 field_10; // 0x10
-    s32 field_14; // 0x14
-    s32 field_18; // 0x18
-} TevCallbackParam;
-
-static void callback(TevCallbackParam* param);
+static void callback(MapTevCallback* param);
 
 extern s32 btldefaultevt_avoid_counter_event[];
 extern s32 subset_attack_ready_jump_event[];
@@ -192,12 +183,12 @@ s32 mario_pinch_pose_sound_callback(BattleUnit* unit) {
 }
 
 
-static void callback(TevCallbackParam* param) {
+static void callback(MapTevCallback* param) {
     GXColor color = (GXColor){ 0x4D, 0x09, 0x52, 0xFF };
-    s32 stage = param->field_C;
-    s32 field_10 = param->field_10;
-    s32 field_14 = param->field_14;
-    s32 field_18 = param->field_18;
+    s32 stage = param->tevStage;
+    s32 texMap = param->texMap;
+    s32 texCoord = param->texCoord;
+    s32 numIndStage = param->numIndStage;
 
     GXSetTevColor(GX_TEVREG0, color);
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
@@ -207,10 +198,10 @@ static void callback(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
     GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
-    param->field_C = stage + 1;
-    param->field_14 = field_14;
-    param->field_18 = field_18;
-    param->field_10 = field_10;
+    param->tevStage = stage + 1;
+    param->texCoord = texCoord;
+    param->numIndStage = numIndStage;
+    param->texMap = texMap;
 }
 
 

@@ -368,8 +368,8 @@ void _epilog(void) {
 void _unresolved(void) {
 }
 
-void credits_tev_callback(TevCallbackParam* param) {
-    GXSetTevColorIn(param->field_C - 1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
+void credits_tev_callback(MapTevCallback* param) {
+    GXSetTevColorIn(param->tevStage - 1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
 }
 
 void credits_pose_gx(s32 wXluStage) {

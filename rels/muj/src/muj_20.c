@@ -71,7 +71,7 @@ static void pressStartGX(LogoWork* work, s32 alpha, f32 x, f32 y);
 static USER_FUNC(fune_eff);
 static USER_FUNC(alpha_set_func);
 static USER_FUNC(alpha_init_func);
-static void alpha_tev(TevCallbackParam* param);
+static void alpha_tev(MapTevCallback* param);
 
 // .bss work pointers for the alpha/tev callbacks and map animation rates.
 MarcoShip* marcoship;
@@ -539,8 +539,8 @@ EVT_BEGIN(moya_effect05)
     RETURN
 EVT_END()
 
-static void alpha_tev(TevCallbackParam* param) {
-    s32 stage = param->field_C;
+static void alpha_tev(MapTevCallback* param) {
+    s32 stage = param->tevStage;
     u8* ap = _ap;
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -549,7 +549,7 @@ static void alpha_tev(TevCallbackParam* param) {
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
-    param->field_C++;
+    param->tevStage++;
 }
 
 static USER_FUNC(alpha_init_func) {

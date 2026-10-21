@@ -22,13 +22,14 @@
 #include "manager/evtmgr_cmd.h"
 #include "memory.h"
 #include <dolphin/gx.h>
+#include "driver/mapdrv.h"
 
 #pragma pool_data off
 
 #pragma force_active on
 static USER_FUNC(alpha_set_func);
 static USER_FUNC(alpha_init_func);
-static void alpha_tev(TevCallbackParam* param);
+static void alpha_tev(MapTevCallback* param);
 static u8* _ap;
 
 // clang-format off
@@ -50,8 +51,8 @@ extend_data(25,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-static void alpha_tev(TevCallbackParam* param) {
-    s32 stage = param->field_C;
+static void alpha_tev(MapTevCallback* param) {
+    s32 stage = param->tevStage;
     u8* ap = _ap;
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -60,7 +61,7 @@ static void alpha_tev(TevCallbackParam* param) {
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
-    param->field_C = param->field_C + 1;
+    param->tevStage = param->tevStage + 1;
 }
 
 static USER_FUNC(alpha_init_func) {

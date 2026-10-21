@@ -40,6 +40,7 @@ void FontDrawColor(GXColor* color);
 #include "party/party_motion.h"
 #include "pmario_sound.h"
 #include "system.h"
+#include "driver/mapdrv.h"
 
 // Retail loads constants separately, rather than through a shared pool base.
 #pragma pool_data off
@@ -2868,7 +2869,7 @@ USER_FUNC(onoff) {
 }
 
 void monitor_tev(void* param) {
-    TevCallbackParam* p = param;
+    MapTevCallback* p = param;
     GXColor color;
 
     if (((GansWork*)gans_wp[0])->texReady != 0) {
@@ -2893,9 +2894,9 @@ void monitor_tev(void* param) {
         color.a = ((GansWork*)gans_wp[0])->alpha;
 #endif
         GXSetTevColor(GX_TEVREG0, color);
-        p->field_C = 2;
-        p->field_14 = 2;
-        p->field_10 = 2;
+        p->tevStage = 2;
+        p->texCoord = 2;
+        p->texMap = 2;
     }
 }
 

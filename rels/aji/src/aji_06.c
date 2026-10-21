@@ -290,7 +290,7 @@ USER_FUNC(kusuri_color_get) {
     return EVT_RETURN_DONE;
 }
 
-void kusuri_naka_color_tev(TevCallbackParam* param) {
+void kusuri_naka_color_tev(MapTevCallback* param) {
     GXColor color;
 
     GXSetTevOrder(0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -300,13 +300,13 @@ void kusuri_naka_color_tev(TevCallbackParam* param) {
     GXSetTevAlphaIn(0, GX_CA_RASA, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
     color = g_Kusuri_Col;
     GXSetTevColor(GX_TEVREG0, color);
-    param->field_C = 1;
-    param->field_14 = 0;
-    param->field_10 = 0;
+    param->tevStage = 1;
+    param->texCoord = 0;
+    param->texMap = 0;
 }
 
-void kusuri_1_color_tev(TevCallbackParam* param) {
-    s32 stage = param->field_C;
+void kusuri_1_color_tev(MapTevCallback* param) {
+    s32 stage = param->tevStage;
     GXColor color;
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -316,11 +316,11 @@ void kusuri_1_color_tev(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
     color = g_Kusuri_Src_Col[g_Kusuri1_No[0]];
     GXSetTevColor(GX_TEVREG0, color);
-    param->field_C++;
+    param->tevStage++;
 }
 
-void kusuri_2_color_tev(TevCallbackParam* param) {
-    s32 stage = param->field_C;
+void kusuri_2_color_tev(MapTevCallback* param) {
+    s32 stage = param->tevStage;
     GXColor color;
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -330,11 +330,11 @@ void kusuri_2_color_tev(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
     color = g_Kusuri_Src_Col[g_Kusuri2_No[0]];
     GXSetTevColor(GX_TEVREG0, color);
-    param->field_C++;
+    param->tevStage++;
 }
 
-void kusuri_3_color_tev(TevCallbackParam* param) {
-    s32 stage = param->field_C;
+void kusuri_3_color_tev(MapTevCallback* param) {
+    s32 stage = param->tevStage;
     GXColor color;
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -344,11 +344,11 @@ void kusuri_3_color_tev(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
     color = g_Kusuri_Src_Col[g_Kusuri3_No[0]];
     GXSetTevColor(GX_TEVREG0, color);
-    param->field_C++;
+    param->tevStage++;
 }
 
-void kusuri_4_color_tev(TevCallbackParam* param) {
-    s32 stage = param->field_C;
+void kusuri_4_color_tev(MapTevCallback* param) {
+    s32 stage = param->tevStage;
     GXColor color;
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -358,7 +358,7 @@ void kusuri_4_color_tev(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
     color = g_Kusuri_Src_Col[g_Kusuri4_No[0]];
     GXSetTevColor(GX_TEVREG0, color);
-    param->field_C++;
+    param->tevStage++;
 }
 
 USER_FUNC(kusuri_list_init) {

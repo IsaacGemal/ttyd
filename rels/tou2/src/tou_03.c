@@ -104,7 +104,7 @@ extern s32 evt_tou_set_ranking_win_lose_28_text_35C0[];
 extern s32 evt_tou_set_rule_result_28_text_355C[];
 extern s32 tou_champion_belt_28_text_2A10[];
 extern s32 tou_champion_belt_onoff_28_text_29DC[];
-static void callback(TevCallbackParam* param);
+static void callback(MapTevCallback* param);
 // cosf: this unit has its own copy; a header already declares it.
 // sinf: this unit has its own copy; a header already declares it.
 static USER_FUNC(screen_evt);
@@ -4061,7 +4061,7 @@ EVT_END()
 // `zero` alias and the function-scope counters put `param` in r27, and declaring `sgcol` before
 // `sgrow` plus the split idx2 temporaries put `sgrow` in r25.
 #pragma opt_propagation off // needed: with propagation on the second fill loop folds sgcol into a buf+sgcol pointer
-void screen_tev(TevCallbackParam* param) {
+void screen_tev(MapTevCallback* param) {
     GXTexObj texObj;
     Mtx mtx;
     Mtx mtxScale;
@@ -4072,9 +4072,9 @@ void screen_tev(TevCallbackParam* param) {
     s32 j;
     s32 k;
     s32 zero = 0;
-    TevCallbackParam* tev = (TevCallbackParam*)((u8*)param + zero);
+    MapTevCallback* tev = (MapTevCallback*)((u8*)param + zero);
 #else
-    TevCallbackParam* tev = param;
+    MapTevCallback* tev = param;
 #endif
 
     if (screen_wp->captured == 0) {
@@ -4209,9 +4209,9 @@ void screen_tev(TevCallbackParam* param) {
     GXSetTexCoordGen(1, 1, 4, 0x21);
     GXLoadTexMtxImm(mtx, 0x21, 1);
 
-    tev->field_C = 2;
-    tev->field_14 = 2;
-    tev->field_10 = 2;
+    tev->tevStage = 2;
+    tev->texCoord = 2;
+    tev->texMap = 2;
 }
 #pragma opt_propagation reset
 
@@ -4544,11 +4544,11 @@ s32 eff_pos(EventEntry* event, BOOL isFirstCall) {
 
 
 
-static void callback(TevCallbackParam* param) {
-    s32 stage = param->field_C;
-    s32 field_10 = param->field_10;
-    s32 field_14 = param->field_14;
-    s32 field_18 = param->field_18;
+static void callback(MapTevCallback* param) {
+    s32 stage = param->tevStage;
+    s32 field_10 = param->texMap;
+    s32 field_14 = param->texCoord;
+    s32 field_18 = param->numIndStage;
     GXColor color = gansColor(gans_alpha);
     GXSetTevColor(GX_TEVREG0, color);
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
@@ -4558,10 +4558,10 @@ static void callback(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
     GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
-    param->field_C = stage + 1;
-    param->field_14 = field_14;
-    param->field_18 = field_18;
-    param->field_10 = field_10;
+    param->tevStage = stage + 1;
+    param->texCoord = field_14;
+    param->numIndStage = field_18;
+    param->texMap = field_10;
 }
 
 s32 gans_white_on(EventEntry* event, BOOL isFirstCall) {

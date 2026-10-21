@@ -26,6 +26,7 @@
 #include "eff/eff_mahojin.h"
 #include "rel/mri/mri.h"
 #include <dolphin/gx.h>
+#include "driver/mapdrv.h"
 
 #pragma pool_data off
 
@@ -58,8 +59,8 @@ extend_data(17,
 
 // Tev callback used by the alpha fade effect. Called before the scripts, so its
 // .rodata zero constant lands first, matching the original's section order.
-static void alpha_tev(TevCallbackParam* param) {
-    s32 stage = param->field_C;
+static void alpha_tev(MapTevCallback* param) {
+    s32 stage = param->tevStage;
     u8* ap = _ap;
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -68,7 +69,7 @@ static void alpha_tev(TevCallbackParam* param) {
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
-    param->field_C = param->field_C + 1;
+    param->tevStage = param->tevStage + 1;
 }
 
 static USER_FUNC(alpha_init_func) {
