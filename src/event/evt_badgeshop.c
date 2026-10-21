@@ -134,11 +134,11 @@ void badgeShop_init(void) {
 	}
 }
 
-s32 bottakuruComp(const void** sortA, const void** sortB) {
+int bottakuruComp(const void* sortA, const void* sortB) {
 	s32 a, b;
 
-	a = (s32)sortA[1];
-	b = (s32)sortB[1];
+	a = ((const s32*)sortA)[1];
+	b = ((const s32*)sortB)[1];
 	if (a < b) {
 		return -1;
 	}
@@ -172,7 +172,7 @@ void badgeShop_bottakuruGeneration(void) {
 		if (n >= 0x10) break;
 	}
 
-	qqsort(entries, 0x11, 8, (int (*)(void*, void*))bottakuruComp);
+	qqsort(entries, 0x11, 8, bottakuruComp);
 
 	for (i = 0; i < 4; i++, base++) { //only 4 slots
 		for (n = 0; n < 0x11; n++) {

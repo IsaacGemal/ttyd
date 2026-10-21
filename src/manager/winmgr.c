@@ -1973,7 +1973,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
                 select->items[select->numItems++].id = i + BADGE_MIN;
             }
         }
-        qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))winMgrSelectCmpTypeSort);
+        qqsort(select->items, select->numItems, 4, winMgrSelectCmpTypeSort);
         break;
     case 13:
         {
@@ -1998,7 +1998,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
                     select->numItems++;
                 }
             }
-            qqsort(select->items, select->numItems, 4, (int (*)(void*, void*))winMgrSelectCmpStarPrice);
+            qqsort(select->items, select->numItems, 4, winMgrSelectCmpStarPrice);
         }
         break;
     case 14:
@@ -2094,9 +2094,9 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     return select;
 }
 
-s32 winMgrSelectCmpStarPrice(void* a, void* b) {
-    u32 va = itemDataTable[((WinMgrSelectItem*)a)->id].star_piece_price;
-    u32 vb = itemDataTable[((WinMgrSelectItem*)b)->id].star_piece_price;
+int winMgrSelectCmpStarPrice(const void* a, const void* b) {
+    u32 va = itemDataTable[((const WinMgrSelectItem*)a)->id].star_piece_price;
+    u32 vb = itemDataTable[((const WinMgrSelectItem*)b)->id].star_piece_price;
 
     if (va > vb) {
         return 1;
@@ -2104,9 +2104,9 @@ s32 winMgrSelectCmpStarPrice(void* a, void* b) {
     return va < vb ? -1 : 0;
 }
 
-s32 winMgrSelectCmpTypeSort(void* a, void* b) {
-    s32 va = itemDataTable[((WinMgrSelectItem*)a)->id].type_sort_order;
-    s32 vb = itemDataTable[((WinMgrSelectItem*)b)->id].type_sort_order;
+int winMgrSelectCmpTypeSort(const void* a, const void* b) {
+    s32 va = itemDataTable[((const WinMgrSelectItem*)a)->id].type_sort_order;
+    s32 vb = itemDataTable[((const WinMgrSelectItem*)b)->id].type_sort_order;
 
     if (va > vb) {
         return 1;

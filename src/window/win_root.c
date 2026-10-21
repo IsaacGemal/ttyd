@@ -1916,7 +1916,7 @@ int N_compare_func4_1_r(const void* a, const void* b) {
     return strcmp((char*)buf_b, (char*)buf_a);
 }
 
-int N_compare_func4_2(void* a, void* b) {
+int N_compare_func4_2(const void* a, const void* b) {
     s32 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
     s32 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -1931,7 +1931,7 @@ int N_compare_func4_2(void* a, void* b) {
     }
 }
 
-int N_compare_func4_2_r(void* a, void* b) {
+int N_compare_func4_2_r(const void* a, const void* b) {
     s32 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
     s32 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -1948,9 +1948,9 @@ int N_compare_func4_2_r(void* a, void* b) {
 
 void sort_4_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->field_404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1);
+        qqsort(work->field_404, work->equipListCount, 0xC, N_compare_func4_1);
     } else {
-        qqsort(work->field_404, work->equipListCount, 0xC, (int (*)(void*, void*))N_compare_func4_1_r);
+        qqsort(work->field_404, work->equipListCount, 0xC, N_compare_func4_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->badgeSel[1] = 0;
@@ -2058,7 +2058,7 @@ int compare_func5_1_r(const void* a, const void* b) {
     return strcmp((char*)buf_b, (char*)buf_a);
 }
 
-int compare_func5_2(void* a, void* b) {
+int compare_func5_2(const void* a, const void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xF0);
     s16 id_b = (s16)(*(s16*)b + 0xF0);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -2073,7 +2073,7 @@ int compare_func5_2(void* a, void* b) {
     }
 }
 
-int compare_func5_2_r(void* a, void* b) {
+int compare_func5_2_r(const void* a, const void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xF0);
     s16 id_b = (s16)(*(s16*)b + 0xF0);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -2090,9 +2090,9 @@ int compare_func5_2_r(void* a, void* b) {
 
 void sort_5_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, (int (*)(void*, void*))compare_func5_1);
+        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, compare_func5_1);
     } else {
-        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, (int (*)(void*, void*))compare_func5_1_r);
+        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, compare_func5_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     LOGWIN(work)->cardSel = 0;
@@ -2207,7 +2207,7 @@ int compare_func6_1_r(const void* a, const void* b) {
     return strcmp((char*)buf_b, (char*)buf_a);
 }
 
-int compare_func6_2(void* a, void* b) {
+int compare_func6_2(const void* a, const void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xB3);
     s16 id_b = (s16)(*(s16*)b + 0xB3);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -2222,7 +2222,7 @@ int compare_func6_2(void* a, void* b) {
     }
 }
 
-int compare_func6_2_r(void* a, void* b) {
+int compare_func6_2_r(const void* a, const void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xB3);
     s16 id_b = (s16)(*(s16*)b + 0xB3);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -2239,9 +2239,9 @@ int compare_func6_2_r(void* a, void* b) {
 
 void sort_6_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, (int (*)(void*, void*))compare_func6_1);
+        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, compare_func6_1);
     } else {
-        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, (int (*)(void*, void*))compare_func6_1_r);
+        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, compare_func6_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     LOGWIN(work)->badgeSel = 0;
@@ -2259,7 +2259,7 @@ void sort_6_2_func(WindowWork* work) {
     LOGWIN(work)->badgePage = LOGWIN(work)->badgeSel / 28;
 }
 
-int compare_func1(void* a, void* b) {
+int compare_func1(const void* a, const void* b) {
     if (*(u8*)a > *(u8*)b) {
         return 1;
     } else if (*(u8*)a < *(u8*)b) {
@@ -2269,7 +2269,7 @@ int compare_func1(void* a, void* b) {
     }
 }
 
-int compare_func1_r(void* a, void* b) {
+int compare_func1_r(const void* a, const void* b) {
     if (*(u8*)a < *(u8*)b) {
         return 1;
     } else if (*(u8*)a > *(u8*)b) {
@@ -2349,17 +2349,17 @@ int compare_func2_r(const void* a, const void* b) {
 void sort_7_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
         qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func1);
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, (int (*)(void*, void*))compare_func2);
+        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func2);
     } else {
         qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func1_r);
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, (int (*)(void*, void*))compare_func2_r);
+        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     LOGWIN(work)->charSel = 0;
     LOGWIN(work)->charPage = LOGWIN(work)->charSel / 16;
 }
 
-int compare_func3(void* a, void* b) {
+int compare_func3(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
@@ -2386,7 +2386,7 @@ int compare_func3(void* a, void* b) {
     return strcmp((char*)buf_a, (char*)buf_b);
 }
 
-int compare_func3_r(void* a, void* b) {
+int compare_func3_r(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
@@ -2448,16 +2448,16 @@ int compare_func4_r(const void* a, const void* b) {
 
 void sort_8_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->field_26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4);
+        qqsort(work->field_26E, work->mailCount, 2, compare_func4);
     } else {
-        qqsort(work->field_26E, work->mailCount, 2, (int (*)(void*, void*))compare_func4_r);
+        qqsort(work->field_26E, work->mailCount, 2, compare_func4_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->mailSel = 0;
     work->mailPage = work->mailSel / 5;
 }
 
-int compare_func5(void* a, void* b) {
+int compare_func5(const void* a, const void* b) {
     if (*(u8*)a > *(u8*)b) {
         return 1;
     } else if (*(u8*)a < *(u8*)b) {
@@ -2467,7 +2467,7 @@ int compare_func5(void* a, void* b) {
     }
 }
 
-int compare_func5_r(void* a, void* b) {
+int compare_func5_r(const void* a, const void* b) {
     if (*(u8*)a < *(u8*)b) {
         return 1;
     } else if (*(u8*)a > *(u8*)b) {

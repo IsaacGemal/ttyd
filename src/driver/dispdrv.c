@@ -31,7 +31,7 @@ DispEntry** pSortWork;
 DispEntry* pDispWork;
 
 //local prototypes
-static s32 _sort(const void** sortA, const void** sortB);
+static int _sort(const void* sortA, const void* sortB);
 
 DispEntry* dispGetCurWork(void) {
 	return currentWorkPtr;
@@ -119,15 +119,15 @@ void dispDraw(CameraId camId) {
 __declspec(section ".data") __declspec(export) u32 gap_05_80302ECC_data[5] = { 0, 0, 0, 0, 0 };
 
 void dispSort(void) {
-	qqsort(pSortWork, entry_n, 4, (int (*)(void*, void*))_sort);
+	qqsort(pSortWork, entry_n, 4, _sort);
 }
 
-static s32 _sort(const void** sortA, const void** sortB) {
+static int _sort(const void* sortA, const void* sortB) {
 	f32 temp_f0;
 	f32 temp_f1;
 
-	temp_f1 = (*(DispEntry**)sortA)->order;
-	temp_f0 = (*(DispEntry**)sortB)->order;
+	temp_f1 = (*(DispEntry* const*)sortA)->order;
+	temp_f0 = (*(DispEntry* const*)sortB)->order;
 	if (temp_f1 > temp_f0) {
 		return 1;
 	}

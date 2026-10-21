@@ -91,8 +91,8 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel);
 s32 winMgrSelect(WinMgrSelect* select);
 s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event);
 s32 winMgrSelectCursor(WinMgrSelect* select);
-s32 winMgrSelectCmpTypeSort(void* a, void* b);
-s32 winMgrSelectCmpStarPrice(void* a, void* b);
+int winMgrSelectCmpTypeSort(const void* a, const void* b);
+int winMgrSelectCmpStarPrice(const void* a, const void* b);
 void winMgrDisp(CameraId camId, void* param);
 void winMgrSeq(WinMgrEntry* entry);
 

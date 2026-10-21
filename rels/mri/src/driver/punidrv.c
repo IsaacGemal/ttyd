@@ -15,7 +15,7 @@
 #pragma pool_data off
 
 #pragma force_active on
-static int compare(void* a, void* b);
+static int compare(const void* a, const void* b);
 static f32 camGetRy(void);
 
 // clang-format off
@@ -396,11 +396,11 @@ void puniMain(void) {
     wp->texSize = 0;
 }
 
-static int compare(void* a, void* b) {
-    if (((PuniSortEntry*)a)->key > ((PuniSortEntry*)b)->key) {
+static int compare(const void* a, const void* b) {
+    if (((const PuniSortEntry*)a)->key > ((const PuniSortEntry*)b)->key) {
         return 1;
     }
-    if (((PuniSortEntry*)a)->key < ((PuniSortEntry*)b)->key) {
+    if (((const PuniSortEntry*)a)->key < ((const PuniSortEntry*)b)->key) {
         return -1;
     }
     return 0;

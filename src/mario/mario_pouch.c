@@ -559,9 +559,9 @@ s32 comp_aiueo(const s16* a, s16* b) {
 	return strcmp((const char*)buf_a, (const char*)buf_b);
 }
 
-s32 comp_kind(s16* a, s16* b) {
-	s32 va = itemDataTable[*a].type_sort_order;
-	s32 vb = itemDataTable[*b].type_sort_order;
+int comp_kind(const void* a, const void* b) {
+	s32 va = itemDataTable[*(const s16*)a].type_sort_order;
+	s32 vb = itemDataTable[*(const s16*)b].type_sort_order;
 
 	if (va > vb) {
 		return 1;
@@ -643,9 +643,9 @@ s32 comp_aiueo_r(const s16* a, s16* b) {
 	return strcmp((const char*)buf_b, (const char*)buf_a);
 }
 
-s32 comp_kind_r(s16* a, s16* b) {
-	s32 va = itemDataTable[*a].type_sort_order;
-	s32 vb = itemDataTable[*b].type_sort_order;
+int comp_kind_r(const void* a, const void* b) {
+	s32 va = itemDataTable[*(const s16*)a].type_sort_order;
+	s32 vb = itemDataTable[*(const s16*)b].type_sort_order;
 
 	if (va < vb) {
 		return 1;
@@ -684,16 +684,16 @@ void pouchSortItem(s32 type) {
 			holdList[i] = 0;
 		}
 		if (type == 0) {
-			qqsort(holdList, count, 2, (int (*)(void*, void*))comp_aiueo);
+			qqsort(holdList, count, 2, (int (*)(const void*, const void*))comp_aiueo);
 		}
 		else if (type == 1) {
-			qqsort(holdList, count, 2, (int (*)(void*, void*))comp_kind);
+			qqsort(holdList, count, 2, comp_kind);
 		}
 		else if (type == 7) {
-			qqsort(holdList, count, 2, (int (*)(void*, void*))comp_aiueo_r);
+			qqsort(holdList, count, 2, (int (*)(const void*, const void*))comp_aiueo_r);
 		}
 		else if (type == 8) {
-			qqsort(holdList, count, 2, (int (*)(void*, void*))comp_kind_r);
+			qqsort(holdList, count, 2, comp_kind_r);
 		}
 		memcpy(pouch->heldItems, holdList, sizeof(holdList));
 	}
@@ -708,16 +708,16 @@ void pouchSortItem(s32 type) {
 			keyList[i] = 0;
 		}
 		if (type == 2) {
-			qqsort(keyList, count, 2, (int (*)(void*, void*))comp_aiueo);
+			qqsort(keyList, count, 2, (int (*)(const void*, const void*))comp_aiueo);
 		}
 		else if (type == 3) {
-			qqsort(keyList, count, 2, (int (*)(void*, void*))comp_kind);
+			qqsort(keyList, count, 2, comp_kind);
 		}
 		else if (type == 9) {
-			qqsort(keyList, count, 2, (int (*)(void*, void*))comp_aiueo_r);
+			qqsort(keyList, count, 2, (int (*)(const void*, const void*))comp_aiueo_r);
 		}
 		else if (type == 10) {
-			qqsort(keyList, count, 2, (int (*)(void*, void*))comp_kind_r);
+			qqsort(keyList, count, 2, comp_kind_r);
 		}
 		memcpy(pouch->keyItems, keyList, sizeof(keyList));
 	}
