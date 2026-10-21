@@ -225,6 +225,12 @@ Considered and deliberately not built yet. Pick one up by adding a dated chapter
   `tools/ci.py` directly and records the result in the PR or commit. Revisit when the repo goes public, for a
   visible "build passing" badge; then it must run only on pushes to `main`, never on pull requests (see the
   private go-public checklist). Not implemented, not tested.
+- **Split this file at 100% matched** (parked 2026-10-20, Isaac). Move the matching-era chapters (up to the
+  last match, around 2026-10-17/18) to `docs/CONTEXT-matching.md` and keep this file, under its current name, as
+  the live cleanup ledger, so CLAUDE.md, the guides, `tools/` and the worker prompts need no changes. Copy the
+  rules still in force (pragma policy, build parity, data ratchet, structural fakes) into a short standing-rules
+  section at the top with links to their dated chapters. Do it in one commit between waves, since every open
+  branch appends here. Not needed for now: agents grep the file rather than read it whole.
 - **Cleanup index** (parked 2026-10-02, Isaac). Melee publishes one ([doldecomp.github.io/melee/cleanup](https://doldecomp.github.io/melee/cleanup/), 6,057 sites in 597 files): every place matched C is ugly for matching's sake (pointer moved by a literal offset, pointer retyped, `MUST_MATCH`/pragma/`PAD_STACK`, `goto`), each counted once by its outermost form, regenerated on every push. A rough grep here suggests far more (~6k `(u8*)p + 0xNN`, ~9k `*(T*)p`, ~2k `MUST_MATCH` blocks, ~600 offset macros). Their `tools/cleanup_index.py` and template are sparse-cloned at `~/melee-cleanup` for reference; the repo has no license file, so study it and write our own rather than copying. Ideas: publish it, ratchet it in `ci.py`, later run cleanup waves (naming struct fields first; the check is objective: stays 100% and linked). After matching, not before.
 
 ## Harness: Pi over opencode (2026-09-25, Claude Opus 5.5)
