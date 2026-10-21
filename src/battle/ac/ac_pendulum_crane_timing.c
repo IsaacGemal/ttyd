@@ -144,42 +144,32 @@ void battleAcDelete_PendulumCraneTiming(BattleWork* work) {
 }
 
 void battleAcDisp_PendulumCraneTiming(CameraId camId, void* param) {
-	BattleWork* work = _battleWorkPointer;
-	s32 state = work->actionCommands.mAcState;
-	BattleACDispParams* ag = &work->actionCommands.dispParams;
-#ifdef MUST_MATCH
-	BattleACDispParams* p; // retail copies the params pointer before the switch and again in case 0x63
-
-	p = ag;
-#else
-	BattleACDispParams* p = ag;
-#endif
+	BattleActions* ac = &_battleWorkPointer->actionCommands;
+	s32 state = ac->mAcState;
+	BattleACDispParams* ag = &ac->dispParams;
 
 	switch (state) {
 	case 0x63:
 		ag->iconX = intplGetValue(4, 0x14 - ag->counter, 0x14, -300.0f, 30.0f);
-#ifdef MUST_MATCH
-		p = ag;
-#endif
 		// fallthrough
 	case 0x64:
 	case 0x3E8:
-		actionCommandDisp(p->iconX, p->iconY);
-		if (p->counter > 0) {
-			p->counter--;
+		actionCommandDisp(ag->iconX, ag->iconY);
+		if (ag->counter > 0) {
+			ag->counter--;
 		}
 		break;
 	case 0x3EA:
 	case 0x3EB:
-		if (p->counter >= 0x28) {
-			p->iconX = intplGetValue(4, p->counter - 0x28, 0x14, 30.0f, -300.0f);
+		if (ag->counter >= 0x28) {
+			ag->iconX = intplGetValue(4, ag->counter - 0x28, 0x14, 30.0f, -300.0f);
 		}
 		else {
-			p->iconX = 30.0f;
+			ag->iconX = 30.0f;
 		}
-		actionCommandDisp(p->iconX, p->iconY);
-		if (p->counter < 0x3C) {
-			p->counter++;
+		actionCommandDisp(ag->iconX, ag->iconY);
+		if (ag->counter < 0x3C) {
+			ag->counter++;
 		}
 		break;
 	}

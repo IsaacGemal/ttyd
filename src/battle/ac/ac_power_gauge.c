@@ -294,20 +294,11 @@ void battleAcDelete_PowerGauge(BattleWork* work) {
 // float_100 into f1, gaugePercent into f2 and float_1 into f0; MWCC assigns gaugePercent f0 and
 // float_1 f2. Every instruction is otherwise identical, and the float_100/float_1 symbols are still
 // referenced, so the data section is unchanged.
-// NONMATCHING (99.95%): ratio clamp's FPRs are f0/f2 swapped.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
-#ifdef MUST_MATCH
-    // Deriving disp before camGetPtr (and dec after it) keeps work=r31, disp=r24 and dec=r29 as the
-    // original; the BattleActions intermediate keeps them from folding into the BattleWork base.
     BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
     PowerGaugeDecWork* dec;
-#else
-    BattleActions* ac = &work->actionCommands;
-    PowerGaugeDecWork* dec;
-    BattleACDispParams* disp = &ac->dispParams;
-#endif
     s32 iconA;
     s32 iconB;
     s32 iconC;
@@ -319,11 +310,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     f32 py = y;
 
     camGetPtr(CAMERA_2D);
-#ifdef MUST_MATCH
     dec = (PowerGaugeDecWork*)&ac->field_0x2BC[0];
-#else
-    dec = (PowerGaugeDecWork*)&work->actionCommands.field_0x2BC[0];
-#endif
 
     ratio = dec->gaugePercent / 100.f;
     if (ratio > 1.0f) {

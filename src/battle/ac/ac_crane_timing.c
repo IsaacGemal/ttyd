@@ -10,23 +10,12 @@
 #include <string.h>
 #include "battle/ac/ac_crane_timing.h"
 
-// .rodata / .sdata2 literals of this unit.
-const f64 double_5_802fdd38 = 5.0;
-const f64 double_20_802fdd40 = 20.0;
-
+// .sdata2 literals of this unit.
 const f32 float_neg300_80420b30 = -300.0f;
 const f32 float_0_80420b34 = 0.0f;
 const f32 float_1p5_80420b38 = 1.5f;
 const f32 float_5_80420b3c = 5.0f;
 const f32 float_neg1_80420b40 = -1.0f;
-
-// MATCH_F64 is the f64 analogue of matching.h's MATCH_F32: read the constant through a volatile
-// pointer so mwcc loads it from its named symbol instead of pooling a copy.
-#ifdef MUST_MATCH
-#define MATCH_F64(x) (*(volatile const f64*)&(x))
-#else
-#define MATCH_F64(x) (x)
-#endif
 
 // Action-command work area for CraneTiming, at BattleWork+0x1F4C (inside BattleActions.field_0x2BC).
 // No header declares it.
@@ -42,17 +31,9 @@ typedef struct CraneTimingWork {
 } CraneTimingWork;
 
 s32 battleAcMain_CraneTiming(BattleWork* work) {
-#ifdef MUST_MATCH
-	// MWCC 2.6 folds two of the three base pointers (dec into disp) when both are derived directly
-	// from `work`; deriving both from the `ac` intermediate keeps work=r28, dec=r31 and disp=r27 in
-	// their own registers, as the original does.
 	BattleActions* ac = &work->actionCommands;
 	CraneTimingWork* dec = (CraneTimingWork*)&ac->field_0x2BC[0];
 	BattleACDispParams* disp = &ac->dispParams;
-#else
-	CraneTimingWork* dec = (CraneTimingWork*)&work->actionCommands.field_0x2BC[0];
-	BattleACDispParams* disp = &work->actionCommands.dispParams;
-#endif
 	BattleUnit* unit;
 	s32 flag;
 	s32 nearCenter;
@@ -113,13 +94,13 @@ s32 battleAcMain_CraneTiming(BattleWork* work) {
 		BtlUnit_SetPos(unit, dec->current.x, dec->current.y, dec->current.z);
 
 		nearCenter = 0;
-		if (flag != 0 && __fabsf(dec->center.x - dec->current.x) < MATCH_F64(double_5_802fdd38)) {
+		if (flag != 0 && __fabsf(dec->center.x - dec->current.x) < 5.0) {
 			nearCenter = 1;
 		}
 		trigger = BattlePadCheckTrigger(dec->trigger);
 		if ((trigger != 0 && dec->timer <= 0) || (nearCenter != 0 && dec->timer <= 0)) {
 			work->actionCommands.outputParams[0] = 1;
-			if (__fabsf(dec->center.x - dec->current.x) > MATCH_F64(double_20_802fdd40)) {
+			if (__fabsf(dec->center.x - dec->current.x) > 20.0) {
 				work->actionCommands.result = 0;
 			}
 			else {

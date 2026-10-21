@@ -170,20 +170,9 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
                 else {
                     dec->gaugePercent -= dec->drain;
                 }
-#ifdef MUST_MATCH
-                {
-                    // Match-only: the volatile read forces the reload into f1 the target has;
-                    // the natural form reuses f0 and swaps the compare operands.
-                    f32 g = *(volatile f32*)&dec->gaugePercent;
-                    if (g <= 0.0f) {
-                        dec->gaugePercent = 0.0f;
-                    }
-                }
-#else
                 if (dec->gaugePercent <= 0.0f) {
                     dec->gaugePercent = 0.0f;
                 }
-#endif
             }
             BattleAcGaugeSeUpdate(dec->gaugePercent);
             work->actionCommands.outputParams[0] =
