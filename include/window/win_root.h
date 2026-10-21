@@ -35,7 +35,7 @@ int N_compare_func4_2(void* a, void* b);
 int N_compare_func4_2_r(void* a, void* b);
 int compare_func5_2(void* a, void* b);
 int compare_func6_2(void* a, void* b);
-void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3);
+void winMsgEntry(WindowWork* work, s32 a1, const char* str, const char* a3);
 void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4);
 void winZClear(void);
 void winBgGX(WindowWork* work, s32 type, f32 x, f32 y);
@@ -63,8 +63,3 @@ typedef struct WinRootVecs {
     Vec v4;       // 0x84
     Vec v5;       // 0x90
 } WinRootVecs;
-
-// The 0xC-byte record at work+0x404 that sort_4_3_func bubble-sorts; field names are placeholders
-// for the swap (only the 3-word size matters).
-typedef struct SortRec { u32 a; u32 b; u32 c; } SortRec;
-

@@ -14,7 +14,8 @@ USER_FUNC(confupose);
 USER_FUNC(snd_sfx_stop);
 USER_FUNC(burst_chain);
 USER_FUNC(tribe_chk);
-void screen_tev(TevCallbackParam* param);
+typedef struct MapTevCallback MapTevCallback;
+void screen_tev(MapTevCallback* param);
 // This unit has its own copy of GXSetTexCoordGen; the SDK header declares it.
 USER_FUNC(screen_init);
 void ext_kyaku_dispent(void);  // TODO: real signature

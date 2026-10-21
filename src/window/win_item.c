@@ -43,34 +43,6 @@ extern const char str_s_w_jp_mail_tpl[];
 #define STR_MAIL_TPL str_s_w_jp_mail_tpl
 #endif
 
-// Extended fields of WindowWork used by this unit. win_main.h only declares the
-// first 0x1210 bytes, so the rest are reached through raw offsets below.
-#define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
-
-// win_item's float positions and Luigi book state, in WindowWork's opaque field_224/field_260/field_26E bands.
-typedef struct WinItemWork {
-    u8 pad_0x0[0x224];
-    f32 field_0x224; // 0x224
-    f32 field_0x228; // 0x228
-    f32 field_0x22C; // 0x22C
-    f32 field_0x230; // 0x230
-    f32 field_0x234; // 0x234
-    f32 field_0x238; // 0x238
-    f32 field_0x23C; // 0x23C
-    f32 field_0x240; // 0x240
-    f32 field_0x244; // 0x244
-    f32 field_0x248; // 0x248
-    f32 field_0x24C; // 0x24C
-    f32 field_0x250; // 0x250
-    u8 pad_0x254[0x260 - 0x254];
-    f32 field_0x260; // 0x260
-    f32 field_0x264; // 0x264
-    u8 pad_0x268[0x2C8 - 0x268];
-    s32 field_0x2C8; // 0x2C8
-    s32 field_0x2CC; // 0x2CC
-    s32 field_0x2D0; // 0x2D0
-} WinItemWork;
-#define WINITEM(w) ((WinItemWork*)(w))
 
 // The window draw functions take their Vec and GXColor arguments by value. win_main.h declares the font and
 // icon ones with pointers, which compiles to the same callee.
@@ -321,14 +293,14 @@ void winItemInit(WindowWork* work) {
     work->itemScrollRow[0] = 0;
     work->itemSel[1] = 0;
     work->itemScrollRow[1] = 0;
-    WINITEM(work)->field_0x238 = 320.f;
-    WINITEM(work)->field_0x234 = 320.f;
-    WINITEM(work)->field_0x240 = -240.f;
-    WINITEM(work)->field_0x23C = -240.f;
-    WINITEM(work)->field_0x248 = 320.f;
-    WINITEM(work)->field_0x244 = 320.f;
-    WINITEM(work)->field_0x250 = -240.f;
-    WINITEM(work)->field_0x24C = -240.f;
+    work->field_0x238 = 320.f;
+    work->field_0x234 = 320.f;
+    work->field_0x240 = -240.f;
+    work->field_0x23C = -240.f;
+    work->field_0x248 = 320.f;
+    work->field_0x244 = 320.f;
+    work->field_0x250 = -240.f;
+    work->field_0x24C = -240.f;
 
     if ((s32)pouchCheckItem(ITEM_MAILBOX_SP) == 0) {
         pouchGetItem(ITEM_MAILBOX_SP);
@@ -337,8 +309,8 @@ void winItemInit(WindowWork* work) {
 
     work->mailSel = 0;
     work->mailPage = 0;
-    WINITEM(work)->field_0x264 = 0.0f;
-    WINITEM(work)->field_0x260 = 0.0f;
+    work->field_0x264 = 0.0f;
+    work->field_0x260 = 0.0f;
 
     {
         for (i = 0; i < work->mailCount; i++) {
@@ -391,27 +363,27 @@ void winItemInit2(WindowWork* work) {
     work->targetY = (f32)(0x7D - work->itemTab * 0x28);
 
     t = 190.f * (f32)work->itemScrollRow[0];
-    WINITEM(work)->field_0x22C = t;
-    WINITEM(work)->field_0x224 = t;
+    work->field_0x22C = t;
+    work->field_0x224 = t;
 
     t = 190.f * (f32)work->itemScrollRow[1];
-    WINITEM(work)->field_0x230 = t;
-    WINITEM(work)->field_0x228 = t;
+    work->field_0x230 = t;
+    work->field_0x228 = t;
 
-    WINITEM(work)->field_0x238 = 320.f;
-    WINITEM(work)->field_0x234 = 320.f;
-    WINITEM(work)->field_0x240 = -240.f;
-    WINITEM(work)->field_0x23C = -240.f;
-    WINITEM(work)->field_0x248 = 320.f;
-    WINITEM(work)->field_0x244 = 320.f;
-    WINITEM(work)->field_0x250 = -240.f;
-    WINITEM(work)->field_0x24C = -240.f;
+    work->field_0x238 = 320.f;
+    work->field_0x234 = 320.f;
+    work->field_0x240 = -240.f;
+    work->field_0x23C = -240.f;
+    work->field_0x248 = 320.f;
+    work->field_0x244 = 320.f;
+    work->field_0x250 = -240.f;
+    work->field_0x24C = -240.f;
 
     t = (f32)(work->mailSel * 0xC8);
-    WINITEM(work)->field_0x264 = t;
-    WINITEM(work)->field_0x260 = t;
+    work->field_0x264 = t;
+    work->field_0x260 = t;
 
-    winMsgEntry(work, 0, work->itemTab == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, 0);
+    winMsgEntry(work, 0, work->itemTab == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, NULL);
     work->useItemId = 0;
 }
 
@@ -469,7 +441,7 @@ s32 winItemMain(WindowWork* work) {
         }
         work->targetX = -275.0f;
         work->targetY = (f32)(0x7D - work->itemTab * 0x28);
-        winMsgEntry(work, 0, work->itemTab == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, 0);
+        winMsgEntry(work, 0, work->itemTab == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, NULL);
         break;
 
     case 10:
@@ -513,22 +485,22 @@ s32 winItemMain(WindowWork* work) {
                     const char** book;
 
                     work->itemState = 100;
-                    WINITEM(work)->field_0x238 = -170.f;
-                    WINITEM(work)->field_0x240 = 160.f;
+                    work->field_0x238 = -170.f;
+                    work->field_0x240 = 160.f;
                     work->flags |= 0x8000;
                     book = luigi_book_list[item - ITEM_SUPER_LUIGI1];
-                    WINITEM(work)->field_0x2C8 = item - ITEM_SUPER_LUIGI1;
-                    WINITEM(work)->field_0x2D0 = 0;
-                    WINITEM(work)->field_0x2CC = 0;
-                    while (book[WINITEM(work)->field_0x2CC] != 0) {
-                        WINITEM(work)->field_0x2CC++;
+                    work->field_0x2C8 = item - ITEM_SUPER_LUIGI1;
+                    work->field_0x2D0 = 0;
+                    work->field_0x2CC = 0;
+                    while (book[work->field_0x2CC] != 0) {
+                        work->field_0x2CC++;
                     }
-                    WINITEM(work)->field_0x2CC = (WINITEM(work)->field_0x2CC + 1) / 2;
+                    work->field_0x2CC = (work->field_0x2CC + 1) / 2;
                     psndSFXOn((const char*)0x20012);
                 } else if (item == ITEM_MAILBOX_SP && pouchReceiveMailCount() != 0) {
                     work->itemState = 200;
-                    WINITEM(work)->field_0x248 = -144.0f;
-                    WINITEM(work)->field_0x250 = 180.f;
+                    work->field_0x248 = -144.0f;
+                    work->field_0x250 = 180.f;
                     psndSFXOn((const char*)0x20012);
                 } else if (item == 0x4E) {
                     work->useItemId = item;
@@ -604,38 +576,38 @@ s32 winItemMain(WindowWork* work) {
         work->targetY = (f32)(0x6E - (work->itemSel[sel] % 10 / 2) * 0x26);
         item = (work->itemTab == 0) ? pouchHaveItem(work->itemSel[sel])
                                           : (s32)work->skipList[work->itemSel[sel]];
-        winMsgEntry(work, item, itemDataTable[item].description, 0);
+        winMsgEntry(work, item, itemDataTable[item].description, NULL);
     }
         break;
 
     case 100:
         if (work->buttonTrg & 0x100) {
             psndSFXOn((const char*)0x20012);
-            WINITEM(work)->field_0x2D0 += 1;
-            if (WINITEM(work)->field_0x2D0 >= WINITEM(work)->field_0x2CC) {
-                WINITEM(work)->field_0x2D0 = WINITEM(work)->field_0x2CC - 1;
+            work->field_0x2D0 += 1;
+            if (work->field_0x2D0 >= work->field_0x2CC) {
+                work->field_0x2D0 = work->field_0x2CC - 1;
                 work->itemState = 10;
-                WINITEM(work)->field_0x238 = 320.f;
-                WINITEM(work)->field_0x240 = -240.f;
+                work->field_0x238 = 320.f;
+                work->field_0x240 = -240.f;
                 work->flags &= ~0x8000;
                 work->posX = work->targetX;
                 work->posY = work->targetY;
             }
         } else if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
-            WINITEM(work)->field_0x2D0 -= 1;
-            if (WINITEM(work)->field_0x2D0 < 0) {
-                WINITEM(work)->field_0x2D0 = 0;
+            work->field_0x2D0 -= 1;
+            if (work->field_0x2D0 < 0) {
+                work->field_0x2D0 = 0;
                 work->itemState = 10;
-                WINITEM(work)->field_0x238 = 320.f;
-                WINITEM(work)->field_0x240 = -240.f;
+                work->field_0x238 = 320.f;
+                work->field_0x240 = -240.f;
                 work->flags &= ~0x8000;
                 work->posX = work->targetX;
                 work->posY = work->targetY;
             }
         } else if (work->buttonTrg & 0x1000) {
-            WINITEM(work)->field_0x238 = 320.f;
-            WINITEM(work)->field_0x240 = -240.f;
+            work->field_0x238 = 320.f;
+            work->field_0x240 = -240.f;
             work->flags &= ~0x8000;
             work->posX = work->targetX;
             work->posY = work->targetY;
@@ -647,7 +619,7 @@ s32 winItemMain(WindowWork* work) {
 
     case 200:
         if (work->buttonTrg & 0x100) {
-            u8* mail;
+            WinMailEntry* mail;
 
             if ((s32)pouchCheckMail(work->field_26E[work->mailSel * 2 + 1]) == 1) {
                 pouchOpenMail(work->field_26E[work->mailSel * 2 + 1]);
@@ -655,18 +627,18 @@ s32 winItemMain(WindowWork* work) {
             swSet(0x26);
             psndSFXOn((const char*)0x20036);
             work->itemState = 201;
-            mail = (u8*)mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
-            FontGetMessageWidthLine(msgSearch(*(const char**)(mail + 0xC)), winItemMailLine(work));
+            mail = mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
+            FontGetMessageWidthLine(msgSearch(mail->body), winItemMailLine(work));
             work->mailLines += 1;
             work->mailScroll = 0;
-            if (*(u16*)(mail + 0) & 0x1000) {
+            if (mail->flags & 0x1000) {
                 work->mailLines += 0xA;
             }
         } else if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
             work->itemState = 10;
-            WINITEM(work)->field_0x248 = 320.f;
-            WINITEM(work)->field_0x250 = -240.f;
+            work->field_0x248 = 320.f;
+            work->field_0x250 = -240.f;
         } else if (work->dirRep & 0x1000) {
             old = work->mailSel;
             work->mailSel = old - 1;
@@ -712,13 +684,13 @@ s32 winItemMain(WindowWork* work) {
                 psndSFXOn((const char*)0x20036);
             }
         } else if (work->buttonTrg & 0x10) {
-            winSortEntry(work, 7, WINITEM(work)->field_0x248, WINITEM(work)->field_0x250 - 60.f);
+            winSortEntry(work, 7, work->field_0x248, work->field_0x250 - 60.f);
             work->savedState = work->itemState;
             psndSFXOn((const char*)0x20012);
             work->itemState = 1000;
         } else if (work->buttonTrg & 0x1000) {
-            WINITEM(work)->field_0x248 = 320.f;
-            WINITEM(work)->field_0x250 = -240.f;
+            work->field_0x248 = 320.f;
+            work->field_0x250 = -240.f;
             return -2;
         }
         work->targetX = -96.0f;
@@ -726,11 +698,11 @@ s32 winItemMain(WindowWork* work) {
         break;
 
     case 201: {
-        u8* mail;
+        WinMailEntry* mail;
 
-        mail = (u8*)mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
+        mail = mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
 
-        if (*(u16*)(mail + 0) & 0x1000) {
+        if (mail->flags & 0x1000) {
             work->mailTpl = (FileEntry*)fileAsyncf(FILE_TYPE_TPL, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
             if ((u32)work->mailTpl != 0) {
                 work->mailTpl = fileAllocf(FILE_TYPE_TPL, STR_MAIL_TPL, getMarioStDvdRoot());
@@ -765,8 +737,8 @@ s32 winItemMain(WindowWork* work) {
             if ((u32)work->mailTpl != 0) {
                 fileFree(work->mailTpl);
             }
-            WINITEM(work)->field_0x248 = 320.f;
-            WINITEM(work)->field_0x250 = -240.f;
+            work->field_0x248 = 320.f;
+            work->field_0x250 = -240.f;
             return -2;
         }
         work->targetX = -96.0f;
@@ -914,18 +886,18 @@ s32 winItemMain(WindowWork* work) {
 }
 
 void winItemMain2(WindowWork* work) {
-    WINITEM(work)->field_0x22C = 190.0f * (f32)work->itemScrollRow[0];
-    WINITEM(work)->field_0x224 += (WINITEM(work)->field_0x22C - WINITEM(work)->field_0x224) / 4.0f;
-    WINITEM(work)->field_0x230 = 190.0f * (f32)work->itemScrollRow[1];
-    WINITEM(work)->field_0x228 += (WINITEM(work)->field_0x230 - WINITEM(work)->field_0x228) / 4.0f;
+    work->field_0x22C = 190.0f * (f32)work->itemScrollRow[0];
+    work->field_0x224 += (work->field_0x22C - work->field_0x224) / 4.0f;
+    work->field_0x230 = 190.0f * (f32)work->itemScrollRow[1];
+    work->field_0x228 += (work->field_0x230 - work->field_0x228) / 4.0f;
 
-    WINITEM(work)->field_0x234 += (WINITEM(work)->field_0x238 - WINITEM(work)->field_0x234) / 6.0f;
-    WINITEM(work)->field_0x23C += (WINITEM(work)->field_0x240 - WINITEM(work)->field_0x23C) / 6.0f;
-    WINITEM(work)->field_0x244 += (WINITEM(work)->field_0x248 - WINITEM(work)->field_0x244) / 6.0f;
-    WINITEM(work)->field_0x24C += (WINITEM(work)->field_0x250 - WINITEM(work)->field_0x24C) / 6.0f;
+    work->field_0x234 += (work->field_0x238 - work->field_0x234) / 6.0f;
+    work->field_0x23C += (work->field_0x240 - work->field_0x23C) / 6.0f;
+    work->field_0x244 += (work->field_0x248 - work->field_0x244) / 6.0f;
+    work->field_0x24C += (work->field_0x250 - work->field_0x24C) / 6.0f;
 
-    WINITEM(work)->field_0x264 = (f32)(work->mailPage * 200);
-    WINITEM(work)->field_0x260 += (WINITEM(work)->field_0x264 - WINITEM(work)->field_0x260) / 4.0f;
+    work->field_0x264 = (f32)(work->mailPage * 200);
+    work->field_0x260 += (work->field_0x264 - work->field_0x260) / 4.0f;
 }
 
 
@@ -935,8 +907,8 @@ void winItemDisp(CameraId camId, void* param, s32 idx) {
     f32 c;
     f32 b;
     f32 a;
-    f32 x = WW_F32((u8*)w + idx * 0x14, 0xC4);
-    f32 y = WW_F32((u8*)w + idx * 0x14, 0xC8);
+    f32 x = w->recs[idx].b;
+    f32 y = w->recs[idx].c;
     GXColor color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     s32 i;
 
@@ -1003,7 +975,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         } else {
             item = *(s16*)(entry + 0x2E8);
         }
-        scroll = (&WINITEM(work)->field_0x224)[work->itemTab];
+        scroll = (&work->field_0x224)[work->itemTab];
 
         grayFlag = ((work->itemTab != 0) || (itemDataTable[item].usable_locations & 4)) == 0;
         drawY = scroll + (20.0f + ((rowY = base - (f32)(half * 0x26)) - 10.0f));
@@ -1058,8 +1030,8 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         winIconSetV(0x217, (Vec){sortX - 30.0f, 20.0f + ((y - 100.0f) - 10.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
 
-    if (WINITEM(work)->field_0x234 < 320.0f && WINITEM(work)->field_0x23C > -240.0f) {
-        winBookGX(work, 0, WINITEM(work)->field_0x234, WINITEM(work)->field_0x23C);
+    if (work->field_0x234 < 320.0f && work->field_0x23C > -240.0f) {
+        winBookGX(work, 0, work->field_0x234, work->field_0x23C);
     }
 }
 

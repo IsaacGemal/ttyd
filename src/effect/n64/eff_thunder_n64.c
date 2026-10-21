@@ -304,12 +304,12 @@ EffectEntry* effThunderN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
 		}
 		if (type != 1) {
 			data->charge = effAkariChargeN64Entry(0, 0, -120.0f, 189.0f, 72.0f, 1.0f);
-			((EffAkariChargeData*)data->charge->userdata)->reg1R = 0xFF;
-			((EffAkariChargeData*)data->charge->userdata)->reg1G = 0xFF;
-			((EffAkariChargeData*)data->charge->userdata)->reg1B = 0xFF;
-			((EffAkariChargeData*)data->charge->userdata)->reg0R = 0xFF;
-			((EffAkariChargeData*)data->charge->userdata)->reg0G = 0x0;
-			((EffAkariChargeData*)data->charge->userdata)->reg0B = 0xFF;
+			((EffAkariChargeWork*)data->charge->userdata)->reg1R = 0xFF;
+			((EffAkariChargeWork*)data->charge->userdata)->reg1G = 0xFF;
+			((EffAkariChargeWork*)data->charge->userdata)->reg1B = 0xFF;
+			((EffAkariChargeWork*)data->charge->userdata)->reg0R = 0xFF;
+			((EffAkariChargeWork*)data->charge->userdata)->reg0G = 0x0;
+			((EffAkariChargeWork*)data->charge->userdata)->reg0B = 0xFF;
 		}
 	}
 	if (type >= 3) {

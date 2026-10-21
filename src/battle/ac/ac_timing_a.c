@@ -14,13 +14,6 @@
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// TimingA's action-command work area at BattleWork+0x1F4C. No header declares it.
-typedef struct AcTimingADecWork {
-	s32 pad_0x00;   // 0x0, never accessed
-	u32 flags;      // 0x4
-	s32 endTimer;   // 0x8, frames the result display waits (0x3C)
-} AcTimingADecWork;
-
 // A timing window: the frame threshold and the success frame it maps to.
 typedef struct AcTimingAEntry {
 	s32 threshold; // 0x0

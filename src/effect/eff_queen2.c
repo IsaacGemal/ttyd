@@ -94,12 +94,12 @@ void effQueen2Main(EffectEntry* effect) {
 			data->phaseTimer = 0;
 			data->state++;
 			data->chargeEntry = effAkariChargeN64Entry(0, 0, data->position.x, data->position.y, data->position.z, 1.0f);
-			((EffAkariChargeData*)data->chargeEntry->userdata)->reg0R = 0;
-			((EffAkariChargeData*)data->chargeEntry->userdata)->reg0G = 0x9A;
-			((EffAkariChargeData*)data->chargeEntry->userdata)->reg0B = 0xFF;
-			((EffAkariChargeData*)data->chargeEntry->userdata)->reg1R = 0xFF;
-			((EffAkariChargeData*)data->chargeEntry->userdata)->reg1G = 0xFF;
-			((EffAkariChargeData*)data->chargeEntry->userdata)->reg1B = 0xFF;
+			((EffAkariChargeWork*)data->chargeEntry->userdata)->reg0R = 0;
+			((EffAkariChargeWork*)data->chargeEntry->userdata)->reg0G = 0x9A;
+			((EffAkariChargeWork*)data->chargeEntry->userdata)->reg0B = 0xFF;
+			((EffAkariChargeWork*)data->chargeEntry->userdata)->reg1R = 0xFF;
+			((EffAkariChargeWork*)data->chargeEntry->userdata)->reg1G = 0xFF;
+			((EffAkariChargeWork*)data->chargeEntry->userdata)->reg1B = 0xFF;
 		}
 		break;
 	}

@@ -788,7 +788,7 @@ void party_motion_homing_walk(PartyEntry* party) {
     f32 t0;
     f32 off;
     s32 noChg;
-    u8* fmark; // struct Footmark is incomplete; fields read at raw offsets (x=0x4, y=0x8, z=0xC, flags=0x0)
+    Footmark* fmark;
     f32 f29;
     PartyEntry* target;
     f32 t1;
@@ -928,8 +928,8 @@ void party_motion_homing_walk(PartyEntry* party) {
     f24 = 40.0f;
     f25 = 20.0f;
     for (;;) {
-        fmark = (u8*)partyGetFootmarkPtr(id);
-        v94 = *(Vec*)(fmark + 0x4);
+        fmark = partyGetFootmarkPtr(id);
+        v94 = *(Vec*)&fmark->x;
         angle = angleABf(px, pz, v94.x, v94.z);
         sincosf(&s1, &c1, angle);
         q.targetDistance = f24;
@@ -1073,7 +1073,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                     }
                 }
             }
-            if ((party->flags & PARTY_FLAG_IS_GROUNDED) && (*(u8*)(fmark + 0x0) & 0x1)) {
+            if ((party->flags & PARTY_FLAG_IS_GROUNDED) && (fmark->field_0 & 0x1)) {
                 ang = toMovedir(party->field_110);
                 partyGetReadId(id, &rx, &ry, &rz);
                 L_getTargetPos(id, &v88);
@@ -1121,7 +1121,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                 partyChgMot(party, 2);
                 break;
             }
-            if (!(party->flags & PARTY_FLAG_IS_GROUNDED) || !(*(u8*)(fmark + 0x0) & 0x4)) {
+            if (!(party->flags & PARTY_FLAG_IS_GROUNDED) || !(fmark->field_0 & 0x4)) {
                 continue;
             }
             dist = distABf(px, pz, v94.x, v94.z);
@@ -1134,7 +1134,7 @@ void party_motion_homing_walk(PartyEntry* party) {
     }
     if (party->speed) {
         partyChgSpeedPose(party, party->speed);
-    } else if (!(*(u8*)(fmark + 0x0) & 0x4)) {
+    } else if (!(fmark->field_0 & 0x4)) {
         partyChgMot(party, 0);
     }
     party->dir = angle;
@@ -1429,16 +1429,16 @@ void party_motion_homing_fly(PartyEntry* party) {
     f27 = party->position.y;
     f26 = party->position.z;
     {
-        u8* fp = (u8*)partyGetFootmarkPtr(id);
-        foot_x = *(f32*)(fp + 0x4);
+        Footmark* fp = partyGetFootmarkPtr(id);
+        foot_x = fp->x;
         {
             f32 yadd = 5.0f;
             if (party->flags2 & 0x8000) {
                 yadd = 1.0f;
             }
-            foot_y = *(f32*)(fp + 0x8) + yadd;
+            foot_y = fp->y + yadd;
         }
-        foot_z = *(f32*)(fp + 0xC);
+        foot_z = fp->z;
     }
     pos = party->position;
     if (partyGetTargetDist3D(id, &pos) >= f31) {

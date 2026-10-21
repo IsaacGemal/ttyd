@@ -93,13 +93,6 @@ typedef struct SukiBytes6 {
     u8 x[6];
 } SukiBytes6;
 
-typedef struct SukiTevParam {
-    u8 pad[0xC];
-    s32 field_C;   // 0xC
-    s32 field_10;  // 0x10
-    s32 field_14;  // 0x14
-} SukiTevParam;
-
 // File .rodata, in the original object's address order (main_suki reaches dat_8030096c at +0x3C,
 // vec3_803009b4 at +0x84 and the img strings at +0x260 through the str_btl_wn_sac_sukkari_sukkiri base).
 const char str_btl_wn_sac_sukkari_sukkiri[0x1C] = "btl_wn_sac_sukkari_sukkiri";
@@ -823,7 +816,7 @@ s32 get_img_name(EventEntry* event) {
 }
 
 // .text:0x0 | 0x80249920 | size: 0xE8
-void set_tev(SukiTevParam* param) {
+void set_tev(MapTevCallback* param) {
     SukiWork* work = get_ptr();
     u8 flash = work->flash;
 
@@ -833,9 +826,9 @@ void set_tev(SukiTevParam* param) {
     GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
     GXSetTevAlphaIn(0, 7, 7, 7, 1);
     GXSetTevColor(1, make_tev_color(flash));
-    param->field_C = 1;
-    param->field_14 = 0;
-    param->field_10 = 0;
+    param->tevStage = 1;
+    param->texCoord = 0;
+    param->texMap = 0;
 }
 
 static void main_star(void);

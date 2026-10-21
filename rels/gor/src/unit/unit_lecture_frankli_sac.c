@@ -209,7 +209,7 @@ static USER_FUNC(lecture_init) {
     s32 id;
 #endif
 
-    *(s32*)slot |= 1;
+    slot->flags |= 1;
     aud->flags |= 0x40000;
     for (i = 0; i < 200; i++) {
         BattleAudience_Delete(i);

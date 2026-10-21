@@ -30,13 +30,6 @@ s32 kurio_msg_evt[19];
 
 // clang-format off
 
-// partial view of PartyEntry from 0x94: the appear position written by
-// partyGetAppearPos3 (no named field in include/party.h).
-typedef struct PartyAppearPos {
-    u8 pad[0x94];
-    Vec position;
-} PartyAppearPos;
-
 BOOL christineGetStatus(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     if (!party || party->currentMemberId != PARTY_MEMBER_GOOMBELLA || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
@@ -273,13 +266,13 @@ void kuribo_use(PartyEntry* party) {
             party->flags |= PARTY_FLAG_FORCE_FALL;
         }
         party->timer = 4;
-        party->field_FC = angleABf(party->position.x, party->position.z, ((PartyAppearPos*)party)->position.x,
-                                   ((PartyAppearPos*)party)->position.z);
+        party->field_FC = angleABf(party->position.x, party->position.z, party->targetPos.x,
+                                   party->targetPos.z);
         party->dir = party->field_FC;
         party->field_10C = mario->unk1A8;
         party->field_110 = mario->unk1A8;
-        party->speed = distABf(party->position.x, party->position.z, ((PartyAppearPos*)party)->position.x,
-                               ((PartyAppearPos*)party)->position.z) /
+        party->speed = distABf(party->position.x, party->position.z, party->targetPos.x,
+                               party->targetPos.z) /
                        (f32)party->timer;
         party->jumpPara1 = 0.0f;
         party->useMotionId = 1;
@@ -289,11 +282,11 @@ void kuribo_use(PartyEntry* party) {
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
         }
-        party->position.x += (((PartyAppearPos*)party)->position.x - party->position.x) /
+        party->position.x += (party->targetPos.x - party->position.x) /
                                  (f32)party->timer;
-        party->position.y += (((PartyAppearPos*)party)->position.y - party->position.y) /
+        party->position.y += (party->targetPos.y - party->position.y) /
                                  (f32)party->timer;
-        party->position.z += (((PartyAppearPos*)party)->position.z - party->position.z) /
+        party->position.z += (party->targetPos.z - party->position.z) /
                                  (f32)party->timer;
         if (--party->timer > 0) {
             return;

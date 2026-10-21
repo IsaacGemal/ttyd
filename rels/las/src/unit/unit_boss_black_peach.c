@@ -4876,7 +4876,7 @@ USER_FUNC(queen_drain) {
 }
 
 USER_FUNC(unk_las_0000af38) {
-    *(u32*)BattleBreakSlotGetPtr() |= 2;
+    BattleBreakSlotGetPtr()->flags |= 2;
     return EVT_RETURN_DONE;
 }
 
@@ -5118,7 +5118,7 @@ USER_FUNC(peach_shock_evt) {
 }
 
 USER_FUNC(slot_init) {
-    *(u32*)BattleBreakSlotGetPtr() |= 4;
+    BattleBreakSlotGetPtr()->flags |= 4;
     return EVT_RETURN_DONE;
 }
 

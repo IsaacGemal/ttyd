@@ -18,6 +18,7 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "driver/effdrv.h"
+#include "eff/n64/eff_kameki_tornade_n64.h"
 #include "manager/evtmgr_cmd.h"
 #include "mario/mariost.h"
 #include "system.h"
@@ -676,7 +677,7 @@ static s32 tornade_alpha_func(EventEntry* event, BOOL isFirstCall) {
     f32 alpha = evtGetFloat(event, args[1]);
     EffectEntry* effect = effNameToPtr((const char*)value);
 
-    *(f32*)((u8*)effect->userdata + 0x148) = alpha;
+    ((effKamekiTornadeData*)effect->userdata)->alphaScale = alpha;
     return EVT_RETURN_DONE;
 }
 // clang-format on

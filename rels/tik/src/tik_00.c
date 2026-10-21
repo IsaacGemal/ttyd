@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "math_ext.h"
+#include "driver/mapdrv.h"
 
 // Work area for the fortune-teller (uranai) card rendering. Only the fields
 // reached by this file are named; the rest is the copy of the event's LW/GW
@@ -426,7 +427,7 @@ USER_FUNC(uranai_cap_evt) {
     return EVT_RETURN_BLOCK;
 }
 
-void card_tev(TevCallbackParam* param) {
+void card_tev(MapTevCallback* param) {
     if (uranai_wp->field_0xE4 != 0) {
         GXLoadTexObj(smartTexObj(&uranai_wp->texObj, (void**)uranai_wp->buffer), GX_TEXMAP0);
         GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
@@ -441,9 +442,9 @@ void card_tev(TevCallbackParam* param) {
         GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
         GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_ZERO, GX_CA_APREV);
         GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-        param->field_C = 1;
-        param->field_14 = 1;
-        param->field_10 = 1;
+        param->tevStage = 1;
+        param->texCoord = 1;
+        param->texMap = 1;
     }
 }
 

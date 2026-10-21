@@ -38,7 +38,7 @@ extern s32 hom_10_evt_resha_start2_13_data_2E14[];
 extern s32 hom_10_evt_resha_start_13_data_2A44[];
 extern s32 hom_10_evt_resha_stop_13_data_3548[];
 static smartEntry* ind_lp;
-static void sun_tev(TevCallbackParam* param);
+static void sun_tev(MapTevCallback* param);
 static USER_FUNC(test_glare);
 s32 evt_train_door[13];
 s32 evt_train_nidome[307];
@@ -656,11 +656,11 @@ static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
 
 // The outer-loop prologue hoists `(i / 4) * 32` and `i % 4`; MWCC's list scheduler and the
 // callee-saved colouring it induces are sensitive to the front-end expression tree here.
-static void sun_tev(TevCallbackParam* param) {
-    s32 field_C = param->field_C;
-    s32 texMapId = param->field_10;
-    s32 field_14 = param->field_14;
-    s32 indTexStage = param->field_18;
+static void sun_tev(MapTevCallback* param) {
+    s32 field_C = param->tevStage;
+    s32 texMapId = param->texMap;
+    s32 field_14 = param->texCoord;
+    s32 indTexStage = param->numIndStage;
     u8* buf;
     GXTexObj texObj;
     f32 mtx[2][3];
@@ -705,10 +705,10 @@ static void sun_tev(TevCallbackParam* param) {
     GXSetIndTexOrder(indTexStage, GX_TEXCOORD0, texMapId);
     GXSetIndTexCoordScale(indTexStage, GX_ITS_1, GX_ITS_1);
     GXSetTevIndWarp(GX_TEVSTAGE0, indTexStage, 1, 0, GX_ITM_0);
-    param->field_C = field_C;
-    param->field_14 = field_14;
-    param->field_18 = indTexStage + 1;
-    param->field_10 = texMapId + 1;
+    param->tevStage = field_C;
+    param->texCoord = field_14;
+    param->numIndStage = indTexStage + 1;
+    param->texMap = texMapId + 1;
 }
 
 EVT_BEGIN(hom_00_init_evt)

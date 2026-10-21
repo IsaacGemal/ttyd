@@ -3649,7 +3649,7 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 		s32 delta = 0;
 		delta += (s32)(rate * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
 		               crowdKindSum * marioMultiplier * partyMultiplier *
-		               *(f32*)((u8*)BattleBreakSlotGetPtr() + 0x14));
+		               BattleBreakSlotGetPtr()->field_14);
 		audience->apGauge += delta;
 	}
 	else {

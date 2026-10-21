@@ -15,7 +15,7 @@
 static USER_FUNC(test);
 static USER_FUNC(check);
 static s32 color_change_evt(s32 arg);
-static void callback(TevCallbackParam* param);
+static void callback(MapTevCallback* param);
 
 // clang-format off
 extend_data(52,
@@ -39,11 +39,11 @@ extend_data(53,
 const GXColor dat_jin_00008498 = { 0x00, 0x00, 0x00, 0xFF };
 const GXColor dat_jin_0000849c = { 0x4D, 0x09, 0x52, 0xFF };
 
-static void callback(TevCallbackParam* param) {
-    s32 stage = param->field_C;
-    s32 field_10 = param->field_10;
-    s32 field_14 = param->field_14;
-    s32 field_18 = param->field_18;
+static void callback(MapTevCallback* param) {
+    s32 stage = param->tevStage;
+    s32 texMap = param->texMap;
+    s32 texCoord = param->texCoord;
+    s32 numIndStage = param->numIndStage;
 
     if (marioGetPtr()->flags & MARIO_FLAG_BG_MODE) {
         GXSetTevColor(GX_TEVREG0, dat_jin_00008498);
@@ -57,10 +57,10 @@ static void callback(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
     GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
-    param->field_C = stage + 1;
-    param->field_14 = field_14;
-    param->field_18 = field_18;
-    param->field_10 = field_10;
+    param->tevStage = stage + 1;
+    param->texCoord = texCoord;
+    param->numIndStage = numIndStage;
+    param->texMap = texMap;
 }
 
 static s32 color_change_evt(s32 arg) {

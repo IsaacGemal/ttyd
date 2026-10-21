@@ -1935,9 +1935,9 @@ USER_FUNC(drill_tor) {
         torCount[0] = 0;
     }
     if (y <= 300.0f) {
-        ((BattenData*)eff_tor[0]->userdata)->position.x = x;
-        ((BattenData*)eff_tor[0]->userdata)->position.y = y - 240.0f;
-        ((BattenData*)eff_tor[0]->userdata)->position.z = z;
+        ((effKamekiTornadeData*)eff_tor[0]->userdata)->x = x;
+        ((effKamekiTornadeData*)eff_tor[0]->userdata)->y = y - 240.0f;
+        ((effKamekiTornadeData*)eff_tor[0]->userdata)->z = z;
     }
     if (++torCount[0] >= 70) {
         effDelete(eff_tor[0]);

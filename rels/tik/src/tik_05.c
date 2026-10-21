@@ -103,7 +103,7 @@ static USER_FUNC(cam_kaiten_set_direct);
 static USER_FUNC(cam_kaiten_init);
 static USER_FUNC(alpha_set_func);
 static USER_FUNC(alpha_init_func);
-static void alpha_tev(TevCallbackParam* param);
+static void alpha_tev(MapTevCallback* param);
 static USER_FUNC(starstone_set_ry);
 s32 look_large_door[25];
 extern BrokenWork broken_work;
@@ -2012,8 +2012,8 @@ static inline GXColor alpha_tev_color(u8 a) {
 }
 #endif
 
-static void alpha_tev(TevCallbackParam* param) {
-    u32 stage = param->field_C;
+static void alpha_tev(MapTevCallback* param) {
+    u32 stage = param->tevStage;
     u8* ap = _ap;
 
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
@@ -2034,7 +2034,7 @@ static void alpha_tev(TevCallbackParam* param) {
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
-    param->field_C = param->field_C + 1;
+    param->tevStage = param->tevStage + 1;
 }
 
 static USER_FUNC(alpha_init_func) {

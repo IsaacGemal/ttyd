@@ -5394,7 +5394,7 @@ USER_FUNC(btlevtcmd_ac_timing_flag_onoff) {
 
     onoff = evtGetValue(event, args[0]);
     flags = args[1];
-    p = (u32*)((u8*)_battleWorkPointer + 0x1F50);
+    p = &((AcTimingADecWork*)_battleWorkPointer->actionCommands.field_0x2BC)->flags;
     if (onoff) {
         *p |= flags;
     }

@@ -170,7 +170,7 @@ void winPartyInit2(WindowWork* work) {
     work->partyState = 0;
     work->targetX = -200.0f;
     work->targetY = 20.0f;
-    winMsgEntry(work, 0, winPartyDt[work->selPartyDt].descMsg, 0);
+    winMsgEntry(work, 0, winPartyDt[work->selPartyDt].descMsg, NULL);
 }
 
 void winPartyExit(WindowWork* work) {
@@ -264,7 +264,7 @@ s32 winPartyMain(WindowWork* work) {
         work->targetX = -200.0f;
         work->targetY = 20.0f;
         work->wazaCount = pouchGetPartyAttackLv(winPartyDt[work->selPartyDt].partnerId) + 2;
-        winMsgEntry(work, 0, winPartyDt[work->selPartyDt].descMsg, 0);
+        winMsgEntry(work, 0, winPartyDt[work->selPartyDt].descMsg, NULL);
         break;
     }
     case 1: {
@@ -296,7 +296,7 @@ s32 winPartyMain(WindowWork* work) {
 
         work->targetX = -10.0f;
         work->targetY = -26.0f * (f32)work->wazaSel + 5.0f;
-        winMsgEntry(work, 0, ((BattleWeapon**)winPartyDt[work->selPartyDt].waza)[work->wazaSel]->description, 0);
+        winMsgEntry(work, 0, ((BattleWeapon**)winPartyDt[work->selPartyDt].waza)[work->wazaSel]->description, NULL);
         break;
     }
     default:
@@ -392,8 +392,8 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     loopWhite = white;
     black = (GXColor){0x00, 0x00, 0x00, 0xFF};
     loopBlack = black;
-    x = ((f32*)((u8*)work + 0xC4))[partyIdx * 5];
-    y = ((f32*)((u8*)work + 0xC8))[partyIdx * 5];
+    x = work->recs[partyIdx].b;
+    y = work->recs[partyIdx].c;
 
     winBgGX(work, 1, x, y);
     if (work->partyCount == 0) {

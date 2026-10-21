@@ -12,16 +12,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-// Extended WindowWork fields used by this unit. win_main.h only declares the
-// first 0x40 bytes, so the rest are reached through raw offsets.
-#define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
-#define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
-// The 0xC-byte record at work+0x404 (WindowWork.field_404), one per equipped badge.
-typedef struct WinEquipRec {
-    s32 field_0x0;
-    s32 field_0x4;
-    s32 field_0x8;
-} WinEquipRec;
 // win texture ids of the BP pips
 typedef enum {
     WIN_TEX_BP_ON = 0x1C,
@@ -34,16 +24,14 @@ extern ItemData itemDataTable[];
 void winMakeEquipList(WindowWork* work) {
     s32 count = 0;
     PouchData* pouch = pouchGetPtr();
-    u8* entry = (u8*)work;
     s32 i;
 
     for (i = 0; i < MAX_BADGES; i++) {
         if (pouch->equippedBadges[i] != 0) {
-            *(s32*)(entry + 0x404) = 1;
+            work->field_404[count].field_0x0 = 1;
+            work->field_404[count].field_0x4 = i;
+            work->field_404[count].field_0x8 = pouch->equippedBadges[i];
             count++;
-            *(s32*)(entry + 0x408) = i;
-            *(s32*)(entry + 0x40C) = pouch->equippedBadges[i];
-            entry += 0xC;
         }
     }
     work->equipListCount = count;
@@ -66,7 +54,7 @@ void winBadgeInit2(WindowWork* work) {
     work->targetY = (f32)(0x7D - work->badgeTab * 0x28);
     work->badgeScrollPos[0] = work->badgeScrollTarget[0] = 184.0f * (f32)work->badgeScrollRow[0];
     work->badgeScrollPos[1] = work->badgeScrollTarget[1] = 184.0f * (f32)work->badgeScrollRow[1];
-    winMsgEntry(work, 0, work->badgeTab == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", 0);
+    winMsgEntry(work, 0, work->badgeTab == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", NULL);
     winMakeEquipList(work);
 }
 
@@ -196,7 +184,7 @@ s32 winBadgeMain(WindowWork* work) {
         }
         work->targetX = -270.0f;
         work->targetY = (f32)(0x7D - work->badgeTab * 0x28);
-        winMsgEntry(work, 0, work->badgeTab == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", 0);
+        winMsgEntry(work, 0, work->badgeTab == 0 ? "msg_menu_badge_all" : "msg_menu_badge_equip", NULL);
         goto end;
 
     case 10:
@@ -229,16 +217,16 @@ s32 winBadgeMain(WindowWork* work) {
                 } else {
                     s32* selPtr = (s32*)((u8*)work + 0x3E4) + sel;
                     s32 entryIdx = selPtr[0];
-                    s32 idx = ((WinEquipRec*)work->field_404)[entryIdx].field_0x4;
-                    if (((WinEquipRec*)work->field_404)[entryIdx].field_0x0 != 0) {
+                    s32 idx = work->field_404[entryIdx].field_0x4;
+                    if (work->field_404[entryIdx].field_0x0 != 0) {
                         psndSFXOn((const char*)0x20039);
                         pouchUnEquipBadgeIndex(idx);
-                        ((WinEquipRec*)work->field_404)[selPtr[0]].field_0x0 = 0;
+                        work->field_404[selPtr[0]].field_0x0 = 0;
                     } else {
                         if (pouch->availableBP >= itemDataTable[pouchHaveBadge(idx)].bp_cost) {
                             psndSFXOn((const char*)0x20038);
                             pouchEquipBadgeIndex(idx);
-                            ((WinEquipRec*)work->field_404)[selPtr[0]].field_0x0 = 1;
+                            work->field_404[selPtr[0]].field_0x0 = 1;
                         }
                     }
                     pouchReviseMarioParam();
@@ -302,9 +290,9 @@ s32 winBadgeMain(WindowWork* work) {
                 if (work->badgeTab == 0) {
                     msgId = pouchHaveBadge(work->badgeSel[sel]);
                 } else {
-                    msgId = ((WinEquipRec*)work->field_404)[work->badgeSel[sel]].field_0x8;
+                    msgId = work->field_404[work->badgeSel[sel]].field_0x8;
                 }
-                winMsgEntry(work, msgId, itemDataTable[msgId].menu_description, 0);
+                winMsgEntry(work, msgId, itemDataTable[msgId].menu_description, NULL);
             }
         }
         goto end;
@@ -365,7 +353,7 @@ static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
 }
 #endif
 
-#define WIN_BADGE_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
+#define WIN_BADGE_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
 
 // Draws the badge screen: the "all"/"equipped" tabs, the BP panel with one pip per BP, then the list.
 void winBadgeDisp(CameraId camId, void* param, s32 idx) {
@@ -376,9 +364,9 @@ void winBadgeDisp(CameraId camId, void* param, s32 idx) {
     f32 tabX;
     f32 tabY;
     f32 tabTop;
-    f32 x = WW_F32((u8*)work + idx * 0x14, 0xC4);
+    f32 x = work->recs[idx].b;
     s32 i;
-    f32 y = WW_F32((u8*)work + idx * 0x14, 0xC8);
+    f32 y = work->recs[idx].c;
     (void)camId;
 
     winBgGX(work, 3, x, y);
