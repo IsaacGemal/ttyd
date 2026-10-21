@@ -104,8 +104,8 @@ static void main_dl(s32 type) {
 		effGetTexObjN64(0xD, &texObj);
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
 		break;
-	/* MUST_MATCH: the empty case 2 makes MWCC emit the duplicated branch to the
-	   default body that retail has. */
+	/* The empty case 2 makes MWCC emit the duplicated branch to the default body
+	   that retail has. */
 	case 2:
 	default:
 		effGetTexObjN64(0xE, &texObj);
@@ -145,8 +145,8 @@ static void main_dl(s32 type) {
 		sizeX = 16;
 		sizeY = 16;
 		break;
-	/* MUST_MATCH: MWCC needs an explicit case 1 sharing the default body to emit the
-	   cmp-1/cmp-0 decision tree retail has. */
+	/* MWCC needs an explicit case 1 sharing the default body to emit the cmp-1/cmp-0
+	   decision tree retail has. */
 	case 1:
 	default:
 		sizeX = 24;
@@ -205,8 +205,8 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 		texWidth = 224.0f;
 		frameSizeF = 32.0f;
 		break;
-	/* MUST_MATCH: the empty case 2 forces MWCC's switch decision tree to emit the
-	   duplicated branch to the default body that retail has. */
+	/* The empty case 2 forces MWCC's switch decision tree to emit the duplicated
+	   branch to the default body that retail has. */
 	case 2:
 	default:
 		texWidth = 256.0f;
