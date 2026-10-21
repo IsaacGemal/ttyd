@@ -54,8 +54,15 @@ s32 partyGetFootmarkReadId(u32 index);
 void partyGetReadId(u32 index, f32* x, f32* y, f32* z);
 void partyGetReadId2(u32 index, Vec* out);
 void L_getTargetPos(s32 id, Vec* out);
-struct Footmark;
-struct Footmark* partyGetFootmarkPtr(u32 index);
+// Layout of a footmark record (0x10 bytes) inside footmarkBuf.
+typedef struct Footmark {
+    u8 field_0; // 0x0, flags (party_motion tests 0x1 and 0x4)
+    u8 pad[3];  // 0x1
+    f32 x;      // 0x4
+    f32 y;      // 0x8
+    f32 z;      // 0xC
+} Footmark;
+Footmark* partyGetFootmarkPtr(u32 index);
 f32 partyGetTargetDistYFrom(s32 id, f32 y);
 f32 partyGetTargetMovespd2(PartyEntry* party);
 void partyMoveBehindMario3(PartyEntry* party, s32 mode, f32 dir);

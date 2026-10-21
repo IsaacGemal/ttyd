@@ -52,15 +52,6 @@ static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot);
 static void flyMain(PartyEntry* party);
 
 
-// Layout of a footmark record (0x10 bytes) inside footmarkBuf.
-typedef struct Footmark {
-    u8 field_0;
-    u8 pad[3];
-    f32 x;
-    f32 y;
-    f32 z;
-} Footmark;
-
 Footmark* partyGetFootmarkPtr(u32 index) {
     u32 id = readId[index];
     return (Footmark*)(footmarkBuf + index * 0x500) + id;
