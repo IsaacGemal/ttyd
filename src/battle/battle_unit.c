@@ -1463,7 +1463,7 @@ BOOL BtlUnit_CheckStatus(BattleUnit* unit, s8 type) {
 }
 
 // Keep BtlUnit_CheckStatusFlag out of line: the original calls it rather than inlining.
-s32 BtlUnit_CheckStatusFlag(BattleUnit* unit, s32 flags) {
+s32 BtlUnit_CheckStatusFlag(BattleUnit* unit, u32 flags) {
     if (unit) {
         return unit->mStatusFlags & flags;
     }
@@ -1472,11 +1472,11 @@ s32 BtlUnit_CheckStatusFlag(BattleUnit* unit, s32 flags) {
 #pragma dont_inline reset
 
 
-void BtlUnit_OnStatusFlag(BattleUnit* unit, s32 flags) {
+void BtlUnit_OnStatusFlag(BattleUnit* unit, u32 flags) {
     unit->mStatusFlags |= flags;
 }
 
-void BtlUnit_OffStatusFlag(BattleUnit* unit, s32 flags) {
+void BtlUnit_OffStatusFlag(BattleUnit* unit, u32 flags) {
     unit->mStatusFlags &= ~flags;
 }
 
