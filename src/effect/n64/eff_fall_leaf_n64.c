@@ -7,50 +7,22 @@
 #include <stdlib.h>
 #include "memory.h"
 
-typedef struct effFallLeafParticle {
-	s32 type;             // 0x00 the header's type (effFallLeafData::type), read through a particle pointer in disp
-	f32 x;                // 0x04
-	f32 y;                // 0x08
-	f32 z;                // 0x0C
-	f32 velX;             // 0x10
-	f32 velY;             // 0x14
-	f32 rotZ;             // 0x18 degrees, the disp's 'z' rotation
-	f32 swayAngle;        // 0x1C degrees; drives the sway in rotZ and rotY
-	f32 rotY;             // 0x20 degrees, the disp's 'y' rotation
-	u8 field_0x24[0x0C];  // 0x24
-} effFallLeafParticle;
-
+// userdata is effect->count of these records: [0] is the header (type, position, fade and life),
+// [1..] are the leaves (position, velocity and rotation).
 typedef struct effFallLeafData {
-	s32 type;                        // 0x00
-	f32 x;                           // 0x04
-	f32 y;                           // 0x08
-	f32 z;                           // 0x0C
-	u8 field_0x10[0x14];             // 0x10
-	s32 tevReg0A;                    // 0x24 TEVREG0 alpha, fades up over the first 10 frames and down over the last 10
-	s32 life;                        // 0x28
-	s32 counter;                     // 0x2C
-	effFallLeafParticle particle[4]; // 0x30
-} effFallLeafData;
-
-#ifdef MUST_MATCH
-// Match-only: a second description of the same 0x30-byte record as effFallLeafData/effFallLeafParticle.
-// Walking the loop with `data++` over this type is what reproduces the original's allocation; the
-// natural form (under #else in effFallLeafMain) walks effFallLeafData::particle instead.
-typedef struct effFallLeafMainData {
-	s32 type;        // 0x00
+	s32 type;        // 0x00 header only
 	f32 x;           // 0x04
 	f32 y;           // 0x08
 	f32 z;           // 0x0C
-	f32 velX;        // 0x10
-	f32 velY;        // 0x14
-	f32 rotZ;        // 0x18
-	f32 swayAngle;   // 0x1C
-	f32 rotY;        // 0x20
-	s32 tevReg0A;    // 0x24 header only
-	s32 life;        // 0x28
-	s32 counter;     // 0x2C
-} effFallLeafMainData;
-#endif
+	f32 velX;        // 0x10 leaves only
+	f32 velY;        // 0x14 leaves only
+	f32 rotZ;        // 0x18 leaves only: degrees, the disp's 'z' rotation
+	f32 swayAngle;   // 0x1C leaves only: degrees; drives the sway in rotZ and rotY
+	f32 rotY;        // 0x20 leaves only: degrees, the disp's 'y' rotation
+	s32 tevReg0A;    // 0x24 header only: TEVREG0 alpha, fades up over the first 10 frames and down over the last 10
+	s32 life;        // 0x28 header only
+	s32 counter;     // 0x2C header only
+} effFallLeafData;
 
 extern const u32 dat_8041edb0;
 extern const u32 dat_8041edb4;
@@ -115,7 +87,7 @@ static u32 size12x12_tex64x64_vtx[28] = {
 EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
 	effFallLeafData* data;
-	effFallLeafParticle* particle;
+	effFallLeafData* particle;
 	s32 i;
 
 	effect = effEntry();
@@ -131,7 +103,7 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	data->life = life;
 	data->counter = 0;
 	data->tevReg0A = 0;
-	particle = data->particle;
+	particle = data + 1;
 	for (i = 1; i < 5; i++, particle++) {
 		switch (type) {
 		case 0:
@@ -165,9 +137,8 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 // The `cos` result is stored in `t` before the `+=` (rather than writing the cos directly in the
 // += statement): that makes the compiler pool the cos-argument constants after the statement's
 // 10.0, reproducing retail's FPR assignment (f24=0.5, f31=10.0) and the loop-setup load order.
-#ifdef MUST_MATCH
 void effFallLeafMain(EffectEntry* effect) {
-	effFallLeafMainData* data = effect->userdata;
+	effFallLeafData* data = effect->userdata;
 	Vec position2;
 	Vec position;
 	s32 type;
@@ -177,10 +148,6 @@ void effFallLeafMain(EffectEntry* effect) {
 	s32 i;
 	f32 s;
 	f32 t;
-#ifdef MUST_MATCH
-	// MUST_MATCH: `sn` pins the case-branch blend to the target's scratch registers.
-	f32 sn;
-#endif
 
 	position = vec3_802fa538;
 	position.x = data->x;
@@ -217,12 +184,8 @@ void effFallLeafMain(EffectEntry* effect) {
 		case 3:
 		case 4:
 			data->velX *= float_0p94_8041edf0;
-#ifdef MUST_MATCH
-			sn = (f32)sin(float_6p2832_8041eddc * data->rotZ / float_360_8041ede4);
-			data->velY *= float_0p05_8041edf8 * sn + float_0p95_8041edf4;
-#else
-			data->velY *= float_0p05_8041edf8 * (f32)sin(float_6p2832_8041eddc * data->rotZ / float_360_8041ede4) + float_0p95_8041edf4;
-#endif
+			t = (f32)sin(float_6p2832_8041eddc * data->rotZ / float_360_8041ede4);
+			data->velY *= float_0p05_8041edf8 * t + float_0p95_8041edf4;
 			break;
 		case 1:
 			data->velY += float_neg0p05_8041ede8;
@@ -238,75 +201,10 @@ void effFallLeafMain(EffectEntry* effect) {
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effFallLeafDisp, effect);
 }
-#else
-void effFallLeafMain(EffectEntry* effect) {
-	effFallLeafData* data = effect->userdata;
-	effFallLeafParticle* particle;
-	Vec position2;
-	Vec position;
-	s32 type;
-	s32 life;
-	s32 counter;
-	s32 i;
-	s32 idx;
-	f32 s;
-	f32 t;
-
-	position = vec3_802fa538;
-	position.x = data->x;
-	position.y = data->y;
-	position.z = data->z;
-	position2 = position;
-
-	data->life--;
-	data->counter++;
-	if (data->life < 0) {
-		effDelete(effect);
-		return;
-	}
-	counter = data->counter;
-	type = data->type;
-	life = data->life;
-	if (counter < 10) {
-		data->tevReg0A = (s32)(float_0p3_8041edd4 * (f32)(0xFF - data->tevReg0A) + (f32)data->tevReg0A);
-	}
-	if (life < 10) {
-		data->tevReg0A = (s32)((f32)data->tevReg0A * float_0p8_8041edd8);
-	}
-	idx = counter + 20;
-	i = 1;
-	particle = &data->particle[0];
-	for (; i < effect->count; i++, particle++, idx += 20) {
-		s = (f32)sin(float_6p2832_8041eddc * (float_2_8041ede0 * particle->rotZ) / float_360_8041ede4);
-		particle->velY += float_neg0p05_8041ede8;
-		t = float_0p2_8041edec * s;
-		particle->velX += t;
-		switch (type) {
-		case 0:
-		case 2:
-		case 3:
-		case 4:
-			particle->velX *= float_0p94_8041edf0;
-			particle->velY *= float_0p05_8041edf8 * (f32)sin(float_6p2832_8041eddc * particle->rotZ / float_360_8041ede4) + float_0p95_8041edf4;
-			break;
-		case 1:
-			particle->velY += float_neg0p05_8041ede8;
-			particle->velX *= float_0p92_8041edfc;
-			break;
-		}
-		particle->swayAngle += (f32)(s32)(effTblRandN64(50, idx) - 25);
-		particle->rotZ += float_10_8041ee00 * (f32)sin(float_6p2832_8041eddc * particle->swayAngle / float_360_8041ede4);
-		particle->rotY += float_10_8041ee00 * (f32)cos(float_6p2832_8041eddc * (particle->swayAngle * float_0p5_8041ee04) / float_360_8041ede4);
-		particle->x += particle->velX;
-		particle->y += particle->velY;
-	}
-	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effFallLeafDisp, effect);
-}
-#endif
 
 void effFallLeafDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
-	effFallLeafParticle* data;
+	effFallLeafData* data;
 	CameraEntry* cam;
 	GXTexObj texObj;
 	Mtx trans;
@@ -329,16 +227,16 @@ void effFallLeafDisp(CameraId cameraId, void* param) {
 	switch (type) {
 	case 0:
 	case 1:
-		leafSetColor0(((effFallLeafData*)data)->tevReg0A);
+		leafSetColor0(data->tevReg0A);
 		break;
 	case 2:
-		leafSetColor1(((effFallLeafData*)data)->tevReg0A);
+		leafSetColor1(data->tevReg0A);
 		break;
 	case 3:
-		leafSetColor2(((effFallLeafData*)data)->tevReg0A);
+		leafSetColor2(data->tevReg0A);
 		break;
 	case 4:
-		leafSetColor3(((effFallLeafData*)data)->tevReg0A);
+		leafSetColor3(data->tevReg0A);
 		break;
 	}
 

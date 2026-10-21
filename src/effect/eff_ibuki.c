@@ -300,12 +300,8 @@ static inline GXColor effIbukiColor1(u8 a) {
 // inside the helper and is stored in `color2` -- this is what lands the two colours' inline locals and
 // by-value argument copies in retail's 0x10/0x14 and 0x8/0xc stack slots. `opt_lifetimes off` is required
 // (without it the effect/cameraId live ranges cascade into 15 extra diffs). The GX vertex block reloads
-// float_0/float_2 per vertex (the literal 0.0f/2.0f keep MWCC from CSEing them; the extern float_8/float_0p5
-// keep the tmp*0.5 multiply inside the loop instead of hoisting it).
+// float_0/float_2 per vertex (the literal 0.0f/2.0f keep MWCC from CSEing them).
 #pragma opt_lifetimes off // required: without it the effect/cameraId live-range cascade costs 15 extra diffs
-#ifdef MUST_MATCH
-#pragma opt_loop_invariants off // keep tmp*0.5 inside the display loop as retail does
-#endif
 void effIbukiDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effIbukiData* data = effect->userdata;
@@ -322,7 +318,6 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	f32 tmp;
 	f32 sixteen;
 	f32 eight;
-	f32 half;
 	s32 alpha2;
 	Mtx out;
 	CameraEntry* camera;
@@ -442,22 +437,17 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 			color2 = effIbukiColor1(alpha2);
 			GXSetChanMatColor(GX_COLOR0A0, color2);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			// Local constants: retail keeps 8.0f in f1 across the strip and reloads 0.5f
-			// once per quad, which is what the named loads below reproduce.
-			half = 0.5f;
+			// Local constant: retail keeps 8.0f in f1 across the strip.
 			eight = 8.0f;
-			GXPosition3f32(tmp * half, eight, 0.0f);
+			GXPosition3f32(tmp / 2.0f, eight, 0.0f);
 			GXTexCoord2f32(0.0f, 0.0f);
 			GXPosition3f32(eight, eight, 0.0f);
 			GXTexCoord2f32(2.0f, 0.0f);
-			GXPosition3f32(eight, tmp * half, 0.0f);
+			GXPosition3f32(eight, tmp / 2.0f, 0.0f);
 			GXTexCoord2f32(2.0f, 2.0f);
-			GXPosition3f32(tmp * half, tmp * half, 0.0f);
+			GXPosition3f32(tmp / 2.0f, tmp / 2.0f, 0.0f);
 			GXTexCoord2f32(0.0f, 2.0f);
 		}
 	}
 }
 #pragma opt_lifetimes reset
-#ifdef MUST_MATCH
-#pragma opt_loop_invariants reset
-#endif
