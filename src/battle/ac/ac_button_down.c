@@ -303,12 +303,15 @@ void battleAcDelete_ButtonDown(BattleWork* work) {
 // `lfd f1, 0x40(r31)`; with one array it emits a fresh lis/addi and the score is 95.17%. The banner
 // string battleAcMain uses must pool after that double, so battleAcMain writes it as a literal (a
 // declared str_SFX_AC_BUTTON_PUSH1 emits first and pushes the double to +0x50, 99.99%).
-// Using bd->buttons[i] directly in the zero test and the switch (no `button` temp) is what gives the
+// Using bd->buttons[k] directly in the zero test and the switch (no `button` temp) is what gives the
 // target's r3 = button / r4 = row base split through the switch.
-#pragma opt_lifetimes off // needed: the default lifetime pass assigns limit/i/work to different callee-saved GPRs than the target
+// The icon count (`limit`) and the drawn-button count (`count`) are separate locals, as are the two loop
+// indices (`i` counts, `k` draws): one shared `limit`/`i` colours bd and the draw index differently.
 static void actionCommandDisp(s32 type, f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     ButtonDownWork* bd;
+    s32 k;
+    s32 count;
     s32 flags;
     s32 i;
     s32 j;
@@ -352,28 +355,28 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
 
     flags = work->actionCommands.acFlag;
     if (flags & 1) {
-        limit = 0;
+        count = 0;
         for (i = 0; i < work->actionCommands.acParams[2]; i++) {
             if (bd->states[i] == 0) {
                 break;
             }
-            limit++;
+            count++;
         }
-        if (limit < work->actionCommands.acParams[2]) {
-            limit++;
+        if (count < work->actionCommands.acParams[2]) {
+            count++;
         }
     } else {
-        limit = work->actionCommands.acParams[2];
+        count = work->actionCommands.acParams[2];
     }
 
-    for (i = 0; i < limit; i++) {
+    for (k = 0; k < count; k++) {
         s32 pressed;
         s32 released;
 
-        if (bd->buttons[i] == 0) {
+        if (bd->buttons[k] == 0) {
             continue;
         }
-        switch (bd->buttons[i]) {
+        switch (bd->buttons[k]) {
             case 0x100:
                 pressed = 0x65;
                 released = 0x64;
@@ -408,18 +411,17 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
                 released = 0x79;
                 break;
         }
-        if (bd->states[i] != 0) {
+        if (bd->states[k] != 0) {
             Vec v = vec3_802fd5f4;
-            v.x = baseX + (f32)(i * 0x30);
+            v.x = baseX + (f32)(k * 0x30);
             v.y = iconY;
             iconDispGx(1.0f, &v, 0x10, pressed);
         } else {
             Vec v = vec3_802fd600;
-            v.x = baseX + (f32)(i * 0x30);
+            v.x = baseX + (f32)(k * 0x30);
             v.y = iconY;
             iconDispGx(1.0f, &v, 0x10, released);
         }
     }
 }
-#pragma opt_lifetimes reset
 
