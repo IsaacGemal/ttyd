@@ -801,7 +801,7 @@ s32 winItemMain(WindowWork* work) {
             } else {
                 PartyId pid = list[work->useTargetSel - 1]->partnerId;
 
-                (*(void(*)(PartyId, s32))pouchSetPartyHP)(pid, (*(s32(*)(PartyId))pouchGetPartyHP)(pid) + itemDataTable[work->useItemId].hp_restored);
+                pouchSetPartyHP(pid, pouchGetPartyHP(pid) + itemDataTable[work->useItemId].hp_restored);
                 pouchSetFP(pouchGetFP() + itemDataTable[work->useItemId].fp_restored);
                 pouchSetAP(pouchGetAP() + itemDataTable[work->useItemId].sp_restored);
             }
