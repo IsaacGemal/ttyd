@@ -35,7 +35,7 @@ typedef struct SlotData {
 // goryuugijo_disp_slot: this unit has its own copy; a header already declares it.
 void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall);
 s32 slot_rotate_sub(void* arg0, SlotData* data, s32 index);
-void slot_neon_sub(void* arg0, u8* data);
+void slot_neon_sub(void* arg0, SlotData* data);
 void goryuugijo_init_slot(EventEntry* event, BOOL isFirstCall);
 USER_FUNC(goryuugijo_door_init_slot);
 void goryuugijo_upsidewindow_disp_sub(s32 a, s32 b);

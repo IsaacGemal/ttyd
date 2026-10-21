@@ -79,7 +79,7 @@ typedef struct PartyEntry {
     s32 timer;                   // 0x24, frame countdown: `--timer <= 0` checks, reset to 0x14/0x1E/0x3C/0x41
     s16 field_28;                // 0x28
     s16 field_2A;                // 0x2A
-    u8 field_2C;                 // 0x2C
+    s8 field_2C;                 // 0x2C
     s8 field_2D;                 // 0x2D
     u8 field_2E;                 // 0x2E
     s8 currentSlotId;            // 0x2F

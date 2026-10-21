@@ -8,6 +8,7 @@
 #include "battle/battle_database_common.h"
 #include "data/item_data.h"
 #include "driver/msgdrv.h"
+#include "manager/filemgr.h"
 #include "manager/fontmgr.h"
 #include "mario/mariost.h"
 #include "win/win_main.h"
@@ -61,11 +62,6 @@ WindowPartyDt winPartyDt[7] = {
     { 3, 0x157, "name_party2", "msg_menu_party_bom", "EFF_m_bomb", "W_1", "d_mario", "R_13", (const char*)sand_waza },
     { 7, 0x161, "name_party6", "msg_menu_party_chu", "EFF_m_chu", "W_1", "d_mario", "R_14", (const char*)chu_waza },
 };
-
-// Extended fields of WindowWork used by this unit. win/win_main.h only declares
-// the first 0x40 bytes, so the rest are reached through raw offsets below.
-#define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
-#define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
 
 void winPartyInit(WindowWork* work) {
     PouchData* pouch = pouchGetPtr();
@@ -178,14 +174,12 @@ void winPartyInit2(WindowWork* work) {
 }
 
 void winPartyExit(WindowWork* work) {
-    u8* p = (u8*)work;
     s32 i;
 
     for (i = 0; i < work->partyCount; i++) {
-        if (*(s32*)(p + 0x1A0) != -1) {
-            animPoseRelease(*(s32*)(p + 0x1A0));
+        if (work->partyPose[i] != -1) {
+            animPoseRelease(work->partyPose[i]);
         }
-        p += 4;
     }
 }
 
@@ -202,7 +196,7 @@ s32 winPartyMain(WindowWork* work) {
         u32 dir;
 
         if (button & 0x100) {
-            WW_S32(work, 0x19C) = 1;
+            work->field_0x19C = 1;
             return -2;
         }
         if (button & 0x400) {
@@ -213,11 +207,11 @@ s32 winPartyMain(WindowWork* work) {
         }
         if (button & 0x200) {
             psndSFXOn((const char*)0x20013);
-            WW_S32(work, 0x19C) = 0;
+            work->field_0x19C = 0;
             return -1;
         }
         if (button & 0x1000) {
-            WW_S32(work, 0x19C) = 0;
+            work->field_0x19C = 0;
             return -2;
         }
 
@@ -295,14 +289,14 @@ s32 winPartyMain(WindowWork* work) {
                 work->partyState = 0;
                 psndSFXOn((const char*)0x20013);
             } else if (button & 0x1000) {
-                WW_S32(work, 0x19C) = 0;
+                work->field_0x19C = 0;
                 return -2;
             }
         }
 
         work->targetX = -10.0f;
         work->targetY = -26.0f * (f32)work->wazaSel + 5.0f;
-        winMsgEntry(work, 0, *(const char**)((u8*)((void**)winPartyDt[work->selPartyDt].waza)[work->wazaSel] + 0xC), 0);
+        winMsgEntry(work, 0, ((BattleWeapon**)winPartyDt[work->selPartyDt].waza)[work->wazaSel]->description, 0);
         break;
     }
     default:
@@ -366,10 +360,10 @@ static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
 }
 #endif
 
-#define WIN_PARTY_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
+#define WIN_PARTY_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
 // the party member shown in pose slot n, and its animation pose
 #define WIN_PARTY_ID(w, n) (((WindowWork*)(w))->partyId[(n)])
-#define WIN_PARTY_POSE(w, n) (((s32*)(w))[0x68 + (n)])
+#define WIN_PARTY_POSE(w, n) (((WindowWork*)(w))->partyPose[(n)])
 
 void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     WindowWork* work = param;
@@ -522,7 +516,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
             }
             animPoseSetAnim(pose, animName, 0);
             animPoseSetLocalTime(pose,
-                                 gp->retraceCount % (s32)*(f32*)((u8*)anim->clip + 0x8));
+                                 gp->retraceCount % (s32)((f32*)anim->clip)[2]);
         } else {
             // the others: smaller, greyed out, still
             PSMTXTrans(mtx, (x - 140.0f) + pos.x, 20.0f + (y + pos.y), pos.z);
