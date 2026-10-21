@@ -1056,10 +1056,10 @@ BOOL BattleAudience_CheckReactionPerPhase(void) {
 		for (i = 0; i < 200; i++) {
 			member = BattleAudienceGetPtr(i);
 			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->status == 0xD) {
-				*(s32*)(member->field_0xEC + 8) -= 1;
-				if (*(s32*)(member->field_0xEC + 8) <= 0) {
+				member->field_0xF4 -= 1;
+				if (member->field_0xF4 <= 0) {
 					BattleAudience_ChangeStatus(i, 3);
-					*(s32*)(member->field_0xEC + 8) = 0;
+					member->field_0xF4 = 0;
 				}
 			}
 		}

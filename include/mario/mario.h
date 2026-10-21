@@ -131,7 +131,7 @@ typedef struct MarioWork {
     u32 field_0x8;                 // 0x8
     u32 trigFlags;                 // 0xC
     s32 peachFlags;                // 0x10, PeachFlags (peach.c, mario.c)
-    u8 field_0x14[0x18 - 0x14];    // 0x14
+    u32 field_0x14;                // 0x14
     const char* animName;          // 0x18
     const char* paperAnimName;     // 0x1C
     u8 field_0x20[4];              // 0x20

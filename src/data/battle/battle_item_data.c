@@ -6149,11 +6149,11 @@ void _disp_item_icon(CameraId camera, void* param) {
 
 #ifdef MUST_MATCH
     // Match-only: the original passes a u16 icon id (no extsh); the header's s16 iconDispGx would extsh.
-    ((void (*)(Vec*, s16, u16, f32))iconDispGx)((Vec*)((u8*)event->userdata[0] + 0xc), 0,
+    ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&((ThrowItemWork*)event->userdata[0])->pos, 0,
                                                 itemDataTable[event->userdata[1]].icon_id,
                                                 1.0f);
 #else
-    iconDispGx(1.0f, (Vec*)((u8*)event->userdata[0] + 0xc), 0,
+    iconDispGx(1.0f, &((ThrowItemWork*)event->userdata[0])->pos, 0,
                itemDataTable[event->userdata[1]].icon_id);
 #endif
 }

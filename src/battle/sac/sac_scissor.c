@@ -125,7 +125,7 @@ typedef struct StarTrail {
 // Keep GetScissorPtr out of line: the original issues a call (bl) to it.
 #pragma dont_inline on
 ScissorWork* GetScissorPtr(void) {
-    return (ScissorWork*)((u8*)_battleWorkPointer + 0x1F4C);
+    return (ScissorWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
 #pragma dont_inline reset
 

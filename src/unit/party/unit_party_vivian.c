@@ -1233,7 +1233,7 @@ USER_FUNC(_vivian_make_extra_work_area) {
     cmd->mWeaponTable[*count].mIcon =                                                      \
         *(u16*)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 4);                         \
     cmd->mWeaponTable[*count].mName =                                                      \
-        (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0));     \
+        (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                   \
     (*count)++;
 
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
@@ -1386,11 +1386,11 @@ USER_FUNC(_disp_heart_entry) {
         event->userdata[2] = evtGetValue(event, args[0]);
         event->field_84 = evtGetValue(event, args[1]);
         *(s32*)&event->wInterpRelatedTime = evtGetValue(event, args[2]);
-        *(s32*)((u8*)event + 0x8C) = 0;
+        event->userdataEx[1] = 0;
         event->field_0x90[0] = evtGetValue(event, args[3]);
         event->field_0x90[1] = evtGetValue(event, args[4]);
     }
-    if (*(s32*)((u8*)event + 0x8C) != 0) {
+    if (event->userdataEx[1] != 0) {
         return EVT_RETURN_DONE;
     }
     event->userdata[1]++;
@@ -1449,12 +1449,12 @@ void _disp_heart(CameraId cameraId, void* param) {
 
 USER_FUNC(_disp_heart_entry_stop) {
     EventEntry* entry = evtGetPtrID(evtGetValue(event, event->args[0]));
-    *(s32*)((u8*)entry + 0x8C) = 1;
+    entry->userdataEx[1] = 1;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(_disp_heart_entry_stop_check) {
-    evtSetValue(event, event->args[0], *(s32*)((u8*)event + 0x8C));
+    evtSetValue(event, event->args[0], event->userdataEx[1]);
     return EVT_RETURN_DONE;
 }
 

@@ -1090,13 +1090,13 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 	switch (member->step) {
 	case 0:
 		BattleAudience_SetAnim(index, 1, 0);
-		*(BattleUnit**)((u8*)member + 0xec) = BattleAudienceDetectTargetAll();
+		member->field_0xEC = BattleAudienceDetectTargetAll();
 		member->counter = 0;
 		psndSFXOn_3D(str_SFX_AUDIENCE_TELESA_MOVE1, &member->position);
 		member->step = 5;
 		// fallthrough
 	case 5:
-		unit = *(BattleUnit**)((u8*)member + 0xec);
+		unit = member->field_0xEC;
 		part = BattleGetUnitPartsPtr(BtlUnit_GetUnitId(unit), BtlUnit_GetBodyPartsId(unit));
 		member->counter++;
 		member->position.x = intplGetValue(5, member->counter, 0x3c,
@@ -1116,7 +1116,7 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 			}
 			member->step = 0xa;
 			member->counter = 0;
-			unit = *(BattleUnit**)((u8*)member + 0xec);
+			unit = member->field_0xEC;
 			part = BattleGetUnitPartsPtr(BtlUnit_GetUnitId(unit), BtlUnit_GetBodyPartsId(unit));
 			BtlUnit_GetHitPos(unit, part, &x_873, &y_874, &z_875);
 			psndSFXOn_3D(str_SFX_AUDIENCE_TELESA_MOVE1, &member->position);
@@ -1131,7 +1131,7 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 		member->position.z =
 		    intplGetValue(0, member->counter, 0x1e, 100.0f, z_875);
 		if (member->counter == 0x1e) {
-			unit = *(BattleUnit**)((u8*)member + 0xec);
+			unit = member->field_0xEC;
 			part = BattleGetUnitPartsPtr(BtlUnit_GetUnitId(unit), BtlUnit_GetBodyPartsId(unit));
 			BtlUnit_GetStatus(unit, 0x12, &turns, &strength);
 			if (turns < 1 && !BtlUnit_CheckShadowGuard(unit)) {
@@ -1474,7 +1474,7 @@ void BattleAudienceCtrlProcessKinopioSingSub(s32 index) {
 	}
 	else if (member->status != 0x11) {
 		BattleAudience_ChangeStatus(index, 0xd);
-		*(s32*)((u8*)member + 0xf4) = 3;
+		member->field_0xF4 = 3;
 	}
 }
 
@@ -1690,8 +1690,8 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	case 0:
 		found = BattleAudienceDetectPakkunEatTarget(index);
 		if (found != -1) {
-			*(s16*)(member->field_0xEC + 4) = found;
-			target = BattleAudienceGetPtr(*(s16*)(member->field_0xEC + 4));
+			member->field_0xF0 = found;
+			target = BattleAudienceGetPtr(member->field_0xF0);
 			if (member->position.x >= target->position.x) {
 				member->yaw = 270.0f;
 			}
@@ -1708,7 +1708,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 		member->step++;
 		// fallthrough
 	case 1:
-		target = BattleAudienceGetPtr(*(s16*)(member->field_0xEC + 4));
+		target = BattleAudienceGetPtr(member->field_0xF0);
 		if (member->counter > 0) {
 			member->counter--;
 		}
@@ -1719,7 +1719,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 		}
 		break;
 	case 3:
-		target = BattleAudienceGetPtr(*(s16*)(member->field_0xEC + 4));
+		target = BattleAudienceGetPtr(member->field_0xF0);
 		if (member->position.x >= target->position.x) {
 			member->drawOffset.x -= 6.0f;
 		}
@@ -1732,7 +1732,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 		}
 		break;
 	case 4:
-		target = BattleAudienceGetPtr(*(s16*)(member->field_0xEC + 4));
+		target = BattleAudienceGetPtr(member->field_0xF0);
 		target->flags = 0;
 		audience->mTargetAudienceCount -= 1.0f;
 		BattleAudienceSoundPakkunEat(index);
