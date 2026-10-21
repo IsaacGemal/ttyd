@@ -72,7 +72,7 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
         damage = -99;
     }
     if (attacker != NULL) {
-        *(s32*)(attacker->field_0x27C + 4) += damage;
+        attacker->field_0x280 += damage;
     }
     if (PART != NULL) {
         unit->currentTarget = PART;
@@ -592,7 +592,7 @@ calculate_defense:
             }
         }
         if (weapon->special & 0x20) {
-            result -= *(s32*)unit1->field_0x27C;
+            result -= unit1->field_0x27C;
             if (result <= 0) {
                 result = 1;
             }
@@ -1726,8 +1726,8 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         flags |= 0x80000;
         psndSFXOn(SFX_STR_GREAT1);
         BattleAudience_Case_GuardGood();
-        *(s32*)unit1->field_0x27C += 1;
-        unit2->field_0x26E[1] = *(s32*)unit1->field_0x27C;
+        unit1->field_0x27C += 1;
+        unit2->field_0x26E[1] = unit1->field_0x27C;
         switch (weapon->superguardType) {
         case 2:
             damageCode = flags | 0x2A;
@@ -1892,8 +1892,8 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         break;
     }
 counter_done:
-    *(s32*)unit1->field_0x27C += 1;
-    unit2->field_0x26E[1] = *(s32*)unit1->field_0x27C;
+    unit1->field_0x27C += 1;
+    unit2->field_0x26E[1] = unit1->field_0x27C;
     if ((u32)work.damageCode != 0) {
     if (work.halfDamage) {
         work.counterDamage += damage * 50 / 100;

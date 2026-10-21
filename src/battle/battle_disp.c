@@ -325,7 +325,7 @@ void btlDispMain(void) {
 			other = BattleGetUnitPtr(wp, unit->work[0]);
 			if (other != NULL) {
 				if (!((other->attackEventId != 0 && evtCheckID(other->attackEventId) != 0 &&
-				       !(*(s32*)other->field_0x2A8 & 4)) ||
+				       !(other->field_0x2A8 & 4)) ||
 				      (other->damageEventId != 0 && evtCheckID(other->damageEventId) != 0))) {
 					BtlUnit_GetPos(unit, &pos1.x, &pos1.y, &pos1.z);
 					BtlUnit_GetPos(other, &pos2.x, &pos2.y, &pos2.z);
@@ -562,7 +562,7 @@ void btlDispMain(void) {
 					if (f < 0.1f) {
 						f = 0.1f;
 					}
-					f *= (f32)*(s16*)part->field_0x1A2 * unit->mScale.x *
+					f *= (f32)part->field_0x1A2 * unit->mScale.x *
 					     part->mScale.x * unit->mSizeMultiplier;
 					f *= part->field_0x78;
 					if (unit->flags & 0x10000) {

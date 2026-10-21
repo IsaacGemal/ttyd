@@ -450,7 +450,9 @@ typedef struct BattleWorkUnitPart {
     Vec mHitCursorBaseOffset;                      // 0x188, guess
     Vec mHitCursorOffset;                          // 0x194
     s16 detectOffsetX;                             // 0x1A0, x offset added to the part's sampling position, times facing (battle_detect)
-    u8 field_0x1A2[0x1AC - 0x1A2];                 // 0x1A2
+    s16 field_0x1A2;                               // 0x1A2
+    s16 field_0x1A4;                               // 0x1A4
+    u8 field_0x1A6[0x1AC - 0x1A6];                 // 0x1A6
     PartsAttribute_Flags attributes;               // 0x1AC
     PartsCounterAttribute_Flags counterAttributes; // 0x1B0
     BattleUnitDefense* defense;                    // 0x1B4
@@ -558,7 +560,8 @@ typedef struct BattleUnit {
     s8 activeTurns;                              // 0x24
     s8 swallowRate;                              // 0x25
     s8 swallowAttribute;                         // 0x26
-    u8 field_0x27[0x2C - 0x27];                  // 0x27, battle_seq sorts units by the s32 at 0x28
+    u8 field_0x27;                               // 0x27
+    s32 field_0x28;                              // 0x28, battle_seq sorts units by it
     s32 seqPhase;                                // 0x2C, SEQ_PHASE value the unit acts in (battle_seq)
     Vec mHomePosition;                           // 0x30
     Vec mPosition;                               // 0x3C
@@ -571,7 +574,7 @@ typedef struct BattleUnit {
     Vec mScale;                                  // 0x90
     Vec mBaseScale;                              // 0x9C
     Vec togeOffset;                              // 0xA8
-    u8 field_0xB4[0xC0 - 0xB4];                  // 0xB4
+    Vec field_0xB4;                              // 0xB4
     Vec heldItemOffset;                          // 0xC0
     s16 mWidth;                                  // 0xCC
     s16 mHeight;                                 // 0xCE
@@ -647,7 +650,7 @@ typedef struct BattleUnit {
     BattleWorkHpGauge hpGauge;                   // 0x1F8
     s32 work[16];                                // 0x214
     BattleUnitPart* currentTarget;           // 0x254
-    u8 field_0x258[0x25C - 0x258];               // 0x258
+    s32 field_0x258;                             // 0x258
     s16 hpDamageCount;                           // 0x25C, number of damaging moves
     u8 field_0x25E[0x260 - 0x25E];               // 0x25E
     s32 totalHpDamageTaken;                      // 0x260
@@ -658,7 +661,8 @@ typedef struct BattleUnit {
     s32 damagePattern;                           // 0x270, TODO: rename?
     s32 damageCode;                              // 0x274
     BattleUnitToken_Flags mTokenFlags;           // 0x278
-    u8 field_0x27C[0x284 - 0x27C];               // 0x27C
+    s32 field_0x27C;                             // 0x27C
+    s32 field_0x280;                             // 0x280
     s32 initEventId;                             // 0x284
     void* waitEventCode;                         // 0x288
     s32 waitEventId;                             // 0x28C
@@ -668,14 +672,16 @@ typedef struct BattleUnit {
     void* attackEventCode;                       // 0x29C, script battle_seq starts as the unit's action (attackEventId)
     u8 field_0x2A0[0x2A4 - 0x2A0];               // 0x2A0
     s32 attackEventId;                           // 0x2A4
-    u8 field_0x2A8[0x2AC - 0x2A8];               // 0x2A8
+    s32 field_0x2A8;                             // 0x2A8
     void* damageEventCode;                       // 0x2AC
     s32 damageEventId;                           // 0x2B0
     void* entryEventCode;                        // 0x2B4, btlevtcmd_SetEventEntry; battle_seq runs it at battle start
     s32 entryEventId;                            // 0x2B8, its event id, 0 once it has finished
     void* ceilFallEventCode;                     // 0x2BC, btlevtcmd_SetEventCeilFall; _fall_frame_wait_unit_ready starts it
     s32 ceilFallEventId;                         // 0x2C0, its event id; _fall_frame_wait_unit_ready blocks while it runs
-    u8 field_0x2C4[0x2D0 - 0x2C4];               // 0x2C4
+    u8 field_0x2C4[0x2C8 - 0x2C4];               // 0x2C4
+    s32 field_0x2C8;                             // 0x2C8
+    u8 field_0x2CC[0x2D0 - 0x2CC];               // 0x2CC
     s32 mBodyPartsId;                            // 0x2D0
     char* mTalkPoseName;                         // 0x2D4, BtlUnit_GetPoseNameFromType of the talk pose
     char* mStayPoseName;                         // 0x2D8, BtlUnit_GetPoseNameFromType of the stay pose

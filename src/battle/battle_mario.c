@@ -209,14 +209,14 @@ USER_FUNC(_tatsumaki_effect) {
         event->userdataEx[1] = (s32)effKamekiTornadeN64Entry(0, 0x5A,
             (f32)event->userdata[2], (f32)(s32)event->field_84, (f32)event->userdataEx[0],
             3.0f);
-        *(s32*)((u8*)event + 0x90) = (s32)effKamekiTornadeN64Entry(0, 0x5A,
+        event->field_0x90[0] = (s32)effKamekiTornadeN64Entry(0, 0x5A,
             (f32)event->userdata[2], (f32)(s32)event->field_84, (f32)event->userdataEx[0],
             3.0f);
-        *(s32*)((u8*)event + 0x94) = psndSFXOn("SFX_BTL_JUMP_TATUMAKI2");
+        event->field_0x90[1] = psndSFXOn("SFX_BTL_JUMP_TATUMAKI2");
         pos.x = (f32)event->userdata[2];
         pos.y = (f32)(s32)event->field_84;
         pos.z = (f32)event->userdataEx[0];
-        psndSFX_pos(*(s32*)((u8*)event + 0x94), &pos);
+        psndSFX_pos(event->field_0x90[1], &pos);
     }
     case 1: {
         f32 amp;
@@ -235,14 +235,14 @@ USER_FUNC(_tatsumaki_effect) {
             (f32)(s32)event->field_84;
         *(f32*)((u8*)((EffectEntry*)event->userdataEx[1])->userdata + 0xC) =
             (f32)event->userdataEx[0] + s;
-        *(f32*)((u8*)((EffectEntry*)*(s32*)((u8*)event + 0x90))->userdata + 4) =
+        *(f32*)((u8*)((EffectEntry*)event->field_0x90[0])->userdata + 4) =
             (f32)event->userdata[2] - c;
-        *(f32*)((u8*)((EffectEntry*)*(s32*)((u8*)event + 0x90))->userdata + 8) =
+        *(f32*)((u8*)((EffectEntry*)event->field_0x90[0])->userdata + 8) =
             (f32)(s32)event->field_84;
-        *(f32*)((u8*)((EffectEntry*)*(s32*)((u8*)event + 0x90))->userdata + 0xC) =
+        *(f32*)((u8*)((EffectEntry*)event->field_0x90[0])->userdata + 0xC) =
             (f32)event->userdataEx[0] - s;
         if (event->userdata[1] >= 90) {
-            psndSFXOff(*(s32*)((u8*)event + 0x94));
+            psndSFXOff(event->field_0x90[1]);
             return EVT_RETURN_DONE;
         }
         break;

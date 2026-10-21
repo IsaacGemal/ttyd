@@ -2319,7 +2319,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 	if (cmd->cancelled) {
 		unit->moveState = 0;
 		unit->attackEventCode = btldefaultevt_Wait;
-		*(s32*)unit->field_0x2A8 = 1;
+		unit->field_0x2A8 = 1;
 		return;
 	}
 
@@ -2327,7 +2327,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 	case 5:
 		switch (cmd->operationKind) {
 		case 6:
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = btldefaultevt_Defend;
 			} else {
@@ -2336,7 +2336,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		case 5:
 			unit->attackEventCode = btldefaultevt_Appeal;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
 				BtlActRec_AddCount((u8*)wp + 0x16F2D);
 			} else {
@@ -2345,7 +2345,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		case 7:
 			unit->attackEventCode = btldefaultevt_Wait;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
 				BtlActRec_AddCount((u8*)wp + 0x16F2D);
 			} else {
@@ -2354,7 +2354,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		case 3:
 			unit->attackEventCode = btldefaultevt_Escape;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			if (unit->currentKind == 0xDE) {
 				BtlActRec_AddCount((u8*)wp + 0x16F37);
 			} else {
@@ -2362,7 +2362,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			}
 			break;
 		case 1:
-			*(s32*)unit->field_0x2A8 = 0;
+			unit->field_0x2A8 = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_Charge.mAttackEvtScript;
 				BtlActRec_AddCount((u8*)wp + 0x16F33);
@@ -2372,7 +2372,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			}
 			break;
 		case 2:
-			*(s32*)unit->field_0x2A8 = 0;
+			unit->field_0x2A8 = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_SuperCharge.mAttackEvtScript;
 				BtlActRec_AddCount((u8*)wp + 0x16F35);
@@ -2383,7 +2383,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		case 0:
 			unit->attackEventCode = btldefaultevt_ChangeParty;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			cmd->cursor[1].field_0 = 0;
 			if (wp->badgeEquippedFlags & 1) {
 				unit->moveState = 3;
@@ -2396,15 +2396,15 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		case 4:
 			unit->attackEventCode = btldefaultevt_ProtectPartner;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			break;
 		case 8:
 			unit->attackEventCode = BtlUnit_GetData(unit, 2);
-			*(s32*)unit->field_0x2A8 = 3;
+			unit->field_0x2A8 = 3;
 			break;
 		default:
 			unit->attackEventCode = btldefaultevt_Wait;
-			*(s32*)unit->field_0x2A8 = 1;
+			unit->field_0x2A8 = 1;
 			break;
 		}
 		break;
@@ -2419,7 +2419,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		_btlcmd_GetCursorPtr(cmd, command, &cursor);
 		weapon = cmd->weaponTable[cursor->field_0].mWeaponParams;
 		unit->attackEventCode = weapon->mAttackEvtScript;
-		*(s32*)unit->field_0x2A8 = 0;
+		unit->field_0x2A8 = 0;
 		if (unit->attackEventCode == NULL) {
 			unit->attackEventCode = btldefaultevt_Wait;
 		}
@@ -2468,7 +2468,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 	case 9:
 		unit->moveState = 1;
 		unit->attackEventCode = btldefaultevt_ChangePosition;
-		*(s32*)unit->field_0x2A8 = 7;
+		unit->field_0x2A8 = 7;
 		break;
 	case 11:
 		switch ((s8)unit->moveState) {
@@ -2486,7 +2486,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		}
 		unit->attackEventCode = btlataudGetAttackEventPtr(unit->unitId);
-		*(s32*)unit->field_0x2A8 = 3;
+		unit->field_0x2A8 = 3;
 		if (unit->currentKind == 0xDE) {
 			BtlActRec_AddCount((u8*)wp + 0x16F2B);
 		} else {
@@ -2512,15 +2512,15 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		}
 		unit->attackEventCode = btlataudGetMoveEventPtr(unit->unitId);
-		*(s32*)unit->field_0x2A8 = 3;
+		unit->field_0x2A8 = 3;
 		break;
 	case 13:
 		unit->attackEventCode = btldefaultevt_LectureEnd;
-		*(s32*)unit->field_0x2A8 = 3;
+		unit->field_0x2A8 = 3;
 		break;
 	default:
 		unit->attackEventCode = btldefaultevt_Wait;
-		*(s32*)unit->field_0x2A8 = 0;
+		unit->field_0x2A8 = 0;
 		break;
 	}
 }

@@ -415,7 +415,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		if (party < 9) {
 			weapon = _GetFirstAttackWeapon(party);
 			unit1->attackEventCode = weapon->mAttackEvtScript;
-			*(s32*)unit1->field_0x2A8 = 0;
+			unit1->field_0x2A8 = 0;
 			BattleStatusWindowEventOff();
 		}
 		if (BtlUnit_GetBelong(unit1) == 0) {
@@ -2030,7 +2030,7 @@ void btlseqMove(BattleWork* wp) {
 					unit->fpDamageTaken = 0;
 					*(s32*)(unit->field_0x264 + 4) = 0;
 					((s8*)unit->field_0x26E)[0] = 0;
-					*(s32*)unit->field_0x27C = 0;
+					unit->field_0x27C = 0;
 				}
 			}
 			for (i = 0; i < 64; i++) {
@@ -2198,7 +2198,7 @@ void btlseqAct(BattleWork* wp) {
 	case 0x6000000: {
 		BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		effNiceAsync(1);
-		*(s32*)((u8*)unit + 0x280) = 0;
+		unit->field_0x280 = 0;
 		*(s32*)((u8*)unit + 0x2CC) = 0;
 		BattleAudience_ActInit();
 		v = TRUE;
@@ -2258,13 +2258,13 @@ void btlseqAct(BattleWork* wp) {
 	case 0x6000005:
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		unit->attackEventCode = BtlUnit_GetData(unit, 2);
-		*(s32*)((u8*)unit + 0x2A8) = 1;
+		unit->field_0x2A8 = 1;
 		BattleSetSeq(wp, SEQ_ACT, 0x6000006);
 		break;
 
 	case 0x6000003:
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-		*(s32*)((u8*)unit + 0x2A8) = 1;
+		unit->field_0x2A8 = 1;
 		unit->flags |= 0x04000000;
 		BattleSetSeq(wp, SEQ_ACT, 0x6000006);
 		break;
@@ -2272,24 +2272,24 @@ void btlseqAct(BattleWork* wp) {
 	case 0x6000004:
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		unit->attackEventCode = BtlUnit_GetData(unit, 3);
-		*(s32*)((u8*)unit + 0x2A8) = 0x1B;
+		unit->field_0x2A8 = 0x1B;
 		BattleSetSeq(wp, SEQ_ACT, 0x6000006);
 		break;
 
 	case 0x6000006: {
-		if ((*(s32*)((u8*)BattleGetUnitPtr(wp, wp->activeUnitId) + 0x2A8) & 1) == 0) {
+		if ((BattleGetUnitPtr(wp, wp->activeUnitId)->field_0x2A8 & 1) == 0) {
 			BattleStatusWindowSystemOff();
 		}
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		event = NULL;
 		if ((wp->flags & 0x40000000) && !(unit->mAttributeFlags & 0x2000) &&
-			!(*(s32*)((u8*)unit + 0x2A8) & 8) && !(*(s32*)((u8*)unit + 0x2A8) & 0x10)) {
+			!(unit->field_0x2A8 & 8) && !(unit->field_0x2A8 & 0x10)) {
 			event = evtEntry(btldefaultevt_CantMoveZeroGravity, 0xA, 0);
-		} else if (*(s32*)((u8*)unit + 0x2A8) & 0x10) {
+		} else if (unit->field_0x2A8 & 0x10) {
 			if (unit->attackEventCode != NULL) {
 				event = evtEntry(unit->attackEventCode, 0xA, 0);
 			}
-		} else if (*(s32*)((u8*)unit + 0x2A8) & 2) {
+		} else if (unit->field_0x2A8 & 2) {
 			event = evtEntry(unit->attackEventCode, 0xA, 0);
 		} else if (!(BtlUnit_CheckStatus(unit, 1) || BtlUnit_CheckStatus(unit, 2) ||
 			BtlUnit_CheckStatus(unit, 9)) &&
@@ -2345,7 +2345,7 @@ void btlseqAct(BattleWork* wp) {
 			if (wp->field_18FE1[0] == 1) {
 				wp->field_18FE1[0] = 0;
 			}
-			*(s32*)((u8*)unit + 0x258) = 0;
+			unit->field_0x258 = 0;
 			switch (unit->moveState) {
 			case 5:
 				unit->moveState = 6;
@@ -2424,11 +2424,11 @@ void btlseqAct(BattleWork* wp) {
 		}
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		if (unit != NULL) {
-			*(s32*)((u8*)unit + 0x2C8) = 0;
+			unit->field_0x2C8 = 0;
 			if (*(void**)((u8*)unit + 0x2C4) != NULL) {
 				event = evtEntry(*(void**)((u8*)unit + 0x2C4), 0xA, 0);
 				if (event != NULL) {
-					*(s32*)((u8*)unit + 0x2C8) = event->eventId;
+					unit->field_0x2C8 = event->eventId;
 					event->unitId = unit->unitId;
 					if (unit->waitEventId != 0) {
 						evtDeleteID(unit->waitEventId);
@@ -2442,11 +2442,11 @@ void btlseqAct(BattleWork* wp) {
 	}
 	case 0x600000D:
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-		if (unit != NULL && *(s32*)((u8*)unit + 0x2C8) != 0) {
-			if (evtCheckID(*(s32*)((u8*)unit + 0x2C8))) {
+		if (unit != NULL && unit->field_0x2C8 != 0) {
+			if (evtCheckID(unit->field_0x2C8)) {
 				break;
 			}
-			*(s32*)((u8*)unit + 0x2C8) = 0;
+			unit->field_0x2C8 = 0;
 		}
 		BattleIncSeq(wp, SEQ_ACT);
 		// fallthrough
@@ -2478,7 +2478,7 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 			unit->activeTurns++;
 			BtlUnit_ResetMoveStatus(unit);
 			kind = unit->mKindParams;
-			*(s32*)((u8*)unit + 0x28) = kind->turnOrder
+			unit->field_0x28 = kind->turnOrder
 				+ irand(kind->turnOrderVariance)
 				- kind->turnOrderVariance / 2;
 			if (BtlUnit_CheckStatusFlag(unit, 0x01000000)) {
@@ -2571,7 +2571,7 @@ void battleSortPhaseMoveTable(BattleWork* wp, s32 count) { //1:1
 		for (j = 0; j < count - i - 1; j++) {
 			a = BattleGetUnitPtr(work, work->unitIdTable[j]);
 			b = BattleGetUnitPtr(work, work->unitIdTable[j + 1]);
-			if (*(s32*)(a->field_0x27 + 1) < *(s32*)(b->field_0x27 + 1)) {
+			if (a->field_0x28 < b->field_0x28) {
 				s32 tmp = work->unitIdTable[j];
 				work->unitIdTable[j] = work->unitIdTable[j + 1];
 				work->unitIdTable[j + 1] = tmp;
