@@ -70,19 +70,7 @@ USER_FUNC(evt_lottery) {
 			info->mFlags |= 4;
 		}
 	} else {
-#ifdef MUST_MATCH
-		// Match only: declaring the pointer and the zero separately lets the allocator
-		// keep the pointer in r3 and the constant in r4, as the original does.
-		s32* q;
-		s32 z;
-
-		q = (s32*)((u8*)info + arg1 * 8);
-		z = 0;
-		q[13] = z;
-		q[12] = z;
-#else
 		info->mSlotTime[arg1] = 0;
-#endif
 	}
 
 	if (!(info->mFlags & 1)) {
@@ -160,18 +148,10 @@ USER_FUNC(evt_lottery) {
 				} else {
 					do {
 						info->mTodayNum = rand() % 10000;
-#ifdef MUST_MATCH
-					// Match only: the original evaluates the mod clauses right-to-left.
 					} while (info->mTodayNum == info->mTicketNum
 						|| info->mTicketNum % 1000 == info->mTodayNum % 1000
 						|| info->mTicketNum % 100 == info->mTodayNum % 100
 						|| info->mTicketNum % 10 == info->mTodayNum % 10);
-#else
-					} while (info->mTodayNum == info->mTicketNum
-						|| info->mTodayNum % 1000 == info->mTicketNum % 1000
-						|| info->mTodayNum % 100 == info->mTicketNum % 100
-						|| info->mTodayNum % 10 == info->mTicketNum % 10);
-#endif
 				}
 			} else {
 				info->mFlags |= 4;
@@ -188,9 +168,6 @@ USER_FUNC(evt_lottery) {
 	evtSetValue(event, args[2], info->mTodayNum);
 	OSTicksToCalendarTime(start, &ct[0]);
 	if (info->mFlags & 2) {
-#ifdef MUST_MATCH
-		// Match only: re-reading mBuyTime through a local variable makes the allocator
-		// keep its low word in r24, as the original does.
 		OSTime t;
 
 		OSTicksToCalendarTime(info->mBuyTime, &ct[0]);
@@ -202,13 +179,6 @@ USER_FUNC(evt_lottery) {
 		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * info->mTierDays[2], &ct[0]);
 		t = info->mBuyTime;
 		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * info->mTierDays[3], &ct[0]);
-#else
-		OSTicksToCalendarTime(info->mBuyTime, &ct[0]);
-		OSTicksToCalendarTime(info->mBuyTime + OSSecondsToTicks((OSTime)86400) * info->mTierDays[0], &ct[0]);
-		OSTicksToCalendarTime(info->mBuyTime + OSSecondsToTicks((OSTime)86400) * info->mTierDays[1], &ct[0]);
-		OSTicksToCalendarTime(info->mBuyTime + OSSecondsToTicks((OSTime)86400) * info->mTierDays[2], &ct[0]);
-		OSTicksToCalendarTime(info->mBuyTime + OSSecondsToTicks((OSTime)86400) * info->mTierDays[3], &ct[0]);
-#endif
 	}
 	return EVT_RETURN_DONE;
 }

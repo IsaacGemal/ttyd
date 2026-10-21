@@ -238,10 +238,11 @@ USER_FUNC(evt_moving_floor_free) {
     return EVT_RETURN_DONE;
 }
 
+static inline f32 movefloorLerp(f32 a, f32 b, f32 ratio) {
+    f32 t = 1.0f - ratio;
+    return b * t + a * ratio;
+}
 
-// The three explicit temporaries in the axisPos blend are what make MWCC put
-// `t = 1.0f - ratio` in f1 and the second value in f2, matching the original's
-// register allocation; the plain expression compiles to the opposite order.
 USER_FUNC(evt_moving_floor_init) {
     s32* args = event->args;
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
@@ -384,27 +385,11 @@ USER_FUNC(evt_moving_floor_init) {
         delta = ((f32*)&work->end)[work->index] - ((f32*)&work->start)[work->index];
     }
     work->speed = delta / (f32)work->duration[work->index];
-#ifdef MUST_MATCH
     if (reverse != 0) {
-        f32 a = ((f32*)&work->start)[work->index];
-        f32 b = ((f32*)&work->end)[work->index];
-        f32 t = 1.0f - ratio;
-        work->axisPos = b * t + a * ratio;
+        work->axisPos = movefloorLerp(((f32*)&work->start)[work->index], ((f32*)&work->end)[work->index], ratio);
     } else {
-        f32 a = ((f32*)&work->end)[work->index];
-        f32 b = ((f32*)&work->start)[work->index];
-        f32 t = 1.0f - ratio;
-        work->axisPos = b * t + a * ratio;
+        work->axisPos = movefloorLerp(((f32*)&work->end)[work->index], ((f32*)&work->start)[work->index], ratio);
     }
-#else
-    if (reverse != 0) {
-        f32 t = 1.0f - ratio;
-        work->axisPos = ((f32*)&work->end)[work->index] * t + ((f32*)&work->start)[work->index] * ratio;
-    } else {
-        f32 t = 1.0f - ratio;
-        work->axisPos = ((f32*)&work->start)[work->index] * t + ((f32*)&work->end)[work->index] * ratio;
-    }
-#endif
     work->progress = (f32)work->duration[work->index] * ratio;
     return EVT_RETURN_DONE;
 }

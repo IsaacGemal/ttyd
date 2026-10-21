@@ -1,7 +1,3 @@
-#ifdef MUST_MATCH
-// Retail pools function literals relative to the unit read-only data base.
-#pragma pool_data on
-#endif
 
 #include "mario/mario_motion.h"
 #include "math_ext.h"

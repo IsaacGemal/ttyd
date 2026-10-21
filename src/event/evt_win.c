@@ -1,5 +1,4 @@
 #include "driver/icondrv.h"
-#include "driver/icondrv_gx.h"
 #include "evt/evt_cmd.h"
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
@@ -19,6 +18,8 @@
 #include <dolphin/mtx.h>
 #include "manager/fontmgr.h"
 void FontDrawColor(GXColor* color);
+// LOCAL_PROTO(iconDispGx): this file passes the flags and icon id as u16 (clrlwi), not s16/s32.
+void iconDispGx(f32 scale, Vec* position, u16 flags, u16 iconId);
 #include "driver/camdrv.h"
 #include "driver/itemdrv.h"
 #include "evt/evt_win.h"
@@ -35,17 +36,10 @@ void FontDrawColor(GXColor* color);
 #include "mario/mario_party.h"
 #include <stdio.h>
 
-#ifdef MUST_MATCH
-// Every retail caller of FontDrawColor copies the colour to the stack first: the original takes it by
-// value (fontmgr.h says GXColor*). iconDispGx's call sites convert the flag and icon as u16 (clrlwi), not
-// s16 (extsh).
-#define FontDrawColorV(c) ((void (*)(GXColor))FontDrawColor)(c)
-// The original's iconDispGx takes the scale first: its callers evaluate it before the position.
-#define iconDispGxS ((void (*)(f32, Vec*, u16, u16))iconDispGx)
-#else
-#define FontDrawColorV(c) do { GXColor fontColor_ = (c); FontDrawColor(&fontColor_); } while (0)
-static inline void iconDispGxS(f32 scale, Vec* pos, u16 flags, u16 iconId) { iconDispGx(scale, pos, flags, iconId); }
-#endif
+// The colour by value: these callers copy it to the stack before passing its address.
+static inline void FontDrawColorV(GXColor color) {
+	FontDrawColor(&color);
+}
 
 // evt_unitwin_disp_func is a display callback, not an event command.
 
@@ -460,11 +454,7 @@ USER_FUNC(evt_unitwin_selltable_setup) {
 		mapObjFlagOn(wp->objList[i].name, 0x4000);
 		if (wp->items[i] != 0) {
 			sprintf(name, str_uwn_d, i);
-#ifdef MUST_MATCH
-			iconEntry(name, *(u16*)&itemDataTable[wp->items[i]].icon_id);
-#else
-			iconEntry(name, (u16)itemDataTable[wp->items[i]].icon_id);
-#endif
+			iconEntry(name, itemDataTable[wp->items[i]].icon_id);
 			iconSetPos(name, pos.x, 6.0f + pos.y, pos.z);
 			iconFlagOn(name, 0x40);
 		} else {
@@ -898,7 +888,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			ItemData* data = &itemDataTable[it];
 
 			if (it != 0) {
-				iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, 0x10, ((ItemDataView*)data)->icon_id);
+				iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, 0x10, ((ItemDataView*)data)->icon_id);
 				FontDrawStart();
 				FontDrawString(36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18), data->id);
 				if ((f32)dispCnt == wp->cursorRow) {
@@ -1004,7 +994,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			} else {
 				iconId = 0x18B;
 			}
-			iconDispGxS(0.6000000238418579f, &(Vec){ 244.0f, 86.0f, 0.0f }, 0x10, iconId);
+			iconDispGx(0.6000000238418579f, &(Vec){ 244.0f, 86.0f, 0.0f }, 0x10, iconId);
 		}
 
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -1075,7 +1065,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 						icolor = *(GXColor*)&dat_8041da0c;
 					}
 				}
-				iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, (u16)(flag | 0x10), ((ItemDataView*)data)->icon_id);
+				iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, (u16)(flag | 0x10), ((ItemDataView*)data)->icon_id);
 				FontDrawStart();
 				FontDrawScale(0.800000011920929f);
 				{
@@ -1180,7 +1170,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			PSMTXScale(scale, 0.6000000238418579f, 0.6000000238418579f, 0.6000000238418579f);
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGxCol(mtx, 0x10, 0x211, *(GXColor*)&dat_8041da20);
-			iconDispGxS(0.6000000238418579f, &(Vec){ 244.0f, 86.0f, 0.0f }, 0x10, 0x18B);
+			iconDispGx(0.6000000238418579f, &(Vec){ 244.0f, 86.0f, 0.0f }, 0x10, 0x18B);
 		}
 		GXGetScissor(&scX, &scY, &scW, &scH);
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
@@ -1292,7 +1282,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				}
 			}
 
-			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, unitwin_party_icon(party_icon_table[i]));
+			iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, unitwin_party_icon(party_icon_table[i]));
 			FontDrawStart();
 			FontDrawColorV(nameColor);
 			name = unitwin_party_name(i);
@@ -1378,7 +1368,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				changed = 1;
 				flag = 0x20;
 			}
-			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
+			iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
 			FontDrawStart();
 			FontDrawColorV(rowColor);
 			sprintf(num, "%s%3d", mario_status_name_table[i], mario_status_point_table[i][0]);
@@ -1398,8 +1388,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					arrow = 0x162;
 					blink = 0;
 				}
-				iconDispGxS(0.5f, &(Vec){ 166.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18) + (f32)blink, 0.0f }, flag | 0x10, arrow);
-				iconDispGxS(0.5f, &(Vec){ 186.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18) + (f32)blink, 0.0f }, flag | 0x10, arrow);
+				iconDispGx(0.5f, &(Vec){ 166.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18) + (f32)blink, 0.0f }, flag | 0x10, arrow);
+				iconDispGx(0.5f, &(Vec){ 186.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18) + (f32)blink, 0.0f }, flag | 0x10, arrow);
 			} else {
 				numval = mario_status_point_table[i][0] - mario_status_henka_table[i];
 				if (numval > 0) {
@@ -1408,7 +1398,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					arrow = 0x162;
 					blink = 0;
 				}
-				iconDispGxS(0.5f, &(Vec){ 176.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18) - (f32)blink, 0.0f }, flag | 0x10, arrow);
+				iconDispGx(0.5f, &(Vec){ 176.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18) - (f32)blink, 0.0f }, flag | 0x10, arrow);
 			}
 			if (numval > 0) {
 				sprintf(num, "%3d", numval);
@@ -1478,7 +1468,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				changed = 1;
 				flag = 0x20;
 			}
-			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
+			iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
 			FontDrawStart();
 			FontDrawColorV(rowColor);
 			sprintf(num, "%s%3d", mario_status_name_table[i], mario_status_point_table[i][0]);
@@ -1555,7 +1545,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				blocked = 1;
 				flag = 0x20;
 			}
-			iconDispGxS(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
+			iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, flag | 0x10, mario_status_icon_table[i]);
 			FontDrawStart();
 			FontDrawColorV(rowColor);
 			sprintf(num, "%s%3d", mario_status_name_table[i], mario_status_point_table[i][0]);
@@ -1667,8 +1657,6 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	}
 }
 
-// itemDataTable[].icon_id is declared s16 in the header, but the original loads it with
-// `lhz` (u16) and its address build only matches through a local u16 view of the field.
 USER_FUNC(set_new_goods_list) {
 	s32* args = event->args;
 	UnitWinWork* wp = (UnitWinWork*)evtGetValue(event, args[0]);
@@ -1679,12 +1667,7 @@ USER_FUNC(set_new_goods_list) {
 	if (wp->index < wp->count) {
 		sprintf(name, str_uwn_d, wp->index);
 		if (item != 0) {
-#ifdef MUST_MATCH
-			u16* p = (u16*)&itemDataTable[0].icon_id;
-			iconChange(name, p[item * (sizeof(ItemData) / sizeof(u16))]);
-#else
-			iconChange(name, (u16)itemDataTable[item].icon_id);
-#endif
+			iconChange(name, itemDataTable[item].icon_id);
 		} else {
 			iconDelete(name);
 		}

@@ -481,9 +481,19 @@ s32 uranaisi_data_make_next(const char* prefix, s32 type) {
     return count;
 }
 
+// The GSWF flag the table maps the name to, or -1 when the name is not in it.
+static inline s32 uranai_table_search(UranaiTableEntry* table, const char* name) {
+    s32 i;
+    for (i = 0; table[i].name != NULL; i++) {
+        if (!strcmp(name, table[i].name)) {
+            return table[i].value;
+        }
+    }
+    return -1;
+}
+
 // opt_lifetimes off: one variable per local for the whole function, so `tmp` (the end-of-tag
-// flag, then the byte saved under the terminator) and `mbbpos` (then the table index) keep the
-// original's registers.
+// flag, then the byte saved under the terminator) keeps the original's register.
 #pragma opt_lifetimes off
 s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     s32 mbbpos;
@@ -491,9 +501,6 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     char tag[64];
     s32 tagNum;
     UranaiWork* wp = &_udt;
-#ifdef MUST_MATCH
-    s32 offset;
-#endif
     const s8* msg;
     BOOL typeFlag;
     s32 storyId;
@@ -510,9 +517,6 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     typeFlag = type & 1;
     count = 0;
     storyId = 0;
-#ifdef MUST_MATCH
-    offset = 0;
-#endif
     while (TRUE) {
         sprintf(label, "%s_%04d", prefix, storyId);
         msg = (const s8*)msgSearch(label);
@@ -572,46 +576,14 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
             labelId = search_evt_no(tag);
             if (labelId != -1 && labelId <= maxLabel) {
                 tmp = initEndPos[tagEndPos];
-#ifdef MUST_MATCH
-                // Match-only: the not-found exit after the loop, reached past by a goto, and the
-                // terminator store chained with the index reset.
-                initEndPos[tagEndPos] = mbbpos = 0;
-                while (uranai_table_starpiece[mbbpos].name != NULL) {
-                    if (!strcmp(initEndPos, uranai_table_starpiece[mbbpos].name)) {
-                        gswf = uranai_table_starpiece[mbbpos].value;
-                        goto gswf_done;
-                    }
-                    mbbpos++;
-                }
-                gswf = -1;
-            gswf_done:
-#else
                 initEndPos[tagEndPos] = '\0';
-                mbbpos = 0;
-                gswf = -1;
-                while (uranai_table_starpiece[mbbpos].name != NULL) {
-                    if (!strcmp(initEndPos, uranai_table_starpiece[mbbpos].name)) {
-                        gswf = uranai_table_starpiece[mbbpos].value;
-                        break;
-                    }
-                    mbbpos++;
-                }
-#endif
+                gswf = uranai_table_search(uranai_table_starpiece, initEndPos);
                 initEndPos[tagEndPos] = tmp;
                 if (gswf != -1 && evtGetValue(NULL, gswf) == 0) {
                     if (typeFlag) {
-#ifdef MUST_MATCH
-                        // Match-only: the entry offset in its own counter (offset == count * 6).
-                        ((UranaiInfo*)((u8*)wp->info + offset))->labelId = (s16)labelId;
-                        ((UranaiInfo*)((u8*)wp->info + offset))->storyId = (s16)storyId;
-#else
                         wp->info[count].labelId = (s16)labelId;
                         wp->info[count].storyId = (s16)storyId;
-#endif
                     }
-#ifdef MUST_MATCH
-                    offset += 6;
-#endif
                     count++;
                 }
             }
@@ -628,9 +600,6 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     char tag[64];
     s32 tagNum;
     UranaiWork* wp = &_udt;
-#ifdef MUST_MATCH
-    s32 offset;
-#endif
     const s8* msg;
     BOOL typeFlag;
     s32 storyId;
@@ -647,9 +616,6 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     typeFlag = type & 1;
     count = 0;
     storyId = 0;
-#ifdef MUST_MATCH
-    offset = 0;
-#endif
     while (TRUE) {
         sprintf(label, "%s_%04d", prefix, storyId);
         msg = (const s8*)msgSearch(label);
@@ -709,46 +675,14 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
             labelId = search_evt_no(tag);
             if (labelId != -1 && labelId <= maxLabel) {
                 tmp = initEndPos[tagEndPos];
-#ifdef MUST_MATCH
-                // Match-only: the not-found exit after the loop, reached past by a goto, and the
-                // terminator store chained with the index reset.
-                initEndPos[tagEndPos] = mbbpos = 0;
-                while (uranai_table_supercoin[mbbpos].name != NULL) {
-                    if (!strcmp(initEndPos, uranai_table_supercoin[mbbpos].name)) {
-                        gswf = uranai_table_supercoin[mbbpos].value;
-                        goto gswf_done;
-                    }
-                    mbbpos++;
-                }
-                gswf = -1;
-            gswf_done:
-#else
                 initEndPos[tagEndPos] = '\0';
-                mbbpos = 0;
-                gswf = -1;
-                while (uranai_table_supercoin[mbbpos].name != NULL) {
-                    if (!strcmp(initEndPos, uranai_table_supercoin[mbbpos].name)) {
-                        gswf = uranai_table_supercoin[mbbpos].value;
-                        break;
-                    }
-                    mbbpos++;
-                }
-#endif
+                gswf = uranai_table_search(uranai_table_supercoin, initEndPos);
                 initEndPos[tagEndPos] = tmp;
                 if (gswf != -1 && evtGetValue(NULL, gswf) == 0) {
                     if (typeFlag) {
-#ifdef MUST_MATCH
-                        // Match-only: the entry offset in its own counter (offset == count * 6).
-                        ((UranaiInfo*)((u8*)wp->info + offset))->labelId = (s16)labelId;
-                        ((UranaiInfo*)((u8*)wp->info + offset))->storyId = (s16)storyId;
-#else
                         wp->info[count].labelId = (s16)labelId;
                         wp->info[count].storyId = (s16)storyId;
-#endif
                     }
-#ifdef MUST_MATCH
-                    offset += 6;
-#endif
                     count++;
                 }
             }
