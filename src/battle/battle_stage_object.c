@@ -2609,7 +2609,7 @@ USER_FUNC(_object_fall_attack) {
 			if (pouchGetPtr()->mStarPowersObtained != 0
 			    && (BattleAudienceBaseGetPtr()->flags & 0x4000) == 0
 			    && newEntry->type != 6 && newEntry->type != 7
-			    && ((wp->forceFlags & 2) != 0 || irand(100) < 10)) {
+			    && ((wp->field_19068.forceFlags & 2) != 0 || irand(100) < 10)) {
 				newEntry->mode = 1;
 				newEntry->partId = -1;
 				newEntry->unitId = BattleAudience_HaitiRandForFallObject();

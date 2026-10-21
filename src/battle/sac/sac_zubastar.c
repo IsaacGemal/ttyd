@@ -236,7 +236,7 @@ void zubaStarDispStar(CameraId cameraId, void* param) {
 // Keep GetZubaStarPtr out of line: the original issues a call (bl) to it.
 #pragma dont_inline on
 ZubaStarWork* GetZubaStarPtr(void) {
-    return (ZubaStarWork*)((u8*)_battleWorkPointer + 0x1F4C);
+    return (ZubaStarWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
 #pragma dont_inline reset
 

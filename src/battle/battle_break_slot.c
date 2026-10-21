@@ -290,8 +290,7 @@ void BattleBreakSlot_Init(void) {
 void BattleBreakSlot_Main(void) {
     static f32 updown;
     BattleWork* wp = _battleWorkPointer;
-    // battle - 0x6F98/0x6F84 are BattleWork forceFlags/forceSlotValue (wp->field recomputes the addis)
-    u8* battle = (u8*)wp + 0x20000;
+    BattleWorkField19068* force = &wp->field_19068;
     BattleAudience* audience = BattleAudienceBaseGetPtr();
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleBreakSlotReel* reel;
@@ -731,7 +730,7 @@ void BattleBreakSlot_Main(void) {
                 if ((slot->flags & 4) && reel->value != 3) {
                     break;
                 }
-                if ((*(u32*)(battle - 0x6F98) & 0x80000) && reel->value != *(s32*)(battle - 0x6F84)) {
+                if ((force->forceFlags & 0x80000) && reel->value != force->forceSlotValue) {
                     break;
                 }
                 reel->pos.y = float_0_8042053c;
@@ -891,8 +890,7 @@ void BattleBreakSlot_End(void) {
 	//stubbed in retail
 }
 void BattleBreakSlot_PointInc(void) {
-    // battle - 0x6F98/0x6F84 are BattleWork forceFlags/forceSlotValue
-    u8* battle = (u8*)_battleWorkPointer + 0x20000;
+    BattleWorkField19068* force = &_battleWorkPointer->field_19068;
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleBreakSlotReel* reel;
     PouchData* pouch;
@@ -916,8 +914,8 @@ void BattleBreakSlot_PointInc(void) {
             reel->index = reel->count - 1;
         }
         reel->value = reel->cards[reel->index];
-        if (*(u32*)(battle - 0x6F98) & 0x80000) {
-            item_appear_force(reel, *(s32*)(battle - 0x6F84));
+        if (force->forceFlags & 0x80000) {
+            item_appear_force(reel, force->forceSlotValue);
         }
         if (slot->flags & 1) {
             item_appear_force(reel, 3);
@@ -932,8 +930,8 @@ void BattleBreakSlot_PointInc(void) {
             reel->index = reel->count - 1;
         }
         reel->value = reel->cards[reel->index];
-        if (*(u32*)(battle - 0x6F98) & 0x80000) {
-            item_appear_force(reel, *(s32*)(battle - 0x6F84));
+        if (force->forceFlags & 0x80000) {
+            item_appear_force(reel, force->forceSlotValue);
         }
         if (slot->flags & 1) {
             item_appear_force(reel, 3);

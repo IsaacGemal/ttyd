@@ -625,7 +625,7 @@ static void disp_3D_alpha(CameraId camera, void* param) {
 
 // .text:0x658 | 0x80249F78 | size: 0xC
 static SukiWork* get_ptr(void) {
-    return (SukiWork*)((u8*)_battleWorkPointer + 0x1F4C);
+    return (SukiWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
 #pragma dont_inline reset
 

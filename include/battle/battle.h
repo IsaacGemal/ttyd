@@ -232,6 +232,22 @@ typedef struct BattleWorkField18C70 {
     char field_0x14[0x118 - 0x14]; // 0x14, the formatted message
 } BattleWorkField18C70;
 
+// BattleWork.field_19068: forced random outcomes. Nothing in the game writes forceFlags; each bit forces a random
+// outcome where it is read. battle_audience.c and battle_break_slot.c read these through one pointer (one addis per
+// function), so the original has them in a struct; no indexed access shows where that struct starts, and this one
+// starts at the first field any user reads.
+typedef struct BattleWorkField19068 {
+    u32 forceFlags;                // 0x0 (BattleWork 0x19068): 0x1 object fall, 0x2 the audience gets the falling
+                                   // object, 0x10/0x20/0x40 stage destroy A1/A2/B, 0x80 iron frame fall, 0x100 nozzle
+                                   // work, 0x200 nozzle turn, 0x10000 audience count = forceAudienceCount, 0x20000
+                                   // frequent audience item throws, 0x40000 the 1-in-20 audience kind swap, 0x80000
+                                   // bingo reels stop on forceSlotValue
+    u8 field_0x4[0xC - 0x4];       // 0x4
+    s32 forceAudienceCount;        // 0xC, starting audience (capped at the max) under 0x10000
+    s32 forceAudienceKind;         // 0x10, 1-12 fills the audience with one kind; 0 = off
+    s32 forceSlotValue;            // 0x14, reel value forced under 0x80000
+} BattleWorkField19068;
+
 struct BattleWork {
     s16 turnCount;                      // 0x0
     u16 field_2;                        // 0x2, step counter of battle_seq's SEQ_TURN 0x3000009 (burn effects)
@@ -247,7 +263,8 @@ struct BattleWork {
     s32 dispFlags;                      // 0xEF8
     s32 field_EFC;                      // 0xEFC, frame countdown (btlseqFirstAct, btlseqTurn)
     s32 stockExp;                       // 0xF00, BattleStoreExp / BattleGetStockExp
-    s32 field_F04;                      // 0xF04, exp shown by _btlStockExpDisp; BattleStockExpDisp counts it up to stockExp
+    s32 field_F04;                      // 0xF04, exp shown by _btlStockExpDisp; BattleStockExpDisp counts it up to
+                                        // stockExp
     s32 field_F08;                      // 0xF08, BattleStockExpDisp's frame counter for that count
     s32 seqInitValue;                   // 0xF0C
     s32 seqFirstActValue;               // 0xF10
@@ -260,7 +277,8 @@ struct BattleWork {
     BattleWorkPad padWork[4];           // 0xF2C
     BattleCommand commandMenu;          // 0x171C
     BattleActions actionCommands;       // 0x1C90
-    u8 field_1F9C[0x271C - 0x1F9C];     // 0x1F9C
+    u8 field_1F9C[0x271C - 0x1F9C];     // 0x1F9C, the special-move works that start at actionCommands.field_0x2BC
+                                        // (0x1F4C: sac_deka's DekaWork, sac_suki's SukiWork, ...) run on into it
     s32 mStylishCurFrame;               // 0x271C
     s32 mStylishWindowStart;            // 0x2720
     s32 mStylishWindowEnd;              // 0x2724
@@ -283,7 +301,9 @@ struct BattleWork {
     s32 badgeEquippedFlags;             // 0x163D8
     FileEntry* menuTex;                 // 0x163DC
     BattleStage stage;                  // 0x163E0
-    u8 field_16F1C[0x16F40 - 0x16F1C];  // 0x16F1C
+    u8 field_16F1C[0x16F40 - 0x16F1C];  // 0x16F1C, act-record counts for battle_actrecord.c's rule checks (most
+                                        // through BtlActRec_AddCount/AddPoint, capped at 100); users write the
+                                        // index of 0x16FNN as [0xNN - 0x1C], as battle_actrecord.c's WP(0xNN) does
     BattleAfterReactionWork afterReaction[64]; // 0x16F40
     BattleStageObject stageObjects[32]; // 0x17140
     BattleWorkField180C0 field_180C0;   // 0x180C0
@@ -298,25 +318,15 @@ struct BattleWork {
     const char* field_18FF0;            // 0x18FF0, BattleAcHelpSetHelp's message
     s32 field_18FF4;                    // 0x18FF4, BattleAcHelpSetDispType's type
     u8 field_18FF8[0x19038 - 0x18FF8];  // 0x18FF8
-    s32 field_19038[5];                 // 0x19038, turn counts; while one is > 0 the command menu disables Mario's jump,
-                                        // hammer or item, or the partner's tech or item ([0]-[4]); battle_seq counts
-                                        // each down, recover_cmd_disable clears all five
+    s32 field_19038[5];                 // 0x19038, turn counts; while one is > 0 the command menu disables Mario's
+                                        // jump, hammer or item, or the partner's tech or item ([0]-[4]); battle_seq
+                                        // counts each down, recover_cmd_disable clears all five
     s32 field_1904C;                    // 0x1904C, nanika_luck_event's event id
     u32 reserveItems[4];                // 0x19050
     s32 field_19060;                    // 0x19060
     u8 field_19064;                     // 0x19064, 1 when the last btlevtcmd_AudienceDeclareACResult succeeded, else 0
     u8 field_19065[0x19068 - 0x19065];  // 0x19065
-    u32 forceFlags;                     // 0x19068, no writer here; each bit forces a random outcome:
-                                        // 0x1 object fall, 0x2 the audience gets the falling object,
-                                        // 0x10/0x20/0x40 stage destroy A1/A2/B, 0x80 iron frame fall,
-                                        // 0x100 nozzle work, 0x200 nozzle turn, 0x10000 audience count
-                                        // = forceAudienceCount, 0x20000 frequent audience item throws,
-                                        // 0x40000 the 1-in-20 audience kind swap, 0x80000 bingo reels
-                                        // stop on forceSlotValue
-    u8 field_1906C[0x19074 - 0x1906C];  // 0x1906C
-    s32 forceAudienceCount;             // 0x19074, starting audience (capped at the max) under 0x10000
-    s32 forceAudienceKind;              // 0x19078, 1-12 fills the audience with one kind; 0 = off
-    s32 forceSlotValue;                 // 0x1907C, reel value forced under 0x80000
+    BattleWorkField19068 field_19068;   // 0x19068
     u32 field_19080;                    // 0x19080, bit 0 set by the gor lecture's aud_attack_init/aud_attack_end
     s32 field_19084;                    // 0x19084, aud_attack_init's message window id (msgWindow_Continue)
 };

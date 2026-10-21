@@ -261,7 +261,7 @@ USER_FUNC(_record_renzoku_count) {
     u8* record;
 
     count = evtGetValue(event, args[0]);
-    record = (u8*)_battleWorkPointer + 0x16F24;
+    record = &_battleWorkPointer->field_16F1C[0x24 - 0x1C];
     pouch = pouchGetPtr();
     if (count > record[0]) {
         if (count > *(u16*)&pouch->mPowerBounceRecord) {

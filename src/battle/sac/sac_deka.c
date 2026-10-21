@@ -1208,7 +1208,7 @@ void yuka_disp(CameraId cameraId, void* param) {
 #pragma dont_inline on
 // .text:0x5D8 | 0x802435D0 | size: 0xC
 static DekaWork* get_ptr(void) {
-    return (DekaWork*)((u8*)_battleWorkPointer + 0x1F4C);
+    return (DekaWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
 #pragma dont_inline reset
 

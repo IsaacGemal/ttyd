@@ -1136,15 +1136,13 @@ void BattleAudienceSettingAudience(void) {
 	s32 maxKinds;
 	s32 sum;
 	s32 total;
-	u8* base;
+	BattleWorkField19068* force;
 	PouchData* pouch;
 	u8* setupBase;
 	s32 listTotal;
 	BattleAudience* audience;
 
-	// base - 0x6F98/0x6F8C/0x6F88 are BattleWork forceFlags/forceAudienceCount/forceAudienceKind; reading them as
-	// _battleWorkPointer->field recomputes the addis per access
-	base = (u8*)_battleWorkPointer + 0x20000;
+	force = &_battleWorkPointer->field_19068;
 	audience = BattleAudienceBaseGetPtr();
 	setupBase = (u8*)_battleWorkPointer->fbatInfo->setup + offsetof(NpcBattleInfo, audienceMode);
 	pouch = pouchGetPtr();
@@ -1174,8 +1172,8 @@ void BattleAudienceSettingAudience(void) {
 	deltaIdx = (pouch->level - 1 < 0x41) ? pouch->level - 1 : 0x40;
 	audience->mAudienceDeltaMultiplier = deltaMultiplier[deltaIdx];
 
-	if (*(u32*)(base - 0x6F98) & 0x10000) {
-		audience->mTargetAudienceCount = (f32) * (s32*)(base - 0x6F8C);
+	if (force->forceFlags & 0x10000) {
+		audience->mTargetAudienceCount = (f32)force->forceAudienceCount;
 		if (audience->mTargetAudienceCount > (f32)audience->mMaxAudience) {
 			audience->mTargetAudienceCount = (f32)audience->mMaxAudience;
 		}
@@ -1281,8 +1279,8 @@ void BattleAudienceSettingAudience(void) {
 			}
 		}
 
-		if (*(s32*)(base - 0x6F88) != 0) {
-			switch (*(s32*)(base - 0x6F88)) {
+		if (force->forceAudienceKind != 0) {
+			switch (force->forceAudienceKind) {
 			case 1:
 				kind = 0;
 				break;
@@ -1396,7 +1394,7 @@ void BattleAudienceSettingAudience(void) {
 		}
 	}
 
-	if (1 == mode && total != 0 && (irand(20) == 0 || (*(u32*)(base - 0x6F98) & 0x40000))) {
+	if (1 == mode && total != 0 && (irand(20) == 0 || (force->forceFlags & 0x40000))) {
 		for (i = 0; i < 12; i++) {
 			order[i] = i;
 		}
@@ -1472,13 +1470,12 @@ void BattleAudienceGuestTPLRead(s32 id, AudienceMemberType member, const char* p
 #pragma dont_inline reset
 
 // 100%: writing the first loop's index as `j + i * 20 + 10` (instead of `i * 20 + 10 + j`) and
-// declaring `s32 r;` immediately after `wp` (before every other local) put `wpHigh` (wp + 0x20000)
+// declaring `s32 r;` immediately after `wp` (before every other local) put `force` (&wp->field_19068)
 // in r27 and `r` in r28 as the original does.
 void BattleAudienceCtrlProcess(void) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 r;
-	// wpHigh - 0x6f98 is BattleWork.forceFlags (wp->forceFlags recomputes the addis)
-	u8* wpHigh = (u8*)wp + 0x20000;
+	BattleWorkField19068* force = &wp->field_19068;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member;
 	s32 order[200];
@@ -1579,7 +1576,7 @@ void BattleAudienceCtrlProcess(void) {
 		}
 	}
 
-	if (*(u32*)(wpHigh - 0x6f98) & 0x20000) {
+	if (force->forceFlags & 0x20000) {
 		audience->itemThrowMax = 0x2710;
 	}
 
@@ -1596,7 +1593,7 @@ void BattleAudienceCtrlProcess(void) {
 				r = 0x7530;
 				break;
 			}
-			if (*(u32*)(wpHigh - 0x6f98) & 0x20000) {
+			if (force->forceFlags & 0x20000) {
 				r = 0x3C;
 			}
 			if (irand(r) == 0) {
