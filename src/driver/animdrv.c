@@ -1670,7 +1670,6 @@ static inline void animSetMaterial_WrapMode(TEXDescriptor* desc, s32 wrapFlags, 
     *outT = wrapT;
 }
 
-#pragma opt_strength_reduction off // preserves the matrix loop's counter/flags/matrix-ID code generation
 void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pTexEntries, AnimTexMtx* animEntries,
                              s32 texBindsCapacity, AnimTexBind* texBinds, AnimationTextureFile* texFile) {
     s32 i;
@@ -1827,11 +1826,10 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
                 mtx = mTrans;
                 break;
         }
-        GXSetTexCoordGen2(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_TEXMTX0 + (u32)(i * 3), GX_FALSE, GX_PTIDENTITY);
-        GXLoadTexMtxImm(mtx, GX_TEXMTX0 + (u32)(i * 3), GX_MTX2x4);
+        GXSetTexCoordGen2(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_TEXMTX0 + i * 3u, GX_FALSE, GX_PTIDENTITY);
+        GXLoadTexMtxImm(mtx, GX_TEXMTX0 + i * 3u, GX_MTX2x4);
     }
 }
-#pragma opt_strength_reduction reset
 
 // Inlined into materialProc and renderProc (the name is the one in its error string). It reads the current
 // pose data through wp, as its callers do; the texture-argument group is declared (texObj, texData, mtx).
@@ -1871,8 +1869,8 @@ static inline BOOL animSetMaterial_ChangeTexture(AnimPoseShapeDraw* draw, Animat
                 smartObj = smartTexObj(texObj, texData);
                 GXLoadTexObj(smartObj, i);
                 if (mtx) {
-                    GXLoadTexMtxImm(mtx, GX_TEXMTX0 + (u32)(i * 3), GX_MTX2x4);
-                    GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_TEXMTX0 + (u32)(i * 3));
+                    GXLoadTexMtxImm(mtx, GX_TEXMTX0 + i * 3u, GX_MTX2x4);
+                    GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_TEXMTX0 + i * 3u);
                 } else {
                     GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_IDENTITY);
                 }
