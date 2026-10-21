@@ -75,7 +75,7 @@ static inline s32 yuu_kesan_chk(s32 mode, s32 value, s32 bonus, s32 mult, s32 ma
 
 static USER_FUNC(evt_yuuranking_main_func);
 static void evt_yuuranking_disp_func(CameraId cameraId, void* param);
-static s32 fontlenpitch(s8* str, s32 pitch);
+static s32 fontlenpitch(const s8* msg, s32 pitch);
 
 // clang-format off
 extend_data(52,
@@ -95,25 +95,8 @@ extend_data(53,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
-static s32 fontlenpitch(s8* text, s32 pitch) {
-    if (pitch != 0) {
-        s32 i = 0;
-        s32 count = 0;
 
-        while (text[i]) {
-            if (_ismbblead(text[i])) {
-                count++;
-                i++;
-            } else {
-                count++;
-            }
-            i++;
-        }
-        return count * pitch;
-    } else {
-        return (u16)FontGetMessageWidth((char*)text);
-    }
-}
+#include "rel/common/fontlenpitch.h"
 
 void gor_draw_msg_fit(const char* msg, s32 width, f32 x, f32 y, f32 z) {
     Mtx trans;

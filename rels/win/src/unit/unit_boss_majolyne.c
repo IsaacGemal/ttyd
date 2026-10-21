@@ -600,40 +600,7 @@ static EVT_BEGIN(dead_event)
     RETURN
 EVT_END()
 
-static s32 majo3_sort(EventEntry* event, BOOL isFirstCall) {
-    struct {
-        s32 a;
-        s32 b;
-    } list[3], tmp;
-    s32 i;
-
-    for (i = 0; i < 3; i++) {
-        list[i].a = event->lwData[3 + i];
-        list[i].b = event->lwData[i];
-    }
-
-    if (list[0].b < list[1].b) {
-        tmp = list[0];
-        list[0] = list[1];
-        list[1] = tmp;
-    }
-    if (list[1].b < list[2].b) {
-        tmp = list[1];
-        list[1] = list[2];
-        list[2] = tmp;
-    }
-    if (list[0].b < list[1].b) {
-        tmp = list[0];
-        list[0] = list[1];
-        list[1] = tmp;
-    }
-
-    for (i = 0; i < 3; i++) {
-        event->lwData[i] = list[i].a;
-    }
-
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/majo3_sort.h"
 
 EVT_BEGIN(majo_unison_phase_event_30_data_126FC)
     SET_VALUE(LW(0), -1)

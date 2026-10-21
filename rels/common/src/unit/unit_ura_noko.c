@@ -625,32 +625,7 @@ static EVT_BEGIN(attack_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(eff_aura) {
-    BattleUnit* unit;
-    EffectEntry* effect;
-    effUranokoData* data;
-    f32 x;
-    f32 y;
-    f32 z;
-    s32 id;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    if (isFirstCall) {
-        unit->work[2] = (s32)effUranokoEntry(0, 120, 0.0f, -1000.0f, 0.0f);
-    }
-    BtlUnit_GetPos(unit, &x, &y, &z);
-    effect = (EffectEntry*)unit->work[2];
-    if (!(effect->flags & 1)) {
-        return EVT_RETURN_DONE;
-    }
-    data = effect->userdata;
-    data->position.x = x;
-    data->position.y = y;
-    data->position.z = z;
-    data->baseScale = unit->mSizeMultiplier;
-    return EVT_RETURN_BLOCK;
-}
+#include "rel/common/eff_aura.h"
 
 
 static EVT_BEGIN(ura_attack_event)

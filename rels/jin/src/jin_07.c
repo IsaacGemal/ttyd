@@ -153,12 +153,8 @@ const Vec vec3_jin_00007fb4 = {0.0f, 250.0f, 0.0f};
 const Vec vec3_jin_00007fc0 = {1.0f, 0.0f, 0.0f};
 
 // Functions are written in the reverse of their order in the asm (deferred inlining).
-static f32 randf(f32 min, f32 max) {
-    f32 r = (f32)rand() / 32767.0f;
-    f32 d = max - min;
 
-    return r * d + min;
-}
+#include "rel/common/randf.h"
 
 // Inlined arithmetic helper: keeps the `+ min` (even when min is 0) as a
 // separate fmadds, which the original's inlined randf produces.

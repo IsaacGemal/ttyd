@@ -325,12 +325,7 @@ EVT_BEGIN(irekawatta_mario)
     RETURN
 EVT_END()
 
-static USER_FUNC(getYoshiColor) {
-    s32* args = event->args;
-
-    evtSetValue(event, args[0], pouchGetPartyColor(PARTNER_YOSHI));
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/getYoshiColor.h"
 
 EVT_BEGIN(yoshi_color)
     CALL(evt_npc_delete, STRING("ヨッシー"))

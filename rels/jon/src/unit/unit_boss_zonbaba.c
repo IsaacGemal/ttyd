@@ -970,15 +970,7 @@ static EVT_BEGIN(phase_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(_leg_smoke_effect) {
-    s32* args = event->args;
-    f32 x = evtGetFloat(event, args[0]);
-    f32 y = evtGetFloat(event, args[1]);
-    f32 z = evtGetFloat(event, args[2]);
-
-    effKemuri9N64Entry(1, 18, 90, x, y, z, 60.0f, 0.0f);
-    return EVT_RETURN_DONE;
-}
+#include "rel/common/_leg_smoke_effect.h"
 
 static EVT_BEGIN(fumituke_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))

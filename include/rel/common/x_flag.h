@@ -1,6 +1,6 @@
-// x_flag_set, x_flag_add, x_flag_get and x_flag_wait, as the lecture units (rel/common/evt_lect.h) and
-// unit_boss_macho_gance have them. Included where they sit in the unit's function order (it sets the .text layout);
-// the unit defines `s32 x_flag_data[]` before it.
+// x_flag_set, x_flag_add, x_flag_get and x_flag_wait, shared by the lecture units (see rel/common/evt_lect.h).
+// Included where they sit in the unit's function order (it sets the .text layout); the unit defines
+// `s32 x_flag_data[]` before it. unit_boss_macho_gance's copies come after its own functions, so it keeps them.
 #include "evt/evt_cmd.h"
 
 static USER_FUNC(x_flag_set) {

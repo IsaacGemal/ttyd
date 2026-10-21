@@ -85,26 +85,8 @@ extend_data(21,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
-static s32 fontlenpitch(const s8* msg, s32 pitch) {
-    s32 i;
-    s32 len;
 
-    if (pitch != 0) {
-        i = 0;
-        len = 0;
-        while (msg[i] != 0) {
-            if (_ismbblead(msg[i])) {
-                len++;
-                i++;
-            } else {
-                len++;
-            }
-            i++;
-        }
-        return len * pitch;
-    }
-    return (u16)FontGetMessageWidth((const char*)msg);
-}
+#include "rel/common/fontlenpitch.h"
 
 // Draws a message centred at (x, y), scaled down horizontally to fit maxWidth.
 // Placed before disp_func so MWCC compiles disp first; yuu_draw_msg_fit's 0.0f then reuses the pool slot disp
