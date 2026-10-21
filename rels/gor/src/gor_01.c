@@ -2287,22 +2287,10 @@ char* badgemise_npc[3] = {
     "バッジ店長", "バッジ店員", NULL,
 };
 
-// Private view of the layout src/event/evt_win.c uses for its UnitWinWork
-typedef struct UnitWinWork {
-    u16 flags;        // 0x0
-    u16 pad_02;       // 0x2
-    void* objList;    // 0x4
-    s32* items;       // 0x8
-    u16 taken[6];     // 0xC
-    s32 count;        // 0x18
-    void* mainEvt;    // 0x1C
-    void* useEvt;     // 0x20
-    s32 index;        // 0x24
-} UnitWinWork;
 static USER_FUNC(disp_off) {
-    u16* p = (u16*)evtGetValue(event, event->args[0]);
+    UnitWinWork* p = (UnitWinWork*)evtGetValue(event, event->args[0]);
 
-    *p &= ~1;
+    p->flags &= ~1;
     return EVT_RETURN_DONE;
 }
 
