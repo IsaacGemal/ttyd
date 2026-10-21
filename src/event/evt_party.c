@@ -275,7 +275,7 @@ USER_FUNC(evt_party_set_dir) {
         party->field_10C = next;
         party->field_110 = party->field_10C;
         party->dir = toMovedirSimple(party->field_110);
-        return (++event->userdata[2] > frames) ? 1 : 0;
+        return ++event->userdata[2] > frames;
     }
     if (frames < 0) {
         next = revise360(270.0f - target);

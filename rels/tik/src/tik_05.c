@@ -1946,7 +1946,7 @@ static USER_FUNC(starstone_set_ry) {
     EffectEntry* entry = effNameToPtr((char*)name);
     effStarStoneData* data = entry->userdata;
 
-    data->rotY = ry - 360.0f * (s32)((s32)ry / 360);
+    data->rotY = ry - 360.0f * ((s32)ry / 360);
     return EVT_RETURN_DONE;
 }
 

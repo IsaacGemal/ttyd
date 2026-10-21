@@ -144,7 +144,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         break;
     case 0x64:
         if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
-            if ((s32)irand(100) >= 0) {
+            if (irand(100) >= 0) {
                 work->actionCommands.field_0x8 = 0x1E;
                 dec->tokenHit = 0;
             } else {
@@ -166,7 +166,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         switch (dec->phase) {
         case 0:
             if (dec->tapMode == 0) {
-                if ((s32)BattlePadCheckNow(dec->buttonMask) != 0) {
+                if (BattlePadCheckNow(dec->buttonMask) != 0) {
                     dec->phase = 1;
                     work->actionCommands.mAcState = 0x3E9;
                     dec->frame = 0;
@@ -176,14 +176,14 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             break;
         case 1:
             if (dec->tapMode != 0) {
-                if ((u32)BattlePadGetNow() == (u32)dec->buttonMask) {
+                if (BattlePadGetNow() == (u32)dec->buttonMask) {
                     if (BattlePadCheckTrigger(dec->buttonMask) != 0) {
                         dec->phase = 2;
                     }
                 }
             } else {
-                if ((s32)BattlePadCheckNow(dec->buttonMask) == 0) {
-                    if ((s32)BattlePadCheckUp(dec->buttonMask) != 0) {
+                if (BattlePadCheckNow(dec->buttonMask) == 0) {
+                    if (BattlePadCheckUp(dec->buttonMask) != 0) {
                         dec->phase = 2;
                     }
                 }

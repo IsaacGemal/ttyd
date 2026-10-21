@@ -1186,7 +1186,7 @@ f32 atan2f(f32 y, f32 x) {
 static f32 camGetRy(void) {
     CameraEntry* cam = camGetPtr(CAMERA_3D);
     f32 ry =
-        reviseAngle((f32)atan2f(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z)) * 57.29579f);
+        reviseAngle(atan2f(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z)) * 57.29579f);
 
     if (ry < 0.0f) {
         ry += 360.0f;

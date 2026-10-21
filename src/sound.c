@@ -469,7 +469,7 @@ BOOL SoundSLibLoadDVD(const char* path) { // 1:1
         group->arrfile = arrfile;
         group->next = 0;
         // Advances after the stores: MWCC then keeps the address in r0 and the field constants in r4.
-        chunkPtr = (u32*)((u32)chunkPtr + (u32)chunkSize);
+        chunkPtr = (u32*)((u32)chunkPtr + chunkSize);
     }
 
     sprintf(str, "%s/%s%s", getMarioStDvdRoot(), path, ".stbl");

@@ -248,7 +248,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
                         work->actionCommands.mAcState = 0x3E8;
                     }
                 } else {
-                    if ((s32)BattlePadCheckNow(0x100) == 0) {
+                    if (BattlePadCheckNow(0x100) == 0) {
                         work->actionCommands.outputParams[1] =
                             (s32)(aw->maxValue * aw->gauge / 100.0f);
                         if ((f32)work->actionCommands.outputParams[1] < aw->minValue) {

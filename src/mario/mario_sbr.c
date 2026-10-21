@@ -69,7 +69,7 @@ static inline void rubStick(MarioWork* p, f32* outAngle, f32* outMag) {
     if (invert) {
         y2 = 0;
     } else {
-        y2 = -((s8)p->wStickDir2);
+        y2 = -(p->wStickDir2);
     }
     if (yoshiGetStatus() == 2) {
         y2 = 0;

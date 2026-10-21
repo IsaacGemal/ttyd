@@ -243,7 +243,7 @@ void* testAlloc(u32 size) {
         size += 32 - (size & 31);
     }
     wp->testAlloc += size;
-    if ((u32)wp->testAlloc >= (u32)wp->testHeap + TESTHEAP_SIZE) { // need to allocate more
+    if (wp->testAlloc >= (u32)wp->testHeap + TESTHEAP_SIZE) { // need to allocate more
         animPoseRefresh();
         alloc = testAlloc(size);
     }
@@ -599,23 +599,28 @@ BOOL animEffectAsync(const char* animName, u32 group) {
 
     if (fileId == -1) {
         result = TRUE;
+#ifdef MUST_MATCH
+    // The `(u32)` casts on the == 0 tests change nothing in C, but the original's compares need them.
     } else if ((u32)fileId == 0) {
         result = FALSE;
     } else if (other == -1) {
         result = TRUE;
     } else {
-#ifdef MUST_MATCH
-        // Retail tests `other` unsigned and keeps explicit 0/1 stores; `result = other != 0`
-        // compiles to the branchless (x | -x) >> 31 form.
         if ((u32)other == 0) {
             result = FALSE;
         } else {
             result = TRUE;
         }
-#else
-        result = other != 0;
-#endif
     }
+#else
+    } else if (fileId == 0) {
+        result = FALSE;
+    } else if (other == -1) {
+        result = TRUE;
+    } else {
+        result = other != 0;
+    }
+#endif
     return result;
 }
 
@@ -3243,7 +3248,12 @@ BOOL animGroupBaseAsync(const char* name, s32 group, void* callback) {
     if (fileId == -1) {
         return TRUE;
     }
+#ifdef MUST_MATCH
+    // As in animEffectAsync: the `(u32)` on the == 0 test is for the original's compare.
     if ((u32)fileId == 0) {
+#else
+    if (fileId == 0) {
+#endif
         return FALSE;
     }
     if (other == -1) {

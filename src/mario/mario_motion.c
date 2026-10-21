@@ -705,7 +705,7 @@ void marioJump(void) {
     }
     // The explicit JUMP_NPC case makes MWCC emit the original's split compare (`beq 4; blt 4`)
     // ahead of the 5..8 range instead of a `subi`/`cmplwi` range check.
-    switch ((s32)mario->currMotionId) {
+    switch (mario->currMotionId) {
     case MARIO_MOTION_JUMP_NPC:
         break;
     case MARIO_MOTION_JUMP_SW:
@@ -716,7 +716,7 @@ void marioJump(void) {
     default:
         break;
     }
-    if ((s32)mario->currSubMotionId < 10) {
+    if (mario->currSubMotionId < 10) {
         return;
     }
     oldVy = mario->jumpVelY;
@@ -1145,7 +1145,7 @@ void mot_talk(void) {
     case 0:
         break;
     case 10:
-        if ((s32)--mario->multiTimer <= 0) {
+        if (--mario->multiTimer <= 0) {
             marioChgPose("M_S_1");
             mario->currSubMotionId = 11;
         }
@@ -1632,7 +1632,7 @@ void mot_bottomless(void) {
                 mario->field_0x2B0);
         mario->field_EC.x = mario->position.x;
         mario->field_EC.z = mario->position.z;
-        if ((s32)--mario->multiTimer <= 0) {
+        if (--mario->multiTimer <= 0) {
             mario->currSubMotionId = 2;
             mario->flags |= MARIO_FLAG_STOP_AIR_MOVEMENT;
             mario2 = marioGetPtr();
@@ -1695,7 +1695,7 @@ void mot_bottomless(void) {
         mario->currSubMotionId = 0xB;
         // fall through
     case 11:
-        if ((s32)--mario->multiTimer > 0) {
+        if (--mario->multiTimer > 0) {
             break;
         }
         pouchAddHP(-1);
@@ -1709,7 +1709,7 @@ void mot_bottomless(void) {
         mario->currSubMotionId = 0xC;
         // fall through
     case 12:
-        if ((s32)--mario->multiTimer <= 0) {
+        if (--mario->multiTimer <= 0) {
             mario = marioGetPtr();
             if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
                 if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {

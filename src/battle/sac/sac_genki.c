@@ -407,7 +407,7 @@ static void main_base(void) {
 
 void main_mario(void) {
     GenkiWork* genki = get_ptr();
-    s32 stickX = (s8)keyGetStickX(0);
+    s32 stickX = keyGetStickX(0);
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     BattleUnitPart* parts = BtlUnit_GetPartsPtr(mario, BtlUnit_GetBodyPartsId(mario));
 
@@ -1460,7 +1460,7 @@ static void disp_3D(CameraId cameraId, void* param) {
             x += 10.0f;
             y += 30.0f;
             z += 10.0f;
-            color = *(GXColor*)&dat_80421d34;
+            color = dat_80421d34;
             tmp = *(const Vec*)vec3_803003c4;
             tmp.z = 6.0f * (f32)genki->field_68;
             rot = tmp;
@@ -1480,7 +1480,7 @@ static void disp_3D(CameraId cameraId, void* param) {
             Vec tmp;
             GXColor color;
 
-            color = *(GXColor*)&dat_80421d38;
+            color = dat_80421d38;
             tmp = *(const Vec*)vec3_803003e8;
             tmp.z = 6.0f * -(f32)genki->field_68;
             rot = tmp;

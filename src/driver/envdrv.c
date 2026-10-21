@@ -396,6 +396,7 @@ static inline void envDofTaps(const f32* amount, s32* texCoord, GXTevStageID* te
     }
 }
 
+#ifdef MUST_MATCH
 // Under propagation off the inline GXPosition3f32 keeps x in a parameter variable, which colours after
 // the y conversion (f5 for the first vertex). The original stores x straight from its computation after
 // y has been evaluated into its parameter, which is what this vertex macro does.
@@ -407,6 +408,7 @@ static inline void envDofTaps(const f32* amount, s32* texCoord, GXTevStageID* te
         GXWGFifo.f32 = _y;                                                                                 \
         GXWGFifo.f32 = (z);                                                                                \
     } while (0)
+#endif
 
 static inline void envDofQuad(void) {
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -558,7 +560,9 @@ void envDisp_DepthOfField(void) {
 #pragma inline_max_size reset
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
+#ifdef MUST_MATCH
 #undef GXPosition3f32
+#endif
 
 // A by-value GXColor built as `color = dat; color.a = a;` and then passed lands its local at the higher
 // slot (sp+0x10 here) and the argument copy at sp+0xC, the wrong way round. Building the colour in an

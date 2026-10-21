@@ -207,7 +207,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb90, (u8)(s32)(255.0f * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(dat_8041cb90, (u8)(s32)(255.0f * alpha)));
 			}
 			break;
 		case 2:
@@ -220,7 +220,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb94, (u8)(s32)(255.0f * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(dat_8041cb94, (u8)(s32)(255.0f * alpha)));
 			}
 			break;
 		case 3:
@@ -233,7 +233,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb98, (u8)(s32)(255.0f * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(dat_8041cb98, (u8)(s32)(255.0f * alpha)));
 			}
 			break;
 		case 4:
@@ -246,7 +246,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb9c, (u8)(s32)(255.0f * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(dat_8041cb9c, (u8)(s32)(255.0f * alpha)));
 			}
 			break;
 		case 6:

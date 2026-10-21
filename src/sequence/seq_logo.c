@@ -572,7 +572,7 @@ void progDisp(CameraId camId, void* param) {
 				msg = romFontGetMessage(type);
 				width = (f32)romFontGetWidth(msg);
 				romFontPrintGX(
-					-(0.7f * (f32)width) / 2.0f,
+					-(0.7f * width) / 2.0f,
 					-145.0f,
 					0.7f,
 					&(GXColor){0xFF, 0xFF, 0xFF, 0xFF},

@@ -54,27 +54,10 @@ USER_FUNC(_chuchu_make_extra_work_area) {
         (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);               \
     (*count)++;
 
-// The original addresses the four weapons from one base register (addi r30, r5, lbl_8037EC10@l, then
-// +0x6A0/+0x8E0/+0x820/+0x9A0); naming each weapon directly does not reproduce that.
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
-#ifdef MUST_MATCH
-    u8* const weaponBase = lbl_8037EC10;
-#endif
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 
-#ifdef MUST_MATCH
-    TECH_MENU_ENTRY(weaponBase + 0x6A0);  // partyWeapon_ChuchurinaNormalAttackLeftLast
-    if (techLv >= 0) {
-        TECH_MENU_ENTRY(weaponBase + 0x8E0); // partyWeapon_ChuchurinaItemSteal
-    }
-    if (techLv >= 1) {
-        TECH_MENU_ENTRY(weaponBase + 0x820); // partyWeapon_ChuchurinaMadowaseAttack
-    }
-    if (techLv >= 2) {
-        TECH_MENU_ENTRY(weaponBase + 0x9A0); // partyWeapon_ChuchurinaKiss
-    }
-#else
     TECH_MENU_ENTRY(&partyWeapon_ChuchurinaNormalAttackLeftLast);
     if (techLv >= 0) {
         TECH_MENU_ENTRY(&partyWeapon_ChuchurinaItemSteal);
@@ -85,7 +68,6 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
     if (techLv >= 2) {
         TECH_MENU_ENTRY(&partyWeapon_ChuchurinaKiss);
     }
-#endif
 }
 
 // The declaration order below is what gives the original's callee-saved allocation
@@ -153,7 +135,7 @@ USER_FUNC(_get_itemsteal_param) {
     work = _battleWorkPointer;
     b = args[2];
     unit = BattleGetUnitPtr(work, BattleTransID(event, id));
-    chance = 0x50 - ((u8)work->actionCommands.mAcDifficulty - 3) * 0x14;
+    chance = 0x50 - (work->actionCommands.mAcDifficulty - 3) * 0x14;
     if (chance <= 5) {
         chance = 5;
     }

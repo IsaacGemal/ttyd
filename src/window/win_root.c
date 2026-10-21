@@ -953,11 +953,21 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
 
     windowDispGX_Waku_col(fx, fy, 500.0f, 80.0f, 20.0f, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 
+#ifdef MUST_MATCH
+    // The `!= 0` test is implied by `> 0`, but it changes the object.
     if (work->field_0x138 != 0 && work->field_0x138 > 0) {
+#else
+    if (work->field_0x138 > 0) {
+#endif
         winTexInit(*(TEXPalette**)work->winTpl->data);
         winTexSet(0x25, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
         winIconInit();
+#ifdef MUST_MATCH
+        // (0, x) is x; the comma only changes when the table address is materialised.
         winMailIconV(((0, (ItemDataView*)itemDataTable)[work->field_0x138]).icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
+#else
+        winMailIconV(((ItemDataView*)itemDataTable)[work->field_0x138].icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
+#endif
     }
 
     if (work->field_0x140 != NULL) {

@@ -495,11 +495,11 @@ USER_FUNC(itemUseFunc) {
             if (event->lwData[11] == 0) {
                 pouchSetHP(pouchGetHP() + item->hp_restored);
                 pouchSetFP(pouchGetFP() + item->fp_restored);
-                pouchSetAP(pouchGetAP() + (u8)item->sp_restored);
+                pouchSetAP(pouchGetAP() + item->sp_restored);
             } else {
                 pouchSetPartyHP(event->lwData[11], pouchGetPartyHP(event->lwData[11]) + item->hp_restored);
                 pouchSetFP(pouchGetFP() + item->fp_restored);
-                pouchSetAP(pouchGetAP() + (u8)item->sp_restored);
+                pouchSetAP(pouchGetAP() + item->sp_restored);
             }
             cnt++;
             break;

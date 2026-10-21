@@ -609,7 +609,7 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
     // shine sprites, the play-time clock and the collected star powers.
     PouchData* pouch = pouchGetPtr();
     static s32 pri[6] = { 3, 2, 8, 10, 7, 9 };
-    GXColor unusedWhite, unusedBlack, loopWhite, loopBlack, white, black;
+    GXColor loopWhite, loopBlack, white, black;
     f32 spRowY, hpIconY, spIconX, rowTexX, headerY, rowX, spIconY, fpRowY, bpRowY, listLabelX;
     f32 listIconX, statX, maxX, colonX, fpIconY, fpTextY, statIconX, listTop, hpTextY, rawW;
     f32 listLeft, nameX, timeRowY, x, coinRowY, y, listValueX, slashX, spLabelY, pieceRowY;
@@ -617,10 +617,8 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
     s32 i;
     (void)camId;
 
-    unusedWhite = winWhiteColor;
     white = winWhiteColor;
     loopWhite = winWhiteColor;
-    unusedBlack = winBlackColor;
     black = winBlackColor;
     loopBlack = winBlackColor;
     x = work->recs[idx].b;
@@ -632,7 +630,7 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
     winFontInit();
     headerY = 152.0f + y;
     winFontSetEdgeV((Vec){nameX, headerY, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white, msgSearch("name_mario"));
-    nameX += 0.8f * (f32)(u16)FontGetMessageWidth(msgSearch("name_mario"));
+    nameX += 0.8f * (f32)FontGetMessageWidth(msgSearch("name_mario"));
     nameX += 20.0f;
     winIconInit();
     winIconSetV(0x19E, (Vec){nameX, 142.0f + y, 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
@@ -644,7 +642,7 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
         sprintf(buf, "%s", winZenkakuStr(pouch->level));
         winFontInit();
         winFontSetEdgeV((Vec){(x - 265.0f + 190.0f)
-                - 0.8f * (f32)(u16)FontGetMessageWidth(buf)
+                - 0.8f * (f32)FontGetMessageWidth(buf)
                 - 10.0f, headerY, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white, buf);
     }
     winTexInit(*(TEXPalette**)work->winTpl->data);
@@ -669,8 +667,8 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
         GXColor hiliteTbl[3] = { { 0xA7, 0x3C, 0x3C, 0xFF }, { 0x37, 0x69, 0x1E, 0xFF }, { 0x0F, 0x21, 0x7A, 0xFF } };
         const char* rawTbl[3] = { "\x82g\x82o", "\x82""e\x82o", "\x82""a\x82o" };
         const char* tagTbl[3] = { "msg_menu_mario_ruby_hp", "msg_menu_mario_ruby_fp", "msg_menu_mario_ruby_bp" };
-        rawW = (f32)(u16)FontGetMessageWidth(rawTbl[i]);
-        halfTagW = 0.5f * (f32)(u16)FontGetMessageWidth(msgSearch(tagTbl[i]));
+        rawW = (f32)FontGetMessageWidth(rawTbl[i]);
+        halfTagW = 0.5f * (f32)FontGetMessageWidth(msgSearch(tagTbl[i]));
         winTexInit(*(TEXPalette**)work->winTpl->data);
         GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
         GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
@@ -817,7 +815,7 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
             winFontSetLabelV((Vec){10.0f + (listLeft - 270.0f), (f32)(0x82 - i * 26), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, loopBlack, superActionTable[i]->name);
             sprintf(buf, "%s", winZenkakuStr(superActionTable[i]->baseSpCost));
             drop = (f32)(0x82 - i * 26);
-            winFontSetV((Vec){(228.0f + x - 270.0f) - (f32)((u16)FontGetMessageWidth(buf) >> 1), drop, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, loopBlack, buf);
+            winFontSetV((Vec){(228.0f + x - 270.0f) - (f32)(FontGetMessageWidth(buf) >> 1), drop, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, loopBlack, buf);
             winFontSetV((Vec){4.0f + (17.0f + colonX - 270.0f), (f32)(0x78 - i * 26), 0.0f}, (Vec){0.5f, 0.5f, 0.5f}, loopBlack, "\x82r\x82o");
         }
     }

@@ -142,7 +142,12 @@ void effKemuri12Disp(CameraId camId, void* param) {
     type = data->type;
     frameIndex = (s32)data->animProgress;
     frameFraction = (s32)(256.0f * (data->animProgress - (f32)frameIndex));
+#ifdef MUST_MATCH
+    // The ternary on a 0/1 test changes the object; the plain test is under #else.
     isLast = (frameIndex == 7) ? 1 : 0;
+#else
+    isLast = frameIndex == 7;
+#endif
 
     GXSetNumChans(0);
     GXSetNumTevStages(3);

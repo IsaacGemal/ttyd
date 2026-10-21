@@ -187,7 +187,7 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
     case 0x64:
         if (!((ac->field_0x4 & 1) && (ac->mAcUnit->mTokenFlags & 0x10)) &&
             dec->padCheck != 0 &&
-            (s32)BattlePadCheckNow(dec->padCheck) == 0 &&
+            BattlePadCheckNow(dec->padCheck) == 0 &&
             autoCommand == 0) {
             dec->waitFrames++;
             if (dec->waitFrames >= 0x96) {
@@ -244,15 +244,15 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
         }
         if (dec->releaseMode != 0) {
             if (ac->acFlag & 0x20) {
-                if ((s32)BattlePadCheckNow(dec->curMask) != 0) {
+                if (BattlePadCheckNow(dec->curMask) != 0) {
                     stateChanged = 1;
                     dec->presses++;
                 }
-            } else if ((s32)BattlePadCheckTrigger(dec->curMask) != 0) {
+            } else if (BattlePadCheckTrigger(dec->curMask) != 0) {
                 stateChanged = 1;
                 dec->presses++;
             }
-        } else if ((s32)BattlePadCheckUp(dec->curMask) != 0) {
+        } else if (BattlePadCheckUp(dec->curMask) != 0) {
             stateChanged = 1;
             dec->presses++;
         }
@@ -308,7 +308,7 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
             dec->level++;
         }
         ac->outputParams[2] = dec->level;
-        if (dec->padCheck != 0 && (s32)BattlePadCheckNow(dec->padCheck) == 0) {
+        if (dec->padCheck != 0 && BattlePadCheckNow(dec->padCheck) == 0) {
             dec->timer = 0;
         }
         BattleAcGaugeSeUpdate(dec->gauge);
@@ -530,7 +530,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 
     count = 0;
     flags = 0;
-    if ((s8)dec->fillState == 1 && disp->value >= float_1_8041e800) {
+    if (dec->fillState == 1 && disp->value >= float_1_8041e800) {
         flags |= 1;
         p[0xD] += disp->dg;
         p[0xE] += disp->db;
@@ -543,7 +543,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             disp->dg = -0x10;
         }
     }
-    if ((s8)dec->fillState == -1) {
+    if (dec->fillState == -1) {
         flags |= 2;
     }
 

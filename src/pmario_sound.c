@@ -5136,10 +5136,10 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 		pan2 = 0xC4 - (pan2 - 0xC4);
 	}
 	pan = pan2 - 0x40;
-	if ((s16)pan < 0) {
+	if (pan < 0) {
 		pan = 0;
 	}
-	if ((s16)pan > 0x7F) {
+	if (pan > 0x7F) {
 		pan = 0x7F;
 	}
 	{
@@ -5438,7 +5438,7 @@ void psndBGM_rate(s32 id, u16 rate) {
 	PaperSoundBGM* bgm = &psbgm[id & 0xF];
 	bgmid = bgm->unk0;
 
-	if ((u32)bgmid == -1) {
+	if (bgmid == -1) {
 		return;
 	}
 	entry = &psbgmlist[bgmid];
@@ -5975,7 +5975,7 @@ BOOL psndBGMOff_f_d(s32 flags, s32 fadetime, BOOL someswitch) {
 BOOL psndBGMChk(s32 id) {
 	s32 val = psbgm[id & 0xF].unk0;
 
-	return (s32)(~((val + 1) | (-1 - val))) >> 31;
+	return (~((val + 1) | (-1 - val))) >> 31;
 }
 
 BOOL psndBGMChkSilent(s32 id) {
@@ -6533,7 +6533,7 @@ s32 psndSFXChk(u32 id) {
 		return -1;
 	}
 	val = sfx->unk0;
-	return (s32)(~((val + 1) | (-1 - val))) >> 31;
+	return (~((val + 1) | (-1 - val))) >> 31;
 }
 #pragma opt_propagation reset
 

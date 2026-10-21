@@ -1033,7 +1033,7 @@ static USER_FUNC(barriernSatelliteToInside) {
     }
     hasSat = 0;
     for (i = 0; i < 4; i++) {
-        if ((u8)barriernSatelliteTo_Main(unit, i) == 1) {
+        if (barriernSatelliteTo_Main(unit, i) == 1) {
             hasSat = 1;
         }
     }

@@ -421,9 +421,10 @@ smartEntry* smartAlloc(u32 size, u8 type) {
 	}
 
 #ifdef MUST_MATCH
+	// The `(s32)` on the u32 flag changes nothing in C, but the original's compare needs it.
 	if ((s32)wp->waitsync != 0) {
 #else
-	if (wp->waitsync) {
+	if (wp->waitsync != 0) {
 #endif
 		sysWaitDrawSync();
 		wp->waitsync = 0;

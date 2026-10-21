@@ -686,7 +686,7 @@ void puniAnimation(PuniData* dat, PuniPose* pose) {
                     frame += dat->angle * (count / 3);
                 }
             }
-            idx = (u32)(gp->retraceCount + frame) % (u32)count;
+            idx = (gp->retraceCount + frame) % (u32)count;
             pose->texId = anim[idx];
         }
 
@@ -2463,7 +2463,12 @@ static inline s32 puniQrnd2(s32 range) {
     Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
     Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
     v = Punigp->randSeedB;
+#ifdef MUST_MATCH
+    // `v ^ 0` is v; the xor changes the object.
     if ((s32)(v ^ 0) < 0) {
+#else
+    if (v < 0) {
+#endif
         v = -v;
     }
     return v % range;
@@ -2480,7 +2485,12 @@ PuniData* puniSearchRandom(s32 start, s32 count) {
     Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
     Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
     v = Punigp->randSeedB;
+#ifdef MUST_MATCH
+    // `v ^ 0` is v; the xor changes the object.
     if ((s32)(v ^ 0) < 0) {
+#else
+    if (v < 0) {
+#endif
         v = -v;
     }
     idx = start + v % (count - 1);
@@ -2513,7 +2523,12 @@ PuniData* puniSearchRandom_Mikata(void) {
     Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
     Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
     r = Punigp->randSeedB;
+#ifdef MUST_MATCH
+    // `r ^ 0` is r; the xor changes the object.
     if ((s32)(r ^ 0) < 0) {
+#else
+    if (r < 0) {
+#endif
         r = -r;
     }
     idx = r % range + 1;
@@ -2551,7 +2566,12 @@ PuniData* puniSearchRandom_Teki(void) {
     Punigp->randSeedA += Punigp->randSeedB + 0x17340000 - 0x506F;
     Punigp->randSeedB += Punigp->randSeedA + 0x21270000 + 0x3F9C;
     r = Punigp->randSeedB;
+#ifdef MUST_MATCH
+    // `r ^ 0` is r; the xor changes the object.
     if ((s32)(r ^ 0) < 0) {
+#else
+    if (r < 0) {
+#endif
         r = -r;
     }
     idx = r % range + 110;
@@ -4557,7 +4577,7 @@ void puniModeWater(PuniData* punidat) {
         }
         case 3: {
             u32 divisor = (__OSBusClock >> 2) / 1000;
-            u32 step = (u32)((u32)gp->renderTime - (u32)punidat->modeStartTime) / divisor;
+            u32 step = ((u32)gp->renderTime - (u32)punidat->modeStartTime) / divisor;
             if ((s32)step < 0x12C) {
                 f32 t = (f32)(s32)step / 300.0f;
                 f32 y;
@@ -6083,7 +6103,7 @@ void puniSound(void) {
     }
 
     if (Punigp->moveLevel != Punigp->prevMoveLevel) {
-        if ((u32)Punigp->moveSfx != 0) {
+        if (Punigp->moveSfx != 0) {
             psndSFXOff(Punigp->moveSfx);
         }
         switch (Punigp->moveLevel) {

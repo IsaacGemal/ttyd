@@ -1288,7 +1288,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
             return 2;
     }
 
-    if (mario->currMotionId == 0x13 && (s32)mario->currSubMotionId == 0x14) {
+    if (mario->currMotionId == 0x13 && mario->currSubMotionId == 0x14) {
         v65 = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
                              &vec3_rsh_000136ec);
 
@@ -1387,7 +1387,11 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
 }
 
 // Calls through the function pointer stay real `bl`s: the original does not inline pose_change/pose_main here.
+#ifdef MUST_MATCH
 #define MOAMOA_POSE_CHANGE(e, a, b) (((void (*)(MoamoaPose*, char*, char*))moamoa_pose_change)((e), (a), (b)))
+#else
+#define MOAMOA_POSE_CHANGE(e, a, b) moamoa_pose_change((e), (a), (b))
+#endif
 // Keeping both sound vectors in inline scopes reproduces their stack-slot order (as in eki_00).
 static inline Vec moaSoundVec(ExtPose* ep, const Vec* base) {
     Vec v = *base;
@@ -1935,7 +1939,11 @@ static void ext_moamoa_main(void) {
         entry->savedX = (*ep->matrix)[0][3];
         entry->savedZ = (*ep->matrix)[2][3];
     }
+#ifdef MUST_MATCH
     ((void (*)(void))moamoa_pose_main)();
+#else
+    moamoa_pose_main();
+#endif
     wp->prevTrainY = wp->train->modelWorldMtx[1][3];
     if (wp->flags & 0x10) {
         mario->riderDelta.x = 0.0f;

@@ -59,34 +59,34 @@ s32 _GetInputDir(void) {
     s32 p;
 
     if (mask != 0) {
-        p = (s32)BattlePadCheckNow(mask);
+        p = BattlePadCheckNow(mask);
         if (p == 0) {
             return -1;
         }
     }
-    p = (s32)BattlePadCheckNow(0x10000);
+    p = BattlePadCheckNow(0x10000);
     if (p) {
-        p = (s32)BattlePadCheckNow(0x80000);
+        p = BattlePadCheckNow(0x80000);
         if (p) {
             return 2;
         }
-        p = (s32)BattlePadCheckNow(0x40000);
+        p = BattlePadCheckNow(0x40000);
         return p ? 8 : 1;
     }
-    p = (s32)BattlePadCheckNow(0x20000);
+    p = BattlePadCheckNow(0x20000);
     if (p) {
-        p = (s32)BattlePadCheckNow(0x80000);
+        p = BattlePadCheckNow(0x80000);
         if (p) {
             return 4;
         }
-        p = (s32)BattlePadCheckNow(0x40000);
+        p = BattlePadCheckNow(0x40000);
         return p ? 6 : 5;
     }
-    p = (s32)BattlePadCheckNow(0x80000);
+    p = BattlePadCheckNow(0x80000);
     if (p) {
         return 3;
     }
-    p = (s32)BattlePadCheckNow(0x40000);
+    p = BattlePadCheckNow(0x40000);
     return p ? 7 : 0;
 }
 
@@ -166,7 +166,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                             break;
                         }
                     }
-                    if ((s32)irand(100) >= 0) {
+                    if (irand(100) >= 0) {
                         work->actionCommands.result = 0;
                     } else {
                         work->actionCommands.result = 2;

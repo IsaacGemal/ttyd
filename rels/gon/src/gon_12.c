@@ -71,7 +71,7 @@ static USER_FUNC(evt_chuchu_back_loop) {
         event->userdata[1] = now & 0xFFFFFFFF;
     }
 
-    elapsed = (s32)((u64)((s32)now - (s32)event->userdata[1]) / (OS_TIMER_CLOCK / 1000));
+    elapsed = (s32)((u64)((s32)now - event->userdata[1]) / (OS_TIMER_CLOCK / 1000));
     if (elapsed < value) {
         npc->rotation.z = intplGetValue(0xB, elapsed, value, 0.0f, 360.0f);
         return EVT_RETURN_BLOCK;

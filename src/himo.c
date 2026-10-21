@@ -234,11 +234,7 @@ void vivihimoDisp(CameraId cameraId, void* data) {
 
     prev = &mtxPrev;
     cur = &mtxCur;
-#ifdef MUST_MATCH
-    spline_getvalue((f32*)&prevPos, 4, points, knots, tangents, float_0_8041decc);
-#else
     spline_getvalue((f32*)&prevPos, 4, (s32)points, (s32)knots, (s32)tangents, float_0_8041decc);
-#endif
     mtx[0][0] = float_10_8041ded0 * (float_1_8041ded4 * work->mtx0[0][0] + float_0_8041decc * work->mtx1[0][0]);
     mtx[0][1] = float_1_8041ded4 * work->mtx0[0][1] + float_0_8041decc * work->mtx1[0][1];
     mtx[0][2] = float_1_8041ded4 * work->mtx0[0][2] + float_0_8041decc * work->mtx1[0][2];

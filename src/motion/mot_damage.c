@@ -154,7 +154,7 @@ void mot_damage(void) {
 		}
 		break;
 	case 1:
-		if ((s32)--mario->multiTimer > 0) {
+		if (--mario->multiTimer > 0) {
 			break;
 		}
 		mario->multiTimer = 0;
@@ -162,7 +162,7 @@ void mot_damage(void) {
 		mario->field_0x2AC = 20.0f;
 		break;
 	case 0xA:
-		if ((s32)(++mario->multiTimer) == 2) {
+		if ((++mario->multiTimer) == 2) {
 			mario->currSubMotionId = 0xB;
 			psndSFXOn_3D((const char*)0x195, &mario->position);
 			if ((HitEntry*)mario->hitobjDamageReturn != NULL) {
@@ -226,12 +226,12 @@ void mot_damage(void) {
 		mario->baseSpeed = 8.0f;
 		mario->multiTimer = (s16)(distABf(target.x, target.z, mario->position.x, mario->position.z) / 8.0f);
 		mario->directionView = angleABf(mario->position.x, mario->position.z, target.x, target.z);
-		mario->wCamVal1 = (target.y - mario->damageRootY) / (f32)(s32)mario->multiTimer;
+		mario->wCamVal1 = (target.y - mario->damageRootY) / (f32)mario->multiTimer;
 		mario->currSubMotionId = 0xC;
 		mario->dispFlags |= 1;
-		if ((s32)mario->multiTimer == 0) {
+		if (mario->multiTimer == 0) {
 			mario->multiTimer = 0xA;
-			mario->wCamVal1 = (target.y - mario->damageRootY) / (f32)(s32)mario->multiTimer;
+			mario->wCamVal1 = (target.y - mario->damageRootY) / (f32)mario->multiTimer;
 			mario->currSubMotionId = 0xE;
 		}
 		break;
@@ -240,7 +240,7 @@ void mot_damage(void) {
 		movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
 		mario->field_EC.x = mario->position.x;
 		mario->field_EC.z = mario->position.z;
-		if ((s32)--mario->multiTimer <= 0) {
+		if (--mario->multiTimer <= 0) {
 			mario->currSubMotionId = 0xD;
 			mario->flags |= MARIO_FLAG_STOP_AIR_MOVEMENT;
 			marioSetFallPara();
@@ -249,7 +249,7 @@ void mot_damage(void) {
 		}
 		break;
 	case 0xD:
-		if ((s32)--mario->multiTimer <= 0) {
+		if (--mario->multiTimer <= 0) {
 			mario->currSubMotionId = 0x14;
 		}
 		break;
@@ -257,7 +257,7 @@ void mot_damage(void) {
 		mario->field_EC.y = mario->field_EC.y + mario->wCamVal1;
 		mario->field_EC.x = mario->position.x;
 		mario->field_EC.z = mario->position.z;
-		if ((s32)--mario->multiTimer <= 0) {
+		if (--mario->multiTimer <= 0) {
 			mario->flags |= MARIO_FLAG_STOP_AIR_MOVEMENT;
 			marioSetFallPara();
 			mario->dispFlags &= ~1;
@@ -306,7 +306,7 @@ void mot_damage(void) {
 		mario->currSubMotionId = 0x1F;
 		// fallthrough
 	case 0x1F:
-		if ((s32)--mario->multiTimer > 0) {
+		if (--mario->multiTimer > 0) {
 			break;
 		}
 		if (mario->characterId == 0) {
@@ -324,7 +324,7 @@ void mot_damage(void) {
 		mario->currSubMotionId = 0x20;
 		// fallthrough
 	case 0x20:
-		if ((s32)--mario->multiTimer <= 0) {
+		if (--mario->multiTimer <= 0) {
 			marioChgMot(0);
 			marioUpdateCamPos();
 			npcStartForEvent();
@@ -343,7 +343,7 @@ s32 marioWaitDamageReturnFall(void) {
 	if (mario->currMotionId != MARIO_MOTION_DAMAGE) {
 		return -1;
 	}
-	if ((s32)mario->currSubMotionId >= 0x14) {
+	if (mario->currSubMotionId >= 0x14) {
 		marioGetScreenPos(mario->position, &x, &y, &z);
 		if (marioChkInScreen((s32)x, (s32)y)) {
 			return 1;
@@ -380,7 +380,7 @@ void mot_damageToge(void) {
 
 	switch (mario->currSubMotionId) {
 	case 0:
-		if ((s32)--mario->multiTimer > 0) {
+		if (--mario->multiTimer > 0) {
 			break;
 		}
 		if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
@@ -417,7 +417,7 @@ void mot_damageToge(void) {
 		mario->baseSpeed = 8.0f;
 		mario->multiTimer = (s16)(distABf(position.x, position.z, mario->position.x, mario->position.z) / 8.0f);
 		mario->directionView = angleABf(mario->position.x, mario->position.z, position.x, position.z);
-		mario->wCamVal1 = (position.y - mario->damageRootY) / (f32)(s32)mario->multiTimer;
+		mario->wCamVal1 = (position.y - mario->damageRootY) / (f32)mario->multiTimer;
 		mario->currSubMotionId = 0xC;
 		break;
 	case 0xC:
@@ -425,14 +425,14 @@ void mot_damageToge(void) {
 		movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
 		mario->field_EC.x = mario->position.x;
 		mario->field_EC.z = mario->position.z;
-		if ((s32)--mario->multiTimer <= 0) {
+		if (--mario->multiTimer <= 0) {
 			mario->currSubMotionId = 0xD;
 			mario->flags |= MARIO_FLAG_STOP_AIR_MOVEMENT;
 			marioSetFallPara();
 		}
 		break;
 	case 0xD:
-		if ((s32)--mario->multiTimer <= 0) {
+		if (--mario->multiTimer <= 0) {
 			mario->currSubMotionId = 0x14;
 		}
 		break;
@@ -464,7 +464,7 @@ void mot_damageToge(void) {
 		mario->currSubMotionId = 0x1F;
 		// fallthrough
 	case 0x1F:
-		if ((s32)--mario->multiTimer > 0) {
+		if (--mario->multiTimer > 0) {
 			break;
 		}
 		pouchAddHP(-1);
@@ -478,7 +478,7 @@ void mot_damageToge(void) {
 		mario->currSubMotionId = 0x20;
 		// fallthrough
 	case 0x20:
-		if ((s32)--mario->multiTimer <= 0) {
+		if (--mario->multiTimer <= 0) {
 			marioChgMot(0);
 			marioUpdateCamPos();
 		}
@@ -512,7 +512,7 @@ s32 marioWaitDamageTogeReturnFall(void) {
 	if (mario->currMotionId != MARIO_MOTION_DAMAGE_TOGE) {
 		return -1;
 	}
-	if ((s32)mario->currSubMotionId >= 0x14) {
+	if (mario->currSubMotionId >= 0x14) {
 		marioGetScreenPos(mario->position, &x, &y, &z);
 		if (marioChkInScreen((s32)x, (s32)y)) {
 			return 1;

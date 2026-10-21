@@ -179,20 +179,20 @@ void titleMain(SequenceWork* work) {
 				&& animGroupBaseAsync(TITLE_MAKU_C, 2, 0))
 			{
 				if (seqGetPrevSeq() == SEQ_LOAD) {
-					fadeEntry(0x40, 0, *(GXColor*)&dat_80419480);
-					fadeEntry(0x1f, 0, *(GXColor*)&dat_80419484);
+					fadeEntry(0x40, 0, dat_80419480);
+					fadeEntry(0x1f, 0, dat_80419484);
 					wp2->tex5PosY = 120.0f;
 					wp2->tex6PosY = -170.0f;
 					wp2->waitTimer = 0;
 				}
 				else if (seqGetPrevSeq() == SEQ_GAME_OVER) {
-					fadeEntry(0x15, 0, *(GXColor*)&dat_80419488);
-					fadeEntry(0x1d, 0, *(GXColor*)&dat_8041948c);
+					fadeEntry(0x15, 0, dat_80419488);
+					fadeEntry(0x1d, 0, dat_8041948c);
 					wp2->waitTimer = 0x4e;
 				}
 				else {
-					fadeEntry(0x15, 0, *(GXColor*)&dat_80419490);
-					fadeEntry(0x22, 0, *(GXColor*)&dat_80419494);
+					fadeEntry(0x15, 0, dat_80419490);
+					fadeEntry(0x22, 0, dat_80419494);
 					fadeSetNarrowFast();
 					wp2->waitTimer = 0x17;
 				}
@@ -209,7 +209,7 @@ void titleMain(SequenceWork* work) {
 			}
 			if (fadeIsFinish()) {
 				if (seqGetPrevSeq() != SEQ_LOAD) {
-					fadeEntry(0x14, 0x1f4, *(GXColor*)&dat_80419498);
+					fadeEntry(0x14, 0x1f4, dat_80419498);
 					wp2->step++;
 				}
 				else {
@@ -263,12 +263,12 @@ void titleMain(SequenceWork* work) {
 			}
 			break;
 		case 10:
-			fadeEntry(0x3f, 0, *(GXColor*)&dat_8041949c);
+			fadeEntry(0x3f, 0, dat_8041949c);
 			wp2->step++;
 			// fallthrough
 		case 11:
 			if (fadeIsFinish()) {
-				fadeEntry(0x1a, 0, *(GXColor*)&dat_804194a0);
+				fadeEntry(0x1a, 0, dat_804194a0);
 				wp2->step++;
 			}
 			break;
@@ -279,8 +279,8 @@ void titleMain(SequenceWork* work) {
 			}
 			break;
 		case 20:
-			fadeEntry(0x21, 0, *(GXColor*)&dat_804194a4);
-			fadeEntry(0xa, 0x3e8, *(GXColor*)&dat_804194a8);
+			fadeEntry(0x21, 0, dat_804194a4);
+			fadeEntry(0xa, 0x3e8, dat_804194a8);
 			psndBGMOff_f_d(0x200, 0x3e8, 0);
 			wp2->phaseFrame = 0;
 			wp2->step++;

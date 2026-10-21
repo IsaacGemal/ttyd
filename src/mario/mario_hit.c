@@ -459,7 +459,7 @@ static inline void marioChkGndRollProbe(MarioWork* wp) {
     if (hit != NULL) {
         grx = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - 180.f);
         grz = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - 180.f);
-        angleABf(0.0f, 0.0f, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
+        angleABf(0.0f, 0.0f, sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
     }
     if (hit != NULL) {
         roll_grx = grx;
@@ -847,7 +847,7 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
             wp2->slopeTiltX = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - 180.f);
             wp2->slopeTiltY = 0.0f;
             wp2->slopeTiltZ = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - 180.f);
-            ang = angleABf(0.0f, 0.0f, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
+            ang = angleABf(0.0f, 0.0f, sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (ang >= lim) {
                 hit = NULL;
             }
@@ -857,7 +857,7 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
             wp2->slopeTiltX = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - 180.f);
             wp2->slopeTiltY = 0.0f;
             wp2->slopeTiltZ = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - 180.f);
-            wp->slopeAngle = angleABf(0.0f, 0.0f, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
+            wp->slopeAngle = angleABf(0.0f, 0.0f, sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (hitPos.y < py && __fabsf(hitPos.y - py) >= 2.0f) {
                 if (__fabsf(hitPos.y - py) > __fabsf(b)) {
                     *outX = __fabsf(py - hitPos.y);
@@ -1208,7 +1208,7 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
             wp2->slopeTiltX = gndCenti(angleABf(0.0f, 0.0f, 100.f * nz, ny100) - 180.f);
             wp2->slopeTiltY = 0.0f;
             wp2->slopeTiltZ = gndCenti(angleABf(0.0f, 0.0f, 100.f * nx, ny100) - 180.f);
-            ang = angleABf(0.0f, 0.0f, (f32)sqrtf(nx * nx + nz * nz), -ny);
+            ang = angleABf(0.0f, 0.0f, sqrtf(nx * nx + nz * nz), -ny);
             wp->slopeAngle = ang;
             if (__fabsf(LND_CENTI((yy - hy) - dist)) < 0.1f) {
                 *pos = LND_CENTI(hy);
@@ -1309,7 +1309,7 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
             wp2->slopeTiltX = gndCenti(gndAngle(normal.z, normal.y) - 180.f);
             wp2->slopeTiltY = 0.0f;
             wp2->slopeTiltZ = gndCenti(gndAngle(normal.x, normal.y) - 180.f);
-            ang = angleABf(0.0f, 0.0f, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
+            ang = angleABf(0.0f, 0.0f, sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
             wp->slopeAngle = ang;
             if (__fabsf(LND_CENTI((yy - hitPos.y) - dist)) < 0.1f) {
                 *out = hitPos.y;
@@ -1601,7 +1601,7 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
             wp2->slopeTiltY = 0.0f;
             wp2->slopeTiltZ =
                 gndCenti(angleABf(0.0f, 0.0f, 100.f * nx, ny100) - 180.f);
-            ang = angleABf(0.0f, 0.0f, (f32)sqrtf(nx * nx + nz * nz), -ny);
+            ang = angleABf(0.0f, 0.0f, sqrtf(nx * nx + nz * nz), -ny);
             if (!(wp->flags & 0x1000000)) {
                 f32 lim = (wp->dispFlags & 0x1000000) ? 75.0f : 50.f;
 

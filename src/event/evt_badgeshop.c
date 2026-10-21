@@ -314,7 +314,12 @@ void badgeShop_bargainGeneration(void) {
 	}
 	irand(0x100); //unused
 	while ((s32)(bdsw->field_0x10C + bdsw->field_0x110) < pickTarget) {
+#ifdef MUST_MATCH
+		// No-op cast: the value is already s32, but the cast changes the object.
 		if ((s32)bdsw->field_0x10C < 3 || !bit2Count) {
+#else
+		if (bdsw->field_0x10C < 3 || !bit2Count) {
+#endif
 			pickIndex = irand(totalBadges);
 			presentIndex = 0;
 			for (i = 0; i < 99; i++) {

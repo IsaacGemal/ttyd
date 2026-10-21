@@ -72,12 +72,7 @@ s32 marioGetPlaneStatus(void) {
 	if (mario->currMotionId != MARIO_MOTION_PLANE) {
 		return 0;
 	}
-#ifdef MUST_MATCH
-	// The original compares currSubMotionId with cmpwi (signed); the header types it u32.
-	if ((s32)mario->currSubMotionId >= 0xC && (s32)mario->currSubMotionId < 0x14) {
-#else
 	if (mario->currSubMotionId >= 0xC && mario->currSubMotionId < 0x14) {
-#endif
 		return 2;
 	}
 	return 1;
@@ -89,7 +84,7 @@ s32 mario_plane_cancel(void) {
 	if (mario->currMotionId != MARIO_MOTION_PLANE) {
 		return 0;
 	}
-	if ((s32)mario->currSubMotionId >= 0xC && (s32)mario->currSubMotionId < 0x14) {
+	if (mario->currSubMotionId >= 0xC && mario->currSubMotionId < 0x14) {
 		mario->currSubMotionId = 0x32;
 		mario->field_0x2AC = mario->position.y;
 		return 1;
@@ -332,7 +327,7 @@ void mot_plane(void) {
 		}
 		mario->wPlayerCollisionBox.x = 20.0f;
 		mario->wPlayerCollisionBox.y = 12.333333f;
-		mario->baseSpeed = __fabsf(0.02f * (f32)(s8)mario->wStickDir1);
+		mario->baseSpeed = __fabsf(0.02f * (f32)mario->wStickDir1);
 		mario->currSubMotionId = 0xC;
 		mario->baseSpeed = 1.0f;
 		((MotionPlaneData*)mario->motStruct)->field_0x10 = 2.0f;
@@ -361,7 +356,7 @@ void mot_plane(void) {
 			return;
 		}
 	}
-	if ((s32)mario->currSubMotionId == 0x14 || (s32)mario->currSubMotionId == 0x1E) {
+	if (mario->currSubMotionId == 0x14 || mario->currSubMotionId == 0x1E) {
 		MarioWork* m;
 		camFollowYOff();
 		{
@@ -380,9 +375,9 @@ void mot_plane(void) {
 		}
 		planeReset();
 		allPartyRideOff2();
-		if ((s32)mario->currSubMotionId == 0x14) {
+		if (mario->currSubMotionId == 0x14) {
 			marioChgMot(3);
-		} else if ((s32)mario->currSubMotionId == 0x1E) {
+		} else if (mario->currSubMotionId == 0x1E) {
 			marioChgMot(0);
 		}
 	}
@@ -678,7 +673,7 @@ static void flyMain(void) {
 			}
 			break;
 	}
-	if ((s32)mario->currSubMotionId != 0xF) {
+	if (mario->currSubMotionId != 0xF) {
 		return;
 	}
 	if (mario->buttonNew & 0x100) {
@@ -727,16 +722,16 @@ static void flyMain(void) {
 
 		if ((s8)(stick & 0xff) != 0) {
 			if (mario->baseSpeed) {
-				f3 = __fabsf((f32)(s8)mario->wStickDir1);
+				f3 = __fabsf((f32)mario->wStickDir1);
 				if (DATA->flags & 1) {
-					if ((s8)mario->wStickDir1 < 0) {
+					if (mario->wStickDir1 < 0) {
 						if (DATA->pitch >= planeData[3]) {
 							DATA->pitch = 0.1f * (planeData[3] - DATA->pitch) + DATA->pitch;
 						} else {
 							DATA->pitch = 0.1f * (f3 * planeData[5]) + DATA->pitch;
 						}
 					}
-					if ((s8)mario->wStickDir1 > 0) {
+					if (mario->wStickDir1 > 0) {
 						if (DATA->pitch <= planeData[4]) {
 							DATA->pitch = planeData[4];
 						} else {
@@ -744,14 +739,14 @@ static void flyMain(void) {
 						}
 					}
 				} else {
-					if ((s8)mario->wStickDir1 > 0) {
+					if (mario->wStickDir1 > 0) {
 						if (DATA->pitch >= planeData[3]) {
 							DATA->pitch = 0.1f * (planeData[3] - DATA->pitch) + DATA->pitch;
 						} else {
 							DATA->pitch = 0.1f * (f3 * planeData[5]) + DATA->pitch;
 						}
 					}
-					if ((s8)mario->wStickDir1 < 0) {
+					if (mario->wStickDir1 < 0) {
 						if (DATA->pitch <= planeData[4]) {
 							DATA->pitch = planeData[4];
 						} else {
@@ -813,14 +808,14 @@ static void flyMain(void) {
 				x = mario->baseSpeed * x;
 				mario->baseSpeed = mario->baseSpeed + x;
 			}
-			if ((s8)mario->wStickDir1 != 0 && DATA->pitch >= planeData[3]) {
+			if (mario->wStickDir1 != 0 && DATA->pitch >= planeData[3]) {
 				mario->baseSpeed = mario->baseSpeed + planeData[2];
 			}
 			if (mario->baseSpeed <= 0.0f) {
 				mario->baseSpeed = 0.0f;
 			}
 			f31 = 0.0f;
-			if ((s8)mario->wStickDir1 == 0) {
+			if (mario->wStickDir1 == 0) {
 				if (mario->baseSpeed < planeData[20]) {
 					f32 s, a;
 
@@ -861,7 +856,7 @@ static void flyMain(void) {
 			{
 				f32 add;
 
-				if ((s8)mario->wStickDir1 != 0) {
+				if (mario->wStickDir1 != 0) {
 					f32 s = sin(3.1415927f * (planeData[0] - mario->baseSpeed) / 180.0f);
 
 					add = planeData[18] * s;
@@ -901,11 +896,11 @@ static void flyMain(void) {
 			}
 			if ((s8)(mario->wStickDir1 & 0xff) != 0) {
 				if (DATA->flags & 1) {
-					if ((s8)mario->wStickDir1 > 0 && DATA->field_0x14 >= 1.0f) {
+					if (mario->wStickDir1 > 0 && DATA->field_0x14 >= 1.0f) {
 						DATA->field_0x14 = 1.0f;
 					}
 				} else {
-					if ((s8)mario->wStickDir1 < 0 && DATA->field_0x14 >= 1.0f) {
+					if (mario->wStickDir1 < 0 && DATA->field_0x14 >= 1.0f) {
 						DATA->field_0x14 = 1.0f;
 					}
 				}
@@ -958,7 +953,7 @@ static void flyMain(void) {
 		s32 frames = sysMsec2Frame((s32)(1000.0f * planeData[17]));
 
 		if (DATA->flags & 1) {
-			if ((f32)(s8)mario->wStickDir1 < 0.0f) {
+			if ((f32)mario->wStickDir1 < 0.0f) {
 				s32 c = DATA->stallTimer + 1;
 
 				DATA->stallTimer = c;
@@ -969,7 +964,7 @@ static void flyMain(void) {
 				}
 			}
 		} else {
-			if ((f32)(s8)mario->wStickDir1 > 0.0f) {
+			if ((f32)mario->wStickDir1 > 0.0f) {
 				s32 c = DATA->stallTimer + 1;
 
 				DATA->stallTimer = c;

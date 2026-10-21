@@ -5038,7 +5038,11 @@ s32 slot_rotate_sub(void* arg0, SlotData* data, s32 index) {
         if (diff < 0.0f) {
             diff += 360.0f;
         }
-        dir = (diff <= data->speed[index]) ? 1 : 0;
+        if (diff <= data->speed[index]) {
+            dir = 1;
+        } else {
+            dir = 0;
+        }
     } else {
         diff = 45.0f * (f32)steps - data->angle[data->now][index];
         if (diff > 0.0f) {

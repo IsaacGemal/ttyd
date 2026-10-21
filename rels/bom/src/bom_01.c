@@ -271,7 +271,12 @@ void drawNum(s32 num, s32 count, f32 a, f32 b, f32 c) {
 }
 
 static inline s32 sightBlink(s32 i) {
+#ifdef MUST_MATCH
+    // The ternary on a 0/1 test changes the object; the plain test is under #else.
     return ((gp->retraceCount % 20) > 6 && i == sight_wp->state) ? 1 : 0;
+#else
+    return (gp->retraceCount % 20) > 6 && i == sight_wp->state;
+#endif
 }
 
 enum SightArrow {
@@ -324,8 +329,8 @@ void disp_sight(CameraId cameraId, void* param) {
     drawNum((s32)(gp->renderTime / 200 / 1000), 8, 126.0f, 150.0f, 0.6f);
     drawNum((s32)(gp->renderTime / 300 / 1000), 6, 162.0f, 120.0f, 0.6f);
     drawNum((s32)(gp->renderTime / 400 / 1000), 6, 162.0f, 90.0f, 0.6f);
-    drawNum((s32)((u32)gp->retraceCount >> 2), 4, 110.0f, -160.0f, 1.0f);
-    drawNum((s32)((u32)gp->retraceCount >> 3), 2, 230.0f, -170.0f, 0.8f);
+    drawNum((s32)(gp->retraceCount >> 2), 4, 110.0f, -160.0f, 1.0f);
+    drawNum((s32)(gp->retraceCount >> 3), 2, 230.0f, -170.0f, 0.8f);
 
     winTexSet(8, (Vec){-210.0f, -140.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, colorA);
 
@@ -590,7 +595,7 @@ static USER_FUNC(bom_flag) {
     s32* args = event->args;
     s32 onoff = evtGetValue(event, args[0]);
     s32 flag = evtGetValue(event, args[1]);
-    u16* p = (u16*)(u32)((u32*)(u32)lp[0])[0];
+    u16* p = (u16*)((u32*)lp[0])[0];
 
     if (onoff != 0) {
         *p |= flag;
@@ -2158,7 +2163,7 @@ static inline s32 find_entry_minnnanokoe(PoseData* pd) {
 }
 
 static void ext_dispent(void) {
-    u16* p = (u16*)(u32)((u32*)(u32)lp[0])[0];
+    u16* p = (u16*)((u32*)lp[0])[0];
 
     if (!(*p & 1)) {
         dispEntry(CAMERA_3D, 0.0f, 1, ext_disp, NULL);

@@ -244,7 +244,7 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 	}
 	cursor->unk8 = count;
 	// The original compares these signed (cmpw), though the header declares them u32.
-	if ((s32)cursor->field_0 >= (s32)cursor->unk8) {
+	if (cursor->field_0 >= cursor->unk8) {
 		cursor->field_0 = cursor->unk8 - 1;
 	}
 }
@@ -1005,7 +1005,12 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 		s8 ownBelong;
 
 		selected = -1;
+#ifdef MUST_MATCH
+		// No-op cast: the value is already s8, but the cast changes the object.
 		ownBelong = (s8)BtlUnit_GetBelong(unit);
+#else
+		ownBelong = BtlUnit_GetBelong(unit);
+#endif
 		for (i = 0; i < *(s8*)&work[0xA6C]; i++) {
 			s32 offset = ((s8)work[0xA6D + i]) * 0x24 + 4;
 
@@ -1055,8 +1060,14 @@ s32 BattleCommandInput(BattleWork* wp) {
 	}
 	_commandRestoreRec();
 	result = 1;
+#ifdef MUST_MATCH
+	// (0, x) is x; the comma only changes how MWCC allocates the two string registers.
 	sfx = (0, "SFX_BTL_CURSOR_MOVE2");
 	sfx2 = (0, "SFX_BTL_CURSOR_MOVE2");
+#else
+	sfx = "SFX_BTL_CURSOR_MOVE2";
+	sfx2 = "SFX_BTL_CURSOR_MOVE2";
+#endif
 
 	while (result) {
 		result = 0;
@@ -1467,7 +1478,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 			}
 
 		}
-		if ((s32)BattlePadCheckNow(-1)) {
+		if (BattlePadCheckNow(-1)) {
 			cmd->idleFrames = 0;
 			btl_camera_set_mode(0, 0);
 		} else {
@@ -1533,7 +1544,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 				break;
 			}
 		}
-		if ((s32)BattlePadCheckRepeat(0x80000)) {
+		if (BattlePadCheckRepeat(0x80000)) {
 			if (cursor->field_0 < cursor->unk8 - 1) {
 				cursor->field_0++;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE1");
@@ -1543,7 +1554,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 			cursor->field_0 = 0;
 			break;
 		}
-		if ((s32)BattlePadCheckRepeat(0x40000)) {
+		if (BattlePadCheckRepeat(0x40000)) {
 			if (cursor->field_0 > 0) {
 				cursor->field_0--;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE1");
@@ -1765,7 +1776,7 @@ s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
 	}
 	// goto: a failed pad check falls through to the next one; an else-if chain retests the cursor (object differs).
 	if (cursor->field_0 < cursor->unk8 - 1) {
-		if ((s32)BattlePadCheckRepeat(0x20000)) {
+		if (BattlePadCheckRepeat(0x20000)) {
 			cursor->field_0++;
 			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 			goto after;
@@ -1778,7 +1789,7 @@ s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
 		}
 	}
 	if (cursor->field_0 > 0) {
-		if ((s32)BattlePadCheckRepeat(0x10000)) {
+		if (BattlePadCheckRepeat(0x10000)) {
 			cursor->field_0--;
 			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 			goto after;
@@ -2442,7 +2453,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		unit->field_0x2A8 = 7;
 		break;
 	case 11:
-		switch ((s8)unit->moveState) {
+		switch (unit->moveState) {
 		case 6:
 			unit->moveState = 5;
 			break;
@@ -2468,7 +2479,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		}
 		break;
 	case 12:
-		switch ((s8)unit->moveState) {
+		switch (unit->moveState) {
 		case 6:
 			unit->moveState = 5;
 			break;

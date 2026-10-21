@@ -67,13 +67,13 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		break;
 	case 0x64:
 		if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
-			if ((s32)irand(100) >= 0) {
+			if (irand(100) >= 0) {
 				work->actionCommands.field_0x8 = work->actionCommands.acParams[3] / 2;
 				work->actionCommands.outputParams[0] = 0;
 				work->actionCommands.outputParams[2] = 0;
 			}
 			else {
-				s32 r = (s32)irand(work->actionCommands.acParams[2] - 1) + 1;
+				s32 r = irand(work->actionCommands.acParams[2] - 1) + 1;
 				work->actionCommands.outputParams[0] = r;
 				switch (r) {
 				case 1:
@@ -102,7 +102,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		// fallthrough
 	case 0x3E8:
 		dec->frame++;
-		if ((s32)BattlePadCheckNow(0x100) != 0) {
+		if (BattlePadCheckNow(0x100) != 0) {
 			work->actionCommands.outputParams[1] = 1;
 			if (BattlePadCheckTrigger(0x100)) {
 				dec->presses++;
@@ -177,7 +177,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 	case 0x3E9:
 		work->actionCommands.field_0x8 = work->actionCommands.field_0x8 - 1;
 		if (work->actionCommands.field_0x8 < 0) {
-			if ((s32)work->actionCommands.outputParams[0] > 0) {
+			if (work->actionCommands.outputParams[0] > 0) {
 				work->actionCommands.result = 2;
 				work->actionCommands.mResultCount++;
 			}

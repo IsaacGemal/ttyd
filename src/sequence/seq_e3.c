@@ -325,7 +325,6 @@ void e3Disp(CameraId cameraId, void* param) {
     f32 projBackup[GX_PROJECTION_SZ];
     f32 viewportBackup[GX_VIEWPORT_SZ];
     CameraEntry camBackup;
-    char* keys[3];
     s32 active;
     s32 alpha;
     s32 i;

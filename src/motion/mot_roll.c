@@ -91,10 +91,10 @@ BOOL marioRollKeyDisable(void) {
     if (mario->currMotionId != 0x16) {
         return TRUE;
     }
-    if ((s32)mario->currSubMotionId >= 0 && (s32)mario->currSubMotionId <= 1) {
+    if (mario->currSubMotionId >= 0 && mario->currSubMotionId <= 1) {
         return FALSE;
     }
-    if ((s32)mario->currSubMotionId >= 0x14 && (s32)mario->currSubMotionId <= 0x16) {
+    if (mario->currSubMotionId >= 0x14 && mario->currSubMotionId <= 0x16) {
         return FALSE;
     }
     return TRUE;
@@ -566,7 +566,7 @@ static inline s32 rollChkStickBack(f32 range) {
 
     m = marioGetPtr();
     a10 = (f32)(s32)(10.0f * m->moveDir) / 10.0f;
-    ref = angleABf(0.0f, 0.0f, (f32)(s8)m->wStickDir1, (f32)(s8)m->wStickDir2);
+    ref = angleABf(0.0f, 0.0f, (f32)m->wStickDir1, (f32)m->wStickDir2);
     lo = a10 - range;
     if (lo < 0.0f) {
         lo += 360.0f;
@@ -693,7 +693,7 @@ void mot_roll(void) {
         if (mario->dispOfs.y > 1.0f) {
             mario->dispOfs.y = 1.0f;
         }
-        if ((s32)--mario->multiTimer <= 0) {
+        if (--mario->multiTimer <= 0) {
             mario->currSubMotionId = 0x1E;
             marioChgPose("M_I_U");
             marioChgPaper("PM_R_1B");
@@ -731,7 +731,7 @@ void mot_roll(void) {
         psndSFXOn_3D((char*)0x17A, &mario->position);
         /* fallthrough */
     case 0x15:
-        if ((s32)--mario->multiTimer > 0) {
+        if (--mario->multiTimer > 0) {
             if (revise360(mario->directionView - mario->targetYaw) < 180.0f) {
                 f30 = 90.0f;
                 f27 = 0.1f * (f30 - mario->unk1A8);
@@ -790,7 +790,7 @@ void mot_roll(void) {
         break;
     }
 
-    if ((s32)mario->currSubMotionId < 0x1E) {
+    if (mario->currSubMotionId < 0x1E) {
         return;
     }
 
@@ -932,8 +932,8 @@ void mot_roll(void) {
     ay = f30;
 
     if (!(mario->flags & 0x30000)) {
-        f26 = (f32)(s8)mario->wStickDir1;
-        f30 = (f32)(s8)mario->wStickDir2;
+        f26 = (f32)mario->wStickDir1;
+        f30 = (f32)mario->wStickDir2;
         ay = distABf(0.0f, 0.0f, f26, f30);
         f26 = revise360(mario->targetYaw + angleABf(0.0f, 0.0f, f26, f30));
         f26 = 3.1415927f * f26 / 180.0f;
@@ -1020,8 +1020,8 @@ void mot_roll(void) {
         }
     }
 
-    if (mario->hitobjFront != NULL && (s8)mario->wStickDir1 == 0 &&
-        (s8)mario->wStickDir2 == 0 && !marioChkBero(mario->hitobjFront)) {
+    if (mario->hitobjFront != NULL && mario->wStickDir1 == 0 &&
+        mario->wStickDir2 == 0 && !marioChkBero(mario->hitobjFront)) {
         f29 = f29 + 0.6f * (-f29);
         f28 = f28 + 0.6f * (-f28);
         if (fabsf(f29) < 0.1f) {
@@ -1281,7 +1281,7 @@ void mot_roll(void) {
     } else {
         mario->dispRot.x = 0.0f;
     }
-    if ((s8)mario->wStickDir1 != 0 || (s8)mario->wStickDir2 != 0) {
+    if (mario->wStickDir1 != 0 || mario->wStickDir2 != 0) {
         mario->rollFlags |= 0x4000;
     }
     if (mario->baseSpeed) {
@@ -1322,7 +1322,7 @@ void roll_upstairs(void) {
     MarioWork* mario = marioGetPtr();
 
     mario->position.y += mario->jumpVelY;
-    if ((s32)--mario->multiTimer <= 0) {
+    if (--mario->multiTimer <= 0) {
         mario->flags &= ~0x80;
         mario->flags &= ~0x40;
         mario->flags &= ~0x40000;

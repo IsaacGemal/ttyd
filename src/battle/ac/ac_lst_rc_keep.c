@@ -97,7 +97,7 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
             }
             else {
                 dec->leftHold++;
-                if ((s32)BattlePadCheckNow(0x40000) == 0) {
+                if (BattlePadCheckNow(0x40000) == 0) {
                     dec->leftHold = 0;
                 }
             }
@@ -108,7 +108,7 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
             }
             else {
                 dec->cRightHold++;
-                if ((s32)BattlePadCheckNow(0x800000) == 0) {
+                if (BattlePadCheckNow(0x800000) == 0) {
                     dec->cRightHold = 0;
                 }
             }
@@ -140,13 +140,13 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
             if (dec->leftHold > 0) {
                 dec->leftHold++;
             }
-            else if ((s32)BattlePadCheckNow(0x40000) == 0) {
+            else if (BattlePadCheckNow(0x40000) == 0) {
                 dec->leftHold = 1;
             }
             if (dec->cRightHold > 0) {
                 dec->cRightHold++;
             }
-            else if ((s32)BattlePadCheckNow(0x800000) == 0) {
+            else if (BattlePadCheckNow(0x800000) == 0) {
                 dec->cRightHold = 1;
             }
             if (!autoCommand && (dec->leftHold > 5 || dec->cRightHold > 5)) {

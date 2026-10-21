@@ -8,15 +8,6 @@
 // The owner value every ARQPostRequest of this manager passes.
 #define ARAM_OWNER 0x19751128
 
-#ifdef MUST_MATCH
-// MUST_MATCH: retail loads the flag halfword (and the busy word) again at every test; plain field reads would be reused.
-#define NODE_FLAGS(n) (*(volatile u16*)(n))
-#define GARBAGE_BUSY() (*(volatile s32*)&wp->garbageBusy)
-#else
-#define NODE_FLAGS(n) ((n)->flags)
-#define GARBAGE_BUSY() (wp->garbageBusy)
-#endif
-
 //.bss
 static ARAMWork work;
 
@@ -58,12 +49,12 @@ void aramMgrGarbage(void) {
 
 	first = wp->nodes;
 	for (node = first; node != NULL; node = node->next) {
-		if (NODE_FLAGS(node) & 2) {
-			while (!(NODE_FLAGS(node) & 4)) {
+		if (node->flags & 2) {
+			while (!(node->flags & 4)) {
 			}
 		}
-		if (NODE_FLAGS(node) & 8) {
-			while (!(NODE_FLAGS(node) & 0x10)) {
+		if (node->flags & 8) {
+			while (!(node->flags & 0x10)) {
 			}
 		}
 	}
@@ -96,12 +87,12 @@ void aramMgrGarbage(void) {
 				wp->garbageBusy = 1;
 				ARQPostRequest(&wp->request, ARAM_OWNER, 1, 0, cur->aramAddr + offset, (u32)wp->garbageBuf,
 				               wp->garbageChunk, aramCallbackGarbage);
-				while (GARBAGE_BUSY()) {
+				while (wp->garbageBusy) {
 				}
 				wp->garbageBusy = 1;
 				ARQPostRequest(&wp->request, ARAM_OWNER, 0, 0, (u32)wp->garbageBuf, cursor + offset,
 				               wp->garbageChunk, aramCallbackGarbage);
-				while (GARBAGE_BUSY()) {
+				while (wp->garbageBusy) {
 				}
 				offset += 0x8000;
 			}
@@ -170,7 +161,7 @@ void* aramMgrToAramAsync(void* data, u32 size) {
 void* aramMgrToAram(void* data, u32 size) {
 	void* work = aramMgrToAramAsync(data, size);
 
-	while (!(*(volatile u16*)work & 4)) {
+	while (!(((ARAMWorkNode*)work)->flags & 4)) {
 	}
 	return work;
 }
@@ -193,11 +184,11 @@ void arqCallbackToMram(u32 request) {
 void aramMgrToMram(void* aram, void* mram) {
 	ARAMWorkNode* node = aram;
 
-	while (!(NODE_FLAGS(node) & 4)) {
+	while (!(node->flags & 4)) {
 	}
 	ARQPostRequest(&node->request, ARAM_OWNER, 1, 0, node->aramAddr, (u32)mram, node->size, arqCallbackToMram);
 	node->flags |= 8;
 	node->mramAddr = mram;
-	while (!(NODE_FLAGS(node) & 0x10)) {
+	while (!(node->flags & 0x10)) {
 	}
 }

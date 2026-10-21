@@ -84,7 +84,7 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
     unit->damagePattern = arg6;
     if (unit->mAttributeFlags & 0x200000) {
         t = unit->damagePattern;
-        if (t == 0x15 || (u32)(t - 0x16) <= 1 || t == 0x18) {
+        if (t == 0x15 || (t - 0x16) <= 1 || t == 0x18) {
             unit->damagePattern = 0;
         }
     }
@@ -434,7 +434,7 @@ s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* 
     if (part->attributes & kUnk_ImmuneToDamageOrStatus) {
         return 0;
     }
-    if (unit1 != 0 && ((u32)weapon->special & 1) && getAllOrNothing(unit1) != 0) {
+    if (unit1 != 0 && (weapon->special & 1) && getAllOrNothing(unit1) != 0) {
         if (!(wp->actionCommands.result & 2) && !(flags & 0x20000)) {
             return 0;
         }
@@ -447,7 +447,7 @@ s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* 
     if (wp->field_18FE1 == 1 && (weapon->special & 2)) {
         damage += 3;
     }
-    if ((u32)weapon->special & 1) {
+    if (weapon->special & 1) {
         u8 allOrNothing = getAllOrNothing(unit1);
 
         damage += unit1->badgesEquipped.PowerPlus;
@@ -1516,17 +1516,13 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
             }
 #ifdef MUST_MATCH
             if (BattleSetStatusDamage(&work, unit2, part, weapon->special, i, (s8)rate, levelDiff, p1, p2)) {
-                if (i == STATUS_INVISIBLE) {
-                    btlDispPoseAnime(part);
-                }
-            }
 #else
             if (BattleSetStatusDamage(&work, unit2, part, weapon->special, i, rate, levelDiff, p1, p2)) {
+#endif
                 if (i == STATUS_INVISIBLE) {
                     btlDispPoseAnime(part);
                 }
             }
-#endif
         }
     }
     return work;

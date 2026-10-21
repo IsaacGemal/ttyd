@@ -1224,22 +1224,12 @@ s32 winLogMain(WindowWork* work) {
 // Advances the tattle-log rows (state machine) and eases the panel
 // springs. The per-block `dN`
 // temps give the diff-first fmadd operand order; `ep` steps the entry base so
-// the prologue copy lands first. The MUST_MATCH `new_var` alias is scheduling
-// shaping only (see its comment).
+// the prologue copy lands first.
 void winLogMain2(WindowWork* work) {
     WinLogWork* w = (WinLogWork*)work;
     u8* ep = (u8*)work;
     LogWin* lw = (LogWin*)work;
-#ifdef MUST_MATCH
-    // Match-only second base alias: with one `work` base MWCC hoists the
-    // second int->float fudge store (`stw r0, 0x8(r1)`) one /6 block early;
-    // the natural single-base form is under #else (99.22%).
-    u8* new_var;
-#endif
     s32 i;
-#ifdef MUST_MATCH
-    new_var = (u8*)work;
-#endif
 
     for (i = 0; i < w->count; i++, ep += 0x20) {
         WinLogEntry* e = (WinLogEntry*)(ep + 0xD78);
@@ -1305,44 +1295,6 @@ void winLogMain2(WindowWork* work) {
         }
     }
 
-#ifdef MUST_MATCH
-    {
-        f32 d1 = ((LogWin*)new_var)->e28 - ((LogWin*)new_var)->e2c;
-        lw->e2c += d1 / 8.0;
-    }
-    {
-        f32 d2 = ((LogWin*)new_var)->e30 - lw->e34;
-        ((LogWin*)new_var)->e34 += d2 / 8.0;
-    }
-    {
-        f32 d3 = lw->e64 - lw->e68;
-        ((LogWin*)new_var)->e68 += d3 / 8.0;
-    }
-    {
-        f32 d4 = lw->e6c - lw->e70;
-        ((LogWin*)new_var)->e70 += d4 / 8.0;
-    }
-    {
-        f32 d5 = ((LogWin*)new_var)->e74 - lw->e78;
-        lw->e78 += d5 / 8.0;
-    }
-    {
-        f32 d6 = lw->e7c - ((LogWin*)new_var)->e80;
-        ((LogWin*)new_var)->e80 += d6 / 4.0f;
-    }
-    lw->ea4 = (f32)(lw->cardPage * 0xE8);
-    lw->ea0 += (((LogWin*)new_var)->ea4 - ((LogWin*)new_var)->ea0) / 6.0f;
-    lw->e84 += (lw->e88 - ((LogWin*)new_var)->e84) / 6.0f;
-    ((LogWin*)new_var)->e8c += (lw->e90 - ((LogWin*)new_var)->e8c) / 6.0f;
-    lw->ea8 += (lw->eac - ((LogWin*)new_var)->ea8) / 6.0f;
-    ((LogWin*)new_var)->eb0 += (lw->eb4 - lw->eb0) / 6.0f;
-    lw->fa0 = (f32)(((LogWin*)new_var)->badgePage * 0xE8);
-    lw->f9c += (lw->fa0 - ((LogWin*)new_var)->f9c) / 6.0f;
-    ((LogWin*)new_var)->f80 += (((LogWin*)new_var)->f84 - ((LogWin*)new_var)->f80) / 6.0f;
-    lw->f88 += (lw->f8c - ((LogWin*)new_var)->f88) / 6.0f;
-    ((LogWin*)new_var)->fa4 += (((LogWin*)new_var)->fa8 - ((LogWin*)new_var)->fa4) / 6.0f;
-    lw->fac += (((LogWin*)new_var)->fb0 - lw->fac) / 6.0f;
-#else
     {
         f32 d1 = lw->e28 - lw->e2c;
         lw->e2c += d1 / 8.0;
@@ -1379,7 +1331,6 @@ void winLogMain2(WindowWork* work) {
     lw->f88 += (lw->f8c - lw->f88) / 6.0f;
     lw->fa4 += (lw->fa8 - lw->fa4) / 6.0f;
     lw->fac += (lw->fb0 - lw->fac) / 6.0f;
-#endif
 }
 
 // The original passes these draw arguments by value: an inline's by-value parameters give the same caller copies.
@@ -1726,10 +1677,10 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         sprintf(buf2, "%d\x81\x44", (s32)enemy_monoshiri_sort_table[id]);
         
         {
-            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, ((24.0f + x) - 5.0f) + (f32)((s32)((i / 8) * 0xD8)), (y - 16.0f) - (f32)((i % 8) * 0x18)), (Vec){0.75f, 0.75f, 0.75f}, c8c, buf2);
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, ((24.0f + x) - 5.0f) + (f32)(((i / 8) * 0xD8)), (y - 16.0f) - (f32)((i % 8) * 0x18)), (Vec){0.75f, 0.75f, 0.75f}, c8c, buf2);
         }
         {
-            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (56.0f + x) + (f32)((s32)((i / 8) * 0xD8)), (y - 16.0f) - (f32)((i % 8) * 0x18)), (Vec){0.75f, 0.75f, 0.75f}, c8c, msg);
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (56.0f + x) + (f32)(((i / 8) * 0xD8)), (y - 16.0f) - (f32)((i % 8) * 0x18)), (Vec){0.75f, 0.75f, 0.75f}, c8c, msg);
         }
     }
     if (w->charPage > 0) {

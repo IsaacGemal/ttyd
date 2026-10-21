@@ -605,7 +605,6 @@ void select_disp_mario(WinMgrEntry* entry) {
     char buf[4];
     GXColor colorBlack;
     GXColor colorGray;
-    GXColor colorWhite;
     GXColor colorIcon;
     GXColor colorTitle;
     GXColor fogColor;
@@ -617,7 +616,6 @@ void select_disp_mario(WinMgrEntry* entry) {
     pouchGetPtr();
     colorBlack = dat_80421a54;
     colorGray = dat_80421a58;
-    colorWhite = dat_80421a5c;
     colorTitle = dat_80421a5c;
     colorIcon = dat_80421a5c;
 
@@ -1245,11 +1243,11 @@ void select_disp(WinMgrEntry* entry) {
             break;
         case 3:
         case 12:
-            value = (u16)item->sell_price;
+            value = item->sell_price;
             hasValue = 1;
             break;
         case 13:
-            value = (u16)item->star_piece_price;
+            value = item->star_piece_price;
             hasValue = 1;
             break;
         case 14:
@@ -1969,7 +1967,12 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         memset(select->items, 0, 0x18c);
         select->numItems = 0;
         for (i = 0; i < BADGE_COUNT; i++) {
+#ifdef MUST_MATCH
+            // No-op cast: the value is already s16, but the cast changes the object.
             s16 v = (s16)badgeShop_get(bdsw->bargain_table, (s16)(i + BADGE_MIN));
+#else
+            s16 v = badgeShop_get(bdsw->bargain_table, (s16)(i + BADGE_MIN));
+#endif
 
             if (v - badgeShop_ThrowCheck(i + BADGE_MIN) > 0) {
                 select->items[select->numItems++].id = i + BADGE_MIN;
@@ -1985,7 +1988,12 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
             memset(select->items, 0, max * 4);
             select->numItems = 0;
             for (i = 0; i < BADGE_COUNT; i++) {
+#ifdef MUST_MATCH
+                // No-op cast: the value is already s16, but the cast changes the object.
                 s32 v = (s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN));
+#else
+                s32 v = badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN));
+#endif
 
                 if (v - badgeShop_ThrowCheck(i + BADGE_MIN) > 0) {
                     select->items[select->numItems].id = i + BADGE_MIN;
@@ -2030,7 +2038,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
             memset(select->items, 0, max * 4);
             select->numItems = 0;
             for (i = 0; i < 0x152; i++) {
-                if ((s16)badgeShop_get(bdsw->bteresa_table, (s16)(i + 1)) > 0) {
+                if (badgeShop_get(bdsw->bteresa_table, (s16)(i + 1)) > 0) {
                     select->items[select->numItems++].id = i + 1;
                 }
             }
@@ -2223,13 +2231,13 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
         case 12:
             event->lwData[1] = itemId;
             event->lwData[2] = (s32)itemDataTable[itemId].id;
-            event->lwData[3] = (u16)itemDataTable[itemId].sell_price;
+            event->lwData[3] = itemDataTable[itemId].sell_price;
             event->lwData[4] = select->cursor;
             break;
         case 13:
             event->lwData[1] = itemId;
             event->lwData[2] = (s32)itemDataTable[itemId].id;
-            event->lwData[3] = (u16)itemDataTable[itemId].star_piece_price;
+            event->lwData[3] = itemDataTable[itemId].star_piece_price;
             event->lwData[4] = itemDataTable[itemId].bp_cost;
             break;
         case 14:

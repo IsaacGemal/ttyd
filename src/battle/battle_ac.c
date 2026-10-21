@@ -297,7 +297,7 @@ s32 BattleActionCommandGetPrizeLv(BattleWork* wp, BattleUnit* unit, s32 index) {
 		return -1;
 	}
 
-	lv = index + (u8)wp->actionCommands.mAcDifficulty;
+	lv = index + wp->actionCommands.mAcDifficulty;
 	lv--;
 	if (lv < 0) {
 		lv = 0;

@@ -110,7 +110,7 @@ s32 marioShipChanging(void) {
     if (mario->currMotionId != MARIO_MOTION_SHIP) {
         return 0;
     }
-    id = (s32)mario->currSubMotionId;
+    id = mario->currSubMotionId;
     if (id == 0xA) {
         return 2;
     }
@@ -403,7 +403,7 @@ void mot_ship(void) {
                 wrap = 1;
             }
         }
-        if (wrap && (s32)mario->currSubMotionId == 4) {
+        if (wrap && mario->currSubMotionId == 4) {
             mario->currSubMotionId = 0xA;
         }
         break;
@@ -701,7 +701,7 @@ void mot_ship(void) {
                 r27 = 1;
             }
         }
-        if ((s32)mario->currSubMotionId == 0x2F && r27) {
+        if (mario->currSubMotionId == 0x2F && r27) {
             mario->unk1A8 = revise360(mario->unk1A8);
             mario->dispReqDir = mario->unk1A8;
             mario->moveDir = toMovedir(mario->unk1A8);
@@ -831,7 +831,7 @@ s32 marioChkShipMoveMode(void) {
     if (mario->currMotionId != MARIO_MOTION_SHIP) {
         return 0;
     }
-    if ((s32)mario->currSubMotionId >= 0x32 && (s32)mario->currSubMotionId <= 0x34) {
+    if (mario->currSubMotionId >= 0x32 && mario->currSubMotionId <= 0x34) {
         return 1;
     }
     return 0;

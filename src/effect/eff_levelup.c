@@ -58,7 +58,12 @@ EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 			{ 0x00000000, 0x00000058, 0x000000D2, 0x00000100, 0x00000086 }
 		};
 
+#ifdef MUST_MATCH
+		// The ternary on a 0/1 test changes the object; the plain test is under #else.
 		elem->position.x = (f32)(tbl[(!gp->language) ? 0 : 1][i] - tbl[(!gp->language) ? 0 : 1][4]);
+#else
+		elem->position.x = (f32)(tbl[gp->language != 0][i] - tbl[gp->language != 0][4]);
+#endif
 		elem->position.y = (f32)y_trans[0];
 		elem->position.z = 0.0f;
 		elem->xOffset = 0.0f;

@@ -61,12 +61,12 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
         break;
     case 0x64:
         if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
-            if ((s32)irand(100) >= 0) {
+            if (irand(100) >= 0) {
                 work->actionCommands.field_0x8 = 0x1e;
                 work->actionCommands.outputParams[0] = 0;
             }
             else {
-                s32 r = (s32)irand(work->actionCommands.acParams[1] - 1) + 1;
+                s32 r = irand(work->actionCommands.acParams[1] - 1) + 1;
                 work->actionCommands.outputParams[0] = r;
                 work->actionCommands.field_0x8 = 0x1e;
             }
@@ -123,7 +123,7 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
     case 0x3e9:
         work->actionCommands.field_0x8--;
         if (work->actionCommands.field_0x8 < 0) {
-            if ((s32)work->actionCommands.outputParams[0] > 0) {
+            if (work->actionCommands.outputParams[0] > 0) {
                 work->actionCommands.result = 2;
                 work->actionCommands.mResultCount++;
             }

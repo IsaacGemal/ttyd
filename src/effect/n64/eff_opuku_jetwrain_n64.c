@@ -139,7 +139,7 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	for (j = 1; j < 18; j++) {
 		{
 			f32 s = (f32)sin(6.2831855f * (f32)((counter - j) * -20) / 360.0f);
-			data->height[j][6] = (s8)(f32)(scale * (-64.0f * s));
+			data->height[j][6] = (s8)(scale * (-64.0f * s));
 		}
 	}
 

@@ -93,7 +93,7 @@ void mot_jumpStand(void) {
         mario->multiTimer = 0;
     }
 
-    switch ((s32)mario->currSubMotionId) {
+    switch (mario->currSubMotionId) {
         case 0:
             if (++mario->multiTimer >= 3) {
                 mario->currSubMotionId = 4;
@@ -178,7 +178,7 @@ void mot_jumpStand(void) {
             mario->position.y += mario->jumpVelY;
             break;
         case 20:
-            if ((s32)--mario->multiTimer <= 0) {
+            if (--mario->multiTimer <= 0) {
                 mario->baseSpeed = float_0_8041abb8;
                 mario->currSubMotionId = 0x1E;
             }
@@ -251,7 +251,7 @@ void mot_jumpSw(void) {
                 mario->multiTimer = 0x14;
                 mario->baseSpeed =
                     distABf(mario->position.x, mario->position.z, x, z)
-                    / (f32)(s32)mario->multiTimer;
+                    / (f32)mario->multiTimer;
             }
         } else {
             f32 dir;
@@ -268,12 +268,12 @@ void mot_jumpSw(void) {
             mario->moveDir = dir;
             mario->multiTimer = 0x14;
             mario->baseSpeed = distABf(mario->position.x, mario->position.z, x, z)
-                               / (f32)(s32)mario->multiTimer;
+                               / (f32)mario->multiTimer;
         }
         mario->currSubMotionId = 0;
     }
 
-    switch ((s32)mario->currSubMotionId) {
+    switch (mario->currSubMotionId) {
         case 0:
             mario->multiTimer--;
             marioMakeJumpPara();
@@ -293,7 +293,7 @@ void mot_jumpSw(void) {
             mario->position.y += mario->jumpVelY;
             break;
         case 10:
-            if ((s32)--mario->multiTimer <= 0) {
+            if (--mario->multiTimer <= 0) {
                 mario->baseSpeed = float_0_8041abb8;
                 mario->currSubMotionId = 0x14;
             }
@@ -378,7 +378,7 @@ void mot_jumpNpc(void) {
                 }
                 mario->multiTimer = 0x14;
                 mario->baseSpeed = distABf(mario->position.x, mario->position.z, x, z)
-                                   / (f32)(s32)mario->multiTimer;
+                                   / (f32)mario->multiTimer;
             }
         } else {
             f32 dir;
@@ -399,12 +399,12 @@ void mot_jumpNpc(void) {
             mario->moveDir = dir;
             mario->multiTimer = 0x14;
             mario->baseSpeed = distABf(mario->position.x, mario->position.z, x, z)
-                               / (f32)(s32)mario->multiTimer;
+                               / (f32)mario->multiTimer;
         }
         mario->currSubMotionId = 0;
     }
 
-    switch ((s32)mario->currSubMotionId) {
+    switch (mario->currSubMotionId) {
         case 0:
             mario->multiTimer--;
             marioMakeJumpPara();
@@ -424,7 +424,7 @@ void mot_jumpNpc(void) {
             mario->position.y += mario->jumpVelY;
             break;
         case 0x14:
-            if ((s32)--mario->multiTimer <= 0) {
+            if (--mario->multiTimer <= 0) {
                 mario->baseSpeed = MATCH_F32(float_0_8041abb8);
                 mario->currSubMotionId = 0x1E;
             }
@@ -491,9 +491,9 @@ void mot_jump(void) {
         mario->trigFlags &= ~0x10000;
     }
 
-    switch ((s32)mario->currSubMotionId) {
+    switch (mario->currSubMotionId) {
         case 0:
-            if ((s32)--mario->multiTimer <= 0) {
+            if (--mario->multiTimer <= 0) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose("M_J_1B\0");
                 }
@@ -560,9 +560,9 @@ void mot_jumpSmall(void) {
         mario->trigFlags &= ~0x10000;
     }
 
-    switch ((s32)mario->currSubMotionId) {
+    switch (mario->currSubMotionId) {
         case 0:
-            if ((s32)--mario->multiTimer <= 0) {
+            if (--mario->multiTimer <= 0) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose("M_J_1B\0");
                 }
@@ -584,14 +584,14 @@ void mot_upstairs(void) {
         marioClearJumpPara();
         mario->multiTimer = 3;
         mario->jumpVelY = (mario->field_0x1C4 - mario->position.y)
-                             / (f32)(s32)mario->multiTimer;
+                             / (f32)mario->multiTimer;
         mario->currSubMotionId = 0;
     }
 
-    switch ((s32)mario->currSubMotionId) {
+    switch (mario->currSubMotionId) {
         case 0:
             mario->position.y += mario->jumpVelY;
-            if ((s32)--mario->multiTimer <= 0) {
+            if (--mario->multiTimer <= 0) {
                 mario->flags &= ~0x80;
                 mario->flags &= ~0x40;
                 mario->flags &= ~0x40000;
@@ -639,7 +639,7 @@ void mot_fall(void) {
         }
     }
 
-    switch ((s32)mario->currSubMotionId) {
+    switch (mario->currSubMotionId) {
         case 0:
             if (mario->position.y <= mario->field_0x11C.y) {
                 if (!marioBgmodeChk()) {
@@ -701,12 +701,12 @@ void mot_land(void) {
             marioChgMot(0);
             break;
         case 1:
-            if ((s32)--mario->multiTimer <= 0) {
+            if (--mario->multiTimer <= 0) {
                 marioChgMot(0);
             }
             break;
         case 10:
-            if ((s32)--mario->multiTimer <= 0) {
+            if (--mario->multiTimer <= 0) {
                 marioChgMot(0);
             }
             break;

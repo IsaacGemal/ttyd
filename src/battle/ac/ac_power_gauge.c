@@ -101,7 +101,7 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
     case 0x64:
         if ((work->actionCommands.field_0x4 & 1) &&
             (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
-            if ((s32)irand(100) >= 0) {
+            if (irand(100) >= 0) {
                 work->actionCommands.field_0x8 = 0x1E;
                 dec->flag = 0;
             }
@@ -145,8 +145,8 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
                 }
             }
             else {
-                if ((s32)BattlePadCheckNow(dec->button) == 0) {
-                    if ((s32)BattlePadCheckUp(dec->button) != 0) {
+                if (BattlePadCheckNow(dec->button) == 0) {
+                    if (BattlePadCheckUp(dec->button) != 0) {
                         dec->state = 2;
                     }
                 }

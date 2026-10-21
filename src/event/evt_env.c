@@ -13,13 +13,8 @@ USER_FUNC(evt_env_blur_on) {
 
 	if (isFirstCall) {
 		envBlurOn(flag, value);
-#ifdef MUST_MATCH // explicit 32-bit masks reproduce the original's `and x, -1` stores
 		event->userdata[0] = (start >> 32) & 0xFFFFFFFF;
 		event->userdata[1] = start & 0xFFFFFFFF;
-#else
-		event->userdata[0] = (u32)(start >> 32);
-		event->userdata[1] = (u32)start;
-#endif
 	}
 
 	if (value != 0) {

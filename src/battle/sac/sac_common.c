@@ -155,7 +155,7 @@ s32 sac_handbeat(EventEntry* event, BOOL isFirstCall) {
             count2 = 0x14;
         }
         volPer += 5;
-        if ((u8)volPer > 0x64) {
+        if (volPer > 0x64) {
             volPer = 0x64;
         }
     }
@@ -205,7 +205,7 @@ s32 sac_cheer(EventEntry* event, BOOL isFirstCall) {
             count2 = 0x14;
         }
         volPer += 5;
-        if ((u8)volPer > 0x64) {
+        if (volPer > 0x64) {
             volPer = 0x64;
         }
     }

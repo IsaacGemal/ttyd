@@ -155,7 +155,7 @@ void mot_stay(void) {
                 mario->dispFlags |= 4;
                 marioChgPose("M_S_3");
             } else {
-                if ((s32)mario->currSubMotionId == 0 && mario->field_0x5A != 0) {
+                if (mario->currSubMotionId == 0 && mario->field_0x5A != 0) {
                     mario->field_0x5A = 0;
                     if (strcmp(mario->animName, "M_I_Y") != 0) {
                         marioChgPose(str_8041AEF0);
@@ -241,7 +241,7 @@ void mot_stay(void) {
     }
 
     if ((mario->flags & 0x8) || (mario->dispFlags & 0x40000000)) {
-        if ((s32)mario->currSubMotionId > 0) {
+        if (mario->currSubMotionId > 0) {
             if (strcmp(mario->animName, str_8041AEF0) != 0
                 && strcmp(mario->animName, "M_S_1R") != 0) {
                 marioChgPose(str_8041AEF0);
@@ -257,9 +257,9 @@ void mot_stay(void) {
         if (low) {
             return;
         }
-        switch ((s32)mario->currSubMotionId) {
+        switch (mario->currSubMotionId) {
             case 0:
-                if ((s32)++mario->multiTimer >= sysMsec2Frame(50000)) {
+                if (++mario->multiTimer >= sysMsec2Frame(50000)) {
                     mario->currSubMotionId = 1;
                 }
                 break;
@@ -274,14 +274,14 @@ void mot_stay(void) {
                 mario->currSubMotionId = 2;
                 // fallthrough
             case 2:
-                if ((s32)--mario->multiTimer < 0) {
+                if (--mario->multiTimer < 0) {
                     marioChgPose(str_8041AEF0);
                     mario->multiTimer = 0x64;
                     mario->currSubMotionId = 3;
                 }
                 break;
             case 3:
-                if ((s32)--mario->multiTimer < 0) {
+                if (--mario->multiTimer < 0) {
                     marioChgEvtPose("M_N_5A");
                     mario->multiTimer = 0;
                     mario->currSubMotionId = 4;
@@ -293,10 +293,10 @@ void mot_stay(void) {
                 }
                 break;
             case 4:
-                if ((s32)++MWS32(mario, 0x2B4) >= sysMsec2Frame(0x2710)) {
+                if (++MWS32(mario, 0x2B4) >= sysMsec2Frame(0x2710)) {
                     MWS32(mario, 0x2B4) = sysMsec2Frame(0x2710);
                 }
-                if ((s32)++mario->multiTimer >= 0x8C) {
+                if (++mario->multiTimer >= 0x8C) {
                     mario->multiTimer = 0;
                     {
                         MarioWork* m = marioGetPtr();

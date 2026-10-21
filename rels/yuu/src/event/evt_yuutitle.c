@@ -55,10 +55,18 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
         }
         alphaF = (f32)wp->alpha;
         t = alphaF / 255.0f;
+#ifdef MUST_MATCH
+        // No-op casts: the products are already f32, but the casts change the object.
         wp->field_08 = (f32)(wp->field_10 * (1.0f - t)) + wp->field_18 * t;
         fade = 0.8f * t + 0.2f;
         scale *= fade;
         wp->field_0c = (f32)(wp->field_14 * (1.0f - t)) + wp->field_1c * t;
+#else
+        wp->field_08 = wp->field_10 * (1.0f - t) + wp->field_18 * t;
+        fade = 0.8f * t + 0.2f;
+        scale *= fade;
+        wp->field_0c = wp->field_14 * (1.0f - t) + wp->field_1c * t;
+#endif
     }
     // MWCC folds `/ 2.0f` into `* 0.5f` but keeps the product's operand order.
     halfWidth = scale * (f32)FontGetMessageWidth(wp->msg) / 2.0f;

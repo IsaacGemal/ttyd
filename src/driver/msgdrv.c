@@ -872,7 +872,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 			maxScale = 0.0f;
 			if (data->flags & 0x20) {
 				flags &= ~0xFF00;
-				flags |= 0x100 << (s8)data->selectCount;
+				flags |= 0x100 << data->selectCount;
 				data->selectCount++;
 			}
 			continue;
@@ -1246,7 +1246,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 					s32 rinc = (s32)(0.55f * fw);
 
 					entry->glyph = g;
-					entry->x = (s16)r25;
+					entry->x = r25;
 					entry->y = (s32)ey;
 					entry->scale = 0.55f * scale;
 					entry->arg = flags;
@@ -1997,7 +1997,7 @@ void selectWindow_Main(WindowEntry* window) {
 			data->selectCursor++;
 		}
 		else if ((keyGetButtonRep(0) & 4) || (keyGetDirRep(0) & 0x2000)) {
-			if ((s8)data->selectCursor < (s8)data->selectCount - 1) {
+			if (data->selectCursor < data->selectCount - 1) {
 				data->selectCursor++;
 			}
 		}
@@ -2070,7 +2070,7 @@ void selectWindow_Disp(CameraId camId, void* param) {
 	msgDisp(window->userdata, (u8)window->alpha, 40.f + window->x, window->y - 25.0f);
 
 	pos.x = 2.0f + window->x;
-	data->selectTopY += 0.3f * (window->y - (f32)((s8)data->selectCursor * 0x1F + 0x3A) - data->selectTopY);
+	data->selectTopY += 0.3f * (window->y - (f32)(data->selectCursor * 0x1F + 0x3A) - data->selectTopY);
 	pos.y = data->selectTopY;
 	pos.z = 0.0f;
 

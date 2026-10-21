@@ -58,9 +58,13 @@ static inline s32 __fpclassifyf(f32 x) {
 #define isnan(x) (fpclassify(x) == FP_NAN)
 
 static inline f32 sqrtf(f32 x) {
+#ifdef MUST_MATCH
 	// Poking float_0 through a pointer forces a load distinct from the caller's `dist != float_0`
 	// compare; a plain reference lets MWCC CSE them and moves effCloudMain's accumulator off f1.
 	if (x > *(f32*)&float_0_8041eba0) {
+#else
+	if (x > float_0_8041eba0) {
+#endif
 		f64 guess = __frsqrte(x);
 		guess = 0.5 * guess * (3.0 - guess * guess * x);
 		guess = 0.5 * guess * (3.0 - guess * guess * x);

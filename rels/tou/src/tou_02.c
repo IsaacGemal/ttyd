@@ -2117,7 +2117,7 @@ s32 check_hammer(FanPose* pose) {
             return 1;
         }
     }
-    if (mario->currMotionId == MARIO_MOTION_HAMMER_2 && (s32)mario->currSubMotionId == 0x14) {
+    if (mario->currMotionId == MARIO_MOTION_HAMMER_2 && mario->currSubMotionId == 0x14) {
         if (PSVECDistance(&mario->position, &pose->position) < 65.0f) {
             return 1;
         }

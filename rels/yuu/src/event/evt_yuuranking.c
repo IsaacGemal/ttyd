@@ -98,8 +98,8 @@ void yuu_draw_msg_fit(const char* msg, s32 maxWidth, f32 x, f32 y, f32 scale) {
     f32 sx;
 
     PSMTXTrans(trans, x, y, 0.0f);
-    if ((u16)FontGetMessageWidth(msg) > maxWidth) {
-        sx = (f32)maxWidth * scale / (f32)(u16)FontGetMessageWidth(msg);
+    if (FontGetMessageWidth(msg) > maxWidth) {
+        sx = (f32)maxWidth * scale / (f32)FontGetMessageWidth(msg);
     } else {
         sx = scale;
     }
@@ -825,7 +825,7 @@ USER_FUNC(evt_yuuranking_alloc_31_text_52F8) {
                     work->currentValue = work->result;
                 }
             },
-            evtSetValue(NULL, 0xF8406058, 1), resultValue >= 0, resultValue >= (s32)A74F(i))
+            evtSetValue(NULL, 0xF8406058, 1), resultValue >= 0, resultValue >= A74F(i))
         break;
     case 2:
     case 3:
@@ -836,7 +836,7 @@ USER_FUNC(evt_yuuranking_alloc_31_text_52F8) {
                     work->currentValue = work->result;
                 }
             },
-            if (work->mode == 3) { evtSetValue(NULL, 0xF8406059, 1); } else { evtSetValue(NULL, 0xF840605A, 1); }, resultValue >= 0, resultValue >= (s32)A74F(i))
+            if (work->mode == 3) { evtSetValue(NULL, 0xF8406059, 1); } else { evtSetValue(NULL, 0xF840605A, 1); }, resultValue >= 0, resultValue >= A74F(i))
         break;
     case 1:
         work->maxValue = evtGetValue(event, args[7]);
@@ -850,7 +850,7 @@ USER_FUNC(evt_yuuranking_alloc_31_text_52F8) {
                     work->currentValue = work->result;
                 }
             },
-            evtSetValue(NULL, 0xF840605B, 1), resultValue < work->maxValue, resultValue <= (s32)A74F(i))
+            evtSetValue(NULL, 0xF840605B, 1), resultValue < work->maxValue, resultValue <= A74F(i))
         break;
     }
 

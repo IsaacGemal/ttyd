@@ -327,7 +327,7 @@ void seq_loadMain(SequenceWork* workArg) {
             }
             break;
         case 3: {
-            GXColor color = *(GXColor*)&fade_color_start;
+            GXColor color = fade_color_start;
             fadeEntry(0x1C, 0, color);
             workArg->state++;
             break;
@@ -510,7 +510,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0xa:
-            fadeEntry(0x1b, 0, *(GXColor*)&fade_color_title);
+            fadeEntry(0x1b, 0, fade_color_title);
             wp->step++;
             break;
 
@@ -539,7 +539,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x16:
-            fadeEntry(0x1b, 0, *(GXColor*)&fade_color_continue);
+            fadeEntry(0x1b, 0, fade_color_continue);
             psndBGMOff_f_d(0x200, 0x7d0, 0);
             wp->step++;
             break;
@@ -560,7 +560,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x1e:
-            fadeEntry(0x1b, 0, *(GXColor*)&fade_color_name_entry);
+            fadeEntry(0x1b, 0, fade_color_name_entry);
             wp->step++;
             break;
 
@@ -573,14 +573,14 @@ void loadMain(SequenceWork* workArg) {
         case 0x20:
             if (nameEntPrepare()) {
                 nameEntOn(0);
-                fadeEntry(0x1c, 0, *(GXColor*)&fade_color_name_on);
+                fadeEntry(0x1c, 0, fade_color_name_on);
                 wp->step++;
             }
             break;
 
         case 0x21:
             if (fadeIsFinish() && !nameEntWait()) {
-                fadeEntry(0x18, 0, *(GXColor*)&fade_color_name_done);
+                fadeEntry(0x18, 0, fade_color_name_done);
                 if (!nameEntIsCancel()) {
                     psndBGMOff_f_d(0x200, 0xbb8, 0);
                 }
@@ -592,7 +592,7 @@ void loadMain(SequenceWork* workArg) {
             if (fadeIsFinish()) {
                 nameEntOff();
                 if (nameEntIsCancel()) {
-                    fadeEntry(0x1c, 0, *(GXColor*)&fade_color_name_cancel);
+                    fadeEntry(0x1c, 0, fade_color_name_cancel);
                     wp->step = 1;
                 } else {
                     strcpy(gp->playerName, nameEntGetName());
@@ -961,14 +961,14 @@ static inline void loadDrawColor(GXColor color) {
 
 void loadDraw(void) {
     CameraEntry* cam = camGetPtr(CAMERA_2D);
-    GXColor white = *(GXColor*)&dat_8041bd84;
-    GXColor greyA0 = *(GXColor*)&dat_8041bd88;
+    GXColor white = dat_8041bd84;
+    GXColor greyA0 = dat_8041bd88;
     s32 i;
     s32 j;
     WinDt* wd;
     CardData* card;
     CardSaveSlot* slot;
-    GXColor grey80 = *(GXColor*)&dat_8041bd8c;
+    GXColor grey80 = dat_8041bd8c;
     f32 viewport[6];
     f32 projection[7];
     char nameBuf[0x20];
@@ -989,7 +989,7 @@ void loadDraw(void) {
     GXSetZCompLoc(0);
     GXSetAlphaCompare(6, 0x80, 1, 0, 0);
     GXSetZMode(0, 7, 0);
-    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, *(GXColor*)&dat_8041bd90);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041bd90);
     GXSetNumChans(0);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetNumTevStages(1);
@@ -1044,7 +1044,7 @@ void loadDraw(void) {
         }
     }
 
-    windowDispGX_Waku_col(-250.0f, 200.0f, 500.0f, 40.0f, 20.0f, 0, *(GXColor*)&dat_8041bd94);
+    windowDispGX_Waku_col(-250.0f, 200.0f, 500.0f, 40.0f, 20.0f, 0, dat_8041bd94);
     FontDrawStart();
     {
         const char* msg = wp->message;
@@ -1154,7 +1154,7 @@ void loadDraw(void) {
                 PSMTXTrans(mtx, 8.0f + (half2 + (wd->x - half)), 1.0f + (wd->y - 22.0f), 0.0f);
                 PSMTXScale(mtx2, 1.5f, 1.5f, 1.5f);
                 PSMTXConcat(mtx, mtx2, mtx);
-                c = *(GXColor*)&dat_8041bda8;
+                c = dat_8041bda8;
                 iconDispGxCol(mtx, 0, 0x201, c);
             }
 
@@ -1185,38 +1185,38 @@ void loadDraw(void) {
 
     if (wp->step >= 0x64 && wp->step < 0xc8) {
         winTexInit(LOAD_TEX_PALETTE());
-        winTexSet(0xf, vec3_802ed6b8, vec3_802ed6c4, *(GXColor*)&dat_8041bdac);
+        winTexSet(0xf, vec3_802ed6b8, vec3_802ed6c4, dat_8041bdac);
         winTexInit_x2(LOAD_TEX_PALETTE());
-        winTexSet_x2(0x13, 0x1f, vec3_802ed6d0, vec3_802ed6dc, *(GXColor*)&dat_8041bdb0);
+        winTexSet_x2(0x13, 0x1f, vec3_802ed6d0, vec3_802ed6dc, dat_8041bdb0);
 
         for (j = 0; j < 3; j++) {
             if (j == wp->soundCursor) {
                 winTexInit(LOAD_TEX_PALETTE());
                 winTexSet(0x33, loadDrawVecY((f32)(0x32 - j * 0x32), vec3_802ed6e8), vec3_802ed6f4, *(GXColor*)&dat_8041bdb4);
                 winTexInit_x2(LOAD_TEX_PALETTE());
-                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY((f32)(0x36 - j * 0x32), vec3_802ed700), vec3_802ed70c, *(GXColor*)&dat_8041bdb8);
+                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY((f32)(0x36 - j * 0x32), vec3_802ed700), vec3_802ed70c, dat_8041bdb8);
             } else {
                 winTexInit_x2(LOAD_TEX_PALETTE());
-                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY((f32)(0x32 - j * 0x32), vec3_802ed718), vec3_802ed724, *(GXColor*)&dat_8041bdbc);
+                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY((f32)(0x32 - j * 0x32), vec3_802ed718), vec3_802ed724, dat_8041bdbc);
             }
         }
     }
 
     if (wp->step >= 0xc8 && wp->step < 0x12c) {
         winTexInit(LOAD_TEX_PALETTE());
-        winTexSet(0xf, vec3_802ed730, vec3_802ed73c, *(GXColor*)&dat_8041bdc0);
+        winTexSet(0xf, vec3_802ed730, vec3_802ed73c, dat_8041bdc0);
         winTexInit_x2(LOAD_TEX_PALETTE());
-        winTexSet_x2(0x14, 0x1f, vec3_802ed748, vec3_802ed754, *(GXColor*)&dat_8041bdc4);
+        winTexSet_x2(0x14, 0x1f, vec3_802ed748, vec3_802ed754, dat_8041bdc4);
 
         for (j = 0; j < 2; j++) {
             if (j == wp->rumbleCursor) {
                 winTexInit(LOAD_TEX_PALETTE());
                 winTexSet(0x33, loadDrawVecY((f32)(0x1e - j * 0x32), vec3_802ed760), vec3_802ed76c, *(GXColor*)&dat_8041bdc8);
                 winTexInit_x2(LOAD_TEX_PALETTE());
-                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY((f32)(0x22 - j * 0x32), vec3_802ed778), vec3_802ed784, *(GXColor*)&dat_8041bdcc);
+                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY((f32)(0x22 - j * 0x32), vec3_802ed778), vec3_802ed784, dat_8041bdcc);
             } else {
                 winTexInit_x2(LOAD_TEX_PALETTE());
-                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY((f32)(0x1e - j * 0x32), vec3_802ed790), vec3_802ed79c, *(GXColor*)&dat_8041bdd0);
+                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY((f32)(0x1e - j * 0x32), vec3_802ed790), vec3_802ed79c, dat_8041bdd0);
             }
         }
     }

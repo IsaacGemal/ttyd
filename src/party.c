@@ -1690,7 +1690,12 @@ s32 partyDokanInit(PartyEntry* party) {
     }
     partyChgPaper(party, "PM_D_1A");
     if (!(party->flags2 & 2)) {
+#ifdef MUST_MATCH
+        // No-op cast: the value is already s8, but the cast changes the object.
         s32 memberId = (s8)party->currentMemberId;
+#else
+        s32 memberId = party->currentMemberId;
+#endif
 
         if (memberId < 8) {
             partyGetHp(memberId);

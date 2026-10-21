@@ -40,7 +40,7 @@ void camShiftMain(CameraEntry* camera, MarioWork* mario, f32* out) {
         wp->targetBank = 0.0f;
         wp->scaleActive = 1.0f;
     } else {
-        stickInput = (f32)(s8)mario->wStickDir1;
+        stickInput = (f32)mario->wStickDir1;
         if (stickInput > 0.0f) {
             stickInput = 25.0f;
         }
