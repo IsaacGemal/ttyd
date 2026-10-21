@@ -325,7 +325,7 @@ typedef struct MarioWork {
         struct {
             s16 jabaraTimer;       // 0x2B8, mot_jabara: frames left in the rising swing (swingMain adds unk4 each frame, then unk8 at 0)
             s8 jabaraState;        // 0x2BA, mot_jabara: swingMain's state switch (0 idle, up to 15)
-            u8 jabaraAnimTime;     // 0x2BB, mot_jabara: local time passed to animPoseSetLocalTime for the paper animation
+            s8 jabaraAnimTime;     // 0x2BB, mot_jabara: local time passed to animPoseSetLocalTime for the paper animation
         };
         struct {
             s16 slitFlags;         // 0x2B8, mot_slit: bit 0 set when the walk speed reaches the dash cap (slitCapSpeed), cleared on steering

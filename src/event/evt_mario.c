@@ -206,7 +206,6 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
 
         if (type == 2 || type == 3) {
         Vec pos;
-        f32 zero;
 
         marioSlitForceCancel();
         marioRollForceCancel();
@@ -219,10 +218,9 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
         mario->dispDir = mario->dispReqDir;
-        zero = 0.0f;
-        mario->spinSpeed = zero;
+        mario->spinSpeed = 0.0f;
         pos = EM_VEC(0xC0, vec3_802e57f0);
-        pos.z = (mario->flags & 0x02000000) ? -16.0f : zero;
+        pos.z = (mario->flags & 0x02000000) ? -16.0f : 0.0f;
         mario->dispOfs = pos;
         event->userdata[0] = 0;
         marioNoUpdateCamPos();
@@ -586,7 +584,6 @@ USER_FUNC(evt_mario_set_dir) {
         f32 a = revise360(270.0f - angle);
         f32 start;   // temps keep the target's separate fmuls+fadds (no fp_contract fusion)
         f32 delta;
-        s32 n;       // temp keeps the increment result live without a reload, matching the allocator
 
         if (a > 270.0f) {
             a -= 360.0f;
@@ -597,9 +594,7 @@ USER_FUNC(evt_mario_set_dir) {
         mario->dispReqDir = mario->dispDir;
         mario->directionView = toMovedirSimple(mario->dispDir);
         mario->moveDir = mario->directionView;
-        n = event->userdata[0] + 1;
-        event->userdata[0] = n;
-        if (n > frames) {
+        if (++event->userdata[0] > frames) {
             if (loop == 0) {
                 return 1;
             }

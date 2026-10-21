@@ -22,10 +22,10 @@ typedef struct EffStarPowerData {
     f32 field_0x3C; // 0x3C
     f32 field_0x40; // 0x40
     f32 field_0x44; // 0x44
-    u32 field_0x48; // 0x48
-    u32 field_0x4C; // 0x4C
-    u32 field_0x50; // 0x50
-    u32 field_0x54; // 0x54
+    f32 field_0x48; // 0x48
+    f32 field_0x4C; // 0x4C
+    f32 field_0x50; // 0x50
+    f32 field_0x54; // 0x54
 } EffStarPowerData;
 EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale);
 void effStarPowerMain(EffectEntry* effect);

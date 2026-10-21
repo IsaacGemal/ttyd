@@ -5798,3 +5798,118 @@ CI ratchet baseline was `--init`ed on the clean 4ee6832b tree.
   (10090 -> 10083 weighted); field_0x 4426 -> 4442 (the `unk_` respellings, less posFrac/texFrac); unk_name 684 ->
   661. The index doesn't count the other spellings: `unkNN` tokens 3140 -> 2553, `field_NN` (no 0x) tokens
   5205 -> 4612 (git grep over src, rels, include).
+
+## The next ten worst files by the cleanup index, deep-cleaned, third round (2026-10-21, Claude Opus 5.5, n9-q-o-worst4)
+
+Task (Isaac): take battle_status_icon, party_motion, evt_mario, battle_disp, ac_shot, mot_jabara,
+ac_monosiri_target, unit_boss_batten_leader, eff_star_power_n64 and eki_00 each as a whole, as #1110 and #1114 did:
+raw offsets, MUST_MATCH, pragmas, gotos, function-pointer casts and puns typed away, no field renames without hard
+evidence, no data layout, and guard any unguarded hack found. A parallel branch (worst3) owns mapdrv, envdrv,
+sac_genki, party_yoshi, gor_03, mario_hit, party_nokonoko, eff_fire, battle_stage, battle_camera, shadowdrv and
+battle_seq, so none of those was edited.
+
+- **Method.** Untracked harness in build/tw4/: try.sh compiles one unit with its ninja command (`FSED` edits the
+  flags, `NM=1` drops -DMUST_MATCH) and runs tools/obj_equiv.py against objects saved from 38a70e42; var.py applies
+  OLD/NEW blocks and reports EQUIV or the per-function normalised asm diff (fdiff.py); regions.py tries each
+  MUST_MATCH region's `#else` alone; pragmas.py removes each scoped pragma pair alone; ci.sh is tools/ci.py with its
+  tools/tests step stubbed (the same 9 test_wave_launch environment errors as the chapters above) under `uv run
+  --with pyelftools`; nm_all.sh builds every object under `configure.py --non-matching`. Every commit: obj_equiv
+  EQUIV for each touched object, `build/G8MJ01/ok` recreated, ci.sh PASS on that commit's own tree, the changed C
+  files compiled without -DMUST_MATCH; after the header changes all 1,230 objects built non-matching (only the link
+  fails, as before); fncast_lint and local_prototypes clean. The ratchet baseline is the clean 38a70e42 build.
+- **Counts** (tools/cleanup_index.py, 38a70e42 -> this branch): index **14.511 -> 14.459** per kLOC (10112 -> 10075
+  weighted); opt_pragma 670 -> 650, raw_offset 281 -> 274, field_0x 4479 -> 4474 (a duplicated function body gone),
+  must_match 762 -> 764 (three unguarded steering temps guarded, one region removed); goto, fn_ptr_cast,
+  address_name, unk_name unchanged. Per file (`--top`, per kLOC; weighted; raw / must_match / pragma / goto /
+  fn_ptr_cast):
+  - battle_status_icon 174.447 -> 162.095 (71 -> 65): 0/4/6/0/0 -> 0/4/0/0/0
+  - party_motion 21.257 -> 21.538 (71 -> 72): 0/16/18/1/0 -> 0/19/16/1/0
+  - evt_mario 27.496 -> 27.554 (65 -> 65): 2/7/0/0/0 unchanged (per kLOC rises: 5 code lines went)
+  - battle_disp 48.973 -> 48.973 (62 -> 62): 0/0/28/0/0 unchanged
+  - ac_shot 124.236 -> 92.873 (61 -> 43): 4/4/10/0/0 -> 0/3/0/0/0
+  - mot_jabara 56.850 -> 51.498 (61 -> 55): 9/4/2/0/0 -> 6/4/2/0/0
+  - ac_monosiri_target 181.538 -> 176.471 (59 -> 57): 1/3/4/0/0 -> 1/3/2/0/0
+  - unit_boss_batten_leader 18.795 -> 16.938 (58 -> 52): 0/0/0/0/0 (its one hack was unmarked; see below)
+  - eff_star_power_n64 140.394 -> 140.394 (57 -> 57): 1/2/0/0/0 unchanged (12 puns gone, which the index doesn't count)
+  - eki_00 25.980 -> 26.042 (55 -> 55): 0/8/18/0/0 unchanged (two `(&wp->field)[i]` views gone, uncounted)
+- **File flags instead of pragmas.** battle_status_icon builds `-O4,s` like the other battle files (three
+  optimize_for_size pairs go). ac_shot builds `-O4,s -inline noauto` (three optimize_for_size and two dont_inline
+  pairs). ac_monosiri_target and party_motion add `-inline noauto` (one dont_inline pair each). Each object identical.
+- **Typing that removed offsets and puns.**
+  - ac_shot reads BattleACDispParams' RGBA word at 0xC through a `GXColor* tint` view (four `((u8*)disp)[0xC..0xF]`
+    reads and the `u8* col` byte view go); the field stays an s32 (ten action commands store it whole from u32
+    constants).
+  - MarioWork.jabaraAnimTime (0x2BB) is s8: mot_jabara, its only user, reads it sign-extended everywhere, so twelve
+    `(s8)` casts, the MW_S8 offset macro and a widened `s32 t` temp go (`++mario->jabaraAnimTime > 0x78`).
+  - EffStarPowerData 0x48-0x54 are f32 (the previous frame's angles and scale, only ever f32): twelve `*(f32*)&` puns.
+  - eki_00 MoamoaWork: `Vec targets[3]` and `u16 nearHits[3]`, rsh_06's layout of the same struct. The old comment
+    said a Vec[3] broke the match; it no longer does. MOA_TARGET and evt_moamoa_target_off index them directly.
+- **Natural shapes that matched.**
+  - ac_shot: `_draw_target_mark(const GXColor* color, ...)` (header too) replaces the guarded `__restrict` qualifier
+    (the const is what lets MWCC hoist the first colour load). Its `f32 zero/neg/one/half` constant locals and
+    their blocks: `if (range)`, `if (aw->rotSpeed)`, `aw->rotSpeed *= -1.0f`, `aw->gauge += 1.0f`,
+    `(s32)((min + max) / 2.0f)`. `range != 0.0f` and `0.0f != range` both swap the fcmpu operands; the bare
+    float test keeps retail's.
+  - party_motion: party_motion_jump and party_motion_homing_fly lose their `f32 zero` locals (`if (party->speed)`;
+    `!= 0.0f` is 20 lines off in fly), jump's `ntx/ntz` block and bare `{ floor.y += 10.0f; }` are plain statements,
+    and partyFollowHeight reads its 5.0f limit and party->position.y in place instead of reloading them into `f0`/
+    `f1` (its per-branch `f3 = 0.1f` stores and the `f1 = 0.05f` operand-order temp change the schedule and stay).
+  - evt_mario: evt_mario_paper_pose_dokan's `f32 zero` and evt_mario_set_dir's `s32 n` increment temp. Its
+    `start`/`delta` split stays: it keeps retail's separate fmuls/fadds, which `-fp_contract on` would fuse, a
+    difference in the computed value, not just in registers.
+  - unit_boss_batten_leader: the "Open (Isaac's call)" item of the 2026-10-19 hack review. Its
+    battenSatelliteTo_InitInline, an unguarded copy of battenSatelliteTo_Init taking the spline table twice (once
+    through a volatile parameter), goes the way #1115 fixed barriern's: BattenSatelliteSpline's word at 0x04 is a
+    `u32*` (the table spline_maketable builds from), so the store into it and the later `work[1] = (s32)table` are
+    separate expressions with retail's rematerialised address. battenSatelliteTo_Init takes `u32* table` and
+    returns u8 (its inlined copies in battenSatelliteToOutside test the result as a byte; with s32 they are 10
+    instructions short); all twenty call sites call it once, uncast.
+- **Guarded (were unguarded steering).** party_motion's three `f32* pz = &v.z` temps before movePos calls
+  (homing_walk once, homing_fly twice): retail computes the z address before the x address, and the plain
+  `movePos(&v.x, &v.z, ...)` is 2 lines off each. Now under MUST_MATCH with the plain call in `#else`; homing_walk's
+  unneeded `px` temp went.
+- **Left, with what was tried.**
+  - battle_disp: all 14 pragma pairs. Each pair removed alone changes the object. Under `-inline noauto` only
+    btlDispMain differs: retail auto-inlines the static btlDispAnimeSpeedReset (no symbol; its out-of-line body is
+    generated and then dropped by the linker, but it pools 1.0f ahead of getFloatDispOffset's 2.0f). Marking it
+    `inline` stops the body and moves the pool word (.sdata2 differs); calling btlDispAnimeSpeed directly would need
+    the body kept as an unused function placing a pool constant, which the rules refuse. btlUnitItemDisp's
+    opt_dead_assignments pair as PRAGMAS_KEPT records.
+  - battle_status_icon: the four `__declspec(section ".rodata")` Vec regions (data); the `*(GXColor*)&dat_...`
+    reads are puns forced by the u32/f32 .sdata2 definitions (data, plain by the guarding rule).
+  - ac_shot: the `("SFX_...", "SFX_...")` comma (the psndSFXOn `s32` lead of #1115 is still Isaac's call) and
+    _draw_target_mark's `Vec* vecs = (Vec*)vec3_802f92b8` alias. That cast is to the array's own element type, and
+    removing only the cast makes the function 0x30 bytes longer, the same as the plain `vec3_802f92b8[i]` reads.
+  - ac_monosiri_target: actionCommandDisp's opt_common_subs pair (the screen2 block puts float_4 in f2 and screen2.x
+    in f1; `float_4 + x`, `x + float_4` and a 4.0f literal tried, 8-44 lines); the vec3 array, its extern block and
+    the RODATA_D15 offset (data).
+  - mot_jabara: the five `MW_S32(mario, 0x2A0..0x2B8) = 0` resets. There is no s32 member at those offsets, each
+    `field_0xNN` name is taken by a differently typed member (as #1110 found for mot_hammer), and the f32 members'
+    `= 0.0f` stores compile differently (lfs/stfs; 640 lines). JABARA_F32, RDBL and the guarded defer_codegen pair.
+  - eff_star_power_n64: the embedded `f7 =` (14 shapes; 14-291 lines, except `4.0f` as a literal for float_4,
+    identical code but a second pool word); the .rodata Vec declspec and `testsrc_akari_v + 0x118` (a u8 data array).
+  - evt_mario: STR_MUJ_01, EM_VEC/EM_STR (data); the searchUnder2 `(void*)`/`(Vec*)&vec` casts need its prototype
+    changed in mario_hit.c, which worst3 owns (the mmsrc chapter's header-copy test found the `HitEntry*`/`f32*`
+    prototype EQUIV); evt_koopa_fire's `(s32)(f32)` round trip (49 lines plain); the volatile flags/Vec copy (18).
+  - eki_00: the six sin/cos pragma lines (family study), the two dont_inline pairs (under `-inline noauto` five
+    functions change, since retail auto-inlines the sin/cos and pose helpers here), the inline_max_total_size pair
+    (needed: ext_moamoa_main stops inlining), and its eight regions (the `"J\0\0"` string, const-template volatiles,
+    the sfx-string union, moaPlayHit without a name).
+  - party_motion: getFrontFloor's goto (`break` plus `i >= 3`/`i == 3` test, or the -2000 store before the loop:
+    164-166 lines). homing_walk's `sid` copy: partyGetTargetDist3D taking `u32 id` changes party_move (cmplwi) and
+    leaves walk 58 lines off. The `(s8)currentMemberId` cast: retail tests the byte unsigned for the BOBBERY compare
+    and sign-extended for the YOSHI one. homing_walk's `(s64)` address round trip (the pz-temp form is 518 lines
+    off), the radius dead store, jump's nested travel-time assignments (18 lines without them, with or without the
+    dead-assignments pragma), the three redundant `hit` re-tests and the 0/1 ternary. Every other pragma pair re-tested
+    alone after the changes still differs (10-683 lines).
+- **For a reviewer.** The bare float tests (`if (range)`, `if (party->speed)`) are the shape that matches; each
+  `!= 0.0f` spelling swaps a compare's operands or moves registers. The header changes: ac_shot.h (const colour
+  pointer), eff_star_power_n64.h (four f32 fields), mario.h (jabaraAnimTime s8), rels/las unit_boss_batten_leader.h
+  (battenSatelliteTo_Init's prototype). The three `-inline noauto` and two `-O4,s` additions are configure.py
+  Object lines. party_motion's index rises by one: three newly guarded hacks against two pragma lines removed.
+- **Leads.** The `-O4,s` lever for battle code built at the default `-O4,p`: ac_timing_wide, ac_signal_timing,
+  battle_ac_help, battle_ac, ac_repeatedly_lv and ac_gauge_timing each compile identical with `-O4,s` and none of
+  their optimize_for_size pairs (8 pairs), and with `-O4,s -inline noauto` also without their dont_inline pairs
+  (3 more); tested only (outside this task's files). evt_mario's and evt_party's searchUnder2 casts once mario_hit
+  is free to edit. PRAGMAS_KEPT's line numbers for party_motion and ac_monosiri_target have shifted; its entries
+  still hold, except party_motion_jump's dead-assignments diff, now 18 lines (was 8).

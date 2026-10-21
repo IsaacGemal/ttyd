@@ -6,7 +6,7 @@ USER_FUNC(battenSatelliteToOutside);
 USER_FUNC(battenSatelliteToInside);
 struct BattleUnit;
 u8 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index);
-s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table);
+u8 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, u32* table);
 extern u32 xlw2[16];
 extern u32 xmemo[5];
 extern EventEntry* xevt[1];

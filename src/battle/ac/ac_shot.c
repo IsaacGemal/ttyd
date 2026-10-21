@@ -79,11 +79,8 @@ static inline void _acShotAppendHistory(AcShotWork* aw, BattleWork* work) {
     work->actionCommands.outputParams[3]++;
 }
 
-// optimize_for_size: the original keeps the 3-iteration history-init loop as a `bdnz` loop.
-#pragma optimize_for_size on
 // The unit's float constants are written as literals so MWCC pools them in the original's .sdata2
-// order. A few sites load a constant into a local first (`f32 zero`, `f32 neg`, `f32 half`, the
-// `f32 r = g + one` temp) because that is what reproduces retail's FPR colouring.
+// order.
 s32 battleAcMain_Shot(BattleWork* work) {
 #ifdef MUST_MATCH
     // Match-only comma: forces MWCC to materialise the SFX name into r31 after `stmw`
@@ -145,8 +142,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
                     {
                         f32 range = aw->maxValue - aw->minValue;
                         s32 r;
-                        f32 zero = 0.0f;
-                        if (range != zero) {
+                        if (range) {
                             r = (s32)(aw->minValue + (f32)irand((s32)range));
                         } else {
                             r = (s32)aw->minValue;
@@ -189,21 +185,17 @@ s32 battleAcMain_Shot(BattleWork* work) {
                         work->actionCommands.mAcState = 0x3E9;
                     }
                 }
-                {
-                    f32 zero = 0.0f;
-                    f32 neg = -1.0f;
-                    if (aw->rotSpeed != zero) {
-                        aw->rotZ += aw->rotSpeed;
-                        if (aw->rotSpeed > zero) {
-                            if (aw->rotZ >= aw->angleMax) {
-                                aw->rotZ = aw->angleMax;
-                                aw->rotSpeed = aw->rotSpeed * neg;
-                            }
-                        } else {
-                            if (aw->rotZ <= aw->angleMin) {
-                                aw->rotZ = aw->angleMin;
-                                aw->rotSpeed = aw->rotSpeed * neg;
-                            }
+                if (aw->rotSpeed) {
+                    aw->rotZ += aw->rotSpeed;
+                    if (aw->rotSpeed > 0.0f) {
+                        if (aw->rotZ >= aw->angleMax) {
+                            aw->rotZ = aw->angleMax;
+                            aw->rotSpeed *= -1.0f;
+                        }
+                    } else {
+                        if (aw->rotZ <= aw->angleMin) {
+                            aw->rotZ = aw->angleMin;
+                            aw->rotSpeed *= -1.0f;
                         }
                     }
                 }
@@ -226,20 +218,12 @@ s32 battleAcMain_Shot(BattleWork* work) {
                     }
                     cont = 1;
                 }
-                {
-                    f32 g = aw->gauge;
-                    f32 one = 1.0f;
-                    aw->gauge = g + one;
-                    if (aw->gauge > 100.0f) {
-                        aw->gauge = 100.0f;
-                    }
+                aw->gauge += 1.0f;
+                if (aw->gauge > 100.0f) {
+                    aw->gauge = 100.0f;
                 }
                 if (work->actionCommands.acFlag & 1) {
-                    {
-                        f32 sum = aw->minValue + aw->maxValue;
-                        f32 half = 0.5f;
-                        work->actionCommands.outputParams[1] = (s32)(sum * half);
-                    }
+                    work->actionCommands.outputParams[1] = (s32)((aw->minValue + aw->maxValue) / 2.0f);
                     _acShotAppendHistory(aw, work);
                     if (aw->index >= work->actionCommands.acParams[1]) {
                         work->actionCommands.mAcState = 0x3EA;
@@ -297,7 +281,6 @@ s32 battleAcMain_Shot(BattleWork* work) {
     dispEntry(8, 900.0f, 1, _disp_target_mark_afterimage, work);
     return 1;
 }
-#pragma optimize_for_size reset
 
 s32 battleAcResult_Shot(BattleWork* work) {
     return work->actionCommands.result;
@@ -342,9 +325,6 @@ void battleAcDelete_Shot(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EC;
 }
 
-// dont_inline: the original keeps _ac_disp_init as its own local function (battleAcMain_Shot
-// reaches it through `bl`), so it must not be inlined into its single caller.
-#pragma dont_inline on
 static void _ac_disp_init(BattleWork* work) {
     BattleACDispParams* disp = &work->actionCommands.dispParams;
 
@@ -359,20 +339,18 @@ static void _ac_disp_init(BattleWork* work) {
     disp->field_0x13 = 0;
     disp->value = 0.0f;
 }
-#pragma dont_inline reset
 
 // The original builds the icon colour in a local and copies it to the by-value argument slot.
 static inline GXColor _makeIconColor(BattleACDispParams* disp) {
+    GXColor* tint = (GXColor*)&disp->field_0xC;
     GXColor color = *(GXColor*)&unk_80423078;
-    color.r = ((u8*)disp)[0xC];
-    color.g = ((u8*)disp)[0xD];
-    color.b = ((u8*)disp)[0xE];
-    color.a = ((u8*)disp)[0xF];
+    color.r = tint->r;
+    color.g = tint->g;
+    color.b = tint->b;
+    color.a = tint->a;
     return color;
 }
 
-// optimize_for_size: actionCommandDisp's prologue saves r30-r31 with `stmw`.
-#pragma optimize_for_size on
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
@@ -406,15 +384,15 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 
     if (disp->value >= 1.0f) {
-        u8* col = (u8*)&disp->field_0xC;
+        GXColor* tint = (GXColor*)&disp->field_0xC;
 
-        col[1] += disp->dg;
-        col[2] += disp->db;
-        if (col[1] <= 0x80 && disp->dg < 0) {
+        tint->g += disp->dg;
+        tint->b += disp->db;
+        if (tint->g <= 0x80 && disp->dg < 0) {
             disp->db = 0x10;
             disp->dg = 0x10;
         }
-        if (col[1] >= 0xF5 && disp->dg > 0) {
+        if (tint->g >= 0xF5 && disp->dg > 0) {
             disp->db = -0x10;
             disp->dg = -0x10;
         }
@@ -433,7 +411,6 @@ static void actionCommandDisp(f32 x, f32 y) {
         iconDispGxCol(mtx, 0x10, 0x8D, _makeIconColor(disp));
     }
 }
-#pragma optimize_for_size reset
 
 // The original passes the vectors and colour by value to an inlined wrapper, which copies them
 // into the btlDispTex4 argument slots.
@@ -454,19 +431,7 @@ static inline Vec _drawTargetMarkRot(Vec v, f32 angle) {
 #define DRW_VEC(i, name) (name)
 #endif
 
-// 100%: the first `*color` load is only hoisted next to the prologue `lis` (as the original has
-// it) when MWCC knows the colour pointer cannot alias the stack/rodata it reads; declaring the
-// parameter `__restrict` supplies that and the emitted code is byte-identical.
-// Match-only qualifier: the natural form leaves the pointer unqualified.
-#ifdef MUST_MATCH
-#define MARK_COLOR_RESTRICT __restrict
-#else
-#define MARK_COLOR_RESTRICT
-#endif
-// dont_inline: the original keeps _draw_target_mark as its own function and calls it with `bl` from
-// _disp_target_mark and _disp_target_mark_afterimage.
-#pragma dont_inline on
-void _draw_target_mark(GXColor* MARK_COLOR_RESTRICT color, f32 x, f32 y, f32 z, f32 angle) {
+void _draw_target_mark(const GXColor* color, f32 x, f32 y, f32 z, f32 angle) {
 #ifdef MUST_MATCH
     Vec* vecs = (Vec*)vec3_802f92b8;
 #endif
@@ -484,8 +449,6 @@ void _draw_target_mark(GXColor* MARK_COLOR_RESTRICT color, f32 x, f32 y, f32 z, 
                         _drawTargetMarkRot(DRW_VEC(5, vec3_802f92b8[5]), angle), *color);
 }
 #undef DRW_VEC
-#undef MARK_COLOR_RESTRICT
-#pragma dont_inline reset
 
 void _disp_target_mark(CameraId cameraId, void* param) {
     BattleWork* work = param;
@@ -511,8 +474,6 @@ static inline GXColor _makeAfterimageColor(f32 value) {
     return color;
 }
 
-// optimize_for_size: _disp_target_mark_afterimage's prologue saves r28-r31 with `stmw`.
-#pragma optimize_for_size on
 void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
     BattleWork* work = param;
     BattleActions* ac = &work->actionCommands;
@@ -546,7 +507,6 @@ void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
         }
     }
 }
-#pragma optimize_for_size reset
 
 // .rodata: the vector table then the SFX name, in the original's order. The compiler's pooled
 // 0.5/i2f doubles are emitted after these named objects. The table is non-const to keep the

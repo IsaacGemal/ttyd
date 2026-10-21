@@ -96,7 +96,6 @@ void BattleStatusIconInit(BattleUnit* unit) {
 	memset(&unit->mStatusIconWork, 0, sizeof(BattleWorkStatusIcon));
 }
 
-#pragma optimize_for_size on // -O4,s: the table loop needs base+index addressing and its register colours
 void BattleStatusIconMain(BattleUnit* unit) {
 	BattleWorkStatusIcon* icon = &unit->mStatusIconWork;
 	BattleWork* work = _battleWorkPointer;
@@ -132,16 +131,12 @@ void BattleStatusIconMain(BattleUnit* unit) {
 		}
 	}
 }
-#pragma optimize_for_size reset
 void BattleStatusIconDelete(BattleUnit* unit) {
 	; //stubbed in retail
 }
 
-// -O4,s (over the default -O4,p) is required: under -O4,p MWCC folds the mIcons +0x20 array offset
-// into the element field displacements (base = icon + off); the original keeps it on the scaled index
-// (addi r29,r26,0x20; add r29,r30,r29). The loop must index mIcons directly (and the float use be
-// written as i * -2) for the -O4,s strength reduction to produce the original's i/2i/offset counters.
-#pragma optimize_for_size on
+// The loop must index mIcons directly (and the float use be written as i * -2) for -O4,s strength
+// reduction to produce the original's i/2i/offset counters.
 void BattleStatusIconDisp(CameraId camId, void* param) {
 	BattleUnit* unit = param;
 	BattleWorkStatusIcon* icon = &unit->mStatusIconWork;
@@ -220,7 +215,6 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 		}
 	}
 }
-#pragma optimize_for_size reset
 
 // Icon parameter table base; fields accessed at +0x60..+0x8C are Vec entries 8..11.
 // -1 sentinel written to entry+0x3C.
@@ -393,7 +387,6 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 // MUST_MATCH (like itemdrv's vec3_802cac1c): that makes the compiler materialise each copy's source
 // address from the .rodata base and reuse it for the mask, and keeps the target's load/store
 // interleaving. The values and therefore the .rodata bytes are unchanged.
-#pragma optimize_for_size on // the target's modulo/division by 0x2d0 is a real divw, not the magic-multiply form
 BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
 	s32 type = disp->id;
 	s16* counter;
@@ -446,7 +439,6 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 	entry->offset = vec3_803012e4;
 	return TRUE;
 }
-#pragma optimize_for_size reset
 
 // .sdata2 named objects this unit owns, in the original's address order.
 #pragma force_active on

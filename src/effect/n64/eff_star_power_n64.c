@@ -188,10 +188,10 @@ void effStarPowerMain(EffectEntry* effect) {
         }
         // 0x48..0x54 keep the previous frame's x/y/z angles and scale (0x3C..0x44, 0x38), which Disp
         // draws as an extra half-alpha star when color2A is nonzero.
-        *(f32*)&data->field_0x48 = data->field_0x3C;
-        *(f32*)&data->field_0x4C = data->field_0x40;
-        *(f32*)&data->field_0x50 = data->field_0x44;
-        *(f32*)&data->field_0x54 = data->field_0x38;
+        data->field_0x48 = data->field_0x3C;
+        data->field_0x4C = data->field_0x40;
+        data->field_0x50 = data->field_0x44;
+        data->field_0x54 = data->field_0x38;
         if (type == 1) {
 #ifdef MUST_MATCH
             /* MUST_MATCH: the embedded `f7 = ...` is allocator steering, not logic; the natural
@@ -218,10 +218,10 @@ void effStarPowerMain(EffectEntry* effect) {
             data->field_0x38 = 0.3f * (f32)sin(float_6p2832_8041fe44 * (float_2p044_8041fe78 * (f32)counter) / float_360_8041fe4c) + 0.7f;
         }
         if (counter == 1) {
-            *(f32*)&data->field_0x48 = data->field_0x3C;
-            *(f32*)&data->field_0x4C = data->field_0x40;
-            *(f32*)&data->field_0x50 = data->field_0x44;
-            *(f32*)&data->field_0x54 = data->field_0x38;
+            data->field_0x48 = data->field_0x3C;
+            data->field_0x4C = data->field_0x40;
+            data->field_0x50 = data->field_0x44;
+            data->field_0x54 = data->field_0x38;
         }
         dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effStarPowerDisp, effect);
     }
@@ -327,15 +327,15 @@ void effStarPowerDisp(CameraId camId, void* param) {
     if (color2A != 0) {
         PSMTXTrans(trans, data->x, data->y, data->z);
         PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * -camGetPtr(CAMERA_3D)->viewYaw);
-        scaleVal = float_0p4_8041fe34 * *(f32*)&data->field_0x54;
+        scaleVal = float_0p4_8041fe34 * data->field_0x54;
         PSMTXScale(scale, scaleVal, scaleVal, scaleVal);
         PSMTXConcat(trans, rot, trans);
         PSMTXConcat(trans, scale, trans);
-        PSMTXRotRad(rot, 'x', float_deg2rad_8041fe30 * *(f32*)&data->field_0x48);
+        PSMTXRotRad(rot, 'x', float_deg2rad_8041fe30 * data->field_0x48);
         PSMTXConcat(trans, rot, trans);
-        PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * *(f32*)&data->field_0x4C);
+        PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * data->field_0x4C);
         PSMTXConcat(trans, rot, trans);
-        PSMTXRotRad(rot, 'z', float_deg2rad_8041fe30 * *(f32*)&data->field_0x50);
+        PSMTXRotRad(rot, 'z', float_deg2rad_8041fe30 * data->field_0x50);
         PSMTXConcat(trans, rot, trans);
         PSMTXConcat(cam->view, trans, work);
         GXLoadPosMtxImm(work, 0);

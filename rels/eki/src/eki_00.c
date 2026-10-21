@@ -86,14 +86,9 @@ typedef struct MoamoaWork {
     MoamoaPose* poses; // 0x08
     u32 field_0x0C;    // 0x0C
     u32 field_0x10;    // 0x10
-    Vec target0;       // 0x14, gathering points; moamoa i heads for target0 + i % 3 (MOA_TARGET).
-                       //       Separate Vecs: as Vec[3] the build no longer matches
-    Vec target1;       // 0x20
-    Vec target2;       // 0x2C
+    Vec targets[3];    // 0x14, gathering points; moamoa i heads for targets[i % 3]
     s16 hitCount;      // 0x38
-    u16 nearHits0;     // 0x3A, hits near target0-2 (as in rsh_05); set to 100 by evt_moamoa_target_off
-    u16 nearHits1;     // 0x3C
-    u16 nearHits2;     // 0x3E
+    u16 nearHits[3];   // 0x3A, hits near targets[i] (as in rsh_05); set to 100 by evt_moamoa_target_off
     s16 hammerFrames;  // 0x40, frames Mario has been in MARIO_MOTION_HAMMER
     s16 idleFrames;    // 0x42, frames Mario has stood still (capped at 1000)
     EventEntry* escapeEvt; // 0x44
@@ -1200,10 +1195,9 @@ static s32 evt_moamoa_fusion_debug(void) {
 
 static USER_FUNC(evt_moamoa_target_off) {
     s32 index = evtGetValue(event, event->args[0]);
-    Vec* vecs = &wp->target0;
 
-    vecs[index] = vecs[1 - index];
-    (&wp->nearHits0)[index] = 0x64;
+    wp->targets[index] = wp->targets[1 - index];
+    wp->nearHits[index] = 0x64;
     if (index == 0) {
         wp->flags |= 0x1000;
     } else {
@@ -1323,9 +1317,9 @@ static void ext_moamoa_init(void) {
 
     wp = _mapAlloc(0x870);
     memset(wp, 0, 0x870);
-    wp->target0 = vec3_eki_00008884;
-    wp->target1 = vec3_eki_00008890;
-    wp->target2 = vec3_eki_0000889c;
+    wp->targets[0] = vec3_eki_00008884;
+    wp->targets[1] = vec3_eki_00008890;
+    wp->targets[2] = vec3_eki_0000889c;
     wp->poseNum = extGetPoseNum();
     wp->poses = _mapAlloc(wp->poseNum * 0x50);
     memset(wp->poses, 0, wp->poseNum * 0x50);
@@ -1341,9 +1335,9 @@ static void ext_moamoa_init(void) {
         radius = randf(0.0f, 100.0f);
         ep->flags |= 0x13;
         PSMTXIdentity(*ep->matrix);
-        ep->matrix[0][0][3] = radius * initSinf(angle) + wp->target0.x;
+        ep->matrix[0][0][3] = radius * initSinf(angle) + wp->targets[0].x;
         ep->matrix[0][1][3] = 0.0f;
-        ep->matrix[0][0][3] = wp->target0.z - radius * initCosf(angle);  // retail stores z here too, over x
+        ep->matrix[0][0][3] = wp->targets[0].z - radius * initCosf(angle);  // retail stores z here too, over x
         hitZ = 0.0f;
         hitY = 0.0f;
         hitX = 0.0f;
@@ -1759,7 +1753,7 @@ static inline f32 ekiCosfM(f32 rad) {
     return cosv;
 }
 
-#define MOA_TARGET(i) ((&wp->target0)[(i) % 3])
+#define MOA_TARGET(i) (wp->targets[(i) % 3])
 // Per-frame update of every moamoa: hit checks against Mario and his partner, the jump/scatter state machine
 // (MoamoaPose.state), clamping into the room, then the animation frame update and the rider-delta limit.
 // voiceSfx is a union under MUST_MATCH so it is not copy-propagated (as yuu_01 fall_rtn): that puts it in r24 and `handled` in r25.
