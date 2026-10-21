@@ -114,14 +114,6 @@ typedef struct StarTrail {
     f32 trailY[4];        // 0x50
 } StarTrail;
 
-
-
-#ifdef MUST_MATCH
-#define SC_P (&points[i])
-#else
-#define SC_P p
-#endif
-
 // Keep GetScissorPtr out of line: the original issues a call (bl) to it.
 #pragma dont_inline on
 ScissorWork* GetScissorPtr(void) {
@@ -201,20 +193,10 @@ s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx,
                 *ox = ((cy - ay) + (m1 * ax - m2 * cx)) / den;
                 *oy = m1 * (*ox - ax) + ay;
             } else {
-#ifdef MUST_MATCH
-                // MUST_MATCH: the named temp makes MWCC load 1.0 into f3 and reuse it
-                // for both the compare and the subtraction, as the original does.
-                f32 one = 1.0f;
-                m2 = d2x / d2y;
-                if (m1 * m2 != one) {
-                    den = one - m1 * m2;
-                } else {
-#else
                 m2 = d2x / d2y;
                 if (m1 * m2 != 1.0f) {
                     den = 1.0f - m1 * m2;
                 } else {
-#endif
                     den = 0.000001f;
                 }
                 *ox = (m2 * (-m1 * ax + ay - cy) + cx) / den;
@@ -223,19 +205,10 @@ s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx,
         } else {
             m1 = d1x / d1y;
             if (scissor_abs(d2x) > scissor_abs(d2y)) {
-#ifdef MUST_MATCH
-                // MUST_MATCH: named temp for the same reason as the branch above.
-                f32 one = 1.0f;
-                m2 = d2y / d2x;
-                if (m1 * m2 != one) {
-                    den = one - m1 * m2;
-                } else {
-#else
                 m2 = d2y / d2x;
                 if (m1 * m2 != 1.0f) {
                     den = 1.0f - m1 * m2;
                 } else {
-#endif
                     den = 0.000001f;
                 }
                 *oy = (m2 * (-m1 * ay + ax - cx) + cy) / den;
@@ -768,19 +741,11 @@ void star_disp2D_sub(s32 index, s32 alpha) {
     f32 z;
 
     if (work->state >= 6) {
-#ifdef MUST_MATCH
-        s32 step;
-        f32 start;
-#endif
         work->stateFrame++;
         if (work->stateFrame > 0x1E) {
             work->stateFrame = 0x1E;
         }
-#ifdef MUST_MATCH
-        alpha = (s32)intplGetValue(0, (step = work->stateFrame, step), 0x1E, (start = (f32)(u32)(u8)alpha, start), 0.0f);
-#else
         alpha = (s32)intplGetValue(0, work->stateFrame, 0x1E, (f32)(u32)(u8)alpha, 0.0f);
-#endif
     }
     *(u32*)&color = dat_80421718;
     color.a = alpha;
@@ -865,14 +830,10 @@ s32 scissor_timer_main(void) {
     return 0;
 }
 
-// MUST_MATCH: re-deriving &points[i] at each use (instead of the cached `p`) gives retail's register use
-// (permuter). The natural build uses `p`.
 s32 scissor_control(s32 unused, s32 reset) {
     ScissorWork* work = GetScissorPtr();
     ScissorPoint* points = (ScissorPoint*)work->pointBuf;
-    ScissorPoint* p;
     s32 i;
-    s32 offset;
 
     if (reset != 0) {
         work->pointCount = 0;
@@ -933,20 +894,19 @@ s32 scissor_control(s32 unused, s32 reset) {
         }
     }
     if (work->pointCount > 3) {
-        for (i = 0, offset = 0; i < work->pointCount - 3; i++, offset += 8) {
+        for (i = 0; i < work->pointCount - 3; i++) {
             f32 ox;
             f32 oy;
-            p = &points[i];
 
-            if (scissor_intersection(SC_P->x, SC_P->y, SC_P[1].x, SC_P[1].y,
+            if (scissor_intersection(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y,
                                      points[work->pointCount - 2].x, points[work->pointCount - 2].y, points[work->pointCount - 1].x, points[work->pointCount - 1].y,
                                      &ox, &oy) != 0) {
                 s32 k;
 
-                SC_P->x = points[work->pointCount - 1].x = ox;
-                SC_P->y = points[work->pointCount - 1].y = oy;
+                points[i].x = points[work->pointCount - 1].x = ox;
+                points[i].y = points[work->pointCount - 1].y = oy;
                 for (k = 0; k < i; k++) {
-                    points[k] = *SC_P;
+                    points[k] = points[i];
                 }
                 if (work->captureBuf != NULL) {
                     smartFree(work->captureBuf);

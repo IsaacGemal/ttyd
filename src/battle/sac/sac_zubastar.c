@@ -971,15 +971,8 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
         work->phase = 0;
         return 0;
     }
-    // A single-case `switch` (rather than `if`) is what makes MWCC lay the guard out as
-    // `beq body; b main_loop` like the original; an `if` collapses it to `bne skip`. Semantically
-    // identical, so the natural form is the #else arm.
-#ifdef MUST_MATCH
     switch (work->phase) {
     case 0: {
-#else
-    if (work->phase == 0) {
-#endif
         s32 count = 0;
 
         for (i = 0; i < work->bombCount; i++) {
@@ -991,13 +984,9 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
         if (count == work->bombCount) {
             return 2;
         }
-#ifdef MUST_MATCH
         break;
     }
     }
-#else
-    }
-#endif
     // The SFX string address is held in a local across the main loop (a callee-saved register), with
     // the main-loop counter declared after it; otherwise MWCC colours the callee-saved set one
     // register higher.

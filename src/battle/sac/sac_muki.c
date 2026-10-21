@@ -866,27 +866,12 @@ static void main_star(void) {
 #pragma dont_inline on
 s32 end_muki(EventEntry* event, BOOL isFirstCall) {
     MukiWork* work = get_ptr();
-    s32 off;
-#ifdef MUST_MATCH
-    // MUST_MATCH: the all-ones mask (a permuter find, Claude #3) gives the loop's induction variables the
-    // original's registers; `(u32)off` alone doesn't.
-    int mask;
-#endif
     s32 i;
-    MukiEntry* entry;
 
     effDelete(((effStarStoneData*)work->starStone->userdata)->dustEffect);
     effDelete(work->starStone);
-#ifdef MUST_MATCH
-    mask = -1;
-#endif
-    for (i = 0, off = 0; i < 9; i++, off += 0x38) {
-#ifdef MUST_MATCH
-        entry = (MukiEntry*)((u8*)work + (off & mask) + 0x1BC);
-#else
-        entry = &work->entries[i];
-#endif
-        effDelete(entry->effect);
+    for (i = 0; i < 9; i++) {
+        effDelete(work->entries[i].effect);
     }
     return 2;
 }
@@ -1131,15 +1116,10 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 fs = (f32)sin(angle0);
                 PSMTXTransApply(mtx, mtx, 15.0f * fs,
                                 0.0f, 15.0f * fc);
-#ifdef MUST_MATCH
-                cA = mukiAlphaColor(entry->alpha, (GXColor){0xE9, 0x4A, 0x3F, 0x00});
-                cB = mukiAlphaColor(entry->alpha, (GXColor){0xFE, 0xE6, 0x3E, 0x00});
-#else
                 cA = (GXColor){0xE9, 0x4A, 0x3F, 0x00};
                 cA.a = entry->alpha;
                 cB = (GXColor){0xFE, 0xE6, 0x3E, 0x00};
                 cB.a = entry->alpha;
-#endif
                 // reverse-order fill, each colour's two copies written together, so MWCC emits
                 // the original's grouped colour stores; the call then takes the array in order.
                 argv[1] = cA; argv[0] = cA; argv[3] = cB; argv[2] = cB;
