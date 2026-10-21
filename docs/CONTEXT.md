@@ -5595,3 +5595,109 @@ evt_mobj, animdrv+mot_plane and battle_audience+battle_stage_object, editing onl
   (EQUIV, and MWCC no longer hangs on them, so those comments are stale). battle.h's BattleWorkCommand* mirrors and
   the unit_party_* weapon-table macros still cast msgSearch to `char*`. A BattleWeapon status sub-record at 0x80
   would clear battle_stage_object's 16 offsets if another version shows one.
+
+## Second MUST_MATCH pass over the RELs, with the levers found since #1094 (2026-10-21, Claude Opus 5.5 with three Claude Opus 5.5 helpers, n9-q-o-mmrels2)
+
+Task (Isaac): redo #1094's pass over every MUST_MATCH region in rels/ (and the shared include/rel/common headers)
+with the levers #1100-#1111 found: int vs s32 locals, `*args++` walks, compound assignment, `/ 2.0f`, calling an
+existing helper, loop shape, declaration order, callee prototypes. Where a natural form matches it becomes the only
+version; otherwise one line of what was tried.
+
+- **Method.** Untracked harness in build/mr2/: regions.py lists the 131 regions; var.py applies an OLD/NEW variant
+  file (any file, headers included), compiles every object that depends on an edited path (from `ninja -t deps`),
+  compares each with objects saved from 436e5a2c (tools/obj_equiv.py) and prints per-function normalised asm diff
+  counts; gen.py writes variant sets. First every region's natural arm alone and each file's all at once (no EQUIV),
+  then per-region variant sets. The sfx-string family, the const-reload/volatile family and the barriern/lecture
+  families went to three helpers in their own worktrees (exploration only; their EQUIV variants were re-verified
+  and committed here). About 1,500 compiles. Every commit: obj_equiv EQUIV for each touched object,
+  `build/G8MJ01/ok` recreated, changed C files compile without -DMUST_MATCH (ci's natural step and the harness's
+  NAT=1), fncast_lint and local_prototypes clean, tools/ci.py PASS with the tools/tests step stubbed (the same 9
+  environment errors as the chapters above), ratchet `--init`ed on the clean HEAD. tools/ci.py run through `uv`
+  rewrites build.ninja with a temporary python, so rerun `python3 configure.py` after it.
+- **Counts** (tools/cleanup_index.py, 436e5a2c -> this branch): must_match **788 -> 780**; in rels/ **124 -> 117**,
+  include/rel 7 -> 6. field_0x 4626 -> 4663
+  (the barriern rename below, 34, and tou2's byte view, 3), so the index went 15.158 -> 15.194 per kLOC (10569 ->
+  10593 weighted); everything else unchanged.
+- **Natural now:**
+  - jin_00 randf_syugo: `f32 r = (f32)rand(); r /= 32767.0f;` instead of the f64 round trip (1). Compound
+    assignment; `r = r / 32767.0f` also matches, the one-expression forms don't.
+  - mri_puni: qrnd, puniQrnd2 and the three puniSearchRandom copies (5). `v = Punigp->randSeedB; if
+    (Punigp->randSeedB < 0) { v = -v; }` keeps the branch; testing the local turns into MWCC's branchless abs idiom,
+    which `-(s32)(u32)v` and `(s32)(v ^ 0)` were stopping. New lever: test the value's source, not the local copy.
+    26 spellings of the plain test failed first (closest `v *= -1`: mulli for neg, 2 lines).
+  - barriern (4: the shared Inside header's volatile InitInline, v1's InitInside and InitInlineOut, v2's
+    BARRIERN_SET_UNITID). BarriernSatelliteTo's word at 0x04 holds the `u32` spline table spline_maketable builds
+    from; typed `u32*`, barriernSatelliteTo_Init's `work->field_0x4 = table` and `->work[2] = (s32)table` are two
+    expressions, so MWCC rematerialises the address for the first and keeps the hoisted copy for the second, which
+    the volatile parameter plus duplicate `inv` argument imitated. The 40 call sites pass the table once, uncast;
+    v2's unguarded InitInline loses its volatile parameter too. The field was `unitId`, which its type now
+    contradicts, so it is the `field_0x4` placeholder. (Helper; found by retyping, not by any of the listed levers.)
+  - tou2 rankingControll (1): RankEntry's `u8 score[2]` is an anonymous union of `s16 score` and the byte view
+    `field_0x8[2]` (rankingInit/rankingExit move it to and from GSW bytes one at a time; everything else read it
+    through `*(s16*)`, eleven puns gone). The guarded u16-view flags store existed only for the score pun: plain
+    `entry[nAbove]` stores give retail's sthx sequence. (Helper.)
+  - yuu_03 evt_ryushi (1): `f32 dx = entry->x; dx -= cameraX;` and `entry->x += (f32)wrapOffset * step;` give
+    retail's entry->x reload and f1 subtraction that the volatile read forced. (Helper.)
+- **Left, with what was tried** (data layout untouched by rule: the `.rodata` declspec Vecs in aji_13,
+  magnum_battender_mkII, rsh_06, usu_00, yuu_02; tou_02's `const volatile` Vecs; the `"J\0\0"` strings in eki_00,
+  rsh_00, rsh_06; tou2's AREA_TOU; rsh.c's Zero256 object and the two debug_print_func regions tied to it (the
+  natural `= {0}` moves the .rodata object); tou.c's TOU_F32 and defer_codegen, pik_02's c50/half_sym (pool);
+  unit_piders' out-of-line GX helpers; gor evt_yuuranking's asm body):
+  - The sfx-string family, 25 regions (eki_00, rsh_05, rsh_06 voiceSfx unions; hei_10; yuu_00/01/02 fall_rtn;
+    gor_03 and zako_group2 comma folds; gon_03's array; BOM_SFX, KARON_SFX, FAN_SFX). Any local set from a constant
+    address compiles to `addi r0; mr rN, r0` (95 type/order combinations in yuu_01, `char*`, `const char* const`,
+    block scope, initialiser vs assignment, a static), and the literal at the call is not hoisted. What retail
+    shows is a hoisted *integer* conversion of the literal at the call: with psndSFXOn_3D and psndSFXOn taking `s32`
+    (as __psndSFXOn and psndSFXOnVol already do; ~378 callers pass numeric ids as `(const char*)0x...`) and
+    `(s32)"SFX_..."` at each call, all 25 go and all 1,228 objects stay identical; npcMain can then call the real
+    npcKoopaWaterCheck instead of its hand expansion, and the dol's BSO_SFX/FALL_SFX look the same. **Not applied:**
+    it rewrites a dol API in 136 files (+833/-1024), removes 414 `(const char*)` casts but adds 341 `(s32)` casts,
+    mostly on string names. It is Isaac's call; the patch (against 436e5a2c; yuu_00 conflicts with this branch's
+    first commit) is build/mr2/sfx_s32_proposal.patch in this worktree. hei_10's third region would stay for its
+    double Vec copy (`sfxOut = sfxPos`, 112 lines without it). gon_03 would keep two locals holding the same literal.
+  - Const-template reloads (retail reloads a const Vec/colour inside a loop or below a store): moamoa_hit_check's
+    pvec rebuild in eki_00/rsh_05/rsh_06 (natural 18 lines everywhere; 10 shapes, closest 14 with a local `Mtx*`;
+    all three volatiles are needed together), eki_06 sw_entry (20), rsh_06 ext_moamoa_init (natural hoists the
+    loads into saved registers), muj_01 sekai_yami_omise (6 shapes, 9-17), las_04 firebar_entry's word copy (162),
+    tou_02 ext_fan_init's three stores (4/20/8, ordered against the `const volatile` definition). These need the
+    templates as non-const data, out of scope.
+  - yuu_00 fall_rtn's y range and yuu_01/yuu_02's z range: each is monte_rand written out with `max -= min`, guarded
+    with the monte_rand call as `#else`; the call puts the subtraction in f0. A monte_rand that does `max -= min`
+    itself matches the x calls in all three files but not these (the inline's parameter copy).
+  - eki_00 and rsh_05 moaPlayHit: guarded in both, since the name has no outside evidence; rsh_05's plain call of it
+    is EQUIV. rsh_05's moaSoundVec
+    adds a return copy (32/370 lines); a hand copy in function or block scope takes stack slot 0x20, not 0x14.
+    rsh_05's MOAMOA_POSE_CHANGE and moamoa_pose_main casts: retail eki_00/rsh_06 inline both, rsh_05 doesn't; no
+    definition order or existing inline_max_total_size value keeps them out while the sin/cos inlines stay in.
+  - barriern zanzou `(p = BattleGetUnitPtr(...), p)` (v1, v2, shared header; 6 regions): 3 lines natural; ~40
+    shapes (unit reuse, `p = ...;` statement, nested calls, local scale copy, `*args++`, declaration orders, int
+    index/id, BattleTransID split): any statement form moves the call ahead of the struct copy (13-50 lines).
+  - Lecture-button `ppos` (shared header, dou; 4): 20 shapes, best 7 (natural). Only a new nested type at 0x8 plus
+    a pointer local matched (hei), which is an invented type and a steering pointer.
+  - sun_tev `q` chain (eki_03, hom_00, jon): 24 more shapes for hom_00, best 14 as before (`row` takes r29, not
+    r31). test_glare: hom_00 15 shapes, all 2 lines; eki_03 5, all 4.
+  - tou_03 screen_tev `zero` alias: 25 variants, all 16 lines (a plain copy of `param` merges into its web).
+  - rsh_00 evt_moamoa_set_one (`| dm`, one-iteration loop): 28 variants (`*args++`, int id, three declaration
+    orders, `entries + id`, a local entries pointer), 27-35 lines; retail materialises `&wp` (`addi; lwz 0`).
+  - gor_03 kuzi_bomb_bomb_eff t0/t1: 25 variants (`*args++`, int, five declaration orders, no args local), all 3
+    lines (the npcNameToPtr string through r0).
+  - gor_irai irai_cancel_func self-cast (pouchCheckItem is s32 since #1111): ~65 variants (item s32/int/ItemType,
+    seven loop shapes, testing `*items`), best 3.
+  - unit_lecture_frankli_sac `id = 0`: 34 variants (int, declaration order, loop scope, `ids[i]` repeated, switch,
+    testing `ids[i]`), best 7.
+  - muj_20 fune_eff_add_x: either operand order and a cast give 4 (85.0f and pos.x land in swapped FPRs).
+  - mri_16/tik_00 ss_check and win_04 ss_ch_check: 14 + 14 shapes (args local, walk, f32/s32/int temps, `static
+    int ssf`), all 14 and 8 lines: retail's conversion-constant address in r6.
+  - bom_01 sightBlink ternary: if/else and flag forms, 5-13 lines (retail normalises the 0/1 with subfe).
+  - Left by rule, not retried at length: las_05's dead sqrtf (the dol's evt_npc uses the value; here it is
+    overwritten), usu_00's self-assignment, evt_yuunpc's and gor_03 slot's redundant terms (retail has the retests),
+    tik_05's reshaped MSL sqrtf tail, pik_02 hoshi_jump's float-to-int-slot puns, the by-pointer GXColor macros
+    (mri.c HAKARI_SET_COLOR, both evt_yuuranking), eki_03/hom_00/jon copy chains.
+- **For a reviewer:** mri_puni's form reads the global twice (no store between, same value); the barriern field
+  rename trades a misleading name for a placeholder (index +34); tou2's anonymous union follows battle_audience.h
+  and evtmgr.h.
+- **Leads.** The psndSFXOn prototype above (25 REL regions plus the dol's BSO_SFX/FALL_SFX and the ac_button_down,
+  ac_shot, eff_nice sfx locals). Testing a value's source instead of its local copy is a lever none of the earlier
+  passes tried; it may apply to other abs/branch shapes in src/. Typing a word as the pointer it holds separates an
+  int use from a pointer use and undoes CSE the way a volatile did; battle_stage.c's tou_gamen_screen_tev has
+  tou_03's `zero` alias and was not tested.

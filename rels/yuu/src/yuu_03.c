@@ -828,13 +828,13 @@ USER_FUNC(evt_ryushi) {
         }
         {
             f32 step = 10.0f * xwp->unk08;
-#ifdef MUST_MATCH
-            f32 entryX = *(volatile f32*)&entry->x;
-#else
-            f32 entryX = entry->x;
-#endif
-            f32 cellOffset = (entryX - cameraX) / (step * half);
-            s32 wrapOffset = (s32)cellOffset;
+            f32 dx = entry->x;
+            f32 cellOffset;
+            s32 wrapOffset;
+
+            dx -= cameraX;
+            cellOffset = dx / (step * half);
+            wrapOffset = (s32)cellOffset;
             if (wrapOffset != 0) {
                 if (wrapOffset > 0) {
                     wrapOffset += 1;
@@ -843,7 +843,7 @@ USER_FUNC(evt_ryushi) {
                 }
                 wrapOffset = -wrapOffset;
                 wrapOffset /= 2;
-                entry->x = entry->x + (f32)wrapOffset * step;
+                entry->x += (f32)wrapOffset * step;
             }
         }
         {

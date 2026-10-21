@@ -1495,16 +1495,9 @@ USER_FUNC(senteresa_tikaduku_stop) {
 }
 
 static inline f32 randf_syugo(f32 min, f32 max) {
-#ifdef MUST_MATCH
-    // The f64 round-trip is a no-op MWCC folds away, but it makes the compiler create the int->float magic
-    // constant's value before the other pool constants, giving this caller's f27-f31 colouring.
     f32 r = (f32)rand();
-    f64 d = (f64)r;
 
-    r = (f32)d / 32767.0f;
-#else
-    f32 r = (f32)rand() / 32767.0f;
-#endif
+    r /= 32767.0f;
     return r * (max - min) + min;
 }
 

@@ -35,7 +35,10 @@ typedef struct RankEntry {
     u16 flags;
     // pad 2 bytes
     s32 id;
-    u8 score[2]; // TODO: see if there's a way to re-type this to s16 and keep rankingInit matching
+    union {
+        s16 score;
+        u8 field_0x8[2]; // rankingInit/rankingExit move it to and from GSW bytes one at a time
+    };
     // pad 2 bytes
 } RankEntry;
 
@@ -293,10 +296,10 @@ static void rankingInit(void) {
         if (swGet(2529)) {
             int j;
             for (j = 0; j < 2; j++) {
-                entry->score[j] = swByteGet(2 * entry->id + 519 + j);
+                entry->field_0x8[j] = swByteGet(2 * entry->id + 519 + j);
             }
         } else {
-            *(s16*)entry->score = fighterDt[entry->id].defaultScore;
+            entry->score = fighterDt[entry->id].defaultScore;
         }
         if (entry->id == FIGHTER_PLAYER) {
             entry->flags |= RANK_PLAYER;
@@ -352,7 +355,7 @@ static void rankingExit(void) {
             swClear(e->id + 0x9a1);
         }
         for (j = 0; j < 2; j++) {
-            swByteSet(e->id * 2 + 0x207 + j, e->score[j]);
+            swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
     _mapFree(rank_wp->entries);
@@ -437,7 +440,7 @@ static void rankingControll(void) {
     if (nAbove > 0) {
         for (i = 0; i < nAbove - 1; i++) {
             for (j = i + 1; j < nAbove; j++) {
-                if (*(s16*)rank_wp->entries[above[i]].score < *(s16*)rank_wp->entries[above[j]].score) {
+                if (rank_wp->entries[above[i]].score < rank_wp->entries[above[j]].score) {
                     tmp = above[i];
                     above[i] = above[j];
                     above[j] = tmp;
@@ -539,7 +542,7 @@ static void rankingControll(void) {
     if (nBelow > 0) {
         for (i = 0; i < nBelow - 1; i++) {
             for (j = i + 1; j < nBelow; j++) {
-                if (*(s16*)rank_wp->entries[below[i]].score < *(s16*)rank_wp->entries[below[j]].score) {
+                if (rank_wp->entries[below[i]].score < rank_wp->entries[below[j]].score) {
                     tmp = below[i];
                     below[i] = below[j];
                     below[j] = tmp;
@@ -608,21 +611,9 @@ static void rankingControll(void) {
     for (i = 0; i < nAbove; i++) {
         entry[i] = rank_wp->entries[above[i]];
     }
-#ifdef MUST_MATCH
-    // MUST_MATCH: the original's flags store compiles to an indexed `sthx` at entry + nAbove*12;
-    // routing it through a u16 view (flags is at offset 0) reproduces that, while id/score go
-    // through a materialised RankEntry*.
-    ((u16*)entry)[nAbove * 6] = RANK_PLAYER;
-    {
-        RankEntry* p = entry + nAbove;
-        p->id = FIGHTER_PLAYER;
-        *(s16*)p->score = 0;
-    }
-#else
     entry[nAbove].flags = RANK_PLAYER;
     entry[nAbove].id = FIGHTER_PLAYER;
-    *(s16*)entry[nAbove].score = 0;
-#endif
+    entry[nAbove].score = 0;
     for (i = 0; i < nBelow; i++) {
         // `1 +` first: MWCC reassociates `nAbove + i + 1` to `nAbove + (i + 1)`, but the original
         // groups it as `(nAbove + i) + 1`.
@@ -960,12 +951,12 @@ USER_FUNC(evt_tou_set_ranking_win_lose_28_text_35C0) {
             d += rand() % 4;
             d += rand() % 4;
 
-            *(s16*)rank_wp->entries[i].score += d - 3;
-            if (*(s16*)rank_wp->entries[i].score < min) {
-                min = *(s16*)rank_wp->entries[i].score;
+            rank_wp->entries[i].score += d - 3;
+            if (rank_wp->entries[i].score < min) {
+                min = rank_wp->entries[i].score;
             }
-            if (*(s16*)rank_wp->entries[i].score > max) {
-                max = *(s16*)rank_wp->entries[i].score;
+            if (rank_wp->entries[i].score > max) {
+                max = rank_wp->entries[i].score;
             }
         }
     }
