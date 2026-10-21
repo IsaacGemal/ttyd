@@ -11772,3 +11772,65 @@ raw_offset 723 -> 677, build byte-identical, the changed files also compile with
 - win_party: `field_19C` (u8[4]) in WindowWork is `s32 field_0x19C` (win_party writes 0/1 to it; no other reader); `partyPose[i]` in winPartyExit and `WIN_PARTY_POSE`; `WIN_PARTY_TEX` via `winTpl->data`; the move description via `BattleWeapon::description`; `((f32*)anim->clip)[2]`. win_party's `WW_*` macros are gone.
 - win_log: `LOG_TEXPAL` via `winTpl->data`; `rows[sel].name`; `AnimData` gets `field_0x4C` (f32, was u8[4]) and `field_0x58` (f32), so the tattle-camera bounds read `ad->field_0x44..0x58` in both the MUST_MATCH and #else branches (AnimData is 0x5C bytes now; nothing takes its sizeof).
 - Left raw: seq_load's 7 `card + off + 0x2000` reads (`saves[wp->cursor].data.flags` for the three cursor sites changed the dol; the other four step a byte offset in a register-critical loop variable); win_log's `p`/`ep` pointer walks over `rows`/`entries` (the indexed form changed winLogMain and winLogMain2's allocation) and the `0xC4/0xC8` window-position reads (a `WinRootRec` view gave winLogDisp and winPartyDisp different register choices; same in win_party); gor_03's init-loop `(u8*)monte_p[0] + i * 0x50 + 8` base (the entry+8 biased pointer is what the original holds), the `upsidegara` u32-table slices, and `kuji_bomb_055_callback`'s `param[0]` (unknown object); mario_kemuri none left.
+
+### Structure: private structs into shared headers, overlays folded (2026-10-20, Claude Opus 5.5, t-o-hdrs)
+
+Structs that lived in one .c file while other files reached the same memory through byte offsets or their own
+overlay structs now live in headers, and the raw sites that depended on them are field accesses. No new names:
+moved structs keep their names, new members are `field_0xNN` or take the name the overlay already used. Build
+byte-identical after every commit; all 1,230 objects also compile without `-DMUST_MATCH` (a full `--non-matching`
+build, not only the changed files, since shared headers changed).
+
+- **WindowWork (win_main.h).** WinRootTab and WinRootRec moved in from win_root.c. The 0x40 band is now a union of
+  the `field_40` byte array (still needed: sort_7_2/7_3's `&field_40[0x1010]` base is the only spelling that
+  matches; `LOGWIN(work)->chars` there changes the object, while sort_7_1 takes `chars` fine) and
+  `tabSel`/`tabCount`/`tabs[5]`/`recs[5]`. The `work + idx*0x14 + 0xC4/0xC8` window-position reads in win_badge,
+  win_item, win_log, win_mario and win_party are `work->recs[idx].b/.c` and match. The earlier failure (t-offtail1)
+  came from a cast view, not from the header field. WinRoot's and WinItemWork's offset-named members (0x128-0x184,
+  0x224-0x264, 0x2C8-0x2D0) replace WindowWork's opaque bands. Every user reads each offset with one type.
+  0x13C/0x140/0x144 are `const char*`: winMsgEntry's `str`, its `a3`, and the last `str`. `a3` was declared s32,
+  but win_log's callers already passed strings through `(s32)` casts, and winMsgDisp passes it to msgSearch. So
+  the prototype's `a3` is `const char*` now, the casts are gone, and callers pass NULL for none. WinEquipRec (win_badge)
+  moved in, and `field_404` is `WinEquipRec[200]` (0x404-0xD64). The WinRoot, WinItemWork and SortRec overlays and
+  the WW_*/WM_* offset macros in win_root, win_item, win_badge and win_main are gone.
+- **LogWin (win_log.h).** LogWin, LogRow and LogChar moved from win_log.c to win_log.h. win_root reads the
+  card/badge/tattle counts, selections, pages and icon arrays through `LOGWIN(work)` instead of its own
+  `field_0xE94..0x1044` members. WinRoot's `field_0xEB8[0x6C]`/`field_0xFB4[0x42]` were sized to fill gaps; LogWin's
+  `cardIcon[100]`/`badgeIcon[58]` are the real sizes, and every win_root index is a runtime one. LogWin stays an
+  overlay rather than moving into WindowWork, because its names collide there (`badgeSel` is win_badge's s32[2] at
+  0x3E4) and its `state`/`sel`/`count` would read wrongly in the flat struct.
+- **win_root codegen that now matches** (each pinned before): winRootMain's 13
+  `((WinRootTab*)((u8*)tabs + tabSel*0x18))` reads as `work->tabs[work->tabSel]`/`recs[...]`, and its
+  `#pragma opt_common_subs off` is no longer needed (same object without it); winBgMain's `WindowWork*` walk as
+  `work->recs[i]`; sort_4_3_func and sort_5_3_func index `field_404[i]` and `cardIcon[i]` instead of a byte base (a
+  mixed form, indexed reads with byte-base swaps, does not match); winMakeEquipList fills `field_404[count]`; the
+  N_compare_func4_* comparators read `WinEquipRec.field_0x8`; the `WIN_*_TEX` macros read `winTpl->data`.
+- **BattleBreakSlot / BattleBreakSlotReel** to battle_break_slot.h; BattleWork's 0x1616C band (exactly 0x134) is
+  `BattleBreakSlot field_1616C` and BattleBreakSlotGetPtr returns its address; battle_audience reads `->field_14`,
+  the las black peach and gor lecture user funcs set `->flags`.
+- **Others moved to their header:** WinMailEntry (mail_data.h; win_item's mail body/flags reads; mail_data.c keeps
+  MailEntry with a u32 at 0x0 for the definitions, so data is untouched); Footmark (party_move.h; party_motion's
+  `u8* fmark` reads); UnitWinWork/UnitWinObj (evt_win.h; gor_01's partial copy gone); AcTimingADecWork (battle_ac.h;
+  btlevtcmd_ac_timing_flag_onoff); effBreathFireData, effScanningData, effKamekiTornadeData (the aji drill tornado
+  wrote it through BattenData), RecoveryData/RecoveryMayaAnim, EffAkariChargeWork (replaces the partial
+  EffAkariChargeData view).
+- **Overlays of header structs folded:** MapTevCallback (mapdrv.h) replaces eff_mahojin.h's TevCallbackParam,
+  unit_mario's copy of it, battle_stage's ScreenTevParam and sac_suki's SukiTevParam in the dol and 13 RELs
+  (field_C/10/14/18 are tevStage/texMap/texCoord/numIndStage, as mapdrv fills them); battle_status_effect's three
+  BattleUnit/BattleUnitKind views are gone (BattleUnit gains `mKagegakureIcon` at 0x330 and `mStatusChange[6]` at
+  0xAE4, the views' names); party_kuribo's PartyAppearPos is PartyEntry.targetPos.
+- **Left, with reasons:** win_log's six row-phase `p = (u8*)work` loops (indexed `rows[i].phase` changes the
+  object), its WinLogWork/WinLogEntry view (a 4-byte-shifted view of LogWin.rows, inside win_log only) and the
+  `entry + 0xD78` walk; winBadgeDisp's `entry` walk (indexed changes the object); `&work->badgeSel[sel]` and win_item's
+  8 itemSel sites (as before); BakuGameGaugeColor (BattleACDispParams.field_0xC is stored as s32 by
+  ac_power_gauge and read as bytes by battle_ac and sac_bakugame); NanNpcWork/NanNpcEntry (muj_10.h and gor_00.h
+  give 0x68-0x7C per-map meanings that differ from evt_nannpc's); evt_msg's EventVec (a Vec over EventEntry's
+  `unk184`/`unk18C`, which evtmgr copies as an EventEntryMsg plus a u32); bom_01's BomSoundView (the comment there
+  says sound.h conflicts with the unit's headers). Already-in-header effect userdata writes (evt_lect_*, tik_02,
+  npc_event, sac_suki, tou_07/08, kamec_green, party_bomhei) are a separate pass.
+- `tools/ci.py` was run with its unit-test step stubbed: in this worktree `tools/tests` fails 9 tests that don't
+  touch the build (test_reloc_value_check cannot import elftools under system python; test_wave_launch times out
+  on systemd scopes). Every other step passed for each commit.
+- Index (`tools/cleanup_index.py`): 17.181 -> 16.970 per kLOC (12137 -> 11986 weighted); raw_offset 587 -> 540,
+  field_0x 3701 -> 3646, opt_pragma 1459 -> 1457. win_root.c 341 -> 223 weighted (raw 20 -> 0), win_item.c 201
+  -> 176, win_badge.c 41 -> 31; win_main.h 2 -> 40 (the offset-named members now in the header).
