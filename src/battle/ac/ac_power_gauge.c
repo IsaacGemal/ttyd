@@ -290,10 +290,6 @@ void battleAcDelete_PowerGauge(BattleWork* work) {
     }
 }
 
-// The only remaining difference is the FPR colouring of the ratio clamp: the original loads
-// float_100 into f1, gaugePercent into f2 and float_1 into f0; MWCC assigns gaugePercent f0 and
-// float_1 f2. Every instruction is otherwise identical, and the float_100/float_1 symbols are still
-// referenced, so the data section is unchanged.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;

@@ -110,8 +110,6 @@ BattleIcon* BtlIcon_Entry(u16 iconId, f32 x, f32 y, f32 z) {
 // dont_inline keeps BtlIcon_Delete a real `bl` from the evt commands as in retail.
 #pragma dont_inline on
 
-// flags is u16 in the original (lhz); the header declares it s16, so `& 1` and `&= ~1`
-// need the sign-agnostic forms.
 void BtlIcon_Delete(BattleIcon* icon) {
 	if (icon->flags & 1) {
 		iconDelete(icon->base->name);
