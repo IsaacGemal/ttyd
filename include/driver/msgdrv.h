@@ -45,7 +45,7 @@ typedef struct MessageData {
 	EventEntry* event; //0x7A00
 	char text[0x20]; //0x7A04
 	s32 battleUnitId; //0x7A24: battle unit that the talk/stay flag (0x8) drives
-	s32 field_0x7A28; //0x7A28: set by 0xFFFA entries, never read
+	s32 se; //0x7A28, the "se" tag's argument (0xFFFA entries), never read
 	u8 sfxVolume; //0x7A2C: volume of the text SE, set by 0xFFF9 entries (0x7F at open)
 	u8 pad_0x7A2D[0x7A30 - 0x7A2D]; //0x7A2D
 	s32 timeCursor; //0x7A30: start time carried from one msgAnalize tag to the next

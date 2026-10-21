@@ -66,7 +66,7 @@ BattleUnitKind unit_black_karon = {
     3,                           // bonusCoinRolls
     100,                         // bonusCoinRate
     3,                           // baseCoin
-    50,                          // field_0x13
+    50,                          // escapeRate
     9999,                        // field_0x14
     36,                          // width
     40,                          // height

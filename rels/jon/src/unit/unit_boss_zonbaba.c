@@ -62,7 +62,7 @@ BattleUnitKind unit_boss_zonbaba = {
     0,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     7,                          // field_0x14
     230,                        // width
     170,                        // height

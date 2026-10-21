@@ -43,7 +43,7 @@ typedef struct MovingFloorWork {
     /* 0x60 */ f32 prevOffsetY;
     /* 0x64 */ f32 time;
     /* 0x68 */ s32 duration[3];
-    /* 0x74 */ s32 field_0x74;
+    /* 0x74 */ s32 stmsec;
     /* 0x78 */ u32 seHalted;
     /* 0x7C */ u32 seId;
     /* 0x80 */ f32 turnSpeed;
@@ -210,7 +210,7 @@ USER_FUNC(evt_moving_floor_alloc) {
         break;
     }
 
-    work->field_0x74 = event->lwData[5];
+    work->stmsec = event->lwData[5];
     work->prev.x = work->pos.x;
     work->prev.y = work->pos.y;
     work->prev.z = work->pos.z;
@@ -541,7 +541,7 @@ USER_FUNC(moving_floor_get_stmsec) {
     if (work->flags & 1) {
         evtSetValue(event, args[1], 0);
     } else {
-        evtSetValue(event, args[1], work->field_0x74 * 60 / 1000);
+        evtSetValue(event, args[1], work->stmsec * 60 / 1000);
     }
     return EVT_RETURN_DONE;
 }

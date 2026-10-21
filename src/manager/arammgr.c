@@ -17,7 +17,7 @@ static ARAMWork* wp = &work;
 void aramMgrInit(void) {
 	memset(wp, 0, sizeof(ARAMWork));
 	if (!ARCheckInit()) {
-		ARInit((u32*)wp, 8);
+		ARInit(wp->stackIndex, 8);
 	}
 	ARQInit();
 	wp->aramSize = 0x3FC000;

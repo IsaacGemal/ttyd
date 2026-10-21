@@ -75,7 +75,7 @@ BattleUnitKind unit_faker_mario = {
     0,                             // bonusCoinRolls
     100,                           // bonusCoinRate
     0,                             // baseCoin
-    70,                            // field_0x13
+    70,                            // escapeRate
     7,                             // field_0x14
     24,                            // width
     40,                            // height

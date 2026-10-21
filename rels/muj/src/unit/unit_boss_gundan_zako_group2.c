@@ -77,7 +77,7 @@ BattleUnitKind unit_boss_gundan_zako_group2 = {
     0,                             // bonusCoinRolls
     100,                           // bonusCoinRate
     0,                             // baseCoin
-    50,                            // field_0x13
+    50,                            // escapeRate
     9999,                          // field_0x14
     400,                           // width
     36,                            // height

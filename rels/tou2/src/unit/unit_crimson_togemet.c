@@ -60,7 +60,7 @@ BattleUnitKind unit_crimson_togemet = {
     1,                          // bonusCoinRolls
     70,                         // bonusCoinRate
     1,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     9999,                       // field_0x14
     28,                         // width
     26,                         // height

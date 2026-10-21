@@ -57,7 +57,7 @@ BattleUnitKind unit_gullible_christine = {
     0,                           // bonusCoinRolls
     100,                         // bonusCoinRate
     0,                           // baseCoin
-    50,                          // field_0x13
+    50,                          // escapeRate
     9,                           // field_0x14
     28,                          // width
     24,                          // height

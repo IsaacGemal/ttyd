@@ -53,7 +53,7 @@ BattleUnitKind unit_gullible_clauda = {
     0,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     9,                          // field_0x14
     42,                         // width
     46,                         // height

@@ -37,7 +37,7 @@ USER_FUNC(btlevtcmd_AnnounceMessage) {
             const char* msg = msgSearch(tag);
             switch (kind) {
             case 1:
-                sprintf(announce->field_0x14, msg, itemDataTable[announce->field_0x4[0]].id);
+                sprintf(announce->field_0x14, msg, itemDataTable[announce->param[0]].id);
                 break;
             default:
                 sprintf(announce->field_0x14, msg);
@@ -92,6 +92,6 @@ USER_FUNC(btlevtcmd_AnnounceSetParam) {
 
     index = evtGetValue(event, args[0]);
     value = evtGetValue(event, args[1]);
-    announce->field_0x4[index] = value;
+    announce->param[index] = value;
     return EVT_RETURN_DONE;
 }

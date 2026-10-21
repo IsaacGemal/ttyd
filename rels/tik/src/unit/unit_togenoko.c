@@ -64,7 +64,7 @@ BattleUnitKind unit_togenoko = {
     2,                           // bonusCoinRolls
     70,                          // bonusCoinRate
     2,                           // baseCoin
-    50,                          // field_0x13
+    50,                          // escapeRate
     9999,                        // field_0x14
     36,                          // width
     50,                          // height

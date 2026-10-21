@@ -62,7 +62,7 @@ BattleUnitKind unit_iron_sinemon2 = {
     2,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     1,                          // baseCoin
-    70,                         // field_0x13
+    70,                         // escapeRate
     9,                          // field_0x14
     52,                         // width
     54,                         // height

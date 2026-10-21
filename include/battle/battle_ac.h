@@ -51,7 +51,7 @@ typedef struct BattleActions {
     s16 guardFrames;                 // 0x88 (BattleWork 0x1D18), counted down by ac_button_down/ac_stick_rotate
     u8 field_0x8A[0x8C - 0x8A];      // 0x8A
     BattleWorkPad pad;               // 0x8C
-    s32 field_0x288;                 // 0x288
+    s32 gaugeSe;                     // 0x288
     u8 field_0x28C[0x290 - 0x28C];   // 0x28C
     BattleACDispParams dispParams;   // 0x290 (BattleWork+0x1F20), used by ac_button_down and ac_air_gauge
     u8 field_0x2BC[0x30C - 0x2BC];   // 0x2BC

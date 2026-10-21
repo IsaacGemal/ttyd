@@ -16,10 +16,10 @@ extern f32 float_498_80420d78;
 
 const char str_802FE1D8[28] = "\202\337\202\301\202\271\201[\202\266\202\252\202\335\202\302\202\251\202\350\202\334\202\271\202\361";
 void BattleAcHelpSetHelp(const char* msg) {
-    _battleWorkPointer->field_18FF0.field_0x0 = msg;
+    _battleWorkPointer->field_18FF0.help = msg;
 }
 void BattleAcHelpSetDispType(s32 type) {
-    _battleWorkPointer->field_18FF0.field_0x4 = type;
+    _battleWorkPointer->field_18FF0.dispType = type;
     switch (type) {
     case 0:
         BattleAudience_WinSetActive(1);
@@ -36,8 +36,8 @@ void BattleAcHelpMain(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleWorkField18FF0* help = &wp->field_18FF0;
 
-    if (help->field_0x0 != NULL
-        && help->field_0x4 != 0
+    if (help->help != NULL
+        && help->dispType != 0
         && !(wp->flags & 2)) {
         dispEntry(CAMERA_2D, float_498_80420d78, 1, _ac_help_disp, NULL);
     }
@@ -64,8 +64,8 @@ static inline const char* acHelpResolve(const char* m) {
 #endif
 void _ac_help_disp(CameraId camera, void* param) {
     BattleWork* wp = _battleWorkPointer;
-    const char** helpMsg = &wp->field_18FF0.field_0x0;
-    s32* dispType = &wp->field_18FF0.field_0x4;
+    const char** helpMsg = &wp->field_18FF0.help;
+    s32* dispType = &wp->field_18FF0.dispType;
     u16 lines;
     GXColor color;
     s32 width;

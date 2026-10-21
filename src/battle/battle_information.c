@@ -27,7 +27,7 @@ void BattleInformationInit(FieldBattleInfo* info) {
 	BattleInformationSetFirstAttack(info, 0);
 	BattleInformationSetResult(info, 0);
 	info->setup = NULL;
-	info->field_0x14 = 0;
+	info->storeCoin = 0;
 	info->field_0x18 = 0;
 	info->ruleKeepResult = 0;
 	info->field_0x1A = 0;

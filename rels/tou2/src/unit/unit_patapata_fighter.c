@@ -59,7 +59,7 @@ BattleUnitKind unit_patapata_fighter = {
     1,                          // bonusCoinRolls
     70,                         // bonusCoinRate
     1,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     9999,                       // field_0x14
     36,                         // width
     40,                         // height

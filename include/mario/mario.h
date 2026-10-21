@@ -321,6 +321,7 @@ typedef struct MarioWork {
     };
     union {
         f32 field_0x2B8;           // 0x2B8
+        f32 jumpHeight;            // 0x2B8, marioGetJumpHeight/marioChgJumpStandMotion (jump stand)
         struct {
             s16 jabaraTimer;       // 0x2B8, mot_jabara: frames left in the rising swing (swingMain adds unk4 each frame, then unk8 at 0)
             s8 jabaraState;        // 0x2BA, mot_jabara: swingMain's state switch (0 idle, up to 15)

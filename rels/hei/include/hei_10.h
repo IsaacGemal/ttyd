@@ -28,13 +28,6 @@ typedef struct HeiExtWork {
 
 extern s32 hei_test_water_tev[];
 
-// Overlay for the unnamed 0x20..0x3C gap in AnimationPose; 0x24 holds the
-// pose's current frame, which wait_anim_frame compares against its argument.
-typedef struct AnimPoseField24 {
-    u8 pad_00[0x24];
-    f32 field_0x24;
-} AnimPoseField24;
-
 // One texture/pose pair in the extended-pose table passed to evt_ext_entry.
 typedef struct ExtEntry {
     const char* name;    // 0x0

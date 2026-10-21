@@ -278,7 +278,7 @@ void marioChgJumpStandMotion(f32 arg) {
 
     camFollowYOn();
     if (marioChkSts(0x10)) {
-        mario->field_0x2B8 = arg;
+        mario->jumpHeight = arg;
         effKemuriEntry(0, mario->position.x, mario->position.y, mario->position.z, 0.0f);
         mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
@@ -298,10 +298,10 @@ void marioChgJumpStandMotion(f32 arg) {
             mario->trigFlags |= MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
         }
     } else if (mario->currMotionId == MARIO_MOTION_YOSHI) {
-        mario->field_0x2B8 = arg;
+        mario->jumpHeight = arg;
         yoshi_jumpStand();
     } else {
-        mario->field_0x2B8 = arg;
+        mario->jumpHeight = arg;
         mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
             if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
@@ -999,18 +999,18 @@ void marioLandOn(void) {
             mario = marioGetPtr();
             camFollowYOn();
             if (marioChkSts(MARIO_MOTION_HIP) != 0) {
-                mario->field_0x2B8 = 100.0f;
+                mario->jumpHeight = 100.0f;
                 effKemuriEntry(0, mario->position.x, mario->position.y, mario->position.z, 0.0f);
                 mario2 = marioGetPtr();
                 MARIO_CHG_BLOCK(mario2, MARIO_MOTION_JUMP_STAND);
                 return;
             }
             if (mario->currMotionId == MARIO_MOTION_YOSHI) {
-                mario->field_0x2B8 = 100.0f;
+                mario->jumpHeight = 100.0f;
                 yoshi_jumpStand();
                 return;
             }
-            mario->field_0x2B8 = 100.0f;
+            mario->jumpHeight = 100.0f;
             mario2 = marioGetPtr();
             MARIO_CHG_BLOCK(mario2, MARIO_MOTION_JUMP_STAND);
             return;

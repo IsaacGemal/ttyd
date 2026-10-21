@@ -2457,14 +2457,14 @@ void winSortMain(WindowWork* work) {
     u32 trg = work->buttonTrg;
     u32 rep = work->dirRep;
 
-    if (work->field_0x17C == 0) {
+    if (work->sortWait == 0) {
         trg = 0;
         rep = 0;
     }
 
     if (trg & 0x200) {
         psndSFXOn((const char*)0x20013);
-        work->field_0x17C = 0;
+        work->sortWait = 0;
         work->field_0x16C = -600.0f;
     } else if (rep & 0x1000) {
         psndSFXOn((const char*)0x20005);
@@ -2482,11 +2482,11 @@ void winSortMain(WindowWork* work) {
         psndSFXOn((const char*)0x20012);
         sort_data[work->field_0x184][work->field_0x174].func(work);
     } else if (trg & 0x1000) {
-        work->field_0x17C = 0;
+        work->sortWait = 0;
         work->field_0x16C = -600.0f;
     }
 
-    if (work->field_0x17C != 0) {
+    if (work->sortWait != 0) {
         work->targetX = 30.0f + work->field_0x16C;
         work->targetY = (work->field_0x170 - 40.0f) -
                               (f32)(work->field_0x174 * 0x28);
@@ -2646,11 +2646,11 @@ void winSortEntry(WindowWork* work, s32 idx, f32 a, f32 b) {
     work->field_0x16C = a;
     work->field_0x168 = b;
     work->field_0x170 = b;
-    work->field_0x17C = 1;
+    work->sortWait = 1;
 }
 
 s32 winSortWait(WindowWork* work) {
-    return work->field_0x17C != 0;
+    return work->sortWait != 0;
 }
 
 // Kage (paper) window quad. The vertex constants are literals so MWCC reloads each

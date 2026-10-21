@@ -176,7 +176,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         part->defenseAttr = part->mKindPartParams->defenseAttr;
         part->field_0x1A2 = part->mKindPartParams->field_0x30;
         part->field_0x1A4 = part->mKindPartParams->field_0x32;
-        part->field_0x78 = 1.0f;
+        part->shadowScale = 1.0f;
         part->moveDirection = 0;
         part->faceDirection = wp->alliances[unit->mAlliance].attackDirection;
         part->mPositionOffset.x = part->mKindPartParams->positionOffset.x;
@@ -207,7 +207,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         part->poseTable = kindPart->poseTable;
         part->poseId = -1;
         part->poseName[0] = 0;
-        part->field_0x208 = 1.0f;
+        part->animeSpeed = 1.0f;
         part->motionSpeed = 1.0f;
         part->statusPoseKind = 0;
         part->statusPoseStep = 0;

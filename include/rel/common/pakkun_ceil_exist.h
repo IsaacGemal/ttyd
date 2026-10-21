@@ -27,6 +27,6 @@ static USER_FUNC(shadow_scale_memory) {
     id = BattleTransID(event, evtGetValue(event, event->args[0]));
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     part = BtlUnit_GetPartsPtr(unit, 1);
-    unit->work[0] = (s32)part->field_0x78;
+    unit->work[0] = (s32)part->shadowScale;
     return EVT_RETURN_DONE;
 }

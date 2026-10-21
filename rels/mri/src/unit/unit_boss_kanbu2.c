@@ -55,7 +55,7 @@ BattleUnitKind unit_boss_kanbu2 = {
     0,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    100,                        // field_0x13
+    100,                        // escapeRate
     9,                          // field_0x14
     56,                         // width
     59,                         // height

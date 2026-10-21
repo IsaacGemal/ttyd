@@ -645,7 +645,7 @@ USER_FUNC(ripple_scale_func) {
     f32 scale = evtGetFloat(event, args[1]);
     EffectEntry* eff = effNameToPtr((const char*)value);
 
-    ((EffRippleData*)eff->userdata)->field_0x14 = scale;
+    ((EffRippleData*)eff->userdata)->rippleScale = scale;
     return EVT_RETURN_DONE;
 }
 

@@ -94,7 +94,7 @@ BattleUnitKind unit_barriern_custom = {
     0,                          // bonusCoinRolls
     70,                         // bonusCoinRate
     5,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     9999,                       // field_0x14
     50,                         // width
     50,                         // height

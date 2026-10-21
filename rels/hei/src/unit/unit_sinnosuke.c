@@ -52,7 +52,7 @@ BattleUnitKind unit_sinnosuke = {
     5,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    70,                         // field_0x13
+    70,                         // escapeRate
     9999,                       // field_0x14
     26,                         // width
     28,                         // height

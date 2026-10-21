@@ -11,7 +11,7 @@ typedef struct EffRippleData {
     f32 y;          // 0x08
     f32 z;          // 0x0C
     f32 scale;      // 0x10, grows every frame and is multiplied into the drawn XZ scale
-    f32 field_0x14; // 0x14
+    f32 rippleScale; // 0x14, set by tik_02's ripple_scale_func
     s32 alpha;      // 0x18, GX_TEVREG0 alpha
     s32 timer;      // 0x1C, counts down; the effect is deleted below zero
     s32 age;        // 0x20, counts up every frame

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "driver/mapdrv.h"
 #include "evt/evt_cmd.h"
 
 USER_FUNC(mist_add_vy);
@@ -17,7 +18,7 @@ USER_FUNC(add_vy);
 void b_peach_msgcb(s32 state);
 USER_FUNC(b_peach_thunder);
 USER_FUNC(all_hikari_onoff);
-void map_color_tev(void* work);
+void map_color_tev(MapTevCallback* work);
 USER_FUNC(all_hikari_change_kuro);
 USER_FUNC(hikari_onoff);
 USER_FUNC(hikari_se);
@@ -42,10 +43,3 @@ EVT_DEF(last_evt_3_2);
 EVT_DEF(last_evt_4);
 EVT_DEF(shuryolight_delete);
 EVT_DEF(las_29_init_evt);
-
-typedef struct MapColorTevWork {
-    u8 pad_0x0[0xC];
-    s32 field_0xC;
-    s32 field_0x10;
-    s32 field_0x14;
-} MapColorTevWork;

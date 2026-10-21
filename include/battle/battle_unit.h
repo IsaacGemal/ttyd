@@ -427,7 +427,7 @@ typedef struct BattleWorkUnitPart {
     Vec mRotationOffset;                           // 0x54
     Vec mScale;                                    // 0x60
     Vec mBaseScale;                                // 0x68
-    f32 field_0x78;                                // 0x78
+    f32 shadowScale;                               // 0x78
     Vec mMoveStartPos;                             // 0x7C
     Vec mMoveCurrentPos;                           // 0x88
     Vec mMoveTargetPos;                            // 0x94
@@ -463,7 +463,7 @@ typedef struct BattleWorkUnitPart {
     s32 poseId;                                    // 0x1C0, animPoseEntry handle, -1 when none (animPoseRelease)
     char poseName[0x204 - 0x1C4];                  // 0x1C4, current animation name, strcpy'd and passed to animPoseSetAnim
     u32 partFlags;                                 // 0x204, bit 0x10 and 0x80 are set and cleared by battle_unit.c
-    f32 field_0x208;                               // 0x208, btlDispAnimeSpeed's factor (2.0 fast, 0.5 slow, else 1.0),
+    f32 animeSpeed;                                // 0x208, btlDispAnimeSpeed's factor (2.0 fast, 0.5 slow, else 1.0),
                                                    // times motionSpeed for animPoseSetLocalTimeRate
     f32 motionSpeed;                               // 0x20C, btlevtcmd_AnimeSetMotionSpeed
     void (*dispCallback)(struct BattleWorkUnitPart* part, s32 mode); // 0x210, called with mode 0 and 1 by btlUnitPartsDisp
@@ -744,7 +744,7 @@ typedef struct BattleUnitKind {
     u8 bonusCoinRolls;                 // 0x10, BtlUnit_GetCoin: this many rolls...
     u8 bonusCoinRate;                  // 0x11, ...each adding a coin with this chance (%)
     u8 baseCoin;                       // 0x12
-    u8 field_0x13;                     // 0x13
+    u8 escapeRate;                     // 0x13
     u16 field_0x14;                    // 0x14, read (lhz) by mario_get_renzoku_count_max
     s16 width;                         // 0x16
     s16 height;                        // 0x18

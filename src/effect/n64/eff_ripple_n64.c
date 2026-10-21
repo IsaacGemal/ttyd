@@ -45,7 +45,7 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->age = 0;
 	data->rx = float_0_8041fba0;
 	data->rz = float_0_8041fba0;
-	data->field_0x14 = 1.0f;
+	data->rippleScale = 1.0f;
 	data->camId = 4;
 	switch (type) {
 		case 1:
@@ -196,8 +196,8 @@ void effRippleDisp(CameraId camId, void* param) {
 	PSMTXRotRad(rotXMtx, 'x', 0.017453292f * data->rx);
 	PSMTXRotRad(scaleMtx, 'z', 0.017453292f * data->rz);
 	PSMTXConcat(rotXMtx, scaleMtx, rotXMtx);
-	PSMTXScale(scaleMtx, data->field_0x14 * data->scale, 1.0f,
-	           data->field_0x14 * data->scale);
+	PSMTXScale(scaleMtx, data->rippleScale * data->scale, 1.0f,
+	           data->rippleScale * data->scale);
 	PSMTXConcat(transMtx, rotXMtx, transMtx);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 	PSMTXConcat(cam->view, transMtx, transMtx);
@@ -210,10 +210,10 @@ void effRippleDisp(CameraId camId, void* param) {
 }
 
 void effRippleN64SetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
-	effRippleN64Data* data = effect->userdata;
+	EffRippleData* data = effect->userdata;
 
-	data->field_0x2C = rx;
-	data->field_0x30 = rz;
+	data->rx = rx;
+	data->rz = rz;
 }
 
 const f32 float_0p0625_8041fb9c = 0.0625f;

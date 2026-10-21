@@ -82,7 +82,7 @@ BattleUnitKind unit_boss_koopa = {
     0,                          // bonusCoinRolls
     100,                        // bonusCoinRate
     0,                          // baseCoin
-    50,                         // field_0x13
+    50,                         // escapeRate
     6,                          // field_0x14
     86,                         // width
     80,                         // height
