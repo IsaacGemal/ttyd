@@ -2257,7 +2257,7 @@ static s32 get_monte_check(Vec* a, Vec* b) {
     return 0;
 }
 
-typedef struct MonteMedal {
+typedef struct Monte {
     u8 field_0x0;        // 0x0
     u8 field_0x1;        // 0x1
     s16 field_0x2;       // 0x2
@@ -2267,10 +2267,10 @@ typedef struct MonteMedal {
     u8 pad_0x18[0x28];   // 0x18
     Vec field_0x40;      // 0x40
     SlotData* field_0x4C; // 0x4C, set on entry 0 only
-} MonteMedal;
+} Monte;
 
 static void monte_disp(CameraId cameraId, void* param) {
-    MonteMedal* p = (MonteMedal*)param;
+    Monte* p = (Monte*)param;
     s32 i;
 
     for (i = 0; i < p->field_0x4C->prize; i++) {
@@ -2296,14 +2296,14 @@ static USER_FUNC(fall_rtn) {
         SlotData* data = ((GoryuugijoWork*)event->lwData[0])->data;
         monte_p[0] = (u32)_mapAlloc(data->prize * 0x50);
         memset((void*)monte_p[0], 0, data->prize * 0x50);
-        ((MonteMedal*)monte_p[0])->field_0x4C = data;
+        ((Monte*)monte_p[0])->field_0x4C = data;
 
-        for (i = 0; i < ((MonteMedal*)monte_p[0])->field_0x4C->prize; i++) {
+        for (i = 0; i < ((Monte*)monte_p[0])->field_0x4C->prize; i++) {
             u8* e = (u8*)monte_p[0] + i * 0x50 + 8;
             f32 spd;
 
             Vec pos = {-113.0f, 70.0f, 0.0f};
-            pos.z = montemedalzpos[((MonteMedal*)monte_p[0])->field_0x4C->now];
+            pos.z = montemedalzpos[((Monte*)monte_p[0])->field_0x4C->now];
             *(Vec*)(e + 0x04) = pos;
 
             f23 = (2.0f * (f32)(i & 1) - 1.0f) * ((f32)(rand() % 101) / 10.0f);
@@ -2325,8 +2325,8 @@ static USER_FUNC(fall_rtn) {
         }
     }
 
-    for (j = 0; j < ((MonteMedal*)monte_p[0])->field_0x4C->prize; j++) {
-        MonteMedal* e = (MonteMedal*)monte_p[0] + j;
+    for (j = 0; j < ((Monte*)monte_p[0])->field_0x4C->prize; j++) {
+        Monte* e = (Monte*)monte_p[0] + j;
 #ifdef MUST_MATCH
         // match-only: folding each literal through a comma makes MWCC materialise its address
         // directly (no extra `mr`), matching the target.
@@ -2405,13 +2405,13 @@ static USER_FUNC(fall_rtn) {
         }
     }
 
-    if (alive < ((MonteMedal*)monte_p[0])->field_0x4C->prize) {
+    if (alive < ((Monte*)monte_p[0])->field_0x4C->prize) {
         dispEntry(4, 0.0f, 1, monte_disp, (void*)monte_p[0]);
         return 0;
     }
 
-    ((MonteMedal*)monte_p[0])->field_0x4C->prize = 0;
-    ((MonteMedal*)monte_p[0])->field_0x4C->fallEvt = NULL;
+    ((Monte*)monte_p[0])->field_0x4C->prize = 0;
+    ((Monte*)monte_p[0])->field_0x4C->fallEvt = NULL;
     _mapFree((void*)monte_p[0]);
     return 2;
 }
@@ -5435,7 +5435,7 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
     case 11:
     {
         if (data->fallEvt != NULL) {
-            MonteMedal* p = (MonteMedal*)monte_p[0];
+            Monte* p = (Monte*)monte_p[0];
             p->field_0x4C->prize = 0;
             _mapFree((void*)monte_p[0]);
             evtDeleteID(data->fallEvt->eventId);
