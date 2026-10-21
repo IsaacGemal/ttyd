@@ -442,7 +442,7 @@ USER_FUNC(irai_cancel_func) {
             // u32 conversion at the pouchCheckItem call instead of emitting a copy.
             item = (ItemType)item;
 #endif
-            if ((s32)pouchCheckItem(item) <= 0) {
+            if (pouchCheckItem(item) <= 0) {
                 break;
             }
             pouchRemoveItem(item);

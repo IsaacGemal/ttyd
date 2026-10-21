@@ -873,7 +873,7 @@ void marioInit(void) {
 	marioResetCamShift();
 	marioResetCamShiftRate();
 	marioResetCamFollowRate();
-	if ((s32)pouchCheckItem(ITEM_HAMMER) == 0) {
+	if (pouchCheckItem(ITEM_HAMMER) == 0) {
 		pouchGetItem(ITEM_HAMMER);
 	}
 	partyInit();
@@ -1014,7 +1014,7 @@ void marioReInit(void) {
 	marioResetCamShiftRate();
 	marioResetCamFollowRate();
 
-	if ((s32)pouchCheckItem(ITEM_HAMMER) == 0) {
+	if (pouchCheckItem(ITEM_HAMMER) == 0) {
 		pouchGetItem(ITEM_HAMMER);
 	}
 

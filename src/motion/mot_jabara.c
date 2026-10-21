@@ -1066,7 +1066,7 @@ BOOL marioChkJabara(void) {
     if ((mario2->flags & MARIO_FLAG_IS_8_BIT) || (mario2->flags & MARIO_FLAG_PAPER_MODE)) {
         mario2->wMotionTimer = check = 0;
     } else {
-        if ((s32)pouchCheckItem(8) == 0) {
+        if (pouchCheckItem(8) == 0) {
             check = 0;
         } else {
             check = 1;

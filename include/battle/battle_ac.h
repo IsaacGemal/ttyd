@@ -76,7 +76,7 @@ void BattleActionCommandStop(BattleWork* work);
 s32 BattleActionCommandGetDefenceResult(void);
 void BattleActionCommandResetDefenceResult(void);
 s32 BattleActionCommandGetDifficulty(BattleWork* work);
-u32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask);
+s32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask);
 void BattleAcDrawGauge(s32 x, s32 y, f32 ratio, s32 type, s32 count, s32 t0, s32 t1, s32 t2, s32 flags);
 void BattleAcGaugeSeInit(void);
 void BattleAcGaugeSeUpdate(f32);

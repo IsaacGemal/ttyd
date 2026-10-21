@@ -835,7 +835,7 @@ u8 SoundSongGetVolCh(s32 chan) {
     return (u8)song->vol;
 }
 
-BOOL SoundSongCheck(s32 chan) {
+u32 SoundSongCheck(s32 chan) {
     return sndSeqGetValid(sound.songs[chan].seqId) != 0;
 }
 
@@ -1069,7 +1069,7 @@ void SoundEfxSetLPF(s32 chan, s16 freq) {
     }
 }
 
-BOOL SoundEfxCheck(s32 chan) {
+u32 SoundEfxCheck(s32 chan) {
     SoundEffect* sfx;
     SND_VOICEID vid;
 
@@ -2088,7 +2088,7 @@ void SoundSSSetPlayFreqCh(s32 chan, u16 freq) {
     }
 }
 
-s32 SoundSSCheck(s32 chan) {
+u32 SoundSSCheck(s32 chan) {
     return sound.streams[chan].flags;
 }
 

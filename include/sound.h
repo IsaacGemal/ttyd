@@ -205,7 +205,7 @@ void SoundSongFadeoutCh(s32 chan);
 void SoundSongFadeinCh(s32 chan);
 void SoundSongSetVolCh(s32 chan, u8 vol);
 u8 SoundSongGetVolCh(s32 chan);
-BOOL SoundSongCheck(s32 chan);
+u32 SoundSongCheck(s32 chan);
 
 s32 SoundEfxPlayEx(SND_FXID fid, u8 a2, u8 vol, u8 pan);
 void SoundEfxStop(s32 chan);
@@ -216,10 +216,10 @@ void SoundEfxSetAux1(s32 chan, u8 reverb);
 void SoundEfxSetPan(s32 chan, u8 pan);
 void SoundEfxSetSrndPan(s32 chan, u8 span);
 void SoundEfxSetLPF(s32 chan, s16 freq);
-BOOL SoundEfxCheck(s32 chan);
+u32 SoundEfxCheck(s32 chan);
 
 void SoundSSMain(void);
-s32 SoundSSCheck(s32);
+u32 SoundSSCheck(s32);
 void SoundSSSetPlayFreqCh(s32 chan, u16 freq);
 void SoundSSStopCh(s32);
 void SoundSSMuteOff(s32 chan);

@@ -1068,7 +1068,7 @@ void kpa_swim(void) {
                 mario->currSubMotionId = 0x20;
             }
         }
-        if ((u32)kpaChkHitobjRide() != 0) {
+        if (kpaChkHitobjRide() != NULL) {
             mario->kpaSpeed = float_0_80420da0;
             mario->baseSpeed = float_0_80420da0;
         }
@@ -1100,7 +1100,7 @@ void kpa_swim(void) {
         }
         break;
     case 0x20:
-        if ((u32)kpaChkHitobjRide() != 0) {
+        if (kpaChkHitobjRide() != NULL) {
             mario->kpaSpeed = float_0_80420da0;
             mario->baseSpeed = float_0_80420da0;
         }

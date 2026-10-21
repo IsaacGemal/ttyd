@@ -61,7 +61,7 @@ s32 N_itemPickUpFromFieldCheck(void);
 s32 itemGetNokoCheck(ItemEntry* item);
 ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, f32 a6, f32 a7, f32 a8, s32 evtId, s32 a5);
 void itemFlagOn(ItemEntry* item, u16 flag);
-s32 itemStatus(ItemEntry* item, u32 mask);
+u32 itemStatus(ItemEntry* item, u32 mask);
 void itemStatusOn(ItemEntry* item, u32 mask);
 void itemFlagOff(ItemEntry* item, u16 flag);
 u16 itemFlag(ItemEntry* item, u16 flag);

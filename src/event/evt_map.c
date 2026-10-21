@@ -541,7 +541,7 @@ USER_FUNC(evt_map_entry_airport_harbor) {
         if (animGroupBaseAsync(str_p_hikohki, 0, NULL) == 0) {
             return 0;
         }
-        if ((s32)pouchCheckItem(ITEM_PLANE_CURSE) != 1) {
+        if (pouchCheckItem(ITEM_PLANE_CURSE) != 1) {
             break;
         }
         data[0] = name;
@@ -555,7 +555,7 @@ USER_FUNC(evt_map_entry_airport_harbor) {
         if (animGroupBaseAsync(str_p_hune, 0, NULL) == 0) {
             return 0;
         }
-        if ((s32)pouchCheckItem(ITEM_BOAT_CURSE) != 1) {
+        if (pouchCheckItem(ITEM_BOAT_CURSE) != 1) {
             break;
         }
         data[0] = name;

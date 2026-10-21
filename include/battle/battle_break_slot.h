@@ -45,7 +45,7 @@ struct BattleBreakSlot {
 
 void BattleBreakSlot_HideReel(void);
 void BattleBreakSlot_DecBreakTurn(void);
-s32 BattleBreakSlot_CheckReaction(void);
+u8 BattleBreakSlot_CheckReaction(void);
 void BattleBreakSlot_Start(void);
 void BattleBreakSlot_PointInc(void);
 void BattleBreakSlotDispReel(CameraId camId, void* param);

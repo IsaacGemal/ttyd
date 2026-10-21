@@ -186,7 +186,7 @@ void badgeShop_bottakuruGeneration(void) {
 void badgeShop_bteresaGeneration(void) {
 	s32* ptr;
 
-	if ((s32)pouchCheckItem(ITEM_SPECIAL_CARD) != 0) {
+	if (pouchCheckItem(ITEM_SPECIAL_CARD) != 0) {
 		if (!evtGetValue(NULL, GSWF(246))) {
 			evtSetValue(NULL, GSWF(246), 1);
 			for (ptr = badge_bteresa_table_card_special; *ptr; ptr++) {
@@ -195,7 +195,7 @@ void badgeShop_bteresaGeneration(void) {
 		}
 	}
 
-	if ((s32)pouchCheckItem(ITEM_SILVER_CARD) != 0) {
+	if (pouchCheckItem(ITEM_SILVER_CARD) != 0) {
 		if (!evtGetValue(NULL, GSWF(247))) {
 			evtSetValue(NULL, GSWF(247), 1);
 			for (ptr = badge_bteresa_table_card_silver; *ptr; ptr++) {
@@ -204,7 +204,7 @@ void badgeShop_bteresaGeneration(void) {
 		}
 	}
 
-	if ((s32)pouchCheckItem(ITEM_GOLD_CARD) != 0) {
+	if (pouchCheckItem(ITEM_GOLD_CARD) != 0) {
 		if (!evtGetValue(NULL, GSWF(248))) {
 			evtSetValue(NULL, GSWF(248), 1);
 			for (ptr = badge_bteresa_table_card_gold; *ptr; ptr++) {
@@ -213,7 +213,7 @@ void badgeShop_bteresaGeneration(void) {
 		}
 	}
 
-	if ((s32)pouchCheckItem(ITEM_PLATINUM_CARD) != 0) {
+	if (pouchCheckItem(ITEM_PLATINUM_CARD) != 0) {
 		if (!evtGetValue(NULL, GSWF(249))) {
 			evtSetValue(NULL, GSWF(249), 1);
 			for (ptr = badge_bteresa_table_card_platinum; *ptr; ptr++) {

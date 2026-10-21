@@ -265,7 +265,7 @@ void winItemInit(WindowWork* work) {
     work->field_0x250 = -240.f;
     work->field_0x24C = -240.f;
 
-    if ((s32)pouchCheckItem(ITEM_MAILBOX_SP) == 0) {
+    if (pouchCheckItem(ITEM_MAILBOX_SP) == 0) {
         pouchGetItem(ITEM_MAILBOX_SP);
     }
     work->mailCount = pouchReceiveMailCount();
@@ -579,7 +579,7 @@ s32 winItemMain(WindowWork* work) {
         if (work->buttonTrg & 0x100) {
             WinMailEntry* mail;
 
-            if ((s32)pouchCheckMail(work->field_26E[work->mailSel * 2 + 1]) == 1) {
+            if (pouchCheckMail(work->field_26E[work->mailSel * 2 + 1]) == 1) {
                 pouchOpenMail(work->field_26E[work->mailSel * 2 + 1]);
             }
             swSet(0x26);

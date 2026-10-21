@@ -9,6 +9,6 @@ void BattleInformationSetParty(FieldBattleInfo* info, BattleUnitType party);
 void BattleInformationSetFirstAttack(FieldBattleInfo* info, u32 partyId);
 void BattleInformationInit(FieldBattleInfo* info);
 void BattleInfomationSetBattleSetupInfo(FieldBattleInfo* info, NpcBattleInfo* setup);
-void BattleInformationSetResult(FieldBattleInfo* info, u32 result);
-u32 BattleInformationGetResult(FieldBattleInfo* info);
+void BattleInformationSetResult(FieldBattleInfo* info, s32 result);
+s32 BattleInformationGetResult(FieldBattleInfo* info);
 void BattleInformationSetDropMaterial(FieldBattleInfo* info);

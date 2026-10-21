@@ -518,11 +518,11 @@ void btlseqFirstAct(BattleWork* wp) {
 		BattleIncSeq(wp, 2);
 		/* fallthrough */
 	case 0x2000006:
-		if ((u8)BattleAudience_CheckReaction()) {
+		if (BattleAudience_CheckReaction()) {
 			break;
 		}
 		if (!BattleCheckConcluded(wp)) {
-			if ((u8)BattleBreakSlot_CheckReaction()) {
+			if (BattleBreakSlot_CheckReaction()) {
 				break;
 			}
 		}
@@ -2138,7 +2138,7 @@ void btlseqMove(BattleWork* wp) {
 			break;
 		}
 		case 0x500000B:
-			if ((u8)BattleAudience_CheckReactionPerPhase() == 0 && BattleWaitAllActiveEvtEnd(wp)) {
+			if (BattleAudience_CheckReactionPerPhase() == 0 && BattleWaitAllActiveEvtEnd(wp)) {
 				BattleIncSeq(wp, SEQ_MOVE);
 			}
 			break;
@@ -2401,10 +2401,10 @@ void btlseqAct(BattleWork* wp) {
 		// fallthrough
 	}
 	case 0x600000A:
-		if ((u8)BattleAudience_CheckReaction() != 0) {
+		if (BattleAudience_CheckReaction() != 0) {
 			break;
 		}
-		if (!BattleCheckConcluded(wp) && (u8)BattleBreakSlot_CheckReaction() != 0) {
+		if (!BattleCheckConcluded(wp) && BattleBreakSlot_CheckReaction() != 0) {
 			break;
 		}
 		BattleIncSeq(wp, SEQ_ACT);

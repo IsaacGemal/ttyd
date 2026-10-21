@@ -150,7 +150,7 @@ s32 psndSFXOn_3D(const char* name, Vec* position);
 void psndSFXOnVol(s32 a, u8 b);
 
 BOOL psndBGMOff_f_d(s32 flags, s32 fadetime, BOOL someswitch);
-BOOL psndBGMStartCheck(s32 id);
+u32 psndBGMStartCheck(s32 id);
 
 void psndSetFlag(s32 flag);
 void psndClearFlag(s32 flag);
@@ -186,7 +186,7 @@ extern SoundEnvList psenvlist[];
 void psndENV_stop(u32 id);
 s32 psndBGMPlayTime(s32 id);
 BOOL psndBGMChk(s32 id);
-BOOL psndBGMChkSilent(s32 id);
+u32 psndBGMChkSilent(s32 id);
 // 16-byte BGM table entry: two name/flag pairs (main BGM name and stream path).
 typedef struct BGMListEntry {
     const char* name;       // 0x0

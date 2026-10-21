@@ -642,22 +642,22 @@ USER_FUNC(evt_shop_setup) {
 		iconSetPos(buf, pos.x, SHOP_F32(shop_icon_y_offset) + pos.y, pos.z);
 		iconFlagOn(buf, 0x40);
 		wp->acquired[i] = 0;
-		if (wp->items[i * 2] == ITEM_CONTACT_LENS && (s32)pouchCheckItem(ITEM_CONTACT_LENS) != 0) {
+		if (wp->items[i * 2] == ITEM_CONTACT_LENS && pouchCheckItem(ITEM_CONTACT_LENS) != 0) {
 			wp->acquired[i] |= 1;
 		}
-		if (wp->items[i * 2] == ITEM_SUPER_LUIGI1 && (s32)pouchCheckItem(ITEM_SUPER_LUIGI1) != 0) {
+		if (wp->items[i * 2] == ITEM_SUPER_LUIGI1 && pouchCheckItem(ITEM_SUPER_LUIGI1) != 0) {
 			wp->acquired[i] |= 1;
 		}
-		if (wp->items[i * 2] == ITEM_SUPER_LUIGI2 && (s32)pouchCheckItem(ITEM_SUPER_LUIGI2) != 0) {
+		if (wp->items[i * 2] == ITEM_SUPER_LUIGI2 && pouchCheckItem(ITEM_SUPER_LUIGI2) != 0) {
 			wp->acquired[i] |= 1;
 		}
-		if (wp->items[i * 2] == ITEM_SUPER_LUIGI3 && (s32)pouchCheckItem(ITEM_SUPER_LUIGI3) != 0) {
+		if (wp->items[i * 2] == ITEM_SUPER_LUIGI3 && pouchCheckItem(ITEM_SUPER_LUIGI3) != 0) {
 			wp->acquired[i] |= 1;
 		}
-		if (wp->items[i * 2] == ITEM_SUPER_LUIGI4 && (s32)pouchCheckItem(ITEM_SUPER_LUIGI4) != 0) {
+		if (wp->items[i * 2] == ITEM_SUPER_LUIGI4 && pouchCheckItem(ITEM_SUPER_LUIGI4) != 0) {
 			wp->acquired[i] |= 1;
 		}
-		if (wp->items[i * 2] == ITEM_SUPER_LUIGI5 && (s32)pouchCheckItem(ITEM_SUPER_LUIGI5) != 0) {
+		if (wp->items[i * 2] == ITEM_SUPER_LUIGI5 && pouchCheckItem(ITEM_SUPER_LUIGI5) != 0) {
 			wp->acquired[i] |= 1;
 		}
 	}

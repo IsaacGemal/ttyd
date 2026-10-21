@@ -451,7 +451,7 @@ s32 pouchGetEmptyHaveItemCnt(void);
 s32 pouchGetEmptyKeepItemCnt(void);
 BOOL pouchGetItem(ItemType type);
 
-u32 pouchCheckItem(u32 itemId);
+s32 pouchCheckItem(s32 itemId);
 
 BOOL pouchRemoveItem(ItemType type);
 
@@ -504,7 +504,7 @@ void pouchGetStarStone(u32 id);
 s32 pouchReceiveMailCount(void);
 void pouchReceiveMail(s32 mailId);
 void pouchOpenMail(s32 mailId);
-u32 pouchCheckMail(s32 mailId);
+s32 pouchCheckMail(s32 mailId);
 s32 pouchGetPartyColor(PartyId partnerId);
 void pouchSetPartyColor(PartyId partnerId, s32 color);
 void pouchSetYoshiName(char* name);

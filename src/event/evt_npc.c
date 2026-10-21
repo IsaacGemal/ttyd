@@ -1902,7 +1902,7 @@ USER_FUNC(evt_npc_wait_battle_end) {
     if (seqGetSeq() != 2) {
         return EVT_RETURN_BLOCK;
     }
-    if ((s32)BattleInformationGetResult(info) == 0) {
+    if (BattleInformationGetResult(info) == 0) {
         return EVT_RETURN_BLOCK;
     }
     marioCtrlOn();

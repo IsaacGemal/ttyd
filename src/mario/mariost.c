@@ -370,7 +370,7 @@ void marioStSystemLevel(s32 level) {
 	}
 }
 
-s32 marioStGetSystemLevel(void) {
+u32 marioStGetSystemLevel(void) {
 	return gp->systemLevelFlags;
 }
 
@@ -572,7 +572,7 @@ void gcRumbleCheck(void) {
 		if (gp->dvdError) {
 			array[i] = TRUE;
 		}
-		if ((u32)gp->systemLevelFlags != 0) {
+		if (gp->systemLevelFlags != 0) {
 			array[i] = TRUE;
 		}
 		if (array[i]) {

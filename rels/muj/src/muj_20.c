@@ -2013,7 +2013,7 @@ USER_FUNC(logo) {
         event->userdata[0] = (s32)work;
     }
     work = (LogoWork*)event->userdata[0];
-    if ((u32)fileAsyncf(FILE_TYPE_TPL, NULL, "%s/mariost.tpl", getMarioStDvdRoot()) == 0) {
+    if (fileAsyncf(FILE_TYPE_TPL, NULL, "%s/mariost.tpl", getMarioStDvdRoot()) == 0) {
         return EVT_RETURN_BLOCK;
     }
     switch (work->state) {

@@ -39,12 +39,12 @@ void BattleInfomationSetBattleSetupInfo(FieldBattleInfo* info, NpcBattleInfo* se
 }
 
 #pragma dont_inline on
-void BattleInformationSetResult(FieldBattleInfo* info, u32 result) {
+void BattleInformationSetResult(FieldBattleInfo* info, s32 result) {
 	info->result = result;
 }
 #pragma dont_inline reset
 
-u32 BattleInformationGetResult(FieldBattleInfo* info) {
+s32 BattleInformationGetResult(FieldBattleInfo* info) {
 	return info->result;
 }
 

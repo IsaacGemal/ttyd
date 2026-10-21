@@ -182,7 +182,7 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 		}
 		else {
 			for (i = 0; i < superFrames; i++) {
-				trigger = (s32)BattleACPadCheckRecordTrigger(i, 0x200);
+				trigger = BattleACPadCheckRecordTrigger(i, 0x200);
 				if (trigger) {
 					break;
 				}
@@ -190,11 +190,11 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 			if (i < superFrames) {
 				count = 0;
 				for (i = 0; i < 15; i++) {
-					trigger = (s32)BattleACPadCheckRecordTrigger(i, 0x100);
+					trigger = BattleACPadCheckRecordTrigger(i, 0x100);
 					if (trigger) {
 						count++;
 					}
-					trigger = (s32)BattleACPadCheckRecordTrigger(i, 0x200);
+					trigger = BattleACPadCheckRecordTrigger(i, 0x200);
 					if (trigger) {
 						count++;
 					}
@@ -215,11 +215,11 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 		else {
 			count = 0;
 			for (i = 0; i < 15; i++) {
-				trigger = (s32)BattleACPadCheckRecordTrigger(i, 0x100);
+				trigger = BattleACPadCheckRecordTrigger(i, 0x100);
 				if (trigger) {
 					count++;
 				}
-				trigger = (s32)BattleACPadCheckRecordTrigger(i, 0x200);
+				trigger = BattleACPadCheckRecordTrigger(i, 0x200);
 				if (trigger) {
 					count++;
 				}
@@ -229,7 +229,7 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 			}
 			else {
 				for (i = 0; i < normalFrames; i++) {
-					trigger = (s32)BattleACPadCheckRecordTrigger(i, 0x100);
+					trigger = BattleACPadCheckRecordTrigger(i, 0x100);
 					if (trigger) {
 						break;
 					}
@@ -254,7 +254,7 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 }
 
 #pragma dont_inline on // retail keeps the BattleACPadCheckRecordTrigger call instead of inlining it
-u32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask) {
+s32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask) {
 	return _battleWorkPointer->actionCommands.pad.mButtonsPressedHistory[chan] & mask;
 }
 #pragma dont_inline reset

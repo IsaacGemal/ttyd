@@ -223,7 +223,7 @@ USER_FUNC(evt_item_get_item) {
 	if (!(item->flags & 1)) {
 		return EVT_RETURN_DONE;
 	}
-	if ((u32)itemStatus(item, 2) != 0) {
+	if (itemStatus(item, 2) != 0) {
 		return EVT_RETURN_DONE;
 	}
 	return itemStatus(item, 0x10000) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
@@ -237,7 +237,7 @@ USER_FUNC(evt_item_get_item_end_wait) {
 	if (!(item->flags & 1)) {
 		return EVT_RETURN_DONE;
 	}
-	if ((u32)itemStatus(item, 2) != 0) {
+	if (itemStatus(item, 2) != 0) {
 		return EVT_RETURN_DONE;
 	}
 	return itemStatus(item, 0x10000) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;

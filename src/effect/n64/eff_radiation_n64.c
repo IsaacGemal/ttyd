@@ -111,9 +111,9 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 			data->startOffset = (f32)((k - 1) * 30 / (count - 1) - 10);
 			data->lifetime = 50 - (k - 1) * 20 / (count - 1);
 			data->speed = 2.5f + 25.0f / (f32)data->lifetime;
-			data->startRotX = (f32)(s32)effTblRandN64(180, k * 3);
-			data->startRotY = (f32)(s32)effTblRandN64(180, k * 3 + 1);
-			data->startRotZ = (f32)(s32)effTblRandN64(180, k * 3 + 2);
+			data->startRotX = (f32)effTblRandN64(180, k * 3);
+			data->startRotY = (f32)effTblRandN64(180, k * 3 + 1);
+			data->startRotZ = (f32)effTblRandN64(180, k * 3 + 2);
 			data->offset = data->startOffset;
 			data->life = data->lifetime;
 			data->offsetVel = data->speed;
@@ -206,9 +206,9 @@ void effRadiationMain(EffectEntry* effect) {
 			}
 			data->offset += data->offsetVel;
 			if (data->life <= 0) {
-				data->startRotX = (f32)(s32)effTblRandN64(180, n);
-				data->startRotY = (f32)(s32)effTblRandN64(180, n1);
-				data->startRotZ = (f32)(s32)effTblRandN64(180, n2);
+				data->startRotX = (f32)effTblRandN64(180, n);
+				data->startRotY = (f32)effTblRandN64(180, n1);
+				data->startRotZ = (f32)effTblRandN64(180, n2);
 				data->offset = data->startOffset;
 				data->life = data->lifetime;
 				data->offsetVel = data->speed;

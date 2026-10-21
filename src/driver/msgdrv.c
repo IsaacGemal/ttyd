@@ -813,7 +813,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 		if (_ismbblead(check)) {
 			glyph = kanjiSearch(*(const u16*)msg);
 			{
-			s32 exinc = (s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 4));
+			s32 exinc = (s32)(scale * (f32)(kanjiGetWidth(glyph) + 4));
 			entry->glyph = glyph;
 			entry->x = ex;
 			entry->y = (s16)((s32)ey - (s32)(10.f * scale));
@@ -1151,7 +1151,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 				}
 				else {
 					glyph = kanjiSearch(0x94B5);
-					w = (u16)(s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 4));
+					w = (u16)(s32)(scale * (f32)(kanjiGetWidth(glyph) + 4));
 					entry->glyph = glyph;
 					entry->x = ex;
 					entry->y = (s16)((s32)ey - (s32)(10.f * scale));
@@ -1232,7 +1232,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 				total = 0;
 				for (i = 0; (s32)i < half; i++) {
 					u16 g = msgGetKanji(tagName, skip + i * 2);
-					f32 fw = scale * (f32)(kanjiGetWidth((u16)g) + 4);
+					f32 fw = scale * (f32)(kanjiGetWidth(g) + 4);
 
 					total += (s32)(0.55f * fw);
 				}
@@ -1242,7 +1242,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 
 				for (j = 0; (s32)j < half; j++) {
 					u16 g = msgGetKanji(tagName, skip + j * 2);
-					f32 fw = scale * (f32)(kanjiGetWidth((u16)g) + 4);
+					f32 fw = scale * (f32)(kanjiGetWidth(g) + 4);
 					s32 rinc = (s32)(0.55f * fw);
 
 					entry->glyph = g;
@@ -1273,7 +1273,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 			glyph = hankakuSearch(check);
 		}
 		{
-		s32 exinc = (s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 2));
+		s32 exinc = (s32)(scale * (f32)(kanjiGetWidth(glyph) + 2));
 		entry->glyph = glyph;
 		entry->x = ex;
 		entry->y = (s16)((s32)ey - (s32)(10.f * scale));

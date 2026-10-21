@@ -132,19 +132,19 @@ s32 iri_22_make_item_tbl(EventEntry* event, BOOL isFirstCall) {
     }
     count = 0;
     if (!(flags & 0x1)) {
-        if ((s32)pouchCheckItem(0xA9) != 0) {
+        if (pouchCheckItem(0xA9) != 0) {
             iri_22_item_tbl[0] = 0xA9;
             count = 1;
         }
     }
     if (!(flags & 0x2)) {
-        if ((s32)pouchCheckItem(0xA8) != 0) {
+        if (pouchCheckItem(0xA8) != 0) {
             iri_22_item_tbl[count] = 0xA8;
             count++;
         }
     }
     if (!(flags & 0x4)) {
-        if ((s32)pouchCheckItem(0xAA) != 0) {
+        if (pouchCheckItem(0xAA) != 0) {
             iri_22_item_tbl[count] = 0xAA;
             count++;
         }

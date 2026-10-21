@@ -724,7 +724,7 @@ void mobjMain(void) {
             if (entry->flags & MOBJ_FLAG_RETRIGGER) {
                 entry->flags &= ~MOBJ_FLAG_TRIGGERED;
             }
-            if ((u32)marioStGetSystemLevel() != 0) {
+            if (marioStGetSystemLevel() != 0) {
                 entry->flags &= ~MOBJ_FLAG_TRIGGERED;
             }
             {

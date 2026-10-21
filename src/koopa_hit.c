@@ -533,7 +533,7 @@ void* kpaGetHitobjRide(s32 index) {
     return *(void**)((u8*)kpa + index * 4 + offsetof(KpaWork, ride));
 }
 
-s32 kpaChkHitobjRide(void) {
+void* kpaChkHitobjRide(void) {
     KpaWork* kpa = KPA(marioGetPtr());
     void* result = kpa->ride[0];
     if (result == NULL) {
@@ -555,7 +555,7 @@ s32 kpaChkHitobjRide(void) {
                                     if (result == NULL) {
                                         result = kpa->ride[9];
                                         if (result == NULL) {
-                                            return (s32)result;
+                                            return result;
                                         }
                                     }
                                 }
@@ -566,7 +566,7 @@ s32 kpaChkHitobjRide(void) {
             }
         }
     }
-    return (s32)result;
+    return result;
 }
 
 void kpaClearHitobjRide(void) {

@@ -277,7 +277,7 @@ void winLogInit(WindowWork* work) {
     }
     w->stoneNum = 0;
     for (i = 0; i < 7; i++) {
-        if ((s32)pouchCheckItem(stone_tbl[i]) != 0) {
+        if (pouchCheckItem(stone_tbl[i]) != 0) {
             w->stoneNum++;
         }
     }
@@ -687,7 +687,7 @@ s32 winLogMain(WindowWork* work) {
         case 10:
             tpl = winGetMapTplName();
             root = getMarioStDvdRoot();
-            if ((u32)fileAsyncf(FILE_TYPE_TPL, NULL, "%s/w/jp/%s", root, tpl) != 0) {
+            if (fileAsyncf(FILE_TYPE_TPL, NULL, "%s/w/jp/%s", root, tpl) != 0) {
                 if (w->mapTpl == 0) {
                     tpl = winGetMapTplName();
                     root = getMarioStDvdRoot();
@@ -1751,8 +1751,8 @@ void monosiriMain(void* work) {
 
     switch (w->state) {
     case 0:
-        if ((u32)fileAsyncf(FILE_TYPE_TPL, NULL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), lang[g->language]) != 0) {
-            if ((u32)fileAsyncf(FILE_TYPE_RAW, NULL, "%s/w/jp/mono.dat", getMarioStDvdRoot()) != 0) {
+        if (fileAsyncf(FILE_TYPE_TPL, NULL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), lang[g->language]) != 0) {
+            if (fileAsyncf(FILE_TYPE_RAW, NULL, "%s/w/jp/mono.dat", getMarioStDvdRoot()) != 0) {
                 w->file1 = fileAllocf(FILE_TYPE_TPL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), lang[gp->language]);
                 w->file2 = fileAllocf(FILE_TYPE_RAW, "%s/w/jp/mono.dat", getMarioStDvdRoot());
                 w->state++;

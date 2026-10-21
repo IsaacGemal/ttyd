@@ -215,7 +215,7 @@ eff_set* effGetSetN64(const char* name) {
 	return NULL;
 }
 
-u32 effTblRandN64(u32 rand, s32 index) {
+s32 effTblRandN64(u32 rand, s32 index) {
 	s32 rand2 = _rand_table[index % 128];
 
 	if (rand2 < 0) {
