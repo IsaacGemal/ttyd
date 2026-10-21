@@ -119,7 +119,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
             bd->frame = 0;
             bd->curSignal = 0;
             bd->signalCount = 0;
-            bd->difficulty = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);
+            bd->difficulty = BattleActionCommandGetDifficulty(work);
             bd->inWindow = 0;
             ac->outputParams[1] = 0;
             for (k = 0; k < 5; k++) {

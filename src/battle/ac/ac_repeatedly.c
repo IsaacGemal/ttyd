@@ -152,13 +152,7 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->field_0x2BC[0];
     BattleACDispParams* disp = &ac->dispParams;
-#ifdef MUST_MATCH
-    // Match-only: battle_ac.h declares the callee `s8`, but the original caller does not sign-extend
-    // (its definition returns a zero-extended `lbz`). The cast suppresses MWCC's `extsb`.
-    s32 difficulty = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);
-#else
     s32 difficulty = BattleActionCommandGetDifficulty(work);
-#endif
     s32 stateChanged;
     s32 autoCommand = 0;
     f32 v;

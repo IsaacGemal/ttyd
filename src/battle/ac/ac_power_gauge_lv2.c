@@ -67,13 +67,7 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
 
     dec = (PowerGaugeLv2DecWork*)&work->actionCommands.field_0x2BC[0];
     disp = &work->actionCommands.dispParams;
-#ifdef MUST_MATCH
-    // Match-only: the callee really returns 4 bytes (no extsb in the original); the `s8` header
-    // would sign-extend the `slwi r0, r31, 2` index.
-    difficulty = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);
-#else
     difficulty = BattleActionCommandGetDifficulty(work);
-#endif
     autoCommand = 0;
     if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
         autoCommand = 1;

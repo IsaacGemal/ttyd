@@ -82,13 +82,7 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
 	AcTimingADecWork* dec = (AcTimingADecWork*)&work->actionCommands.field_0x2BC[0];
 	AcTimingAEntry* entry = _ac_timing_a_timing_tbl[
-#ifdef MUST_MATCH
-	    // Match-only: the header says `s8`, but the callee returns a zero-extended 4-byte value;
-	    // a plain call makes MWCC emit `extsb r3, r3` before the `slwi` table index.
-	    ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work)
-#else
 	    BattleActionCommandGetDifficulty(work)
-#endif
 	];
 	s32 frame = work->actionCommands.mResultCount;
 	s32 result = entry->value;
