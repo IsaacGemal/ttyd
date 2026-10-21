@@ -417,11 +417,9 @@ void battleAcDelete_SignalTiming(BattleWork* work) {
 // pass).
 //  - the offset expressions must be written so the last constant binds to the loop-invariant
 //    term: `(i * 0x30 + (field * 0x21 - 0xfa))` and `(num * 0x30 - 0x1a + (field * 32))`
-//    (left-grouped or field-first forms reassociate and cost ~10-100 diffs); the t0 level tests
-//    stay `field_0x10 >= field_c * t0 - 5`;
+//    (left-grouped or field-first forms reassociate and cost ~10-100 diffs); the level tests
+//    stay `frame >= acParams[2] * (i + acParams[6]) - 5`;
 //  - `field * 32` (not `field << 5`) lands the Mtx-block temporaries in the target's registers;
-//  - the t0 loops' `s32 t0 = (i, i + field)` comma nudge (MUST_MATCH; natural form below) colours
-//    t0 in r4 and fixes ~16 diffs; `(i, i + field)` and `i + field` compile identically otherwise;
 //  - the int->float magic double has to stay the compiler's own anonymous pool entry, which this
 //    all-literal form places at +0xa8 and actionCommandDisp loads as `lfd fN, 0xa8(r30)`;
 //    defining the double as a source object does not make MWCC use it for `(f32)int` and shifts
@@ -568,15 +566,9 @@ static void actionCommandDisp(f32 x, f32 y) {
         f28 = 15.0f + y;
         for (i = 0; i < num; i++) {
             f32 scale = 0.8f;
-#ifdef MUST_MATCH
-            // The leading comma (a discarded second read of `i`) nudges the allocator to colour
-            // t0 in r4 as the target; the natural form below colours it r7 and costs ~12 diffs.
-            s32 t0 = (i, i + ac->acParams[6]);
-#else
-            s32 t0 = i + ac->acParams[6];
-#endif
-            if (bd->signalCount == t0 && bd->frame >= ac->acParams[2] * t0 - 5 &&
-                bd->frame < ac->acParams[2] * t0) {
+            if (bd->signalCount == i + ac->acParams[6] &&
+                bd->frame >= ac->acParams[2] * (i + ac->acParams[6]) - 5 &&
+                bd->frame < ac->acParams[2] * (i + ac->acParams[6])) {
                 Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.y = f28;
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
@@ -584,7 +576,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             } else {
                 s32 delta;
                 Vec t;
-                if (bd->signalCount <= t0) {
+                if (bd->signalCount <= i + ac->acParams[6]) {
                     delta = -2;
                     scale = 0.6f;
                 } else {
@@ -599,18 +591,14 @@ static void actionCommandDisp(f32 x, f32 y) {
     } else {
         f28 = 20.800001f + f31;
         for (i = 0; i < num; i++) {
-#ifdef MUST_MATCH
-            s32 t0 = (i, i + ac->acParams[6]); // see the note on the first t0 loop
-#else
-            s32 t0 = i + ac->acParams[6];
-#endif
-            if (bd->signalCount == t0 && bd->frame >= ac->acParams[2] * t0 - 0x14 &&
-                bd->frame <= ac->acParams[2] * t0) {
+            if (bd->signalCount == i + ac->acParams[6] &&
+                bd->frame >= ac->acParams[2] * (i + ac->acParams[6]) - 0x14 &&
+                bd->frame <= ac->acParams[2] * (i + ac->acParams[6])) {
                 Vec t = (Vec){0.0f, 0.0f, 0.0f};
                 t.x = x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa)));
                 t.y = f31;
                 iconDispGx(0.8f, &t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0));
-            } else if (bd->signalCount <= t0) {
+            } else if (bd->signalCount <= i + ac->acParams[6]) {
                 if (i >= num - 1) {
                     btlDispTexPlane(x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28, 0.0f, 0.8f, 0.8f,
                                     0x40, *(GXColor*)&dat_804216d4, 0);

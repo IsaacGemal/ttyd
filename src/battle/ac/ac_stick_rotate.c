@@ -122,17 +122,9 @@ s32 _CalcRollDir(void) {
 #pragma dont_inline reset
 
 s32 battleAcMain_StickRotate(BattleWork* work) {
-#ifdef MUST_MATCH
-    // Match-only: addressing the work area through the header's named field (via the `ac`
-    // intermediate) is what keeps work=r28, sr=r31 and disp=r30 in separate registers; the
-    // natural form below folds sr into the BattleWork base.
     BattleActions* ac = &work->actionCommands;
     StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
     BattleACDispParams* disp = &ac->dispParams;
-#else
-    StickRotateWork* sr = (StickRotateWork*)&work->actionCommands.field_0x2BC[0];
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
-#endif
     s32 cont;
 
     do {

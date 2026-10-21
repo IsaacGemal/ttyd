@@ -6,11 +6,14 @@
 #include "battle/battle_unit.h"
 #include "driver/camdrv.h"
 #include "driver/icondrv.h"
-#include "driver/icondrv_gx.h"
 #include "mario/mariost.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include <string.h>
+
+// iconDispGx's definition takes the icon id as s32, but this unit's original passes it zero-extended
+// (u16); declare it with the width this file's asm passes (see tools/local_prototype_exceptions.json).
+void iconDispGx(f32 scale, Vec* position, s16 flags, u16 iconId);
 
 // sdata2 float constants used by actionCommandDisp.
 extern const f32 float_neg200_8041c3e8;
@@ -436,12 +439,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
                 Vec v = ((Vec){0.0f, 0.0f, 0.0f});
                 v.x = x + (step * i + (-258.0f));
                 v.y = yy;
-#ifdef MUST_MATCH
-                // iconDispGx's header says s16 but the original passes a zero-extended u16 (clrlwi, no extsh).
-                ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&v, 0x10, (u16)(i + 0x92), float_1_8041c3f0);
-#else
-                iconDispGx(float_1_8041c3f0, &v, 0x10, (s16)(i + 0x92));
-#endif
+                iconDispGx(float_1_8041c3f0, &v, 0x10, i + 0x92);
             }
             else {
                 Vec v = ((Vec){0.0f, 0.0f, 0.0f});

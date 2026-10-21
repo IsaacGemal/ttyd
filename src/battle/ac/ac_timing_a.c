@@ -74,9 +74,6 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 }
 
 
-// The header says `s8`, but the callee returns a zero-extended 4-byte value; a plain call makes
-// MWCC emit `extsb r3, r3` before the `slwi` table index, so this is called through a
-// function pointer under MUST_MATCH (as ac_lst_rc_keep/ac_stick_keep_left do).
 // dont_inline: battleAcResult_TimingA calls this with `bl`; without it MWCC inlines the body.
 #pragma dont_inline on
 s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
@@ -91,19 +88,12 @@ s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
 		if (frame >= 100000) {
 			result = 0;
 		} else {
-#ifdef MUST_MATCH
-			// The original's -O4,s loop is not rotated; a plain `while` rotates it here.
 			for (;;) {
 				if (frame <= entry->threshold) {
 					break;
 				}
 				entry++;
 			}
-#else
-			while (frame > entry->threshold) {
-				entry++;
-			}
-#endif
 			result = entry->value;
 		}
 	}
