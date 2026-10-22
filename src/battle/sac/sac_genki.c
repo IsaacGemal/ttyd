@@ -113,24 +113,12 @@ typedef struct GenkiStar {
     s32 field_0;                // 0x0
     s32 field_4;                // 0x4
     s32 field_8;                // 0x8
-    f32 field_C;                // 0xC
-    f32 field_10;               // 0x10
-    f32 field_14;               // 0x14
-    f32 field_18;               // 0x18
-    f32 field_1C;               // 0x1C
-    f32 field_20;               // 0x20
-    f32 field_24;               // 0x24
-    f32 field_28;               // 0x28
-    f32 field_2C;               // 0x2C
-    f32 field_30;               // 0x30
-    f32 field_34;               // 0x34
-    f32 field_38;               // 0x38
-    f32 field_3C;               // 0x3C
-    f32 field_40;               // 0x40
-    f32 field_44;               // 0x44
-    f32 field_48;               // 0x48
-    f32 field_4C;               // 0x4C
-    f32 field_50;               // 0x50
+    Vec field_C;                // 0xC
+    Vec field_18;               // 0x18
+    Vec field_24;               // 0x24
+    Vec field_30;               // 0x30
+    Vec field_3C;               // 0x3C
+    Vec field_48;               // 0x48
     f32 field_54;               // 0x54
     f32 field_58;               // 0x58
     f32 field_5C;               // 0x5C
@@ -227,9 +215,9 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
             genki->field_58 = 7;
         }
         if (genki->field_C == 0) {
-            genki->field_5C = (s32*)BattleAlloc(0x64);
+            genki->field_5C = BattleAlloc(0x64);
         } else {
-            genki->field_5C = (s32*)BattleAlloc(0xC8);
+            genki->field_5C = BattleAlloc(0xC8);
         }
         genki->field_34 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
         genki->field_38 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
@@ -474,11 +462,6 @@ void main_mario(void) {
     }
 }
 
-// `auto_inline off` (not `dont_inline`) is what the original needs: MWCC must not auto-inline
-// plain helpers such as get_ptr (every call is a real `bl`, and inlining get_ptr wrecks the
-// callers), but `_drawGenkiTex`/`_drawGenkiTex2` are declared `inline` and DO inline at their
-// two call sites in disp_3D, exactly as the original does.
-#pragma auto_inline off
 void main_target(void) {
     GenkiWork* genki = get_ptr();
 
@@ -726,7 +709,7 @@ void main_weapon(s32 idx) {
         f32 scale = 1.125f;
 
         if (weapon->field_44 != NULL) {
-            effStarStoneData* data = (effStarStoneData*)weapon->field_44->userdata;
+            effStarStoneData* data = weapon->field_44->userdata;
 
             data->x = weapon->pos[0].x;
             data->y = weapon->pos[0].y;
@@ -735,7 +718,7 @@ void main_weapon(s32 idx) {
             data->tevReg0A = 0xFF;
         }
         for (i = 0; i < 3; i++) {
-            effStarStoneData* data = (effStarStoneData*)weapon->field_48[i]->userdata;
+            effStarStoneData* data = weapon->field_48[i]->userdata;
 
             data->x = weapon->pos[i + 1].x;
             data->y = weapon->pos[i + 1].y;
@@ -820,8 +803,8 @@ void main_object(s32 idx) {
         }
         {
             BtlUnit_GetPos(mario, &x, &y, &z);
-            obj->field_C = star->field_C;
-            obj->field_10 = star->field_10;
+            obj->field_C = star->field_C.x;
+            obj->field_10 = star->field_C.y;
             obj->field_14 = z + (f32)idx;
         }
     case 2:
@@ -888,14 +871,14 @@ void main_star0(s32 idx) {
         star->field_0 = 2;
         star->field_4 = 0;
         star->field_60 = effStarStoneEntry(idx, 0.0f, -1000.0f, 0.0f, 1.0f);
-        BtlUnit_GetPos(mario, &star->field_C, &star->field_10, &star->field_14);
-        star->field_10 = star->field_10 +
+        BtlUnit_GetPos(mario, &star->field_C.x, &star->field_C.y, &star->field_C.z);
+        star->field_C.y = star->field_C.y +
             (mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f);
-        *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
-        *(Vec*)&star->field_24 = *(Vec*)&star->field_C;
-        star->field_28 += 30.0f;
-        *(Vec*)&star->field_3C = *(const Vec*)vec3_803002d4;
-        *(Vec*)&star->field_48 = *(const Vec*)vec3_803002e0;
+        star->field_18 = star->field_C;
+        star->field_24 = star->field_C;
+        star->field_24.y += 30.0f;
+        star->field_3C = *(const Vec*)vec3_803002d4;
+        star->field_48 = *(const Vec*)vec3_803002e0;
         star->field_54 = 0.0f;
         star->field_58 = 6.283184f * (f32)idx / 7.0f;
         star->field_5C = 0.1f;
@@ -903,41 +886,41 @@ void main_star0(s32 idx) {
     case 2:
         star->field_4++;
         if (star->field_4 <= 0x64) {
-            star->field_10 = intplGetValue(0, star->field_4, 0x64, star->field_1C, star->field_28);
+            star->field_C.y = intplGetValue(0, star->field_4, 0x64, star->field_18.y, star->field_24.y);
             BtlUnit_GetPos(mario, &x, &y, &z);
             star->field_54 = intplGetValue(0, star->field_4, 0x64, 0.0f,
                                            40.0f);
             star->field_58 += star->field_5C;
-            star->field_C = x + star->field_54 * (f32)cos(star->field_58);
-            star->field_14 = z + star->field_54 * (f32)sin(star->field_58);
+            star->field_C.x = x + star->field_54 * (f32)cos(star->field_58);
+            star->field_C.z = z + star->field_54 * (f32)sin(star->field_58);
             f = intplGetValue(0, star->field_4, 0x64, 0.0f, 0.75f);
-            star->field_44 = f;
-            star->field_40 = f;
-            star->field_3C = f;
+            star->field_3C.z = f;
+            star->field_3C.y = f;
+            star->field_3C.x = f;
         } else {
-            star->field_10 = star->field_28;
+            star->field_C.y = star->field_24.y;
             BtlUnit_GetPos(mario, &x, &y, &z);
             star->field_58 += star->field_5C;
-            star->field_C = x + star->field_54 * (f32)cos(star->field_58);
-            star->field_14 = z + star->field_54 * (f32)sin(star->field_58);
-            star->field_44 = 0.75f;
-            star->field_40 = 0.75f;
-            star->field_3C = 0.75f;
+            star->field_C.x = x + star->field_54 * (f32)cos(star->field_58);
+            star->field_C.z = z + star->field_54 * (f32)sin(star->field_58);
+            star->field_3C.z = 0.75f;
+            star->field_3C.y = 0.75f;
+            star->field_3C.x = 0.75f;
         }
-        star->field_4C = intplGetValue(4, star->field_4, 0x78, 0.0f,
+        star->field_48.y = intplGetValue(4, star->field_4, 0x78, 0.0f,
                                        2160.0f);
         if (star->field_4 >= 0x78) {
             Vec v;
 
             star->field_0 = 3;
             star->field_4 = 0;
-            *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
+            star->field_18 = star->field_C;
             v = *(const Vec*)vec3_803002ec;
             v.x = 200.0f * (f32)rand() / 32767.0f;
-            v.z = star->field_20;
-            *(Vec*)&star->field_24 = v;
-            *(Vec*)&star->field_30 = *(const Vec*)vec3_803002f8;
-            star->field_34 = (2.0f * (star->field_28 - star->field_1C) -
+            v.z = star->field_18.z;
+            star->field_24 = v;
+            star->field_30 = *(const Vec*)vec3_803002f8;
+            star->field_30.y = (2.0f * (star->field_24.y - star->field_18.y) -
                               (60.0f * (60.0f *
                                (0.2f - 0.01f * (f32)idx)))) /
                              120.0f;
@@ -945,40 +928,40 @@ void main_star0(s32 idx) {
         break;
     case 3:
         star->field_4++;
-        star->field_C = intplGetValue(4, star->field_4, 0x3C, star->field_18, star->field_24);
-        star->field_10 += star->field_34;
-        star->field_34 += 0.2f - 0.01f * (f32)idx;
-        star->field_4C = 0.0f;
-        star->field_44 = 0.75f;
-        star->field_40 = 0.75f;
-        star->field_3C = 0.75f;
+        star->field_C.x = intplGetValue(4, star->field_4, 0x3C, star->field_18.x, star->field_24.x);
+        star->field_C.y += star->field_30.y;
+        star->field_30.y += 0.2f - 0.01f * (f32)idx;
+        star->field_48.y = 0.0f;
+        star->field_3C.z = 0.75f;
+        star->field_3C.y = 0.75f;
+        star->field_3C.x = 0.75f;
         if (star->field_4 >= 0x3C) {
             star->field_0 = 4;
             star->field_4 = 0;
             if (irand(2) == 0) {
-                star->field_30 = -2.0f - 0.05f * (f32)idx;
+                star->field_30.x = -2.0f - 0.05f * (f32)idx;
             }
-            star->field_30 = 2.0f + 0.05f * (f32)idx;
-            star->field_34 = 0.0f;
+            star->field_30.x = 2.0f + 0.05f * (f32)idx;
+            star->field_30.y = 0.0f;
         }
         break;
     case 4:
-        star->field_C += star->field_30;
-        if (star->field_C < 0.0f) {
-            star->field_30 = 3.0f + 0.05f * (f32)idx;
+        star->field_C.x += star->field_30.x;
+        if (star->field_C.x < 0.0f) {
+            star->field_30.x = 3.0f + 0.05f * (f32)idx;
         }
-        if (star->field_C > 200.0f) {
-            star->field_30 = -3.0f - 0.05f * (f32)idx;
+        if (star->field_C.x > 200.0f) {
+            star->field_30.x = -3.0f - 0.05f * (f32)idx;
         }
-        star->field_34 += 0.1f + 0.01f * (f32)idx;
-        if (star->field_34 >= 6.283184f) {
-            star->field_34 -= 6.283184f;
+        star->field_30.y += 0.1f + 0.01f * (f32)idx;
+        if (star->field_30.y >= 6.283184f) {
+            star->field_30.y -= 6.283184f;
         }
-        star->field_10 = 10.0f * (f32)sin(star->field_34) + 180.0f;
+        star->field_C.y = 10.0f * (f32)sin(star->field_30.y) + 180.0f;
         if (genki->field_40 <= 0) {
             star->field_0 = 5;
             star->field_4 = 0;
-            *(Vec*)&star->field_C = *(const Vec*)vec3_80300304;
+            star->field_C = *(const Vec*)vec3_80300304;
         }
         break;
     case 5:
@@ -987,13 +970,13 @@ void main_star0(s32 idx) {
 
     if (star->field_60 != NULL) {
         effStarStoneData* p = star->field_60->userdata;
-        p->x = star->field_C;
-        p->y = star->field_10;
-        p->z = star->field_14;
-        p->tipRotY = star->field_48;
-        p->rotY = star->field_4C;
-        p->tipRotZ = star->field_50;
-        p->scale = 1.5f * star->field_3C;
+        p->x = star->field_C.x;
+        p->y = star->field_C.y;
+        p->z = star->field_C.z;
+        p->tipRotY = star->field_48.x;
+        p->rotY = star->field_48.y;
+        p->tipRotZ = star->field_48.z;
+        p->scale = 1.5f * star->field_3C.x;
     }
 }
 
@@ -1015,87 +998,87 @@ void main_star1(void) {
         star->field_0 = 2;
         star->field_4 = 0;
         star->field_60 = effStarStoneEntry(4, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84, 1.0f);
-        BtlUnit_GetPos(mario, &star->field_C, &star->field_10, &star->field_14);
-        star->field_10 = star->field_10 +
+        BtlUnit_GetPos(mario, &star->field_C.x, &star->field_C.y, &star->field_C.z);
+        star->field_C.y = star->field_C.y +
             (mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f);
-        *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
-        *(Vec*)&star->field_24 = *(Vec*)&star->field_C;
-        star->field_28 += 50.0f;
-        star->field_2C += -1.0f;
-        *(Vec*)&star->field_3C = *(const Vec*)&vec3_80300310[0];
-        *(Vec*)&star->field_48 = *(const Vec*)&vec3_8030031c[0];
+        star->field_18 = star->field_C;
+        star->field_24 = star->field_C;
+        star->field_24.y += 50.0f;
+        star->field_24.z += -1.0f;
+        star->field_3C = *(const Vec*)&vec3_80300310[0];
+        star->field_48 = *(const Vec*)&vec3_8030031c[0];
         /* fallthrough */
     case 2:
         star->field_4++;
         if (star->field_4 <= 0x64) {
-            star->field_C = intplGetValue(0, star->field_4, 0x64, star->field_18, star->field_24);
-            star->field_10 = intplGetValue(0, star->field_4, 0x64, star->field_1C, star->field_28);
-            star->field_14 = intplGetValue(0, star->field_4, 0x64, star->field_20, star->field_2C);
+            star->field_C.x = intplGetValue(0, star->field_4, 0x64, star->field_18.x, star->field_24.x);
+            star->field_C.y = intplGetValue(0, star->field_4, 0x64, star->field_18.y, star->field_24.y);
+            star->field_C.z = intplGetValue(0, star->field_4, 0x64, star->field_18.z, star->field_24.z);
             f = intplGetValue(0, star->field_4, 0x64, float_0_80421d84, 2.0f);
-            star->field_44 = f;
-            star->field_40 = f;
-            star->field_3C = f;
+            star->field_3C.z = f;
+            star->field_3C.y = f;
+            star->field_3C.x = f;
         } else {
-            star->field_C = star->field_24;
-            star->field_10 = star->field_28;
-            star->field_14 = star->field_2C;
-            star->field_44 = 2.0f;
-            star->field_40 = 2.0f;
-            star->field_3C = 2.0f;
+            star->field_C.x = star->field_24.x;
+            star->field_C.y = star->field_24.y;
+            star->field_C.z = star->field_24.z;
+            star->field_3C.z = 2.0f;
+            star->field_3C.y = 2.0f;
+            star->field_3C.x = 2.0f;
         }
-        star->field_4C = intplGetValue(4, star->field_4, 0x78, float_0_80421d84,
+        star->field_48.y = intplGetValue(4, star->field_4, 0x78, float_0_80421d84,
                                        2160.0f);
         if (star->field_4 >= 0x78) {
             Vec v;
 
             star->field_0 = 3;
             star->field_4 = 0;
-            *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
+            star->field_18 = star->field_C;
             v = *(const Vec*)&vec3_80300328[0];
             v.x = 200.0f * (f32)rand() / 32767.0f;
-            v.z = star->field_20;
-            *(Vec*)&star->field_24 = v;
-            *(Vec*)&star->field_30 = *(const Vec*)&vec3_80300334[0];
-            star->field_34 = (2.0f * (star->field_28 - star->field_1C) -
+            v.z = star->field_18.z;
+            star->field_24 = v;
+            star->field_30 = *(const Vec*)&vec3_80300334[0];
+            star->field_30.y = (2.0f * (star->field_24.y - star->field_18.y) -
                               720.0f) / 120.0f;
         }
         break;
     case 3:
         star->field_4++;
-        star->field_C = intplGetValue(4, star->field_4, 0x3C, star->field_18, star->field_24);
-        star->field_10 += star->field_34;
-        star->field_34 += 0.2f;
-        star->field_4C = float_0_80421d84;
-        star->field_44 = 2.0f;
-        star->field_40 = 2.0f;
-        star->field_3C = 2.0f;
+        star->field_C.x = intplGetValue(4, star->field_4, 0x3C, star->field_18.x, star->field_24.x);
+        star->field_C.y += star->field_30.y;
+        star->field_30.y += 0.2f;
+        star->field_48.y = float_0_80421d84;
+        star->field_3C.z = 2.0f;
+        star->field_3C.y = 2.0f;
+        star->field_3C.x = 2.0f;
         if (star->field_4 >= 0x3C) {
             star->field_0 = 4;
             star->field_4 = 0;
             if (irand(2) == 0) {
-                star->field_30 = -2.0f;
+                star->field_30.x = -2.0f;
             }
-            star->field_30 = 2.0f;
-            star->field_34 = float_0_80421d84;
+            star->field_30.x = 2.0f;
+            star->field_30.y = float_0_80421d84;
         }
         break;
     case 4:
-        star->field_C += star->field_30;
-        if (star->field_C < float_0_80421d84) {
-            star->field_30 = 3.0f;
+        star->field_C.x += star->field_30.x;
+        if (star->field_C.x < float_0_80421d84) {
+            star->field_30.x = 3.0f;
         }
-        if (star->field_C > 200.0f) {
-            star->field_30 = -3.0f;
+        if (star->field_C.x > 200.0f) {
+            star->field_30.x = -3.0f;
         }
-        star->field_34 += 0.1f;
-        if (star->field_34 >= 6.283184f) {
-            star->field_34 -= 6.283184f;
+        star->field_30.y += 0.1f;
+        if (star->field_30.y >= 6.283184f) {
+            star->field_30.y -= 6.283184f;
         }
-        star->field_10 = 10.0f * (f32)sin(star->field_34) + 180.0f;
+        star->field_C.y = 10.0f * (f32)sin(star->field_30.y) + 180.0f;
         if (genki->field_40 <= 0) {
             star->field_0 = 5;
             star->field_4 = 0;
-            *(Vec*)&star->field_C = *(const Vec*)&vec3_80300340[0];
+            star->field_C = *(const Vec*)&vec3_80300340[0];
         }
         break;
     case 5:
@@ -1104,13 +1087,13 @@ void main_star1(void) {
 
     if (star->field_60 != NULL) {
         effStarStoneData* p = star->field_60->userdata;
-        p->x = star->field_C;
-        p->y = star->field_10;
-        p->z = star->field_14;
-        p->tipRotY = star->field_48;
-        p->rotY = star->field_4C;
-        p->tipRotZ = star->field_50;
-        p->scale = 1.5f * star->field_3C;
+        p->x = star->field_C.x;
+        p->y = star->field_C.y;
+        p->z = star->field_C.z;
+        p->tipRotY = star->field_48.x;
+        p->rotY = star->field_48.y;
+        p->tipRotZ = star->field_48.z;
+        p->scale = 1.5f * star->field_3C.x;
     }
 }
 
@@ -1210,10 +1193,10 @@ static void disp_3D(CameraId cameraId, void* param) {
             frame = genki->field_28 % 12;
             if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
-                iconC1 = *(GXColor*)&dat_80421d20;
+                iconC1 = dat_80421d20;
                 ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_1C, 0, &iconC1);
 #else
-                iconNumberDispGx3D(mtx, (s32)genki->field_1C, 0, *(GXColor*)&dat_80421d20);
+                iconNumberDispGx3D(mtx, (s32)genki->field_1C, 0, dat_80421d20);
 #endif
 
             }
@@ -1246,10 +1229,10 @@ static void disp_3D(CameraId cameraId, void* param) {
                 frame = genki->field_2C % 12;
                 if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
-                    iconC2 = *(GXColor*)&dat_80421d24;
+                    iconC2 = dat_80421d24;
                     ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_20, 0, &iconC2);
 #else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_20, 0, *(GXColor*)&dat_80421d24);
+                    iconNumberDispGx3D(mtx, (s32)genki->field_20, 0, dat_80421d24);
 #endif
 
                 }
@@ -1283,10 +1266,10 @@ static void disp_3D(CameraId cameraId, void* param) {
                 frame = genki->field_30 % 12;
                 if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
-                    iconC3 = *(GXColor*)&dat_80421d28;
+                    iconC3 = dat_80421d28;
                     ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC3);
 #else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d28);
+                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, dat_80421d28);
 #endif
 
                 }
@@ -1319,10 +1302,10 @@ static void disp_3D(CameraId cameraId, void* param) {
                 frame = genki->field_30 % 12;
                 if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
-                    iconC4 = *(GXColor*)&dat_80421d2c;
+                    iconC4 = dat_80421d2c;
                     ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC4);
 #else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d2c);
+                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, dat_80421d2c);
 #endif
 
                 }
@@ -1434,10 +1417,10 @@ static void disp_3D(CameraId cameraId, void* param) {
             // The original passes `flags` without a sign extension; with the header's s16
             // parameter MWCC emits `extsh`, so call it through a u16 prototype. The named
             // `iconC5` address (not a by-value temp) gives it the original's 0x10 slot.
-            iconC5 = *(GXColor*)&dat_80421d30;
+            iconC5 = dat_80421d30;
             ((void (*)(Mtx, u16, s32, GXColor*))iconDispGxCol)(mtx, flags, icon, &iconC5);
 #else
-            iconDispGxCol(mtx, flags, icon, *(GXColor*)&dat_80421d30);
+            iconDispGxCol(mtx, flags, icon, dat_80421d30);
 #endif
         }
     }
@@ -1493,38 +1476,6 @@ static void disp_3D(CameraId cameraId, void* param) {
             btlDispTex4(0x42, &trans, &scale, &rot, &color);
         }
     }
-}
-
-static inline void _drawGenkiTex(s32 id, GXColor color, Vec trans, Vec rot, Vec scale) {
-    btlDispTex4(id, &trans, &scale, &rot, &color);
-}
-static inline void _drawGenkiTex2(s32 id, Vec scale, Vec rot, Vec trans, GXColor color) {
-    btlDispTex4(id, &trans, &scale, &rot, &color);
-}
-
-static inline Vec _makeRot2(const f32* vec, f32 z) {
-    Vec v = *(const Vec*)&vec[0x138 / 4];
-    v.z = z;
-    return v;
-}
-static inline Vec _makeTrans2(const f32* vec, f32 x, f32 y, f32 z) {
-    Vec v = *(const Vec*)&vec[0x120 / 4];
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
-}
-static inline Vec _makeRot1(const f32* vec, f32 z) {
-    Vec v = *(const Vec*)&vec[0x114 / 4];
-    v.z = z;
-    return v;
-}
-static inline Vec _makeTrans1(const f32* vec, f32 x, f32 y, f32 z) {
-    Vec v = *(const Vec*)&vec[0xFC / 4];
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
 }
 
 static void disp_3D_alpha(CameraId camera, void* param) {
@@ -1593,7 +1544,6 @@ s32 object_get_num(void) {
     }
     return count;
 }
-#pragma auto_inline reset
 
 USER_FUNC(start_game) {
     GenkiWork* genki = get_ptr();

@@ -538,9 +538,7 @@ USER_FUNC(evt_party_jump_pos) {
             } else if (dy >= float_0_8041bb1c) {
                 dy += float_37_8041bb20;
 #ifdef MUST_MATCH
-            // MUST_MATCH: the header declares searchUnder2 as s32, but it returns a pointer;
-            // the cast restores the original's unsigned (cmplwi) null test.
-            } else if ((HitEntry*)searchUnder2((Vec*)&pos, tx, ty, tz)) {
+            } else if (searchUnder2((Vec*)&pos, tx, ty, tz)) {
 #else
             } else if (searchUnder2(&pos, tx, ty, tz)) {
 #endif

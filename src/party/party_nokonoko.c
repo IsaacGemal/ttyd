@@ -32,10 +32,6 @@ static const f32 float_0p1 = 0.1f;
 static const f32 float_0 = 0.0f;
 static const f32 float_neg1 = -1.0f;
 
-// nokonoko_use reads the pose names (str_PNK_K_2/158) as offsets from this first .rodata object.
-#define NK_STR(off, lit) (lit)
-#define NKF_180 180.0
-
 static const f32 float_90 = 90.0f;
 static const f32 float_0p5 = 0.5f;
 static const f32 float_10 = 10.0f;
@@ -149,8 +145,14 @@ void unk_800cd9a0(void) {
             party->flags2 &= ~0x20;
             party->flags2 &= ~0x10;
             party->height = float_37;
-            *(s32*)((u8*)party + 0x178) = 0;
-            *(s32*)((u8*)party + 0x17C) = 0;
+#ifdef MUST_MATCH
+            *(s32*)&party->tail.koops.slideDecay = 0;
+            *(s32*)&party->tail.koops.dashing = 0;
+#else
+            party->tail.koops.slideDecay = 0.0f;
+            party->tail.koops.dashing = 0;
+            party->tail.koops.moveFlags = 0;
+#endif
             party->tail.koops.field_180 = 0;
         }
         if (party->runMode != 8 && party->runMode != 0xD) {
@@ -177,16 +179,16 @@ void nokonoko_use_post(PartyEntry* party) {
     party->flags2 &= ~0x20;
     party->flags2 &= ~0x10;
     party->height = float_37;
-    *(s32*)((u8*)party + 0x178) = 0;
-    *(s32*)((u8*)party + 0x17C) = 0;
+#ifdef MUST_MATCH
+    *(s32*)&party->tail.koops.slideDecay = 0;
+    *(s32*)&party->tail.koops.dashing = 0;
+#else
+    party->tail.koops.slideDecay = 0.0f;
+    party->tail.koops.dashing = 0;
+    party->tail.koops.moveFlags = 0;
+#endif
     party->tail.koops.field_180 = 0;
 }
-
-// The `NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C))` updates stay raw: `party->dispDir` there
-// schedules the add differently.
-#define NKF(off) (*(f32*)((u8*)party + (off)))
-#define NKS(off) (*(s32*)((u8*)party + (off)))
-#define NKM(off) (*(f32*)((u8*)mario + (off)))
 
 // Koops' overworld use state machine.  Reconstructed from the original asm; the
 // many switches mirror the jump tables in party_nokonoko.s.
@@ -220,8 +222,14 @@ void nokonoko_use(PartyEntry* party) {
     if (party->field_8 & 0x8) {
         party->field_8 &= ~0x8;
         party->tail.koops.heldItem = NULL;
-        NKS(0x178) = 0;
-        NKS(0x17c) = 0;
+#ifdef MUST_MATCH
+        *(s32*)&party->tail.koops.slideDecay = 0;
+        *(s32*)&party->tail.koops.dashing = 0;
+#else
+        party->tail.koops.slideDecay = 0.0f;
+        party->tail.koops.dashing = 0;
+        party->tail.koops.moveFlags = 0;
+#endif
         party->tail.koops.field_180 = 0;
         if (party->flags & PARTY_FLAG_IS_EVT_USE) {
             if (party->unk16C > 0) {
@@ -242,7 +250,7 @@ void nokonoko_use(PartyEntry* party) {
         partyClearJumpPara(party);
         party->flags |= PARTY_FLAG_DISABLE_FLOORS;
         party->flags2 |= 0x10;
-        partyChgPose(party, NK_STR(0x18, "PNK_K_2"));
+        partyChgPose(party, "PNK_K_2");
         party->height = 18.5f;
         party->useMotionId = 1;
         party->timer = 100;
@@ -283,7 +291,7 @@ void nokonoko_use(PartyEntry* party) {
         party->field_110 = mario->dispReqDir;
         party->dispDir = mario->dispReqDir;
         party->useMotionId = 2;
-        partyChgPose(party, NK_STR(0x20, "PNK_A_1"));
+        partyChgPose(party, "PNK_A_1");
         /* fallthrough */
     case 2:
         if (mario->currMotionId == MARIO_MOTION_DAMAGE_TOGE || mario->currMotionId == MARIO_MOTION_DAMAGE) {
@@ -321,12 +329,10 @@ void nokonoko_use(PartyEntry* party) {
         }
         /* fallthrough */
     case 12:
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         if (gp->retraceCount & 1) {
-            f32 k = 0.25f;
-            EffectEntry* eff = effKemuTestEntry(0, party->position.x, party->height * k + party->position.y,
+            EffectEntry* eff = effKemuTestEntry(0, party->position.x, party->position.y + party->height / 4.0f,
                                                 party->position.z, 0.3f);
             effKemuTestDrawCam(eff, party->camId);
         }
@@ -395,9 +401,8 @@ void nokonoko_use(PartyEntry* party) {
         }
         /* fallthrough */
     case 20:
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         if (gp->retraceCount % 30 == 0) {
             EffectEntry* eff = effKemuTestEntry(5, party->position.x, party->position.y, party->position.z, 1.0f);
             effKemuTestDrawCam(eff, party->camId);
@@ -436,26 +441,18 @@ void nokonoko_use(PartyEntry* party) {
             }
         }
         if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
-            MarioMotion mot = mario->currMotionId;
-            // goto: as one || condition MWCC merges the 0x18/0x19 tests into a range check
-            if (mot == 0x19) { goto L_800CC4E8; }
-            if (mot == 0x14) { goto L_800CC4E8; }
-            if (mot == 0x18) { goto L_800CC4E8; }
-            if (mot == 0x16) { goto L_800CC4E8; }
-            if ((u16)(mot - 0x1f) <= 1) { goto L_800CC4E8; }
-            if (mario->flags & 0x20) { goto L_800CC4E8; }
-            if (marioChkKey() != 0) {
-                goto L_800CC514;
+            if (mario->currMotionId == MARIO_MOTION_SHIP || mario->currMotionId == MARIO_MOTION_JABARA ||
+                mario->currMotionId == MARIO_MOTION_PLANE || mario->currMotionId == MARIO_MOTION_ROLL ||
+                mario->currMotionId == MARIO_MOTION_DAMAGE || mario->currMotionId == MARIO_MOTION_DAMAGE_TOGE ||
+                (mario->flags & 0x20) || !marioChkKey()) {
+                nokonoko_finish(party);
+                marioGetPtr();
+                if (nokoSe != 0xFFFFFFFFu) {
+                    psndSFXOff(nokoSe);
+                    nokoSe = 0xFFFFFFFFu;
+                }
+                break;
             }
-        L_800CC4E8:
-            nokonoko_finish(party);
-            marioGetPtr();
-            if (nokoSe != 0xFFFFFFFFu) {
-                psndSFXOff(nokoSe);
-                nokoSe = 0xFFFFFFFFu;
-            }
-            break;
-        L_800CC514:
             if (mario->buttonHeld & 0x400) {
                 break;
             }
@@ -480,9 +477,8 @@ void nokonoko_use(PartyEntry* party) {
         break;
 
     case 21:
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         if (gp->retraceCount % 30 == 0) {
             EffectEntry* eff = effKemuTestEntry(5, party->position.x, party->position.y, party->position.z, 1.0f);
             effKemuTestDrawCam(eff, party->camId);
@@ -529,9 +525,8 @@ void nokonoko_use(PartyEntry* party) {
                                  f4, -1.0f, -f31);
             return;
         }
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         party->speed = 0.1f * (-1.0f - party->speed) + party->speed;
         party->targetDist -= party->speed;
         if (!(party->targetDist <= 0.0f)) {
@@ -552,9 +547,8 @@ void nokonoko_use(PartyEntry* party) {
         if (party->tail.koops.slideDecay <= 0.0f) {
             party->tail.koops.slideDecay = 0.0f;
         }
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         f3 = -2.0f - party->speed;
         f2 = (party->tail.koops.dashing != 0) ? 0.2f : 0.1f;
         party->speed += f3 * f2;
@@ -602,9 +596,8 @@ void nokonoko_use(PartyEntry* party) {
         break;
 
     case 0x36:
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         party->speed += 0.5f;
         if (party->speed >= 4.0f) {
             party->speed = 4.0f;
@@ -622,9 +615,8 @@ void nokonoko_use(PartyEntry* party) {
             party->useMotionId = 0x46;
             return;
         }
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         party->tail.koops.slideDecay -= 2.2f;
         if (party->tail.koops.slideDecay <= 0.0f) {
             party->tail.koops.slideDecay = 0.0f;
@@ -650,7 +642,7 @@ void nokonoko_use(PartyEntry* party) {
             f1 = (f32)sqrt(d4 + d3 + d2);
         }
         if (f1 < 5.0f) {
-            f0 = (mario->directionView >= NKF_180) ? -90.0f : 90.0f;
+            f0 = (mario->directionView >= 180.0) ? -90.0f : 90.0f;
             movePos(&party->position.x, &party->position.z,
                     0.5f * mario->wPlayerCollisionBox.x, mario->directionView + f0);
             ccwall(party, 1);
@@ -682,9 +674,8 @@ void nokonoko_use(PartyEntry* party) {
         psndSFXOn_3D((const char*)0x92b, &party->position);
         /* fallthrough */
     case 0x51:
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         party->speed += 3.0f;
         if (party->speed >= 18.0f) {
             party->speed = 18.0f;
@@ -718,9 +709,8 @@ void nokonoko_use(PartyEntry* party) {
         break;
 
     case 0x52:
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         party->speed += 0.35f * (-1.0f - party->speed);
         if (party->tail.koops.heldItem == NULL) {
             party->tail.koops.heldItem = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
@@ -748,9 +738,8 @@ void nokonoko_use(PartyEntry* party) {
         break;
 
     case 0x54:
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         if (ccwall(party, 1)) {
             party->useMotionId = 0x64;
             break;
@@ -764,9 +753,8 @@ void nokonoko_use(PartyEntry* party) {
         break;
 
     case 0x56:
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         if (--party->timer <= 0) {
             party->useMotionId = 0x64;
         }
@@ -787,7 +775,7 @@ void nokonoko_use(PartyEntry* party) {
             f1 = (f32)sqrt(d4 + d3 + d2);
         }
         if (f1 < 5.0f) {
-            f0 = (mario->directionView >= NKF_180) ? 90.0f : -90.0f;
+            f0 = (mario->directionView >= 180.0) ? 90.0f : -90.0f;
             movePos(&party->position.x, &party->position.z,
                     0.5f * mario->wPlayerCollisionBox.x, mario->directionView + f0);
             ccwall(party, 1);
@@ -851,9 +839,8 @@ void nokonoko_use(PartyEntry* party) {
         break;
 
     case 0x5A:
-        f1 = revise360(party->dir - party->playerTargetYaw);
-        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
-        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f2 = (revise360(party->dir - party->playerTargetYaw) > 180.0f) ? 1.0f : -1.0f;
+        party->dispDir = revise360(50.0f * f2 + party->dispDir);
         party->speed += 0.5f;
         if (party->speed >= 4.0f) {
             party->speed = 4.0f;
@@ -892,7 +879,7 @@ void nokonoko_use(PartyEntry* party) {
         if (!(party->flags & PARTY_FLAG_IS_EVT_USE)) {
             partyGetReturnPos(&v);
         } else {
-            *(Vec*)&v = mario->position;
+            v = mario->position;
             f1 = mario->dispReqDir;
             {
                 s32 flag = 0;
@@ -926,8 +913,6 @@ void nokonoko_use(PartyEntry* party) {
             if (wsy > 240.0f) {
                 party->flags &= ~PARTY_FLAG_FORCE_FALL;
             }
-            (void)wsx;
-            (void)wsz;
         }
         partyMove(party);
         if (party->jumpPara1 <= -6.0f) {
@@ -941,7 +926,7 @@ void nokonoko_use(PartyEntry* party) {
         if (party->groundHit != NULL) {
             party->field_110 = mario->dispReqDir;
             party->dispDir = party->field_110;
-            if (((hitGetAttr((HitEntry*)party->groundHit) >> 9) & 1) == 0) {
+            if (((hitGetAttr(party->groundHit) >> 9) & 1) == 0) {
                 party->useMotionId = 0x72;
                 party->timer = 30;
             }
@@ -964,9 +949,6 @@ void nokonoko_use(PartyEntry* party) {
     }
     return;
 }
-#undef NKF
-#undef NKS
-#undef NKM
 
 void nokonoko_finish(PartyEntry* party) {
     if (party == NULL) {
@@ -978,25 +960,7 @@ void nokonoko_finish(PartyEntry* party) {
     if (!(party->flags & PARTY_FLAG_IS_BEING_USED)) {
         return;
     }
-    if (party->tail.koops.heldItem != NULL) {
-        itemNokoForceGet(party->tail.koops.heldItem);
-        party->tail.koops.heldItem = NULL;
-    }
-    marioGetPtr();
-    if (nokoSe != 0xFFFFFFFFu) {
-        psndSFXOff(nokoSe);
-        nokoSe = 0xFFFFFFFFu;
-    }
-    party->flags &= ~PARTY_FLAG_IS_BEING_USED;
-    party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
-    party->flags &= ~PARTY_FLAG_DISABLE_FRONT_WALL_CHK;
-    party->flags &= ~PARTY_FLAG_FORCE_FALL;
-    party->flags2 &= ~0x20;
-    party->flags2 &= ~0x10;
-    party->height = float_37;
-    *(s32*)((u8*)party + 0x178) = 0;
-    *(s32*)((u8*)party + 0x17C) = 0;
-    party->tail.koops.field_180 = 0;
+    nokonoko_use_post(party);
     if (party->runMode == 9) {
         return;
     }
@@ -1013,16 +977,13 @@ void nokotaro_hold_cancel(PartyEntry* party) {
     party->useMotionId = 0x14;
 }
 
-static inline float fsub32(f32 arg0, f32 arg1)
-{
-  return arg0 - arg1;
-}
-
-// Operand order matters: the original's first probe is fadds f0, f5, f0.
+#ifdef MUST_MATCH
+// Operand order: the original's first probe is fadds f0, f5, f0 (height first); `height + 30` gives f0, f5.
 static inline float fadd32(f32 arg0, f32 arg1)
 {
   return arg0 + arg1;
 }
+#endif
 
 static void ccfloor(PartyEntry* party, s32 flag, f32 step, f32* hitX, f32* hitY, f32* hitZ, f32* distance,
                     f32* hitNX, f32* hitNY, f32* hitNZ);
@@ -1147,7 +1108,11 @@ static void ccfloor(PartyEntry* party, s32 flag, f32 step, f32* hitX, f32* hitY,
     x = party->position.x;
     z = party->position.z;
     oy = party->position.y + party->height + float_10;
+#ifdef MUST_MATCH
     *distance = fadd32(party->height, float_30);
+#else
+    *distance = party->height + float_30;
+#endif
     hit = hitCheckFilter(NULL, x, oy, z, float_0, float_neg1, float_0, hitX, hitY, hitZ,
                          distance, hitNX, hitNY, hitNZ);
     if (((hitGetAttr(hit) >> 9) & 1) == 1) {

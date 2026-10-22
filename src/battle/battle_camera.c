@@ -76,8 +76,10 @@ void battleCameraInit(void) {
   camera->unk4 = 0;
 }
 
+#ifdef MUST_MATCH
 // Inlining this lookup gives case 7's live unit pointer the original register.
 static inline BattleUnit* bcam_get_unit(BattleWork* wp, s32 id) { return BattleGetUnitPtr(wp, id); }
+#endif
 // The unit pointers are shared function-scope locals reused across cases; which case uses which
 // one (and their declaration order) decides how the frontend numbers their per-case webs, and so
 // the registers in cases 7, 9, 11 and 13.
@@ -97,21 +99,19 @@ void battleCameraMain(void) {
   f32 o1, o2, o3, o4, o5, o6;
   f32 t1, t2, t3;
   f32 zb, zc;
-  f32 zero;
   char name[0x40];
 
   cam = camGetPtr(CAMERA_3D);
   wp = _battleWorkPointer;
   audience = BattleAudienceBaseGetPtr();
-  zero = 0.0f;
   zc = 0.0f; // the original's f30 starts at 0.0 (prologue `lfs f30`): zc when rank is outside 0..3
   (void)BattleGetMarioPtr(wp);
-  o1 = zero;
-  o2 = zero;
-  o3 = zero;
-  o4 = zero;
-  o5 = zero;
-  o6 = zero;
+  o1 = 0.0f;
+  o2 = 0.0f;
+  o3 = 0.0f;
+  o4 = 0.0f;
+  o5 = 0.0f;
+  o6 = 0.0f;
 
   if (wp->cameraWork.mode != 3) {
     wp->cameraWork.unk84 = 0;
@@ -203,7 +203,11 @@ void battleCameraMain(void) {
     f32 y;
     f32 w;
 
+#ifdef MUST_MATCH
     unit2 = bcam_get_unit(wp, wp->cameraWork.unk10);
+#else
+    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+#endif
     if (unit2 == NULL) {
       btl_camera_set_mode(0, 0);
       break;
@@ -280,7 +284,11 @@ void battleCameraMain(void) {
       t = 0.5f;
     }
     // The product lives in its own temporary, which fixes the registers of the following float math.
+#ifdef MUST_MATCH
     { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
+#else
+    base = float_2_8041c450 * wp->cameraWork.zoom - 1.5f * (wa + wb);
+#endif
     f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
     xv = (1.0f - t) * wp->cameraWork.unkC8.x;
     v = (1.0f - t) * base;
@@ -434,7 +442,11 @@ void battleCameraMain(void) {
       t = 0.5f;
     }
     // The product lives in its own temporary, which fixes the registers of the following float math.
+#ifdef MUST_MATCH
     { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
+#else
+    base = float_2_8041c450 * wp->cameraWork.zoom - 1.5f * (wa + wb);
+#endif
     f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
     xv = (1.0f - t) * wp->cameraWork.unkC8.x;
     v = (1.0f - t) * base;
@@ -663,15 +675,15 @@ void battleCameraMain(void) {
     odd = (wp->cameraWork.unkDC - wp->cameraWork.unkE4) & 2;
     wp->cameraWork.moveSpeedLv = 3;
     wp->cameraWork.zoomSpeedLv = 3;
-    *(f32*)&wp->cameraWork.unkFC[0] = intplGetValue(wp->cameraWork.unkD4, (wp->cameraWork.unkDC - wp->cameraWork.unkE4) / 2, wp->cameraWork.unkDC / 2, wp->cameraWork.unkEC, wp->cameraWork.unkF0);
+    wp->cameraWork.field_0xFC = intplGetValue(wp->cameraWork.unkD4, (wp->cameraWork.unkDC - wp->cameraWork.unkE4) / 2, wp->cameraWork.unkDC / 2, wp->cameraWork.unkEC, wp->cameraWork.unkF0);
     if (wp->cameraWork.unkE4 > 0) {
       if (odd == 0) {
-        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x + *(f32*)&wp->cameraWork.unkFC[0],
-                           cam->cameraPos.y, cam->cameraPos.z, cam->cameraAt.x + *(f32*)&wp->cameraWork.unkFC[0], cam->cameraAt.y,
+        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x + wp->cameraWork.field_0xFC,
+                           cam->cameraPos.y, cam->cameraPos.z, cam->cameraAt.x + wp->cameraWork.field_0xFC, cam->cameraAt.y,
                            cam->cameraAt.z);
       } else {
-        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x - *(f32*)&wp->cameraWork.unkFC[0],
-                           cam->cameraPos.y, cam->cameraPos.z, cam->cameraAt.x - *(f32*)&wp->cameraWork.unkFC[0], cam->cameraAt.y,
+        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x - wp->cameraWork.field_0xFC,
+                           cam->cameraPos.y, cam->cameraPos.z, cam->cameraAt.x - wp->cameraWork.field_0xFC, cam->cameraAt.y,
                            cam->cameraAt.z);
       }
     } else if (wp->cameraWork.unkE4 == 0) {
@@ -689,14 +701,14 @@ void battleCameraMain(void) {
     odd = (wp->cameraWork.unkE0 - wp->cameraWork.unkE8) & 2;
     wp->cameraWork.moveSpeedLv = 3;
     wp->cameraWork.zoomSpeedLv = 3;
-    *(f32*)&wp->cameraWork.unkFC[4] = intplGetValue(wp->cameraWork.unkD8, (wp->cameraWork.unkE0 - wp->cameraWork.unkE8) / 2, wp->cameraWork.unkE0 / 2, wp->cameraWork.unkF4, wp->cameraWork.unkF8);
+    wp->cameraWork.field_0x100 = intplGetValue(wp->cameraWork.unkD8, (wp->cameraWork.unkE0 - wp->cameraWork.unkE8) / 2, wp->cameraWork.unkE0 / 2, wp->cameraWork.unkF4, wp->cameraWork.unkF8);
     if (wp->cameraWork.unkE8 > 0) {
       if (odd == 0) {
-        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x, cam->cameraPos.y + *(f32*)&wp->cameraWork.unkFC[4],
-                           cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.y + *(f32*)&wp->cameraWork.unkFC[4], cam->cameraAt.z);
+        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x, cam->cameraPos.y + wp->cameraWork.field_0x100,
+                           cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.y + wp->cameraWork.field_0x100, cam->cameraAt.z);
       } else {
-        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x, cam->cameraPos.y - *(f32*)&wp->cameraWork.unkFC[4],
-                           cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.y - *(f32*)&wp->cameraWork.unkFC[4], cam->cameraAt.z);
+        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x, cam->cameraPos.y - wp->cameraWork.field_0x100,
+                           cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.y - wp->cameraWork.field_0x100, cam->cameraAt.z);
       }
     } else if (wp->cameraWork.unkE8 == 0) {
       wp->cameraWork.flags &= ~2;
@@ -885,7 +897,6 @@ void battleCameraMoveTo(s32 id, s32 a, f32* p1, f32* p2, f32* p3, f32* p4,
   }
 }
 
-#pragma dont_inline on
 f32 battleCameraGetPosMoveSpeed(void) {
   BattleCameraWork *camera = &_battleWorkPointer->cameraWork;
   f32 x = camera->unk68.x;
@@ -897,7 +908,6 @@ f32 battleCameraGetPosMoveSpeed(void) {
 void btl_camera_set_prilimit(s32 limit) {
   _battleWorkPointer->cameraWork.priLimit = limit;
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_set_prilimit) {
   s32 *args = event->args;
@@ -905,7 +915,6 @@ USER_FUNC(evt_btl_camera_set_prilimit) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_set_mode(s32 id, s32 mode) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -923,7 +932,6 @@ void btl_camera_set_mode(s32 id, s32 mode) {
   btl_camera_nomove_z_onoff(0, 0);
   camera->flags &= ~0x20;
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_set_mode) {
   s32 *args = event->args;
@@ -977,11 +985,13 @@ USER_FUNC(evt_btl_camera_set_homing_unit) {
   return EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
 // Wrapping the call in this inline changes MWCC's scheduling of the return-value save
 // (direct `mr r26, r3` instead of the r0 spill) without changing the emitted call.
 static inline BattleUnit *getUnitPtr(BattleWork *wp, s32 id) {
   return BattleGetUnitPtr(wp, id);
 }
+#endif
 
 USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   BattleWork *wp;
@@ -1006,7 +1016,11 @@ USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   }
   camera->unk10 = BattleTransID(event, type);
   camera->unk18 = partId;
+#ifdef MUST_MATCH
   unit = getUnitPtr(wp, camera->unk10);
+#else
+  unit = BattleGetUnitPtr(wp, camera->unk10);
+#endif
   part = BattleGetUnitPartsPtr(camera->unk10, camera->unk18);
   BtlUnit_GetHomePos(unit, &pos.x, &pos.y, &pos.z);
   home = vec3_802efc7c;
@@ -1017,7 +1031,11 @@ USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   if (type2 != -1) {
     camera->unk14 = BattleTransID(event, type2);
     camera->unk1C = partId2;
+#ifdef MUST_MATCH
     unit = getUnitPtr(wp, camera->unk14);
+#else
+    unit = BattleGetUnitPtr(wp, camera->unk14);
+#endif
     part = BattleGetUnitPartsPtr(camera->unk14, camera->unk1C);
     BtlUnit_GetHitPos(unit, part, &pos2.x, &pos2.y, &pos2.z);
     hit = vec3_802efc88;
@@ -1074,7 +1092,6 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_set_zoom(s32 id, f32 z) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1094,7 +1111,6 @@ void btl_camera_add_zoom(s32 id, f32 z) {
   }
   camera->zoom += z;
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_set_zoom) {
   s32 *args = event->args;
@@ -1112,7 +1128,6 @@ USER_FUNC(evt_btl_camera_add_zoom) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_set_moveSpeedLv(s32 id, s32 lv) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1141,7 +1156,6 @@ void btl_camera_set_zoomSpeedLv(s32 id, s32 lv) {
   }
   camera->zoomSpeedLv = 1;
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_set_moveSpeedLv) {
   s32 *args = event->args;
@@ -1161,7 +1175,6 @@ USER_FUNC(evt_btl_camera_set_zoomSpeedLv) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,
                            f32 f5, f32 f6) {
   BattleWork *wp = _battleWorkPointer;
@@ -1187,7 +1200,6 @@ void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,
   camera->unk88 = a;
   camera->unk80 = b;
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_set_moveto) {
   s32 *args = event->args;
@@ -1205,7 +1217,6 @@ USER_FUNC(evt_btl_camera_set_moveto) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_shake_w(s32 id, s32 a, s32 b, f32 x, f32 y) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1223,7 +1234,6 @@ void btl_camera_shake_w(s32 id, s32 a, s32 b, f32 x, f32 y) {
     padRumbleOn(0);
   }
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_shake_w) {
   s32 *args = event->args;
@@ -1237,7 +1247,6 @@ USER_FUNC(evt_btl_camera_shake_w) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1255,7 +1264,6 @@ void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y) {
     padRumbleOn(0);
   }
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_shake_h) {
   s32 *args = event->args;
@@ -1269,7 +1277,6 @@ USER_FUNC(evt_btl_camera_shake_h) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_noshake(s32 id) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1280,7 +1287,6 @@ void btl_camera_noshake(s32 id) {
   camera->flags &= ~0x1;
   camera->flags &= ~0x2;
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_noshake) {
   s32 *args = event->args;
@@ -1288,7 +1294,6 @@ USER_FUNC(evt_btl_camera_noshake) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_nomove_x_onoff(s32 id, s32 on) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1302,7 +1307,6 @@ void btl_camera_nomove_x_onoff(s32 id, s32 on) {
   }
   camera->flags &= ~0x04;
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_nomove_x_onoff) {
   s32 *args = event->args;
@@ -1313,7 +1317,6 @@ USER_FUNC(evt_btl_camera_nomove_x_onoff) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_nomove_y_onoff(s32 id, s32 on) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1327,7 +1330,6 @@ void btl_camera_nomove_y_onoff(s32 id, s32 on) {
   }
   camera->flags &= ~0x08;
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_nomove_y_onoff) {
   s32 *args = event->args;
@@ -1338,7 +1340,6 @@ USER_FUNC(evt_btl_camera_nomove_y_onoff) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_nomove_z_onoff(s32 id, s32 on) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1352,7 +1353,6 @@ void btl_camera_nomove_z_onoff(s32 id, s32 on) {
   }
   camera->flags &= ~0x10;
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_nomove_z_onoff) {
   s32 *args = event->args;
@@ -1363,7 +1363,6 @@ USER_FUNC(evt_btl_camera_nomove_z_onoff) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_set_posoffset(s32 id, f32 x, f32 y, f32 z) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1376,7 +1375,6 @@ void btl_camera_set_posoffset(s32 id, f32 x, f32 y, f32 z) {
   camera->position.y = y;
   camera->position.z = z;
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_set_posoffset) {
   s32 *args = event->args;
@@ -1389,7 +1387,6 @@ USER_FUNC(evt_btl_camera_set_posoffset) {
   return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on
 void btl_camera_off_posoffset_manual(s32 id) {
   BattleWork *wp = _battleWorkPointer;
   BattleCameraWork *camera = &wp->cameraWork;
@@ -1402,7 +1399,6 @@ void btl_camera_off_posoffset_manual(s32 id) {
   camera->position.y = 0.0f;
   camera->position.z = 0.0f;
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_btl_camera_off_posoffset_manual) {
   s32 *args = event->args;

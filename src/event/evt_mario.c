@@ -1377,7 +1377,7 @@ USER_FUNC(evt_mario_jump_pos) {
     f32 framesF;
     f32 dy;
     f32 accel;
-    void* ground;
+    HitEntry* ground;
     s32 landed;
 
     if (isFirstCall) {
@@ -1428,9 +1428,7 @@ USER_FUNC(evt_mario_jump_pos) {
 #endif
 
 #ifdef MUST_MATCH
-                // The header declares searchUnder2 as s32 but it returns a pointer;
-                // the cast restores the original's unsigned (cmplwi) null test.
-                if ((void*)searchUnder2((Vec*)&vec, x, y, z)) {
+                if (searchUnder2((Vec*)&vec, x, y, z)) {
 #else
                 if (searchUnder2(&vec, x, y, z)) {
 #endif
@@ -1488,9 +1486,9 @@ USER_FUNC(evt_mario_jump_pos) {
         dy = mario->jumpVelY;
         mario2 = marioGetPtr();
         if (mario2->flags & MARIO_FLAG_TUBE_MODE) {
-            ground = (void*)marioSearchGroundRoll(&v0, &v1, &v2, 11.0f, mario2->jumpVelY);
+            ground = marioSearchGroundRoll(&v0, &v1, &v2, 11.0f, mario2->jumpVelY);
         } else {
-            ground = (void*)marioSearchGround(&v0, &v1, &v2, dy, dy);
+            ground = marioSearchGround(&v0, &v1, &v2, dy, dy);
         }
         if (ground != NULL && mario2->position.y + dy <= v0) {
             marioClearJumpPara();
@@ -1662,7 +1660,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         dy = mario->jumpVelY;
         player = marioGetPtr();
         if (player->flags & 0x01000000) {
-            hit = (HitEntry*)marioSearchGroundRoll(&outY, &outX, &outZ, 11.0f, player->jumpVelY);
+            hit = marioSearchGroundRoll(&outY, &outX, &outZ, 11.0f, player->jumpVelY);
         } else {
             hit = marioSearchGround(&outY, &outX, &outZ, dy, dy);
         }
@@ -1748,7 +1746,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         dy = mario->jumpVelY;
         player = marioGetPtr();
         if (player->flags & 0x01000000) {
-            hit = (HitEntry*)marioSearchGroundRoll(&outY, &outX, &outZ, 11.0f, player->jumpVelY);
+            hit = marioSearchGroundRoll(&outY, &outX, &outZ, 11.0f, player->jumpVelY);
         } else {
             hit = marioSearchGround(&outY, &outX, &outZ, dy, dy);
         }
@@ -1942,7 +1940,7 @@ USER_FUNC(evt_koopa_hip_attack) {
         break;
     case 2: {
         MarioWork* mario2;
-        void* ground;
+        HitEntry* ground;
         s32 landed;
 
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
@@ -1950,9 +1948,9 @@ USER_FUNC(evt_koopa_hip_attack) {
         y = mario->jumpVelY;
         mario2 = marioGetPtr();
         if (mario2->flags & MARIO_FLAG_TUBE_MODE) {
-            ground = (void*)marioSearchGroundRoll(&v0, &v1, &v2, 11.0f, mario2->jumpVelY);
+            ground = marioSearchGroundRoll(&v0, &v1, &v2, 11.0f, mario2->jumpVelY);
         } else {
-            ground = (void*)marioSearchGround(&v0, &v1, &v2, y, y);
+            ground = marioSearchGround(&v0, &v1, &v2, y, y);
         }
         if (ground != NULL && mario2->position.y + y <= v0) {
             marioClearJumpPara();

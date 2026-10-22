@@ -43,7 +43,8 @@ typedef struct BattleCameraWork {
     f32 unkF0;              // 0xF0
     f32 unkF4;              // 0xF4
     f32 unkF8;              // 0xF8
-    u8 unkFC[0x104 - 0xFC]; // 0xFC
+    f32 field_0xFC;         // 0xFC, the current x offset of a btl_camera_shake_w shake (flag 1)
+    f32 field_0x100;        // 0x100, the current y offset of a btl_camera_shake_h shake (flag 2)
 } BattleCameraWork;
 
 void battleCameraInit(void);
