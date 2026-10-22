@@ -233,8 +233,8 @@ void computePosHermite(ExtPose* pose, f32* p) {
 // Inlined copy of computePosHermite. The inlined instance sees different
 // register pressure than the out-of-line body, so it inlines the `2.0f * t`
 // product and keeps `t * t` inline instead of using a shared t2 local.
-static inline void senteresa_ext_main_computePosHermite(ExtPose* pose, f32* p) {
-    f32 t = p[6];
+static inline void senteresa_ext_main_computePosHermite(ExtPose* pose, TeresaEntry* p) {
+    f32 t = p->field_0x18;
     f32 omt = 1.0f - t;
     f32 h00 = ((1.0f + 2.0f * t) * omt) * omt;
     f32 h10 = t * omt * omt;
@@ -242,12 +242,12 @@ static inline void senteresa_ext_main_computePosHermite(ExtPose* pose, f32* p) {
     f32 h01 = (3.0f - 2.0f * t) * (t * t);
     Vec va = vec3_jin_00007f9c;
     Vec vb = vec3_jin_00007fa8;
-    va.x = p[9];
-    va.y = 3.4f * p[4];
+    va.x = p->field_0x24;
+    va.y = 3.4f * p->field_0x10;
 
-    (*pose->matrix)[0][3] = p[0] * h00 + va.x * h10 + vb.x * h11 + p[3] * h01;
-    (*pose->matrix)[1][3] = p[1] * h00 + va.y * h10 + vb.y * h11 + p[4] * h01;
-    (*pose->matrix)[2][3] = p[2] * h00 + va.z * h10 + vb.z * h11 + p[5] * h01;
+    (*pose->matrix)[0][3] = p->field_0x00 * h00 + va.x * h10 + vb.x * h11 + p->field_0x0C * h01;
+    (*pose->matrix)[1][3] = p->field_0x04 * h00 + va.y * h10 + vb.y * h11 + p->field_0x10 * h01;
+    (*pose->matrix)[2][3] = p->field_0x08 * h00 + va.z * h10 + vb.z * h11 + p->field_0x14 * h01;
 }
 
 
@@ -273,7 +273,7 @@ static void senteresa_ext_main(void) {
                 break;
             case 1: {
                 pose->texId = (gp->retraceCount + i * i) % 3 + 1;
-                senteresa_ext_main_computePosHermite(pose, (f32*)&pTeresa[i]);
+                senteresa_ext_main_computePosHermite(pose, &pTeresa[i]);
                 pTeresa[i].field_0x18 += 0.015f;
                 if (pTeresa[i].field_0x18 >= 1.0f) {
                     pTeresa[i].field_0x00 = (*pose->matrix)[0][3];

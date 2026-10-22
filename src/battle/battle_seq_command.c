@@ -1096,7 +1096,7 @@ s32 BattleCommandInput(BattleWork* wp) {
 			BattleStageOffLightEnemyInCommand();
 			break;
 		case 1:
-			BattleCommandDisplay_ActMenuSetup(wp, (void*)1);
+			BattleCommandDisplay_ActMenuSetup(wp, 1);
 			cmd->commandState = 2;
 			break;
 		case 2:
@@ -1263,7 +1263,7 @@ s32 BattleCommandInput(BattleWork* wp) {
 		case 14:
 		case 15:
 			if (state == 0xE) {
-				BattleCommandDisplay_MultiItemMenuSetup(wp, (void*)1);
+				BattleCommandDisplay_MultiItemMenuSetup(wp, 1);
 			} else {
 				BattleCommandDisplay_MultiItemMenuSetup(wp, 0);
 			}
@@ -1291,7 +1291,7 @@ s32 BattleCommandInput(BattleWork* wp) {
 		case 19:
 		case 20:
 			if (state == 0x13) {
-				BattleCommandDisplay_OperationMenuSetup(wp, (void*)1);
+				BattleCommandDisplay_OperationMenuSetup(wp, 1);
 			} else {
 				BattleCommandDisplay_OperationMenuSetup(wp, 0);
 			}
@@ -1319,7 +1319,7 @@ s32 BattleCommandInput(BattleWork* wp) {
 		case 24:
 		case 25:
 			if (state == 0x18) {
-				BattleCommandDisplay_ChangePartySelectMenuSetup(wp, (void*)1);
+				BattleCommandDisplay_ChangePartySelectMenuSetup(wp, 1);
 			} else {
 				BattleCommandDisplay_ChangePartySelectMenuSetup(wp, 0);
 			}
@@ -1399,18 +1399,18 @@ void _cursor_init(BattleCursor* cursor) {
 	cursor->field_4 = 0;
 }
 
-void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, void* arg) {
+void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, u32 arg) {
 	BattleWork* work = wp;
-	void* a = arg;
+	u32 a = arg;
 	BattleCursor* cursor;
 	BattleCommand* cmd = &work->commandMenu;
 
 	_btlcmd_MakeActClassTable(work);
 	_btlcmd_GetCursorPtr(cmd, 14, &cursor);
-	BattleMenuDisp_ActSelect_Init(work, cursor, cmd->actionTable, (u32)a);
+	BattleMenuDisp_ActSelect_Init(work, cursor, cmd->actionTable, a);
 	cmd->idleFrames = 0;
 	cmd->menuFlags |= 0x01000001;
-	if (a == NULL && cmd->restoreState == 0) {
+	if (a == 0 && cmd->restoreState == 0) {
 		_cursor_init(&cmd->cursor[2]);
 		_cursor_init(&cmd->cursor[3]);
 		_cursor_init(&cmd->cursor[4]);
@@ -1836,9 +1836,9 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	iconDispGx(1.0f, &pos, 0x14, 0x1F0);
 }
 
-void BattleCommandDisplay_OperationMenuSetup(BattleWork* wp, void* arg) {
+void BattleCommandDisplay_OperationMenuSetup(BattleWork* wp, u32 arg) {
 	_btlcmd_MakeOperationTable(wp);
-	BattleMenuDisp_Operation_Init(wp, (u32)arg);
+	BattleMenuDisp_Operation_Init(wp, arg);
 	wp->commandMenu.menuFlags |= 0x01000100;
 }
 
@@ -1942,9 +1942,9 @@ void BattleCommandDisplay_OperationMenuEnd(BattleWork* wp) {
 	wp->commandMenu.menuFlags &= ~0x100;
 }
 
-void BattleCommandDisplay_MultiItemMenuSetup(BattleWork* wp, void* arg) {
+void BattleCommandDisplay_MultiItemMenuSetup(BattleWork* wp, u32 arg) {
 	_btlcmd_MakeMultiItemTable(wp);
-	BattleMenuDisp_MultiItem_Init(wp, (u32)arg);
+	BattleMenuDisp_MultiItem_Init(wp, arg);
 	wp->commandMenu.menuFlags |= 0x20;
 }
 
@@ -2027,8 +2027,8 @@ void BattleCommandDisplay_MultiItemMenuEnd(BattleWork* wp) {
 	wp->commandMenu.menuFlags &= ~0x20;
 }
 
-void BattleCommandDisplay_ChangePartySelectMenuSetup(BattleWork* wp, void* arg) {
-	BattleMenuDisp_ChangePartySelect_Init(wp, (u32)arg);
+void BattleCommandDisplay_ChangePartySelectMenuSetup(BattleWork* wp, u32 arg) {
+	BattleMenuDisp_ChangePartySelect_Init(wp, arg);
 	wp->commandMenu.menuFlags |= 0x01001000;
 }
 

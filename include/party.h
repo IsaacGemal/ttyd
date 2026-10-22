@@ -143,7 +143,7 @@ typedef struct PartyEntry {
     f32 field_120;               // 0x120
     f32 field_0x124;             // 0x124
     f32 targetDist;              // 0x128, distance to targetPos, set before the fly/jump step count
-    void* field_12C;             // 0x12C
+    struct HitEntry* field_12C;  // 0x12C
     struct HitEntry* frontHit;   // 0x130, check_front result
     void* field_134;             // 0x134
     struct HitEntry* groundHit;  // 0x138, partySearchGround result
@@ -168,7 +168,12 @@ typedef struct PartyEntry {
     s32 camId;                   // 0x164
     s32 yoshiPsndSFXId;          // 0x168
     s32 unk16C;                  // 0x16C
-    void* useStruct;             // 0x170
+    union {
+        void* useStruct;                     // 0x170
+        struct BomheiWork* bomheiWork;       // 0x170, party_bomhei
+        struct PartyCloud* partyCloud;       // 0x170, party_cloud
+        struct PartyYoshiUse* partyYoshiUse; // 0x170, party_yoshi
+    };
     // 0x174-0x187: scratch that each partner uses for its own state; read the member for the active partner.
     union {
         struct {                       // generic jump (party.c partyRideMain case 20-21, evt_party_jump_pos)
@@ -189,7 +194,7 @@ typedef struct PartyEntry {
         } bobbery;
         struct {                       // Flurrie (party_cloud.c; cloud_move bobs the body with bobAngle)
             s32 field_174;             // 0x174, zeroed at init only
-            void* breathFx;            // 0x178, effKumokumoN64Entry effect while the breath is held, NULL otherwise
+            struct EffectEntry* breathFx; // 0x178, effKumokumoN64Entry effect while the breath is held, NULL otherwise
             f32 bobAngle;              // 0x17C, degrees, revise360'd by bobStep each frame
             f32 bobStep;               // 0x180, 4.25 per frame
         } flurrie;

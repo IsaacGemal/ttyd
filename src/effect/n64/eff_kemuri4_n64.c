@@ -180,8 +180,8 @@ void effKemuri4Disp(CameraId camId, void* param) {
 	GXTexObj texObj;
 	Mtx mtx;
 	Mtx texMtx;
-	effVtxArray* vtx0;
-	effVtxArray* vtx1;
+	Kemuri4Vertex* vtx0;
+	Kemuri4Vertex* vtx1;
 	effKemuri4Data* data;
 	s32 i;
 
@@ -189,8 +189,8 @@ void effKemuri4Disp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 	GXSetCullMode(0);
-	vtx0 = (effVtxArray*)&((Kemuri4Vertex*)flowers_v)[25];
-	vtx1 = (effVtxArray*)&((Kemuri4Vertex*)flowers_v)[35];
+	vtx0 = &((Kemuri4Vertex*)flowers_v)[25];
+	vtx1 = &((Kemuri4Vertex*)flowers_v)[35];
 
 	for (i = 0; i < effect->count; i++, data++) {
 		if (data->active == 0) {

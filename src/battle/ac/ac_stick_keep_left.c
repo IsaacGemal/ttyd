@@ -277,7 +277,8 @@ s32 battleAcResult_StickKeepLeft(BattleWork* work) {
 
 // optimize_for_size: the original prologue uses stmw/lmw (this file's other functions do too), i.e. built
 void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleWork* work = param;
+    BattleActions* ac = &work->actionCommands;
     StickKeepLeftWork* dec = (StickKeepLeftWork*)&ac->field_0x2BC[0];
     BattleACDispParams* disp = &ac->dispParams;
 
@@ -285,19 +286,19 @@ void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
     case 0x63:
     case 0x64:
     case 0x3E8:
-        *(s32*)&disp->field_0x24[0] = -1;
+        disp->field_0x24 = -1;
         disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.0f,
                                     30.0f);
-        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
+        actionCommandDisp(disp->iconX, disp->iconY, disp->field_0x24);
         if (ac->acParams[3] == 0 && disp->counter > 0) {
             disp->counter--;
         }
         break;
     case 0x3E9:
-        *(s32*)&disp->field_0x24[0] = dec->note - 1;
+        disp->field_0x24 = dec->note - 1;
         disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.0f,
                                     30.0f);
-        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
+        actionCommandDisp(disp->iconX, disp->iconY, disp->field_0x24);
         if (ac->acParams[3] == 0 && disp->counter > 0) {
             disp->counter--;
         }
@@ -305,7 +306,7 @@ void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
     case 0x3EA:
     case 0x3EB:
     case 0x3EC:
-        actionCommandDisp(30.0f, 0.0f, *(s32*)&disp->field_0x24[0]);
+        actionCommandDisp(30.0f, 0.0f, disp->field_0x24);
         break;
     case 0x3ED:
     case 0x3EE:
@@ -316,7 +317,7 @@ void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
         else {
             disp->iconX = 30.0f;
         }
-        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
+        actionCommandDisp(disp->iconX, disp->iconY, disp->field_0x24);
         if (ac->acParams[3] == 0 && disp->counter < 0x3C) {
             disp->counter++;
         }

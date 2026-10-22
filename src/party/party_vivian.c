@@ -250,7 +250,7 @@ static inline void vivianUseStep(PartyEntry* party) {
     }
     if (strcmp(gp->currentMapName, "eki_02") == 0) {
         marioChkWallAround(&mario->position, 1, 0.0f, mario->directionView,
-                           *(f32*)&mario->wPlayerCollisionBox.z, 0.5f);
+                           mario->wPlayerCollisionBox.z, 0.5f);
     }
 }
 
@@ -385,7 +385,7 @@ void vivian_use(PartyEntry* party) {
         Vec v = party->field_B8;
         if (party->tail.vivian.ripple == NULL) {
             party->tail.vivian.ripple = NULL;
-        } else if (*(u32*)party->tail.vivian.ripple == 0) {
+        } else if (party->tail.vivian.ripple->flags == 0) {
             party->tail.vivian.ripple = NULL;
         } else {
             effRippleSetPosition(party->tail.vivian.ripple, v.x, v.y + 1.5f, v.z);
@@ -496,7 +496,7 @@ void vivian_use(PartyEntry* party) {
         }
         party->useMotionId = 0x1B;
         marioPaperOff();
-        *(s32*)&mario->field_0x20[0] = 0;
+        mario->field_0x20 = 0;
         mario->dispFlags &= ~0x1000;
         mario->hitobjJumpFrom = mario->hitobjStandOn;
         mario->hitobjStandOn = NULL;

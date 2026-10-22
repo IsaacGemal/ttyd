@@ -200,7 +200,7 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(mtx2, 0.015625f, 0.015625f, 0.0f);
 	GXLoadTexMtxImm(mtx2, GX_TEXMTX0, GX_MTX2x4);
-	effSetVtxDescN64((effVtxArray*)size64x64_tex64x64_vtx);
+	effSetVtxDescN64(size64x64_tex64x64_vtx);
 
 	if (data->state == 1) {
 		GXSetNumTevStages(1);
@@ -273,7 +273,7 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		}
 		DCFlushRange(vtx, 0x1C0);
 		GXInvalidateVtxCache();
-		effSetVtxDescN64((effVtxArray*)vtx);
+		effSetVtxDescN64(vtx);
 		for (i = 0; i < 15; i++) {
 			j = i * 2;
 			GXBegin(GX_TRIANGLES, 0, 6);

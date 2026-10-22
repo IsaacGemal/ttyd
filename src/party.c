@@ -328,7 +328,7 @@ s32 getPartyEntryId(void) {
 
     for (i = 0; i < 2; i++) {
         if (partyPtrTbl[i] == NULL) {
-            party = (PartyEntry*)__memAlloc(HEAP_DEFAULT, sizeof(PartyEntry));
+            party = __memAlloc(HEAP_DEFAULT, sizeof(PartyEntry));
             partyPtrTbl[i] = party;
             memset(party, 0, sizeof(PartyEntry));
             return i;
@@ -594,7 +594,7 @@ s32 partyEntry2(s32 memberId) {
     const char* animName;
 
     if (partyPtrTbl[1] == NULL) {
-        partyPtrTbl[1] = (PartyEntry*)__memAlloc(HEAP_DEFAULT, sizeof(PartyEntry));
+        partyPtrTbl[1] = __memAlloc(HEAP_DEFAULT, sizeof(PartyEntry));
         memset(partyPtrTbl[1], 0, sizeof(PartyEntry));
         slotId = 1;
     } else {
@@ -639,7 +639,7 @@ s32 partyEntry2Hello(s32 memberId) {
     const char* animName;
 
     if (partyPtrTbl[1] == NULL) {
-        partyPtrTbl[1] = (PartyEntry*)__memAlloc(HEAP_DEFAULT, sizeof(PartyEntry));
+        partyPtrTbl[1] = __memAlloc(HEAP_DEFAULT, sizeof(PartyEntry));
         memset(partyPtrTbl[1], 0, sizeof(PartyEntry));
         slotId = 1;
     } else {
@@ -679,7 +679,7 @@ s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z) {
     const char* animName;
 
     if (partyPtrTbl[1] == NULL) {
-        partyPtrTbl[1] = (PartyEntry*)__memAlloc(HEAP_DEFAULT, sizeof(PartyEntry));
+        partyPtrTbl[1] = __memAlloc(HEAP_DEFAULT, sizeof(PartyEntry));
         memset(partyPtrTbl[1], 0, sizeof(PartyEntry));
         slotId = 1;
     } else {
@@ -2464,7 +2464,7 @@ void party_damage_return(PartyEntry* party) {
                 party->flags &= ~0x70;
             }
             if (party->groundHit != NULL) {
-                if ((hitGetAttr((HitEntry*)party->groundHit) >> 9 & 1) == 0) {
+                if ((hitGetAttr(party->groundHit) >> 9 & 1) == 0) {
                     partyChgPoseId(party, 9);
                     party->motionStep = 0x17;
                     party->timer = 0x1e;
@@ -2664,7 +2664,7 @@ s32 partyEntry2(s32 memberId) {
                 slotId = -1;
         }
         else {
-                partyPtrTbl[1] = (PartyEntry*)__memAlloc(HEAP_DEFAULT, sizeof(PartyEntry));
+                partyPtrTbl[1] = __memAlloc(HEAP_DEFAULT, sizeof(PartyEntry));
                 memset(partyPtrTbl[1], 0, sizeof(PartyEntry));
                 slotId = 1;
         }

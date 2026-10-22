@@ -683,7 +683,7 @@ static USER_FUNC(mario_chk) {
     area = (ChkEntry*)event->userdata[0];
 
     for (i = 0; i < 13; i++) {
-        hit1 = hitNameToPtr((const char*)name_tbl[i]);
+        hit1 = hitNameToPtr(name_tbl[i]);
         if (hit1 != NULL && hit1->mapObj != NULL) {
             pos = vec3_aji_00014370;
             pos.x = hit1->mapObj->unkAC[0][3];
@@ -696,10 +696,10 @@ static USER_FUNC(mario_chk) {
     }
 
     for (j = 0; j < 13; j++) {
-        hit2 = hitNameToPtr((const char*)name_tbl[j]);
+        hit2 = hitNameToPtr(name_tbl[j]);
         mario = marioGetPtr();
         if (hit2 != NULL && mario != NULL && mario->hitobjStandOn != NULL &&
-            hitIsGroup((HitEntry*)mario->hitobjStandOn, hit2) != 0) {
+            hitIsGroup(mario->hitobjStandOn, hit2) != 0) {
             mario->riderDelta.x = area[j].diff.x * 10.0f;
             mario->riderDelta.z = area[j].diff.z * 10.0f;
             break;
@@ -707,10 +707,10 @@ static USER_FUNC(mario_chk) {
     }
 
     for (j = 0; j < 13; j++) {
-        hit3 = hitNameToPtr((const char*)name_tbl[j]);
+        hit3 = hitNameToPtr(name_tbl[j]);
         party = partyGetPtr(0);
         if (hit3 != NULL && party != NULL && party->groundHit != NULL &&
-            hitIsGroup((HitEntry*)party->groundHit, hit3) != 0) {
+            hitIsGroup(party->groundHit, hit3) != 0) {
             party->moveDelta.x = area[j].diff.x * 10.0f;
             party->moveDelta.z = area[j].diff.z * 10.0f;
             break;
@@ -721,17 +721,17 @@ static USER_FUNC(mario_chk) {
         mario = marioGetPtr();
         party = partyGetPtr(0);
         if (mario != NULL && mario->hitobjStandOn != NULL &&
-            hitIsGroup((HitEntry*)mario->hitobjStandOn, hitNameToPtr("A_bel")) != 0) {
+            hitIsGroup(mario->hitobjStandOn, hitNameToPtr("A_bel")) != 0) {
             mario->riderDelta.x = 0.6f;
         }
         if (party != NULL && party->field_0x144 != NULL &&
-            hitIsGroup((HitEntry*)party->groundHit, hitNameToPtr("A_bel")) != 0) {
+            hitIsGroup(party->groundHit, hitNameToPtr("A_bel")) != 0) {
             party->moveDelta.x = 0.6f;
         }
     }
 
     for (j = 0; j < 6; j++) {
-        hit5 = hitNameToPtr((const char*)name_tbl2[j]);
+        hit5 = hitNameToPtr(name_tbl2[j]);
         mario = marioGetPtr();
         if (hit5 == NULL) {
             continue;
@@ -741,13 +741,13 @@ static USER_FUNC(mario_chk) {
             event->userdata[2] = 0;
             continue;
         }
-        if (hitIsGroup((HitEntry*)mario->hitobjStandOn, hit5) != 0) {
+        if (hitIsGroup(mario->hitobjStandOn, hit5) != 0) {
             up = vec3_aji_0001437c;
             mtxGetRotationElement(hit5->mapObj->unkAC, rot, 0x78, 0x79);
             PSMTXMultVec(rot, &up, &up);
             angle = angleABf(0.0f, 0.0f, up.x, up.y);
             diff = angle - event->userdataf[1];
-            hitObjGetPos((const char*)name_tbl2[j], &up);
+            hitObjGetPos(name_tbl2[j], &up);
             dist = distABf(mario->position.x, mario->position.y, up.x, up.y);
             dir = angleABf(up.x, up.y, mario->position.x, mario->position.y);
             if ((HitEntry*)event->userdata[2] != NULL &&

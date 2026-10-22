@@ -273,7 +273,7 @@ static void sun_tev(EnvironmentYami* yami) {
         ind_lp = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, GX_FALSE), 1);
     }
 
-    image = (u8*)ind_lp->address;
+    image = ind_lp->address;
     for (i = 0; i < 0x40; i++) {
 #ifdef MUST_MATCH
         // MUST_MATCH: reusing `q` as the row base (instead of `row = (i / 4) * 32;`) makes MWCC schedule the

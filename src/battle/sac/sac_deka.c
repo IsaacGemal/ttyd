@@ -1070,7 +1070,7 @@ void yuka_capture(CameraId cameraId) {
     t = (f32)tan(0.21816615760326385);
     cam->cameraPos.y += (f32)p->height / 2.0f / t;
 
-    C_MTXLookAt(cam->view, (Point3d*)&cam->cameraPos, &cam->cameraUp, (Point3d*)&cam->cameraAt);
+    C_MTXLookAt(cam->view, &cam->cameraPos, &cam->cameraUp, &cam->cameraAt);
     C_MTXPerspective(cam->projection, 25.0f, (f32)p->width / (f32)p->height, 1.0f, 32767.0f);
     cam->projType = GX_PERSPECTIVE;
     GXSetProjection(cam->projection, cam->projType);

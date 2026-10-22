@@ -40,7 +40,7 @@ u32 kpaPauseSeTable[28] = {
 
 f32 kpaWidthDat[4] = {20.0f, 60.0f, 84.0f, 186.0f};
 f32 baseScaleTbl[4] = {0.3f, 1.0f, 1.4f, 3.1f};
-void* fireefp;
+EffectEntry* fireefp;
 const Vec vec3_802fc920 = {0.0f, 0.0f, 0.0f};
 
 // Defined after the code: these follow the breath helpers' eight pooled floats,
@@ -133,10 +133,10 @@ static inline void kpaFireBreath(MarioWork* mp, Vec* pos) {
         break;
     }
     fireefp = effGonbabaBreathEntry(type, 0, x, y, z, escale);
-    ((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->rotation =
+    ((effGonbabaBreathData*)fireefp->userdata)->rotation =
         (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
-    if (((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child != NULL) {
-        ((effGonbabaBreathData*)((EffectEntry*)((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child)->userdata)->rotation =
+    if (((effGonbabaBreathData*)fireefp->userdata)->child != NULL) {
+        ((effGonbabaBreathData*)((effGonbabaBreathData*)fireefp->userdata)->child->userdata)->rotation =
             (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
     }
 }
@@ -191,10 +191,10 @@ static inline void kpaFireBreath2(MarioWork* mp, Vec* pos) {
         break;
     }
     fireefp = effGonbabaBreathEntry(type, 0, x, y, z, escale);
-    ((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->rotation =
+    ((effGonbabaBreathData*)fireefp->userdata)->rotation =
         (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
-    if (((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child != NULL) {
-        ((effGonbabaBreathData*)((EffectEntry*)((effGonbabaBreathData*)((EffectEntry*)fireefp)->userdata)->child)->userdata)->rotation =
+    if (((effGonbabaBreathData*)fireefp->userdata)->child != NULL) {
+        ((effGonbabaBreathData*)((effGonbabaBreathData*)fireefp->userdata)->child->userdata)->rotation =
             (mp->dispReqDir >= 90.0f && mp->dispReqDir <= 270.0f) ? 0xB4 : 0;
     }
 }
@@ -664,7 +664,7 @@ void kpa_jumpNpc(void) {
 void kpaFall(void) {
     MarioWork* mp = marioGetPtr();
     f32 spd;
-    void* res;
+    HitEntry* res;
     f32 landY;
     if (strcmp(gp->currentMapName, "kpa_03") == 0) {
         mp->hitobjStandOn = NULL;
@@ -733,7 +733,7 @@ void kpaFall(void) {
         } else {
             mp->hitobjStandOn = res;
             mp->hitobjJumpFrom = NULL;
-            if (hitGetAttr((HitEntry*)res) & 0x200) {
+            if (hitGetAttr(res) & 0x200) {
                 mp->position.y += spd;
             } else {
                 mp->position.y = landY;
@@ -1020,13 +1020,13 @@ void kpaFireMain(void) {
         off = (((MW_S32(mp2, 0x14) & 1) ^ 1) == 1) ? 6.0f : 0.0f;
         y = py + (20.0f * scale + off);
         z = mp->position.z;
-        ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.x = x;
-        ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.y = y;
-        ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.z = z;
-        if (((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp != NULL) {
-            ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.x = x;
-            ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.y = y;
-            ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->nextEfp)->userdata)->pos.z = z;
+        ((KpaFireNode*)fireefp->userdata)->pos.x = x;
+        ((KpaFireNode*)fireefp->userdata)->pos.y = y;
+        ((KpaFireNode*)fireefp->userdata)->pos.z = z;
+        if (((KpaFireNode*)fireefp->userdata)->nextEfp != NULL) {
+            ((KpaFireNode*)((KpaFireNode*)fireefp->userdata)->nextEfp->userdata)->pos.x = x;
+            ((KpaFireNode*)((KpaFireNode*)fireefp->userdata)->nextEfp->userdata)->pos.y = y;
+            ((KpaFireNode*)((KpaFireNode*)fireefp->userdata)->nextEfp->userdata)->pos.z = z;
         }
         level = kpaGetLevel();
         if (level != 0) {

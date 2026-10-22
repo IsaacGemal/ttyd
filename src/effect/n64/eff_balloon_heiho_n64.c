@@ -106,7 +106,7 @@ void effBalloonHeihoDisp(CameraId camId, void* param) {
 	GXSetTevOrder(0, 0, 0, 0xff);
 	GXSetTevOp(0, 3);
 	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)size32x64_tex32x64_vtx);
+	effSetVtxDescN64(size32x64_tex32x64_vtx);
 	GXBegin(0x90, 0, 0x18);
 	tri2(0, 1, 2, 0, 1, 2, 3, 0);
 	tri2(0, 1, 2, 0, 1, 2, 3, 0);

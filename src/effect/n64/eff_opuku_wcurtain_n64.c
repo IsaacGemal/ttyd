@@ -140,7 +140,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	GXSetCullMode(GX_CULL_NONE);
 
 	entry = smartAlloc(0x2A0, HEAP_EFFECT);
-	vtx = (OpukuWcurtainVtx*)entry->address;
+	vtx = entry->address;
 	base = vtx;
 	for (i = 0; i < 12; i++) {
 		texS = (counter + i * 4) << 5;
@@ -184,7 +184,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 
 	DCFlushRange(base, 0x2A0);
 	GXInvalidateVtxCache();
-	effSetVtxDescN64((effVtxArray*)base);
+	effSetVtxDescN64(base);
 	GXLoadPosMtxImm(cam->view, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 

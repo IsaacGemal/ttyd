@@ -53,8 +53,8 @@ s32 BattleCheckDamage(struct BattleUnit* unit1, struct BattleUnit* unit2, struct
 void BattleAttackDeclareAll(BattleWork* wp);
 s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32 a);
 
-void BattleInitCounterPreCheckWork(void* work);
-void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 arg2, s32 arg3, s32 arg4,
+void BattleInitCounterPreCheckWork(CounterPreCheckWork* work);
+void BattleDamageDirect(s32 damageCode, BattleUnit* unit, BattleUnitPart* part, s32 arg3, s32 arg4,
                         s32 arg5, s32 arg6, s32 arg7);
 void BattleAttackDeclare(s32* out1, s32* out2);
 s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out);

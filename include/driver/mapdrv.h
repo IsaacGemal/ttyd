@@ -448,7 +448,7 @@ void mapBlendOff(void);
 void mapBlendOff2(void);
 void mapFogOn(void);
 void mapFogOff(void);
-void mapGetFog(u32* c, f32* near, f32* far, u32* c2);
+void mapGetFog(u32* c, f32* near, f32* far, GXColor* c2);
 void mapSetFog(u32 color, f32 near, f32 far, GXColor color2);
 void mapResetPaperAmbColor(void);
 void mapResetPaperCraftAmbColor(void);
@@ -496,7 +496,7 @@ void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force);
 BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b);
 typedef struct MapTevCallback {
     MapObject* obj;  // 0x0
-    void* mtx;       // 0x4
+    MtxPtr mtx;      // 0x4
     s32 drawMode;    // 0x8
     s32 tevStage;    // 0xC
     s32 texMap;      // 0x10

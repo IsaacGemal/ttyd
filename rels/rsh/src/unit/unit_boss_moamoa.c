@@ -35,11 +35,11 @@ typedef struct MoamoaWorkPose {
     s16 groupIdx;      // 0x20
     s16 seq;           // 0x22
     f32 frame;         // 0x24
-    void* animPose;    // 0x28
+    s32 animPose;      // 0x28, pose id
     s32 type;          // 0x2C
     s32* ownerIdPtr;   // 0x30, mainUnitId or the unit work word holding the owning part's unit id; -1 once it is gone
-    f32 field_0x34[3]; // 0x34
-    f32 field_0x40[3]; // 0x40
+    Vec field_0x34;    // 0x34
+    Vec field_0x40;    // 0x40
     u8 pad_0x4C[4];
 } MoamoaWorkPose; // 0x50
 
@@ -59,7 +59,7 @@ typedef struct MoamoaWork {
     MoamoaWorkAnim anims[32]; // 0x10
     s16 seqCounts[0x80];    // 0x490
     s16 groupCounts[0x100]; // 0x590
-    void* animPoses[5];     // 0x790, AnimationPose handles: [0] main unit, [1-3] units in work[3..5], [4] work[6]
+    s32 animPoses[5];       // 0x790, pose ids: [0] main unit, [1-3] units in work[3..5], [4] work[6]
     s32 mainUnitId;         // 0x7A4
     Vec center;             // 0x7A8, centre of the pose cloud (guruguru)
     f32 spinAngle;          // 0x7B4, degrees, advanced 8.57 per frame in ext_moamoa_main
@@ -835,12 +835,12 @@ USER_FUNC(moamoa_guruguru) {
     angle = 0.0f;
     for (i = 0; i < wp->countA; i++, extPose++, pose++) {
         if (pose->flags & 1) {
-            pose->field_0x34[0] = (*extPose->matrix)[0][3];
-            pose->field_0x34[1] = (*extPose->matrix)[1][3];
-            pose->field_0x34[2] = (*extPose->matrix)[2][3];
-            *(Vec*)pose->field_0x40 = (Vec){ 0.0f, 1.0f, 0.0f };
+            pose->field_0x34.x = (*extPose->matrix)[0][3];
+            pose->field_0x34.y = (*extPose->matrix)[1][3];
+            pose->field_0x34.z = (*extPose->matrix)[2][3];
+            pose->field_0x40 = (Vec){ 0.0f, 1.0f, 0.0f };
             PSMTXRotRad(mtx, 'Z', angle * 0.017453292f);
-            PSMTXMultVec(mtx, (Vec*)pose->field_0x40, (Vec*)pose->field_0x40);
+            PSMTXMultVec(mtx, &pose->field_0x40, &pose->field_0x40);
             angle += 22.4375f;
             if (angle >= 360.0f) {
                 angle -= 360.0f;
@@ -884,12 +884,12 @@ USER_FUNC(moamoa_bomb) {
                 if (!(pose2->flags & 1)) {
                     pose2->flags |= 1;
                     if (pose2->flags & 1) {
-                        pose2->field_0x34[0] = randf(0.0f, 60.0f) - 30.0f;
-                        pose2->field_0x34[1] = randf(0.0f, 35.0f);
-                        pose2->field_0x34[2] = randf(0.0f, 30.0f) + 60.0f;
-                        pose2->field_0x40[0] = (*extPose->matrix)[0][3];
-                        pose2->field_0x40[1] = (*extPose->matrix)[1][3];
-                        pose2->field_0x40[2] = (*extPose->matrix)[2][3];
+                        pose2->field_0x34.x = randf(0.0f, 60.0f) - 30.0f;
+                        pose2->field_0x34.y = randf(0.0f, 35.0f);
+                        pose2->field_0x34.z = randf(0.0f, 30.0f) + 60.0f;
+                        pose2->field_0x40.x = (*extPose->matrix)[0][3];
+                        pose2->field_0x40.y = (*extPose->matrix)[1][3];
+                        pose2->field_0x40.z = (*extPose->matrix)[2][3];
                         count++;
                     }
                 }
@@ -904,15 +904,15 @@ USER_FUNC(moamoa_bomb) {
     pose = wp->poses;
     for (i = 0; i < wp->countA; i++, extPose++, pose++) {
         if (pose->flags & 1) {
-            if (pose->field_0x40[1] >= -500.0f) {
-                pose->field_0x40[0] += pose->field_0x34[0];
-                pose->field_0x40[1] += pose->field_0x34[1];
-                pose->field_0x40[2] += pose->field_0x34[2];
-                pose->field_0x34[1] -= 1.0f;
+            if (pose->field_0x40.y >= -500.0f) {
+                pose->field_0x40.x += pose->field_0x34.x;
+                pose->field_0x40.y += pose->field_0x34.y;
+                pose->field_0x40.z += pose->field_0x34.z;
+                pose->field_0x34.y -= 1.0f;
             }
-            (*extPose->matrix)[0][3] = pose->field_0x40[0];
-            (*extPose->matrix)[1][3] = pose->field_0x40[1];
-            (*extPose->matrix)[2][3] = pose->field_0x40[2];
+            (*extPose->matrix)[0][3] = pose->field_0x40.x;
+            (*extPose->matrix)[1][3] = pose->field_0x40.y;
+            (*extPose->matrix)[2][3] = pose->field_0x40.z;
         }
     }
 
@@ -952,10 +952,10 @@ USER_FUNC(moamoa1_on) {
             part = BattleGetUnitPartsPtr(unit->work[5], 1);
             break;
         }
-        wp->animPoses[i] = (void*)part->poseId;
-        animPoseWorldPositionEvalOn((s32)wp->animPoses[i]);
-        anim = animPoseGetAnimPosePtr((s32)wp->animPoses[i]);
-        positions = (Vec*)((smartEntry*)(void*)anim->groupWorldPos)->address;
+        wp->animPoses[i] = part->poseId;
+        animPoseWorldPositionEvalOn(wp->animPoses[i]);
+        anim = animPoseGetAnimPosePtr(wp->animPoses[i]);
+        positions = anim->groupWorldPos->address;
         for (j = 0; j < anim->groupWorldPosCount; j++) {
             *positions++ = (Vec){ 0.0f, -1000.0f, 0.0f };
         }
@@ -991,10 +991,10 @@ USER_FUNC(moamoa2_on) {
     MoamoaWorkPose* wp2;
     s32 j;
 
-    wp->animPoses[4] = (void*)part->poseId;
-    animPoseWorldPositionEvalOn((s32)wp->animPoses[4]);
-    pose = animPoseGetAnimPosePtr((s32)wp->animPoses[4]);
-    positions = (Vec*)((smartEntry*)(void*)pose->groupWorldPos)->address;
+    wp->animPoses[4] = part->poseId;
+    animPoseWorldPositionEvalOn(wp->animPoses[4]);
+    pose = animPoseGetAnimPosePtr(wp->animPoses[4]);
+    positions = pose->groupWorldPos->address;
     for (j = 0; j < pose->groupWorldPosCount; j++) {
         *positions++ = (Vec){ 0.0f, -1000.0f, 0.0f };
     }
@@ -1052,17 +1052,17 @@ USER_FUNC(moamoa_on) {
     wp->mainUnitId = BattleTransID(event, -2);
     BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
     part = BattleGetUnitPartsPtr(wp->mainUnitId, 1);
-    wp->animPoses[0] = (void*)part->poseId;
-    animPoseWorldPositionEvalOn((s32)wp->animPoses[0]);
-    animPose = animPoseGetAnimPosePtr((s32)wp->animPoses[0]);
-    positions = (Vec*)((smartEntry*)(void*)animPose->groupWorldPos)->address;
+    wp->animPoses[0] = part->poseId;
+    animPoseWorldPositionEvalOn(wp->animPoses[0]);
+    animPose = animPoseGetAnimPosePtr(wp->animPoses[0]);
+    positions = animPose->groupWorldPos->address;
     for (i = 0; i < animPose->groupWorldPosCount; i++) {
         *positions++ = (Vec){ 0.0f, -1000.0f, 0.0f };
     }
 
     for (i = 0; i < moamoa_chain_count; i++) {
-        wp->groupCounts[i * 2] = animPoseGetGroupIdx((s32)wp->animPoses[0], g_moamoa_chain_tbl[i].name);
-        wp->groupCounts[i * 2 + 1] = animPoseGetGroupIdx((s32)wp->animPoses[0], g_moamoa_chain_tbl[i].anim);
+        wp->groupCounts[i * 2] = animPoseGetGroupIdx(wp->animPoses[0], g_moamoa_chain_tbl[i].name);
+        wp->groupCounts[i * 2 + 1] = animPoseGetGroupIdx(wp->animPoses[0], g_moamoa_chain_tbl[i].anim);
     }
 
     pose = wp->poses;
@@ -1112,7 +1112,7 @@ USER_FUNC(moamoa_on) {
         }
     }
 
-    data = (MoamoaAnimData*)ext_moamoa_data;
+    data = ext_moamoa_data;
     j = 0;
     strcpy(name, "");
     strcpy(animName, "");
@@ -1297,9 +1297,9 @@ static void ext_moamoa_main(void) {
             if (iF != 0 && unit->work[iF + 2] == -1) {
                 continue;
             }
-            animPose = animPoseGetAnimPosePtr((s32)wp->animPoses[iF]);
-            vtx = (Vec*)((smartEntry*)(void*)animPose->groupWorldPos)->address;
-            tmp2[iF] = vtx[animPoseGetGroupIdx((s32)wp->animPoses[iF], "joint_core")];
+            animPose = animPoseGetAnimPosePtr(wp->animPoses[iF]);
+            vtx = animPose->groupWorldPos->address;
+            tmp2[iF] = vtx[animPoseGetGroupIdx(wp->animPoses[iF], "joint_core")];
             PSVECSubtract(&tmp2[0], &tmp2[iF], &tmp1[iF]);
         }
 
@@ -1318,8 +1318,8 @@ static void ext_moamoa_main(void) {
                 Vec* vp0;
                 Vec* vp1;
 
-                animPose = animPoseGetAnimPosePtr((s32)pose->animPose);
-                vtx = (Vec*)((smartEntry*)(void*)animPose->groupWorldPos)->address;
+                animPose = animPoseGetAnimPosePtr(pose->animPose);
+                vtx = animPose->groupWorldPos->address;
                 vp0 = &vtx[wp->groupCounts[pose->groupIdx * 2]];
                 vp1 = &vtx[wp->groupCounts[pose->groupIdx * 2 + 1]];
                 t = pose->frame;
@@ -1365,8 +1365,8 @@ static void ext_moamoa_main(void) {
         pose = wp->poses;
         for (i = 0; i < wp->countA; i++, extPose++, pose++) {
             if (pose->flags & 1) {
-                PSVECSubtract((Vec*)pose->field_0x34, &wp->center, &offsetR);
-                PSMTXRotAxisRad(mtx, (Vec*)pose->field_0x40, 0.017453292f * wp->spinAngle);
+                PSVECSubtract(&pose->field_0x34, &wp->center, &offsetR);
+                PSMTXRotAxisRad(mtx, &pose->field_0x40, 0.017453292f * wp->spinAngle);
                 PSMTXMultVec(mtx, &offsetR, &offsetR);
                 PSVECScale(&offsetR, &offsetR, wp->spinScale);
                 PSVECAdd(&offsetR, &wp->center, &offsetR);

@@ -215,7 +215,7 @@ void effPokopiPipoDisp(CameraId camId, void* param) {
 	effGetTexObjN64(texId, &tex);
 	GXLoadTexObj(&tex, GX_TEXMAP0);
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_vtx);
+	effSetVtxDescN64(size32x32_tex32x32_vtx);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

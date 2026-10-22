@@ -94,7 +94,7 @@ extend_data(9,
 #define BOM_SFX(name) (name)
 #endif
 
-extern u32 lp[1];
+extern smartEntry* lp[1];
 
 // Inline Vec build reproduces the target's vec3 -> temp -> field copy (rule 7).
 static inline Vec bomVec3(f32 x, f32 y, f32 z, const Vec* base) {
@@ -189,9 +189,6 @@ typedef struct BomSoundView {
 } BomSoundView;
 extern BomSoundView sound;
 
-// SightWork's word at 0x18 is the sight's rotation, an f32 (bom_01.h declares it as field_4[5]).
-#define SIGHT_ROT(wp) (*(f32*)&(wp)->field_4[5])
-
 // drawBG is the last function in the original asm, so it is the first body in the reverse-ordered source.
 void drawBG(s32 id, f32 x, f32 y, f32 scaleX, f32 scaleY, f32 rot) {
     CameraEntry* cam;
@@ -203,7 +200,7 @@ void drawBG(s32 id, f32 x, f32 y, f32 scaleX, f32 scaleY, f32 rot) {
     s16 h;
 
     cam = camGetPtr(CAMERA_2D);
-    TEXGetGXTexObjFromPalette((TEXPalette*)((SightWork*)sight_wp)->file->data[0], &texObj, id);
+    TEXGetGXTexObjFromPalette(sight_wp->file->data[0], &texObj, id);
     GXLoadTexObj(&texObj, 0);
     GXSetBlendMode(1, 4, 5, 0);
     GXSetZCompLoc(1);
@@ -254,13 +251,13 @@ void drawNum(s32 num, s32 count, f32 a, f32 b, f32 c) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
     s32 n = num < 0 ? -num : num;
 
-    winTexInit((TEXPalette*)((SightWork*)sight_wp)->file->data[0]);
+    winTexInit(sight_wp->file->data[0]);
     for (i = 0; i < count; i++) {
         s32 texId = n % 10 + 0xd;
         u16 w;
         f32 step;
 
-        TEXGetGXTexObjFromPalette((TEXPalette*)((SightWork*)sight_wp)->file->data[0], &texObj, texId);
+        TEXGetGXTexObjFromPalette(sight_wp->file->data[0], &texObj, texId);
         w = GXGetTexObjWidth(&texObj);
         step = (f32)w;
         step = c * step;
@@ -293,22 +290,22 @@ void disp_sight(CameraId cameraId, void* param) {
     drawBG(0, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
     drawBG(0, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f);
     drawBG(0, 0.0f, 0.0f, -1.0f, -1.0f, 0.0f);
-    drawBG(1, 0.0f, 0.0f, 1.0f, 1.0f, SIGHT_ROT(sight_wp));
-    drawBG(1, 0.0f, 0.0f, -1.0f, 1.0f, -SIGHT_ROT(sight_wp));
-    drawBG(1, 0.0f, 0.0f, 1.0f, -1.0f, -SIGHT_ROT(sight_wp));
-    drawBG(1, 0.0f, 0.0f, -1.0f, -1.0f, SIGHT_ROT(sight_wp));
+    drawBG(1, 0.0f, 0.0f, 1.0f, 1.0f, sight_wp->field_0x18);
+    drawBG(1, 0.0f, 0.0f, -1.0f, 1.0f, -sight_wp->field_0x18);
+    drawBG(1, 0.0f, 0.0f, 1.0f, -1.0f, -sight_wp->field_0x18);
+    drawBG(1, 0.0f, 0.0f, -1.0f, -1.0f, sight_wp->field_0x18);
 
     if (sight_wp->state == 2) {
-        SIGHT_ROT(sight_wp) += 2.0f;
+        sight_wp->field_0x18 += 2.0f;
     } else if (sight_wp->state == 3) {
-        SIGHT_ROT(sight_wp) -= 2.0f;
+        sight_wp->field_0x18 -= 2.0f;
     } else if (sight_wp->state == 0) {
-        SIGHT_ROT(sight_wp) -= 2.0f;
+        sight_wp->field_0x18 -= 2.0f;
     } else {
-        SIGHT_ROT(sight_wp) += 1.0f;
+        sight_wp->field_0x18 += 1.0f;
     }
 
-    winTexInit((TEXPalette*)sight_wp->file->data[0]);
+    winTexInit(sight_wp->file->data[0]);
     winTexSet(5, (Vec){0.0f, 0.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, colorB);
 
     for (i = 0; i < 3; i++) {
@@ -322,7 +319,7 @@ void disp_sight(CameraId cameraId, void* param) {
         }
     }
 
-    winTexInit((TEXPalette*)sight_wp->file->data[0]);
+    winTexInit(sight_wp->file->data[0]);
     winTexSet(0x17, (Vec){-200.0f, 150.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, colorA);
 
     drawNum((s32)(gp->renderTime / 100 / 1000), 10, 90.0f, 180.0f, 0.6f);
@@ -375,7 +372,7 @@ void disp_sight(CameraId cameraId, void* param) {
         }
     }
 
-    winTexInit((TEXPalette*)sight_wp->file->data[0]);
+    winTexInit(sight_wp->file->data[0]);
     for (i = 0; i < 4; i++) {
         s32 flag = sightBlink(i);
         s32 id = flag ? SIGHT_ARROW_ACTIVE : SIGHT_ARROW_INACTIVE;
@@ -595,7 +592,7 @@ static USER_FUNC(bom_flag) {
     s32* args = event->args;
     s32 onoff = evtGetValue(event, args[0]);
     s32 flag = evtGetValue(event, args[1]);
-    u16* p = (u16*)((u32*)lp[0])[0];
+    u16* p = lp[0]->address;
 
     if (onoff != 0) {
         *p |= flag;
@@ -606,7 +603,7 @@ static USER_FUNC(bom_flag) {
 }
 
 USER_FUNC(bom_fall) {
-    PoseData* data = ((PoseRoot*)lp[0])->data;
+    PoseData* data = lp[0]->address;
     ExtPose* pose = extGetPosePtr();
     s32 i;
     s32 j;
@@ -618,7 +615,7 @@ USER_FUNC(bom_fall) {
         pose->matrix[0][0][3] = 600.0f * rand() / 32767.0f;
         pose->matrix[0][1][3] = 300.0f + 3700.0f * rand() / 32767.0f;
         pose->matrix[0][2][3] = -650.0f + -450.0f * rand() / 32767.0f;
-        pd = ((PoseRoot*)lp[0])->data;
+        pd = lp[0]->address;
         for (j = 0, e = pd->entries; j < pd->count; j++, e++) {
             if (strcmp(e->name, "S_2") == 0) {
                 break;
@@ -636,7 +633,7 @@ USER_FUNC(bom_fall) {
 
 static void pose_init(void) {
     char buf[0x20];
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    PoseData* pd = lp[0]->address;
     ExtTableEntry* p = ext_data;
     s32 i = 0;
     s32 start;
@@ -659,7 +656,7 @@ static void pose_init(void) {
 }
 
 static void pose_main(void) {
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    PoseData* pd = lp[0]->address;
     s32 i;
     ExtPose* pose;
 
@@ -678,7 +675,7 @@ static void pose_main(void) {
 }
 
 static void pose_change(s32 index, const char* name) {
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    PoseData* pd = lp[0]->address;
     PoseEntry* e = pd->entries;
     s32 i;
 
@@ -734,8 +731,8 @@ static void ext_init(void) {
     f32 sine;
     f32 cosine;
 
-    lp[0] = (u32)smartAlloc(0xBC30, 1);
-    pd = ((PoseRoot*)lp[0])->data;
+    lp[0] = smartAlloc(0xBC30, 1);
+    pd = lp[0]->address;
     memset(pd, 0, 0xBC30);
     pd->field_0x4 = extGetPoseNum();
     pose_init();
@@ -831,7 +828,7 @@ static void ext_disp(CameraId cameraId, void* param) {
 
 // jump(index, a, x, y, z, p, q): aim a pose at (x,z), distance/time-scaled.
 void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    PoseData* pd = lp[0]->address;
     ExtPose* ep = &extGetPosePtr()[index];
     f32 d;
     f32 dy;
@@ -865,7 +862,7 @@ void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
 #pragma opt_propagation off
 static void ext_main(void) {
     s32 i;
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    PoseData* pd = lp[0]->address;
     ExtPose* pose = extGetPosePtr();
 
     for (i = 0; i < pd->field_0x4; i++, pose++) {
@@ -2126,7 +2123,7 @@ EVT_END()
 // Inlined copy of pose_init used by ext_init_minnnanokoe (the original inlines it there with a 0x20 buffer).
 static inline void pose_init_minnnanokoe_copy(void) {
     char buf[0x20];
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    PoseData* pd = lp[0]->address;
     ExtTableEntry* p = ext_data;
     s32 i = 0;
     s32 start;
@@ -2163,7 +2160,7 @@ static inline s32 find_entry_minnnanokoe(PoseData* pd) {
 }
 
 static void ext_dispent(void) {
-    u16* p = (u16*)((u32*)lp[0])[0];
+    u16* p = lp[0]->address;
 
     if (!(*p & 1)) {
         dispEntry(CAMERA_3D, 0.0f, 1, ext_disp, NULL);
@@ -2318,8 +2315,8 @@ void ext_init_minnnanokoe(void) {
     s32 rz;
     ExtPose* pose;
 
-    lp[0] = (u32)smartAlloc(0xBC30, 1);
-    data = ((PoseRoot*)lp[0])->data;
+    lp[0] = smartAlloc(0xBC30, 1);
+    data = lp[0]->address;
     memset(data, 0, 0xBC30);
     data->field_0x4 = extGetPoseNum();
     pose_init_minnnanokoe_copy();
@@ -2336,7 +2333,7 @@ void ext_init_minnnanokoe(void) {
         pose->matrix[0][1][3] = 0.0f;
         pose->matrix[0][2][3] = (f32)rz;
         pose->heading = 270.0f;
-        pd = ((PoseRoot*)lp[0])->data;
+        pd = lp[0]->address;
         j = find_entry_minnnanokoe(pd);
         if (j < pd->count) {
             if (pd->states[i].field_20 != j) {
@@ -2350,7 +2347,7 @@ void ext_init_minnnanokoe(void) {
 // jump_minnnanokoe(index, f): kick a single pose's state (position from pose matrix, a
 // short animation timer) and occasionally play a 3D SFX.
 void jump_minnnanokoe(s32 index, f32 f) {
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    PoseData* pd = lp[0]->address;
     ExtPose* pose = &extGetPosePtr()[index];
 
     pd->states[index].field_4 = (Vec){pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]};
@@ -2432,7 +2429,7 @@ USER_FUNC(bom1000_msg) {
 
 // bom1000_jump(): kick a random pose's state and occasionally play a 3D SFX.
 USER_FUNC(bom1000_jump) {
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    PoseData* pd = lp[0]->address;
     s32 idx = rand() % pd->field_0x4;
 
     if ((s32)pd->states[idx].field_0 != 100) {
@@ -2802,10 +2799,11 @@ static USER_FUNC(starstone_set_ry) {
     s32 name = evtGetValue(event, args[0]);
     f32 value = evtGetFloat(event, args[1]);
     EffectEntry* entry = effNameToPtr((const char*)name);
+    effStarStoneData* data = entry->userdata;
 
-    ((effStarStoneData*)entry->userdata)->rotY = value;
+    data->rotY = value;
     return EVT_RETURN_DONE;
 }
 
-u32 lp[1];
+smartEntry* lp[1];
 

@@ -3,6 +3,7 @@
 #include "evt/evt_cmd.h"
 #include "driver/extdrv.h"
 #include "driver/npcdrv.h"
+#include "mario/mario.h"
 
 // Per-entry state of the 200 "teresa" boxes managed by senteresa_ext_init/ext_main.
 typedef struct TeresaEntry {
@@ -41,9 +42,9 @@ USER_FUNC(senteresa_get_random_position);
 USER_FUNC(senteresa_get_seq);
 void senteresa_loadTev(void);
 void senteresa_loadRenderMode(void);
-s32 computeAlpha(TeresaEntry* p, NpcEntry* npc, f32 angle);
+s32 computeAlpha(TeresaEntry* p, MarioWork* mario, f32 angle);
 void computeMtx(ExtPose* pose, f32 angle);
-f32 computeAngle(ExtPose* pose, NpcEntry* npc);
+f32 computeAngle(ExtPose* pose, MarioWork* mario);
 s32 randn(s32 min, s32 max);
 USER_FUNC(get_npc_color);
 EVT_DEF(n3_open);

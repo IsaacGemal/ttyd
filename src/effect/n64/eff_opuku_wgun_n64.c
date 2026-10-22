@@ -207,7 +207,7 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 
 	GXSetCullMode(GX_CULL_NONE);
 
-	vtx = (OpukuWgunVtx*)smartAlloc(0x2A0, HEAP_EFFECT)->address;
+	vtx = smartAlloc(0x2A0, HEAP_EFFECT)->address;
 	p = vtx;
 
 	for (i = 0; i < 12; i++) {
@@ -287,7 +287,7 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 
 	DCFlushRange(p, 0x2A0);
 	GXInvalidateVtxCache();
-	effSetVtxDescN64((effVtxArray*)p);
+	effSetVtxDescN64(p);
 	GXLoadPosMtxImm(cam->view, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 

@@ -378,7 +378,7 @@ void effDogabonAttackDisp(CameraId camId, void* param) {
     effGetTexObjN64(0x8C, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetCullMode(GX_CULL_NONE);
-    effSetVtxDescN64((effVtxArray*)size12x12_tex32x32_vtx);
+    effSetVtxDescN64(size12x12_tex32x32_vtx);
 
     for (i = 0; i < 25; i++) {
         if (data->state[i] == 0 || data->state[i] == 7) {

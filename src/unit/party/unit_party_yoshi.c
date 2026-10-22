@@ -73,12 +73,12 @@ static s32 wait_event[6];
 #define TECH_MENU_ENTRY(table)                                                        \
     cmd->mWeaponTable[*count].mIndex = -1;                                            \
     cmd->mWeaponTable[*count].mItem = 0;                                              \
-    cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                 \
+    cmd->mWeaponTable[*count].mWeaponParams = (table);                                \
     cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
     cmd->mWeaponTable[*count].mIcon =                                                 \
         cmd->mWeaponTable[*count].mWeaponParams->icon;                                \
     cmd->mWeaponTable[*count].mName =                                                 \
-        (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);               \
+        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                      \
     (*count)++;
 
 __declspec(section ".data") u32 lbl_80379A00[2] = {
@@ -1770,9 +1770,7 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 // One of the 256 particles drawn by _gundan_yoshi_run_effect: a 0x30-byte entry whose
 // display callback argument is the entry's +4 sub-structure. No header declares it.
 typedef struct YoshiGundanDispWork {
-    f32 posX; // 0x00
-    f32 posY; // 0x04
-    f32 posZ; // 0x08
+    Vec pos;  // 0x00
     f32 velX; // 0x0C
     f32 field_0x10; // 0x10
     f32 velZ; // 0x14
@@ -2102,7 +2100,7 @@ USER_FUNC(_gundan_yoshi_run_effect) {
         event->userdata[0] = 0;
         event->userdata[1] = psndSFXOn("SFX_BTL_YOSHI_TAIGUN1");
     } else {
-        area = (YoshiGundanArea*)unit->mExtraWork;
+        area = unit->mExtraWork;
     }
     switch (area->state) {
     case 0:
@@ -2125,9 +2123,9 @@ USER_FUNC(_gundan_yoshi_run_effect) {
             case 0:
                 work->state++;
                 work->startDelay = irand(3);
-                work->posX = (f32)(-(30 * (i / 16) + 300) + irand(10));
-                work->posY = 0.0f;
-                work->posZ = (f32)((i % 16) * 10 - 80);
+                work->pos.x = (f32)(-(30 * (i / 16) + 300) + irand(10));
+                work->pos.y = 0.0f;
+                work->pos.z = (f32)((i % 16) * 10 - 80);
                 work->tplIndex = irand(6);
                 work->animTimer = irand(5);
                 work->velX = 3.0f + 0.1f * (f32)irand(10);
@@ -2141,18 +2139,18 @@ USER_FUNC(_gundan_yoshi_run_effect) {
                 }
                 // fallthrough
             case 2:
-                work->posZ += work->velZ;
-                if (work->posZ >= 80.0f) {
-                    work->posZ = 80.0f;
+                work->pos.z += work->velZ;
+                if (work->pos.z >= 80.0f) {
+                    work->pos.z = 80.0f;
                     work->velZ *= -1.0f;
                 }
-                if (work->posZ <= -80.0f) {
-                    work->posZ = -80.0f;
+                if (work->pos.z <= -80.0f) {
+                    work->pos.z = -80.0f;
                     work->velZ *= -1.0f;
                 }
-                work->posX += work->velX;
-                if (work->posX >= 300.0f) {
-                    work->posX = 300.0f;
+                work->pos.x += work->velX;
+                if (work->pos.x >= 300.0f) {
+                    work->pos.x = 300.0f;
                     work->velX = 0.0f;
                     work->state = 999;
                 }
@@ -2167,15 +2165,15 @@ USER_FUNC(_gundan_yoshi_run_effect) {
             if (active) {
                 done = 0;
             }
-            area->avgPosX += work->posX;
+            area->avgPosX += work->pos.x;
         }
         if (event->userdata[0] > 0) {
             event->userdata[0]--;
         } else {
             work = &area->field_0x4[irand(256)];
             scale = 1.0f + 0.05f * (f32)irand(20);
-            effKemuTestEntry(0, work->posX,
-                             5.0f + work->posY + (f32)irand(15),
+            effKemuTestEntry(0, work->pos.x,
+                             5.0f + work->pos.y + (f32)irand(15),
                              65.0f, scale);
         }
         area->avgPosX *= 0.00390625f;
@@ -2189,14 +2187,14 @@ USER_FUNC(_gundan_yoshi_run_effect) {
         break;
     case 999:
         psndSFXOff(event->userdata[1]);
-        BattleFree((YoshiGundanArea*)unit->mExtraWork);
+        BattleFree(unit->mExtraWork);
         unit->mExtraWork = NULL;
         return 2;
     default:
         break;
     }
     for (j = 0; j < 256; j++) {
-        dispEntry(4, dispCalcZ((Vec*)work), 2, _btlYoshiDisp,
+        dispEntry(4, dispCalcZ(&work->pos), 2, _btlYoshiDisp,
                   &area->field_0x4[j]);
     }
     return 0;
@@ -2211,7 +2209,7 @@ void _btlYoshiDisp(CameraId cameraId, void* param) {
 
     x_scale = (work->velX < 0.0f) ? 0.4f : -0.4f;
     color = white;
-    btlDispTexPlane(work->posX, 20.f + work->posY, work->posZ, x_scale, 0.4f, _yoshig_tpl_no_tbl[work->tplIndex],
+    btlDispTexPlane(work->pos.x, 20.f + work->pos.y, work->pos.z, x_scale, 0.4f, _yoshig_tpl_no_tbl[work->tplIndex],
                     color, 0);
 }
 

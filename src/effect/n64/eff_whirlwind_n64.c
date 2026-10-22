@@ -263,7 +263,7 @@ void effWhirlwindDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, work, work);
 
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)eff_whirlwind_v);
+	effSetVtxDescN64(eff_whirlwind_v);
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {

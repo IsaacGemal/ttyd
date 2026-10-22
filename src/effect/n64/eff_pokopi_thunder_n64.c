@@ -384,7 +384,7 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	}
 
 	entry = smartAlloc(0x2A0, 3);
-	vtx = (EffPokopiThunderVtx*)entry->address;
+	vtx = entry->address;
 
 	v = vtx;
 	for (i = 0; i < 12; i++) {
@@ -433,7 +433,7 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 
 	DCFlushRange(vtx, 0x2A0);
 	GXInvalidateVtxCache();
-	effSetVtxDescN64((effVtxArray*)vtx);
+	effSetVtxDescN64(vtx);
 
 	effPokopiThunderDrawStrip(i);
 

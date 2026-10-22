@@ -126,7 +126,7 @@ void effRotHammerSuccessDisp(CameraId camId, void* param) {
     GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
     GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
     GXSetCullMode(GX_CULL_NONE);
-    effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+    effSetVtxDescN64(size16x16_tex32x32_vtx);
 
     PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
     PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);

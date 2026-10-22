@@ -85,7 +85,7 @@ f32 cloudGetBreathDir() {
         breathDir = 0.0f;
     }
     else {
-        PartyCloud* cloud = (PartyCloud*)party->useStruct;
+        PartyCloud* cloud = party->partyCloud;
         breathDir = toMovedir(cloud->unk4);
     }
     
@@ -112,10 +112,10 @@ f32 cloudGetBreathPower(f32 param_1, Vec* param_2) {
         && party->useMotionId >= MARIO_MOTION_FALL
         && ((fabs(party->position.y - param_2->y - 18.0f)) <= val)
     ) {
-        PartyCloud* cloud = (PartyCloud*)party->useStruct;
+        PartyCloud* cloud = party->partyCloud;
         breathDist = cloud->breathDist;
         if (-((0.5f * param_1) - distABf(party->position.x, party->position.z, param_2->x, param_2->z)) <= breathDist) {
-            PartyCloud* cloud = (PartyCloud*)party->useStruct;
+            PartyCloud* cloud = party->partyCloud;
             dist = toMovedir(cloud->unk4);
             angle = angleABf(party->position.x, party->position.z, param_2->x, param_2->z);
             dist = revise360(angle - dist);
@@ -131,13 +131,13 @@ f32 cloudGetBreathPower(f32 param_1, Vec* param_2) {
     return breathPower;
 }
 
-s32 cloudGetHitBreathout(s32 param_1) {
+HitEntry* cloudGetHitBreathout(s32 param_1) {
     u32 partyId = marioGetPartyId();
     PartyEntry* party = partyGetPtr(partyId);
-    s32 hitBreathout;
+    HitEntry* hitBreathout;
 
     if (party == NULL) {
-        return 0;
+        return NULL;
     }
 
     if (
@@ -145,21 +145,21 @@ s32 cloudGetHitBreathout(s32 param_1) {
         || (party->flags & PARTY_FLAG_IS_BEING_USED) == 0
         || party->useMotionId < MARIO_MOTION_FALL
     ){
-            return 0;
+            return NULL;
     }
 
-    hitBreathout = 0;
+    hitBreathout = NULL;
     if (param_1 == 0) {
-        hitBreathout = ((PartyCloud*)party->useStruct)->hitBreathout[0];
+        hitBreathout = party->partyCloud->hitBreathout[0];
     }
     else if (param_1 == 1) { 
-        hitBreathout = ((PartyCloud*)party->useStruct)->hitBreathout[1];
+        hitBreathout = party->partyCloud->hitBreathout[1];
     }
     else if (param_1 == 2) {
-        hitBreathout = ((PartyCloud*)party->useStruct)->hitBreathout[2];
+        hitBreathout = party->partyCloud->hitBreathout[2];
     }
     else if (param_1 == 3) { 
-        hitBreathout = ((PartyCloud*)party->useStruct)->hitBreathout[3];
+        hitBreathout = party->partyCloud->hitBreathout[3];
     }
     
     return hitBreathout;
@@ -179,7 +179,7 @@ f32 cloudGetBreathDist() {
         breathDist = 0.0f;
     }
     else {
-        PartyCloud* cloud = (PartyCloud*)party->useStruct;
+        PartyCloud* cloud = party->partyCloud;
         breathDist = cloud->breathDist;
     }
 
@@ -268,14 +268,14 @@ void cloud_use(PartyEntry* party) {
         party->flags &= ~(1 << 8);
 
         if (party->useStruct != NULL) {
-            if (((PartyCloud*)party->useStruct)->sfxId != 0xFFFFFFFFu) {
-                psndSFXOff(((PartyCloud*)party->useStruct)->sfxId);
-                ((PartyCloud*)party->useStruct)->sfxId = 0xFFFFFFFFu;
+            if (party->partyCloud->sfxId != 0xFFFFFFFFu) {
+                psndSFXOff(party->partyCloud->sfxId);
+                party->partyCloud->sfxId = 0xFFFFFFFFu;
             }
         }
 
         if (party->tail.flurrie.breathFx != NULL) {
-            effSoftDelete((EffectEntry*)party->tail.flurrie.breathFx);
+            effSoftDelete(party->tail.flurrie.breathFx);
             party->tail.flurrie.breathFx = NULL;
         }
 
@@ -300,8 +300,6 @@ void cloud_use(PartyEntry* party) {
     }
 }
 
-#define cloud ((PartyCloud*)party->useStruct)
-
 static inline void cloudMoveToMarioStep(PartyEntry* party) {
     MarioWork* pm = party->playerPtr;
     f32 pa;
@@ -316,7 +314,7 @@ static inline void cloudMoveToMarioStep(PartyEntry* party) {
 #define MOVE_TO_MARIO() cloudMoveToMarioStep(party)
 
 #ifdef MUST_MATCH
-// Match-only: the original re-reads party->playerPtr at the cloud->breathDist clamp (lwz r30, 0x160(r29));
+// Match-only: the original re-reads party->playerPtr at the party->partyCloud->breathDist clamp (lwz r30, 0x160(r29));
 // the natural single load is under #else.
 #define RELOAD_MARIO() (mario = party->playerPtr)
 #else
@@ -340,18 +338,18 @@ void N__cloud_use(PartyEntry* party) {
         party->useMotionId = 0;
         party->useStruct = __memAlloc(HEAP_DEFAULT, 0x48);
         memset(party->useStruct, 0, 0x48);
-        cloud->unk0 = 100.0f;
-        cloud->maxDist = 120.0f;
-        cloud->sweepOffset1 = 0.0f;
-        cloud->sweepDown1 = 0;
-        cloud->sweepOffset2 = 0.0f;
-        cloud->sweepDown2 = 1;
+        party->partyCloud->unk0 = 100.0f;
+        party->partyCloud->maxDist = 120.0f;
+        party->partyCloud->sweepOffset1 = 0.0f;
+        party->partyCloud->sweepDown1 = 0;
+        party->partyCloud->sweepOffset2 = 0.0f;
+        party->partyCloud->sweepDown2 = 1;
         party->tail.flurrie.breathFx = NULL;
         if (party->useStruct != NULL) {
-            ((PartyCloud*)party->useStruct)->sfxId = 0xFFFFFFFFu;
+            party->partyCloud->sfxId = 0xFFFFFFFFu;
         }
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) != 0) {
-            ((PartyCloud*)party->useStruct)->useTimer = sysMsec2Frame(party->unk16C);
+            party->partyCloud->useTimer = sysMsec2Frame(party->unk16C);
         }
     }
 
@@ -378,30 +376,30 @@ void N__cloud_use(PartyEntry* party) {
         party->position = party->targetPos;
         if (party->tail.flurrie.breathFx == NULL) {
             party->tail.flurrie.breathFx = effKumokumoN64Entry(0, 0, 0.0f, 0.0f, 0.0f, 0.0f, -2.0f, 0.0f);
-            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->camera = party->camId;
-            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color1R = 0x4C;
-            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color1G = 0xA7;
-            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color1B = 0xCA;
-            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color2R = 0x7D;
-            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color2G = 0x1B;
-            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->color2B = 0xF5;
+            ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->camera = party->camId;
+            ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->color1R = 0x4C;
+            ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->color1G = 0xA7;
+            ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->color1B = 0xCA;
+            ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->color2R = 0x7D;
+            ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->color2G = 0x1B;
+            ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->color2B = 0xF5;
         }
         marioChgMot(0x1B);
         marioChgPose("M_A_2A");
-        partyChgPose(party, (char*)"PWD_A_5");
+        partyChgPose(party, "PWD_A_5");
         party->timer = 0x10;
         party->useMotionId = 0xB;
         mario->dispFlags |= 0x4;
         mario->dispFlags |= 0x100;
         party->flags2 |= 0x10;
-        cloud->breathDist = 0.0f;
-        cloud->unk4 = mario->dispDir;
+        party->partyCloud->breathDist = 0.0f;
+        party->partyCloud->unk4 = mario->dispDir;
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
             mario->unk150.x = 0.03f;
             mario->unk138 = 70.0f * ((revise360(270.0f - mario->dispReqDir) <= 180.0f) ? -1.0f : 1.0f);
         }
-        if (party->useStruct != NULL && ((PartyCloud*)party->useStruct)->sfxId == 0xFFFFFFFFu) {
-            ((PartyCloud*)party->useStruct)->sfxId = psndSFXOn_3D((char*)0x930, &party->playerPtr->position);
+        if (party->useStruct != NULL && party->partyCloud->sfxId == 0xFFFFFFFFu) {
+            party->partyCloud->sfxId = psndSFXOn_3D((char*)0x930, &party->playerPtr->position);
         }
         /* fallthrough */
     case 0xB:
@@ -410,7 +408,7 @@ void N__cloud_use(PartyEntry* party) {
         if (--party->timer > 0) {
             break;
         }
-        partyChgPose(party, (char*)"PWD_A_6");
+        partyChgPose(party, "PWD_A_6");
         marioChgPose("M_A_2B");
         party->useMotionId = 0xC;
         /* fallthrough */
@@ -418,10 +416,10 @@ void N__cloud_use(PartyEntry* party) {
         MOVE_TO_MARIO();
         party->position = party->targetPos;
         partyUpdateKeyData(party);
-        mario->dispDir = cloud->unk4;
-        mario->dispReqDir = cloud->unk4;
-        party->dispDir = cloud->unk4;
-        party->field_110 = cloud->unk4;
+        mario->dispDir = party->partyCloud->unk4;
+        mario->dispReqDir = party->partyCloud->unk4;
+        party->dispDir = party->partyCloud->unk4;
+        party->field_110 = party->partyCloud->unk4;
         sx = mario->position.x;
         sz = mario->position.z;
         f31 = mario->dispDir;
@@ -433,47 +431,47 @@ void N__cloud_use(PartyEntry* party) {
         party->position.z = sz;
         party->position.y = mario->position.y + 10.0f;
         party->dispOffset = (Vec){0.0f, 0.0f, 0.0f};
-        cloud->breathDist += 2.0f;
+        party->partyCloud->breathDist += 2.0f;
         RELOAD_MARIO();
-        if (cloud->breathDist >= cloud->maxDist) {
-            cloud->breathDist = cloud->maxDist;
+        if (party->partyCloud->breathDist >= party->partyCloud->maxDist) {
+            party->partyCloud->breathDist = party->partyCloud->maxDist;
         }
-        angle = toMovedir(cloud->unk4);
+        angle = toMovedir(party->partyCloud->unk4);
         sincosf(&sin1, &cos1, angle);
         sincosf(&sin2, &cos2, -45.0f);
-        dist = cloud->breathDist;
+        dist = party->partyCloud->breathDist;
         hit = hitCheckFilter(NULL, party->position.x, 18.0f + mario->position.y, party->position.z, sin1, sin2, cos1, &hitX,
                              &hitY, &hitZ, &dist,
                              &hitNX, &hitNY, &hitNZ);
         if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
             hit = NULL;
         }
-        cloud->hitBreathout[1] = (s32)hit;
+        party->partyCloud->hitBreathout[1] = hit;
         getHitBreatheout2(party, 0.0f);
-        if (++cloud->mode > 2) {
-            cloud->mode = 0;
+        if (++party->partyCloud->mode > 2) {
+            party->partyCloud->mode = 0;
         }
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
             if ((party->button & 0x400) != 0 && marioKeyOffChk() == 0) {
                 break;
             }
         } else {
-            if (--cloud->useTimer > 0) {
+            if (--party->partyCloud->useTimer > 0) {
                 break;
             }
         }
-        cloud->hitBreathout[0] = 0;
-        cloud->hitBreathout[1] = 0;
-        cloud->hitBreathout[2] = 0;
-        cloud->hitBreathout[3] = 0;
+        party->partyCloud->hitBreathout[0] = 0;
+        party->partyCloud->hitBreathout[1] = 0;
+        party->partyCloud->hitBreathout[2] = 0;
+        party->partyCloud->hitBreathout[3] = 0;
         party->timer = sysMsec2Frame(200);
         party->useMotionId = 0xD;
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) != 0) {
             party->useMotionId = 0x14;
         }
-        if (party->useStruct != NULL && ((PartyCloud*)party->useStruct)->sfxId != 0xFFFFFFFFu) {
-            psndSFXOff(((PartyCloud*)party->useStruct)->sfxId);
-            ((PartyCloud*)party->useStruct)->sfxId = 0xFFFFFFFFu;
+        if (party->useStruct != NULL && party->partyCloud->sfxId != 0xFFFFFFFFu) {
+            psndSFXOff(party->partyCloud->sfxId);
+            party->partyCloud->sfxId = 0xFFFFFFFFu;
         }
         break;
     case 0xD:
@@ -495,12 +493,12 @@ void N__cloud_use(PartyEntry* party) {
         /* fallthrough */
     case 0x14:
         party->flags &= ~(1 << 8);
-        if (party->useStruct != NULL && ((PartyCloud*)party->useStruct)->sfxId != 0xFFFFFFFFu) {
-            psndSFXOff(((PartyCloud*)party->useStruct)->sfxId);
-            ((PartyCloud*)party->useStruct)->sfxId = 0xFFFFFFFFu;
+        if (party->useStruct != NULL && party->partyCloud->sfxId != 0xFFFFFFFFu) {
+            psndSFXOff(party->partyCloud->sfxId);
+            party->partyCloud->sfxId = 0xFFFFFFFFu;
         }
         if (party->tail.flurrie.breathFx != NULL) {
-            effSoftDelete((EffectEntry*)party->tail.flurrie.breathFx);
+            effSoftDelete(party->tail.flurrie.breathFx);
             party->tail.flurrie.breathFx = NULL;
         }
         MOVE_TO_MARIO();
@@ -531,21 +529,20 @@ void N__cloud_use(PartyEntry* party) {
         break;
     }
 }
-#undef cloud
 #undef MOVE_TO_MARIO
 
 void cloud_exit(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
 
     if (party->useStruct != NULL) {
-        if (((PartyCloud*)party->useStruct)->sfxId != 0xFFFFFFFFu) {
-            psndSFXOff(((PartyCloud*)party->useStruct)->sfxId);
-            ((PartyCloud*)party->useStruct)->sfxId = 0xFFFFFFFFu;
+        if (party->partyCloud->sfxId != 0xFFFFFFFFu) {
+            psndSFXOff(party->partyCloud->sfxId);
+            party->partyCloud->sfxId = 0xFFFFFFFFu;
         }
     }
 
     if (party->tail.flurrie.breathFx != NULL) {
-        effSoftDelete((EffectEntry*)party->tail.flurrie.breathFx);
+        effSoftDelete(party->tail.flurrie.breathFx);
         party->tail.flurrie.breathFx = NULL;
     }
 
@@ -562,11 +559,10 @@ void cloud_exit(PartyEntry* party) {
     mario->unk138 = 0.0f;
 }
 
-#define cloud ((PartyCloud*)party->useStruct)
 // Reading the mode through an inline gives the original's register allocation
 // (cloud in r4, mode in r3); a plain dereference swaps them.
 static inline s16 getHitBreatheout2_mode(PartyEntry* party) {
-    return ((PartyCloud*)party->useStruct)->mode;
+    return party->partyCloud->mode;
 }
 
 void getHitBreatheout2(PartyEntry* party, f32 angle) {
@@ -590,97 +586,96 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
         f30 = 40.0f;
     }
 
-    if (cloud->breathDist >= cloud->maxDist) {
-        cloud->breathDist = cloud->maxDist;
+    if (party->partyCloud->breathDist >= party->partyCloud->maxDist) {
+        party->partyCloud->breathDist = party->partyCloud->maxDist;
     }
 
     sincosf(&sin1, &cos1, angle);
-    f31 = toMovedir(cloud->unk4);
+    f31 = toMovedir(party->partyCloud->unk4);
     sincosf(&sin2, &cos2, f31);
 
-    distance = cloud->breathDist;
+    distance = party->partyCloud->breathDist;
     hit = hitCheckFilter(NULL, party->position.x, mario->position.y + f30, party->position.z, sin2, sin1, cos2, &hitX,
                          &hitY, &hitZ, &distance,
                          &hitNX, &hitNY, &hitNZ);
     if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
         hit = NULL;
     }
-    cloud->hitBreathout[0] = (s32)hit;
+    party->partyCloud->hitBreathout[0] = hit;
 
     dx = 0.0f;
     dz = 0.0f;
     if (party->tail.flurrie.breathFx != NULL) {
         movePos(&dx, &dz, 24.0f, f31);
-        ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->x = party->position.x + dx;
-        ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->y = 18.0f + party->position.y;
-        ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->z = party->position.z + dz;
-        ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->scale =
-            0.6f * (cloud->breathDist / cloud->maxDist);
+        ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->x = party->position.x + dx;
+        ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->y = 18.0f + party->position.y;
+        ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->z = party->position.z + dz;
+        ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->scale =
+            0.6f * (party->partyCloud->breathDist / party->partyCloud->maxDist);
 
-        if (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) {
-            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->rotation = -25.0f;
+        if (party->partyCloud->unk4 >= 90.0f && party->partyCloud->unk4 <= 270.0f) {
+            ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->rotation = -25.0f;
         } else {
-            ((effKumokumoData*)((EffectEntry*)party->tail.flurrie.breathFx)->userdata)->rotation = 205.0f;
+            ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->rotation = 205.0f;
         }
     }
 
-    if (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) {
+    if (party->partyCloud->unk4 >= 90.0f && party->partyCloud->unk4 <= 270.0f) {
         f31 = 1.0f;
     } else {
         f31 = -1.0f;
     }
 
-    if (cloud->sweepDown1 == 0) {
-        cloud->sweepOffset1 += 1.0f;
-        if (cloud->sweepOffset1 >= 20.0f) {
-            cloud->sweepOffset1 = 20.0f;
-            cloud->sweepDown1 = 1;
+    if (party->partyCloud->sweepDown1 == 0) {
+        party->partyCloud->sweepOffset1 += 1.0f;
+        if (party->partyCloud->sweepOffset1 >= 20.0f) {
+            party->partyCloud->sweepOffset1 = 20.0f;
+            party->partyCloud->sweepDown1 = 1;
         }
     } else {
-        cloud->sweepOffset1 -= 1.0f;
-        if (cloud->sweepOffset1 <= -20.0f) {
-            cloud->sweepOffset1 = -20.0f;
-            cloud->sweepDown1 = 0;
+        party->partyCloud->sweepOffset1 -= 1.0f;
+        if (party->partyCloud->sweepOffset1 <= -20.0f) {
+            party->partyCloud->sweepOffset1 = -20.0f;
+            party->partyCloud->sweepDown1 = 0;
         }
     }
 
-    dir = toMovedir(cloud->unk4 + cloud->sweepOffset1 * f31);
+    dir = toMovedir(party->partyCloud->unk4 + party->partyCloud->sweepOffset1 * f31);
     sincosf(&sin2, &cos2, dir);
-    distance = cloud->breathDist;
+    distance = party->partyCloud->breathDist;
     hit = hitCheckFilter(NULL, party->position.x, mario->position.y + f30, party->position.z, sin2, sin1, cos2, &hitX,
                          &hitY, &hitZ, &distance,
                          &hitNX, &hitNY, &hitNZ);
     if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
         hit = NULL;
     }
-    cloud->hitBreathout[2] = (s32)hit;
+    party->partyCloud->hitBreathout[2] = hit;
 
-    if (cloud->sweepDown2 == 0) {
-        cloud->sweepOffset2 += 1.0f;
-        if (cloud->sweepOffset2 >= 20.0f) {
-            cloud->sweepOffset2 = 20.0f;
-            cloud->sweepDown2 = 1;
+    if (party->partyCloud->sweepDown2 == 0) {
+        party->partyCloud->sweepOffset2 += 1.0f;
+        if (party->partyCloud->sweepOffset2 >= 20.0f) {
+            party->partyCloud->sweepOffset2 = 20.0f;
+            party->partyCloud->sweepDown2 = 1;
         }
     } else {
-        cloud->sweepOffset2 -= 1.0f;
-        if (cloud->sweepOffset2 <= -20.0f) {
-            cloud->sweepOffset2 = -20.0f;
-            cloud->sweepDown2 = 0;
+        party->partyCloud->sweepOffset2 -= 1.0f;
+        if (party->partyCloud->sweepOffset2 <= -20.0f) {
+            party->partyCloud->sweepOffset2 = -20.0f;
+            party->partyCloud->sweepDown2 = 0;
         }
     }
 
-    dir = toMovedir(cloud->unk4 + cloud->sweepOffset2 * f31);
+    dir = toMovedir(party->partyCloud->unk4 + party->partyCloud->sweepOffset2 * f31);
     sincosf(&sin2, &cos2, dir);
-    distance = cloud->breathDist;
+    distance = party->partyCloud->breathDist;
     hit = hitCheckFilter(NULL, party->position.x, mario->position.y + f30, party->position.z, sin2, sin1, cos2, &hitX,
                          &hitY, &hitZ, &distance,
                          &hitNX, &hitNY, &hitNZ);
     if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
         hit = NULL;
     }
-    cloud->hitBreathout[3] = (s32)hit;
+    party->partyCloud->hitBreathout[3] = hit;
 }
-#undef cloud
 
 void cloudGetAt(Vec* position) {
     MarioWork* mario = marioGetPtr();

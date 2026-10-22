@@ -73,8 +73,8 @@ typedef enum BattleActRecordConditionType {
 	kConditionMarioOnlyJumpOrDefend, //0x42
 	kConditionMarioOnlyHammerOrDefend, //0x43
 } BattleActRecordConditionType;
-void BtlActRec_AddPoint(void* p, u8 value);
-void BtlActRec_AddCount(void* p);
+void BtlActRec_AddPoint(u8* p, u8 value);
+void BtlActRec_AddCount(u8* p);
 void BtlActRec_JudgeTurnRuleKeep(void);
 void BtlActRec_JudgeRuleKeep(void);
 u8 _check_turn_count_0_end(s32 flag);

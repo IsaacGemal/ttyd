@@ -22,7 +22,7 @@ void FontDrawColor(GXColor* color);
 const u32 dat_yuu_00014990 = 0xFFFFFFFF;
 
 typedef struct YuuRankingWork {
-    s32 eventEntry;   // 0x00
+    EventEntry* eventEntry; // 0x00
     u16 freeFlags;    // 0x04
     u16 pad_06;       // 0x06
     s32 flags2;       // 0x08
@@ -838,8 +838,8 @@ USER_FUNC(evt_yuuranking_alloc_31_text_52F8) {
         work->flags2 |= 4;
     }
     evt = evtEntry(main_evt, 0, 0);
-    work->eventEntry = (s32)evt;
-    ((EventEntry*)work->eventEntry)->lwData[0] = (s32)work;
+    work->eventEntry = evt;
+    work->eventEntry->lwData[0] = (s32)work;
     return EVT_RETURN_DONE;
 }
 

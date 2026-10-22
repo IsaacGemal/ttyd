@@ -182,6 +182,7 @@ static void effBombMain(EffectEntry* effect) {
 // original (data r29, camera r30, timer r31). The natural order (timer first) makes mwcc put timer in
 // r30 and camera in r31, ten instructions apart; with this order no #pragma is required.
 static void effBombDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
 	effBombN64Data* data;
 	CameraEntry* camera;
 	Mtx mtx;
@@ -195,7 +196,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	s32 tmp;
 
 	camera = camGetPtr(camId);
-	data = ((EffectEntry*)param)->userdata;
+	data = effect->userdata;
 	timer = data->counter;
 
 	PSMTXTrans(mtx, data->x, data->y, data->z);
@@ -215,7 +216,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	PSMTXScale(mtx, 0.0625f, 0.0625f, 0.0f);
 	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)size8x8_tex32x32_vtx);
+	effSetVtxDescN64(size8x8_tex32x32_vtx);
 
 	if (data->texType != -1) {
 		effGetTexObjN64(0x18, &texObj);

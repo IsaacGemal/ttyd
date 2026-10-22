@@ -186,7 +186,7 @@ void effRippleDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(transMtx, 0);
 	GXSetCurrentMtx(0);
 	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_0_vtx);
+	effSetVtxDescN64(size16x16_tex32x32_0_vtx);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

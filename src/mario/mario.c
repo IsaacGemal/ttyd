@@ -828,7 +828,7 @@ void marioInit(void) {
 	MarioWork* wp;
 	s32 i;
 
-	mp = (MarioWork*)__memAlloc(HEAP_DEFAULT, 0x2e0);
+	mp = __memAlloc(HEAP_DEFAULT, 0x2e0);
 	memset(mp, 0, 0x2e0);
 	wp = mp;
 	wp->sfxIds[0] = -1;
@@ -861,7 +861,7 @@ void marioInit(void) {
 	mp->prevPosition = mp->position;
 	mp->wPlayerCollisionBox.z = 20.0f;
 	marioChgPose("M_S_1");
-	*(s32*)mp->field_0x20 = 0;
+	mp->field_0x20 = 0;
 	mp->bottomlessResetPosition = (Vec){0.0f, 74.0f, 0.0f};
 	marioChgMot(0);
 	marioBaloonInit();
@@ -1695,10 +1695,10 @@ void marioMoveMain(void) {
 
 	f29 = wp->baseSpeed;
 	if (wp->hitobjStandOn != NULL) {
-		if (hitGetAttr((HitEntry*)wp->hitobjStandOn) & 0x40000000) {
+		if (hitGetAttr(wp->hitobjStandOn) & 0x40000000) {
 			wp->hitobjDamageReturn = wp->hitobjStandOn;
 		}
-		if (hitGetAttr((HitEntry*)wp->hitobjStandOn) & 0x100) {
+		if (hitGetAttr(wp->hitobjStandOn) & 0x100) {
 			wp->flags |= 0x04000000;
 			f29 *= 0.75f;
 		} else {
@@ -1770,7 +1770,7 @@ void marioMoveMain(void) {
 			marioCheckWall_roll(f31, dirRes);
 		}
 		N_dou10_yoko_yari3(&wp->frontWallDist);
-		hit = (HitEntry*)wp->hitobjFront;
+		hit = wp->hitobjFront;
 		if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
 			set_damage_root_ypos(wp->position.y);
 			marioChgMot(MARIO_MOTION_DAMAGE_TOGE);

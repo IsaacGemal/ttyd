@@ -92,7 +92,7 @@ typedef struct BattleCommand {
     s32 restoreId;                            // 0x554, commandState saved by the restore path, compared with it to clear restoreState
     u8 restoreState;                          // 0x558, set to 1 or 2 when a sub-menu opens; tested by BattleMenuKeyOKInACT
     u8 pad_0x559[0x55C - 0x559];              // 0x559
-    void* field_55C;                          // 0x55C
+    struct BattleMenuWork* field_55C;         // 0x55C, menu window work battle_menu_disp allocates and frees
     s32 idleFrames;                           // 0x560, reset while a button is held, counts up otherwise; 0x384 switches the idle camera
     s32 disableReason;                        // 0x564, mDisableReason of the rejected entry; _get_msg picks the error text
     s32 eventId;                              // 0x568, pending event checked with evtCheckID
@@ -131,16 +131,16 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd);
 s32 _battleGetPartyIcon(s32 kind);
 s32 BattleCommandInput(BattleWork* wp);
 void BattleCommandInit(BattleWork* wp);
-void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, void* arg);
+void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, u32 arg);
 s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp);
 void BattleCommandDisplay_WeaponSelectMenuSetup(BattleWork* wp, s32 arg, u32 arg2);
 void BattleCommandDisplay_TargetSelectMenuEnd(BattleWork* wp);
 void BattleCommandDisplay_WeaponMultiItemCancelCheckSetup(BattleWork* wp);
-void BattleCommandDisplay_MultiItemMenuSetup(BattleWork* wp, void* arg);
+void BattleCommandDisplay_MultiItemMenuSetup(BattleWork* wp, u32 arg);
 s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp);
-void BattleCommandDisplay_OperationMenuSetup(BattleWork* wp, void* arg);
+void BattleCommandDisplay_OperationMenuSetup(BattleWork* wp, u32 arg);
 s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp);
-void BattleCommandDisplay_ChangePartySelectMenuSetup(BattleWork* wp, void* arg);
+void BattleCommandDisplay_ChangePartySelectMenuSetup(BattleWork* wp, u32 arg);
 s32 BattleCommandDisplay_ChangePartySelectMenuMain(BattleWork* wp);
 void BattleCommandDisplay_ProtectPartnerSelectMenuSetup(BattleWork* wp);
 void BattleCommandDisplay_ProtectPartnerSelectMenuEnd(BattleWork* wp);

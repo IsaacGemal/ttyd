@@ -662,10 +662,10 @@ static USER_FUNC(evt_cloud_main) {
         return EVT_RETURN_BLOCK;
     }
 
-    h0 = (HitEntry*)cloudGetHitBreathout(0);
-    h1 = (HitEntry*)cloudGetHitBreathout(1);
-    h2 = (HitEntry*)cloudGetHitBreathout(2);
-    h3 = (HitEntry*)cloudGetHitBreathout(3);
+    h0 = cloudGetHitBreathout(0);
+    h1 = cloudGetHitBreathout(1);
+    h2 = cloudGetHitBreathout(2);
+    h3 = cloudGetHitBreathout(3);
 
     switch (cp->mode) {
     case 0:
@@ -822,7 +822,7 @@ EVT_END()
 USER_FUNC(evt_iri_16_cloud_init) {
     s32 i;
 
-    cloud = (CloudEntry*)_mapAlloc(0x1B00);
+    cloud = _mapAlloc(0x1B00);
     for (i = 0; i < 16; i++) {
         cloud[i].flags = 0;
         sprintf(cloud[i].imgName, "i_name_%1d", i);
@@ -834,17 +834,17 @@ USER_FUNC(evt_iri_16_cloud_init) {
 
 USER_FUNC(evt_iri_16_cloud_ent) {
     s32* args;
-    s32 a;
-    s32 b;
-    s32 c;
+    const char** a;
+    const char* b;
+    void* c;
     CloudEntry* cp;
     s32 i;
     s32 j;
 
     args = event->args;
-    a = evtGetValue(event, args[0]);
-    b = evtGetValue(event, args[1]);
-    c = evtGetValue(event, args[2]);
+    a = (const char**)evtGetValue(event, args[0]);
+    b = (const char*)evtGetValue(event, args[1]);
+    c = (void*)evtGetValue(event, args[2]);
 
     for (i = 0; i < 16; i++) {
         if (cloud[i].flags == 0) {
@@ -858,13 +858,13 @@ USER_FUNC(evt_iri_16_cloud_ent) {
     cp->flags = 1;
     strcpy(cp->animName, "P_oof_cloud_1");
     for (j = 0; j < 8; j++) {
-        if ((s8)((const char**)a)[j][0] == 0) {
+        if ((s8)a[j][0] == 0) {
             break;
         }
-        strcpy(cp->mapGrpName[j], ((const char**)a)[j]);
+        strcpy(cp->mapGrpName[j], a[j]);
     }
-    strcpy(cp->hitName, (const char*)b);
-    cp->endScript = (void*)c;
+    strcpy(cp->hitName, b);
+    cp->endScript = c;
     cp->breathLimit = 0xB4;
     cp->breathCount = 0;
     cp->mode = 0;

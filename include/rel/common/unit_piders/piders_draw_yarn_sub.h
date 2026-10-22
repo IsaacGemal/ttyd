@@ -41,7 +41,7 @@ static USER_FUNC(piders_draw_yarn) {
     u8 alpha = evtGetValue(event, event->args[0]);
     s32 id = BattleTransID(event, -2);
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    PidersYarnWork* yarn = (PidersYarnWork*)unit->mExtraWork;
+    PidersYarnWork* yarn = unit->mExtraWork;
 
     BtlUnit_GetHomePos(unit, &yarn->field_0xC, &yarn->field_0x10, &yarn->field_0x14);
     yarn->field_0x10 = (f32)unit->work[2];

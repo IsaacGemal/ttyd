@@ -324,7 +324,7 @@ void effStardust2Disp(CameraId camId, void* param) {
     s32 i;
     s32 vtxIndex;
     s32 colorIdx;
-    effVtxArray* vtx;
+    u32* vtx;
     GXTexObj texObj;
     Mtx mtx;
     Mtx scale;
@@ -420,28 +420,28 @@ void effStardust2Disp(CameraId camId, void* param) {
 
         switch (vtxIndex & 7) {
         case 0:
-            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[3];
+            vtx = &size8x8_tex22x22_vtx[3 * 14];
             break;
         case 1:
-            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[4];
+            vtx = &size8x8_tex22x22_vtx[4 * 14];
             break;
         case 2:
-            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[5];
+            vtx = &size8x8_tex22x22_vtx[5 * 14];
             break;
         case 3:
-            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[6];
+            vtx = &size8x8_tex22x22_vtx[6 * 14];
             break;
         case 4:
-            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[7];
+            vtx = &size8x8_tex22x22_vtx[7 * 14];
             break;
         case 5:
-            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[0];
+            vtx = &size8x8_tex22x22_vtx[0 * 14];
             break;
         case 6:
-            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[1];
+            vtx = &size8x8_tex22x22_vtx[1 * 14];
             break;
         case 7:
-            vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[2];
+            vtx = &size8x8_tex22x22_vtx[2 * 14];
             break;
         }
         effSetVtxDescN64(vtx);
@@ -450,7 +450,9 @@ void effStardust2Disp(CameraId camId, void* param) {
     }
 }
 void effStardust2N64SetDrawCam(EffectEntry* entry, s32 cam) {
-    ((EffStardust2Data*)entry->userdata)->drawCam = cam;
+    EffStardust2Data* data = entry->userdata;
+
+    data->drawCam = cam;
 }
 
 // The constants the code above loads by name, defined after it (defined first, the compiler folds them).

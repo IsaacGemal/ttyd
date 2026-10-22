@@ -10,7 +10,7 @@ typedef struct ItemData {
 	const char* menu_description; //0xC
 	u16 usable_locations; //0x10
 	s16 type_sort_order; //0x12
-	s16 buy_price; //0x14
+	u16 buy_price; //0x14
 	u16 discount_price; //0x16
 	u16 star_piece_price; //0x18
 	u16 sell_price; //0x1A
@@ -24,13 +24,3 @@ typedef struct ItemData {
 } ItemData;
 
 extern ItemData itemDataTable[];
-// winMgrSelectOther reads ItemData.buy_price with `lhz` (unsigned), while the field above is s16. This view has
-// the field unsigned; use it for that one read and fix ItemData.buy_price (then delete this) when the header is
-// corrected.
-typedef struct ItemDataView {
-	u8 pad_0x0[0x14];
-	u16 buy_price; //0x14
-	u8 pad_0x16[0x20 - 0x16];
-	u16 icon_id; //0x20
-	u8 pad_0x22[0x28 - 0x22];
-} ItemDataView;

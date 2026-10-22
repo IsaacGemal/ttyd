@@ -300,7 +300,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx, rot, finalMtx);
 
 		if (i == 1 && type != 2) {
-			effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_heart_vtx);
+			effSetVtxDescN64(size32x32_tex32x32_heart_vtx);
 			PSMTXConcat(cam->view, finalMtx, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
@@ -322,9 +322,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_heart_vtx);
+					effSetVtxDescN64(size24x24_tex32x32_heart_vtx);
 				} else {
-					effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_flower_vtx);
+					effSetVtxDescN64(size24x24_tex32x32_flower_vtx);
 				}
 				PSMTXConcat(cam->view, mtx, trans);
 				GXLoadPosMtxImm(trans, 0);
@@ -342,9 +342,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_r_heart_vtx);
+					effSetVtxDescN64(size16x24_tex32x32_r_heart_vtx);
 				} else {
-					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_r_flower_vtx);
+					effSetVtxDescN64(size16x24_tex32x32_r_flower_vtx);
 				}
 				PSMTXConcat(cam->view, mtx, trans);
 				GXLoadPosMtxImm(trans, 0);
@@ -357,9 +357,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_l_heart_vtx);
+					effSetVtxDescN64(size16x24_tex32x32_l_heart_vtx);
 				} else {
-					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_l_flower_vtx);
+					effSetVtxDescN64(size16x24_tex32x32_l_flower_vtx);
 				}
 				GXBegin(0x90, 0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -368,7 +368,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 			PSMTXConcat(cam->view, finalMtx, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
-			effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_heart_vtx);
+			effSetVtxDescN64(size16x16_tex32x32_heart_vtx);
 			GXBegin(0x90, 0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 		}

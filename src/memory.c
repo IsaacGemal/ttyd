@@ -102,7 +102,7 @@ void memInit(void) {
     for (i = 0; i < 6; i++) {
         heapHandle[i] = OSCreateHeap(heapStart[i], heapEnd[i]);
     }
-    OSSetArenaLo((void* ) arenaHi);
+    OSSetArenaLo(arenaHi);
     for (i = 0; i < 6; i++) {
         OSDestroyHeap(heapHandle[i]);
         OSCreateHeap(heapStart[i], heapEnd[i]);

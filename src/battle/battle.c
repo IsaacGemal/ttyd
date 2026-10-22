@@ -1011,7 +1011,7 @@ BOOL BattleMain(void) {
 void BattleInit(FieldBattleInfo* info) {
     BattleWork* wp;
 
-    wp = _battleWorkPointer = (BattleWork*)_mapAlloc(sizeof(BattleWork));
+    wp = _battleWorkPointer = _mapAlloc(sizeof(BattleWork));
     memset(_battleWorkPointer, 0, sizeof(BattleWork));
     wp->field_19060 = -1;
     wp->lectureUnitId = -1;

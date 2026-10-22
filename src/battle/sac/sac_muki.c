@@ -56,9 +56,7 @@ typedef struct MukiPoint {
     s32 type;          // 0x00
     s32 field_04;      // 0x04
     Vec pos;           // 0x08
-    f32 field_14;      // 0x14
-    f32 field_18;      // 0x18
-    f32 field_1C;      // 0x1C
+    Vec field_14;      // 0x14
     MukiEntry* field_20; // 0x20, but MukiEntry is declared above? no
 } MukiPoint;
 
@@ -89,15 +87,9 @@ typedef struct MukiWork {
     MukiEntry entries[9];            // 0x1BC
     s32 field_3B4;                   // 0x3B4
     s32 field_3B8;                   // 0x3B8
-    f32 posX;                        // 0x3BC
-    f32 posY;                        // 0x3C0
-    f32 posZ;                        // 0x3C4
-    f32 startX;                      // 0x3C8
-    f32 startY;                      // 0x3CC
-    f32 startZ;                      // 0x3D0
-    f32 endX;                        // 0x3D4
-    f32 endY;                        // 0x3D8
-    f32 endZ;                        // 0x3DC
+    Vec pos;                         // 0x3BC
+    Vec start;                       // 0x3C8
+    Vec end;                         // 0x3D4
     u8 field_3E0[0x3EC - 0x3E0];     // 0x3E0
     Vec scale;                       // 0x3EC
     Vec scale2;                      // 0x3F8
@@ -620,15 +612,15 @@ void main_point(s32 index) {
             pos.y = (f32)(0x7D - row * 0x30);
             point->pos = pos;
         }
-        *(Vec*)&point->field_14 = (Vec){0.0f, 0.0f, 1.0f};
+        point->field_14 = (Vec){0.0f, 0.0f, 1.0f};
         point->field_20 = NULL;
         /* fallthrough */
     case 2:
         point->field_04--;
         if (point->field_04 <= 0x1E) {
             f = intplGetValue(0, 0x1E - point->field_04, 0x1E, 0.0f, 0.5f);
-            point->field_18 = f;
-            point->field_14 = f;
+            point->field_14.y = f;
+            point->field_14.x = f;
         }
         if (point->field_04 <= 0) {
             point->type = 3;
@@ -638,7 +630,7 @@ void main_point(s32 index) {
     case 3:
         point->type = 4;
         point->field_04 = 0;
-        *(Vec*)&point->field_14 = (Vec){0.5f, 0.5f, 1.0f};
+        point->field_14 = (Vec){0.5f, 0.5f, 1.0f};
         break;
     case 0:
     case 4:
@@ -673,8 +665,8 @@ void main_point(s32 index) {
         point->field_04--;
         if (point->field_04 <= 0x1E) {
             f = intplGetValue(0, 0x1E - point->field_04, 0x1E, 0.5f, 0.0f);
-            point->field_18 = f;
-            point->field_14 = f;
+            point->field_14.y = f;
+            point->field_14.x = f;
         }
         if (point->field_04 <= 0) {
             point->type = 8;
@@ -785,21 +777,21 @@ static void main_star(void) {
                 work->starStone = effStarStoneEntry(2, zero, neg, zero, 1.0f);
             }
         }
-        BtlUnit_GetPos(mario, &work->posX, &work->posY, &work->posZ);
-        work->posY += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
-        *(Vec*)&work->startX = *(Vec*)&work->posX;
-        *(Vec*)&work->endX = *(Vec*)&work->posX;
-        work->endY += 50.0f;
-        work->endZ += -1.0f;
+        BtlUnit_GetPos(mario, &work->pos.x, &work->pos.y, &work->pos.z);
+        work->pos.y += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
+        work->start = work->pos;
+        work->end = work->pos;
+        work->end.y += 50.0f;
+        work->end.z += -1.0f;
         work->scale = (Vec){0.0f, 0.0f, 0.0f};
         work->scale2 = (Vec){0.0f, 0.0f, 0.0f};
         /* fallthrough */
     case 2:
         work->field_3B8++;
         if (work->field_3B8 <= 0x64) {
-            work->posX = intplGetValue(0, work->field_3B8, 0x64, work->startX, work->endX);
-            work->posY = intplGetValue(0, work->field_3B8, 0x64, work->startY, work->endY);
-            work->posZ = intplGetValue(0, work->field_3B8, 0x64, work->startZ, work->endZ);
+            work->pos.x = intplGetValue(0, work->field_3B8, 0x64, work->start.x, work->end.x);
+            work->pos.y = intplGetValue(0, work->field_3B8, 0x64, work->start.y, work->end.y);
+            work->pos.z = intplGetValue(0, work->field_3B8, 0x64, work->start.z, work->end.z);
             f = intplGetValue(0, work->field_3B8, 0x64, 0.0f, 2.0f);
             work->scale.z = f;
             work->scale.y = f;
@@ -808,9 +800,9 @@ static void main_star(void) {
         else {
             f32 two = 2.0f;
 
-            work->posX = work->endX;
-            work->posY = work->endY;
-            work->posZ = work->endZ;
+            work->pos.x = work->end.x;
+            work->pos.y = work->end.y;
+            work->pos.z = work->end.z;
             work->scale.z = two;
             work->scale.y = two;
             work->scale.x = two;
@@ -819,13 +811,13 @@ static void main_star(void) {
         if (work->field_3B8 >= 0x78) {
             work->field_3B4 = 3;
             work->field_3B8 = 0;
-            *(Vec*)&work->startX = *(Vec*)&work->posX;
-            work->endY = 300.0f;
+            work->start = work->pos;
+            work->end.y = 300.0f;
         }
         break;
     case 3:
         work->field_3B8++;
-        work->posY = intplGetValue(1, work->field_3B8, 0x3C, work->startY, work->endY);
+        work->pos.y = intplGetValue(1, work->field_3B8, 0x3C, work->start.y, work->end.y);
         if (work->field_3B8 >= 0x3C) {
             work->field_3B4 = 5;
             work->field_3B8 = 0;
@@ -840,9 +832,9 @@ static void main_star(void) {
         f32 s = 1.5f;
 
         data = work->starStone->userdata;
-        data->x = work->posX;
-        data->y = work->posY;
-        data->z = work->posZ;
+        data->x = work->pos.x;
+        data->y = work->pos.y;
+        data->z = work->pos.z;
         data->tipRotY = work->scale2.x;
         data->rotY = work->scale2.y;
         data->tipRotZ = work->scale2.z;
@@ -1034,11 +1026,11 @@ static void disp_3D(CameraId cameraId, void* param) {
         point = &work->points[i];
         if (point->type >= 2 && point->type < 8) {
             for (t = 0; t < 4; t++) {
-                PSMTXScale(m, (f32)arr2[t * 2] * point->field_14,
-                           (f32)arr2[t * 2 + 1] * point->field_18, point->field_1C);
+                PSMTXScale(m, (f32)arr2[t * 2] * point->field_14.x,
+                           (f32)arr2[t * 2 + 1] * point->field_14.y, point->field_14.z);
                 PSMTXTransApply(m, m, point->pos.x, point->pos.y, point->pos.z);
-                PSMTXTransApply(m, m, (f32)arr0[t * 2] * point->field_14,
-                                (f32)arr0[t * 2 + 1] * point->field_18,
+                PSMTXTransApply(m, m, (f32)arr0[t * 2] * point->field_14.x,
+                                (f32)arr0[t * 2 + 1] * point->field_14.y,
                                 0.0f);
                 color = (GXColor){0xDE, 0xDE, 0xDE, 0xFF};
                 btlDispTexPlane2(m, 0x42, color, 0);

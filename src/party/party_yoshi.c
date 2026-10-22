@@ -158,7 +158,7 @@ void L_sweatMain(PartyEntry* party) {
     if (party->useStruct == NULL) {
         return;
     }
-    if (((PartyYoshiUse*)party->useStruct)->effect == NULL) {
+    if (party->partyYoshiUse->effect == NULL) {
         return;
     }
 
@@ -167,14 +167,14 @@ void L_sweatMain(PartyEntry* party) {
         f32 z = party->position.z;
         f32 x = party->position.x;
 
-        ((effSweatData*)((PartyYoshiUse*)party->useStruct)->effect->userdata)->position.x = x;
-        ((effSweatData*)((PartyYoshiUse*)party->useStruct)->effect->userdata)->position.y = y;
-        ((effSweatData*)((PartyYoshiUse*)party->useStruct)->effect->userdata)->position.z = z;
+        ((effSweatData*)party->partyYoshiUse->effect->userdata)->position.x = x;
+        ((effSweatData*)party->partyYoshiUse->effect->userdata)->position.y = y;
+        ((effSweatData*)party->partyYoshiUse->effect->userdata)->position.z = z;
     }
 
-    if (--((PartyYoshiUse*)party->useStruct)->timer <= 0) {
-        effDelete(((PartyYoshiUse*)party->useStruct)->effect);
-        ((PartyYoshiUse*)party->useStruct)->effect = NULL;
+    if (--party->partyYoshiUse->timer <= 0) {
+        effDelete(party->partyYoshiUse->effect);
+        party->partyYoshiUse->effect = NULL;
     }
 }
 
@@ -211,7 +211,7 @@ void marioRideYoshi(void) {
     if (party->useStruct == NULL) {
         party->useStruct = __memAlloc(HEAP_DEFAULT, 0x18);
         memset(party->useStruct, 0, 0x18);
-        ((PartyYoshiUse*)party->useStruct)->effect = NULL;
+        party->partyYoshiUse->effect = NULL;
     }
 
     {
@@ -497,7 +497,7 @@ void yoshi_use(PartyEntry* party) {
         party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
         party->useStruct = __memAlloc(HEAP_DEFAULT, 0x18);
         memset(party->useStruct, 0, 0x18);
-        ((PartyYoshiUse*)party->useStruct)->effect = NULL;
+        party->partyYoshiUse->effect = NULL;
         if (party->flags & PARTY_FLAG_IS_EVT_USE) {
             evt_yoshi_spd = 1.0f;
         } else {
@@ -515,7 +515,7 @@ void yoshi_use(PartyEntry* party) {
         M_F(0x2A0) = 0.0f;
         mario->field_0x2B0 = 0.0f;
         M_F(0x2B4) = 0.0f;
-        ((PartyYoshiUse*)party->useStruct)->direction = 0;
+        party->partyYoshiUse->direction = 0;
     }
 
     switch (party->useMotionId) {
@@ -684,7 +684,7 @@ void yoshi_use(PartyEntry* party) {
             }
             use = party->useStruct;
             use->counter++;
-            if (((PartyYoshiUse*)party->useStruct)->counter % 10 == 0) {
+            if (party->partyYoshiUse->counter % 10 == 0) {
                 psndSFXOn_3D((const char*)0x940, &party->position);
             }
         } else {
@@ -721,7 +721,7 @@ void yoshi_use(PartyEntry* party) {
                     partyChgPose(party, YOSHI_R_2);
                     use = party->useStruct;
                     use->counter++;
-                    if (((PartyYoshiUse*)party->useStruct)->counter % 10 == 0) {
+                    if (party->partyYoshiUse->counter % 10 == 0) {
                         psndSFXOn_3D((const char*)0x940, &party->position);
                     }
                 } else {
@@ -730,7 +730,7 @@ void yoshi_use(PartyEntry* party) {
                     }
                     partyChgPose(party, YOSHI_S_2);
                     party->speed = 0.0f;
-                    ((PartyYoshiUse*)party->useStruct)->counter = 0;
+                    party->partyYoshiUse->counter = 0;
                 }
                 inertia(party);
                 party->position.x = mario->position.x;
@@ -858,7 +858,7 @@ void yoshi_use(PartyEntry* party) {
     default:
         break;
     case 0x14:
-        ((PartyYoshiUse*)party->useStruct)->direction =
+        party->partyYoshiUse->direction =
             (mario->dispDir >= 90.0f && mario->dispDir <= 270.0f) ? 1 : -1;
         mario->hitobjJumpFrom = mario->hitobjStandOn;
         mario->hitobjStandOn = NULL;
@@ -871,17 +871,17 @@ void yoshi_use(PartyEntry* party) {
         if (party->speed <= 0.0f) {
             party->speed = 0.0f;
         }
-        ((PartyYoshiUse*)party->useStruct)->anim = 1.0f;
-        M_F(0x2A0) = (f32)sin(3.1415927f * ((PartyYoshiUse*)party->useStruct)->anim / 180.0f);
+        party->partyYoshiUse->anim = 1.0f;
+        M_F(0x2A0) = (f32)sin(3.1415927f * party->partyYoshiUse->anim / 180.0f);
         mario->field_0x2A4 = 0.0f;
         mario->wCamVal1 = party->position.y;
         party->yoshiPsndSFXId = psndSFXOn_3D((const char*)0x941, &party->position);
         /* fallthrough */
     case 0x15:
-        f30 = (f32)sin(3.1415927f * ((PartyYoshiUse*)party->useStruct)->anim / 180.0f);
+        f30 = (f32)sin(3.1415927f * party->partyYoshiUse->anim / 180.0f);
         {
             f32 mult;
-            if (((PartyYoshiUse*)party->useStruct)->anim <= 180.0f) {
+            if (party->partyYoshiUse->anim <= 180.0f) {
                 mult = 0.5f;
             } else {
                 mult = 0.37f;
@@ -889,9 +889,9 @@ void yoshi_use(PartyEntry* party) {
             M_F(0x2A0) = f30 * mult;
         }
         mario->field_0x2A4 = mario->field_0x2A4 + M_F(0x2A0);
-        ((PartyYoshiUse*)party->useStruct)->anim += 7.0f;
-        if (((PartyYoshiUse*)party->useStruct)->anim >= 360.0f) {
-            ((PartyYoshiUse*)party->useStruct)->anim = 360.0f;
+        party->partyYoshiUse->anim += 7.0f;
+        if (party->partyYoshiUse->anim >= 360.0f) {
+            party->partyYoshiUse->anim = 360.0f;
             party->useMotionId = 0x16;
         }
         /* fallthrough */
@@ -900,11 +900,11 @@ void yoshi_use(PartyEntry* party) {
             f32 px = party->position.x;
             f32 py = party->position.y + 18.0f;
             f32 pz = party->position.z;
-            if (((PartyYoshiUse*)party->useStruct)->effect == NULL) {
+            if (party->partyYoshiUse->effect == NULL) {
                 f32 c = (party->field_110 == 180.0f) ? -1.0f : 1.0f;
-                ((PartyYoshiUse*)party->useStruct)->effect =
+                party->partyYoshiUse->effect =
                     effSweatN64Entry(1, px, py, pz, 1.0f, 70.0f * c, 0x16);
-                ((PartyYoshiUse*)party->useStruct)->timer = 0x14;
+                party->partyYoshiUse->timer = 0x14;
             }
         }
         hit = partySearchGround(party, 11.0f, 11.0f);
@@ -972,7 +972,7 @@ void yoshi_use(PartyEntry* party) {
                 }
                 break;
             }
-            ((PartyYoshiUse*)party->useStruct)->direction = 0;
+            party->partyYoshiUse->direction = 0;
         }
         mario->field_EC.x = party->position.x;
         mario->field_EC.z = party->position.z;
@@ -1176,7 +1176,7 @@ void yoshi_use(PartyEntry* party) {
             marioChgPose("M_Y_2");
             mario->field_0x2B0 = 0.0f;
             M_F(0x2B4) = 0.0f;
-            ((PartyYoshiUse*)party->useStruct)->direction = 0;
+            party->partyYoshiUse->direction = 0;
             if (party->flags & PARTY_FLAG_IS_EVT_USE) {
                 evt_yoshi_spd = 0.0f;
                 evt_yoshi_frm = -1;
@@ -1325,7 +1325,7 @@ void inertia(PartyEntry* party) {
         f32 t = f4 * f4 + f5 * f5;
 
         if (t <= float_256) {
-            s32 v = ((PartyYoshiUse*)party->useStruct)->direction;
+            s32 v = party->partyYoshiUse->direction;
             f4 = f3 * p01 + f4;
             if (v > 0 && f4 <= 0.0f) {
                 f4 = 0.0f;

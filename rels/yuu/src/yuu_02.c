@@ -153,7 +153,7 @@ USER_FUNC(unk_yuu_00001160) {
 }
 
 void monte_single_disp(CameraId cameraId, void* param) {
-    MonteEntry* entries = (MonteEntry*)param;
+    MonteEntry* entries = param;
     MarioWork* mario;
     s32 i;
 
@@ -209,7 +209,7 @@ USER_FUNC(monte_single_init) {
             wasAllocated = 1;
         }
         entryCount = 1;
-        monte_p = (MonteEntry*)_mapAlloc(entryCount * sizeof(MonteEntry));
+        monte_p = _mapAlloc(entryCount * sizeof(MonteEntry));
         memset(monte_p, 0, entryCount * sizeof(MonteEntry));
         monte_p->count = entryCount;
         monte_p->work = work;
@@ -241,7 +241,7 @@ static s32 get_monte_check(Vec* a, Vec* b) {
 }
 
 static void monte_disp(CameraId cameraId, void* param) {
-    MonteEntry* entries = (MonteEntry*)param;
+    MonteEntry* entries = param;
     s32 i;
 
     if (entries != NULL) {
@@ -260,7 +260,7 @@ static inline f32 monte_rand(f32 min, f32 max) {
 USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated = 0;
-    YuuMinigame3Data* data = (YuuMinigame3Data*)work->data;
+    YuuMinigame3Data* data = work->data;
     s32 total;
     s32 i;
     s32 tableIdx;
@@ -279,7 +279,7 @@ USER_FUNC(fall_rtn) {
             i++;
         }
         allocSize = total * 0x44;
-        monte_entries = (MonteEntry*)_mapAlloc(allocSize);
+        monte_entries = _mapAlloc(allocSize);
         memset(monte_entries, 0, allocSize);
         monte_entries->count = total;
         monte_entries->work = work;
@@ -433,7 +433,7 @@ USER_FUNC(fall_rtn) {
 USER_FUNC(re_fall_rtn) {
     if (monte_entries != NULL) {
         YuuMinigame3Data* data =
-            (YuuMinigame3Data*)((YuuminigameWork*)monte_entries->work)->data;
+            monte_entries->work->data;
         if (data->viewEvent != NULL) {
             evtDeleteID(data->viewEvent->eventId);
             data->viewEvent = NULL;
@@ -448,7 +448,7 @@ USER_FUNC(re_fall_rtn) {
 USER_FUNC(yuuminigame3_set_phase) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
-    YuuMinigame3Data* data = (YuuMinigame3Data*)work->data;
+    YuuMinigame3Data* data = work->data;
 
     data->phase = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
@@ -466,7 +466,7 @@ USER_FUNC(yuuminigame3_roll_fix_off) {
 USER_FUNC(yuuminigame3_opening_on_off) {
     s32* args = event->args;
     YuuMinigame3Data* data =
-        (YuuMinigame3Data*)((YuuminigameWork*)evtGetValue(event, args[0]))->data;
+        ((YuuminigameWork*)evtGetValue(event, args[0]))->data;
 
     if (evtGetValue(event, args[1]) != 0) {
         data->flags |= 1;
@@ -479,7 +479,7 @@ USER_FUNC(yuuminigame3_opening_on_off) {
 USER_FUNC(yuuminigame3_opening_chk) {
     s32* args = event->args;
     YuuMinigame3Data* data =
-        (YuuMinigame3Data*)((YuuminigameWork*)evtGetValue(event, args[0]))->data;
+        ((YuuminigameWork*)evtGetValue(event, args[0]))->data;
 
     if (data->flags & 1) {
         evtSetValue(event, args[1], 1);
@@ -503,7 +503,7 @@ void yuuminigame_init_3roll(EventEntry* event, BOOL isFirstCall) {
 
 void yuuminigame_main_3roll(EventEntry* event, BOOL isFirstCall) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
-    YuuMinigame3Data* data = (YuuMinigame3Data*)work->data;
+    YuuMinigame3Data* data = work->data;
     MarioWork* mario = marioGetPtr();
 
     switch (data->phase) {

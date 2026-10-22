@@ -168,7 +168,7 @@ void puniSinCosRet(u32 angle, f32* sinOut, f32* cosOut, f32 scaleSin, f32 scaleC
 }
 
 void puniInit(void) {
-    PuniDrvWork* wp = (PuniDrvWork*)_mapAlloc(sizeof(PuniDrvWork));
+    PuniDrvWork* wp = _mapAlloc(sizeof(PuniDrvWork));
 
     work = wp;
     wp->poseNum = 0;
@@ -397,10 +397,13 @@ void puniMain(void) {
 }
 
 static int compare(const void* a, const void* b) {
-    if (((const PuniSortEntry*)a)->key > ((const PuniSortEntry*)b)->key) {
+    const PuniSortEntry* ea = a;
+    const PuniSortEntry* eb = b;
+
+    if (ea->key > eb->key) {
         return 1;
     }
-    if (((const PuniSortEntry*)a)->key < ((const PuniSortEntry*)b)->key) {
+    if (ea->key < eb->key) {
         return -1;
     }
     return 0;

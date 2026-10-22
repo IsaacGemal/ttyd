@@ -349,7 +349,7 @@ s32 battleAcResult_RepeatedlyLv(BattleWork* work) {
 }
 
 void battleAcDisp_RepeatedlyLv(CameraId camId, void* param) {
-    BattleWork* work = (BattleWork*)param;
+    BattleWork* work = param;
     BattleActions* ac = &work->actionCommands;
     BattleACDispParams* ag = &ac->dispParams;
 
@@ -414,7 +414,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     numIcons = 1;
     offB = 0;
     offA = 0;
-    (*(s32*)&disp->field_0x0[0])++;
+    disp->field_0x0++;
 
     iconA = BattleACGetButtonIcon(dec->curMask, 1);
     {
@@ -445,7 +445,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         break;
     }
 
-    div7 = *(s32*)&disp->field_0x0[0] / 7;
+    div7 = disp->field_0x0 / 7;
     if (numIcons == 1) {
         if ((div7 & 1) == 1) {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};

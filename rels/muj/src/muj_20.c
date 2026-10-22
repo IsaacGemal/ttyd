@@ -586,7 +586,7 @@ USER_FUNC(elmos1000tai_init) {
         f32 c;
         f32 rf;
         entry = &work->entries[i];
-        *(s32*)entry->pose |= 4;
+        entry->pose->flags |= 4;
         entry->color.a = 0;
         entry->facingAngle = c90;
         entry->field_0x70 = i;
@@ -1931,9 +1931,9 @@ static void pressStartGX(LogoWork* work, s32 alpha, f32 x, f32 y) {
     GXTexObj startText, gradient;
     Mtx v17, v16;
 
-    TEXGetGXTexObjFromPalette((TEXPalette*)*work->tpl->data, &startText, 8);
+    TEXGetGXTexObjFromPalette(*work->tpl->data, &startText, 8);
     GXLoadTexObj(&startText, GX_TEXMAP0);
-    TEXGetGXTexObjFromPalette((TEXPalette*)*work->tpl->data, &gradient, 9);
+    TEXGetGXTexObjFromPalette(*work->tpl->data, &gradient, 9);
     GXLoadTexObj(&gradient, GX_TEXMAP1);
     GXSetNumTevStages(2);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -1996,7 +1996,7 @@ static void draw(CameraId cameraId, void* param) {
     GXSetProjection(camGetPtr(CAMERA_2D)->projection, camera->projType);
     camBackup = *camGetCurPtr();
     *camGetCurPtr() = *camGetPtr(CAMERA_2D);
-    winTexInit((TEXPalette*)*work->tpl->data);
+    winTexInit(*work->tpl->data);
     unk_80177008(5, (Vec){ 0.0f, 100.0f + work->offsetY, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f },
                  (GXColor){ 0xFF, 0xFF, 0xFF, work->alpha });
     *camGetCurPtr() = camBackup;

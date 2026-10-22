@@ -334,7 +334,8 @@ s32 battleAcResult_SignalTiming(BattleWork* work) {
     return work->actionCommands.result;
 }
 void battleAcDisp_SignalTiming(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleWork* work = param;
+    BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
 
     switch (ac->mAcState) {

@@ -1044,9 +1044,9 @@ USER_FUNC(make_gonbaba_projection_evt) {
     GonbabaProj* work;
 
     if (isFirstCall) {
-        *(void**)&event->userdata[0] = _mapAlloc(0x24);
+        event->userdata[0] = (s32)_mapAlloc(0x24);
     }
-    work = (GonbabaProj*)*(void**)&event->userdata[0];
+    work = (GonbabaProj*)event->userdata[0];
     work->texBuffer = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, GX_TF_RGBA8, GX_FALSE, 0), 3);
     GXInitTexObj(&work->texObj, work->texBuffer->address, 0x260, 0x1E0, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GXInitTexObjLOD(&work->texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);

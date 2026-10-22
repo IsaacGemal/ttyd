@@ -18,7 +18,7 @@ typedef struct MonteEntry {
     u8 hit;                        // 0x04
     u8 pad_05[0x08 - 0x05];        // 0x05
     MonteEntryField8 field_0x8;    // 0x08
-    void* work;                    // 0x40
+    struct YuuminigameWork* work;  // 0x40
 } MonteEntry;
 
 typedef struct MonteTableEntry {

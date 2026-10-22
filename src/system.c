@@ -521,7 +521,7 @@ void qqsort(void* base, u32 n, u32 size, int (*compare)(const void*, const void*
         return;
     }
 
-    src = (u8*)base;
+    src = base;
     pp = table;
     j = 0;
     while (j++ < n) {
@@ -531,7 +531,7 @@ void qqsort(void* base, u32 n, u32 size, int (*compare)(const void*, const void*
 
     fsort(table, n);
 
-    dst = (u8*)base;
+    dst = base;
     idx = table;
     i = 0;
     while (i++ < n) {
@@ -542,7 +542,7 @@ void qqsort(void* base, u32 n, u32 size, int (*compare)(const void*, const void*
                 memcpy(buf, cur = dst, size);
                 do {
                     memcpy(cur, *slot, size);
-                    cur = (u8*)*slot;
+                    cur = *slot;
                     *slot = NULL;
                     slot = &table[(u32)(cur - (u8*)base) / size];
                 } while ((p = *slot) != dst);

@@ -290,7 +290,7 @@ typedef struct FieldBattleData {
     u8 sandersBombTrigger;       // 0x54D
     u8 field_54E[0x550 - 0x54E]; // 0x54E
     FirstStrikeInfo firstStrike; // 0x550
-    u8 field_570[0x574 - 0x570]; // 0x570
+    s32 field_570;               // 0x570
     s32 field_574;               // 0x574
     s32 field_578;               // 0x578
     s32 field_57C;               // 0x57C

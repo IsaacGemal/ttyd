@@ -597,7 +597,7 @@ void ryushi_disp(CameraId cameraId, void* param) {
                 f32 s;
                 d = d - (f32)(k * 360);
                 idx = (s32)d;
-                s = *(f32*)&yuusintbl[idx];
+                s = yuusintbl[idx];
                 swayAmplitude = 3.0f;
                 PSMTXTrans(trans, swayAmplitude * s + entry->x, entry->y, entry->z);
             }

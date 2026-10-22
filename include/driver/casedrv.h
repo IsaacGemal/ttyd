@@ -25,7 +25,7 @@ typedef struct CaseEntry {
 	u32 swFlag; //0x4C
 	s32 (*activeFunc)(struct CaseEntry* entry); //0x50, activeConditionId 17: caseMain sets flags 2 when it returns nonzero
 	s32 lwData[16]; //0x54
-	u8 field_0x94[4]; //0x94
+	s32 field_0x94; //0x94
 	void* evtCode; //0x98, TODO re-type
 	s32 priority; //0x9C
 } CaseEntry;

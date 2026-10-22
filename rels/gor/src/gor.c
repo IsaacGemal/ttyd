@@ -302,7 +302,7 @@ s32 unk_gor_0000041c(EventEntry* event, BOOL isFirstCall) {
 
     unk_gor_bss00000000[0] = buf;
     memset(buf, 0, totalLen);
-    sprintf((char*)unk_gor_bss00000000[0], "%s%s%s", prefix, middle, suffix);
+    sprintf(unk_gor_bss00000000[0], "%s%s%s", prefix, middle, suffix);
     evtSetValue(event, args[3], (s32)unk_gor_bss00000000[0]);
     return EVT_RETURN_DONE;
 }

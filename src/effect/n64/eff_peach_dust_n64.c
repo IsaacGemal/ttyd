@@ -212,7 +212,7 @@ void effPeachDustDisp(CameraId camId, void* param) {
 	s32 i;
 	s32 colorType;
 	s32 colorIndex;
-	effVtxArray* vtx;
+	u32* vtx;
 	f32 scale;
 
 	camera = camGetPtr(camId);
@@ -268,28 +268,28 @@ void effPeachDustDisp(CameraId camId, void* param) {
 		GXSetTevColor(1, (GXColor){ r, g, b, 0xFF });
 		switch (colorType & 7) {
 		case 0:
-			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[3];
+			vtx = &size8x8_tex22x22_vtx[3 * 14];
 			break;
 		case 1:
-			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[4];
+			vtx = &size8x8_tex22x22_vtx[4 * 14];
 			break;
 		case 2:
-			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[5];
+			vtx = &size8x8_tex22x22_vtx[5 * 14];
 			break;
 		case 3:
-			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[6];
+			vtx = &size8x8_tex22x22_vtx[6 * 14];
 			break;
 		case 4:
-			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[7];
+			vtx = &size8x8_tex22x22_vtx[7 * 14];
 			break;
 		case 5:
-			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[0];
+			vtx = &size8x8_tex22x22_vtx[0 * 14];
 			break;
 		case 6:
-			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[1];
+			vtx = &size8x8_tex22x22_vtx[1 * 14];
 			break;
 		case 7:
-			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[2];
+			vtx = &size8x8_tex22x22_vtx[2 * 14];
 			break;
 		}
 		effSetVtxDescN64(vtx);

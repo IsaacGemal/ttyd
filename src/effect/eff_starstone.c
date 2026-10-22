@@ -265,7 +265,7 @@ EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale) {
 		color.r = 255.0f * edge_color[data->starType].x;
 		color.g = 255.0f * edge_color[data->starType].y;
 		color.b = 255.0f * edge_color[data->starType].z;
-		data->matColor = *(u32*)&color;
+		data->matColor = color;
 	}
 
 	if (idx >= 7) {
@@ -502,7 +502,7 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	GXSetArray(GX_VA_CLR0, color_tbl[data->starType], 4);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
-	GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&data->matColor);
+	GXSetChanMatColor(GX_COLOR0A0, data->matColor);
 	GXSetNumTexGens(0);
 	GXSetNumTevStages(2);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -646,7 +646,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetArray(GX_VA_CLR0, color_tbl[data->starType], 4);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
-	GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&data->matColor);
+	GXSetChanMatColor(GX_COLOR0A0, data->matColor);
 	GXSetNumTexGens(0);
 	GXSetNumTevStages(2);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);

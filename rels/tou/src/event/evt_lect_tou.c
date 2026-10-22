@@ -845,9 +845,9 @@ static USER_FUNC(effitemgetchange_cam) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
     s32 value = evtGetValue(event, args[1]);
-    EffectEntry* eff = effNameToPtr((const char*)name);
+    effItemGetData* data = effNameToPtr((const char*)name)->userdata;
 
-    ((effItemGetData*)eff->userdata)->camId = value;
+    data->camId = value;
     return EVT_RETURN_DONE;
 }
 static USER_FUNC(effitemgetchange_cam_ptr) {
@@ -858,15 +858,15 @@ static USER_FUNC(effitemgetchange_cam_ptr) {
     return EVT_RETURN_DONE;
 }
 static USER_FUNC(effitemget_open) {
-    EffectEntry* eff = effNameToPtr((const char*)evtGetValue(event, event->args[0]));
+    effItemGetData* data = effNameToPtr((const char*)evtGetValue(event, event->args[0]))->userdata;
 
-    ((effItemGetData*)eff->userdata)->scaleMode = 1;
+    data->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 static USER_FUNC(effitemget_open_ptr) {
-    EffectEntry* eff = (EffectEntry*)evtGetValue(event, event->args[0]);
+    effItemGetData* data = ((EffectEntry*)evtGetValue(event, event->args[0]))->userdata;
 
-    ((effItemGetData*)eff->userdata)->scaleMode = 1;
+    data->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 static USER_FUNC(effitemget_busaiku) {
@@ -949,7 +949,7 @@ static USER_FUNC(lect_npc_balloon_on_off) {
         EffMarioBalloonData* data;
 
         eff = effMarioBalloonEntry(1, npc);
-        data = (EffMarioBalloonData*)eff->userdata;
+        data = eff->userdata;
         data->cameraId = 7;
     } else {
         effDelete(eff);
@@ -960,9 +960,9 @@ static USER_FUNC(efffukidashichange_cam) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
     s32 value = evtGetValue(event, args[1]);
-    EffectEntry* eff = effNameToPtr((const char*)name);
+    effFukidashiData* data = effNameToPtr((const char*)name)->userdata;
 
-    ((effFukidashiData*)eff->userdata)->camId = value;
+    data->camId = value;
     return EVT_RETURN_DONE;
 }
 static f32 lect_party_ido_sub(f32 a, f32 b, f32 c, f32 d) {

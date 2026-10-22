@@ -151,7 +151,7 @@ void effWangFlushDisp(CameraId camId, void* param) {
 	PSMTXScale(mtxA, float_0p03125_80420118, float_0p03125_80420118, float_0_8042011c);
 	GXLoadTexMtxImm(mtxA, 0x1E, 1);
 	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);
+	effSetVtxDescN64(size16x16_tex64x64_vtx);
 
 	if (type == 0) {
 		PSMTXScale(mtxD, data->alphaScale, data->alphaScale, data->alphaScale);

@@ -82,11 +82,11 @@ static void monte_disp(CameraId cameraId, void* param);
 static s32 get_monte_check(Vec* a, Vec* b);
 static USER_FUNC(setmertn);
 static u32 dataadr[8];
-static u32 monte_p[1];
+static struct Monte* monte_p[1];
 NpcEntry* npc[1];
 static EffectEntry* eff[1];
 static u32 xlw[16];
-u32 exchange_msgp[1];
+char* exchange_msgp[1];
 u32 cherryEnt[46];
 s32 majorin_nusumigiki[331];
 s32 kuzi_bomb_talk[16];
@@ -2031,17 +2031,17 @@ USER_FUNC(exchange_ryokin_medal) {
 }
 
 USER_FUNC(evt_exchange_msg_free) {
-    if (exchange_msgp[0] == 0) {
+    if (exchange_msgp[0] == NULL) {
         return EVT_RETURN_DONE;
     }
-    _mapFree((void*)exchange_msgp[0]);
-    exchange_msgp[0] = 0;
+    _mapFree(exchange_msgp[0]);
+    exchange_msgp[0] = NULL;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_exchange_msg_alloc) {
-    exchange_msgp[0] = (u32)_mapAlloc(0x100);
-    memset((void*)exchange_msgp[0], 0, 0x100);
+    exchange_msgp[0] = _mapAlloc(0x100);
+    memset(exchange_msgp[0], 0, 0x100);
     return EVT_RETURN_DONE;
 }
 
@@ -2069,10 +2069,10 @@ USER_FUNC(evt_exchange_msg_set) {
     } else if (value >= 0x3d) {
         rank = 1;
     }
-    sprintf((char*)exchange_msgp[0], msg, a, exchange_ryokin_medal_tbl[rank][0][1], exchange_ryokin_medal_tbl[rank][0][0],
+    sprintf(exchange_msgp[0], msg, a, exchange_ryokin_medal_tbl[rank][0][1], exchange_ryokin_medal_tbl[rank][0][0],
             exchange_ryokin_medal_tbl[rank][1][1], exchange_ryokin_medal_tbl[rank][1][0], exchange_ryokin_medal_tbl[rank][2][1],
             exchange_ryokin_medal_tbl[rank][2][0]);
-    evtSetValue(event, args[2], exchange_msgp[0]);
+    evtSetValue(event, args[2], (s32)exchange_msgp[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -2095,18 +2095,18 @@ USER_FUNC(minigameselect_msg_set) {
     src = 0;
 
     while (msg[src] != '\n') {
-        ((char*)exchange_msgp[0])[pos++] = msg[src++];
+        exchange_msgp[0][pos++] = msg[src++];
     }
-    ((char*)exchange_msgp[0])[pos++] = msg[src++];
+    exchange_msgp[0][pos++] = msg[src++];
 
     count = 0;
     for (i = 0; i < 4; i++) {
         if (flags[i] != 0) {
             while (msg[src] != '\n') {
-                ((char*)exchange_msgp[0])[pos++] = msg[src++];
+                exchange_msgp[0][pos++] = msg[src++];
             }
             count++;
-            ((char*)exchange_msgp[0])[pos++] = msg[src++];
+            exchange_msgp[0][pos++] = msg[src++];
         } else {
             while (msg[src] != '\n') {
                 src++;
@@ -2116,13 +2116,13 @@ USER_FUNC(minigameselect_msg_set) {
     }
 
     while (msg[src] != 0) {
-        ((char*)exchange_msgp[0])[pos++] = msg[src++];
+        exchange_msgp[0][pos++] = msg[src++];
     }
 #ifdef MUST_MATCH
     // The terminator copy keeps the loop's (dead) increments: the plain store is 9 lines off.
-    ((char*)exchange_msgp[0])[pos++] = msg[src++];
+    exchange_msgp[0][pos++] = msg[src++];
 #else
-    ((char*)exchange_msgp[0])[pos] = msg[src];
+    exchange_msgp[0][pos] = msg[src];
 #endif
 
     i = 0;
@@ -2133,10 +2133,10 @@ USER_FUNC(minigameselect_msg_set) {
         i--;
     }
     num = 0x50 - (4 - count) * 12;
-    ((char*)exchange_msgp[0])[i + 1] = num / 10 + '0';
-    ((char*)exchange_msgp[0])[i + 2] = num % 10 + '0';
+    ((s8*)exchange_msgp[0])[i + 1] = num / 10 + '0';
+    ((s8*)exchange_msgp[0])[i + 2] = num % 10 + '0';
 
-    evtSetValue(event, args[1], exchange_msgp[0]);
+    evtSetValue(event, args[1], (s32)exchange_msgp[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -2256,7 +2256,7 @@ typedef struct Monte {
 } Monte;
 
 static void monte_disp(CameraId cameraId, void* param) {
-    Monte* p = (Monte*)param;
+    Monte* p = param;
     s32 i;
 
     for (i = 0; i < p->field_0x4C->prize; i++) {
@@ -2280,16 +2280,16 @@ static USER_FUNC(fall_rtn) {
 
     if (isFirstCall) {
         SlotData* data = ((GoryuugijoWork*)event->lwData[0])->data;
-        monte_p[0] = (u32)_mapAlloc(data->prize * 0x50);
-        memset((void*)monte_p[0], 0, data->prize * 0x50);
-        ((Monte*)monte_p[0])->field_0x4C = data;
+        monte_p[0] = _mapAlloc(data->prize * 0x50);
+        memset(monte_p[0], 0, data->prize * 0x50);
+        monte_p[0]->field_0x4C = data;
 
-        for (i = 0; i < ((Monte*)monte_p[0])->field_0x4C->prize; i++) {
-            MonteField8* e = &((Monte*)monte_p[0])[i].field_0x8;
+        for (i = 0; i < monte_p[0]->field_0x4C->prize; i++) {
+            MonteField8* e = &monte_p[0][i].field_0x8;
             f32 spd;
 
             Vec pos = {-113.0f, 70.0f, 0.0f};
-            pos.z = montemedalzpos[((Monte*)monte_p[0])->field_0x4C->now];
+            pos.z = montemedalzpos[monte_p[0]->field_0x4C->now];
             e->field_0x4 = pos;
 
             f23 = (2.0f * (f32)(i & 1) - 1.0f) * ((f32)(rand() % 101) / 10.0f);
@@ -2304,15 +2304,15 @@ static USER_FUNC(fall_rtn) {
                 Vec vel = {0.0f, 10.0f, 0.0f};
                 vel.x = moveX;
                 vel.z = moveZ;
-                ((Monte*)monte_p[0])[i].field_0x40 = vel;
+                monte_p[0][i].field_0x40 = vel;
             }
 
-            ((Monte*)monte_p[0])[i].field_0x2 = ((rand() % 700) + 100) * 60 / 1000;
+            monte_p[0][i].field_0x2 = ((rand() % 700) + 100) * 60 / 1000;
         }
     }
 
-    for (j = 0; j < ((Monte*)monte_p[0])->field_0x4C->prize; j++) {
-        Monte* e = (Monte*)monte_p[0] + j;
+    for (j = 0; j < monte_p[0]->field_0x4C->prize; j++) {
+        Monte* e = monte_p[0] + j;
 #ifdef MUST_MATCH
         // match-only: folding each literal through a comma makes MWCC materialise its address
         // directly (no extra `mr`), matching the target.
@@ -2391,14 +2391,14 @@ static USER_FUNC(fall_rtn) {
         }
     }
 
-    if (alive < ((Monte*)monte_p[0])->field_0x4C->prize) {
-        dispEntry(4, 0.0f, 1, monte_disp, (void*)monte_p[0]);
+    if (alive < monte_p[0]->field_0x4C->prize) {
+        dispEntry(4, 0.0f, 1, monte_disp, monte_p[0]);
         return 0;
     }
 
-    ((Monte*)monte_p[0])->field_0x4C->prize = 0;
-    ((Monte*)monte_p[0])->field_0x4C->fallEvt = NULL;
-    _mapFree((void*)monte_p[0]);
+    monte_p[0]->field_0x4C->prize = 0;
+    monte_p[0]->field_0x4C->fallEvt = NULL;
+    _mapFree(monte_p[0]);
     return 2;
 }
 
@@ -5493,9 +5493,9 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
     case 11:
     {
         if (data->fallEvt != NULL) {
-            Monte* p = (Monte*)monte_p[0];
+            Monte* p = monte_p[0];
             p->field_0x4C->prize = 0;
-            _mapFree((void*)monte_p[0]);
+            _mapFree(monte_p[0]);
             evtDeleteID(data->fallEvt->eventId);
             data->fallEvt = NULL;
         }
@@ -5590,8 +5590,8 @@ USER_FUNC(teresa_badge_item_list_init) {
 }
 
 USER_FUNC(desk_talk_init_func) {
-    npc[0] = (NpcEntry*)_mapAlloc(0x340);
-    eff[0] = (EffectEntry*)_mapAlloc(0x28);
+    npc[0] = _mapAlloc(0x340);
+    eff[0] = _mapAlloc(0x28);
     return EVT_RETURN_DONE;
 }
 

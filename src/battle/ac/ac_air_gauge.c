@@ -293,7 +293,8 @@ s32 battleAcResult_AirGauge(BattleWork* work) {
 // Deriving both the state and disp parameters from one BattleActions* makes MWCC materialise the
 // disp base: `addi r31, r4, 0x1f20`, then 0x14(r31).
 void battleAcDisp_AirGauge(CameraId camId, void* param) {
-	BattleActions* ac = &((BattleWork*)param)->actionCommands;
+	BattleWork* work = param;
+	BattleActions* ac = &work->actionCommands;
 	s32 state = ac->mAcState;
 	BattleACDispParams* ag = &ac->dispParams;
 

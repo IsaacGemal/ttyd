@@ -71,7 +71,6 @@ typedef struct FileType9 {
 	u32 field_0x64;
 } FileType9;
 
-#define POSE(data) ((AnimationPoseData*)(data))
 #define FILE_ENTRY_COUNT 0x400
 
 void fileInit(void) {
@@ -138,54 +137,63 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 	void* data = *entry->data;
 
 	switch (entry->type) {
-		case FILE_TYPE_1:
-			if ((u32)POSE(data)->shapes >= (u32)data) {
-				FILE_UNRELOC(POSE(data)->shapes, data);
-				FILE_UNRELOC(POSE(data)->drawCalls, data);
-				FILE_UNRELOC(POSE(data)->bufferVtxPos, data);
-				FILE_UNRELOC(POSE(data)->posIndex, data);
-				FILE_UNRELOC(POSE(data)->nrmVtxBuffer, data);
-				FILE_UNRELOC(POSE(data)->nrmIndex, data);
-				FILE_UNRELOC(POSE(data)->clr0VtxBuffer, data);
-				FILE_UNRELOC(POSE(data)->clr0Index, data);
-				FILE_UNRELOC(POSE(data)->texIndex[0], data);
-				FILE_UNRELOC(POSE(data)->texIndex[1], data);
-				FILE_UNRELOC(POSE(data)->texIndex[2], data);
-				FILE_UNRELOC(POSE(data)->texIndex[3], data);
-				FILE_UNRELOC(POSE(data)->texIndex[4], data);
-				FILE_UNRELOC(POSE(data)->texIndex[5], data);
-				FILE_UNRELOC(POSE(data)->texIndex[6], data);
-				FILE_UNRELOC(POSE(data)->texIndex[7], data);
-				FILE_UNRELOC(POSE(data)->texVtxBuffer, data);
-				FILE_UNRELOC(POSE(data)->mBufferTexAnim, data);
-				FILE_UNRELOC(POSE(data)->texData, data);
-				FILE_UNRELOC(POSE(data)->texBinds, data);
-				FILE_UNRELOC(POSE(data)->draws, data);
-				FILE_UNRELOC(POSE(data)->mBufferVisibility, data);
-				FILE_UNRELOC(POSE(data)->mBufferNode, data);
-				FILE_UNRELOC(POSE(data)->groups, data);
-				FILE_UNRELOC(POSE(data)->mpAnims, data);
-			}
-			break;
+		case FILE_TYPE_1: {
+			AnimationPoseData* pose = data;
 
-		case FILE_TYPE_2:
-			if ((u32)((AnimData*)data)->clip >= (u32)data) {
-				FILE_UNRELOC(((AnimData*)data)->clip, data);
-				FILE_UNRELOC(((AnimData*)data)->frames, data);
-				FILE_UNRELOC(((AnimData*)data)->posData, data);
-				FILE_UNRELOC(((AnimData*)data)->nrmData, data);
-				FILE_UNRELOC(((AnimData*)data)->texData, data);
-				FILE_UNRELOC(((AnimData*)data)->visData, data);
-				FILE_UNRELOC(((AnimData*)data)->nodeData, data);
-				FILE_UNRELOC(((AnimData*)data)->frames2, data);
+			if ((u32)pose->shapes >= (u32)data) {
+				FILE_UNRELOC(pose->shapes, data);
+				FILE_UNRELOC(pose->drawCalls, data);
+				FILE_UNRELOC(pose->bufferVtxPos, data);
+				FILE_UNRELOC(pose->posIndex, data);
+				FILE_UNRELOC(pose->nrmVtxBuffer, data);
+				FILE_UNRELOC(pose->nrmIndex, data);
+				FILE_UNRELOC(pose->clr0VtxBuffer, data);
+				FILE_UNRELOC(pose->clr0Index, data);
+				FILE_UNRELOC(pose->texIndex[0], data);
+				FILE_UNRELOC(pose->texIndex[1], data);
+				FILE_UNRELOC(pose->texIndex[2], data);
+				FILE_UNRELOC(pose->texIndex[3], data);
+				FILE_UNRELOC(pose->texIndex[4], data);
+				FILE_UNRELOC(pose->texIndex[5], data);
+				FILE_UNRELOC(pose->texIndex[6], data);
+				FILE_UNRELOC(pose->texIndex[7], data);
+				FILE_UNRELOC(pose->texVtxBuffer, data);
+				FILE_UNRELOC(pose->mBufferTexAnim, data);
+				FILE_UNRELOC(pose->texData, data);
+				FILE_UNRELOC(pose->texBinds, data);
+				FILE_UNRELOC(pose->draws, data);
+				FILE_UNRELOC(pose->mBufferVisibility, data);
+				FILE_UNRELOC(pose->mBufferNode, data);
+				FILE_UNRELOC(pose->groups, data);
+				FILE_UNRELOC(pose->mpAnims, data);
 			}
 			break;
+		}
 
-		case FILE_TYPE_3:
-			if (((FileType3*)data)->field_0x48 >= (u32)data) {
-				((FileType3*)data)->field_0x48 -= (u32)data;
+		case FILE_TYPE_2: {
+			AnimData* anim = data;
+
+			if ((u32)anim->clip >= (u32)data) {
+				FILE_UNRELOC(anim->clip, data);
+				FILE_UNRELOC(anim->frames, data);
+				FILE_UNRELOC(anim->posData, data);
+				FILE_UNRELOC(anim->nrmData, data);
+				FILE_UNRELOC(anim->texData, data);
+				FILE_UNRELOC(anim->visData, data);
+				FILE_UNRELOC(anim->nodeData, data);
+				FILE_UNRELOC(anim->frames2, data);
 			}
 			break;
+		}
+
+		case FILE_TYPE_3: {
+			FileType3* type3 = data;
+
+			if (type3->field_0x48 >= (u32)data) {
+				type3->field_0x48 -= (u32)data;
+			}
+			break;
+		}
 
 		case FILE_TYPE_TPL:
 			fileClearTpl(data);
@@ -194,11 +202,12 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 		case FILE_TYPE_ANIMPOSE: {
 			s32 i;
 			s32 count;
+			AnimationPoseData* pose = data;
 
-			if ((u32)POSE(data)->shapes >= (u32)data) {
-				count = POSE(data)->mAnimCount;
+			if ((u32)pose->shapes >= (u32)data) {
+				count = pose->mAnimCount;
 				for (i = 0; i < count; i++) {
-					AnimTableEntry* elem = &POSE(data)->mpAnims[i];
+					AnimTableEntry* elem = &pose->mpAnims[i];
 					AnimData* anim = elem->data;
 
 					FILE_UNRELOC(elem->data, data);
@@ -213,90 +222,105 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 						FILE_UNRELOC(anim->frames2, anim);
 					}
 				}
-				FILE_UNRELOC(POSE(data)->shapes, data);
-				FILE_UNRELOC(POSE(data)->drawCalls, data);
-				FILE_UNRELOC(POSE(data)->bufferVtxPos, data);
-				FILE_UNRELOC(POSE(data)->posIndex, data);
-				FILE_UNRELOC(POSE(data)->nrmVtxBuffer, data);
-				FILE_UNRELOC(POSE(data)->nrmIndex, data);
-				FILE_UNRELOC(POSE(data)->clr0VtxBuffer, data);
-				FILE_UNRELOC(POSE(data)->clr0Index, data);
-				FILE_UNRELOC(POSE(data)->texIndex[0], data);
-				FILE_UNRELOC(POSE(data)->texIndex[1], data);
-				FILE_UNRELOC(POSE(data)->texIndex[2], data);
-				FILE_UNRELOC(POSE(data)->texIndex[3], data);
-				FILE_UNRELOC(POSE(data)->texIndex[4], data);
-				FILE_UNRELOC(POSE(data)->texIndex[5], data);
-				FILE_UNRELOC(POSE(data)->texIndex[6], data);
-				FILE_UNRELOC(POSE(data)->texIndex[7], data);
-				FILE_UNRELOC(POSE(data)->texVtxBuffer, data);
-				FILE_UNRELOC(POSE(data)->mBufferTexAnim, data);
-				FILE_UNRELOC(POSE(data)->texData, data);
-				FILE_UNRELOC(POSE(data)->texBinds, data);
-				FILE_UNRELOC(POSE(data)->draws, data);
-				FILE_UNRELOC(POSE(data)->mBufferVisibility, data);
-				FILE_UNRELOC(POSE(data)->mBufferNode, data);
-				FILE_UNRELOC(POSE(data)->groups, data);
-				FILE_UNRELOC(POSE(data)->mpAnims, data);
+				FILE_UNRELOC(pose->shapes, data);
+				FILE_UNRELOC(pose->drawCalls, data);
+				FILE_UNRELOC(pose->bufferVtxPos, data);
+				FILE_UNRELOC(pose->posIndex, data);
+				FILE_UNRELOC(pose->nrmVtxBuffer, data);
+				FILE_UNRELOC(pose->nrmIndex, data);
+				FILE_UNRELOC(pose->clr0VtxBuffer, data);
+				FILE_UNRELOC(pose->clr0Index, data);
+				FILE_UNRELOC(pose->texIndex[0], data);
+				FILE_UNRELOC(pose->texIndex[1], data);
+				FILE_UNRELOC(pose->texIndex[2], data);
+				FILE_UNRELOC(pose->texIndex[3], data);
+				FILE_UNRELOC(pose->texIndex[4], data);
+				FILE_UNRELOC(pose->texIndex[5], data);
+				FILE_UNRELOC(pose->texIndex[6], data);
+				FILE_UNRELOC(pose->texIndex[7], data);
+				FILE_UNRELOC(pose->texVtxBuffer, data);
+				FILE_UNRELOC(pose->mBufferTexAnim, data);
+				FILE_UNRELOC(pose->texData, data);
+				FILE_UNRELOC(pose->texBinds, data);
+				FILE_UNRELOC(pose->draws, data);
+				FILE_UNRELOC(pose->mBufferVisibility, data);
+				FILE_UNRELOC(pose->mBufferNode, data);
+				FILE_UNRELOC(pose->groups, data);
+				FILE_UNRELOC(pose->mpAnims, data);
 			}
 			break;
 		}
-		case FILE_TYPE_6:
-			if (((FileType3*)data)->field_0x48 >= (u32)data) {
-				((FileType3*)data)->field_0x48 -= (u32)data;
-			}
-			break;
+		case FILE_TYPE_6: {
+			FileType3* type3 = data;
 
-		case FILE_TYPE_7:
-			if (((FileType7*)data)->field_0x64 >= (u32)data) {
-				((FileType7*)data)->field_0x64 -= (u32)data;
-				((FileType7*)data)->field_0x68 -= (u32)data;
-				((FileType7*)data)->field_0x6C -= (u32)data;
+			if (type3->field_0x48 >= (u32)data) {
+				type3->field_0x48 -= (u32)data;
 			}
 			break;
+		}
 
-		case FILE_TYPE_8:
-			if (((FileType8*)data)->field_0xC8 >= (u32)data) {
-				((FileType8*)data)->field_0xC8 -= (u32)data;
-				((FileType8*)data)->field_0xCC -= (u32)data;
-				((FileType8*)data)->field_0xD0 -= (u32)data;
-				((FileType8*)data)->field_0xD4 -= (u32)data;
-				((FileType8*)data)->field_0xD8 -= (u32)data;
-				((FileType8*)data)->field_0xDC -= (u32)data;
-				((FileType8*)data)->field_0xE0 -= (u32)data;
-				((FileType8*)data)->field_0xE4 -= (u32)data;
-				((FileType8*)data)->field_0xE8 -= (u32)data;
-				((FileType8*)data)->field_0xEC -= (u32)data;
-				((FileType8*)data)->field_0xF0 -= (u32)data;
-				((FileType8*)data)->field_0xF4 -= (u32)data;
-				((FileType8*)data)->field_0xF8 -= (u32)data;
-				((FileType8*)data)->field_0xFC -= (u32)data;
-				((FileType8*)data)->field_0x100 -= (u32)data;
-				((FileType8*)data)->field_0x104 -= (u32)data;
-				((FileType8*)data)->field_0x108 -= (u32)data;
-				((FileType8*)data)->field_0x10C -= (u32)data;
-				((FileType8*)data)->field_0x110 -= (u32)data;
-				((FileType8*)data)->field_0x114 -= (u32)data;
-				((FileType8*)data)->field_0x118 -= (u32)data;
-				((FileType8*)data)->field_0x11C -= (u32)data;
-				((FileType8*)data)->field_0x120 -= (u32)data;
-			}
-			break;
+		case FILE_TYPE_7: {
+			FileType7* type7 = data;
 
-		case FILE_TYPE_9:
-			if (((FileType9*)data)->field_0x58 >= (u32)data) {
-				((FileType9*)data)->field_0x58 -= (u32)data;
-				((FileType9*)data)->field_0x5C -= (u32)data;
-				((FileType9*)data)->field_0x60 -= (u32)data;
-				((FileType9*)data)->field_0x64 -= (u32)data;
+			if (type7->field_0x64 >= (u32)data) {
+				type7->field_0x64 -= (u32)data;
+				type7->field_0x68 -= (u32)data;
+				type7->field_0x6C -= (u32)data;
 			}
 			break;
+		}
 
-		case FILE_TYPE_10:
-			if (((FileType3*)data)->field_0x48 >= (u32)data) {
-				((FileType3*)data)->field_0x48 -= (u32)data;
+		case FILE_TYPE_8: {
+			FileType8* type8 = data;
+
+			if (type8->field_0xC8 >= (u32)data) {
+				type8->field_0xC8 -= (u32)data;
+				type8->field_0xCC -= (u32)data;
+				type8->field_0xD0 -= (u32)data;
+				type8->field_0xD4 -= (u32)data;
+				type8->field_0xD8 -= (u32)data;
+				type8->field_0xDC -= (u32)data;
+				type8->field_0xE0 -= (u32)data;
+				type8->field_0xE4 -= (u32)data;
+				type8->field_0xE8 -= (u32)data;
+				type8->field_0xEC -= (u32)data;
+				type8->field_0xF0 -= (u32)data;
+				type8->field_0xF4 -= (u32)data;
+				type8->field_0xF8 -= (u32)data;
+				type8->field_0xFC -= (u32)data;
+				type8->field_0x100 -= (u32)data;
+				type8->field_0x104 -= (u32)data;
+				type8->field_0x108 -= (u32)data;
+				type8->field_0x10C -= (u32)data;
+				type8->field_0x110 -= (u32)data;
+				type8->field_0x114 -= (u32)data;
+				type8->field_0x118 -= (u32)data;
+				type8->field_0x11C -= (u32)data;
+				type8->field_0x120 -= (u32)data;
 			}
 			break;
+		}
+
+		case FILE_TYPE_9: {
+			FileType9* type9 = data;
+
+			if (type9->field_0x58 >= (u32)data) {
+				type9->field_0x58 -= (u32)data;
+				type9->field_0x5C -= (u32)data;
+				type9->field_0x60 -= (u32)data;
+				type9->field_0x64 -= (u32)data;
+			}
+			break;
+		}
+
+		case FILE_TYPE_10: {
+			FileType3* type3 = data;
+
+			if (type3->field_0x48 >= (u32)data) {
+				type3->field_0x48 -= (u32)data;
+			}
+			break;
+		}
 
 		default: break;
 	}
@@ -337,89 +361,100 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 	TEXPalette* tpl;
 
 	switch (type) {
-		case FILE_TYPE_1:
-			if ((u32)POSE(data)->shapes < (u32)data) {
-				FILE_RELOC(POSE(data)->shapes, data);
-				FILE_RELOC(POSE(data)->drawCalls, data);
-				FILE_RELOC(POSE(data)->bufferVtxPos, data);
-				FILE_RELOC(POSE(data)->posIndex, data);
-				FILE_RELOC(POSE(data)->nrmVtxBuffer, data);
-				FILE_RELOC(POSE(data)->nrmIndex, data);
-				FILE_RELOC(POSE(data)->clr0VtxBuffer, data);
-				FILE_RELOC(POSE(data)->clr0Index, data);
-				FILE_RELOC(POSE(data)->texIndex[0], data);
-				FILE_RELOC(POSE(data)->texIndex[1], data);
-				FILE_RELOC(POSE(data)->texIndex[2], data);
-				FILE_RELOC(POSE(data)->texIndex[3], data);
-				FILE_RELOC(POSE(data)->texIndex[4], data);
-				FILE_RELOC(POSE(data)->texIndex[5], data);
-				FILE_RELOC(POSE(data)->texIndex[6], data);
-				FILE_RELOC(POSE(data)->texIndex[7], data);
-				FILE_RELOC(POSE(data)->texVtxBuffer, data);
-				FILE_RELOC(POSE(data)->mBufferTexAnim, data);
-				FILE_RELOC(POSE(data)->texData, data);
-				FILE_RELOC(POSE(data)->texBinds, data);
-				FILE_RELOC(POSE(data)->draws, data);
-				FILE_RELOC(POSE(data)->mBufferVisibility, data);
-				FILE_RELOC(POSE(data)->mBufferNode, data);
-				FILE_RELOC(POSE(data)->groups, data);
-				FILE_RELOC(POSE(data)->mpAnims, data);
+		case FILE_TYPE_1: {
+			AnimationPoseData* pose = data;
+
+			if ((u32)pose->shapes < (u32)data) {
+				FILE_RELOC(pose->shapes, data);
+				FILE_RELOC(pose->drawCalls, data);
+				FILE_RELOC(pose->bufferVtxPos, data);
+				FILE_RELOC(pose->posIndex, data);
+				FILE_RELOC(pose->nrmVtxBuffer, data);
+				FILE_RELOC(pose->nrmIndex, data);
+				FILE_RELOC(pose->clr0VtxBuffer, data);
+				FILE_RELOC(pose->clr0Index, data);
+				FILE_RELOC(pose->texIndex[0], data);
+				FILE_RELOC(pose->texIndex[1], data);
+				FILE_RELOC(pose->texIndex[2], data);
+				FILE_RELOC(pose->texIndex[3], data);
+				FILE_RELOC(pose->texIndex[4], data);
+				FILE_RELOC(pose->texIndex[5], data);
+				FILE_RELOC(pose->texIndex[6], data);
+				FILE_RELOC(pose->texIndex[7], data);
+				FILE_RELOC(pose->texVtxBuffer, data);
+				FILE_RELOC(pose->mBufferTexAnim, data);
+				FILE_RELOC(pose->texData, data);
+				FILE_RELOC(pose->texBinds, data);
+				FILE_RELOC(pose->draws, data);
+				FILE_RELOC(pose->mBufferVisibility, data);
+				FILE_RELOC(pose->mBufferNode, data);
+				FILE_RELOC(pose->groups, data);
+				FILE_RELOC(pose->mpAnims, data);
 			}
 			break;
-		case FILE_TYPE_2:
-			if ((u32)((AnimData*)data)->clip < (u32)data) {
-				FILE_RELOC(((AnimData*)data)->clip, data);
-				FILE_RELOC(((AnimData*)data)->frames, data);
-				FILE_RELOC(((AnimData*)data)->posData, data);
-				FILE_RELOC(((AnimData*)data)->nrmData, data);
-				FILE_RELOC(((AnimData*)data)->texData, data);
-				FILE_RELOC(((AnimData*)data)->visData, data);
-				FILE_RELOC(((AnimData*)data)->nodeData, data);
-				FILE_RELOC(((AnimData*)data)->frames2, data);
+		}
+		case FILE_TYPE_2: {
+			AnimData* anim = data;
+
+			if ((u32)anim->clip < (u32)data) {
+				FILE_RELOC(anim->clip, data);
+				FILE_RELOC(anim->frames, data);
+				FILE_RELOC(anim->posData, data);
+				FILE_RELOC(anim->nrmData, data);
+				FILE_RELOC(anim->texData, data);
+				FILE_RELOC(anim->visData, data);
+				FILE_RELOC(anim->nodeData, data);
+				FILE_RELOC(anim->frames2, data);
 			}
 			break;
-		case FILE_TYPE_3:
-			if (((FileType3*)data)->field_0x48 < (u32)data) {
-				((FileType3*)data)->field_0x48 += (u32)data;
+		}
+		case FILE_TYPE_3: {
+			FileType3* type3 = data;
+
+			if (type3->field_0x48 < (u32)data) {
+				type3->field_0x48 += (u32)data;
 			}
 			break;
+		}
 		case FILE_TYPE_TPL:
-			tpl = (TEXPalette*)data;
+			tpl = data;
 			fileUnpackTpl(tpl);
 			break;
-		case FILE_TYPE_ANIMPOSE:
-			if ((u32)POSE(data)->shapes < (u32)data) {
-				FILE_RELOC(POSE(data)->shapes, data);
-				FILE_RELOC(POSE(data)->drawCalls, data);
-				FILE_RELOC(POSE(data)->bufferVtxPos, data);
-				FILE_RELOC(POSE(data)->posIndex, data);
-				FILE_RELOC(POSE(data)->nrmVtxBuffer, data);
-				FILE_RELOC(POSE(data)->nrmIndex, data);
-				FILE_RELOC(POSE(data)->clr0VtxBuffer, data);
-				FILE_RELOC(POSE(data)->clr0Index, data);
-				FILE_RELOC(POSE(data)->texIndex[0], data);
-				FILE_RELOC(POSE(data)->texIndex[1], data);
-				FILE_RELOC(POSE(data)->texIndex[2], data);
-				FILE_RELOC(POSE(data)->texIndex[3], data);
-				FILE_RELOC(POSE(data)->texIndex[4], data);
-				FILE_RELOC(POSE(data)->texIndex[5], data);
-				FILE_RELOC(POSE(data)->texIndex[6], data);
-				FILE_RELOC(POSE(data)->texIndex[7], data);
-				FILE_RELOC(POSE(data)->texVtxBuffer, data);
-				FILE_RELOC(POSE(data)->mBufferTexAnim, data);
-				FILE_RELOC(POSE(data)->texData, data);
-				FILE_RELOC(POSE(data)->texBinds, data);
-				FILE_RELOC(POSE(data)->draws, data);
-				FILE_RELOC(POSE(data)->mBufferVisibility, data);
-				FILE_RELOC(POSE(data)->mBufferNode, data);
-				FILE_RELOC(POSE(data)->groups, data);
-				FILE_RELOC(POSE(data)->mpAnims, data);
-				count = POSE(data)->mAnimCount;
+		case FILE_TYPE_ANIMPOSE: {
+			AnimationPoseData* pose = data;
+
+			if ((u32)pose->shapes < (u32)data) {
+				FILE_RELOC(pose->shapes, data);
+				FILE_RELOC(pose->drawCalls, data);
+				FILE_RELOC(pose->bufferVtxPos, data);
+				FILE_RELOC(pose->posIndex, data);
+				FILE_RELOC(pose->nrmVtxBuffer, data);
+				FILE_RELOC(pose->nrmIndex, data);
+				FILE_RELOC(pose->clr0VtxBuffer, data);
+				FILE_RELOC(pose->clr0Index, data);
+				FILE_RELOC(pose->texIndex[0], data);
+				FILE_RELOC(pose->texIndex[1], data);
+				FILE_RELOC(pose->texIndex[2], data);
+				FILE_RELOC(pose->texIndex[3], data);
+				FILE_RELOC(pose->texIndex[4], data);
+				FILE_RELOC(pose->texIndex[5], data);
+				FILE_RELOC(pose->texIndex[6], data);
+				FILE_RELOC(pose->texIndex[7], data);
+				FILE_RELOC(pose->texVtxBuffer, data);
+				FILE_RELOC(pose->mBufferTexAnim, data);
+				FILE_RELOC(pose->texData, data);
+				FILE_RELOC(pose->texBinds, data);
+				FILE_RELOC(pose->draws, data);
+				FILE_RELOC(pose->mBufferVisibility, data);
+				FILE_RELOC(pose->mBufferNode, data);
+				FILE_RELOC(pose->groups, data);
+				FILE_RELOC(pose->mpAnims, data);
+				count = pose->mAnimCount;
 				for (j = 0; j < count; j++) {
 					AnimData* anim;
-					u32 off = (u32)POSE(data)->mpAnims[j].data;
-					POSE(data)->mpAnims[j].data = (AnimData*)(off + (u32)data);
-					anim = POSE(data)->mpAnims[j].data;
+					u32 off = (u32)pose->mpAnims[j].data;
+					pose->mpAnims[j].data = (AnimData*)(off + (u32)data);
+					anim = pose->mpAnims[j].data;
 					if ((u32)anim->clip < (u32)anim) {
 						FILE_RELOC(anim->clip, anim);
 						FILE_RELOC(anim->frames, anim);
@@ -433,58 +468,74 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 				}
 			}
 			break;
-		case FILE_TYPE_6:
-			if (((FileType3*)data)->field_0x48 < (u32)data) {
-				((FileType3*)data)->field_0x48 += (u32)data;
+		}
+		case FILE_TYPE_6: {
+			FileType3* type3 = data;
+
+			if (type3->field_0x48 < (u32)data) {
+				type3->field_0x48 += (u32)data;
 			}
 			break;
-		case FILE_TYPE_7:
-			if (((FileType7*)data)->field_0x64 < (u32)data) {
-				((FileType7*)data)->field_0x64 += (u32)data;
-				((FileType7*)data)->field_0x68 += (u32)data;
-				((FileType7*)data)->field_0x6C += (u32)data;
+		}
+		case FILE_TYPE_7: {
+			FileType7* type7 = data;
+
+			if (type7->field_0x64 < (u32)data) {
+				type7->field_0x64 += (u32)data;
+				type7->field_0x68 += (u32)data;
+				type7->field_0x6C += (u32)data;
 			}
 			break;
-		case FILE_TYPE_8:
-			if (((FileType8*)data)->field_0xC8 < (u32)data) {
-				((FileType8*)data)->field_0xC8 += (u32)data;
-				((FileType8*)data)->field_0xCC += (u32)data;
-				((FileType8*)data)->field_0xD0 += (u32)data;
-				((FileType8*)data)->field_0xD4 += (u32)data;
-				((FileType8*)data)->field_0xD8 += (u32)data;
-				((FileType8*)data)->field_0xDC += (u32)data;
-				((FileType8*)data)->field_0xE0 += (u32)data;
-				((FileType8*)data)->field_0xE4 += (u32)data;
-				((FileType8*)data)->field_0xE8 += (u32)data;
-				((FileType8*)data)->field_0xEC += (u32)data;
-				((FileType8*)data)->field_0xF0 += (u32)data;
-				((FileType8*)data)->field_0xF4 += (u32)data;
-				((FileType8*)data)->field_0xF8 += (u32)data;
-				((FileType8*)data)->field_0xFC += (u32)data;
-				((FileType8*)data)->field_0x100 += (u32)data;
-				((FileType8*)data)->field_0x104 += (u32)data;
-				((FileType8*)data)->field_0x108 += (u32)data;
-				((FileType8*)data)->field_0x10C += (u32)data;
-				((FileType8*)data)->field_0x110 += (u32)data;
-				((FileType8*)data)->field_0x114 += (u32)data;
-				((FileType8*)data)->field_0x118 += (u32)data;
-				((FileType8*)data)->field_0x11C += (u32)data;
-				((FileType8*)data)->field_0x120 += (u32)data;
+		}
+		case FILE_TYPE_8: {
+			FileType8* type8 = data;
+
+			if (type8->field_0xC8 < (u32)data) {
+				type8->field_0xC8 += (u32)data;
+				type8->field_0xCC += (u32)data;
+				type8->field_0xD0 += (u32)data;
+				type8->field_0xD4 += (u32)data;
+				type8->field_0xD8 += (u32)data;
+				type8->field_0xDC += (u32)data;
+				type8->field_0xE0 += (u32)data;
+				type8->field_0xE4 += (u32)data;
+				type8->field_0xE8 += (u32)data;
+				type8->field_0xEC += (u32)data;
+				type8->field_0xF0 += (u32)data;
+				type8->field_0xF4 += (u32)data;
+				type8->field_0xF8 += (u32)data;
+				type8->field_0xFC += (u32)data;
+				type8->field_0x100 += (u32)data;
+				type8->field_0x104 += (u32)data;
+				type8->field_0x108 += (u32)data;
+				type8->field_0x10C += (u32)data;
+				type8->field_0x110 += (u32)data;
+				type8->field_0x114 += (u32)data;
+				type8->field_0x118 += (u32)data;
+				type8->field_0x11C += (u32)data;
+				type8->field_0x120 += (u32)data;
 			}
 			break;
-		case FILE_TYPE_9:
-			if (((FileType9*)data)->field_0x58 < (u32)data) {
-				((FileType9*)data)->field_0x58 += (u32)data;
-				((FileType9*)data)->field_0x5C += (u32)data;
-				((FileType9*)data)->field_0x60 += (u32)data;
-				((FileType9*)data)->field_0x64 += (u32)data;
+		}
+		case FILE_TYPE_9: {
+			FileType9* type9 = data;
+
+			if (type9->field_0x58 < (u32)data) {
+				type9->field_0x58 += (u32)data;
+				type9->field_0x5C += (u32)data;
+				type9->field_0x60 += (u32)data;
+				type9->field_0x64 += (u32)data;
 			}
 			break;
-		case FILE_TYPE_10:
-			if (((FileType3*)data)->field_0x48 < (u32)data) {
-				((FileType3*)data)->field_0x48 += (u32)data;
+		}
+		case FILE_TYPE_10: {
+			FileType3* type3 = data;
+
+			if (type3->field_0x48 < (u32)data) {
+				type3->field_0x48 += (u32)data;
 			}
 			break;
+		}
 	}
 }
 
@@ -654,7 +705,7 @@ FileEntry* _fileAlloc(const char* filename, s32 type, FileCallback callback) {
 	}
 	if (handle) {
 		newentry->state = FILE_STATE_ALLOCATED;
-		newentry->data = (void**)&newentry->inlineData;
+		newentry->data = &newentry->inlineData;
 		*newentry->data = handle;
 		newentry->references = 1;
 		newentry->type = type;

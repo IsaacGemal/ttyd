@@ -527,18 +527,18 @@ void effSnowDustDisp(CameraId camId, void* param) {
 		switch (type) {
 			case 0:
 			case 6:
-				effSetVtxDescN64((effVtxArray*)size4x4_tex64x64_vtx);
+				effSetVtxDescN64(size4x4_tex64x64_vtx);
 				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 				break;
 			case 1:
-				effSetVtxDescN64((effVtxArray*)size8x8_tex64x64_vtx);
+				effSetVtxDescN64(size8x8_tex64x64_vtx);
 				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 				break;
 			case 2:
 			case 3:
-				effSetVtxDescN64((effVtxArray*)size12x12_tex64x64_vtx);
+				effSetVtxDescN64(size12x12_tex64x64_vtx);
 				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 				break;
@@ -562,7 +562,7 @@ void effSnowDustDisp(CameraId camId, void* param) {
 				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_KONST, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
 				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 				GXSetTevKColorSel(GX_TEVSTAGE2, GX_TEV_KCSEL_K0);
-				effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);
+				effSetVtxDescN64(size16x16_tex64x64_vtx);
 				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 				GXSetNumChans(1);
@@ -574,7 +574,7 @@ void effSnowDustDisp(CameraId camId, void* param) {
 				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_KONST, GX_CA_ZERO);
 				GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
-				effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_vtx);
+				effSetVtxDescN64(size32x32_tex32x32_vtx);
 				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xc);
 				tri2(0, 1, 4, 0, 1, 2, 4, 0);
 				tri2(0, 4, 3, 0, 4, 2, 3, 0);

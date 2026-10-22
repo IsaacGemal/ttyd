@@ -4057,7 +4057,7 @@ void screen_tev(MapTevCallback* param) {
     }
 
     if (screen_wp->useNoise != 0) {
-        buf = (u8*)screen_wp->noiseBuf;
+        buf = screen_wp->noiseBuf;
 
         for (i = 0; i < 0x40; i++) {
             for (j = 0; j < 0x40; j++) {

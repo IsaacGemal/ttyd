@@ -210,5 +210,7 @@ void effPeachFukidashiDisp(CameraId camId, void* param) {
 
 void effSetPeachFukiBatu(const char* name) {
     EffectEntry* entry = effNameToPtr(name);
-    ((EffPeachFukidashiData*)entry->userdata)->flags |= 0x80;
+    EffPeachFukidashiData* data = entry->userdata;
+
+    data->flags |= 0x80;
 }

@@ -218,8 +218,8 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
 	effGetTexObjN64(0x63, &texObj);
 	effGetTexObjN64(0x64, &texObj2);
-	dst = (u8*)OSPhysicalToCached(GXGetTexObjData(&texObj));
-	src = (u8*)OSPhysicalToCached(GXGetTexObjData(&texObj2));
+	dst = OSPhysicalToCached(GXGetTexObjData(&texObj));
+	src = OSPhysicalToCached(GXGetTexObjData(&texObj2));
 	dst += GXGetTexBufferSize(0x40, 0x40, GX_TF_I4, GX_TRUE, 2);
 	memcpy(dst, src, GXGetTexBufferSize(0x10, 0x10, GX_TF_I4, GX_FALSE, 0));
 	DCFlushRange(dst, GXGetTexBufferSize(0x40, 0x40, GX_TF_I4, GX_TRUE, 3));
@@ -232,7 +232,7 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 		GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0xFF, alpha });
 	}
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)eff_snowfall_v);
+	effSetVtxDescN64(eff_snowfall_v);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041fd20 * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(cam->view, rotMtx, rotMtx);
 	data++;

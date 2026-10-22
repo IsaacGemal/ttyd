@@ -539,7 +539,7 @@ void effThunderDisp(CameraId camId, void* param) {
 	GXLoadTexMtxImm(mtx, GX_TEXMTX1, GX_MTX2x4);
 
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)Ncube_inazuma_v);
+	effSetVtxDescN64(Ncube_inazuma_v);
 
 	switch (type) {
 	case 0:

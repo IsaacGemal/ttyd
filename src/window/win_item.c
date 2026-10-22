@@ -197,7 +197,7 @@ static WinMgrDesc window_desc[2];
 // where the original computes it straight into r4 and uses displacements afterwards. Going
 // through a (trivially inlined) function makes the address a separate value and restores the
 // original sequence.
-static inline u16* winItemMailLine(void* w) { return &((WindowWork*)w)->mailLines; }
+static inline u16* winItemMailLine(WindowWork* w) { return &w->mailLines; }
 
 
 void winMakeSkipList(WindowWork* work) {
@@ -258,12 +258,10 @@ void winItemInit(WindowWork* work) {
 
     {
         for (i = 0; i < work->mailCount; i++) {
-            u8* pouch;
-            s32 off;
+            PouchData* pouch;
             work->field_26E[i * 2] = work->mailCount - i - 1;
-            pouch = (u8*)pouchGetPtr();
-            off = 0x519 + (work->mailCount - i);
-            work->field_26E[i * 2 + 1] = pouch[off];
+            pouch = pouchGetPtr();
+            work->field_26E[i * 2 + 1] = pouch->mEmailIds[work->mailCount - i - 1];
         }
     }
 
@@ -861,12 +859,12 @@ void winItemDisp(CameraId camId, void* param, s32 idx) {
 
     for (i = 0; i < 2; i++) {
         if (i == w->itemTab) {
-            winTexInit(*(TEXPalette**)w->winTpl->data);
+            winTexInit(*w->winTpl->data);
             winTexSet(0xB3, (Vec){x - 215.0f, 20.0f + (a - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
-            winTexInit_x2(*(TEXPalette**)w->winTpl->data);
+            winTexInit_x2(*w->winTpl->data);
             winTexSet_x2(i + 0x18, 0xB3, (Vec){c, 20.0f + (b - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, color);
         } else {
-            winTexInit_x2(*(TEXPalette**)w->winTpl->data);
+            winTexInit_x2(*w->winTpl->data);
             winTexSet_x2(i + 0x18, 0xB3, (Vec){x - 215.0f, 20.0f + (a - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
                          (GXColor){ 0x80, 0x80, 0x80, 0xFF });
         }
@@ -935,7 +933,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         } else {
             winIconInit();
         }
-        winIconSet(*(u16*)&itemDataTable[item].icon_id, (Vec){(x - 125.0f) + (f32)(colX = parity * 0xCC), drawY, 0.0f},
+        winIconSet(itemDataTable[item].icon_id, (Vec){(x - 125.0f) + (f32)(colX = parity * 0xCC), drawY, 0.0f},
                    work->itemTab == 0 ? (Vec){0.8f, 0.8f, 0.8f} : (Vec){0.6666667f, 0.6666667f, 0.6666667f},
                    iconColor);
         winFontInit();
@@ -947,7 +945,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     if (work->itemScrollRow[work->itemTab] > 0) {
         f32 arrowX;
 
-        winTexInit(*(TEXPalette**)work->winTpl->data);
+        winTexInit(*work->winTpl->data);
         arrowX = 250.0f + x;
         winTexSet(0x17, (Vec){arrowX, 20.0f + (18.0f + (110.0f + y)), 0.0f}, (Vec){-1.0f, -1.0f, -1.0f}, white);
         winIconInit();
@@ -956,7 +954,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     if (count > work->itemScrollRow[work->itemTab] * 10 + 10) {
         f32 arrowX;
 
-        winTexInit(*(TEXPalette**)work->winTpl->data);
+        winTexInit(*work->winTpl->data);
         arrowX = 250.0f + x;
         winTexSet(0x17, (Vec){arrowX, 20.0f + ((y - 90.0f) - 15.0f), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
         winIconInit();
@@ -1047,7 +1045,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                 }
                 winIconSet(0x19E, (Vec){(f32)(entry->x + 0x1E), (f32)(entry->y - 0x14 - i * 0x16), 0.0f},
                            (Vec){0.65f, 0.65f, 0.65f}, iconColor);
-                winTexInit(*(TEXPalette**)work->winTpl->data);
+                winTexInit(*work->winTpl->data);
                 GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
                 GXSetTevAlphaIn(0, 7, 1, 4, 7);
                 winTexSet(0xAF,
@@ -1089,7 +1087,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                 if (work->useTimer % 20 > 15 && i == work->useTargetSel) {
                     continue;
                 }
-                winTexInit(*(TEXPalette**)work->winTpl->data);
+                winTexInit(*work->winTpl->data);
                 GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
                 GXSetTevAlphaIn(0, 7, 1, 4, 7);
                 winTexSet(0xAF,
@@ -1128,7 +1126,7 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
         }
     }
-    winTexInit(*(TEXPalette**)work->winTpl->data);
+    winTexInit(*work->winTpl->data);
     winTexSet(0, (Vec){2.0f + work->posX, work->posY - 2.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
               (GXColor){ 0x00, 0x00, 0x00, 0x80 });
     winTexSet(0, (Vec){work->posX, work->posY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);

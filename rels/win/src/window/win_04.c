@@ -1308,7 +1308,7 @@ u32 rose_table[120] = {
 
 void flower_disp(CameraId camera, void* param) {
     CameraEntry* cam = camGetPtr(camera);
-    FlowerData* data = (FlowerData*)param;
+    FlowerData* data = param;
     Flower* flower;
     GXTexObj texObj;
     Mtx trans;

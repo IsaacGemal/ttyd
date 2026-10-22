@@ -216,7 +216,7 @@ void effBreathFireDisp(CameraId camId, void* param) {
 	GXSetCurrentMtx(GX_PNMTX0);
 	GXSetCullMode(GX_CULL_NONE);
 
-	effSetVtxDescN64((effVtxArray*)((u8*)stg_fire_breath_v + 0x46));
+	effSetVtxDescN64((u8*)stg_fire_breath_v + 0x46);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
 	tri2(0, 1, 2, 0, 1, 3, 2, 0);
 	tri2(4, 2, 3, 0, 4, 0, 2, 0);

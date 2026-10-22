@@ -1118,7 +1118,7 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 			BtlUnit_GetStatus(unit, 0x12, &turns, &strength);
 			if (turns < 1 && !BtlUnit_CheckShadowGuard(unit)) {
 				BattleCheckDamage(BattleGetSystemPtr(work), unit, part,
-				    (BattleWeapon*)&weapon_teresa_trans, 0x100);
+				    &weapon_teresa_trans, 0x100);
 				BtlUnit_snd_se(unit, str_SFX_AUDIENCE_TELESA_INVISIBLE1, -250000000, 0);
 			}
 		}

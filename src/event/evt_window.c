@@ -141,7 +141,7 @@ USER_FUNC(evt_win_item_maketable) {
         evtSetValue(event, args[1], 0);
         return EVT_RETURN_DONE;
     }
-    out = (s32*)_mapAlloc((count + 1) * 4);
+    out = _mapAlloc((count + 1) * 4);
     for (i = 0, n = 0; i < count; i++) {
         if (pouchCheckItem(table[i]) != 0) {
             out[n] = table[i];
@@ -189,7 +189,7 @@ USER_FUNC(evt_win_nameent_off) {
 }
 
 void oneMessageDisp(WinMgrEntry* entry) {
-    WinOneMsgWork* work = (WinOneMsgWork*)entry->param;
+    WinOneMsgWork* work = entry->param;
     const char* msg;
 
     if (winMgrAction(work->id) == 0) {
@@ -269,7 +269,7 @@ void coin_disp(WinMgrEntry* entry) {
     GXColor color;
 
     pouchGetPtr();
-    work = (WinCoinWork*)entry->param;
+    work = entry->param;
     if (entry->flags & 4) {
         return;
     }
@@ -323,7 +323,7 @@ USER_FUNC(evt_win_coin_on) {
     WinCoinWork* work;
     s32 type;
 
-    work = (WinCoinWork*)_mapAlloc(0x10);
+    work = _mapAlloc(0x10);
     type = evtGetValue(event, args[0]);
     work->type = type;
     work->id = winMgrEntry(&coin_desc);

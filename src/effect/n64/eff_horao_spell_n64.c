@@ -271,7 +271,7 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 		PSMTXRotRad(rotMtx, 'y', 0.017453292f * (-30.0f * s));
 		PSMTXConcat(transMtx, rotMtx, baseMtx);
 		entry = smartAlloc(0x1C0, 3);
-		vtx = (effHoraoSpellVtx*)entry->address;
+		vtx = entry->address;
 		for (j = 0; j < 16; j++) {
 			k = j * 2;
 			PSMTXTrans(transMtx, 8.0f, 0.0f, 0.0f);
@@ -289,7 +289,7 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 		}
 		DCFlushRange(vtx, 0x1C0);
 		GXInvalidateVtxCache();
-		effSetVtxDescN64((effVtxArray*)vtx);
+		effSetVtxDescN64(vtx);
 		for (j = 0; j < 15; j++) {
 			k = j * 2;
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);

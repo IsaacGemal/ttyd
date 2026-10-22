@@ -4,9 +4,9 @@
 #include <dolphin/types.h>
 
 typedef struct {
-    s16 readFlag; //0x0, bit 0 set by johoya_keti_oldspeak_setreadflag
+    u16 readFlag; //0x0, bit 0 set by johoya_keti_oldspeak_setreadflag
     s16 labelId; //0x2
-    s32 initEndPos; //0x4
+    char* initEndPos; //0x4
     s16 tagEndPos; //0x8
     s16 unkA; //0xA
     s16 storyId; //0xC
@@ -24,8 +24,8 @@ typedef struct {
     InformantInfo* info; //0x0
     s32 count; //0x4
     const char* prefix; //0x8
-    InformantInfo *infoEnd; //0xC
-    u8 unk10[0x14 - 0x10]; //0x10
+    char* infoEnd; //0xC
+    s32 unk10; //0x10
     InformantUnknown unk14; //0x14
     u8 unk3F[0x40 - 0x3F]; //0x3F
 } InformantWork;

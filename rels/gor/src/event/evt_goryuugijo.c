@@ -32,7 +32,7 @@ extend_data(57,
      f32, one, 1.0f)
 
 void evt_goryuugijo_disp_func(CameraId cameraId, void* param) {
-    GoryuugijoWork* work = (GoryuugijoWork*)param;
+    GoryuugijoWork* work = param;
 
     work->disp(cameraId, param);
 }

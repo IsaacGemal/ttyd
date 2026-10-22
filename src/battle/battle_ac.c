@@ -608,7 +608,7 @@ void BattleAcGaugeSeInit(void) {
 	BattleWork* work = _battleWorkPointer;
 
 	work->actionCommands.gaugeSe = psndSFXOn("SFX_AC_POWER_GAUGE1");
-	*(f32*)&work->actionCommands.field_0x28C[0] = 0.0f;
+	work->actionCommands.field_0x28C = 0.0f;
 }
 
 void BattleAcGaugeSeUpdate(f32 value) {
@@ -620,9 +620,9 @@ void BattleAcGaugeSeUpdate(f32 value) {
 	if (value > 100.0f) {
 		value = 100.0f;
 	}
-	*(f32*)&work->actionCommands.field_0x28C[0] = value;
+	work->actionCommands.field_0x28C = value;
 	if ((u32)work->actionCommands.gaugeSe != -1) {
-		psndSFX_pit(work->actionCommands.gaugeSe, (s32)(4092.0f * *(f32*)&work->actionCommands.field_0x28C[0] * 0.01f));
+		psndSFX_pit(work->actionCommands.gaugeSe, (s32)(4092.0f * work->actionCommands.field_0x28C * 0.01f));
 	}
 }
 

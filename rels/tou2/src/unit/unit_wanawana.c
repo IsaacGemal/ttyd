@@ -210,7 +210,7 @@ void replace_disp(CameraId cameraId, void* param) {
 
 // .text:0x26C | 0x86B8 | size: 0xB8
 void replace_callback(BattleUnitPart* part, s32 arg) {
-    WanawanaWork* p = (WanawanaWork*)part->mOwner->mExtraWork;
+    WanawanaWork* p = part->mOwner->mExtraWork;
     Mtx mtx;
 
     if (p->field_0x00 == 0) {

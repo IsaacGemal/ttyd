@@ -264,7 +264,7 @@ void effAkariPoseDisp(CameraId camId, void* param) {
     effGetTexObjN64(0x76, &texObj);
     GXLoadTexObj(&texObj, 0);
     GXSetCullMode(0);
-    effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+    effSetVtxDescN64(size16x16_tex32x32_vtx);
     data++;
     for (i = 1; i < effect->count; i++, data++) {
         effAkariPosePart* part = (effAkariPosePart*)data;

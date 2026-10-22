@@ -4289,7 +4289,7 @@ void puniModePreupdraft(PuniData* punidat) {
         }
         case 1:
             if ((punidat->timer)-- == 0) {
-                u32* p = (u32*)punidat->pose;
+                u32* p = &punidat->pose->flags;
                 *p |= 4;
                 punidat->mode = PUNI_MODE_UPDRAFT;
                 punidat->state = 0;
@@ -4441,7 +4441,7 @@ void puniModeWonder(PuniData* punidat) {
         }
         case 1:
             if ((punidat->timer)-- == 0) {
-                u32* p = (u32*)punidat->pose;
+                u32* p = &punidat->pose->flags;
                 *p &= ~0x4;
                 punidat->mode = PUNI_MODE_FUNBARI;
                 punidat->animIdx = 1;
@@ -4477,7 +4477,7 @@ void puniModeFunbari(PuniData* punidat) {
             punidat->timer = 0x44;
             punidat->height = 1.0f;
             {
-                u32* p = (u32*)punidat->pose;
+                u32* p = &punidat->pose->flags;
                 *p |= 4;
             }
             punidat->state = 1;
@@ -4508,7 +4508,7 @@ void puniModeFunbari(PuniData* punidat) {
             punidat->vel = (Vec){0.0f, 0.0f, 0.0f};
             punidat->mode = PUNI_MODE_FALL;
             punidat->animIdx = 0;
-            p = (u32*)punidat->pose;
+            p = &punidat->pose->flags;
             *p &= ~0x4;
             punidat->state = 0;
             break;
@@ -5166,7 +5166,7 @@ void puni_puni_shadow_disp(CameraId camId, void* param) {
         { 0.0f, 0.0f, 10.0f, 0.0f },
     };
     CameraEntry* cam = camGetPtr(camId);
-    PuniPose* pose = (PuniPose*)param;
+    PuniPose* pose = param;
     Mtx mtx;
     GXTexObj texObj;
     GXColor color;

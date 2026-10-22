@@ -213,7 +213,7 @@ void effRubbleDisp(CameraId cameraId, void* param) {
 	switch (data->type) {
 	case 0:
 	case 3:
-		effSetVtxDescN64((effVtxArray*)((rubbleVtxData*)stg_hahen_v)->type0_3Verts);
+		effSetVtxDescN64(((rubbleVtxData*)stg_hahen_v)->type0_3Verts);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x1e);
 		tri2(0, 1, 2, 0, 3, 4, 5, 0);
 		tri2(6, 7, 8, 0, 9, 10, 11, 0);
@@ -223,7 +223,7 @@ void effRubbleDisp(CameraId cameraId, void* param) {
 		break;
 	case 1:
 	case 4:
-		effSetVtxDescN64((effVtxArray*)((rubbleVtxData*)stg_hahen_v)->type1_4Verts);
+		effSetVtxDescN64(((rubbleVtxData*)stg_hahen_v)->type1_4Verts);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x12);
 		tri2(0, 1, 2, 0, 1, 3, 2, 0);
 		tri2(1, 0, 4, 0, 1, 4, 3, 0);
@@ -231,7 +231,7 @@ void effRubbleDisp(CameraId cameraId, void* param) {
 		break;
 	case 2:
 	case 5:
-		effSetVtxDescN64((effVtxArray*)((rubbleVtxData*)stg_hahen_v)->type2_5Verts);
+		effSetVtxDescN64(((rubbleVtxData*)stg_hahen_v)->type2_5Verts);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x1e);
 		tri2(0, 1, 2, 0, 2, 3, 4, 0);
 		tri2(5, 6, 7, 0, 5, 7, 8, 0);

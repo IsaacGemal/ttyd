@@ -438,7 +438,7 @@ static USER_FUNC(waku_main) {
     animPoseGetAnimBaseDataPtr(poseId);
     pose = animPoseGetAnimPosePtr(poseId);
     group = animPoseGetGroupIdx(poseId, "locator17");
-    positions = (Vec*)pose->groupWorldPos->address;
+    positions = pose->groupWorldPos->address;
     BtlUnit_SetPartsPos(part3, positions[group].x, positions[group].y, positions[group].z);
     {
         f32 yaw = camGetPtr(CAMERA_3D)->viewYaw;
@@ -1320,7 +1320,7 @@ static USER_FUNC(arm_main) {
     if (w->effect == NULL) {
         return EVT_RETURN_DONE;
     }
-    data = (BattenData*)w->effect->userdata;
+    data = w->effect->userdata;
     id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(wp, id);
     BtlUnit_GetPos(unit, &x, &y, &z);

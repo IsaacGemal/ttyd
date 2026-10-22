@@ -91,7 +91,7 @@ USER_FUNC(evt_yuutitle_alloc) {
     _wp = wp;
     wp->field_18 = evtGetFloat(event, args[0]);
     wp->field_1c = evtGetFloat(event, args[1]);
-    wp->msg = (const char*)msgSearch((const char*)evtGetValue(event, args[2]));
+    wp->msg = msgSearch((const char*)evtGetValue(event, args[2]));
     temp = 200.0f + wp->field_18;
     wp->field_08 = temp;
     wp->field_10 = temp;

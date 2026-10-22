@@ -43,8 +43,11 @@ static USER_FUNC(lect_npc_balloon_on_off) {
     NpcEntry* npc = evtNpcNameToPtr(event, (const char*)name);
 
     if (evtGetValue(event, args[1])) {
+        EffMarioBalloonData* data;
+
         eff = effMarioBalloonEntry(1, npc);
-        ((EffMarioBalloonData*)eff->userdata)->cameraId = 7;
+        data = eff->userdata;
+        data->cameraId = 7;
     } else {
         effDelete(eff);
     }
@@ -56,8 +59,9 @@ static USER_FUNC(efffukidashichange_cam) {
     s32 name = evtGetValue(event, args[0]);
     s32 camId = evtGetValue(event, args[1]);
     EffectEntry* effect = effNameToPtr((const char*)name);
+    effFukidashiData* data = effect->userdata;
 
-    ((effFukidashiData*)effect->userdata)->camId = camId;
+    data->camId = camId;
     return EVT_RETURN_DONE;
 }
 

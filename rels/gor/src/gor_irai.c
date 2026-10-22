@@ -714,7 +714,7 @@ USER_FUNC(irai_end_func) {
 }
 
 void irai_window_disp(CameraId cameraId, void* param) {
-    IraiWork* work = (IraiWork*)param;
+    IraiWork* work = param;
     const char* name;
     u32 scissorX, scissorY, scissorW, scissorH;
     s32 idx;

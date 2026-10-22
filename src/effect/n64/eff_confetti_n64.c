@@ -71,7 +71,9 @@ u32 size6x6_tex16x16_2_vtx[56] = {
 };
 
 void effConfettiN64SetCamId(EffectEntry* entry, s32 camId) {
-	((effConfettiN64Data*)entry->userdata)->camId = camId;
+	effConfettiN64Data* data = entry->userdata;
+
+	data->camId = camId;
 }
 
 // Declaring randCount as f32 (so its int->float conversion is the first use of the magic double)
@@ -364,7 +366,7 @@ void effConfettiDisp(CameraId camId, void* param) {
 		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 		switch (type % 10) {
 		case 3:
-			effSetVtxDescN64((effVtxArray*)size6x6_tex16x16_2_vtx);
+			effSetVtxDescN64(size6x6_tex16x16_2_vtx);
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x18);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 			tri2(4, 5, 6, 4, 4, 6, 7, 4);
@@ -372,7 +374,7 @@ void effConfettiDisp(CameraId camId, void* param) {
 			tri2(12, 13, 14, 12, 12, 14, 15, 12);
 			break;
 		default:
-			effSetVtxDescN64((effVtxArray*)size6x6_tex16x16_vtx);
+			effSetVtxDescN64(size6x6_tex16x16_vtx);
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 			break;

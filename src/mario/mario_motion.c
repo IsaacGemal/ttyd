@@ -772,7 +772,7 @@ void marioFall(void) {
     f32 landY;
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
-    void* hit;
+    HitEntry* hit;
     s32 rub;
 
     if (strcmp(gp->currentMapName, "kpa_03") == 0 && mario->characterId == 2) {
@@ -854,7 +854,7 @@ void marioFall(void) {
     if (hit != NULL) {
         mario->hitobjStandOn = hit;
         mario->hitobjJumpFrom = NULL;
-        if (hitGetAttr((HitEntry*)hit) & (1 << 9)) {
+        if (hitGetAttr(hit) & (1 << 9)) {
             mario->position.y += f31;
         } else {
             mario->position.y = landY;
@@ -899,13 +899,13 @@ void marioLandOn(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
     Vec pos;
-    char* obj;
-    void* stand;
+    MapObjectEntry* obj;
+    HitEntry* stand;
     s32 attr;
     s32 action;
     s32 sfx;
 
-    if (!(hitGetAttr((HitEntry*)mario->hitobjStandOn) & (1 << 9))) {
+    if (!(hitGetAttr(mario->hitobjStandOn) & (1 << 9))) {
         mario2 = marioGetPtr();
         mario2->jumpVelY = 0.0f;
         mario2->jumpAccelY = 0.0f;
@@ -926,7 +926,7 @@ void marioLandOn(void) {
     stand = mario->hitobjStandOn;
     pos = mario->position;
     if (stand != NULL) {
-        attr = hitGetAttr((HitEntry*)stand);
+        attr = hitGetAttr(stand);
         if (attr & (1 << 8)) {
             sfx = 0x150;
         } else if (attr & (1 << 21)) {
@@ -950,7 +950,7 @@ void marioLandOn(void) {
     mario->field_0x2B0 =
         fabsf(distABf(mario->position.x, mario->position.z, mario->field_0x11C.x,
                       mario->field_0x11C.z));
-    attr = hitGetAttr((HitEntry*)mario->hitobjStandOn);
+    attr = hitGetAttr(mario->hitobjStandOn);
     if (mario->currMotionId != MARIO_MOTION_DAMAGE && (attr & (1 << 9))) {
         set_damage_root_ypos(mario->position.y);
         mario2 = marioGetPtr();
@@ -963,15 +963,15 @@ void marioLandOn(void) {
         MARIO_CHG_BLOCK(mario2, MARIO_MOTION_DAMAGE_TOGE);
         return;
     }
-    attr = hitGetAttr((HitEntry*)mario->hitobjStandOn);
+    attr = hitGetAttr(mario->hitobjStandOn);
     if ((u32)attr & (1 << 31)) {
-        obj = (char*)mobjHitObjPtrToPtr((HitEntry*)mario->hitobjStandOn);
-        if (strcmp(obj + 0x15, "MOBJ_RedSwitch") == 0) {
+        obj = mobjHitObjPtrToPtr(mario->hitobjStandOn);
+        if (strcmp(obj->animName, "MOBJ_RedSwitch") == 0) {
             mario2 = marioGetPtr();
             MARIO_CHG_BLOCK(mario2, MARIO_MOTION_JUMP_SW);
             return;
         }
-        if (strcmp(obj + 0x15, "MOBJ_BlueJumpStand") == 0) {
+        if (strcmp(obj->animName, "MOBJ_BlueJumpStand") == 0) {
             mario = marioGetPtr();
             camFollowYOn();
             if (marioChkSts(MARIO_MOTION_HIP) != 0) {
@@ -1158,8 +1158,8 @@ BOOL marioChkJump(void) {
         return FALSE;
     }
     if (mario->actionHitObj != NULL) {
-        if ((u32)hitGetAttr((HitEntry*)mario->actionHitObj) & (1 << 31)) {
-            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)mario->actionHitObj)) == 1) {
+        if ((u32)hitGetAttr(mario->actionHitObj) & (1 << 31)) {
+            if (mobjGetHint(mobjHitObjPtrToPtr(mario->actionHitObj)) == 1) {
                 return FALSE;
             }
         }
@@ -1172,8 +1172,8 @@ BOOL marioChkJump(void) {
         }
     }
     if (mario->hitobjFront != NULL) {
-        if ((u32)hitGetAttr((HitEntry*)mario->hitobjFront) & (1 << 31)) {
-            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)mario->hitobjFront)) == 1) {
+        if ((u32)hitGetAttr(mario->hitobjFront) & (1 << 31)) {
+            if (mobjGetHint(mobjHitObjPtrToPtr(mario->hitobjFront)) == 1) {
                 return FALSE;
             }
         }
@@ -1186,8 +1186,8 @@ BOOL marioChkJump(void) {
         }
     }
     if (mario->hitobjStandOn != NULL) {
-        if ((u32)hitGetAttr((HitEntry*)mario->hitobjStandOn) & (1 << 31)) {
-            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)mario->hitobjStandOn)) == 1) {
+        if ((u32)hitGetAttr(mario->hitobjStandOn) & (1 << 31)) {
+            if (mobjGetHint(mobjHitObjPtrToPtr(mario->hitobjStandOn)) == 1) {
                 return FALSE;
             }
         }
@@ -1235,7 +1235,7 @@ BOOL marioChkTransform(void) {
         return FALSE;
     }
     if (pouchCheckItem(5) > 0) {
-        if (marioChkShipPlace((HitEntry*)mario->hitobjStandOn) != 0) {
+        if (marioChkShipPlace(mario->hitobjStandOn) != 0) {
             mario = marioGetPtr();
             if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
                 if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
@@ -1257,7 +1257,7 @@ BOOL marioChkTransform(void) {
         }
     }
     if (pouchCheckItem(4) > 0) {
-        if (marioChkPlanePlace((HitEntry*)mario->hitobjStandOn) != 0) {
+        if (marioChkPlanePlace(mario->hitobjStandOn) != 0) {
             mario = marioGetPtr();
             if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
                 if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
@@ -1350,7 +1350,7 @@ s32 marioRollChgChk(void) {
     MarioWork* mario = marioGetPtr();
     s32 unk10;
     s32 unk0C;
-    s32 unk08;
+    f32 unk08;
 
     if (mario->flags & MARIO_FLAG_IS_8_BIT) {
         return 0;
@@ -1358,7 +1358,7 @@ s32 marioRollChgChk(void) {
     if (!(mario->buttonHeld & (1 << 5))) {
         return 0;
     }
-    if (marioGetRub(0x20, &unk0C, &unk10, (f32*)&unk08) != 1) {
+    if (marioGetRub(0x20, &unk0C, &unk10, &unk08) != 1) {
         return 0;
     }
     if (unk10 < 3) {

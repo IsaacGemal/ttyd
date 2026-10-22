@@ -164,7 +164,8 @@ s32 battleAcResult_PowerGaugeLv(BattleWork* work) {
 // (`addi r31, r4, 0x1f20`) instead of folding it into the BattleWork base
 // (`mr r31, r4` + 0x1fxx offsets); the state is read through `ac` and folds back to r4.
 void battleAcDisp_PowerGaugeLv(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleWork* work = param;
+    BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
     s32 state = ac->mAcState;
 

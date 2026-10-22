@@ -683,7 +683,7 @@ USER_FUNC(kpa_status_init) {
     }
     newEvent->uwBase = event->uwBase;
     newEvent->ufBase = event->ufBase;
-    kwp = (u8*)_mapAlloc(3);
+    kwp = _mapAlloc(3);
     kwp[0] = a0;
     kwp[1] = a1;
     kwp[2] = a2;

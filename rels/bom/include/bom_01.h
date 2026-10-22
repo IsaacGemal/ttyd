@@ -3,6 +3,7 @@
 #include "evt/evt_cmd.h"
 #include "driver/dispdrv.h"
 #include "manager/filemgr.h"
+#include "memory.h"
 
 typedef struct ExtTableEntry {
 	const char* name;
@@ -12,7 +13,8 @@ typedef struct ExtTableEntry {
 
 typedef struct SightWork {
 	FileEntry* file; // 0x0
-	s32 field_4[6]; // 0x4
+	s32 field_4[5]; // 0x4
+	f32 field_0x18; // 0x18, drawBG's rotation for the four sight quarters
 	s32 state;      // 0x1C
 	s32 field_20;   // 0x20
 	s32 field_24;   // 0x24
@@ -50,11 +52,7 @@ typedef struct PoseData {
 	PoseState states[1];  // 0xB0
 } PoseData;
 
-typedef struct PoseRoot {
-	PoseData* data; // 0x0
-} PoseRoot;
-
-extern u32 lp[1];
+extern smartEntry* lp[1];
 
 USER_FUNC(bom1000_jump);
 USER_FUNC(bom1000_msg);

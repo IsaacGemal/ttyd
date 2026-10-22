@@ -705,7 +705,7 @@ static USER_FUNC(fall_rtn) {
 
 static USER_FUNC(re_fall_rtn) {
     if (monte_p != NULL) {
-        YuuMinigame1Data* data = ((YuuminigameWork*)monte_p->work)->data;
+        YuuMinigame1Data* data = monte_p->work->data;
         if (data->event != NULL) {
             evtDeleteID(data->event->eventId);
             data->event = NULL;

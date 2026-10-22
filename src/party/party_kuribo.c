@@ -71,11 +71,11 @@ USER_FUNC(pre_kurio_use) {
         return EVT_RETURN_DONE;
     }
 
-    hit = (HitEntry*)mario->hitobjPush;
+    hit = mario->hitobjPush;
     if (hit == NULL || !(hitGetAttr(hit) & 0x80000000)) {
         hit = mario->hitobjFront;
         if (hit == NULL || !(hitGetAttr(hit) & 0x80000000)) {
-            hit = (HitEntry*)mario->hitobjStandOn;
+            hit = mario->hitobjStandOn;
             if (hit == NULL || !(hitGetAttr(hit) & 0x80000000)) {
                 event->lwData[0] = (s32) "msg_kuri_map";
                 return EVT_RETURN_DONE;

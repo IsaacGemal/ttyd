@@ -69,7 +69,7 @@ u8 enemy_monoshiri_sort_table[0xE8] = {
         f32 xs; \
         f64 hh; \
         f64 ww; \
-        TEXGetGXTexObjFromPalette(*(TEXPalette**)work->winTpl->data, &texObj, (id_)); \
+        TEXGetGXTexObjFromPalette(*work->winTpl->data, &texObj, (id_)); \
         GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0); \
         GXLoadTexObj(&texObj, 0); \
         GXSetNumTexGens(1); \
@@ -90,7 +90,7 @@ static inline Vec mail_vec(const Vec* base, f32 x, f32 y) {
     return v;
 }
 
-#define WIN_MAIL_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
+#define WIN_MAIL_TEX(w) (*(w)->winTpl->data)
 
 // The loop both comparators run: find `tag` in the 26-entry table, formatting each
 // candidate into `buf`. Written as an inlined helper because inlining it twice is
@@ -111,7 +111,7 @@ static inline void wazaQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f3
     f64 sx;
     f64 sy;
 
-    TEXGetGXTexObjFromPalette(*(TEXPalette**)work->winTpl->data, &texObj, texId);
+    TEXGetGXTexObjFromPalette(*work->winTpl->data, &texObj, texId);
     GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
@@ -141,7 +141,7 @@ static inline void winSortPanel(WindowWork* work, s32 texId, f32 x, f32 y, f32 w
     f64 sx;
     f64 sy;
 
-    TEXGetGXTexObjFromPalette(*(TEXPalette**)work->winTpl->data, &texObj, texId);
+    TEXGetGXTexObjFromPalette(*work->winTpl->data, &texObj, texId);
     GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
@@ -162,7 +162,7 @@ static inline void winSortPanel(WindowWork* work, s32 texId, f32 x, f32 y, f32 w
     GXTexCoord2f32(1.0f, 0.0f);
 }
 
-#define WIN_BOOK_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
+#define WIN_BOOK_TEX(w) (*(w)->winTpl->data)
 extern const char** luigi_book_list[];
 
 // Per-tab slide-in/slide-out animation. winRootTabStep is a plain static defined after winRootMain: MWCC
@@ -608,7 +608,7 @@ void winRootDisp(CameraId camId, WindowWork* work) {
     winSortGX(work);
 
     if (!(work->flags & 0x8000)) {
-        winTexInit(*(TEXPalette**)work->winTpl->data);
+        winTexInit(*work->winTpl->data);
 
         {
             f32 two = 2.0f;
@@ -632,7 +632,7 @@ static inline void winRootTabDisp(WindowWork* work) {
         } else {
             color = (GXColor){0x80, 0x80, 0x80, 0xFE};
         }
-        winTexInit_x2(*(TEXPalette**)work->winTpl->data);
+        winTexInit_x2(*work->winTpl->data);
         winTexSet_x2(tab->id + 1, 0xB2, (Vec){tab->x, tab->y, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, color);
     }
 }
@@ -784,7 +784,7 @@ void winBgGX(WindowWork* work, s32 type, f32 x, f32 y) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
-    TEXGetGXTexObjFromPalette(*(TEXPalette**)work->winTpl->data, &texObj, 7);
+    TEXGetGXTexObjFromPalette(*work->winTpl->data, &texObj, 7);
     GXInitTexObjLOD(&texObj, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
@@ -813,7 +813,7 @@ void winBgGX(WindowWork* work, s32 type, f32 x, f32 y) {
     GXPosition3f32(285.0f, 160.0f, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
 
-    TEXGetGXTexObjFromPalette(*(TEXPalette**)work->winTpl->data, &texObj, 6);
+    TEXGetGXTexObjFromPalette(*work->winTpl->data, &texObj, 6);
     GXInitTexObjLOD(&texObj, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
@@ -922,7 +922,7 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
 #else
     if (work->field_0x138 > 0) {
 #endif
-        winTexInit(*(TEXPalette**)work->winTpl->data);
+        winTexInit(*work->winTpl->data);
         winTexSet(0x25, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
         winIconInit();
         winIconSet(itemDataTable[work->field_0x138].icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
@@ -1324,13 +1324,13 @@ void winNameGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
 }
 
 // One textured piece of a book frame: (x, y) top-left, w x h, the texture stretched across it.
-static inline void winBookQuad(void* pal, s32 texId, f32 x, f32 y, f64 w, f64 h) {
+static inline void winBookQuad(TEXPalette* pal, s32 texId, f32 x, f32 y, f64 w, f64 h) {
     GXTexObj texObj;
     Mtx mtx;
     f64 sx;
     f64 sy;
 
-    TEXGetGXTexObjFromPalette((TEXPalette*)pal, &texObj, texId);
+    TEXGetGXTexObjFromPalette(pal, &texObj, texId);
     GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
@@ -1428,7 +1428,7 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
     }
 }
 
-void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
+void winHalfBookGX(TEXPalette* pal, f32 x, f32 y, s32 a4) {
     Mtx mtx;
     s32 i;
 
@@ -1642,7 +1642,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     }
 
     // Section 2: the empty-slot tiles. Drawn when the item is not yet obtained.
-    winTexInit(*(TEXPalette**)work->winTpl->data);
+    winTexInit(*work->winTpl->data);
     for (page = 0; page < (count + 0x1B) / 28; page++) {
         f32 vis2 = (scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8);
         if (vis2 > 400.0f || vis2 < -400.0f) {
@@ -1683,13 +1683,13 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                             continue;
                         }
                         { ItemData* it = &itemDataTable[LOGWIN(work)->cardIcon[idx]];
-                        iconId = *(u16*)&it[0xF0].icon_id; }
+                        iconId = it[0xF0].icon_id; }
                     } else {
                         if (swGet(LOGWIN(work)->badgeIcon[idx] + 0x41) == 0) {
                             continue;
                         }
                         { ItemData* it = &itemDataTable[LOGWIN(work)->badgeIcon[idx]];
-                        iconId = *(u16*)&it[0xB3].icon_id; }
+                        iconId = it[0xB3].icon_id; }
                     }
                     winIconSet(iconId, (Vec){((x + (f32)(col * 0x38)) + 24.0f) + 4.0f, ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - 28.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
@@ -1702,7 +1702,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     if (cursor > 0) {
         f32 bx;
 
-        winTexInit(*(TEXPalette**)work->winTpl->data);
+        winTexInit(*work->winTpl->data);
         bx = 395.0f + x;
         winTexSet(0x17, (Vec){bx, 15.0f + y, 0.0f}, (Vec){-1.0f, -1.0f, -1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         winIconInit();
@@ -1711,7 +1711,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     if (count > cursor * 0x1C + 0x1C) {
         f32 bx;
 
-        winTexInit(*(TEXPalette**)work->winTpl->data);
+        winTexInit(*work->winTpl->data);
         bx = 395.0f + x;
         winTexSet(0x17, (Vec){bx, y - 235.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         winIconInit();
@@ -1852,31 +1852,37 @@ void sort_3_3_func(WindowWork* work) {
 
 // 1:1 (the `const` parameters reproduce the original's hoisted `lwz r4,0x8(r4)` prologue load).
 int N_compare_func4_1(const void* a, const void* b) {
-    u16 buf_a[64];
-    u16 buf_b[64];
-    s16 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
-    s16 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
+    const WinEquipRec* pa = a;
+    const WinEquipRec* pb = b;
+    char buf_a[128];
+    char buf_b[128];
+    s16 id_b = (s16)pb->field_0x8;
+    s16 id_a = (s16)pa->field_0x8;
 
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
-    return strcmp((char*)buf_a, (char*)buf_b);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_a].name), buf_a);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_b].name), buf_b);
+    return strcmp(buf_a, buf_b);
 }
 
 // 1:1 (same `const`-parameter prologue hoist as N_compare_func4_1).
 int N_compare_func4_1_r(const void* a, const void* b) {
-    u16 buf_a[64];
-    u16 buf_b[64];
-    s16 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
-    s16 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
+    const WinEquipRec* pa = a;
+    const WinEquipRec* pb = b;
+    char buf_a[128];
+    char buf_b[128];
+    s16 id_b = (s16)pb->field_0x8;
+    s16 id_a = (s16)pa->field_0x8;
 
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
-    return strcmp((char*)buf_b, (char*)buf_a);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_a].name), buf_a);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_b].name), buf_b);
+    return strcmp(buf_b, buf_a);
 }
 
 int N_compare_func4_2(const void* a, const void* b) {
-    s32 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
-    s32 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
+    const WinEquipRec* pa = a;
+    const WinEquipRec* pb = b;
+    s32 id_a = (s16)pa->field_0x8;
+    s32 id_b = (s16)pb->field_0x8;
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -1890,8 +1896,10 @@ int N_compare_func4_2(const void* a, const void* b) {
 }
 
 int N_compare_func4_2_r(const void* a, const void* b) {
-    s32 id_a = (s16)((const WinEquipRec*)a)->field_0x8;
-    s32 id_b = (s16)((const WinEquipRec*)b)->field_0x8;
+    const WinEquipRec* pa = a;
+    const WinEquipRec* pb = b;
+    s32 id_a = (s16)pa->field_0x8;
+    s32 id_b = (s16)pb->field_0x8;
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -1996,29 +2004,35 @@ void sort_4_3_func(WindowWork* work) {
 
 // 1:1 (the `const` parameters reproduce the target's hoisted `lha` prologue load).
 int compare_func5_1(const void* a, const void* b) {
-    u16 buf_a[64];
-    u16 buf_b[64];
-    s16 id_a = (s16)(*(s16*)a + 0xF0);
-    s16 id_b = (s16)(*(s16*)b + 0xF0);
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
-    return strcmp((char*)buf_a, (char*)buf_b);
+    const s16* pa = a;
+    const s16* pb = b;
+    char buf_a[128];
+    char buf_b[128];
+    s16 id_a = (s16)(*pa + 0xF0);
+    s16 id_b = (s16)(*pb + 0xF0);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_a].name), buf_a);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_b].name), buf_b);
+    return strcmp(buf_a, buf_b);
 }
 
 // 1:1 (same `const`-parameter prologue hoist as compare_func5_1).
 int compare_func5_1_r(const void* a, const void* b) {
-    u16 buf_a[64];
-    u16 buf_b[64];
-    s16 id_a = (s16)(*(s16*)a + 0xF0);
-    s16 id_b = (s16)(*(s16*)b + 0xF0);
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
-    return strcmp((char*)buf_b, (char*)buf_a);
+    const s16* pa = a;
+    const s16* pb = b;
+    char buf_a[128];
+    char buf_b[128];
+    s16 id_a = (s16)(*pa + 0xF0);
+    s16 id_b = (s16)(*pb + 0xF0);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_a].name), buf_a);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_b].name), buf_b);
+    return strcmp(buf_b, buf_a);
 }
 
 int compare_func5_2(const void* a, const void* b) {
-    s16 id_a = (s16)(*(s16*)a + 0xF0);
-    s16 id_b = (s16)(*(s16*)b + 0xF0);
+    const s16* pa = a;
+    const s16* pb = b;
+    s16 id_a = (s16)(*pa + 0xF0);
+    s16 id_b = (s16)(*pb + 0xF0);
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -2032,8 +2046,10 @@ int compare_func5_2(const void* a, const void* b) {
 }
 
 int compare_func5_2_r(const void* a, const void* b) {
-    s16 id_a = (s16)(*(s16*)a + 0xF0);
-    s16 id_b = (s16)(*(s16*)b + 0xF0);
+    const s16* pa = a;
+    const s16* pb = b;
+    s16 id_a = (s16)(*pa + 0xF0);
+    s16 id_b = (s16)(*pb + 0xF0);
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -2145,29 +2161,35 @@ void sort_5_3_func(WindowWork* work) {
 
 // 1:1 (the `const` parameters reproduce the target's hoisted `lha` prologue load).
 int compare_func6_1(const void* a, const void* b) {
-    u16 buf_a[64];
-    u16 buf_b[64];
-    s16 id_a = (s16)(*(s16*)a + 0xB3);
-    s16 id_b = (s16)(*(s16*)b + 0xB3);
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
-    return strcmp((char*)buf_a, (char*)buf_b);
+    const s16* pa = a;
+    const s16* pb = b;
+    char buf_a[128];
+    char buf_b[128];
+    s16 id_a = (s16)(*pa + 0xB3);
+    s16 id_b = (s16)(*pb + 0xB3);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_a].name), buf_a);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_b].name), buf_b);
+    return strcmp(buf_a, buf_b);
 }
 
 // 1:1 (same `const`-parameter prologue hoist as compare_func6_1).
 int compare_func6_1_r(const void* a, const void* b) {
-    u16 buf_a[64];
-    u16 buf_b[64];
-    s16 id_a = (s16)(*(s16*)a + 0xB3);
-    s16 id_b = (s16)(*(s16*)b + 0xB3);
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
-    pouchHiraganaToKatakana((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
-    return strcmp((char*)buf_b, (char*)buf_a);
+    const s16* pa = a;
+    const s16* pb = b;
+    char buf_a[128];
+    char buf_b[128];
+    s16 id_a = (s16)(*pa + 0xB3);
+    s16 id_b = (s16)(*pb + 0xB3);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_a].name), buf_a);
+    pouchHiraganaToKatakana(msgSearch(itemDataTable[id_b].name), buf_b);
+    return strcmp(buf_b, buf_a);
 }
 
 int compare_func6_2(const void* a, const void* b) {
-    s16 id_a = (s16)(*(s16*)a + 0xB3);
-    s16 id_b = (s16)(*(s16*)b + 0xB3);
+    const s16* pa = a;
+    const s16* pb = b;
+    s16 id_a = (s16)(*pa + 0xB3);
+    s16 id_b = (s16)(*pb + 0xB3);
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -2181,8 +2203,10 @@ int compare_func6_2(const void* a, const void* b) {
 }
 
 int compare_func6_2_r(const void* a, const void* b) {
-    s16 id_a = (s16)(*(s16*)a + 0xB3);
-    s16 id_b = (s16)(*(s16*)b + 0xB3);
+    const s16* pa = a;
+    const s16* pb = b;
+    s16 id_a = (s16)(*pa + 0xB3);
+    s16 id_b = (s16)(*pb + 0xB3);
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -2218,9 +2242,12 @@ void sort_6_2_func(WindowWork* work) {
 }
 
 int compare_func1(const void* a, const void* b) {
-    if (*(u8*)a > *(u8*)b) {
+    const u8* pa = a;
+    const u8* pb = b;
+
+    if (*pa > *pb) {
         return 1;
-    } else if (*(u8*)a < *(u8*)b) {
+    } else if (*pa < *pb) {
         return -1;
     } else {
         return 0;
@@ -2228,9 +2255,11 @@ int compare_func1(const void* a, const void* b) {
 }
 
 int compare_func1_r(const void* a, const void* b) {
-    if (*(u8*)a < *(u8*)b) {
+    const u8* pa = a;
+    const u8* pb = b;
+    if (*pa < *pb) {
         return 1;
-    } else if (*(u8*)a > *(u8*)b) {
+    } else if (*pa > *pb) {
         return -1;
     } else {
         return 0;
@@ -2248,7 +2277,7 @@ void sort_7_1_func(WindowWork* work) {
     LOGWIN(work)->charPage = LOGWIN(work)->charSel / 16;
 }
 
-static inline s32 winRootFindTag(const char* tag, u8* buf) {
+static inline s32 winRootFindTag(const char* tag, char* buf) {
     static const char* tbl[] = {
         "nara", "gor",  "tik", "shiga", "hei", "nok", "stn", "gon", "win",
         "hou",  "mri",  "tou", "usu",   "gra", "jin", "muj", "dou", "hom",
@@ -2257,8 +2286,8 @@ static inline s32 winRootFindTag(const char* tag, u8* buf) {
     s32 i;
 
     for (i = 0; (u32)i < 0x1A; i++) {
-        sprintf((char*)buf, "menu_monosiri_%s", tbl[i]);
-        if (strcmp((char*)buf, tag) == 0) {
+        sprintf(buf, "menu_monosiri_%s", tbl[i]);
+        if (strcmp(buf, tag) == 0) {
             break;
         }
     }
@@ -2270,10 +2299,12 @@ static inline s32 winRootFindTag(const char* tag, u8* buf) {
 
 // Two `menu_monosiri_%s` lookups over the 26-entry enemy-code table.
 int compare_func2(const void* a, const void* b) {
-    u8 buf_a[64];
-    u8 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
-    TattleEntry* eb = battleGetUnitMonosiriPtr(((LogChar*)b)->id);
+    const LogChar* pa = a;
+    const LogChar* pb = b;
+    char buf_a[64];
+    char buf_b[64];
+    TattleEntry* ea = battleGetUnitMonosiriPtr(pa->id);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(pb->id);
     s32 i = winRootFindTag(ea->locationTag, buf_a);
     s32 j = winRootFindTag(eb->locationTag, buf_b);
 
@@ -2288,10 +2319,12 @@ int compare_func2(const void* a, const void* b) {
 
 // Two `menu_monosiri_%s` lookups over the 26-entry enemy-code table.
 int compare_func2_r(const void* a, const void* b) {
-    u8 buf_a[64];
-    u8 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
-    TattleEntry* eb = battleGetUnitMonosiriPtr(((LogChar*)b)->id);
+    const LogChar* pa = a;
+    const LogChar* pb = b;
+    char buf_a[64];
+    char buf_b[64];
+    TattleEntry* ea = battleGetUnitMonosiriPtr(pa->id);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(pb->id);
     s32 i = winRootFindTag(ea->locationTag, buf_a);
     s32 j = winRootFindTag(eb->locationTag, buf_b);
 
@@ -2318,57 +2351,61 @@ void sort_7_2_func(WindowWork* work) {
 }
 
 int compare_func3(const void* a, const void* b) {
-    u16 buf_a[64];
-    u16 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
-    TattleEntry* eb = battleGetUnitMonosiriPtr(((LogChar*)b)->id);
+    const LogChar* pa = a;
+    const LogChar* pb = b;
+    char buf_a[128];
+    char buf_b[128];
+    TattleEntry* ea = battleGetUnitMonosiriPtr(pa->id);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(pb->id);
 
-    pouchHiraganaToKatakana((char*)msgSearch(ea->enemyTag), (char*)buf_a);
-    pouchHiraganaToKatakana((char*)msgSearch(eb->enemyTag), (char*)buf_b);
+    pouchHiraganaToKatakana(msgSearch(ea->enemyTag), buf_a);
+    pouchHiraganaToKatakana(msgSearch(eb->enemyTag), buf_b);
 
-    if (((LogChar*)a)->id == 0x4D || ((LogChar*)a)->id == 0x87) {
+    if (pa->id == 0x4D || pa->id == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
-            pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_a);
+            pouchHiraganaToKatakana(msgSearch("btl_un_hatena"), buf_a);
         } else {
-            pouchHiraganaToKatakana((char*)msgSearch("btl_un_rampell"), (char*)buf_a);
+            pouchHiraganaToKatakana(msgSearch("btl_un_rampell"), buf_a);
         }
     }
-    if (((LogChar*)b)->id == 0x4D || ((LogChar*)b)->id == 0x87) {
+    if (pb->id == 0x4D || pb->id == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
-            pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_b);
+            pouchHiraganaToKatakana(msgSearch("btl_un_hatena"), buf_b);
         } else {
-            pouchHiraganaToKatakana((char*)msgSearch("btl_un_rampell"), (char*)buf_b);
+            pouchHiraganaToKatakana(msgSearch("btl_un_rampell"), buf_b);
         }
     }
 
-    return strcmp((char*)buf_a, (char*)buf_b);
+    return strcmp(buf_a, buf_b);
 }
 
 int compare_func3_r(const void* a, const void* b) {
-    u16 buf_a[64];
-    u16 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(((LogChar*)a)->id);
-    TattleEntry* eb = battleGetUnitMonosiriPtr(((LogChar*)b)->id);
+    const LogChar* pa = a;
+    const LogChar* pb = b;
+    char buf_a[128];
+    char buf_b[128];
+    TattleEntry* ea = battleGetUnitMonosiriPtr(pa->id);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(pb->id);
 
-    pouchHiraganaToKatakana((char*)msgSearch(ea->enemyTag), (char*)buf_a);
-    pouchHiraganaToKatakana((char*)msgSearch(eb->enemyTag), (char*)buf_b);
+    pouchHiraganaToKatakana(msgSearch(ea->enemyTag), buf_a);
+    pouchHiraganaToKatakana(msgSearch(eb->enemyTag), buf_b);
 
-    if (((LogChar*)a)->id == 0x4D || ((LogChar*)a)->id == 0x87) {
+    if (pa->id == 0x4D || pa->id == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
-            pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_a);
+            pouchHiraganaToKatakana(msgSearch("btl_un_hatena"), buf_a);
         } else {
-            pouchHiraganaToKatakana((char*)msgSearch("btl_un_rampell"), (char*)buf_a);
+            pouchHiraganaToKatakana(msgSearch("btl_un_rampell"), buf_a);
         }
     }
-    if (((LogChar*)b)->id == 0x4D || ((LogChar*)b)->id == 0x87) {
+    if (pb->id == 0x4D || pb->id == 0x87) {
         if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
-            pouchHiraganaToKatakana((char*)msgSearch("btl_un_hatena"), (char*)buf_b);
+            pouchHiraganaToKatakana(msgSearch("btl_un_hatena"), buf_b);
         } else {
-            pouchHiraganaToKatakana((char*)msgSearch("btl_un_rampell"), (char*)buf_b);
+            pouchHiraganaToKatakana(msgSearch("btl_un_rampell"), buf_b);
         }
     }
 
-    return strcmp((char*)buf_b, (char*)buf_a);
+    return strcmp(buf_b, buf_a);
 }
 
 void sort_7_3_func(WindowWork* work) {
@@ -2421,9 +2458,11 @@ void sort_8_1_func(WindowWork* work) {
 }
 
 int compare_func5(const void* a, const void* b) {
-    if (*(u8*)a > *(u8*)b) {
+    const u8* pa = a;
+    const u8* pb = b;
+    if (*pa > *pb) {
         return 1;
-    } else if (*(u8*)a < *(u8*)b) {
+    } else if (*pa < *pb) {
         return -1;
     } else {
         return 0;
@@ -2431,9 +2470,11 @@ int compare_func5(const void* a, const void* b) {
 }
 
 int compare_func5_r(const void* a, const void* b) {
-    if (*(u8*)a < *(u8*)b) {
+    const u8* pa = a;
+    const u8* pb = b;
+    if (*pa < *pb) {
         return 1;
-    } else if (*(u8*)a > *(u8*)b) {
+    } else if (*pa > *pb) {
         return -1;
     } else {
         return 0;
@@ -2610,15 +2651,15 @@ void winSortGX(WindowWork* work) {
         if (i == work->field_0x174) {
             f32 row;
 
-            winTexInit(*(TEXPalette**)work->winTpl->data);
+            winTexInit(*work->winTpl->data);
             row = y - 20.0f - (f32)(i * 0x28) - 16.0f - 8.0f;
             winTexSet(0xB6, (Vec){x + 64.0f + 3.0f + 16.0f, row, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0x00, 0x00, 0x00, 0x80});
-            winTexInit_x2(*(TEXPalette**)work->winTpl->data);
+            winTexInit_x2(*work->winTpl->data);
             winTexSet_x2(tex, 0xB6, (Vec){x + 64.0f + 16.0f + 4.0f - 6.0f, 6.0f + row, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         } else {
             f32 row;
 
-            winTexInit_x2(*(TEXPalette**)work->winTpl->data);
+            winTexInit_x2(*work->winTpl->data);
             row = y - 20.0f - (f32)(i * 0x28) - 16.0f - 8.0f;
             winTexSet_x2(tex, 0xB6, (Vec){x + 64.0f + 16.0f + 4.0f, row, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0x80, 0x80, 0x80, 0xFF});
         }
@@ -2656,7 +2697,7 @@ s32 winSortWait(WindowWork* work) {
 // Kage (paper) window quad. The vertex constants are literals so MWCC reloads each
 // through f0 into the FIFO as the original does; the same-literal GXSetFog zero lets
 // MWCC land it in f1 after saving x. The int->f32 magic double still pools anonymously.
-void winKageGX(WindowWork* work, f32 x, f32 y, f32 w, f32 h, void* color) {
+void winKageGX(WindowWork* work, f32 x, f32 y, f32 w, f32 h, GXColor* color) {
     GXTexObj texObj;
     Mtx mtx4;
     Mtx mtx1;
@@ -2680,10 +2721,10 @@ void winKageGX(WindowWork* work, f32 x, f32 y, f32 w, f32 h, void* color) {
     GXSetTevSwapMode(0, 0, 0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-    TEXGetGXTexObjFromPalette(*(TEXPalette**)work->winTpl->data, &texObj, 0x7A);
+    TEXGetGXTexObjFromPalette(*work->winTpl->data, &texObj, 0x7A);
     GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
     GXLoadTexObj(&texObj, 0);
-    GXSetTevColor(1, *(GXColor*)color);
+    GXSetTevColor(1, *color);
     PSMTXTrans(mtx1, x, y, w);
     scaleY = h * (2.0f * (f32)GXGetTexObjHeight(&texObj));
     PSMTXScale(mtx2, h * (2.0f * (f32)GXGetTexObjWidth(&texObj)), scaleY, 1.0f);
@@ -2842,7 +2883,7 @@ void winMailDisp(WindowWork* work) {
         winFontSetLabel((Vec){80.0f + work->field_0x244, (work->field_0x24C - 80.0f) + (f32)(work->mailScroll * 21), 0.0f},
                         (Vec){0.75f, 0.75f, 0.75f}, (GXColor){0x00, 0x00, 0x00, 0xFF}, mail->body);
         if (mail->flags & 0x1000) {
-            winTexInit(*(TEXPalette**)work->mailTpl->data);
+            winTexInit(*work->mailTpl->data);
             winTexSet(mail->picture,
                       (Vec){210.0f + work->field_0x244, 7.0f + ((work->field_0x24C - (f32)((work->mailLines - 1) * 21))
                                                    + (f32)(work->mailScroll * 21)), 0.0f},

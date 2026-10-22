@@ -272,7 +272,7 @@ void effFireRingDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)stg__s_v);
+	effSetVtxDescN64(stg__s_v);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x5a);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	tri2(4, 5, 6, 0, 4, 6, 7, 0);

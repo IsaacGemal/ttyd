@@ -49,10 +49,12 @@ void DVDMgrDelete(void) { //1:1
 }
 
 static int compare(const void* a, const void* b) { //1:1
+    const u8* indexA = a;
+    const u8* indexB = b;
     u8 value1, value2;
     
-    value1 = (u8)dvdq[*(const u8*)a].priority;
-    value2 = (u8)dvdq[*(const u8*)b].priority;
+    value1 = (u8)dvdq[*indexA].priority;
+    value2 = (u8)dvdq[*indexB].priority;
     if (value1 > value2) {
         return 1;
     }

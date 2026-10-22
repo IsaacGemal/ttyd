@@ -77,7 +77,7 @@ s32 waku(EventEntry* event, BOOL isFirstCall) {
         animPoseWorldPositionEvalOn(npc->poseId);
         if (pose->groupWorldPos != NULL) {
             s32 i;
-            Vec* positions = (Vec*)pose->groupWorldPos->address;
+            Vec* positions = pose->groupWorldPos->address;
             idx = animPoseGetGroupIdx(npc->poseId, "locator17");
             if (npc->position.y >= 0.0f) {
                 npcNameToPtr("枠")->position = positions[idx];
@@ -85,7 +85,7 @@ s32 waku(EventEntry* event, BOOL isFirstCall) {
                 npcNameToPtr("枠")->position = (Vec){0.0f, -1000.0f, 0.0f};
             }
             // The original reloads the base before the loop instead of reusing `positions`.
-            clear = (Vec*)pose->groupWorldPos->address;
+            clear = pose->groupWorldPos->address;
             for (i = 0; i < pose->groupWorldPosCount; i++) {
                 clear[i] = (Vec){0.0f, -1000.0f, 0.0f};
             }
@@ -98,7 +98,7 @@ s32 waku(EventEntry* event, BOOL isFirstCall) {
         animPoseWorldPositionEvalOn(npc->poseId);
         if (pose->groupWorldPos != NULL) {
             s32 i;
-            Vec* positions = (Vec*)pose->groupWorldPos->address;
+            Vec* positions = pose->groupWorldPos->address;
             // A base of its own, as in the first block (sharing `clear` changes the registers).
             Vec* clear2;
 
@@ -108,7 +108,7 @@ s32 waku(EventEntry* event, BOOL isFirstCall) {
             } else {
                 npcNameToPtr("枠２")->position = (Vec){0.0f, -1000.0f, 0.0f};
             }
-            clear2 = (Vec*)pose->groupWorldPos->address;
+            clear2 = pose->groupWorldPos->address;
             for (i = 0; i < pose->groupWorldPosCount; i++) {
                 clear2[i] = (Vec){0.0f, -1000.0f, 0.0f};
             }

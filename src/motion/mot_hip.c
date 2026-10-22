@@ -60,7 +60,7 @@ void mot_hip(void) {
     f32 landY;
     f32 outX;
     f32 outZ;
-    void* hit;
+    HitEntry* hit;
     MarioWork* m2;
     f32 angle;
     f32 dy;
@@ -245,7 +245,7 @@ void mot_hip(void) {
                 mario->dispOfs2.y = 0.0f;
                 marioChgPose("M_A_1B");
                 {
-                    s32 attr = hitGetAttr((HitEntry*)hit);
+                    s32 attr = hitGetAttr(hit);
                     if (attr & 0x200) {
                         set_damage_root_ypos(mario->position.y);
                         mario->jumpVelY = -0.4f;
@@ -332,7 +332,7 @@ void mot_hip(void) {
 s32 U_chkground(void) {
     MarioWork* mario = marioGetPtr();
     f32 landY;
-    void* hit;
+    HitEntry* hit;
     s32 attr;
 
     hit = marioChkLandon(&landY, 1.0f);
@@ -348,7 +348,7 @@ s32 U_chkground(void) {
         mario->dispFlags &= ~4;
         mario->flags &= ~0x80;
         camFollowYOn();
-        attr = hitGetAttr((HitEntry*)hit);
+        attr = hitGetAttr(hit);
         if (attr & 0x200) {
             set_damage_root_ypos(mario->position.y);
             mario->jumpVelY = -0.4f;

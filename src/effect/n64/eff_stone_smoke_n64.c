@@ -132,7 +132,7 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	effGetTexObjN64(0x5C, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+	effSetVtxDescN64(size16x16_tex32x32_vtx);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

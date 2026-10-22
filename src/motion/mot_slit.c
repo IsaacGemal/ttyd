@@ -811,9 +811,9 @@ keyOffPath:
         break;
     }
     if (mario->flags & 0x100000) {
-        if ((u32)mario->hitobjPush != 0) {
-            if ((u32)mario->hitobjStandOn != 0 && mario->currMotionId == 0x15) {
-                if (hitGetAttr((HitEntry*)(s32)mario->hitobjPush) & 0x2000) {
+        if (mario->hitobjPush != NULL) {
+            if (mario->hitobjStandOn != NULL && mario->currMotionId == 0x15) {
+                if (hitGetAttr(mario->hitobjPush) & 0x2000) {
                     f32 turn = revise360(mario->controlStickAngle - mario->targetYaw);
 
                     if (turn > 90.0f && turn < 270.0f) {
@@ -836,19 +836,19 @@ keyOffPath:
                         query.targetPos.z = mario->position.z;
                         query.targetDir = (Vec){slitSinv, 0.0f, slitCosv};
                         query.targetDistance = 20.0f;
-                        if (hitCheckVecHitObjXZ(q, (HitEntry*)(s32)mario->hitobjPush) != 0) {
+                        if (hitCheckVecHitObjXZ(q, mario->hitobjPush) != 0) {
                             query.targetPos.x = mario->position.x;
                             query.targetPos.z = mario->position.z;
                             query.targetDistance = 20.0f;
                             movePos(&q->targetPos.x, &q->targetPos.z, 1.0f,
                                     reviseAngle(90.0f + mario->moveDir));
-                            if (hitCheckVecHitObjXZ(q, (HitEntry*)(s32)mario->hitobjPush) != 0) {
+                            if (hitCheckVecHitObjXZ(q, mario->hitobjPush) != 0) {
                                 query.targetPos.x = mario->position.x;
                                 query.targetPos.z = mario->position.z;
                                 query.targetDistance = 20.0f;
                                 movePos(&q->targetPos.x, &q->targetPos.z, 1.0f,
                                         reviseAngle(mario->moveDir - 90.0f));
-                                if (hitCheckVecHitObjXZ(q, (HitEntry*)(s32)mario->hitobjPush) != 0) {
+                                if (hitCheckVecHitObjXZ(q, mario->hitobjPush) != 0) {
                                     mario->slitState = 0x50;
                                 }
                             }
@@ -860,8 +860,8 @@ keyOffPath:
             }
         } else {
             state = mario->slitState;
-            if ((state < 0x5A || state > 0x5E) && (u32)mario->hitobjStandOn != 0 &&
-                (hitGetAttr((HitEntry*)(s32)mario->hitobjStandOn) & 0x2000)) {
+            if ((state < 0x5A || state > 0x5E) && mario->hitobjStandOn != NULL &&
+                (hitGetAttr(mario->hitobjStandOn) & 0x2000)) {
                 s32 count = mario->slitPushCount;
 
                 mario->slitPushCount = count + 3;
@@ -945,7 +945,7 @@ keyOffPath:
             mario->flags &= 0xFFFFFEFF;
             mario->flags &= 0xEFFFFFFF;
     case 0x5D:
-            if ((u32)mario->hitobjStandOn != 0) {
+            if (mario->hitobjStandOn != NULL) {
                 mario->flags &= 0xFFF0FFFF;
                 mario->slitState = 0x5E;
     case 0x5E:

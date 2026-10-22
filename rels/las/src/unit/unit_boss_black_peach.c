@@ -46,6 +46,46 @@
 
 #pragma pool_data off
 
+typedef struct HandElem {
+    /*0x00*/ u16 mirror;          // nonzero flips the pose matrix x scale
+    /*0x02*/ u8 pad_0x02[2];
+    /*0x04*/ s32 poseIdx;         // index into HandWork.poses
+    /*0x08*/ OSTime startTime;    // renderTime the pose animation started at
+    /*0x10*/ s16 stagger;         // random 0..20 subtracted from phase * speed to stagger posY
+    /*0x12*/ s16 wavePhase;       // 0..0x870, advanced and wrapped by the wave hand events
+    /*0x14*/ f32 speed;           // random scale on phase
+    /*0x18*/ f32 posX;            // stored into pose->matrix[0][3]
+    /*0x1C*/ f32 posY;            // stored into pose->matrix[1][3]
+    /*0x20*/ f32 posZ;            // stored into pose->matrix[2][3]
+    /*0x24*/ u8 pad_0x24[4];
+} HandElem;
+
+typedef struct HandPose {
+    /*0x00*/ char name[0x10];
+    /*0x10*/ char name2[8];
+    /*0x18*/ f32 duration;        // HandData.value, divides the elapsed time in pose_main
+    /*0x1C*/ s32 firstFrame;      // first frame of the run of same-name entries
+    /*0x20*/ s32 frameCount;      // number of entries in the run
+} HandPose;
+
+typedef struct HandWork {
+    /*0x000*/ HandElem* elems;
+    /*0x004*/ s32 count;
+    /*0x008*/ HandPose poses[32];
+    /*0x488*/ u8 pad_0x488[0x14];
+    /*0x49C*/ f32 phase;          // scroll position the hand setup/scroll events step by 1 per frame
+    /*0x4A0*/ u8 pad_0x4A0[4];
+    /*0x4A4*/ s32 poseCount;      // pose_init counter, then the total number of poses
+    /*0x4A8*/ s32 frameTimer;     // counts down a 30-frame hold, or up to 200 in queen_hand_small_1000hand_1_evt
+    /*0x4AC*/ s32 state;          // switch selector of the hand scroll and setup events
+} HandWork;
+
+typedef struct HandData {
+    /*0x0*/ const char* str1;
+    /*0x4*/ const char* str2;
+    /*0x8*/ f32 value;
+} HandData;
+
 #pragma force_active on
 static void hand_init(void);
 static void pose_main(void);
@@ -94,7 +134,7 @@ s32 queen_hand_small_attack_event[35];
 s32 queen_hand_small_damage_event[48];
 s32 queen_hand_small_dead_event[32];
 s32 queen_hand_small_wait_event[6];
-u32 hand_data[96];
+HandData hand_data[32];
 
 // clang-format off
 extend_data(140,
@@ -1319,56 +1359,14 @@ BattleUnitKind unit_boss_shadow_queen = {
 
 
 
-// TODO: type
-u32 hand_wp[1];
+HandWork* hand_wp[1];
 
-// TODO: type
-u32 hand_data[96];
+HandData hand_data[32];
 
 // TODO: write queen_hand_small_drag_4_evt (global, 0x180 bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
 
-typedef struct HandElem {
-    /*0x00*/ u16 mirror;          // nonzero flips the pose matrix x scale
-    /*0x02*/ u8 pad_0x02[2];
-    /*0x04*/ s32 poseIdx;         // index into HandWork.poses
-    /*0x08*/ OSTime startTime;    // renderTime the pose animation started at
-    /*0x10*/ s16 stagger;         // random 0..20 subtracted from phase * speed to stagger posY
-    /*0x12*/ s16 wavePhase;       // 0..0x870, advanced and wrapped by the wave hand events
-    /*0x14*/ f32 speed;           // random scale on phase
-    /*0x18*/ f32 posX;            // stored into pose->matrix[0][3]
-    /*0x1C*/ f32 posY;            // stored into pose->matrix[1][3]
-    /*0x20*/ f32 posZ;            // stored into pose->matrix[2][3]
-    /*0x24*/ u8 pad_0x24[4];
-} HandElem;
-
-typedef struct HandPose {
-    /*0x00*/ char name[0x10];
-    /*0x10*/ char name2[8];
-    /*0x18*/ f32 duration;        // HandData.value, divides the elapsed time in pose_main
-    /*0x1C*/ s32 firstFrame;      // first frame of the run of same-name entries
-    /*0x20*/ s32 frameCount;      // number of entries in the run
-} HandPose;
-
-typedef struct HandWork {
-    /*0x000*/ HandElem* elems;
-    /*0x004*/ s32 count;
-    /*0x008*/ HandPose poses[32];
-    /*0x488*/ u8 pad_0x488[0x14];
-    /*0x49C*/ f32 phase;          // scroll position the hand setup/scroll events step by 1 per frame
-    /*0x4A0*/ u8 pad_0x4A0[4];
-    /*0x4A4*/ s32 poseCount;      // pose_init counter, then the total number of poses
-    /*0x4A8*/ s32 frameTimer;     // counts down a 30-frame hold, or up to 200 in queen_hand_small_1000hand_1_evt
-    /*0x4AC*/ s32 state;          // switch selector of the hand scroll and setup events
-} HandWork;
-
-typedef struct HandData {
-    /*0x0*/ const char* str1;
-    /*0x4*/ const char* str2;
-    /*0x8*/ f32 value;
-} HandData;
-
-#define HAND ((HandWork*)hand_wp[0])
+#define HAND (hand_wp[0])
 
 typedef struct ShadowQueenData {
     s32 pose2Id;                // handle from part 2 (poseId), animPoseWorldPositionEvalOn
@@ -1401,14 +1399,14 @@ USER_FUNC(shadow_queen_connect) {
     }
     data = (ShadowQueenData*)event->userdata[0];
     pose = animPoseGetAnimPosePtr(data->pose2Id);
-    verts = *(f32**)((void*)pose->groupWorldPos);
+    verts = pose->groupWorldPos->address;
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
     BtlUnit_SetPartsPos(part, verts[data->locator2Group * 3], verts[data->locator2Group * 3 + 1], verts[data->locator2Group * 3 + 2]);
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 5);
     part->field_0x4F8 = 7.0f;
     BtlUnit_SetPartsPos(part, verts[data->locator2Group * 3], verts[data->locator2Group * 3 + 1], verts[data->locator2Group * 3 + 2]);
     pose = animPoseGetAnimPosePtr(data->pose3Id);
-    verts = *(f32**)((void*)pose->groupWorldPos);
+    verts = pose->groupWorldPos->address;
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 4);
     part->field_0x4F8 = 1.0f;
     BtlUnit_SetPartsPos(part, verts[data->locator3Group * 3], verts[data->locator3Group * 3 + 1], verts[data->locator3Group * 3 + 2]);
@@ -1459,7 +1457,7 @@ USER_FUNC(make_pattern) {
     NpcEntry* npc;
     AnimData* data;
     s32 i;
-    p = (HandData*)hand_data;
+    p = hand_data;
     npc = npcNameToPtr("dummy");
     animPoseSetAnim(npc->poseId, "KRT_S_1", 1);
     animPoseGetAnimPosePtr(npc->poseId);
@@ -1484,7 +1482,7 @@ static void pose_init(void) {
     HandData* data;
     s32 i;
     s32 start;
-    data = (HandData*)hand_data;
+    data = hand_data;
     i = 0;
     light = lightGetPaperCraft();
     light->position = (Vec){-200.0f, 100.0f, 500.0f};
@@ -4777,7 +4775,7 @@ static void hand_init(void) {
     s32 i;
     ExtPose* pose;
     HandElem* elem;
-    hand_wp[0] = (u32)__memAlloc(4, 0x4B0);
+    hand_wp[0] = __memAlloc(4, 0x4B0);
     memset(HAND, 0, 0x4B0);
     HAND->count = extGetPoseNum();
     HAND->elems = __memAlloc(4, HAND->count * 0x28);
@@ -4883,7 +4881,8 @@ USER_FUNC(unk_las_0000af38) {
 USER_FUNC(eff_queen_set_alpha_evt) {
     s32 value = evtGetValue(event, event->args[0]);
     EffectEntry* eff = effNameToPtr("m_q2");
-    ((effQueenData*)eff->userdata)->alphaCap = value;
+    effQueenData* data = eff->userdata;
+    data->alphaCap = value;
     return EVT_RETURN_DONE;
 }
 

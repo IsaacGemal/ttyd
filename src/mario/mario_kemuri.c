@@ -49,11 +49,11 @@ void mario_kemuri_80130474(void) {
     }
     if (mario->currMotionId != 3) {
         if (mario->hitobjStandOn != NULL) {
-            attr = hitGetAttr((HitEntry*)mario->hitobjStandOn);
+            attr = hitGetAttr(mario->hitobjStandOn);
         }
     } else {
         if (mario->hitobjJumpFrom != NULL) {
-            attr = hitGetAttr((HitEntry*)mario->hitobjJumpFrom);
+            attr = hitGetAttr(mario->hitobjJumpFrom);
         }
     }
     if (attr & 0x1000) {
@@ -104,7 +104,7 @@ void unk_80130374(void) {
     s32 attr;
     EffectEntry* effect;
 
-    hit = (HitEntry*)mario->hitobjStandOn;
+    hit = mario->hitobjStandOn;
     if (hit == NULL) {
         return;
     }

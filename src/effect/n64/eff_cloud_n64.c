@@ -250,7 +250,7 @@ void effCloudMain(EffectEntry* effect) {
 }
 
 // effCloudDisp's ring loop needed two changes to match: the Vtx pointer is rebuilt per iteration
-// (`((cloudVtx*)base) + i * 2`) instead of being a stepped function-scope pointer, which lands it in
+// (`base + i * 2`) instead of being a stepped function-scope pointer, which lands it in
 // r28; and a running `deg` that only counts active entries drives the alpha angle
 // (`(f32)((deg * 180) / (count - 1))`, `deg++` inside the active-entry `if`), which lets MWCC
 // strength-reduce `deg * 180` and schedule `addi r27,r27,0xb4` in the original's mid-store slot.
@@ -261,7 +261,7 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	s32 count;
 	s32 type;
 	CameraEntry* cam;
-	effVtxArray* base;
+	cloudVtx* base;
 	s32 firstActive;
 	s32 fadeG;
 	GXTexObj texObj;
@@ -344,7 +344,7 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	GXSetCullMode(GX_CULL_NONE);
 
 	entry = smartAlloc(0x690, 3);
-	base = (effVtxArray*)entry->address;
+	base = entry->address;
 	memset(base, 0, 0x690);
 	effSetVtxDescN64(base);
 
@@ -361,7 +361,7 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	if (count - 1 > 0) {
 		deg = 0;
 		for (i = 0; i < 30; i++) {
-			cloudVtx* vtx = ((cloudVtx*)base) + i * 2;
+			cloudVtx* vtx = base + i * 2;
 			j = (1 + data->trailHead + i) % 30;
 			alpha = (s32)(255.0f * (f32)sin((f32)((deg * 180) / (count - 1)) * float_6p2832_8041eba4 / float_360_8041eba8));
 			if (alpha > 200) {

@@ -355,13 +355,13 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 		switch (kind) {
 		case 0:
 		case 2:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_0_vtx);
+			effSetVtxDescN64(size8x8_tex16x16_0_vtx);
 			break;
 		case 1:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_1_vtx);
+			effSetVtxDescN64(size8x8_tex16x16_1_vtx);
 			break;
 		case 3:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_2_vtx);
+			effSetVtxDescN64(size8x8_tex16x16_2_vtx);
 			break;
 		}
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
@@ -444,13 +444,13 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 		switch (kind) {
 		case 0:
 		case 2:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_0_vtx);
+			effSetVtxDescN64(size8x8_tex16x16_0_vtx);
 			break;
 		case 1:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_1_vtx);
+			effSetVtxDescN64(size8x8_tex16x16_1_vtx);
 			break;
 		case 3:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_2_vtx);
+			effSetVtxDescN64(size8x8_tex16x16_2_vtx);
 			break;
 		}
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);

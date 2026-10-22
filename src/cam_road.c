@@ -27,13 +27,13 @@ typedef struct CamRoadMap {
     /* 0x044 */ char name[0x84];
     /* 0x0C8 */ s32 count;
     /* 0x0CC */ u8 pad_0CC[0x1C];
-    /* 0x0E8 */ u32 field_0xE8;
+    /* 0x0E8 */ Vec* field_0xE8;
     /* 0x0EC */ CamRoadMapEntry* entries;
-    /* 0x0F0 */ u32 subs;
-    /* 0x0F4 */ u32 lists;
-    /* 0x0F8 */ u32 curvePts;
-    /* 0x0FC */ u32 verts;
-    /* 0x100 */ u32 indices;
+    /* 0x0F0 */ struct CamRoadSub* subs;
+    /* 0x0F4 */ struct CamRoadList* lists;
+    /* 0x0F8 */ Vec* curvePts;
+    /* 0x0FC */ Vec* verts;
+    /* 0x100 */ s32* indices;
     /* 0x104 */ u32 curveRanges;
     /* 0x108 */ u32 field_0x108;
 } CamRoadMap;
@@ -563,7 +563,7 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
 
     for (i = 0; i < wp->map->count; i++, entry++) {
         subCount = entry->subCount;
-        sub = (CamRoadSub*)wp->map->subs + entry->subStart;
+        sub = wp->map->subs + entry->subStart;
         if (wp->mapKind != CAM_ROAD_MAP_101 || entry->disabled == 0) {
             if (subCount == 0) {
                 top = entry->topHeight;
@@ -576,11 +576,11 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
                 for (k = 0; k < subCount; k++, sub++) {
                     CamRoadMap* map = wp->map;
 
-                    verts = (Vec*)map->verts + sub->vertStart;
+                    verts = map->verts + sub->vertStart;
                     n = sub->listCount;
-                    list = (CamRoadList*)map->lists + sub->listStart;
+                    list = map->lists + sub->listStart;
                     for (j = 0; j < n; j++, list++) {
-                        idx = (s32*)wp->map->indices + list->idxStart;
+                        idx = wp->map->indices + list->idxStart;
                         idxp = idx + 1;
                         m = list->idxCount;
                         for (found = 1; found < m - 1; idxp++, found++) {
@@ -605,10 +605,10 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
         }
     }
 
-    cur = (CamRoadCurve*)hit;
+    cur = hit;
     if (hit == NULL) {
         if (b->valid != 0) {
-            cur = (CamRoadCurve*)b->road;
+            cur = b->road;
         } else {
             cur = NULL;
         }
@@ -685,7 +685,7 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
     }
 
     if (cur != NULL) {
-        rad = 3.141592f * (*(f32*)wp->map->field_0xE8 / 2.0f / 180.0f);
+        rad = 3.141592f * (wp->map->field_0xE8->x / 2.0f / 180.0f);
 
         if (bank && hit != NULL && b->valid != 0) {
             f32 scale = 1.0f;
@@ -899,7 +899,7 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit
         limB = data->limitB;
         openEnds = 0;
         half = data->ptsCount / 2;
-        base = (Vec*)wp->map->curvePts;
+        base = wp->map->curvePts;
         ptBase = &base[data->ptsStart];
         nBase = &base[data->ptsStart + half];
         idxLo = data->firstSeg;
@@ -908,7 +908,7 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit
     } else {
         idxLo = 0;
         limA = 0.0f;
-        base = (Vec*)wp->map->curvePts;
+        base = wp->map->curvePts;
         limB = 0.0f;
         ptBase = &base[data->curvePtsStart];
         idxHi = 1;
@@ -1409,7 +1409,7 @@ BOOL collisionTri_simple(Vec p, Vec v0, Vec v1, Vec v2, f32* out) {
 }
 
 void calcCurrentCamState(f32* dst) {
-    Vec* src = (Vec*)wp->map->field_0xE8;
+    Vec* src = wp->map->field_0xE8;
     f32 f31;
     f32 sx;
     f32 sy;
@@ -1507,14 +1507,14 @@ BOOL camRoadSetup(const char* filename) {
             return FALSE;
         }
     }
-    if (wp->map->field_0xE8 < (u32)wp->map) {
-        wp->map->field_0xE8 += (u32)wp->map;
+    if ((u32)wp->map->field_0xE8 < (u32)wp->map) {
+        wp->map->field_0xE8 = (Vec*)((u32)wp->map->field_0xE8 + (u32)wp->map);
         wp->map->entries = (CamRoadMapEntry*)((u32)wp->map->entries + (u32)wp->map);
-        wp->map->subs += (u32)wp->map;
-        wp->map->lists += (u32)wp->map;
-        wp->map->curvePts += (u32)wp->map;
-        wp->map->verts += (u32)wp->map;
-        wp->map->indices += (u32)wp->map;
+        wp->map->subs = (CamRoadSub*)((u32)wp->map->subs + (u32)wp->map);
+        wp->map->lists = (CamRoadList*)((u32)wp->map->lists + (u32)wp->map);
+        wp->map->curvePts = (Vec*)((u32)wp->map->curvePts + (u32)wp->map);
+        wp->map->verts = (Vec*)((u32)wp->map->verts + (u32)wp->map);
+        wp->map->indices = (s32*)((u32)wp->map->indices + (u32)wp->map);
         wp->map->curveRanges += (u32)wp->map;
         wp->map->field_0x108 += (u32)wp->map;
     }

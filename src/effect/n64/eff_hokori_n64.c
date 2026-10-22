@@ -179,7 +179,7 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 	Mtx scale;
 	Mtx rot;
 	Mtx work;
-	effVtxArray* vtx;
+	u32* vtx;
 	s32 i;
 	s32 type;
 
@@ -236,12 +236,12 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 		GXSetCurrentMtx(0);
 		if (type <= 1) {
 			if (i & 1) {
-				vtx = (effVtxArray*)size16x32_tex32x64_vtx;
+				vtx = size16x32_tex32x64_vtx;
 			} else {
-				vtx = (effVtxArray*)size16x16_tex32x32_vtx;
+				vtx = size16x16_tex32x32_vtx;
 			}
 		} else {
-			vtx = (effVtxArray*)size8x8_tex32x32_vtx;
+			vtx = size8x8_tex32x32_vtx;
 		}
 		effSetVtxDescN64(vtx);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);

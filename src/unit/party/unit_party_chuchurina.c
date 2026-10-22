@@ -52,7 +52,7 @@ USER_FUNC(_chuchu_make_extra_work_area) {
     cmd->mWeaponTable[*count].mIcon =                                                 \
         cmd->mWeaponTable[*count].mWeaponParams->icon;                                \
     cmd->mWeaponTable[*count].mName =                                                 \
-        (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);               \
+        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                      \
     (*count)++;
 
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
@@ -116,7 +116,7 @@ USER_FUNC(_make_madowase_weapon) {
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(work, id);
     dst = args[0];
-    area = (BattleWeapon*)unit->mExtraWork;
+    area = unit->mExtraWork;
     src = evtGetValue(event, dst);
     val = evtGetValue(event, args[1]);
     memcpy(area, (void*)src, 0xC0);

@@ -356,7 +356,8 @@ s32 battleAcResult_GaugeTiming(BattleWork* work) {
     return work->actionCommands.result;
 }
 void battleAcDisp_GaugeTiming(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleWork* work = param;
+    BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
 
     switch (ac->mAcState) {

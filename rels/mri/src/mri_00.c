@@ -663,10 +663,10 @@ static USER_FUNC(evt_cloud_main) {
         return EVT_RETURN_BLOCK;
     }
 
-    h0 = (HitEntry*)cloudGetHitBreathout(0);
-    h1 = (HitEntry*)cloudGetHitBreathout(1);
-    h2 = (HitEntry*)cloudGetHitBreathout(2);
-    h3 = (HitEntry*)cloudGetHitBreathout(3);
+    h0 = cloudGetHitBreathout(0);
+    h1 = cloudGetHitBreathout(1);
+    h2 = cloudGetHitBreathout(2);
+    h3 = cloudGetHitBreathout(3);
 
     switch (cp->mode) {
     case 0:
@@ -817,12 +817,12 @@ USER_FUNC(evt_mri_cloud_init) {
 USER_FUNC(evt_mri_cloud_ent) {
     s32* args = event->args;
     s8** a;
-    s8* b;
+    const char* b;
     void* c;
     CloudEntry* cp;
     s32 i, j;
     a = (s8**)evtGetValue(event, args[0]);
-    b = (s8*)evtGetValue(event, args[1]);
+    b = (const char*)evtGetValue(event, args[1]);
     c = (void*)evtGetValue(event, args[2]);
     for (j = 0; j < 16; j++) {
         if (cloud[j].flags == 0) {
@@ -842,7 +842,7 @@ USER_FUNC(evt_mri_cloud_ent) {
         }
         strcpy((char*)cp->mapGrpName[i], (const char*)a[i]);
     }
-    strcpy(cp->hitName, (const char*)b);
+    strcpy(cp->hitName, b);
     cp->endScript = c;
     cp->breathLimit = 0xB4;
     cp->breathCount = 0;

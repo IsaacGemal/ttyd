@@ -88,8 +88,9 @@ void effSheepMain(EffectEntry* effect) {
 	s32 living;
 	s32 alive = 0;
 	s32 inBattle;
+	EffSheepWork* data = effect->userdata;
 
-	sheepMakeVec(&pos, ((EffSheepWork*)effect->userdata)->x, ((EffSheepWork*)effect->userdata)->y, ((EffSheepWork*)effect->userdata)->z);
+	sheepMakeVec(&pos, data->x, data->y, data->z);
 	pos2 = pos;
 	inBattle = gp->inBattle != 0;
 	if (effect->flags & 4) {
@@ -97,7 +98,7 @@ void effSheepMain(EffectEntry* effect) {
 		living = 1;
 		// The separate increment makes MWCC coalesce the userdata load's destination with the
 		// pointer register (the target loads it straight into r25, not r3 then r25).
-		p = (EffSheepWork*)effect->userdata;
+		p = effect->userdata;
 		p++;
 		while (living < effect->count) {
 			if (p->poseId != -1) {
@@ -114,7 +115,7 @@ void effSheepMain(EffectEntry* effect) {
 
 	sfx[0] = "SFX_ITEM_SLEEP1";
 	sfx[1] = "SFX_ITEM_SLEEP2";
-	p = &((EffSheepWork*)effect->userdata)[1];
+	p = &data[1];
 	for (i = 1; i < effect->count; i++, p++) {
 		switch (p->state) {
 		case 0:

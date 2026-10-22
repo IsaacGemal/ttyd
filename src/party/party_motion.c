@@ -2680,7 +2680,7 @@ s32 party_motion_fall(PartyEntry* party) {
     f32 frontWall;
 
     if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
-        partyNextReadId(partyGetFootmarkId((u32*)party));
+        partyNextReadId(partyGetFootmarkId(&party->flags));
     }
     if (party->field_8 & 0x2) {
         party->field_8 = (party->field_8 & ~0x2);
@@ -3144,7 +3144,7 @@ s32 party_roll(PartyEntry* party) {
     if (party->field_8 & 0x1) {
         party->field_8 = (party->field_8 & ~0x1);
         partyPaperOn(party, "p_roll");
-        partyChgPaper(party, (void*)"PM_R_1A");
+        partyChgPaper(party, "PM_R_1A");
         partyChgPoseId(party, 0);
         party->spinPivot.x = -6.0f;
         party->spinPivot.y = 6.0f;
@@ -3158,7 +3158,7 @@ s32 party_roll(PartyEntry* party) {
     case 0:
         party->timer = party->timer - 1;
         if (party->timer <= 0) {
-            partyChgPaper(party, (void*)"PM_R_1B");
+            partyChgPaper(party, "PM_R_1B");
             party->field_3A = 0xA;
         }
         break;
@@ -3182,7 +3182,7 @@ s32 party_roll(PartyEntry* party) {
         party->dispOffset.y = 0.0f;
         party->timer = 0x41;
         party->field_3A = 0x65;
-        partyChgPaper(party, (void*)"PM_R_1C");
+        partyChgPaper(party, "PM_R_1C");
         partyPaperLightOff(party);
         // fallthrough
     case 0x65:

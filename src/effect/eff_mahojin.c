@@ -206,7 +206,7 @@ void effMahojinMain(EffectEntry* effect) {
         break;
     }
 
-    entry = (MahojinWork*)effect->userdata;
+    entry = effect->userdata;
     entry += 2;
     for (i = 2; i < effect->count; i++, entry++) {
         switch (entry->state) {

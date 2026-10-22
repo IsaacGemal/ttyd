@@ -3183,7 +3183,7 @@ s32 mobj_10countblk(MapObjectEntry* obj) {
 s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
 
     s32* args = event->args;
-    s32 name = evtGetValue(event, args[0]);
+    const char* name = (const char*)evtGetValue(event, args[0]);
     f32 x = evtGetFloat(event, args[1]);
     f32 y = evtGetFloat(event, args[2]);
     f32 z = evtGetFloat(event, args[3]);
@@ -3227,9 +3227,9 @@ s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
     if (!animGroupBaseAsync("P_box_y", inBattle, NULL)) {
         return 0;
     }
-    mobjEntry((const char*)name, animName);
-    obj = mobjNameToPtr((const char*)name);
-    mobjSetPosition((const char*)name, x, y, z);
+    mobjEntry(name, animName);
+    obj = mobjNameToPtr(name);
+    mobjSetPosition(name, x, y, z);
     if (type >= 0xa) {
         obj->flags |= 0x800;
     }

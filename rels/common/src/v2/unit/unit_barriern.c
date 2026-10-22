@@ -2235,7 +2235,7 @@ static USER_FUNC(_check_satellite) {
         part->attributes |= 0x20000000;
         evtSetValue(event, args[0], 1);
         if (unit->work[3] != 0) {
-            data = (BarriernSatelliteToData*)((EffectEntry*)unit->work[3])->userdata;
+            data = ((EffectEntry*)unit->work[3])->userdata;
             BtlUnit_GetPos(unit, &x, &y, &z);
             data->x = x;
             data->y = y - 32.0f * unit->mSizeMultiplier * 0.8f;

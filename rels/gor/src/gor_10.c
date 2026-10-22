@@ -240,7 +240,7 @@ static inline GXColor drawColor(u8 a) {
 }
 
 static void draw(CameraId cameraId, void* param) {
-    winTexInit((TEXPalette*)wp->file->data[0]);
+    winTexInit(wp->file->data[0]);
     {
         GXColor color = drawColor(wp->unk0);
         winTexSet(4, vec3_gor_0001da38, vec3_gor_0001da44, color);

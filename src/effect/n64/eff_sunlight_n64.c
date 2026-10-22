@@ -227,7 +227,7 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	effGetTexObjN64(0x43, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP1);
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)testsrc__s_v);
+	effSetVtxDescN64(testsrc__s_v);
 
 	for (i = 0; i < 5; i++) {
 		PSMTXScale(mtx, float_0p0039062_8041ff84, float_0p125_8041ff88, float_0_8041ff80);

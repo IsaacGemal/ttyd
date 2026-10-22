@@ -604,34 +604,37 @@ USER_FUNC(namiyoke_set_mapobj) {
 }
 
 USER_FUNC(nami_running_init_func) {
-    *(f32*)&event->lwData[6] = (f32)event->lwData[11];
-    *(f32*)&event->lwData[7] = (f32)event->lwData[12];
-    *(f32*)&event->lwData[8] = (f32)event->lwData[13];
+    f32* work = (f32*)&event->lwData[6];
+
+    work[0] = (f32)event->lwData[11];
+    work[1] = (f32)event->lwData[12];
+    work[2] = (f32)event->lwData[13];
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(nami_running_func) {
     s32* args = event->args;
     f32 s;
+    f32* work = (f32*)&event->lwData[6];
 
-    *(f32*)&event->lwData[6] = *(f32*)&event->lwData[6] - 1.3499999f;
-    if (*(f32*)&event->lwData[6] > 840.0f) {
-        *(f32*)&event->lwData[7] += 0.35f;
-        if (*(f32*)&event->lwData[7] > 0.0f) {
-            *(f32*)&event->lwData[7] = 0.0f;
+    work[0] = work[0] - 1.3499999f;
+    if (work[0] > 840.0f) {
+        work[1] += 0.35f;
+        if (work[1] > 0.0f) {
+            work[1] = 0.0f;
         }
     }
     switch (event->lwData[14]) {
     case 0:
     case 1:
-        if (*(f32*)&event->lwData[6] < 200.0f) {
-            *(f32*)&event->lwData[7] = *(f32*)&event->lwData[7] - 0.4f;
+        if (work[0] < 200.0f) {
+            work[1] = work[1] - 0.4f;
         }
         break;
     case 2:
     case 3:
-        if (*(f32*)&event->lwData[6] < -340.0f) {
-            *(f32*)&event->lwData[7] = *(f32*)&event->lwData[7] - 0.4f;
+        if (work[0] < -340.0f) {
+            work[1] = work[1] - 0.4f;
         }
         break;
     }
@@ -639,21 +642,21 @@ USER_FUNC(nami_running_func) {
     switch (event->lwData[14]) {
     case 0:
     case 1:
-        if (*(f32*)&event->lwData[6] < 0.0f) {
+        if (work[0] < 0.0f) {
             event->lwData[15] = 1;
         }
         break;
     case 2:
     case 3:
-        if (*(f32*)&event->lwData[6] < -540.0f) {
+        if (work[0] < -540.0f) {
             event->lwData[15] = 1;
         }
         break;
     }
     s = sin((2.0f * (f32)gp->retraceCount) * 6.2831855f / 360.0f);
-    evtSetFloat(event, args[0], *(f32*)&event->lwData[6]);
-    evtSetFloat(event, args[1], *(f32*)&event->lwData[7] + (5.0f * s - 5.0f));
-    evtSetFloat(event, args[2], *(f32*)&event->lwData[8]);
+    evtSetFloat(event, args[0], work[0]);
+    evtSetFloat(event, args[1], work[1] + (5.0f * s - 5.0f));
+    evtSetFloat(event, args[2], work[2]);
     return EVT_RETURN_DONE;
 }
 

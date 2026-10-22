@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dolphin/types.h>
+#include <dolphin/gx.h>
 #include "driver/effdrv.h"
 struct EffectEntry;
 EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale);
@@ -20,7 +21,7 @@ typedef struct effStarStoneData {
 	f32 scrollU;     // 0x24 texture-matrix translation U
 	f32 scrollV;     // 0x28 texture-matrix translation V
 	s32 timer;       // 0x2C counts 0..59
-	u32 matColor;    // 0x30 packed RGBA channel material colour
+	GXColor matColor; // 0x30 channel material colour
 	struct EffectEntry* dustEffect; // 0x34 child dust effect
 	s32 camId;       // 0x38
 	s32 state;       // 0x3C

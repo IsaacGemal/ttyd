@@ -58,7 +58,7 @@ USER_FUNC(evt_bero_set_now_number);
 USER_FUNC(evt_bero_get_now_number);
 USER_FUNC(evt_bero_get_info);
 USER_FUNC(evt_bero_get_into_info);
-void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end);
+void bero_get_position_pipe_sub(s32 a, s32 b, const char* c, s32 d, Vec* start, Vec* end);
 
 USER_FUNC(N_evt_bero_set_mario_bottomless_respawn_pos_on_bero_entry);
 USER_FUNC(N_evt_bero_set_mario_bottomless_respawn_pos_to_current_mario_pos);

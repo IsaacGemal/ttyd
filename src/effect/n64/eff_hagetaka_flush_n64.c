@@ -136,7 +136,7 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	                            color_rotation_data[colorIndex + 2], alpha });
 
 	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);
+	effSetVtxDescN64(size16x16_tex64x64_vtx);
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

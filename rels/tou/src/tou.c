@@ -79,7 +79,10 @@ typedef struct RankEntry {
     u16 flags; // 0x00 bits: 1 beaten (below us), 2 hidden, 4 player line
     u16 pad;   // 0x02
     s32 id;    // 0x04
-    s16 score; // 0x08
+    union {
+        s16 score;       // 0x08
+        u8 field_0x8[2]; // 0x08 score, saved byte by byte with swByteSet/swByteGet
+    };
     u16 pad2;  // 0x0A
 } RankEntry;
 
@@ -93,10 +96,6 @@ typedef struct DispWork {
     f32 targetScroll; // 0x4 scroll offset for the current page
     s32 page;         // 0x8 current page index
 } DispWork;
-
-typedef struct PoseUser {
-    Vec* locators; // 0x0
-} PoseUser;
 
 typedef struct GansWork {
     smartEntry* texData; // 0x0
@@ -178,7 +177,7 @@ s32 evt_doku_cake[234];
 s32 evt_michel_1[39];
 static u32 rank_work[2];
 static u32 disp_work[3];
-u32 gans_wp[1];
+GansWork* gans_wp[1];
 
 // clang-format off
 extend_data(0,
@@ -2680,8 +2679,7 @@ EVT_END()
 // TODO: type
 static s32 champion_belt_onoff[1];
 
-// TODO: type
-u32 gans_wp[1];
+GansWork* gans_wp[1];
 
 // TODO: type
 static u32 rank_work[2];
@@ -2730,7 +2728,7 @@ USER_FUNC(tou_champion_belt_27_text_34) {
         champion_belt_onoff[0] = 0;
     }
     pose = animPoseGetAnimPosePtr(npc->poseId);
-    loc = ((PoseUser*)pose->groupWorldPos)->locators;
+    loc = pose->groupWorldPos->address;
     group = animPoseGetGroupIdx(npc->poseId, "locator8");
     cam = camGetPtr(CAMERA_3D);
     angle = reviseAngle((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z)) *
@@ -2862,7 +2860,7 @@ static USER_FUNC(getYoshiColor) {
 }
 
 USER_FUNC(onoff) {
-    ((GansWork*)gans_wp[0])->enabled = evtGetValue(event, event->args[0]);
+    gans_wp[0]->enabled = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -2870,9 +2868,9 @@ void monitor_tev(void* param) {
     MapTevCallback* p = param;
     GXColor color;
 
-    if (((GansWork*)gans_wp[0])->texReady != 0) {
+    if (gans_wp[0]->texReady != 0) {
         GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-        GXLoadTexObj(smartTexObj(&((GansWork*)gans_wp[0])->texObj, (void**)((GansWork*)gans_wp[0])->texData), 1);
+        GXLoadTexObj(smartTexObj(&gans_wp[0]->texObj, &gans_wp[0]->texData->address), 1);
         GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
         GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -2885,7 +2883,7 @@ void monitor_tev(void* param) {
         GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_TEXC, GX_CC_CPREV, GX_CC_A0, GX_CC_ZERO);
         GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
         GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-        color = monitorColor(((GansWork*)gans_wp[0])->alpha);
+        color = monitorColor(gans_wp[0]->alpha);
         GXSetTevColor(GX_TEVREG0, color);
         p->tevStage = 2;
         p->texCoord = 2;
@@ -2899,7 +2897,7 @@ USER_FUNC(make_monitor) {
     GansWork* work;
 
     if (isFirstCall) {
-        work = (GansWork*)_mapAlloc(sizeof(GansWork));
+        work = _mapAlloc(sizeof(GansWork));
         event->userdata[0] = (s32)work;
         work->enabled = 0;
         work->texReady = 0;
@@ -2908,19 +2906,19 @@ USER_FUNC(make_monitor) {
         return EVT_RETURN_BLOCK;
     }
     work = (GansWork*)event->userdata[0];
-    gans_wp[0] = (u32)work;
+    gans_wp[0] = work;
     work->texData = smartAlloc(GXGetTexBufferSize(0x80, 0x80, GX_TF_RGB5A3, 0, 0), 3);
     GXInitTexObj(&work->texObj, work->texData->address, 0x80, 0x80, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, 0);
     GXInitTexObjLOD(&work->texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    if (((GansWork*)gans_wp[0])->enabled) {
-        ((GansWork*)gans_wp[0])->alpha += 4;
-        if (((GansWork*)gans_wp[0])->alpha > 0x80) {
-            ((GansWork*)gans_wp[0])->alpha = 0x80;
+    if (gans_wp[0]->enabled) {
+        gans_wp[0]->alpha += 4;
+        if (gans_wp[0]->alpha > 0x80) {
+            gans_wp[0]->alpha = 0x80;
         }
     } else {
-        ((GansWork*)gans_wp[0])->alpha -= 4;
-        if (((GansWork*)gans_wp[0])->alpha < 0) {
-            ((GansWork*)gans_wp[0])->alpha = 0;
+        gans_wp[0]->alpha -= 4;
+        if (gans_wp[0]->alpha < 0) {
+            gans_wp[0]->alpha = 0;
         }
     }
     dispEntry(CAMERA_SHADOW, 0.0f, 3, gans_tex, work);
@@ -2928,7 +2926,7 @@ USER_FUNC(make_monitor) {
 }
 
 void gans_tex(CameraId cameraId, void* param) {
-    GansWork* work = (GansWork*)param;
+    GansWork* work = param;
     NpcEntry* npc;
     CameraEntry cam;
     f32 viewport[6];
@@ -3065,7 +3063,6 @@ static void disp_proc(CameraId cameraId, void* param) {
     s32 i;
     s32 rank;
     s32 y;
-    s32 off;
     f32 f27;
     f32 f26;
     Mtx scale;
@@ -3103,13 +3100,12 @@ static void disp_proc(CameraId cameraId, void* param) {
     rank = 0;
     y = 0;
     i = 0;
-    off = 0;
-    for (; i < ((RankWork*)rank_wp[0])->count; i++, off += 0xc) {
+    for (; i < ((RankWork*)rank_wp[0])->count; i++) {
         f26 = ((DispWork*)dwp[0])->scroll + ((TOU_F32(float_135_tou_0000a8b0) - (f32)y) - TOU_F32(float_40_tou_0000a8c4));
-        if (!(((RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off))->flags & 2)) {
+        if (!(((RankWork*)rank_wp[0])->entries[i].flags & 2)) {
             PSMTXScale(scale, TOU_F32(float_0p8_tou_0000a8c8), TOU_F32(float_0p8_tou_0000a8c8), TOU_F32(float_0p8_tou_0000a8c8));
             if (rank != 0) {
-                const char* p1 = (rank / 10) ? suuji[rank / 10] : (const char*)&(*(f32*)&TOU_F32(zero_tou_0000a8cc));
+                const char* p1 = (rank / 10) ? suuji[rank / 10] : (const char*)&zero_tou_0000a8cc;
 
                 sprintf(buf, str_fmt_ss, p1, suuji[rank % 10]);
                 FontDrawStart();
@@ -3123,7 +3119,7 @@ static void disp_proc(CameraId cameraId, void* param) {
                 FontDrawMessageMtx(mtx, buf);
             }
             FontDrawStart();
-            if (((RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off))->flags & 4) {
+            if (((RankWork*)rank_wp[0])->entries[i].flags & 4) {
                 GXColor color = *(GXColor*)&dat_tou_0000990c;
 
                 FontDrawColor(&color);
@@ -3134,7 +3130,7 @@ static void disp_proc(CameraId cameraId, void* param) {
             }
             PSMTXTrans(mtx, TOU_F32(float_40_tou_0000a8c4) + f27, f26, 0.0f);
             PSMTXConcat(mtx, scale, mtx);
-            FontDrawMessageMtx(mtx, msgSearch((const char*)((u32*)dt)[((RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off))->id * 7 + 1]));
+            FontDrawMessageMtx(mtx, msgSearch(dt[((RankWork*)rank_wp[0])->entries[i].id].name));
             rank++;
             y += 0x14;
         }
@@ -3528,7 +3524,7 @@ static void rankingControll(void) {
 
         if (nAbove > 0) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id * 14] & 4) {
+                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 4) {
                     break;
                 }
             }
@@ -3539,7 +3535,7 @@ static void rankingControll(void) {
 
         if (nAbove > 1) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id * 14] & 0x1000) {
+                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x1000) {
                     break;
                 }
             }
@@ -3550,7 +3546,7 @@ static void rankingControll(void) {
 
         if (nAbove > 10) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id * 14] & 0x800) {
+                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x800) {
                     break;
                 }
             }
@@ -3561,7 +3557,7 @@ static void rankingControll(void) {
 
         if (nAbove > 18) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id * 14] & 0x200) {
+                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x200) {
                     break;
                 }
             }
@@ -3572,7 +3568,7 @@ static void rankingControll(void) {
 
         if (nAbove > 19) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id * 14] & 0x400) {
+                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x400) {
                     break;
                 }
             }
@@ -3583,7 +3579,7 @@ static void rankingControll(void) {
 
         if (nAbove > 16) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id * 14] & 0x100) {
+                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x100) {
                     break;
                 }
             }
@@ -3629,7 +3625,7 @@ static void rankingControll(void) {
 
         if (nBelow > 0) {
             for (idx = 0; idx < nBelow; idx++) {
-                if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[idx]].id * 14] & 4) {
+                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[idx]].id].flags & 4) {
                     break;
                 }
             }
@@ -3640,13 +3636,13 @@ static void rankingControll(void) {
 
         if (nBelow > 0) {
             for (bi = 0; bi < nBelow; bi++) {
-                if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[bi]].id * 14] & 0x800) {
+                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[bi]].id].flags & 0x800) {
                     break;
                 }
             }
             if (bi < nBelow) {
                 for (bi2 = 0; bi2 < nBelow; bi2++) {
-                    if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[bi2]].id * 14] & 2) {
+                    if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[bi2]].id].flags & 2) {
                         break;
                     }
                 }
@@ -3668,7 +3664,7 @@ static void rankingControll(void) {
         }
     }
 
-    entry = (RankEntry*)__memAlloc(HEAP_DEFAULT, sizeof(RankEntry) * ((RankWork*)rank_wp[0])->count);
+    entry = __memAlloc(HEAP_DEFAULT, sizeof(RankEntry) * ((RankWork*)rank_wp[0])->count);
     for (i = 0; i < nAbove; i++) {
         entry[i] = ((RankWork*)rank_wp[0])->entries[above[i]];
     }
@@ -3725,7 +3721,7 @@ USER_FUNC(unk_tou_00002e24) {
             swClear(e->id + 0x9a1);
         }
         for (j = 0; j < 2; j++) {
-            swByteSet(e->id * 2 + 0x207 + j, ((u8*)e)[8 + j]);
+            swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
     _mapFree(((RankWork*)rank_wp[0])->entries);
@@ -3759,7 +3755,7 @@ static USER_FUNC(evt_rankingReInit) {
             swClear(e->id + 0x9a1);
         }
         for (j = 0; j < 2; j++) {
-            swByteSet(e->id * 2 + 0x207 + j, ((u8*)e)[8 + j]);
+            swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
     _mapFree(((RankWork*)rank_wp[0])->entries);
@@ -3779,7 +3775,7 @@ static void rankingExit(void) {
             swClear(e->id + 0x9a1);
         }
         for (j = 0; j < 2; j++) {
-            swByteSet(e->id * 2 + 0x207 + j, ((u8*)e)[8 + j]);
+            swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
     _mapFree(((RankWork*)rank_wp[0])->entries);
@@ -3803,7 +3799,7 @@ static void rankingInit(void) {
         }
         if (swGet(0x9e1)) {
             for (j = 0; j < 2; j++) {
-                ((u8*)e)[8 + j] = swByteGet(e->id * 2 + 0x207 + j);
+                e->field_0x8[j] = swByteGet(e->id * 2 + 0x207 + j);
             }
         } else {
             e->score = ((FighterEntry*)fighterDt)[e->id].defaultScore;
@@ -3854,7 +3850,7 @@ void _epilog(void) {
             swClear(e->id + 0x9a1);
         }
         for (j = 0; j < 2; j++) {
-            swByteSet(e->id * 2 + 0x207 + j, ((u8*)e)[8 + j]);
+            swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
     _mapFree(((RankWork*)rank_wp[0])->entries);

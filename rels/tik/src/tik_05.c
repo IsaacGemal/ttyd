@@ -1929,7 +1929,7 @@ USER_FUNC(starstone_set_position) {
 USER_FUNC(starstone_get_position) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
-    effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+    effStarStoneData* data = effNameToPtr((char*)name)->userdata;
     f32 y = data->y;
     f32 z = data->z;
 
@@ -1954,7 +1954,7 @@ USER_FUNC(starstone_set_alpha) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
     u8 alpha = evtGetValue(event, args[1]);
-    effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+    effStarStoneData* data = effNameToPtr((char*)name)->userdata;
 
     data->tevReg0A = alpha;
     return EVT_RETURN_DONE;
@@ -1964,7 +1964,7 @@ USER_FUNC(starstone_set_scale) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
     f32 scale = evtGetFloat(event, args[1]);
-    effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+    effStarStoneData* data = effNameToPtr((char*)name)->userdata;
 
     data->scale = scale;
     return EVT_RETURN_DONE;
@@ -1998,7 +1998,7 @@ USER_FUNC(starstone_circle_link_func) {
 USER_FUNC(eff_starstone_sound_off) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
-    effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+    effStarStoneData* data = effNameToPtr((char*)name)->userdata;
 
     data->flags &= ~4;
     return EVT_RETURN_DONE;
@@ -2217,7 +2217,7 @@ USER_FUNC(mahojin_effect_alpha) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
     u8 alpha = evtGetValue(event, args[1]);
-    MahojinWork* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+    MahojinWork* data = effNameToPtr((char*)name)->userdata;
 
     data->alpha = alpha;
     return EVT_RETURN_DONE;
@@ -2352,7 +2352,7 @@ void tiz_broken_draw(CameraId camId, void* param) {
     GXSetCurrentMtx(0);
     PSMTXIdentity(mtx);
 
-    entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entryBuffer->address;
+    entry = ((BrokenWork*)broken_wp[0])->entryBuffer->address;
     for (i = 0; i < 0x1E; i++, entry++) {
         y = 232.0f - (f32)(i * 0x10);
         for (j = 0; j < 0x26; j++, entry++) {
@@ -2498,7 +2498,7 @@ USER_FUNC(tiz_broken) {
         ((BrokenWork*)broken_wp[0])->entryBuffer = smartAlloc(0xF594, 1);
         ((BrokenWork*)broken_wp[0])->texCopied = 0;
 
-        entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entryBuffer->address;
+        entry = ((BrokenWork*)broken_wp[0])->entryBuffer->address;
         for (i = 0; i < 0x1E; i++) {
             for (j = 0; j < 0x26; j++) {
                 f3 = (f32)j / 37.0f - 0.5f;
@@ -2547,7 +2547,7 @@ USER_FUNC(tiz_broken) {
         }
     }
 
-    entry2 = (BrokenEntry*)((BrokenWork*)broken_wp[0])->entryBuffer->address;
+    entry2 = ((BrokenWork*)broken_wp[0])->entryBuffer->address;
     for (i2 = 0; i2 < 0x1E; i2++) {
         for (j = 0; j < 0x26; j++) {
             switch (entry2->state) {
@@ -2653,8 +2653,9 @@ USER_FUNC(crystal_bgmode) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
     EffectEntry* entry = effNameToPtr((char*)name);
+    EffCrystalData* data = entry->userdata;
 
-    ((EffCrystalData*)entry->userdata)->camId = CAMERA_3D_EFFECTA;
+    data->camId = CAMERA_3D_EFFECTA;
     return EVT_RETURN_DONE;
 }
 
@@ -2678,10 +2679,12 @@ USER_FUNC(map_bgmode_end) {
     s32 name2 = evtGetValue(event, args[1]);
     EffectEntry* entry = effNameToPtr((char*)name1);
     effItemGetData* data = entry->userdata;
+    EffTreasureMapData* data2;
 
     data->camId = CAMERA_3D;
     entry = effNameToPtr((char*)name2);
-    ((EffTreasureMapData*)entry->userdata)->cameraId = CAMERA_3D;
+    data2 = entry->userdata;
+    data2->cameraId = CAMERA_3D;
     marioSetCamId(CAMERA_3D);
     return EVT_RETURN_DONE;
 }

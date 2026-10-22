@@ -319,7 +319,7 @@ void effStardustDisp(CameraId camId, void* param) {
     s32 i;
     s32 renderType;
     s32 colorIdx;
-    effVtxArray* vtx;
+    u32* vtx;
     GXTexObj texObj;
     Mtx mtx;
     Mtx scale;
@@ -393,28 +393,28 @@ void effStardustDisp(CameraId camId, void* param) {
         // Eight 0x38-byte (14-word) vertex strips; strip N starts at word N * 14.
         switch (renderType & 7) {
         case 0:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[3 * 14];
+            vtx = &size8x8_tex22x22_vtx[3 * 14];
             break;
         case 1:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[4 * 14];
+            vtx = &size8x8_tex22x22_vtx[4 * 14];
             break;
         case 2:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[5 * 14];
+            vtx = &size8x8_tex22x22_vtx[5 * 14];
             break;
         case 3:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[6 * 14];
+            vtx = &size8x8_tex22x22_vtx[6 * 14];
             break;
         case 4:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[7 * 14];
+            vtx = &size8x8_tex22x22_vtx[7 * 14];
             break;
         case 5:
-            vtx = (effVtxArray*)size8x8_tex22x22_vtx;
+            vtx = size8x8_tex22x22_vtx;
             break;
         case 6:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[1 * 14];
+            vtx = &size8x8_tex22x22_vtx[1 * 14];
             break;
         case 7:
-            vtx = (effVtxArray*)&size8x8_tex22x22_vtx[2 * 14];
+            vtx = &size8x8_tex22x22_vtx[2 * 14];
             break;
         }
         effSetVtxDescN64(vtx);
@@ -424,16 +424,20 @@ void effStardustDisp(CameraId camId, void* param) {
 }
 
 void effStardustN64SetColor(EffectEntry* entry, f32 r, f32 g, f32 b) {
-    EffStardustN64Data* data = (EffStardustN64Data*)entry->userdata;
+    EffStardustN64Data* data = entry->userdata;
     data->r = r;
     data->g = g;
     data->b = b;
 }
 
 void effStardustN64SetDrawCam(EffectEntry* entry, s32 cam) {
-    ((EffStardustN64Data*)entry->userdata)->drawCam = cam;
+    EffStardustN64Data* data = entry->userdata;
+
+    data->drawCam = cam;
 }
 
 void effStardustN64SetScale(EffectEntry* entry, f32 scale) {
-    ((EffStardustN64Data*)entry->userdata)->scale = scale;
+    EffStardustN64Data* data = entry->userdata;
+
+    data->scale = scale;
 }

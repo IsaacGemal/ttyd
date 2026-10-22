@@ -669,12 +669,8 @@ ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, f32 a6, f32 a7, f3
 		entry->effect = effStarStoneEntry(entry->itemId - ITEM_DIAMOND_STAR, a6, 16.0f + a7, a8, 1.0f);
 		break;
 	default:
-	{
-		ItemDataView* view = (ItemDataView*)itemDataTable;
-
 		entry->effect = NULL;
-		iconEntry(entry->name, view[type].icon_id);
-	}
+		iconEntry(entry->name, itemDataTable[type].icon_id);
 		iconSetPos(entry->name, a6, a7, a8);
 		iconSetScale(entry->name, entry->scale);
 		iconSetAlpha(entry->name, entry->alpha);
@@ -809,7 +805,7 @@ void itemDelete(char* name) {
     }
 }
 
-ItemEntry* itemNameToPtr(char* name) {
+ItemEntry* itemNameToPtr(const char* name) {
     ItemWork* wp = itemGetWork();
     ItemEntry* entry = wp->entries;
     int i;
@@ -1166,14 +1162,16 @@ void itemseq_GetItem(ItemEntry* item) {
                                                           62.0f + mario->position.y, mario->position.z);
         if (item->status & 0x2000) {
             EffectEntry* eff = wp->getEffect;
+            effItemGetData* data = eff->userdata;
 
-            ((effItemGetData*)eff->userdata)->camId = 5;
+            data->camId = 5;
             iconFlagOn(item->name, 0x200);
             marioSetCamId(CAMERA_3D_EFFECTB);
         } else {
             EffectEntry* eff = wp->getEffect;
+            effItemGetData* data = eff->userdata;
 
-            ((effItemGetData*)eff->userdata)->camId = 5;
+            data->camId = 5;
             iconFlagOn(item->name, 0x100);
             if (effType == 0 || effType == 3) {
                 marioSetCamId(CAMERA_3D_EFFECTA);

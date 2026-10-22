@@ -126,9 +126,9 @@ void mot_hammer(void) {
         mario->airTimer = 0;
         mario->currSubMotionId = 0;
         mario->baseSpeed = float_0_8041a9a8;
-        mario->field_0x200 = 0;
+        mario->field_0x200 = NULL;
         hit = hitEstimate(&type);
-        mario->field_0x200 = (s32)hit;
+        mario->field_0x200 = hit;
         if (hit != NULL) {
             f30 = mario->dispDir;
             {
@@ -255,7 +255,7 @@ void mot_hammer(void) {
             evtEntry(lv3quake_evt, 0, 0);
         }
         mario->currSubMotionId = 1;
-        mario->hitobjHammer = (void*)mario->field_0x200;
+        mario->hitobjHammer = mario->field_0x200;
         px = mario->position.x;
         f30 = mario->position.y;
         pz = mario->position.z;
@@ -464,7 +464,7 @@ void mot_hammer2(void) {
             marioChgPose("M_H_9");
             break;
         }
-        mario->field_0x200 = 0;
+        mario->field_0x200 = NULL;
         mario->currSubMotionId = 1;
         mario->multiTimer = 1;
         break;

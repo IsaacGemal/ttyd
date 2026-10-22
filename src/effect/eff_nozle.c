@@ -268,6 +268,7 @@ EffectEntry* effNozleEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 rotX
 
 void effNozleMain(EffectEntry* effect) {
 	effNozleData* data = effect->userdata;
+	effNozleEntryData* entry;
 	s32 type;
 	s32 i;
 	Vec pos;
@@ -298,24 +299,23 @@ void effNozleMain(EffectEntry* effect) {
 		break;
 	case 3:
 	{
-		// Retail walks the header and the entry array through one pointer: it reloads userdata,
-		// steps it once (data++) into the entries, and reloads it again at the join below. A separate
-		// `entry` pointer makes MWCC spend r6 on the base and emit `addi r4, r3, 0x44`.
-		data = effect->userdata;
-		data++;
-		for (i = 1; i < effect->count; i++, data++) {
-			((effNozleEntryData*)data)->offsetX += -((effNozleEntryData*)data)->offsetX / 300.f;
-			if (((effNozleEntryData*)data)->shrinking == 0) {
-				((effNozleEntryData*)data)->scaleY += (1.3f - ((effNozleEntryData*)data)->scaleY) / 500.f;
-				if (((effNozleEntryData*)data)->scaleY > 1.2f) {
-					((effNozleEntryData*)data)->shrinking = 1;
+		// Retail reloads userdata, steps it once (entry++) past the 0x44-byte head into the entries,
+		// and reloads it again at the join below.
+		entry = effect->userdata;
+		entry++;
+		for (i = 1; i < effect->count; i++, entry++) {
+			entry->offsetX += -entry->offsetX / 300.f;
+			if (entry->shrinking == 0) {
+				entry->scaleY += (1.3f - entry->scaleY) / 500.f;
+				if (entry->scaleY > 1.2f) {
+					entry->shrinking = 1;
 				}
 			} else {
-				((effNozleEntryData*)data)->scaleY += (0.8f - ((effNozleEntryData*)data)->scaleY) / 300.f;
+				entry->scaleY += (0.8f - entry->scaleY) / 300.f;
 			}
-			((effNozleEntryData*)data)->scrollY0 += 0.002f;
-			((effNozleEntryData*)data)->scrollX1 += 0.002f;
-			((effNozleEntryData*)data)->scrollY1 += 0.004f;
+			entry->scrollY0 += 0.002f;
+			entry->scrollX1 += 0.002f;
+			entry->scrollY1 += 0.004f;
 		}
 		break;
 	}

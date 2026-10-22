@@ -89,7 +89,9 @@ void effMagic1Main(EffectEntry* effect) {
         if (type == 0 && data->timer == 0) {
             EffectEntry* newEffect = effMagic1N64Entry(1, 0x30, data->x + data->offsetX,
                 data->y + data->offsetY, data->z + data->offsetZ, 0.0f, 0.0f, 0.0f);
-            ((effMagic1Data*)newEffect->userdata)->scale = data->scale;
+            effMagic1Data* newData = newEffect->userdata;
+
+            newData->scale = data->scale;
         }
         if (type == 1) {
             f32 k83 = 0.83f;

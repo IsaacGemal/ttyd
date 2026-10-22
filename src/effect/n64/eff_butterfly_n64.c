@@ -343,7 +343,7 @@ void effButterflyDisp(CameraId camId, void* param) {
     effGetTexObjN64(type + 0x78, &texObj);
     GXLoadTexObj(&texObj, 0);
     GXSetCullMode(0);
-    effSetVtxDescN64((effVtxArray*)((butterflyVtxFrame*)but_02_v + data->frame));
+    effSetVtxDescN64((butterflyVtxFrame*)but_02_v + data->frame);
     GXBegin(0x90, 0, 0xC);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     tri2(3, 4, 0, 0, 3, 5, 4, 0);

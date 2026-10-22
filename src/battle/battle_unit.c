@@ -66,7 +66,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     }
     if (i >= 64) return NULL;
 
-    unit = (BattleUnit*)BattleAlloc(sizeof(BattleUnit));
+    unit = BattleAlloc(sizeof(BattleUnit));
     if (!unit) return NULL;
 
     memset(unit, 0, sizeof(BattleUnit));
@@ -152,7 +152,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     unit->work[3] = setup->unitWork[3];
 
     n = unit->mKindParams->numParts;
-    part = (BattleUnitPart*)BattleAlloc(n * sizeof(BattleUnitPart));
+    part = BattleAlloc(n * sizeof(BattleUnitPart));
     memset(part, 0, n * sizeof(BattleUnitPart));
     unit->mParts = part;
 

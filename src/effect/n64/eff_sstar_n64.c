@@ -378,7 +378,7 @@ void effSstarDisp(CameraId camId, void* param) {
     GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
     GXSetTevColorIn(2, 6, 0xF, 0xF, 0);
     GXSetTevAlphaIn(2, 7, 0, 5, 7);
-    effSetVtxDescN64((effVtxArray*)size64x64_tex64x64_vtx);
+    effSetVtxDescN64(size64x64_tex64x64_vtx);
     PSMTXConcat(cam->view, mtx3, mtx1);
     GXLoadPosMtxImm(mtx1, 0);
     GXBegin(GX_TRIANGLES, 0, 6);
@@ -390,7 +390,7 @@ void effSstarDisp(CameraId camId, void* param) {
     GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xC);
     GXSetTevAlphaIn(0, 7, 5, 3, 7);
-    effSetVtxDescN64((effVtxArray*)size128x128_tex32x32_vtx);
+    effSetVtxDescN64(size128x128_tex32x32_vtx);
     GXBegin(GX_TRIANGLES, 0, 0xC);
     tri2(0, 1, 4, 0, 1, 2, 4, 0);
     tri2(0, 4, 3, 0, 4, 2, 3, 0);
@@ -434,7 +434,7 @@ void effSstarDisp(CameraId camId, void* param) {
         }
         GXInvalidateVtxCache();
         DCFlushRange(data->vtx, 0x8C);
-        effSetVtxDescN64((effVtxArray*)data->vtx);
+        effSetVtxDescN64(data->vtx);
         GXLoadPosMtxImm(cam->view, 0);
         for (i = 0; i < 4; i++) {
             base = i * 2;

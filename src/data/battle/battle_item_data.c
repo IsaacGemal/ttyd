@@ -4218,7 +4218,7 @@ s32 _naniga_okorukana_check(EventEntry* event, BOOL isFirstCall) {
     }
  done:
     {
-        EffectEntry* e = (EffectEntry*)effNameToPtr("effNaniga");
+        EffectEntry* e = effNameToPtr("effNaniga");
 
         return e ? 0 : 2;
     }

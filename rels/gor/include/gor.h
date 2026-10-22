@@ -8,7 +8,7 @@ typedef void (*voidfunctionptr)(void);
 extern voidfunctionptr _ctors[];
 extern voidfunctionptr _dtors[];
 
-extern void* unk_gor_bss00000000[];
+extern char* unk_gor_bss00000000[];
 extern s32 inemuri_sfx_id[];
 extern BattleSetupData btlsetup_gor_tbl[7];
 extern u32 btl_gor_setup_no_tbl[];

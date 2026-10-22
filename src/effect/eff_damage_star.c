@@ -552,10 +552,10 @@ void effDamageStarDisp(CameraId camId, void* param) {
     PSMTXTrans(mtx88, 10.0f, -1.5f, 0.0f);
     PSMTXConcat(mtx148, mtx88, mtx148);
     {
-        EffectMayaAnim* anim = (EffectMayaAnim*)data->anim;
+        EffectMayaAnim* anim = data->anim;
 
         PSMTXConcat(mtx148, anim->entries[0].mtx, mtx148);
-        anim = (EffectMayaAnim*)data->anim;
+        anim = data->anim;
         PSMTXConcat(mtx148, anim->entries[1].mtx, mtx148);
     }
     GXSetCurrentMtx(0);

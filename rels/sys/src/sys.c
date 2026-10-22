@@ -236,7 +236,7 @@ void display_func(CameraId cameraId, void* param) {
     GXLoadNrmMtxImm(mtx, GX_PNMTX0);
     GXSetCurrentMtx(GX_PNMTX0);
 
-    TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)work->palIndex);
+    TEXGetGXTexObjFromPalette(work->handle->data[0], &tex, (u16)work->palIndex);
     GXLoadTexObj(&tex, GX_TEXMAP0);
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     halfW = (f32)GXGetTexObjWidth(&tex) / 2.0f;
@@ -254,7 +254,7 @@ void display_func(CameraId cameraId, void* param) {
     GXNormal3f32(0.0f, 0.0f, 1.0f);
     GXTexCoord2f32(0.0f, 1.0f);
 
-    msg = msgSearch((const char*)msg_tbl[work->stage]);
+    msg = msgSearch(msg_tbl[work->stage]);
     FontDrawStart();
 
     revealed = work->reveal / 256;
@@ -341,9 +341,9 @@ void display_func(CameraId cameraId, void* param) {
             break;
         }
 
-        TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)entry->palIndex);
+        TEXGetGXTexObjFromPalette(work->handle->data[0], &tex, (u16)entry->palIndex);
         GXLoadTexObj(&tex, GX_TEXMAP0);
-        TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)niji_tbl[gp->language]);
+        TEXGetGXTexObjFromPalette(work->handle->data[0], &tex, (u16)niji_tbl[gp->language]);
         GXLoadTexObj(&tex, GX_TEXMAP1);
         lightColor = getLightColor(entry->angle);
         GXSetChanMatColor(GX_COLOR0A0, (GXColor){ lightColor, lightColor, lightColor, 0xFF });

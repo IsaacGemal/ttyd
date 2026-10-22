@@ -318,9 +318,11 @@ EVT_END()
 USER_FUNC(syuryo_baria) {
     NpcEntry* npc = npcNameToPtr("ピーチ姫");
     EffectEntry* effect;
+    EffSyuryouData* data;
 
     effect = effSyuryouEntry(1, 1000, npc->position.x, npc->position.y - 8.0f, npc->position.z + 10.0f);
-    ((EffSyuryouData*)effect->userdata)->scale = 2.0f;
+    data = effect->userdata;
+    data->scale = 2.0f;
     effSetName(effect, "baria");
     return EVT_RETURN_DONE;
 }
@@ -690,8 +692,9 @@ static USER_FUNC(eff_guruguru) {
     f32 c = evtGetFloat(event, args[3]);
     f32 d = evtGetFloat(event, args[4]);
     EffectEntry* effect = effGuruguruN64Entry(0, 3, a, b, c, d);
+    EffGuruguruData* data = effect->userdata;
 
-    ((EffGuruguruData*)effect->userdata)->drawScale = 0.8f;
+    data->drawScale = 0.8f;
     effSetName(effect, (const char*)effectName);
     return EVT_RETURN_DONE;
 }

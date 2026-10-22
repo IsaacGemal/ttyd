@@ -208,10 +208,12 @@ typedef struct LightNearObj {
 } LightNearObj;
 
 int _sort(const void* a, const void* b) {
+	const LightNearObj* objA = a;
+	const LightNearObj* objB = b;
 	f32 value2, value1;
 
-	value1 = ((const LightNearObj*)a)->distance;
-	value2 = ((const LightNearObj*)b)->distance;
+	value1 = objA->distance;
+	value2 = objB->distance;
 
 	if (value1 > value2) {
 		return 1;

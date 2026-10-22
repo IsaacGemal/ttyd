@@ -39,19 +39,6 @@ static u32 size32x32_tex32x32_vtx_words[70] = {
 
 static void main_dl(EffectEntry* effect, Mtx matrix);
 
-typedef struct effHitData {
-	s32 type;
-	Vec position;
-	u8 pad_0x10[0x28 - 0x10];
-	f32 scale;
-	s32 color1Alpha;
-	s32 lifetime;
-	s32 timer;
-	f32 frameProgress;
-	u8 color[6];
-	u8 pad_0x42[0x44 - 0x42];
-} effHitData;
-
 typedef struct effHitParticle {
 	s32 field_0x0;
 	Vec position;
@@ -65,6 +52,20 @@ typedef struct effHitParticle {
 	s32 field_0x2C;
 	u8 pad_0x30[0x44 - 0x30];
 } effHitParticle;
+
+typedef struct effHitData {
+	s32 type;
+	Vec position;
+	u8 pad_0x10[0x28 - 0x10];
+	f32 scale;
+	s32 color1Alpha;
+	s32 lifetime;
+	s32 timer;
+	f32 frameProgress;
+	u8 color[6];
+	u8 pad_0x42[0x44 - 0x42];
+	effHitParticle particles[];
+} effHitData;
 
 static inline Vec effHitInitVec(Vec* input) {
 	Vec temp = { 0.0f, 0.0f, 0.0f };
@@ -141,7 +142,7 @@ EffectEntry* effHitN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 sca
 
 	data->scale = scale;
 
-	part = (effHitParticle*)(data + 1);
+	part = data->particles;
 	for (i = 1; i < count; i++, part++) {
 		frand = (f32)(rand() % 360);
 		part->position.x = float_0_8041f0f0;
@@ -347,7 +348,7 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
 	}
 
 	vtx = size32x32_tex32x32_vtx + frame;
-	part = (effHitParticle*)(data + 1);
+	part = data->particles;
 	for (i = 1; i < effect->count; i++, part++) {
 		PSMTXRotRad(m0, 'y', float_deg2rad_8041f0f8 * part->rotY);
 		PSMTXRotRad(m1, 'z', float_deg2rad_8041f0f8 * part->rotZ);

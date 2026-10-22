@@ -100,11 +100,11 @@ u32 stg6_list[1];
 u32 stg7_list[6];
 u32 stg8_list[10];
 u32 follow[24];
-u32 _door[1];
-static u32 _ap[1];
+GXColor* _door[1];
+static u8* _ap[1];
 static u32 xlw[16];
-u32 iri_13_item_tbl[1];
-u32 camstring[1];
+s32* iri_13_item_tbl[1];
+char* camstring[1];
 
 // clang-format off
 extend_data(12,
@@ -127,7 +127,7 @@ extend_data(13,
 
 void _door_color_tev(MapTevCallback* param) {
     s32 stage = param->tevStage;
-    GXColor* door = (GXColor*)_door[0];
+    GXColor* door = _door[0];
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
     GXSetTevColor(GX_TEVREG0, door[0]);
@@ -140,7 +140,7 @@ void _door_color_tev(MapTevCallback* param) {
 
 void _door_color2_tev(MapTevCallback* param) {
     s32 stage = param->tevStage;
-    GXColor* door = (GXColor*)_door[0];
+    GXColor* door = _door[0];
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
     GXSetTevColor(GX_TEVREG0, door[1]);
@@ -154,21 +154,21 @@ void _door_color2_tev(MapTevCallback* param) {
 USER_FUNC(_door_color_init_func) {
     GXColor* door = _mapAlloc(8);
 
-    _door[0] = (u32)door;
-    ((GXColor*)_door[0])[0].r = 0xFF;
-    ((GXColor*)_door[0])[0].g = 0xFF;
-    ((GXColor*)_door[0])[0].b = 0xFF;
-    ((GXColor*)_door[0])[0].a = 0xFF;
-    ((GXColor*)_door[0])[1].r = 0xFF;
-    ((GXColor*)_door[0])[1].g = 0xFF;
-    ((GXColor*)_door[0])[1].b = 0xFF;
-    ((GXColor*)_door[0])[1].a = 0xFF;
+    _door[0] = door;
+    _door[0][0].r = 0xFF;
+    _door[0][0].g = 0xFF;
+    _door[0][0].b = 0xFF;
+    _door[0][0].a = 0xFF;
+    _door[0][1].r = 0xFF;
+    _door[0][1].g = 0xFF;
+    _door[0][1].b = 0xFF;
+    _door[0][1].a = 0xFF;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(_door_color_main_func) {
     s32* args = event->args;
-    GXColor* door = (GXColor*)_door[0];
+    GXColor* door = _door[0];
 
     door[0].r = evtGetValue(event, args[0]);
     door[0].g = evtGetValue(event, args[1]);
@@ -179,7 +179,7 @@ USER_FUNC(_door_color_main_func) {
 
 USER_FUNC(_door_color2_main_func) {
     s32* args = event->args;
-    GXColor* door = (GXColor*)_door[0];
+    GXColor* door = _door[0];
 
     door[1].r = evtGetValue(event, args[0]);
     door[1].g = evtGetValue(event, args[1]);
@@ -197,7 +197,7 @@ USER_FUNC(_door_color2_main_func) {
 
 static void alpha_tev(MapTevCallback* param) {
     s32 stage = param->tevStage;
-    u8* ap = (u8*)_ap[0];
+    u8* ap = _ap[0];
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
     GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, *ap });
@@ -211,7 +211,7 @@ static void alpha_tev(MapTevCallback* param) {
 static USER_FUNC(alpha_init_func) {
     u8* p = _mapAlloc(1);
 
-    _ap[0] = (u32)p;
+    _ap[0] = p;
     p[0] = 0xFF;
     return EVT_RETURN_DONE;
 }
@@ -220,7 +220,7 @@ static USER_FUNC(alpha_init_func) {
 static USER_FUNC(alpha_set_func) {
     s32 value = evtGetValue(event, event->args[0]);
 
-    *(u8*)_ap[0] = value;
+    *_ap[0] = value;
     return EVT_RETURN_DONE;
 }
 
@@ -529,7 +529,7 @@ USER_FUNC(iri_13_make_item_tbl) {
     s32 count = pouchCheckItem(0x6B);
 
     if (count > 0) {
-        iri_13_item_tbl[0] = (u32)_mapAlloc((count + 1) * sizeof(s32));
+        iri_13_item_tbl[0] = _mapAlloc((count + 1) * sizeof(s32));
     }
     return EVT_RETURN_DONE;
 }
@@ -541,19 +541,19 @@ USER_FUNC(iri_13_update_item_tbl) {
 
     if (count > 0) {
         for (i = 0; i < count; i++) {
-            ((s32*)iri_13_item_tbl[0])[i] = 0x6B;
+            iri_13_item_tbl[0][i] = 0x6B;
         }
-        ((s32*)iri_13_item_tbl[0])[i] = -1;
+        iri_13_item_tbl[0][i] = -1;
     }
-    evtSetValue(event, args[0], iri_13_item_tbl[0]);
+    evtSetValue(event, args[0], (s32)iri_13_item_tbl[0]);
     evtSetValue(event, args[1], count);
     return EVT_RETURN_DONE;
 }
 
 
 USER_FUNC(iri_13_free_item_tbl) {
-    _mapFree((void*)iri_13_item_tbl[0]);
-    iri_13_item_tbl[0] = 0;
+    _mapFree(iri_13_item_tbl[0]);
+    iri_13_item_tbl[0] = NULL;
     return EVT_RETURN_DONE;
 }
 
@@ -3528,7 +3528,7 @@ USER_FUNC(camera_front_check) {
 USER_FUNC(get_camcurve_init) {
     char* p = _mapAlloc(0x100);
 
-    camstring[0] = (u32)p;
+    camstring[0] = p;
     p[0] = 0;
     return EVT_RETURN_DONE;
 }
@@ -3539,11 +3539,11 @@ USER_FUNC(get_camcurve) {
     s32 flag = 0;
 
     if (road->previous.valid != 0 && road->previous.road != NULL) {
-        if (strcmp((char*)road->previous.road, "|MarioSt_CameraRoad|C_ground_ok") == 0 &&
-            strcmp((char*)camstring[0], "|MarioSt_CameraRoad|C_ue") == 0) {
+        if (strcmp(road->previous.road, "|MarioSt_CameraRoad|C_ground_ok") == 0 &&
+            strcmp(camstring[0], "|MarioSt_CameraRoad|C_ue") == 0) {
             flag = 1;
         }
-        strcpy((char*)camstring[0], (char*)road->previous.road);
+        strcpy(camstring[0], road->previous.road);
     }
     evtSetValue(event, args[0], flag);
     return EVT_RETURN_DONE;

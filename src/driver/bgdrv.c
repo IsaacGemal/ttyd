@@ -59,7 +59,7 @@ void bgEntry(const char* filename) {
 				DVDMgrClose(dvd);
 			}
 		}
-		tpl = (TEXPalette*)bgwork->data;
+		tpl = bgwork->data;
 		if (tpl) {
 			UnpackTexPalette(tpl);
 			bgwork->flags |= 1;

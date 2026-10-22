@@ -328,7 +328,7 @@ void effRadiationDisp(CameraId camId, void* param) {
 	Mtx work;
 	Mtx trans2;
 	GXTexObj texObj;
-	effVtxArray* vtx;
+	u32* vtx;
 	f32 alpha;
 	f32 scaleY;
 	f32 scaleX;
@@ -428,10 +428,10 @@ void effRadiationDisp(CameraId camId, void* param) {
 		switch (type) {
 		case 0:
 		case 1:
-			vtx = (effVtxArray*)size150x20_tex32x32;
+			vtx = size150x20_tex32x32;
 			break;
 		default:
-			vtx = (effVtxArray*)size300x40_tex32x32;
+			vtx = size300x40_tex32x32;
 			break;
 		}
 		effSetVtxDescN64(vtx);

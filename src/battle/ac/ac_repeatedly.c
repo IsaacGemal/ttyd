@@ -441,7 +441,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             iconB = 0x79;
             break;
         }
-        if (((*(s32*)&disp->field_0x0[0] / 7) & 1) == 1) {
+        if (((disp->field_0x0 / 7) & 1) == 1) {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = float_neg200_8041c7ac + x;
             vec.y = float_70_8041c7b0 + y;
@@ -453,7 +453,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             iconDispGx(float_1_8041c7b4, &vec, 0x10, iconA);
         }
     } else {
-        s32 alt = (*(s32*)&disp->field_0x0[0] / 7) & 1;
+        s32 alt = (disp->field_0x0 / 7) & 1;
         f32 baseX = float_neg200_8041c7ac + x;
         f32 baseY = float_70_8041c7b0 + y;
         s32 i;
@@ -537,8 +537,8 @@ static void actionCommandDisp(f32 x, f32 y) {
         vec.y = float_45_8041c7cc + y;
         iconDispGx(float_1_8041c7b4, &vec, 0x10, 0x96);
     }
-    (*(s32*)&disp->field_0x0[0])++;
-    (*(s32*)&disp->field_0x0[4])++;
+    disp->field_0x0++;
+    disp->field_0x4++;
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

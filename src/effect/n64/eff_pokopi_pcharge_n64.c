@@ -266,7 +266,7 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 	s32 base3;
 	s32 base2;
 	s32 base1;
-	effVtxArray* tex9;
+	u32* tex9;
 	s32 base;
 	effPokopiPchargeData* data;
 	s32 i;
@@ -317,7 +317,7 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 	base3 = base + 3;
 	base2 = base + 2;
 	base1 = base + 1;
-	tex9 = (effVtxArray*)&size10x10_tex32x32_2_vtx[28];
+	tex9 = &size10x10_tex32x32_2_vtx[28];
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		scl = data->scale;
@@ -340,14 +340,14 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 		case 0:
 		case 1:
 		case 2:
-			effSetVtxDescN64((effVtxArray*)size10x10_tex32x32_vtx);
+			effSetVtxDescN64(size10x10_tex32x32_vtx);
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(base, base1, base2, 0, base, base2, base3, 0);
 			break;
 		case 3:
 		case 4:
 		case 5:
-			effSetVtxDescN64((effVtxArray*)size10x10_tex32x32_2_vtx);
+			effSetVtxDescN64(size10x10_tex32x32_2_vtx);
 			base3 -= 12;
 			base2 -= 12;
 			base -= 12;
@@ -360,7 +360,7 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 		case 7:
 		case 8:
 		case 11:
-			effSetVtxDescN64((effVtxArray*)size128x10_tex32x32_vtx);
+			effSetVtxDescN64(size128x10_tex32x32_vtx);
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 			break;
@@ -371,7 +371,7 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 			break;
 		case 10:
-			effSetVtxDescN64((effVtxArray*)size128x10_tex32x32_2_vtx);
+			effSetVtxDescN64(size128x10_tex32x32_2_vtx);
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 			break;

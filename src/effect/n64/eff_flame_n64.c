@@ -455,7 +455,7 @@ void effFlameDisp(CameraId camId, void* param) {
 	GXInvalidateVtxCache();
 	DCFlushRange(data->vtx, 0x70);
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)data->vtx);
+	effSetVtxDescN64(data->vtx);
 	GXLoadPosMtxImm(cam->view, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 

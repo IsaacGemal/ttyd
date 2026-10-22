@@ -205,7 +205,7 @@ void effThunderflareDisp(CameraId camId, void* param) {
 	PSMTXScale(work, float_0p03125_80420084, float_0p03125_80420084, float_0_80420088);
 	GXLoadTexMtxImm(work, 0x1E, 1);
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+	effSetVtxDescN64(size16x16_tex32x32_vtx);
 
 	for (i = 1; i < effect->count; i++, data++) {
 		scale = data->scale;

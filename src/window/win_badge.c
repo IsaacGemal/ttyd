@@ -318,7 +318,7 @@ void winBadgeMain2(WindowWork* work) {
     work->badgeScrollPos[1] += (work->badgeScrollTarget[1] - work->badgeScrollPos[1]) / 4.0f;
 }
 
-#define WIN_BADGE_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
+#define WIN_BADGE_TEX(w) (*(w)->winTpl->data)
 
 // Draws the badge screen: the "all"/"equipped" tabs, the BP panel with one pip per BP, then the list.
 void winBadgeDisp(CameraId camId, void* param, s32 idx) {
@@ -463,7 +463,7 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
         } else {
             winIconGrayInit();
         }
-        winIconSet(*(u16*)&itemDataTable[badge].icon_id, (Vec){x - 75.0f, drawY, 0.0f}, (Vec){0.54f, 0.54f, 0.54f},
+        winIconSet(itemDataTable[badge].icon_id, (Vec){x - 75.0f, drawY, 0.0f}, (Vec){0.54f, 0.54f, 0.54f},
                    iconColor);
         winFontInit();
         winFontSet((Vec){x - 55.0f, textY = scroll + (12.0f + rowY), 0.0f}, (Vec){0.9f, 0.9f, 0.9f}, color, itemDataTable[badge].id);

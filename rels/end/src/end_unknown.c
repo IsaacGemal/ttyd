@@ -101,10 +101,10 @@ s32 evt_credits_moamoa[108];
 // .bss emitted in reverse source order by the deferred-inline compiler, so declare them
 // back-to-front to land at 0x00..0x10 as in the original.
 u32 credits_work[14];
-u32 credits_chain_groups[1];
-u32 credits_chain_counts[1];
-u32 credits_ext_setup[1];
-u32 credits_pose_states[1];
+s32* credits_chain_groups[1];
+s32* credits_chain_counts[1];
+ExtMakeTextureEntry* credits_ext_setup[1];
+CreditsPoseState* credits_pose_states[1];
 
 // clang-format off
 // TODO: type
@@ -383,7 +383,7 @@ void credits_pose_gx(s32 wXluStage) {
 }
 
 void credits_pose_disp(CameraId cameraId, void* param) {
-    CreditsPoseEntry* entry = (CreditsPoseEntry*)param;
+    CreditsPoseEntry* entry = param;
 
     if (evtGetValue(NULL, GF(10)) == 0) {
         mapSetTevCallback(1, credits_tev_callback);
@@ -622,7 +622,7 @@ void credits_draw(CameraId cameraId, void* param) {
     if (WORK->image == NULL) {
         return;
     }
-    if ((u32)var1 >= (*(TEXPalette**)WORK->image->data)->numDescriptors) {
+    if ((u32)var1 >= ((TEXPalette*)*WORK->image->data)->numDescriptors) {
         return;
     }
     if (var1 == 9 && swGet(0x5E7) != 0) {
@@ -642,21 +642,21 @@ void credits_draw(CameraId cameraId, void* param) {
 
     switch (WORK->mode) {
         case 0:
-            TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, var1);
+            TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, var1);
             GXLoadTexObj(&texObj, 0);
             break;
         case 1:
             setTevColorGX(&credits_mode1_tev, WORK->tevAlpha);
-            TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x31);
+            TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, 0x31);
             GXLoadTexObj(&texObj, 0);
-            TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x32);
+            TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, 0x32);
             GXLoadTexObj(&texObj, 1);
             break;
         case 2:
             setTevColorGX(&credits_mode2_tev, WORK->tevAlpha);
-            TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x32);
+            TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, 0x32);
             GXLoadTexObj(&texObj, 0);
-            TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x33);
+            TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, 0x33);
             GXLoadTexObj(&texObj, 1);
             break;
         default:
@@ -752,7 +752,7 @@ void credits_draw(CameraId cameraId, void* param) {
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 4);
         GXSetTevOp(0, 0);
-        TEXGetGXTexObjFromPalette(*(TEXPalette**)WORK->image->data, &texObj, 0x34);
+        TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, 0x34);
         GXLoadTexObj(&texObj, 0);
         setChanMatColorGX(&credits_overlay_mat, WORK->overlayAlpha);
         GXSetZMode(1, 3, 0);
@@ -1452,7 +1452,7 @@ char* credits_ext_npc_name = "c_n_moa_a";
 char* credits_ext_anim_name = "S_1";
 void credits_ext_init(void) {
     ExtPose* pose = extGetPosePtr();
-    CreditsPoseState* work = (CreditsPoseState*)credits_pose_states[0];
+    CreditsPoseState* work = credits_pose_states[0];
     s32 i;
 
     for (i = 0; i < extGetPoseNum(); i++) {
@@ -1467,7 +1467,7 @@ void credits_ext_init(void) {
             work->position = pos;
         }
         work->idx = i % moamoa_chain_count;
-        work->counter = ((s32*)credits_chain_counts[0])[work->idx]++;
+        work->counter = credits_chain_counts[0][work->idx]++;
         work++;
         pose++;
     }
@@ -1478,8 +1478,8 @@ void credits_ext_init(void) {
 // original uses; the indices into credits_chain_groups are kept as a pointer pair.
 void credits_ext_update(void) {
     NpcEntry* npc = npcNameToPtr("モアモア");
-    AnimationPose* pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
-    Vec* positions = (Vec*)pose->groupWorldPos->address;
+    AnimationPose* pose = animPoseGetAnimPosePtr(npc->poseId);
+    Vec* positions = pose->groupWorldPos->address;
     s32 i;
     ExtPose* extPose;
     CreditsPoseState* work;
@@ -1493,12 +1493,12 @@ void credits_ext_update(void) {
         return;
     }
     extPose = extGetPosePtr();
-    work = (CreditsPoseState*)credits_pose_states[0];
+    work = credits_pose_states[0];
     for (i = 0; i < extGetPoseNum(); i++) {
-        s32* idxPair = (s32*)credits_chain_groups[0] + work->idx * 2;
+        s32* idxPair = credits_chain_groups[0] + work->idx * 2;
         Vec* p0 = &positions[idxPair[0]];
         Vec* p1 = &positions[idxPair[1]];
-        f32 ratio = (f32)work->counter / (f32)((s32*)credits_chain_counts[0])[work->idx];
+        f32 ratio = (f32)work->counter / (f32)credits_chain_counts[0][work->idx];
         f32 c = 1.0f - ratio;
 
         if (p0->y == -1000.0f || p1->y == -1000.0f) {
@@ -1520,10 +1520,10 @@ void credits_ext_update(void) {
         extPose++;
     }
 
-    pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
+    pose = animPoseGetAnimPosePtr(npc->poseId);
     {
         s32 count = pose->groupWorldPosCount;
-        Vec* p = (Vec*)pose->groupWorldPos->address;
+        Vec* p = pose->groupWorldPos->address;
 
         for (i = 0; i < count; i++) {
             p[i] = (Vec){0.0f, -1000.0f, 0.0f};
@@ -1560,24 +1560,24 @@ s32 credits_moamoa_setup(EventEntry* event, BOOL isFirstCall) {
     s32 count;
 
     p = _mapAlloc(0x1770);
-    credits_pose_states[0] = (u32)p;
+    credits_pose_states[0] = p;
     memset(p, 0, 0x1770);
     animPoseWorldPositionEvalOn(npc->poseId);
     p = _mapAlloc(0x1EC);
-    credits_ext_setup[0] = (u32)p;
+    credits_ext_setup[0] = p;
     memset(p, 0, 0x1EC);
     for (i = 0; i < 0x28; i++) {
-        ((s32*)credits_ext_setup[0])[i * 3 + 0] = (s32)credits_ext_npc_name;
-        ((s32*)credits_ext_setup[0])[i * 3 + 1] = (s32)credits_ext_anim_name;
-        ((f32*)credits_ext_setup[0])[i * 3 + 2] = (f32)i;
+        credits_ext_setup[0][i].name = credits_ext_npc_name;
+        credits_ext_setup[0][i].animName = credits_ext_anim_name;
+        credits_ext_setup[0][i].field_0x8 = (f32)i;
     }
-    evtSetValue(event, LW(10), credits_ext_setup[0]);
+    evtSetValue(event, LW(10), (s32)credits_ext_setup[0]);
 
-    pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
+    pose = animPoseGetAnimPosePtr(npc->poseId);
     {
         smartEntry* entry = pose->groupWorldPos;
 
-        positions = (Vec*)entry->address;
+        positions = entry->address;
     }
     count = pose->groupWorldPosCount;
     for (i = 0; i < count; i++) {
@@ -1585,14 +1585,14 @@ s32 credits_moamoa_setup(EventEntry* event, BOOL isFirstCall) {
     }
 
     p = _mapAlloc(moamoa_chain_count * 4);
-    credits_chain_counts[0] = (u32)p;
+    credits_chain_counts[0] = p;
     memset(p, 0, moamoa_chain_count * 4);
     p = _mapAlloc(moamoa_chain_count * 8);
-    credits_chain_groups[0] = (u32)p;
+    credits_chain_groups[0] = p;
     memset(p, 0, moamoa_chain_count * 8);
     for (i = 0; i < moamoa_chain_count; i++) {
-        ((s32*)credits_chain_groups[0])[i * 2 + 0] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].name);
-        ((s32*)credits_chain_groups[0])[i * 2 + 1] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].anim);
+        credits_chain_groups[0][i * 2 + 0] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].name);
+        credits_chain_groups[0][i * 2 + 1] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].anim);
     }
     return EVT_RETURN_DONE;
 }
@@ -1637,10 +1637,10 @@ s32 credits_moamoa_free(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("モアモア");
 
     L_animPoseWorldPositionEvalOff(npc->poseId);
-    _mapFree((void*)credits_pose_states[0]);
+    _mapFree(credits_pose_states[0]);
     extReset();
-    _mapFree((void*)credits_chain_groups[0]);
-    _mapFree((void*)credits_chain_counts[0]);
+    _mapFree(credits_chain_groups[0]);
+    _mapFree(credits_chain_counts[0]);
     return EVT_RETURN_DONE;
 }
 

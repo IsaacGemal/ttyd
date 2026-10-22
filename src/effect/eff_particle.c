@@ -267,7 +267,7 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	work->scale = 1.0f;
 	work->alpha = 0xFF;
 	work->count = count;
-	work->particles = (ParticleEntry*)((ParticleWork*)work + entry->count);
+	work->particles = (ParticleEntry*)(work + entry->count);
 	work->field_0xAC = 4.0f;
 	{
 		ParticleWork* w2 = entry->userdata;

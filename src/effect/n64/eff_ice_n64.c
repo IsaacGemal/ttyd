@@ -158,7 +158,7 @@ static void effIceDisp(CameraId camId, void* param) {
     GXTexObj texobj;
     Mtx mPos, mScale, mRot, mBase;
     s32 i;
-    effVtxArray* vtx;
+    u32* vtx;
 
     effect = param;
     cam = camGetPtr(camId);
@@ -184,13 +184,13 @@ static void effIceDisp(CameraId camId, void* param) {
 
     for (i = 1, data++; i < effect->count; i++, data++) {
         if (i & 1) {
-            vtx = (effVtxArray*)ice_s_vtx;
+            vtx = ice_s_vtx;
             effGetTexObjN64(8, &texobj);
             GXLoadTexObj(&texobj, GX_TEXMAP0);
             PSMTXScale(mScale, float_0p015625_8041f1a0, float_0p015625_8041f1a0, float_0_8041f1a4);
             GXLoadTexMtxImm(mScale, GX_TEXMTX0, GX_MTX2x4);
         } else {
-            vtx = (effVtxArray*)ice_vtx;
+            vtx = ice_vtx;
             effGetTexObjN64(7, &texobj);
             GXLoadTexObj(&texobj, GX_TEXMAP0);
             PSMTXScale(mScale, float_0p03125_8041f1a8, float_0p03125_8041f1a8, float_0_8041f1a4);

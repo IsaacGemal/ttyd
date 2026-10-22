@@ -1,6 +1,7 @@
 #pragma once
 
 #include "driver/camdrv.h"
+#include "sdk/texPalette.h"
 typedef struct WindowWork WindowWork;
 
 #include <dolphin/types.h>
@@ -36,12 +37,12 @@ int N_compare_func4_2_r(const void* a, const void* b);
 int compare_func5_2(const void* a, const void* b);
 int compare_func6_2(const void* a, const void* b);
 void winMsgEntry(WindowWork* work, s32 a1, const char* str, const char* a3);
-void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4);
+void winHalfBookGX(TEXPalette* pal, f32 x, f32 y, s32 a4);
 void winZClear(void);
 void winBgGX(WindowWork* work, s32 type, f32 x, f32 y);
 void winNameGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h);
 void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h);
-void winKageGX(WindowWork* work, f32 x, f32 y, f32 w, f32 h, void* color);
+void winKageGX(WindowWork* work, f32 x, f32 y, f32 w, f32 h, GXColor* color);
 void winWazaGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h);
 void winSortEntry(WindowWork* work, s32 idx, f32 a, f32 b);
 s32 winSortWait(WindowWork* work);

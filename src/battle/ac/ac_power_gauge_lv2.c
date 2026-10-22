@@ -170,7 +170,7 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
             if (work->actionCommands.outputParams[0] >= work->actionCommands.acParams[3]) {
                 work->actionCommands.outputParams[0] = work->actionCommands.acParams[3] - 1;
             }
-            if (!(*(u32*)&work->actionCommands.acFlag & 1) && dec->gaugePercent >= 100.0f) {
+            if (!(work->actionCommands.acFlag & 1) && dec->gaugePercent >= 100.0f) {
                 work->actionCommands.outputParams[0]++;
             }
             break;
@@ -220,7 +220,8 @@ s32 battleAcResult_PowerGaugeLv2(BattleWork* work) {
 // The original keeps disp (work+0x1F20) in r31 and reads mAcState once from work+0x1C9C.
 // Binding it through `ac`/`disp` and a local `state` is what makes mwcc materialise the disp base.
 void battleAcDisp_PowerGaugeLv2(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleWork* work = param;
+    BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
     s32 state = ac->mAcState;
 

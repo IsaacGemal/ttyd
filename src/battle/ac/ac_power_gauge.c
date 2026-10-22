@@ -153,7 +153,7 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
             }
             break;
         }
-        if ((*(u32*)&work->actionCommands.acFlag & 1) == 0) {
+        if ((work->actionCommands.acFlag & 1) == 0) {
             dec->counter++;
         }
         else if (dec->state == 1) {
@@ -252,7 +252,8 @@ s32 battleAcResult_PowerGauge(BattleWork* work) {
 }
 
 void battleAcDisp_PowerGauge(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleWork* work = param;
+    BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
     s32 state = ac->mAcState;
 

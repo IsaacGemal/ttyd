@@ -98,7 +98,7 @@ inline void make_jump_table(EventEntry* entry) {
 				return; //exit loop
 			case OPCODE_LABEL:
 				entry->labelIdTable[n] = (s8)label;
-				entry->labelAddressTable[n] = (s32*)cmd;
+				entry->labelAddressTable[n] = cmd;
 				n++;
 		}
 		if (n >= 16) { //needed to match, optimization leftover from some debug assert

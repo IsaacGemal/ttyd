@@ -28,7 +28,7 @@ extern const f32 float_0_8041c144;
 typedef struct BattleMenuWork {
     BattleCursor* cursor;     // 0x0
     BattleCommandAction* mainIconTable; // 0x4, passed as the table to DrawMainIcon (set from the Init argument)
-    void* weaponEntries;      // 0x8, BattleMenuWeaponEntry[] for the weapon menu (set from the Init argument)
+    BattleCommandWeapon* weaponEntries; // 0x8, the weapon menu table (set from the Init argument)
     s32 phase;                // 0xC, ring/scroll state: 0, 1, 2, 0xA, 0x14, 0x1E, 0x28
     s32 field_0x10;           // 0x10
     u8 inputReady;            // 0x14, read by BattleMenuKeyOKInACT
@@ -69,40 +69,6 @@ f32 kakutable[3][5] = {
     {270.0f, 203.0f, 157.0f, 90.0f, 0.0f},
 };
 
-// The multi-item table uses the same 0x18 stride with its own layout.
-typedef struct BattleMenuMultiEntry {
-    s32 enabled;         // 0x0
-    const char* label;   // 0x4
-    const char* helpMsg; // 0x8
-    u16 iconId;          // 0xC
-    u16 field_0xE;       // 0xE
-    s32 fpCost;          // 0x10
-    s32 field_0x14;      // 0x14
-} BattleMenuMultiEntry; // 0x18
-
-typedef struct BattleMenuDispEntryOp {
-    s32 field_0x0;       // 0x0
-    s32 enabled;         // 0x4
-    s32 field_0x8;       // 0x8
-    const char* label;   // 0xC
-    u16 iconId;          // 0x10
-    u16 field_0x12;      // 0x12
-    const char* helpMsg; // 0x14
-    s32 fpCost;          // 0x18
-} BattleMenuDispEntryOp; // 0x1C
-
-// Per-weapon entries behind BattleMenuWork.field_8 (stride 0x1C).
-typedef struct BattleMenuWeaponEntry {
-    BattleWeapon* weapon;  // 0x0
-    s32 enabled;           // 0x4
-    const char* label;     // 0x8
-    s32 field_0xC;         // 0xC
-    u16 field_0x10;        // 0x10
-    u8 field_0x12;         // 0x12
-    u8 field_0x13[0x14 - 0x13];
-    s32 itemId;            // 0x14
-    s32 field_0x18;        // 0x18
-} BattleMenuWeaponEntry; // 0x1C
 
 extern BattleWeapon ItemWeaponData_CookingItem;
 
@@ -118,7 +84,7 @@ typedef struct BattleMenuDispScratch {
     u16 arr24[7];   // 0x14
     s32 arr34[7];   // 0x24
     s32 arr50[7];   // 0x40
-    s32 arr6C[7];   // 0x5C
+    const char* arr6C[7]; // 0x5C
     s32 arr88[7];   // 0x78
     f32 scales[5];  // 0x94
     Vec centers[5]; // 0xA8
@@ -126,12 +92,8 @@ typedef struct BattleMenuDispScratch {
     Mtx rot[7];     // 0x1D4
 } BattleMenuDispScratch;
 
-typedef struct MainIconCirclePoint {
-    f32 x;
-    f32 y;
-} MainIconCirclePoint;
 typedef struct MainIconCircleTable {
-    MainIconCirclePoint v[4][4];
+    f32 v[4][8];
 } MainIconCircleTable;
 
 void SelectedItemCoordinateColorUpDate(void) {
@@ -171,7 +133,7 @@ void SelectedItemCoordinateColorUpDate(void) {
 
 BOOL BattleMenuKeyOKInACT(BattleWork* wp) {
     if (wp->commandMenu.restoreState == 0 &&
-        ((BattleMenuWork*)wp->commandMenu.field_55C)->inputReady == 0) {
+        (wp->commandMenu.field_55C)->inputReady == 0) {
         return FALSE;
     }
     return TRUE;
@@ -284,7 +246,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, BattleCommandAction* entry, Mt
     PSMTXConcat(resultMtx, transMtx, resultMtx);
     PSMTXConcat(cam->view, resultMtx, resultMtx);
     GXLoadPosMtxImm(resultMtx, 0);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, 1);
+    TEXGetGXTexObjFromPalette(wp->menuTex->data[0], &texObj, 1);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
 
     if (scale >= float_0_8041c144 && scale <= 180.0f) {
@@ -374,7 +336,7 @@ void DrawMainIconCircle(BattleMenuWork* window, BattleCommandAction* entry, Mtx*
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
     PSMTXConcat(cam->view, resultMtx, resultMtx);
     GXLoadPosMtxImm(resultMtx, 0);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, 0);
+    TEXGetGXTexObjFromPalette(wp->menuTex->data[0], &texObj, 0);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     if (scale >= float_0_8041c144 && scale <= 180.0f) {
         offset = (4.0f - 8.0f * scale / 180.0f) / 1.3f;
@@ -382,21 +344,21 @@ void DrawMainIconCircle(BattleMenuWork* window, BattleCommandAction* entry, Mtx*
     if (scale >= 180.0f && scale <= 360.0f) {
         offset = (-4.0f + 8.0f * (scale - 180.0f) / 180.0f) / 1.3f;
     }
-    posTable = (MainIconCircleTable){ { { { -20.0f, 40.0f }, { 0.0f, 40.0f }, { 0.0f, 20.0f }, { -20.0f, 20.0f } }, { { 20.0f, 40.0f }, { 20.0f, 20.0f }, { 0.0f, 20.0f }, { 0.0f, 40.0f } }, { { -20.0f, 20.0f }, { 0.0f, 20.0f }, { 0.0f, 0.0f }, { -20.0f, 0.0f } }, { { 0.0f, 20.0f }, { 20.0f, 20.0f }, { 20.0f, 0.0f }, { 0.0f, 0.0f } } } };
-    texCoord = (MainIconCircleTable){ { { { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } }, { { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f } }, { { 0.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 0.0f, 0.0f } }, { { 1.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 0.0f } } } };
+    posTable = (MainIconCircleTable){ { { -20.0f, 40.0f, 0.0f, 40.0f, 0.0f, 20.0f, -20.0f, 20.0f }, { 20.0f, 40.0f, 20.0f, 20.0f, 0.0f, 20.0f, 0.0f, 40.0f }, { -20.0f, 20.0f, 0.0f, 20.0f, 0.0f, 0.0f, -20.0f, 0.0f }, { 0.0f, 20.0f, 20.0f, 20.0f, 20.0f, 0.0f, 0.0f, 0.0f } } };
+    texCoord = (MainIconCircleTable){ { { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f }, { 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f } } };
     shadowY = -3.0769231f;
     for (i = 0; i < 4; i++) {
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         for (j = 0; j < 7; j += 2) {
-            btlDispGXPoint2D(offset + ((f32*)posTable.v[i])[j], shadowY + ((f32*)posTable.v[i])[j + 1], 0, 0, 0,
-                             0x80, ((f32*)texCoord.v[i])[j], ((f32*)texCoord.v[i])[j + 1]);
+            btlDispGXPoint2D(offset + posTable.v[i][j], shadowY + posTable.v[i][j + 1], 0, 0, 0,
+                             0x80, texCoord.v[i][j], texCoord.v[i][j + 1]);
         }
     }
     for (i = 0; i < 4; i++) {
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         for (j = 0; j < 7; j += 2) {
-            btlDispGXPoint2D(((f32*)posTable.v[i])[j], ((f32*)posTable.v[i])[j + 1], alpha, alpha, alpha, 0xFF,
-                             ((f32*)texCoord.v[i])[j], ((f32*)texCoord.v[i])[j + 1]);
+            btlDispGXPoint2D(posTable.v[i][j], posTable.v[i][j + 1], alpha, alpha, alpha, 0xFF,
+                             texCoord.v[i][j], texCoord.v[i][j + 1]);
         }
     }
     PSMTXTrans(transMtx, float_0_8041c144, 7.5f, float_0_8041c144);
@@ -418,7 +380,7 @@ void DrawMainIconCircle(BattleMenuWork* window, BattleCommandAction* entry, Mtx*
     }
 }
 
-void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, s32* c, s32* d, s32* e, BattleCommandParty* table, s32 flag) {
+void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, const char** c, s32* d, s32* e, BattleCommandParty* table, s32 flag) {
     BattleWork* wp = _battleWorkPointer;
     BattleCursor* cursor;
     Mtx mtx;
@@ -453,7 +415,7 @@ static inline void SubIconDrawColor(GXColor c) {
     FontDrawColor(c);
 }
 
-void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s32 c, s32 d, s32 e, BattleCommandParty* table,
+void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, const char* c, s32 d, s32 e, BattleCommandParty* table,
                     s32 flag) {
     BattleWork* wp = _battleWorkPointer;
     BattleCursor* cursor = window->cursor;
@@ -504,7 +466,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     btlDispGXInit2D();
     PSMTXConcat(cam->view, mtx, mtxOut);
     GXLoadPosMtxImm(mtxOut, 0);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, 2);
+    TEXGetGXTexObjFromPalette(wp->menuTex->data[0], &texObj, 2);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
 #ifdef MUST_MATCH
     // btlDispGXQuads2D's header declares its alpha as u8, but the original passes a 32-bit value
@@ -519,7 +481,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     btlDispGXQuads2D(152.0f, 24.0f, 136.0f, float_0_8041c144, cr, cg, cb,
                      ca);
 #endif
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, 3);
+    TEXGetGXTexObjFromPalette(wp->menuTex->data[0], &texObj, 3);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
 #ifdef MUST_MATCH
     ((void (*)(f32, f32, f32, f32, u8, u8, u8, s32))btlDispGXQuads2D)(
@@ -565,8 +527,8 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     PSMTXTrans(mtxTrans, (-104.0f), 22.0f, float_0_8041c144);
     if (flag == 1) {
         f32 scale;
-        if (FontGetMessageWidth((char*)c) > 0x96) {
-            scale = 120.0f / (f32)FontGetMessageWidth((char*)c);
+        if (FontGetMessageWidth(c) > 0x96) {
+            scale = 120.0f / (f32)FontGetMessageWidth(c);
         } else {
             scale = 0.8f;
         }
@@ -576,7 +538,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     }
     PSMTXConcat(mtx, mtxTrans, mtxOut);
     PSMTXConcat(mtxOut, mtxScale, mtxOut);
-    FontDrawStringMtx(mtxOut, (char*)c);
+    FontDrawStringMtx(mtxOut, c);
 
     if (d != 0) {
         s32 h = d / 100;
@@ -777,7 +739,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
 
 void DrawMenuPartyChangeButton(void) {
     BattleWork* wp = _battleWorkPointer;
-    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    BattleMenuWork* window = wp->commandMenu.field_55C;
     BattleUnit* mario;
     BattleUnit* party;
     s32 memberId;
@@ -869,7 +831,7 @@ void DrawMenuPinchMark(void) {
             cr = 0xFF; cg = 0xE9; cb = 0x40; ca = 0xFF;
             id = (gp->language == 0) ? 6 : 7;
         }
-        TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, id);
+        TEXGetGXTexObjFromPalette(wp->menuTex->data[0], &texObj, id);
         GXLoadTexObj(&texObj, GX_TEXMAP0);
         btlGetScreenPoint(&unit->mPosition, &pos);
         PSMTXTrans(mtx1, pos.x - 20.0f, 60.0f + pos.y, float_0_8041c144);
@@ -891,7 +853,7 @@ void DrawMenuPinchMark(void) {
             cr = 0xFF; cg = 0xE9; cb = 0x40; ca = 0xFF;
             id = (gp->language == 0) ? 6 : 7;
         }
-        TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, id);
+        TEXGetGXTexObjFromPalette(wp->menuTex->data[0], &texObj, id);
         GXLoadTexObj(&texObj, GX_TEXMAP0);
         btlGetScreenPoint(&unit->mPosition, &pos);
         PSMTXTrans(mtx1, pos.x - 20.0f, 60.0f + pos.y, float_0_8041c144);
@@ -966,7 +928,7 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
 
 void DrawMenuCursorAndScrollArrow(Vec pos) {
     BattleWork* wp = _battleWorkPointer;
-    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    BattleMenuWork* window = wp->commandMenu.field_55C;
     BattleCursor* cursor = window->cursor;
     Vec vec;
     f32 bounce;
@@ -1116,7 +1078,7 @@ void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 i
 
 void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* scales, Mtx* mtxC) {
     BattleWork* wp = _battleWorkPointer;
-    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    BattleMenuWork* window = wp->commandMenu.field_55C;
     BattleCursor* cursor = window->cursor;
     BattleCursor* mainCursor;
     s32 maxCount;
@@ -1335,7 +1297,7 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, BattleComman
     }
     wp->commandMenu.field_55C = BattleAlloc(sizeof(BattleMenuWork));
     if (flags & 1) {
-        w = (BattleMenuWork*)wp->commandMenu.field_55C;
+        w = wp->commandMenu.field_55C;
         w->cursor = a;
         w->mainIconTable = b;
         w->phase = 0xA;
@@ -1360,7 +1322,7 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, BattleComman
             }
         }
     } else {
-        w = (BattleMenuWork*)wp->commandMenu.field_55C;
+        w = wp->commandMenu.field_55C;
         w->cursor = a;
         w->mainIconTable = b;
         w->phase = 0;
@@ -1399,7 +1361,7 @@ static inline s32 menuCursorDelta(BattleMenuWork* w) {
 
 void DrawMainMenu(void) {
     BattleWork* wp = _battleWorkPointer;
-    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    BattleMenuWork* window = wp->commandMenu.field_55C;
     BattleCursor* cursor = window->cursor;
     f32 ringX;
     f32 ringY;
@@ -1647,7 +1609,7 @@ void DrawMainMenu(void) {
     DrawMenuPinchMark();
 }
 
-void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, BattleCursor* menu, void* arg, u32 flags) {
+void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, BattleCursor* menu, BattleCommandWeapon* arg, u32 flags) {
     BattleMenuWork* window = 0;
     BattleCursor* cursor = 0;
     InitSubMenuCommonProcess(&window, &cursor, menu);
@@ -1674,7 +1636,7 @@ void BattleMenuDisp_WeaponSelect_End(BattleWork* wp) {
 void DrawWeaponWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleCommand* cmd = &wp->commandMenu;
-    BattleMenuWork* window = (BattleMenuWork*)cmd->field_55C;
+    BattleMenuWork* window = cmd->field_55C;
     BattleCursor* cursor = window->cursor;
     BattleUnit* unit;
     BattleWeapon* sel;
@@ -1683,7 +1645,7 @@ void DrawWeaponWin(void) {
     u16 arr24[7];
     f32 scales[5];
     s32 arr88[7];
-    s32 arr6C[7];
+    const char* arr6C[7];
     s32 arr50[7];
     s32 arr34[7];
     Vec centers[5];
@@ -1693,21 +1655,21 @@ void DrawWeaponWin(void) {
     const char* msg;
 
     unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-    sel = ((BattleMenuWeaponEntry*)window->weaponEntries)[cursor->field_0].weapon;
+    sel = window->weaponEntries[cursor->field_0].mWeaponParams;
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
-            arr88[i] = ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].enabled;
+            arr88[i] = window->weaponEntries[idx].mEnabled;
             arr24[i] = cmd->weaponTable[idx].mIcon;
-            arr6C[i] = (s32)((BattleMenuWeaponEntry*)window->weaponEntries)[idx].label;
-            if (((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon != 0) {
-                arr50[i] = BtlUnit_GetWeaponCost(unit, ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon);
+            arr6C[i] = window->weaponEntries[idx].mName;
+            if (window->weaponEntries[idx].mWeaponParams != 0) {
+                arr50[i] = BtlUnit_GetWeaponCost(unit, window->weaponEntries[idx].mWeaponParams);
             } else {
                 arr50[i] = 0;
             }
-            if (((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon != 0) {
-                arr34[i] = ((BattleMenuWeaponEntry*)window->weaponEntries)[idx].weapon->baseSpCost;
+            if (window->weaponEntries[idx].mWeaponParams != 0) {
+                arr34[i] = window->weaponEntries[idx].mWeaponParams->baseSpCost;
             } else {
                 arr34[i] = 0;
             }
@@ -1721,14 +1683,14 @@ void DrawWeaponWin(void) {
         if (id != 0) {
             msg = itemDataTable[id].description;
         } else if (sel == &ItemWeaponData_CookingItem) {
-            BattleMenuWeaponEntry* entry = (BattleMenuWeaponEntry*)window->weaponEntries;
-            msg = itemDataTable[entry[cursor->field_0].itemId].description;
+            BattleCommandWeapon* entry = window->weaponEntries;
+            msg = itemDataTable[entry[cursor->field_0].mItem].description;
         } else {
             msg = sel->description;
         }
     } else {
-        BattleMenuWeaponEntry* entry = (BattleMenuWeaponEntry*)window->weaponEntries;
-        msg = itemDataTable[entry[cursor->field_0].itemId].description;
+        BattleCommandWeapon* entry = window->weaponEntries;
+        msg = itemDataTable[entry[cursor->field_0].mItem].description;
     }
     if (msg != 0) {
         DrawMenuHelpWin(msg, outX, outY);
@@ -1771,12 +1733,12 @@ void BattleMenuDisp_Operation_End(BattleWork* wp) {
 // ...) and hand r10/r9 to i/entry; the natural order does not.
 void DrawOperationWin(void) {
     BattleWork* wp = _battleWorkPointer;
-    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    BattleMenuWork* window = wp->commandMenu.field_55C;
     BattleCursor* cursor = window->cursor;
-    BattleMenuDispEntryOp* entries;
+    BattleCommandOperation* entries;
     f32 scales[5];
     s32 arr88[7];
-    s32 arr6C[7];
+    const char* arr6C[7];
     Vec centers[5];
     u16 arr24[7];
     f32 outX;
@@ -1786,31 +1748,31 @@ void DrawOperationWin(void) {
     s32 arr34[7];
     f32 outY;
 
-    BattleMenuDispEntryOp* entry;
+    BattleCommandOperation* entry;
     s32 i;
     BattleGetUnitPtr(wp, wp->activeUnitId);
-    entries = (BattleMenuDispEntryOp*)wp->commandMenu.operationTable;
+    entries = wp->commandMenu.operationTable;
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
             entry = &entries[idx];
-            arr88[i] = entry->enabled;
-            if (entries[i].iconId != 0) {
-                arr24[i] = entry->iconId;
+            arr88[i] = entry->mEnabled;
+            if (entries[i].mIcon != 0) {
+                arr24[i] = entry->mIcon;
             } else {
                 arr24[i] = 0x18B;
             }
-            arr6C[i] = (s32)entry->label;
-            arr50[i] = entry->fpCost;
+            arr6C[i] = entry->mName;
+            arr50[i] = entry->mWeaponCost;
             arr34[i] = 0;
         }
     }
     DrawMainIcon(window, wp->commandMenu.actionTable, mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
-    if (entries[cursor->field_0].helpMsg != 0) {
-        DrawMenuHelpWin(entries[cursor->field_0].helpMsg, outX, outY);
+    if (entries[cursor->field_0].mDescription != 0) {
+        DrawMenuHelpWin(entries[cursor->field_0].mDescription, outX, outY);
     }
 }
 
@@ -1850,7 +1812,7 @@ void DrawChangePartyWin(void) {
     u16 arr24[7];
     f32 scales[5];
     s32 arr88[7];
-    s32 arr6C[7];
+    const char* arr6C[7];
     s32 arr50[7];
     s32 arr34[7];
     Vec centers[5];
@@ -1858,7 +1820,7 @@ void DrawChangePartyWin(void) {
     Mtx rot[7];
     s32 i;
 
-    window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    window = wp->commandMenu.field_55C;
     cursor = window->cursor;
     BattleGetUnitPtr(wp, wp->activeUnitId);
     entries = wp->commandMenu.partyTable;
@@ -1873,7 +1835,7 @@ void DrawChangePartyWin(void) {
             } else {
                 arr24[i] = 0x18B;
             }
-            arr6C[i] = (s32)entry->mName;
+            arr6C[i] = entry->mName;
             arr50[i] = 0;
             arr34[i] = 0;
         }
@@ -1911,15 +1873,15 @@ void BattleMenuDisp_MultiItem_End(BattleWork* wp) {
 
 void DrawMultiItemWin(void) {
     BattleWork* wp = _battleWorkPointer;
-    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    BattleMenuWork* window = wp->commandMenu.field_55C;
     BattleCursor* cursor = window->cursor;
-    BattleMenuMultiEntry* entries;
+    BattleCommandMultiItem* entries;
     f32 outX;
     f32 outY;
     u16 arr24[7];
     f32 scales[5];
     s32 arr88[7];
-    s32 arr6C[7];
+    const char* arr6C[7];
     s32 arr50[7];
     s32 arr34[7];
     Vec centers[5];
@@ -1928,27 +1890,27 @@ void DrawMultiItemWin(void) {
     s32 i;
 
     BattleGetUnitPtr(wp, wp->activeUnitId);
-    entries = (BattleMenuMultiEntry*)wp->commandMenu.multiItemTable;
+    entries = wp->commandMenu.multiItemTable;
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->unk8) {
-            arr88[i] = entries[idx].enabled;
-            if (entries[idx].iconId != 0) {
-                arr24[i] = entries[idx].iconId;
+            arr88[i] = entries[idx].mEnabled;
+            if (entries[idx].mIcon != 0) {
+                arr24[i] = entries[idx].mIcon;
             } else {
                 arr24[i] = 0x18B;
             }
-            arr6C[i] = (s32)entries[idx].label;
-            arr50[i] = entries[idx].fpCost;
+            arr6C[i] = entries[idx].mName;
+            arr50[i] = entries[idx].mWeaponCost;
             arr34[i] = 0;
         }
     }
     DrawMainIcon(window, wp->commandMenu.actionTable, mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
-    if (entries[cursor->field_0].helpMsg != 0) {
-        DrawMenuHelpWin(entries[cursor->field_0].helpMsg, outX, outY);
+    if (entries[cursor->field_0].mDescription != 0) {
+        DrawMenuHelpWin(entries[cursor->field_0].mDescription, outX, outY);
     }
 }
 

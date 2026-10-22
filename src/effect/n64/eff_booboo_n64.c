@@ -1061,6 +1061,7 @@ static inline void boo_polygon(int poly) {
 
 // Storing the sin result in `f32 s` first pools 6.2832/360 before 63.0 as the original's .sdata2 does.
 void effBoobooDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
 	CameraEntry* camera;
 	int phase;
 	BoobooData* data;
@@ -1070,7 +1071,7 @@ void effBoobooDisp(CameraId camId, void* param) {
 	Mtx rotMtx;
 
 	camera = camGetPtr(camId);
-	data = ((EffectEntry*)param)->userdata;
+	data = effect->userdata;
 	phase = data->timer * 30;
 	for (i = 0; i < 11; i++, phase += 20) {
 		if (data->flags[i] & 1) {

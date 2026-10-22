@@ -32,9 +32,9 @@ s32 door_mapflag;
 typedef struct DoorParam {
     s32 field_00;    // 0x00
     s32 field_04;    // 0x04
-    s32 field_08;    // 0x08
+    const char* field_08; // 0x08
     s32 field_0C;    // 0x0C
-    s32 field_10;    // 0x10
+    const char* field_10; // 0x10
     s32 field_14;    // 0x14
     s32 field_18;    // 0x18
     s32 field_1C;    // 0x1C
@@ -46,7 +46,7 @@ typedef struct DoorParam {
     char** field_34; // 0x34
     s32 field_38;    // 0x38
     char** field_3C; // 0x3C
-    s32 field_40;    // 0x40
+    void** field_40; // 0x40
     char** field_44; // 0x44
     char** field_48; // 0x48
 } DoorParam;
@@ -56,10 +56,6 @@ typedef struct DoorWork {
     Vec in;           // 0x04
     Vec out;          // 0x10
 } DoorWork;
-
-typedef struct DoorData {
-    u32 data[0x48 / 4];
-} DoorData;
 
 extern s32 N_evt_mario_party_door_halve_hitbox[];
 s32 door_up_se[2];
@@ -182,38 +178,38 @@ USER_FUNC(door_entry) {
 	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
 	Vec a = { 0 };
 	Vec b = { 0 };
-	DoorWork* work = (DoorWork*)_mapAlloc(sizeof(DoorWork));
+	DoorWork* work = _mapAlloc(sizeof(DoorWork));
 
 	work->param = param;
 	switch (param->field_00) {
 	case 0:
 	case 1:
-		hitObjGetPos((char*)param->field_08, &a);
-		hitObjGetNormal((char*)param->field_08, &b);
+		hitObjGetPos(param->field_08, &a);
+		hitObjGetNormal(param->field_08, &b);
 		work->out.x = a.x + b.x * 40.0f - b.z * 10.0f;
 		work->out.z = a.z + b.z * 40.0f + b.x * 10.0f;
-		hitObjGetPos((char*)param->field_10, &a);
-		hitObjGetNormal((char*)param->field_10, &b);
+		hitObjGetPos(param->field_10, &a);
+		hitObjGetNormal(param->field_10, &b);
 		work->in.x = a.x + b.x * 30.0f;
 		work->in.z = a.z + b.z * 30.0f;
 		break;
 	case 2:
-		hitObjGetPos((char*)param->field_08, &a);
-		hitObjGetNormal((char*)param->field_08, &b);
+		hitObjGetPos(param->field_08, &a);
+		hitObjGetNormal(param->field_08, &b);
 		work->out.x = a.x + b.x * 40.0f + b.z * 10.0f;
 		work->out.z = a.z + b.z * 40.0f - b.x * 10.0f;
-		hitObjGetPos((char*)param->field_10, &a);
-		hitObjGetNormal((char*)param->field_10, &b);
+		hitObjGetPos(param->field_10, &a);
+		hitObjGetNormal(param->field_10, &b);
 		work->in.x = a.x + b.x * 30.0f;
 		work->in.z = a.z + b.z * 30.0f;
 		break;
 	case 3:
-		hitObjGetPos((char*)param->field_08, &a);
-		hitObjGetNormal((char*)param->field_08, &b);
+		hitObjGetPos(param->field_08, &a);
+		hitObjGetNormal(param->field_08, &b);
 		work->out.x = a.x + b.x * 40.0f;
 		work->out.z = a.z + b.z * 40.0f;
-		hitObjGetPos((char*)param->field_10, &a);
-		hitObjGetNormal((char*)param->field_10, &b);
+		hitObjGetPos(param->field_10, &a);
+		hitObjGetNormal(param->field_10, &b);
 		work->in.x = a.x + b.x * 40.0f;
 		work->in.z = a.z + b.z * 40.0f;
 		break;
@@ -228,9 +224,9 @@ USER_FUNC(inout_hit) {
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
 	evtSetValue(event, args[1], work->param->field_04);
-	evtSetValue(event, args[2], work->param->field_08);
+	evtSetValue(event, args[2], (s32)work->param->field_08);
 	evtSetValue(event, args[3], work->param->field_0C);
-	evtSetValue(event, args[4], work->param->field_10);
+	evtSetValue(event, args[4], (s32)work->param->field_10);
 	return EVT_RETURN_DONE;
 }
 
@@ -423,7 +419,7 @@ USER_FUNC(get_noclip_map) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 	s32 index = evtGetValue(event, args[1]);
-	void** list = (void**)work->param->field_40;
+	void** list = work->param->field_40;
 
 	if (list != NULL) {
 		void* value = list[index];
@@ -437,7 +433,7 @@ USER_FUNC(get_noclip_map) {
 }
 
 
-void door_position_sub(s32 mode, char* mapName, char* hitIn, char* hitOut, Vec* in, Vec* out, s32 flag) {
+void door_position_sub(s32 mode, const char* mapName, const char* hitIn, const char* hitOut, Vec* in, Vec* out, s32 flag) {
 	MapObject* mapObj = mapGetMapObj(mapName);
 	Vec pos;
 	Vec normal;
@@ -561,7 +557,7 @@ void door_position_sub(s32 mode, char* mapName, char* hitIn, char* hitOut, Vec* 
 }
 
 
-void door_dark_flag_sub(s32 flag, char** npcs, char** mobjs, char** items) {
+void door_dark_flag_sub(s32 flag, const char** npcs, const char** mobjs, const char** items) {
 	MarioWork* mario = marioGetPtr();
 	PartyEntry* party0 = partyGetPtr(0);
 	PartyEntry* party1 = partyGetPtr(1);
@@ -648,10 +644,10 @@ void door_dark_flag_sub(s32 flag, char** npcs, char** mobjs, char** items) {
 
 USER_FUNC(door_dark_flag) {
 	s32* args = event->args;
-	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
+	DoorEntry* param = (DoorEntry*)evtGetValue(event, args[0]);
 	s32 flag = evtGetValue(event, args[1]);
 
-	door_dark_flag_sub(flag, (char**)param->field_34, (char**)param->field_38, (char**)param->field_3C);
+	door_dark_flag_sub(flag, param->npcNames, param->mobjNames, param->itemNames);
 	return EVT_RETURN_DONE;
 }
 
@@ -765,63 +761,63 @@ EVT_END()
 
 USER_FUNC(evt_door_param) {
 	s32* args = event->args;
-	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
+	DoorEntry* param = (DoorEntry*)evtGetValue(event, args[0]);
 	s32 mode = evtGetValue(event, args[1]);
 	Vec in = { 0 };
 	Vec out = { 0 };
 
 	switch (mode) {
 	case 0:
-		evtSetValue(event, args[2], param->field_04);
+		evtSetValue(event, args[2], param->type);
 		break;
 	case 1:
-		evtSetValue(event, args[2], param->field_0C);
-		evtSetValue(event, args[3], param->field_10);
-		evtSetValue(event, args[4], param->field_14);
+		evtSetValue(event, args[2], (s32)param->doorMapObj);
+		evtSetValue(event, args[3], (s32)param->closeHit);
+		evtSetValue(event, args[4], (s32)param->openHit);
 		break;
 	case 2:
-		evtSetValue(event, args[2], param->field_18);
-		evtSetValue(event, args[3], param->field_1C);
+		evtSetValue(event, args[2], (s32)param->outsideMapObj);
+		evtSetValue(event, args[3], (s32)param->outsideHit);
 		break;
 	case 3:
-		evtSetValue(event, args[2], param->field_20);
-		evtSetValue(event, args[3], param->field_24);
+		evtSetValue(event, args[2], (s32)param->insideMapObj);
+		evtSetValue(event, args[3], (s32)param->insideHit);
 		break;
 	case 4:
-		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 0);
+		door_position_sub(param->type, param->doorMapObj, param->closeHit, param->openHit, &in, &out, 0);
 		evtSetValue(event, args[2], (s32)in.x);
 		evtSetValue(event, args[3], (s32)in.y);
 		evtSetValue(event, args[4], (s32)in.z);
 		break;
 	case 5:
-		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 0);
+		door_position_sub(param->type, param->doorMapObj, param->closeHit, param->openHit, &in, &out, 0);
 		evtSetValue(event, args[2], (s32)out.x);
 		evtSetValue(event, args[3], (s32)out.y);
 		evtSetValue(event, args[4], (s32)out.z);
 		break;
 	case 6:
-		evtSetValue(event, args[2], param->field_28);
-		evtSetValue(event, args[3], param->field_2C);
-		evtSetValue(event, args[4], param->field_30);
+		evtSetValue(event, args[2], (s32)param->doorEvt);
+		evtSetValue(event, args[3], param->field_0x2C);
+		evtSetValue(event, args[4], (s32)param->houseEvt);
 		break;
 	case 7:
-		evtSetValue(event, args[2], param->field_40);
-		evtSetValue(event, args[3], (s32)param->field_44);
+		evtSetValue(event, args[2], (s32)param->openEvt);
+		evtSetValue(event, args[3], (s32)param->closeEvt);
 		break;
 	case 8:
-		evtSetValue(event, args[2], param->field_08);
+		evtSetValue(event, args[2], param->field_0x8);
 		break;
 	case 9:
-		evtSetValue(event, args[2], param->field_00);
+		evtSetValue(event, args[2], param->flags);
 		break;
 	case 10:
-		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 1);
+		door_position_sub(param->type, param->doorMapObj, param->closeHit, param->openHit, &in, &out, 1);
 		evtSetValue(event, args[2], (s32)in.x);
 		evtSetValue(event, args[3], (s32)in.y);
 		evtSetValue(event, args[4], (s32)in.z);
 		break;
 	case 11:
-		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 1);
+		door_position_sub(param->type, param->doorMapObj, param->closeHit, param->openHit, &in, &out, 1);
 		evtSetValue(event, args[2], (s32)out.x);
 		evtSetValue(event, args[3], (s32)out.y);
 		evtSetValue(event, args[4], (s32)out.z);
@@ -840,7 +836,7 @@ USER_FUNC(evt_door_save_mapflag) {
 		mapErrorEntry(0, name);
 		return EVT_RETURN_DONE;
 	}
-	door_mapflag = *(s32*)obj;
+	door_mapflag = obj->flags;
 	return EVT_RETURN_DONE;
 }
 
@@ -854,16 +850,16 @@ USER_FUNC(evt_door_load_mapflag) {
 		mapErrorEntry(0, name);
 		return EVT_RETURN_DONE;
 	}
-	*(s32*)obj = door_mapflag;
+	obj->flags = door_mapflag;
 	return EVT_RETURN_DONE;
 }
 
 
 USER_FUNC(npc_hide_onoff) {
 	s32* args = event->args;
-	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
+	DoorEntry* param = (DoorEntry*)evtGetValue(event, args[0]);
 	s32 flag = evtGetValue(event, args[1]);
-	char** npcs = param->field_34;
+	const char** npcs = param->npcNames;
 	NpcEntry* npc;
 	s32 i;
 
@@ -882,8 +878,8 @@ USER_FUNC(npc_hide_onoff) {
 
 USER_FUNC(evt_door_data_copy) {
 	s32* args = event->args;
-	DoorData* src = (DoorData*)evtGetValue(event, args[0]);
-	DoorData* dst = (DoorData*)_mapAlloc(0x48);
+	DoorEntry* src = (DoorEntry*)evtGetValue(event, args[0]);
+	DoorEntry* dst = _mapAlloc(0x48);
 
 	*dst = *src;
 	evtSetValue(event, args[1], (s32)dst);
@@ -893,13 +889,13 @@ USER_FUNC(evt_door_data_copy) {
 
 USER_FUNC(evt_door_set_param) {
 	s32* args = event->args;
-	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
+	DoorEntry* param = (DoorEntry*)evtGetValue(event, args[0]);
 	s32 which = evtGetValue(event, args[1]);
 	s32 value = evtGetValue(event, args[2]);
 
 	switch (which) {
 	case 0:
-		param->field_34 = (char**)value;
+		param->npcNames = (const char**)value;
 		break;
 	default:
 		break;

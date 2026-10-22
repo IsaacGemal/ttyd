@@ -2,14 +2,13 @@
 #include "driver/camdrv.h"
 #include "driver/effdrv.h"
 #include <dolphin/types.h>
+#include <dolphin/mtx.h>
 typedef struct effNanigaData {
 	s32 type;       // 0x00
 	f32 posX;       // 0x04
 	f32 posY;       // 0x08
 	f32 posZ;       // 0x0C
-	f32 field_0x10; // 0x10
-	f32 field_0x14; // 0x14
-	f32 field_0x18; // 0x18
+	Vec field_0x10; // 0x10, the position through the 3D camera's view and projection, then scaled to the screen
 	f32 scale;      // 0x1C
 	s32 state;      // 0x20
 	s32 timer;      // 0x24

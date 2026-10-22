@@ -250,7 +250,7 @@ void effShockDisp(CameraId cameraId, void* param) {
 		GXSetTevColorIn(0, 4, 2, 0xA, 0xF);
 		GXSetTevAlphaIn(0, 7, 1, 4, 7);
 
-		effSetVtxDescN64((effVtxArray*)testsrc_shock_v);
+		effSetVtxDescN64(testsrc_shock_v);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x90);
 		tri2(0x30, 0x31, 0x32, 0, 0x30, 0x32, 0x33, 0);
 		tri2(0x31, 0x34, 0x35, 0, 0x31, 0x35, 0x32, 0);

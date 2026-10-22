@@ -193,10 +193,10 @@ void effTorchDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(mtxView, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 	GXSetNumChans(GX_FALSE);
-	GXInitTexObj(&texObj, (void*)torch_obj2_texture, 0x20, 0x40, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	GXInitTexObj(&texObj, torch_obj2_texture, 0x20, 0x40, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
-	GXInitTexObj(&texObj, (void*)torch_obj22t_texture, 0x20, 0x40, GX_TF_I4, GX_CLAMP, GX_MIRROR, GX_FALSE);
+	GXInitTexObj(&texObj, torch_obj22t_texture, 0x20, 0x40, GX_TF_I4, GX_CLAMP, GX_MIRROR, GX_FALSE);
 	GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 	GXLoadTexObj(&texObj, GX_TEXMAP1);
 	GXSetNumTexGens(2);

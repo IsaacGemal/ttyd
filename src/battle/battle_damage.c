@@ -42,10 +42,9 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
                                     BattleWeapon* weapon, s32 flags);
 static inline u8 getAllOrNothing(BattleUnit* unit);
 
-#define PART ((BattleUnitPart*)partArg)
 // The .rodata displacements (the i2f double at 0x58 and the SFX_MARIO_HAMMER_PIKKYO strings at 0x290) only
 // match when BattlePreCheckDamage is emitted after BattleCheckDamage, so its i2f double pools after the strings.
-void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damage, s32 arg4, s32 flags,
+void BattleDamageDirect(s32 damageCode, BattleUnit* unit, BattleUnitPart* part, s32 damage, s32 arg4, s32 flags,
                         s32 arg6, s32 arg7) {
     BattleUnit* attacker;
     BattleWork* wp = _battleWorkPointer;
@@ -74,12 +73,12 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
     if (attacker != NULL) {
         attacker->field_0x280 += damage;
     }
-    if (PART != NULL) {
-        unit->currentTarget = PART;
+    if (part != NULL) {
+        unit->currentTarget = part;
     } else {
         BattleUnitPart* tmp = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
         unit->currentTarget = tmp;
-        partArg = (s32)tmp;
+        part = tmp;
     }
     unit->damagePattern = arg6;
     if (unit->mAttributeFlags & 0x200000) {
@@ -88,11 +87,11 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
             unit->damagePattern = 0;
         }
     }
-    BtlUnit_GetHitPos(unit, PART, &sfxPos.x, &sfxPos.y, &sfxPos.z);
+    BtlUnit_GetHitPos(unit, part, &sfxPos.x, &sfxPos.y, &sfxPos.z);
 
     if (!(flags & 0x2000)) {
         if (damage != 0 || arg4 != 0) {
-            BtlUnit_GetHitPos(unit, PART, &effectX, &effectY, &effectZ);
+            BtlUnit_GetHitPos(unit, part, &effectX, &effectY, &effectZ);
             switch ((u8)flags) {
             case 0x18:
             case 0x19:
@@ -135,11 +134,11 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
             }
             if (damageCode != -5 && attacker != NULL && attacker->badgesEquipped.MegaRush != 0 &&
                 attacker->currentHp <= attacker->mKindParams->mPerilHP) {
-                BtlUnit_GetHitPos(unit, PART, &fukidashiHitX, &fukidashiHitY, &fukidashiHitZ);
+                BtlUnit_GetHitPos(unit, part, &fukidashiHitX, &fukidashiHitY, &fukidashiHitZ);
                 effFukidashiEntry(0, 0, 0, 60, fukidashiHitX, fukidashiHitY, fukidashiHitZ, 10.0f, 0.0f);
             }
         } else {
-            BtlUnit_GetHitPos(unit, PART, &missHitX, &missHitY, &missHitZ);
+            BtlUnit_GetHitPos(unit, part, &missHitX, &missHitY, &missHitZ);
             if ((u32)arg6 != 2 && (u32)arg6 != 3 && (u32)arg6 != 0x15 && (u32)arg6 != 0x16 &&
                 (u32)arg6 != 0x14 && (u32)arg6 != 0x13 && (u32)arg6 != 0x1b && (u32)arg6 != 7 &&
                 (u8)flags != 0x16) {
@@ -152,7 +151,7 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
             }
         }
     } else {
-        BtlUnit_GetHitPos(unit, PART, &recoverHitX, &recoverHitY, &recoverHitZ);
+        BtlUnit_GetHitPos(unit, part, &recoverHitX, &recoverHitY, &recoverHitZ);
         effRecoveryEntry(0, (s32)__fabs(damage), recoverHitX, recoverHitY, recoverHitZ);
     }
 
@@ -218,7 +217,7 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
     unit->field_0x26E = arg4;
     unit->field_0x264 += unit->fpDamageTaken;
 
-    if (!(unit->mAttributeFlags & 0x40000000) && !(PART->attributes & 0x800000)) {
+    if (!(unit->mAttributeFlags & 0x40000000) && !(part->attributes & 0x800000)) {
         unit->hpGauge.field_0xC = unit->currentHp;
         unit->currentHp = unit->currentHp - unit->hpDamageTaken;
         if (unit->currentHp > unit->maxHp) {
@@ -324,7 +323,6 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
     unit->mTokenFlags |= 1;
     BattleRunHitEvent(unit, flags);
 }
-#undef PART
 
 s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
     BattleWork* wp = _battleWorkPointer;
@@ -524,8 +522,8 @@ s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* 
         damage = 0;
     }
 calculate_defense:
-    defense = ((s8*)part->defense->defenses)[element];
-    defenseAttr = ((s8*)part->defenseAttr->defenseAttrs)[element];
+    defense = part->defense->defenses[element];
+    defenseAttr = part->defenseAttr->defenseAttrs[element];
     switch (element) {
     case 1:
         *damageCode = flags | 0x18;
@@ -1014,7 +1012,7 @@ u8 _getRegistStatus(BattleUnit* unit, s32 type) {
 // functions in the original .text order this function is byte-identical
 s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, u32 type,
                           s32 rate, s32 levelDiff, s8 turns, s8 strength) {
-    u8 chargeStrength;
+    s8 chargeStrength;
     u8 sp9;
     u8 sp8;
     f32 x, y, z;
@@ -1027,7 +1025,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
     EffectEntry* eff;
 
     isRemoving = 0;
-    BtlUnit_GetStatus(unit, STATUS_CHARGE, NULL, (s8*)&chargeStrength);
+    BtlUnit_GetStatus(unit, STATUS_CHARGE, NULL, &chargeStrength);
     switch (type) {
     case STATUS_FAST:
     case STATUS_SLOW:
@@ -1328,7 +1326,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
         switch ((s32)type) {
         case STATUS_CHARGE:
             if ((s8)sp8 > 0) {
-                if ((s8)chargeStrength != (s8)sp8) {
+                if (chargeStrength != (s8)sp8) {
                     BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp8, 1);
                     BattleStatusChangeMsgSetAnnouce(unit, type, 1);
                     announced = 1;
@@ -1691,17 +1689,17 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         switch (weapon->superguardType) {
         case 2:
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, weapon->field_0x6D, 0);
+            BattleDamageDirect(unit1->unitId, unit2, part, 0, 0, damageCode, weapon->field_0x6D, 0);
             return 0x15;
         case 3:
             flags |= 0x100;
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, weapon->field_0x6D, 0);
+            BattleDamageDirect(unit1->unitId, unit2, part, 0, 0, damageCode, weapon->field_0x6D, 0);
             return 0x15;
         case 4:
             flags |= 0x100;
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, weapon->field_0x6D, 0);
+            BattleDamageDirect(unit1->unitId, unit2, part, 0, 0, damageCode, weapon->field_0x6D, 0);
             if (unit1->field_0x2CC != NULL) {
                 BattleRunHitEventDirect(unit1, 0x137, unit1->field_0x2CC);
             } else {
@@ -1712,7 +1710,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         default:
             flags |= 0x100;
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, weapon->field_0x6D, 0);
+            BattleDamageDirect(unit1->unitId, unit2, part, 0, 0, damageCode, weapon->field_0x6D, 0);
             BattleDamageDirect(-5, unit1, 0, 1, 0, 0x137, 0, 1);
             return -1;
         }
@@ -1840,9 +1838,9 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                 }
             }
             if (statusDamage & 0x20) {
-                BattleDamageDirect(unit1->unitId, unit2, (s32)part, damage, fpDamage, damageCode, weaponField6D, 0);
+                BattleDamageDirect(unit1->unitId, unit2, part, damage, fpDamage, damageCode, weaponField6D, 0);
             } else {
-                BattleDamageDirect(unit1->unitId, unit2, (s32)part, damage, fpDamage, damageCode, weaponField6D, 1);
+                BattleDamageDirect(unit1->unitId, unit2, part, damage, fpDamage, damageCode, weaponField6D, 1);
             }
         }
         break;
@@ -2052,16 +2050,16 @@ void BattleAttackDeclareAll(BattleWork* wp) {
     sampling->selectIdx = 0;
 }
 
-void BattleInitCounterPreCheckWork(void* work) {
+void BattleInitCounterPreCheckWork(CounterPreCheckWork* work) {
     memset(work, 0, 0x30);
-    *(s32*)work = 1;
+    work->hitLands = 1;
 }
 
 
 
 s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part,
                        BattleWeapon* weapon, s32* out) {
-    CounterPreCheckWork* w = (CounterPreCheckWork*)work;
+    CounterPreCheckWork* w = work;
 
     if (attacker == NULL) {
         return 0;

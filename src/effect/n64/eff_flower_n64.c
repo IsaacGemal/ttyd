@@ -162,7 +162,7 @@ void effFlowerDisp(CameraId camId, void* param) {
     GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_A0, GX_CC_ZERO);
     GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
-    effSetVtxDescN64((effVtxArray*)flowers_v);
+    effSetVtxDescN64(flowers_v);
     GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x18);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     tri2(4, 2, 5, 0, 4, 5, 6, 0);
@@ -177,7 +177,7 @@ void effFlowerDisp(CameraId camId, void* param) {
     GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_RASC, GX_CC_A0, GX_CC_ZERO);
     GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_A0, GX_CA_ZERO);
     // Second vertex block in the shared flowers_v array.
-    effSetVtxDescN64((effVtxArray*)(flowers_v + 0xb6));
+    effSetVtxDescN64(flowers_v + 0xb6);
     GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x18);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     tri2(2, 4, 5, 0, 2, 5, 3, 0);

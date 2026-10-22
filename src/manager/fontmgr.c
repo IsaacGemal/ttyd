@@ -432,7 +432,7 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 			msg += 2;
 		}
 		else {
-			switch (*(s8*)msg) {
+			switch ((s8)*msg) {
 			case '\n':
 				x = 0.0f;
 				y -= 28.0f;
@@ -441,12 +441,12 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 			case '<': {
 				char arg1[128];
 				char arg2[128];
-				msg = msgGetCommand((char*)msg + 1, arg1, arg2);
+				msg = msgGetCommand(msg + 1, arg1, arg2);
 				// '/r' is a multi-character constant (0x2f72, unsigned): the second test can never be true.
 				if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (s8)arg1[0] == '/r')) {
 					break;
 				}
-				if (*(s8*)msg == '\n') {
+				if ((s8)*msg == '\n') {
 					msg++;
 				}
 				break;
@@ -593,7 +593,7 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 				msg++;
 				break;
 			case '<':
-				msg = msgGetCommand((char*)msg + 1, arg1, arg2);
+				msg = msgGetCommand(msg + 1, arg1, arg2);
 				if (strcmp(arg1, "red") == 0) {
 					GXColor c;
 					c = (GXColor){0xE0, 0x00, 0x00, 0xFF};
@@ -704,14 +704,14 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 			msg += 2;
 		}
 		else {
-			switch (*(s8*)msg) {
+			switch ((s8)*msg) {
 			case '\n':
 				x = x0;
 				y -= 28;
 				msg++;
 				break;
 			case '<':
-				msg = msgGetCommand((char*)msg + 1, arg1, arg2);
+				msg = msgGetCommand(msg + 1, arg1, arg2);
 				if (strcmp(arg1, "red") == 0) {
 					GXColor c;
 					c = (GXColor){0xE0, 0x00, 0x00, 0xFF};
@@ -757,7 +757,7 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 				else if ((s8)arg1[0] == 'R' || (s8)arg1[0] == '/' && (u32)(s8)arg1[0] == 0x2f72) {
 					break;
 				}
-				if (*(s8*)msg == '\n') {
+				if ((s8)*msg == '\n') {
 					msg++;
 				}
 				break;
@@ -813,7 +813,7 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 			message += 2;
 		}
 		else {
-			switch (*(s8*)message) {
+			switch ((s8)*message) {
 			case '\n':
 				if (maxwidth < curwidth) {
 					maxwidth = curwidth;
@@ -834,7 +834,7 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 				u16 width;
 				u16 height;
 
-				message = msgGetCommand((char*)message + 1, arg1, arg2);
+				message = msgGetCommand(message + 1, arg1, arg2);
 				if (strcmp(arg1, "icon") == 0) {
 					camGetCurPtr();
 					if ((s8)arg2[0] >= '0' && (s8)arg2[0] <= '9') {

@@ -418,7 +418,7 @@ EffectEntry* effGonbabaBreathEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, 
 		data->child = effGonbabaBreathEntry(type + 10, lifetime, x, y, z, scale);
 		((effGonbabaBreathData*)data->child->userdata)->rotation = data->rotation;
 		if (((effGonbabaBreathData*)data->child->userdata)->child != NULL) {
-			tmp = (effGonbabaBreathData*)((effGonbabaBreathData*)data->child->userdata)->child->userdata;
+			tmp = ((effGonbabaBreathData*)data->child->userdata)->child->userdata;
 			tmp->rotation = data->rotation;
 		}
 	}
