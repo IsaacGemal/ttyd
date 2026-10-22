@@ -387,8 +387,8 @@ BOOL marioChkBero(HitEntry* hit) {
 
 #ifdef MUST_MATCH
 // Match-only helper (no name evidence; the natural build writes it out in marioChkGnd). Its locals become
-// compiler temporaries when inlined. The rolling probe's inline expansion only happens with the unit's raised inline_max_size;
-// at the default the helper stays a real `bl` and the whole frame shifts.
+// compiler temporaries when inlined. The rolling probe's inline expansion only happens with the unit's raised
+// inline_max_size; at the default the helper stays a real `bl` and the whole frame shifts.
 static inline void marioChkGndRollProbe(MarioWork* wp) {
     HitEntry* hit;
     Vec p;

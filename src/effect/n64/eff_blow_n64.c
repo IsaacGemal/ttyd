@@ -146,8 +146,8 @@ static inline Vec blowInitVec(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-// Passing the deg2rad*i*360/5 angle straight to
-// PSMTXRotAxisRad instead of through an `angle` temp fixed the angle block's scheduling.
+// Passing the deg2rad*i*360/5 angle straight to PSMTXRotAxisRad instead of through an `angle` temp
+// fixed the angle block's scheduling.
 // The six loop-invariant values (2*dir and the -0.2*dir accelerations) are hoisted into named
 // locals before the loop and reused inside it; assigning them explicitly (rather than letting
 // MWCC CSE the repeated `2.0f * dirX` expressions) is what gives the original's callee-saved FPR

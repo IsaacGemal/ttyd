@@ -51,10 +51,10 @@ s32 _get_ok_frame_range(s32 idx) {
     }
 }
 
-// The shape is load-bearing: the `cont`/`pressed` resets at the top of the do/while, the selection `while (!found)` loop with
-// `unique = 1` after the `irand` call, the `switch`es for the range and in-window tests, the
-// `acParams[0] + acParams[6]` association, and reading `bd->curSignal` directly at each
-// `bd->states[...]` index (a cached `idx` makes MWCC keep it in a register and miss).
+// The shape is load-bearing: the `cont`/`pressed` resets at the top of the do/while, the selection
+// `while (!found)` loop with `unique = 1` after the `irand` call, the `switch`es for the range and
+// in-window tests, the `acParams[0] + acParams[6]` association, and reading `bd->curSignal` directly
+// at each `bd->states[...]` index (a cached `idx` makes MWCC keep it in a register and miss).
 #ifdef MUST_MATCH
 // The target's string pool is PI,PONE,OK,NG while its four address loads in the entry block run
 // NG,PI,PONE,OK. Reassigning after the initializers gives that emission order; the initializers
