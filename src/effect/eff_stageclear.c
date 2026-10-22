@@ -71,11 +71,11 @@ EffectEntry* effStageClearEntry(s32 type, f32 x, f32 y, f32 z) {
 	s32 count = 9;
 	s32 i;
 
-	if (type == 1 && (u32)gp->language != 0) {
+	if (type == 1 && gp->language != 0) {
 		return effMiniGameEntry(1, x, y, z);
 	}
 	entry = effEntry();
-	if ((u32)gp->language != 0) {
+	if (gp->language != 0) {
 		count = 0xE;
 	}
 	if (type % 10 == 1) {
@@ -178,12 +178,7 @@ void effStageClearMain(EffectEntry* effect) {
 }
 
 static inline Vec getStageClearCamPos(void) {
-#ifdef MUST_MATCH
-	// Read the named double so the load comes off the base register instead of a pooled copy of it.
-	Vec temp = (Vec){ 0.0f, 0.0f, 1.0f / (f32)tan(*(volatile const f64*)&double_0p21817_802fe3f0) };
-#else
 	Vec temp = (Vec){ 0.0f, 0.0f, 1.0f / (f32)tan(double_0p21817_802fe3f0) };
-#endif
 	return temp;
 }
 
@@ -221,7 +216,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 	scale = float_0p9_80420f18 * scale;
 	field1C = data->field_0x1C;
 	type = data->type;
-	if ((u32)gp->language != 0) {
+	if (gp->language != 0) {
 		scale = scale * float_0p6_80420f20;
 	}
 	GXGetProjectionv(proj);
@@ -255,7 +250,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 			f26 = (f32)(-i * 4);
 			if (i != 0) {
 				if (shadow == 0) {
-					u32* tbl = texid_tbl[(u32)gp->language * 2 + 1];
+					u32* tbl = texid_tbl[gp->language * 2 + 1];
 
 					effGetTexObj(tbl[j - 1], &tex);
 					GXLoadTexObj(&tex, 0);
@@ -272,11 +267,11 @@ void effStageClearDisp(CameraId camId, void* param) {
 				GXSetTevColor(1, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
 			} else {
 				if (shadow == 0) {
-					u32* tbl = texid_tbl[(u32)gp->language * 2];
+					u32* tbl = texid_tbl[gp->language * 2];
 
 					effGetTexObj(tbl[j - 1], &tex);
 					GXLoadTexObj(&tex, 0);
-					effGetTexObj(niji_tbl[(u32)gp->language != 0], &tex);
+					effGetTexObj(niji_tbl[gp->language != 0], &tex);
 					GXLoadTexObj(&tex, 1);
 					GXSetNumTevStages(3);
 					GXSetTevOrder(0, 0, 0, 0xFF);

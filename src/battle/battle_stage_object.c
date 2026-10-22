@@ -1839,19 +1839,10 @@ void BattleStage_NozzleDirChangeCheck(void) {
 }
 
 void _Nozzle_Change_Check(u8 index, u8* nozzle) {
-	u8 idx = index;
-#ifdef MUST_MATCH
-	// MUST_MATCH: `base` walks BattleWorkField180C0 by byte: 0x1C4 is field_0x1C4, 0x1C7 field_0x1C7 and
-	// slot[0x73] field_0x1CC. Indexing those members directly (the #else arms) gives `add` + `lbz 0x1C4`
-	// instead of the original's precomputed index. Three source shapes are needed: (1) `s32 typeOffset =
-	// idx + 0x1C4` declared before `base` (the compiler then precomputes `base[typeOffset]` as
-	// `lbzx base,typeOffset` and hands base/typeOffset r28/r29); (2) the `idx` store uses array syntax
-	// `base[idx + 0x1C7]` (a pointer expression makes mwcc emit `stbx` with a re-extended index); (3)
-	// `slot[0x73]` (rather than `base+index*4+0x1CC`) keeps mwcc from folding 0x1CC into an `lwzx`.
-	s32 typeOffset = idx + 0x1C4;
-	u8* base = (u8*)&_battleWorkPointer->field_180C0;
-#else
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+#ifdef MUST_MATCH
+	// The element pointer, taken before the loop, keeps base and index apart for the original's lbzx.
+	u8* dir = &w->field_0x1C4[index];
 #endif
 	u8* data = nozzle;
 	s32 sum = 0;
@@ -1872,39 +1863,24 @@ void _Nozzle_Change_Check(u8 index, u8* nozzle) {
 		data++;
 	}
 #ifdef MUST_MATCH
-	if (i != base[typeOffset]) {
-		s32* slot = (s32*)(base + idx * 4);
-		if (slot[0x73] != 0 && !evtCheckID(slot[0x73])) {
-			slot[0x73] = 0;
-		}
-		if (slot[0x73] == 0) {
-			base[idx + 0x1C7] = i;
-			{
-				EventEntry* e = evtEntry(_nozzle_turn_event, 10, 0);
-				slot[0x73] = e->eventId;
-				if (e != NULL) {
-					e->unitId = index;
-				}
-			}
-		}
-	}
+	if (i != *dir) {
 #else
-	if (i != w->field_0x1C4[idx]) {
-		if (w->field_0x1CC[idx] != 0 && !evtCheckID(w->field_0x1CC[idx])) {
-			w->field_0x1CC[idx] = 0;
+	if (i != w->field_0x1C4[index]) {
+#endif
+		if (w->field_0x1CC[index] != 0 && !evtCheckID(w->field_0x1CC[index])) {
+			w->field_0x1CC[index] = 0;
 		}
-		if (w->field_0x1CC[idx] == 0) {
-			w->field_0x1C7[idx] = i;
+		if (w->field_0x1CC[index] == 0) {
+			w->field_0x1C7[index] = i;
 			{
 				EventEntry* e = evtEntry(_nozzle_turn_event, 10, 0);
-				w->field_0x1CC[idx] = e->eventId;
+				w->field_0x1CC[index] = e->eventId;
 				if (e != NULL) {
 					e->unitId = index;
 				}
 			}
 		}
 	}
-#endif
 }
 
 USER_FUNC(_nozzle_turn) {

@@ -98,6 +98,7 @@ void effKemuri12Main(EffectEntry* effect) {
 }
 
 void effKemuri12Disp(CameraId camId, void* param) {
+    s32 isLast;
     EffectEntry* effect;
     effKemuri12Data* data;
     CameraEntry* cam;
@@ -107,7 +108,6 @@ void effKemuri12Disp(CameraId camId, void* param) {
     s32 frameIndex;
     s32 scaled;
     s32 frameFraction;
-    s32 isLast;
     u32* vtx;
 
     effect = param;
@@ -116,12 +116,12 @@ void effKemuri12Disp(CameraId camId, void* param) {
     type = data->type;
     frameIndex = (s32)data->animProgress;
     frameFraction = (s32)(256.0f * (data->animProgress - (f32)frameIndex));
-#ifdef MUST_MATCH
-    // The ternary on a 0/1 test changes the object; the plain test is under #else.
-    isLast = (frameIndex == 7) ? 1 : 0;
-#else
-    isLast = frameIndex == 7;
-#endif
+    if (frameIndex == 7) {
+        isLast = 1;
+    }
+    else {
+        isLast = 0;
+    }
 
     GXSetNumChans(0);
     GXSetNumTevStages(3);

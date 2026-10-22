@@ -44,7 +44,7 @@ typedef struct GlobalWork {
 	void* mapAlloc; //0x160
 	u32 mapInitEvtId; //0x164, event id of the map init script (seq_mapchange waits on it; item and npc drivers skip while set)
 	FieldBattleData* fbatData; //0x168
-	s32 language; //0x16C
+	u32 language; //0x16C
 	u16 fbWidth; //0x170
 	u16 efbHeight; //0x172
 	s32 mGSW0; //0x174

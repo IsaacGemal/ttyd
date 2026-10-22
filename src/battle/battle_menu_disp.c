@@ -676,7 +676,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, co
         for (i = 0; i < count2; i++) {
             textH[0] = (char)(digitsH[i] + 0x30);
             textH[1] = 0;
-            if ((u32)gp->language == 0) {
+            if (gp->language == 0) {
                 PSMTXTrans(mtxTrans, 26.0f + (30.0f + (f32)posH[i]), 25.0f,
                            float_0_8041c144);
             } else {
@@ -687,7 +687,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, co
             PSMTXConcat(mtxOut, mtxScale, mtxOut);
             FontDrawStringMtx(mtxOut, textH);
         }
-        if ((u32)gp->language == 0) {
+        if (gp->language == 0) {
             PSMTXTrans(mtxTrans, 92.0f, 22.0f, float_0_8041c144);
         } else {
             PSMTXTrans(mtxTrans, 100.0f, 22.0f, float_0_8041c144);
@@ -723,7 +723,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, co
         for (i = 0; i < count2; i++) {
             textH[0] = (char)(digitsH[i] + 0x30);
             textH[1] = 0;
-            if ((u32)gp->language == 0) {
+            if (gp->language == 0) {
                 PSMTXTrans(mtxTrans, 76.0f + (30.0f + (f32)posH[i]), 25.0f,
                            float_0_8041c144);
             } else {

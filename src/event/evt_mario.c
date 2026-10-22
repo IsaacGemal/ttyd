@@ -2198,15 +2198,8 @@ USER_FUNC(evt_mario_set_prev_party_dokan) {
             mario->currPartySlotId[slot] = ret;
             party = partyGetPtr(ret);
             partyChgRunMode(party, 0);
-#ifdef MUST_MATCH
-            // Volatile on the flags updates reproduces the original's unscheduled load/store pair
-            // without hoisting.
-            *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x04000000;
-            *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x02000000;
-#else
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
-#endif
             pos = &party->scale;
             *pos = (Vec){0.0f, 0.0f, 0.0f};
         }

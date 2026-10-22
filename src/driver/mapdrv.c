@@ -4419,11 +4419,7 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	GXColor color;
 	MapObject* obj;
 
-	color = (GXColor){0, 0, 0, 0};
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
+	color = (GXColor){r, g, b, a};
 	obj = mapGetMapObjSub(name);
 	if (obj) {
 		obj->color = color;
@@ -4432,32 +4428,8 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	mapObjFlagOff(name, 0x40);
 }
 
-#ifdef MUST_MATCH
-// Built in an inline that returns the colour: puts the by-value argument copy above the local, as retail has it
-// (a local built in place, #else, takes the slot above the copy).
-static inline GXColor mapFlushColor(u8 r, u8 g, u8 b, u8 a) {
-	GXColor color = (GXColor){0, 0, 0, 0};
-
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	return color;
-}
-#endif
-
 void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
-#ifdef MUST_MATCH
-	mapGrpSetColor(name, mapFlushColor(r, g, b, a));
-#else
-	GXColor color = (GXColor){0, 0, 0, 0};
-
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	mapGrpSetColor(name, color);
-#endif
+	mapGrpSetColor(name, (GXColor){r, g, b, a});
 	mapGrpFlagOff(name, 0x40);
 }
 

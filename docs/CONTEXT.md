@@ -6572,3 +6572,156 @@ of bounds.
   - Data: party_yoshi's three vec3_802ccc* zero Vecs as compound literals would remove its remaining copy hacks
     (siblings party_vivian, mot_dokan, mot_yoshi already write `(Vec){0.0f, 0.0f, 0.0f}`); party_nokonoko's float_30 and
     party_bomhei's 10.5f as non-const objects would remove fadd32 and `frames`.
+
+## Fresh-eyes MUST_MATCH pass over src/effect, driver, battle, event, motion, window, manager (2026-10-22, Claude Opus 5.5 orchestrating eight Claude Opus 5.5 workers, n9-q-mm4)
+
+Task (Isaac): retry every MUST_MATCH block in src/effect, driver, battle, event, motion, window and manager after
+#1103/#1104 (whose verdicts were "compiler steering"), including the arms #1125 had just guarded, with the levers
+those passes didn't try: declaration order and scope, honest local types, split/merged locals, loop shape, early
+returns, operand order, assignment in the condition, an existing helper instead of a hand expansion, a matched
+sibling's shape. A natural form that matches becomes the only version; otherwise one line of what was tried. rels/,
+src/party, src/mario and src/unit were a parallel branch's (mm3) and not edited. Data layout (string padding,
+`gap_`/`force_active`, section declspecs, data definitions, `.sbss2` templates) was out of bounds.
+
+- **Method.** Untracked harness in build/mm4/ (adapted from build/w5 and build/mm3): try.sh (one unit with its
+  ninja command, obj_equiv against objects saved from 051713c4; `NM=1`, `OVL=`, `FN=`), regions.py (each region's
+  `#else` alone), pragmas.py, hdrcheck.sh. First a sweep of every region's `#else` alone across the 132 files (436
+  regions; build/mm4/sweep/), then eight workers on disjoint file groups (effA: eff_kemuri + n64; effB: other
+  effects; drvA: envdrv, mapdrv, mobjdrv, shadowdrv; drvB: other drivers; batA: battle/ac + sac; batB: battle/*.c;
+  evt; mwm: motion + window + manager), each editing only its own .c files, headers through overlays. Reports with
+  `Model:` lines and per-region attempts (shape -> asm lines differing): build/mm4/w/*/REPORT.txt. Every commit:
+  `build/G8MJ01/ok` recreated, changed C files compile without -DMUST_MATCH, fncast_lint and local_prototypes clean,
+  tools/ci.py PASS with the tools/tests step stubbed (the same 9 environment errors as the chapters above). The
+  header changes were checked over every user (222 for mariost.h, rels/party/mario included), matching and natural.
+- **Counts** (after review fixes, rebased on dc2b0f89 (#1126)). `grep -c MUST_MATCH` 512 -> 483: effect 139 -> 129,
+  driver 101 -> 94, battle 122 -> 116, event 77 -> 73, motion 35 -> 35, window 21 -> 21, manager 17 -> 15. Per file:
+  battle_ac 3 -> 1, battle_audience 3 -> 2, battle_stage_object 6 -> 5, sac_scissor 4 -> 2, mapdrv 14 -> 12, mobjdrv
+  11 -> 6, eff_break 3 -> 2, eff_energy 2 -> 0, eff_naniga 4 -> 3, eff_stageclear 1 -> 0, eff_teresa 2 -> 0,
+  eff_balloon_n64 4 -> 2, eff_kemuri12_n64 1 -> 0, evt_badgeshop 1 -> 0, evt_mario 7 -> 6, evt_npc 2 -> 0, cardmgr
+  3 -> 2, winmgr 12 -> 11; the other files unchanged. Index (tools/cleanup_index.py) **19.920 -> 19.852** per kLOC
+  (13801 -> 13751 weighted): must_match 716 -> 693, deref_cast 527 -> 520, raw_offset 194 -> 190, prim_ptr_cast
+  1966 -> 1962, struct_ptr_cast 1460 -> 1459.
+- **Natural now.**
+  - `#else` arms that had become identical since the last pass (the sweep): evt_mario's volatile party-flag updates,
+    battle_audience's volatile startPos store, eff_stageclear's volatile double read, eff_teresa's READ_RODATA macro.
+  - Honest field types, each checked over every user: `GlobalWork.language` is `u32` (retail compares it unsigned at
+    every site; 22 `(u32)gp->language` casts in effect, driver, battle, event and sequence go, and effdrv's
+    `(u32)wp->language`). eff_break's guarded redundant language test is the two per-language letter counts,
+    `sizeof(tex_jp)/sizeof(tex_jp[0]) + 1` then the US table's when language != 0 (both 7; element 0 is the head).
+    `BadgeShopWork.field_0x10C` is `int` (the intlead lever on a field; u32 breaks badgeShop_ThrowCheck), so
+    badgeShop_bargainGeneration's no-op `(s32)` cast goes. eff_naniga: `ItemData.icon_id` was already `u16`, so the
+    ICON_ID pun goes.
+  - New lever, tentative definitions: mobjdrv declared cubeDJ/headDJ/frontDJ/front2DJ `extern` although it defines
+    them; declared `u32 cubeDJ[26];` (same file, defined below), MWCC reaches all four from one section-base register
+    as retail does, and the guarded `negone_one_374 + 0x16a4..` byte base with its four memcpy regions goes. Tried on
+    every other file in scope with extern declarations of its own objects (27 files): no further region moved.
+  - Compound literals at the call: mapGrpSetFlushColor `mapGrpSetColor(name, (GXColor){r, g, b, a})` (the guarded
+    inline goes; with it still defined `.sbss2` keeps a second template word), and mapObjSetFlushColor's unguarded
+    copy of the same shape; eff_energy's mat colour (its guarded GXSetTevColor forwarder and unguarded invented
+    effEnergySetMatColor inline go).
+  - Expression shapes: eff_balloon_n64 keeps the raw sin/cos in `wave` and writes `0.1f * wave + 2.0f` at its use
+    (the embedded `wave =` assignment goes; `sinOffset`, the sin in its own statement for the pool order, is
+    guarded); eff_kemuri12_n64's
+    ternary is an if/else storing 1/0 with `isLast` declared first; evt_npc_glide_position tests `if (dx || dz)`
+    (the named zero goes); evt_npc_flag_onoff's mask is `int` (the u32 complement temp goes); cardMain's `(s32)(s64)`
+    round trip is `chan = CARDProbe(0) ? 0 : -1` (chan: the SDK's parameter name for the card slot);
+    winMgrSelectEntry calls badgeShop_get in the condition (no `v`, no `(s16)`).
+  - battle_ac: N_normal_guard_frames loses its `volatile` (inside the guarded `.rodata` definition arm; same bytes and
+    section), and the own-type pointer read becomes a plain element read.
+  - battle_stage_object _Nozzle_Change_Check: the guarded byte walk (typeOffset, base, slot[0x73]) is member accesses;
+    what stays guarded is one early `u8* dir = &w->field_0x1C4[index]` (the worker offered it as natural; the
+    orchestrator kept it guarded as a steering pointer, with the plain subscript under `#else`).
+  - sac_scissor: scissor_abs is `fabsf`, defined in the file exactly as the SDK's fake_tgmath.h defines it (math_ext.h
+    only declares it; including fake_tgmath.h pulls `#pragma cplusplus on` and changes the object).
+  - Unguarded steering locals made plain: fadedrv/msgdrv `half` (`/ 2.0f`), itemdrv `half` (`* 0.5f`) and `k`
+    (`/ 4.0f`).
+- **Reverted by the orchestrator** (EQUIV, not applied; patches in build/mm4/w/):
+  - Named pool constants deleted so their uses become literals (data definitions): evt_telop (all eight; its MUST_MATCH lines
+    9 -> 1 and its opt_common_subs pair goes; telop_literals_lead.patch),
+    evt_item EI_HALF, ac_crane_timing MATCH_F64/MATCH_F32, eff_kemuri3_n64, eff_sunlight_n64, eff_bomhei_n64,
+    eff_star_power_n64 (*_literals_lead.patch). Under the constraint that every definition stays, evt_telop and
+    evt_item were retried: nothing matches (the volatile constants block every region; best 2 lines). This is the
+    n9-q-addrall sweep applied to constants a MUST_MATCH conditional names, which the standing rule excluded; Isaac's
+    call whether that exclusion still holds once the conditional goes with them. symbols.txt would keep the names.
+  - Hacks offered as the only version: win_root's `(10.0f + (x - 250.0f)) - 10.0f` (a cancelling offset; unguarded
+    siblings with non-cancelling offsets exist in the same function), battle_attack_audience's `*(GXColor*)&dat_8041ccc0`
+    (a pun forced by the object's declared type, but the task said puns stay guarded).
+  - Not applied by the workers themselves: eff_indirect `{ f32 w = 32.0f; half = -w / 2.0f; }`, eff_sweat
+    `x0 = -x1; x0 *= h; x1 *= h;`, battle_camera `base = -(1.5f * (wa + wb) - float_2 * zoom)` (drops in for both
+    `_t` regions), evt_yuugijou `(scaled = E) >= 0 ? E : 0` (dead store), fadedrv `+ (half - half)`, icondrv
+    `frames = d->frames - 2`, npcdrv duplicated `info.dist` store, evt_win/evt_shop folded-notKey forms.
+- **Left, with what was tried** (one line per file or family; per-region shapes and scores in the reports):
+  - Data layout (skipped by rule; most `#else` arms differ only in pool or section bytes): eff_bomb, eff_kiss
+    SDATA2_CONST (both `#else` EQUIV in .text and data: leads), eff_particle/mot_roll/mot_jabara/pendulum/winmgr/
+    mot_plane/evt_shop defer_codegen and pool helpers, battle_seq_end force_active (EQUIV), battle_damage's named
+    sfx char arrays (`#else` EQUIV: lead), evt_bero/evt_mario/mapdrv/msgdrv/effdrv/npcdrv/windowdrv/flame/kameki/
+    opuku_jetw/radiation/cloud padded strings, evt_cam/evt_mobj/mapdrv stripped-function placeholders, the ac `-1`
+    declspec words, mobjdrv's negone_one_374 anchor, shadowdrv's Texture FIFO block and mapdrv's case-8 `wave` (their
+    `#else` gives identical .text, only .sdata2 differs), eff_fire/break/funemizu/mahorn/mizutama/spark/spirit/
+    mobj_broken volatile constant reloads (all-literal forms 88-118 lines and data), eff_kemuri r0/r26-28, booboo,
+    win_item's string macros, win_main winFontSetC, mot_jump's named 0.1/0.8 (literals give identical code, only the
+    pool differs), ac_monosiri_target/ac_shot_target `vecs` arrays (split into symbols.txt's 0xC Vecs: identical code,
+    DIFF only on symbol size).
+  - eff_kemuri: every code region tried in all-literal form: Main/2Main match that way, effKemuri2Entry 148 lines (1.0/
+    0.7/-20/0 held in saved registers across the sin/cos calls), effKemuriDisp 144 (`-one * 0.5` at run time),
+    effKemuri2Disp 198; with `opt_propagation off` all four Entry/Main functions match, so the named constants and
+    the FIFO volatiles stay. n64: cloud sqrtf `x > 0.0f` 2 (extra pool word), horao_spell OSs16tof32/OSf32tos16 2,
+    kemuri8/9 47, opuku_wgun nested if 1 (retail's extra beq), release 26-81, sweat 3-62, pokopi_pipo by rule.
+  - effB: starstone loops 14 (unsigned bound fixes loops 2-4, loop 1's r26/r23 swap remains); fall/nice sfx (psndSFXOn
+    prototype, Isaac's call); fukidashi `(u32)` 4; levelup ternary 15 and elemIdx 4; ibuki comma 4; kemutest dirptr 4;
+    fire zero-Vec copies (data); recovery R1-R3 (compound literal EQUIV but deletes the unk_80423044 template: data).
+  - drvA: mobjdrv fabs f64 locals (fabsf inline 24-34, fabs 61) and doubled inBattle (1-296); mapdrv `flag = !flag`
+    (7 x 6 types, best 4), `ofs` walk (all 120 declaration orders, 120), `(s8)*name` by rule; envdrv vertex macro 16,
+    envGlare x0s 20, cos temp 8, envFF_Sqrtf (needs a reshaped sqrtf), frustumE 364; shadowdrv u64 bufferSize 6,
+    ProjMtx 78, PROJ_ZERO 253.
+  - drvB: animdrv `(u32)x == 0` tails (u32/FileEntry* locals 6, int 4); arcdrv infoPtr 2-4; fadedrv `+ zero` (36-79);
+    hitdrv hitFindElem 14 (600 declaration orders); icondrv frames 56 (720 orders); imgdrv ternaries 18 and identical
+    arms; itemdrv volatile status 3 (calling itemStatus()); npcdrv identical-arm ternary 4, `(s64)(s32)` 4 (24 orders),
+    punned kind store 7-153; windowdrv FIFO interleave 16 (272 placements), `goto ret` 2; effdrv/hitdrv asm approved.
+  - batA: gauge_timing doubled test 1; stick_keep_left loop 2; signal_timing 2 (sfx family) and ICON_DISP_B (a local
+    u16 prototype fixes that call, adds clrlwi to four others: 8); repeatedly 37 (36 shapes); genki 30; bakugame
+    22-25 and neg2 (retail uninitialised read); timing_a 46; shot_target volatile stores 6/24; zubastar b18 base 55;
+    scissor HSV inline 12-15; sac_suki table (a local initialiser moves it off its .sdata2 slot); button_down/shot/
+    gauge_timing2 sfx family.
+  - batB: ac_help acHelpResolve 3, makeWakuColor 10 (slot swap); the Waku_col by-pointer family (attack_audience,
+    message, seq, status_effect) 12 (r6/r7); battle_audience goto (the hitResult==2 path jumps into case 4's body);
+    kinopio `step` 27-32 without either pragma, const-stripping reads 6, memcpy 17; battle_camera bcam_get_unit 16
+    (3000 sampled declaration orders), getUnitPtr 3 (24 orders); battle_damage `s8 rate` prototype (caller EQUIV,
+    callee 14); seq_command `(s32)(s8)` (s8 parameter proven by neg; extsb), `(s32)` pointer compare; battle_stage
+    MATCH_F32 and the `zero` alias (a typed MapTevCallback* parameter is still 16); stage_object _combine_nozzle_weapon
+    194; status_effect `+ 0` (_get_pri(s32) 21); battle_unit status copies, partyData pun, `*(const f64*)&` 20;
+    break_slot uninitialised read by rule.
+  - evt: lottery days/limit 16 (r24/r25); evt_mario `(s32)(f32)` 35, searchUnder2 (header lead below); evt_mobj
+    jumpstand 26, the five cmpwi `(s32)hit != 0` tests (the only cmpwi hitCheckFilter tests in the dol; BOOL local 4),
+    mobjSwitchAnimIndex 49 (32 shapes); nannpc `s64 id` 2-121; shop/win notKey tails 3/4/5; sub one-iteration loop
+    3-10; uranaisi table search 9-15; telop and item: see the reverted list.
+  - mwm: cardmgr dead store and dead timeout test (12 more shapes, 16 + 4 per inlined copy); filemgr CLUT pun 10
+    (SPM's PackTexPalette writes a union's u32 member; non-compound 10); winmgr `zero = zero` (136 without), arrow
+    Vec reloads 552-599, macros and Waku helpers as recorded; mot_hammer type copy 11-13, clamp 3, volatile Vec copies
+    (compound literal 168), argument temps 10, dead attribute compare, `five`; mot_roll volatiles; mot_jump; mot_ship;
+    mot_slit `speed = speed`; win_badge `arg0`; win_item walks (all 5040 integer declaration orders, best 16);
+    win_log fabs temp and helper; win_main vertex macro; win_mario `d2`; win_root `!= 0 && > 0`, uninitialised `row`.
+  - No unguarded pragma pair in a changed function became removable (balloon opt_dead_assignments 76 without it,
+    release opt_common_subs 81, zubastar opt_propagation 26, telop opt_common_subs 24, evt_npc_set_color 2).
+- **For a reviewer.** The two header retypes (GlobalWork.language u32, BadgeShopWork.field_0x10C int). mobjdrv's
+  tentative definitions. sac_scissor's file-local fabsf (the SDK's own body; one could call it a renamed steering
+  helper). battle_ac's dropped `volatile` on a guarded data definition. evt_npc's bare float test. cardmgr's `chan`.
+  eff_break's sizeof counts (they explain the redundant test as two compile-time counts that happen to be equal).
+- **Leads.**
+  - sac_zubastar: its three `#else` arms together are the plain initialised `Vec points[4]` and match (each alone
+    doesn't compile, which is why earlier passes missed it; the recorded hang was ZubaStarPoints4's initialiser). It
+    turns the guarded `zubastar_points_init` object into a compiler template `@NNN` (same bytes and place), so it is
+    a data-definition change: not applied, Isaac's call.
+  - The deleted-constant patches above (eight files; the biggest readability win this pass found).
+  - `searchUnder2(..., f32* out)` in include/mario/mario_hit.h with `*out = hit ? hitPos.y : -1.0f` in mario_hit.c
+    removes evt_mario's two and evt_party's two regions (all 25 users EQUIV with mario_hit.c edited; that file is the
+    mm3 branch's: build/mm4/w/evt/searchUnder2_*.patch).
+  - The `(u32)gp->language` casts left in src/mario, src/party and rels/ are now no-ops (mm3's trees).
+  - battle_enemy_item.c passes `(s32)wp->alliances[...].attackDirection` unguarded at six sites, the no-op widening the
+    consist rule guards.
+  - Unguarded steering the workers saw outside regions (adding guards was out of scope this time): fadedrv z()'s
+    `one`, windowdrv `zero` and the x4 split, itemdrv `height`, npcdrv `(s8)name[0] == 0`, evt_nannpc `zero`/`offset`/
+    `(void)strcmp`, mot_hammer hitEstimate's `p`, mot_slit `zero`, mot_ship's doubled `sp0C = 0.0f` and bare
+    `marioGetPtr();`, eff_kemuri effKemuri2Entry's zero/neg20/p7/one and effKemuri2Disp's p8/p12/n12p8; the
+    jabaraSetCamParam/rollSetCamParam and yuugijou scale700/scale2000b inline names have no outside evidence.
+  - win_mario's early pose-name selection looks like a second inlined copy of the tail's (needs an evidenced name).

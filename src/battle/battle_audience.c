@@ -2214,13 +2214,7 @@ BOOL BattleAudienceApSrcEntry(void) {
 	star->randOffset.x = 40.0f * (f32)rand() / 32767.0f - 20.0f;
 	star->randOffset.y = 10.0f * (f32)rand() / 32767.0f;
 	star->randOffset.z = 0.0f;
-#ifdef MUST_MATCH
-	// Match-only: the volatile store stops the scheduler hoisting the constant-Vec copy's loads up
-	// into the two preceding rand blocks; the plain store is the natural form.
-	*(volatile Vec*)&star->startPos = star->pos;
-#else
 	star->startPos = star->pos;
-#endif
 	star->endPos = (Vec){ -96.0f, 106.0f, 0.0f };
 	return TRUE;
 }

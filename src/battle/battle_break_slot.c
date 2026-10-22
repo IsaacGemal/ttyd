@@ -508,7 +508,7 @@ void BattleBreakSlot_Main(void) {
             BattleAudienceAddTargetNum(float_0_8042053c, updown);
             slot->state = 8;
             slot->flags &= ~4;
-            if ((u32)gp->language == 0) {
+            if (gp->language == 0) {
                 switch (BattleBreakSlotReelGetPtr(0)->value) {
                 case 0:
                     slot->event = evtEntry(msg_hp_max, 0, 0x20);

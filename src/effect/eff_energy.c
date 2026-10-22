@@ -118,19 +118,6 @@ static GXColor color_tbl[10] = {
     { 0xFD, 0xBC, 0xFB, 0xFF },
 };
 
-
-static inline void effEnergySetMatColor(EnergyData* data) {
-    GXColor color = (GXColor){ data->alphaAnim, data->alphaAnim, data->alphaAnim, data->alpha };
-    GXSetChanMatColor(4, color);
-}
-// Routing the two by-value GXSetTevColor calls through this forwarder makes MWCC build the
-// mat colour in stack slot 0x10 and copy it to the argument temp at 0x14 (retail's layout); the plain
-// calls put them the other way round (0x14/0x10).
-#ifdef MUST_MATCH
-static inline void effEnergySetTevColor(s32 id, GXColor c) {
-    GXSetTevColor(id, c);
-}
-#endif
 void effEnergyDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     EnergyData* data = effect->userdata;
@@ -165,14 +152,9 @@ void effEnergyDisp(CameraId camId, void* param) {
     GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-    effEnergySetMatColor(data);
-#ifdef MUST_MATCH
-    effEnergySetTevColor(1, color_tbl[type * 2]);
-    effEnergySetTevColor(2, color_tbl[type * 2 + 1]);
-#else
+    GXSetChanMatColor(4, (GXColor){ data->alphaAnim, data->alphaAnim, data->alphaAnim, data->alpha });
     GXSetTevColor(1, color_tbl[type * 2]);
     GXSetTevColor(2, color_tbl[type * 2 + 1]);
-#endif
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 4);
     GXSetTevColorOp(0, 0, 0, 0, 1, 0);

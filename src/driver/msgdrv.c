@@ -1250,7 +1250,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 			continue;
 		}
 
-		if ((u32)gp->language == 0 && (s8)check >= '0' && (s8)check <= '9') {
+		if (gp->language == 0 && (s8)check >= '0' && (s8)check <= '9') {
 			glyph = kanjiSearch((u16)(check + 0x10000 - 0x7DE1));
 		}
 		else {
@@ -1864,8 +1864,6 @@ void msgWindow_Disp(CameraId camId, void* param) {
 	case WINDOW_TYPE_BOSS:
 	case WINDOW_TYPE_TEC:
 	case WINDOW_TYPE_MAJO: {
-		f32 half = 0.5f;
-
 		if (window->dispFlags != 0) {
 			f32 px, py, h, w;
 
@@ -1879,11 +1877,11 @@ void msgWindow_Disp(CameraId camId, void* param) {
 			case WINDOW_TYPE_BOSS:
 			case WINDOW_TYPE_TEC:
 			case WINDOW_TYPE_MAJO:
-				px = intplGetValue(0, window->alpha, 0xFF, pos.x, window->x + window->height * half);
-				py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width * half);
+				px = intplGetValue(0, window->alpha, 0xFF, pos.x, window->x + window->height / 2.0f);
+				py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width / 2.0f);
 				h = intplGetValue(0, window->alpha, 0xFF, 10.f, window->height);
 				w = intplGetValue(0, window->alpha, 0xFF, 10.f, window->width);
-				windowDispGX_Message(window->type, window->dispFlags, (u8)window->alpha, px - h * half, py + w * half, h, w, pos.x, pos.y);
+				windowDispGX_Message(window->type, window->dispFlags, (u8)window->alpha, px - h / 2.0f, py + w / 2.0f, h, w, pos.x, pos.y);
 				if (window->alpha == 0xFF) {
 					GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f)), camera->scissor[2], 100);
 					drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
@@ -1892,17 +1890,17 @@ void msgWindow_Disp(CameraId camId, void* param) {
 			case WINDOW_TYPE_SMALL: {
 				s32 top;
 
-				window->x = pos.x - window->height * half;
+				window->x = pos.x - window->height / 2.0f;
 				if (window->dispFlags & 8) {
 					window->y = pos.y - 80.f;
 				} else {
 					window->y = 60.f + pos.y;
 				}
-				px = intplGetValue(0, window->alpha, 0xFF, pos.x, window->x + window->height * half);
-				py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width * half);
+				px = intplGetValue(0, window->alpha, 0xFF, pos.x, window->x + window->height / 2.0f);
+				py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width / 2.0f);
 				h = intplGetValue(0, window->alpha, 0xFF, 10.f, window->height);
 				w = intplGetValue(0, window->alpha, 0xFF, 10.f, window->width);
-				windowDispGX_Message(window->type, window->dispFlags, (u8)window->alpha, px - h * half, py + w * half, h, w, pos.x, pos.y);
+				windowDispGX_Message(window->type, window->dispFlags, (u8)window->alpha, px - h / 2.0f, py + w / 2.0f, h, w, pos.x, pos.y);
 				if (window->alpha == 0xFF) {
 					top = 0xF0 - ((s32)window->y - 10);
 					if (top < 0) {

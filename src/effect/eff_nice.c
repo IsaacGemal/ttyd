@@ -97,7 +97,7 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 	}
 	switch (type) {
 	case 7:
-		if ((u32)gp->language == 0) {
+		if (gp->language == 0) {
 			count = 8;
 		}
 		else {
@@ -187,7 +187,7 @@ void effNiceMain(EffectEntry* effect) {
 		case 0:
 		case 1:
 			end = animData->clip->field_0x8;
-			base = (u32)gp->language == 0 ? 32.0f : 34.0f;
+			base = gp->language == 0 ? 32.0f : 34.0f;
 			time = pose->clipTime;
 			if (time > base) {
 				alpha = 1.0f - (time - base) / (end - base);
@@ -200,7 +200,7 @@ void effNiceMain(EffectEntry* effect) {
 			break;
 		case 2:
 			end2 = animData->clip->field_0x8;
-			base2 = (u32)gp->language == 0 ? 35.0f : 37.0f;
+			base2 = gp->language == 0 ? 35.0f : 37.0f;
 			time2 = pose->clipTime;
 			if (time2 > base2) {
 				alpha = 1.0f - (time2 - base2) / (end2 - base2);
@@ -213,7 +213,7 @@ void effNiceMain(EffectEntry* effect) {
 			break;
 		case 3:
 			end3 = animData->clip->field_0x8;
-			base3 = (u32)gp->language == 0 ? 45.0f : 40.f;
+			base3 = gp->language == 0 ? 45.0f : 40.f;
 			time3 = pose->clipTime;
 			if (time3 > base3) {
 				alpha = 1.0f - (time3 - base3) / (end3 - base3);
@@ -226,7 +226,7 @@ void effNiceMain(EffectEntry* effect) {
 			break;
 		case 4:
 			end4 = animData->clip->field_0x8;
-			base4 = (u32)gp->language == 0 ? 48.0f : 40.f;
+			base4 = gp->language == 0 ? 48.0f : 40.f;
 			time4 = pose->clipTime;
 			if (time4 > base4) {
 				alpha = 1.0f - (time4 - base4) / (end4 - base4);

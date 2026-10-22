@@ -134,19 +134,14 @@ s32 cardGetCode(void) {
 }
 
 void cardMain(void) {
-	s32 temp_r4;
+	s32 chan;
 
 	if (wp->flags & 0x8000) {
-#ifdef MUST_MATCH
-		// The round trip through another type changes the object; the plain form is under #else.
-		temp_r4 = (s32)(s64)-(CARDProbe(0) == 0); //is something inserted?
-#else
-		temp_r4 = -(CARDProbe(0) == 0); //is something inserted?
-#endif
-		if (wp->slotWatchChan != temp_r4) {
+		chan = CARDProbe(0) ? 0 : -1; //is something inserted?
+		if (wp->slotWatchChan != chan) {
 			wp->flags |= 0x4000;
 		}
-		wp->slotWatchChan = temp_r4;
+		wp->slotWatchChan = chan;
 		if (wp->slotWatchTimer) {
 			wp->slotWatchTimer--;
 		}

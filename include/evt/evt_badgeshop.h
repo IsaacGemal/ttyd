@@ -11,7 +11,7 @@ typedef struct BadgeShopWork {
 	u8 bteresa_table[0x55]; //0xA0, Pianta Parlor
 	u8 align[3];
 	s32 bargainTable[5]; //0xF8, badgeShop_getBargainTable returns it
-	s32 field_0x10C; //0x10C
+	int field_0x10C; //0x10C
 	u32 field_0x110; //0x110
 	u16 field_0x114; //0x114
 	u16 field_0x116; //0x116
