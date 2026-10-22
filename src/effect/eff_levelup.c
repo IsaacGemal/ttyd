@@ -26,10 +26,10 @@ u8 y_scale[20] = {
 	0x00, 0x0D, 0x28, 0x45, 0x62, 0x7E, 0x95, 0xA6, 0xAF, 0xA5,
 	0x88, 0x64, 0x43, 0x32, 0x49, 0x75, 0x82, 0x71, 0x64, 0x00,
 };
-static s32 evt_shake[8] = {
-	EVT_CMD(5, OPCODE_USER_FUNC), (s32)evt_cam_shake, 4, FLOAT(0.001953125f), FLOAT(0.001953125f), 0x32,
-	EVT_CMD(0, OPCODE_END_EVENT), OPCODE_END_SCRIPT
-};
+static EVT_BEGIN(evt_shake)
+    CALL(evt_cam_shake, 4, FLOAT(0.002f), FLOAT(0.002f), 50)
+    RETURN
+EVT_END()
 
 EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;

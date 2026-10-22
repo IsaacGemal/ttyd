@@ -37,18 +37,20 @@ extern const char str_MOBJ_Lv3BigBlock[];
 s32 se_data[10] = {
     0x13B, 0x165, 0x13C, 0x167, 0x13D, 0x166, 0x13E, 0x168, 0x13F, 0x169,
 };
-s32 lv1quake_evt[] = {
-    EVT_CMD(5, OPCODE_USER_FUNC), (s32)evt_cam_shake, 4, 0xF24A7A80, 0xF24A7A8A, 0x5A,
-    EVT_CMD(0, OPCODE_END_EVENT), OPCODE_END_SCRIPT
-};
-s32 lv2quake_evt[] = {
-    EVT_CMD(5, OPCODE_USER_FUNC), (s32)evt_cam_shake, 4, 0xF24A7A80, 0xF24A7A94, 0x6E,
-    EVT_CMD(0, OPCODE_END_EVENT), OPCODE_END_SCRIPT
-};
-s32 lv3quake_evt[] = {
-    EVT_CMD(5, OPCODE_USER_FUNC), (s32)evt_cam_shake, 4, 0xF24A7A80, 0xF24A7A9E, 0x8C,
-    EVT_CMD(0, OPCODE_END_EVENT), OPCODE_END_SCRIPT
-};
+EVT_BEGIN(lv1quake_evt)
+    CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.01f), 90)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(lv2quake_evt)
+    CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.02f), 110)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(lv3quake_evt)
+    CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.03f), 140)
+    RETURN
+EVT_END()
 
 // .sdata2
 extern const f32 float_2_8041a9a0;
