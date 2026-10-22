@@ -7,32 +7,13 @@
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423070;
-
 
 static u8 color_rotation_data[24] = {
 	0xFF, 0xFF, 0x52, 0xFF, 0xFF, 0x52, 0xB5, 0x94, 0x00, 0xB5, 0x94, 0x00,
 	0xFF, 0xFF, 0xD6, 0xFF, 0xFF, 0xD6, 0xB5, 0x94, 0x00, 0xB5, 0x94, 0x00,
 };
 
-const GXColor dat_8041e328 = { 0xFF, 0x00, 0x00, 0x00 };
-const GXColor dat_8041e32c = { 0x00, 0x00, 0xFF, 0x00 };
-const GXColor dat_8041e330 = { 0xFF, 0x00, 0x00, 0x00 };
-const GXColor dat_8041e334 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_8041e338 = { 0xF1, 0x4B, 0x41, 0x00 };
-const GXColor dat_8041e33c = { 0xC9, 0xC0, 0xCF, 0x00 };
-const GXColor dat_8041e340 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
-#ifdef MUST_MATCH
-// MUST_MATCH: non-const (pinned to .rodata, as kpa_act.c does) so MWCC assumes the store to
-// data->outerAlpha may alias vec3_802f8e80 and leaves its three lwz after that store, as retail
-// schedules them. A plain `const Vec` makes the scheduler hoist them above the second fctiwz.
-__declspec(section ".rodata") Vec vec3_802f8e80 = { 0.0f, 0.0f, 0.0f };
-#else
-const Vec vec3_802f8e80 = { 0.0f, 0.0f, 0.0f };
-#endif
 
 EffectEntry* effTogeFlushEntry(s32 type, f32 x, f32 y, f32 z, s32 life) {
 	EffectEntry* entry;
@@ -68,7 +49,6 @@ void effTogeFlushMain(EffectEntry* effect) {
 	s32 life;
 	effTogeFlushData* data = effect->userdata;
 	s32 frame;
-	Vec pos;
 	f32 angle;
 	f32 s;
 
@@ -99,77 +79,13 @@ void effTogeFlushMain(EffectEntry* effect) {
 	s = (f32)sin(angle);
 	data->outerAlpha = (s32)(64.0f * s + 144.0f);
 
-	{
-		pos = vec3_802f8e80;
-		pos.x = data->x;
-		pos.y = data->y;
-		pos.z = data->z;
-		dispEntry(4, dispCalcZ(&pos), 2, effTogeFlushDisp, effect);
-	}
+	dispEntry(4, dispCalcZ(&(Vec){ data->x, data->y, data->z }), 2, effTogeFlushDisp, effect);
 }
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: building the colour inside an inline that also issues the GXSetTevColor call makes MWCC
-   allocate the temp and the by-value argument copy together per call site (r1+0x40/0x44, 0x38/0x3c, ...),
-   as retail does. A helper that only returns the colour (the usual pattern) leaves them in separate slots. */
-static inline void togeSetColor0(s32 a, s32 idx) {
-	GXColor c = *(GXColor*)&unk_80423070;
-	c.a = a;
-	c.r = color_rotation_data[idx + 0];
-	c.g = color_rotation_data[idx + 1];
-	c.b = color_rotation_data[idx + 2];
-	GXSetTevColor(1, c);
-}
-
-static inline void togeSetColor1(s32 a) {
-	GXColor c = dat_8041e328;
-	c.a = a;
-	GXSetTevColor(1, c);
-}
-
-static inline void togeSetColor2(s32 a) {
-	GXColor c = dat_8041e32c;
-	c.a = a;
-	GXSetTevColor(1, c);
-}
-
-static inline void togeSetColor3(s32 a) {
-	GXColor c = dat_8041e330;
-	c.a = a;
-	GXSetTevColor(1, c);
-}
-
-static inline void togeSetColor4(s32 a) {
-	GXColor c = dat_8041e334;
-	c.a = a;
-	GXSetTevColor(1, c);
-}
-
-static inline void togeSetColorA3(s32 a) {
-	GXColor c = dat_8041e338;
-	c.a = a;
-	GXSetTevColor(1, c);
-}
-
-static inline void togeSetColorA4(s32 a) {
-	GXColor c = dat_8041e33c;
-	c.a = a;
-	GXSetTevColor(1, c);
-}
-
-static inline void togeSetColorAD(s32 a) {
-	GXColor c = dat_8041e340;
-	c.a = a;
-	GXSetTevColor(1, c);
-}
-#endif
 
 void effTogeFlushDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effTogeFlushData* data = effect->userdata;
-#ifndef MUST_MATCH
-	GXColor color;
-#endif
 	GXTexObj texObj;
 	Mtx mtxTrans;
 	Mtx mtxRot;
@@ -216,58 +132,25 @@ void effTogeFlushDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(mtxPos, 0);
 	GXSetCurrentMtx(0);
 
-#ifdef MUST_MATCH
 	switch (type) {
 	case 0:
 		idx %= 24;
-		togeSetColor0(colorAlpha, idx);
+		GXSetTevColor(1, (GXColor){ color_rotation_data[idx + 0], color_rotation_data[idx + 1],
+		                            color_rotation_data[idx + 2], colorAlpha });
 		break;
 	case 1:
-		togeSetColor1(colorAlpha);
+		GXSetTevColor(1, (GXColor){ 0xFF, 0x00, 0x00, colorAlpha });
 		break;
 	case 2:
-		togeSetColor2(colorAlpha);
+		GXSetTevColor(1, (GXColor){ 0x00, 0x00, 0xFF, colorAlpha });
 		break;
 	case 3:
-		togeSetColor3(colorAlpha);
+		GXSetTevColor(1, (GXColor){ 0xFF, 0x00, 0x00, colorAlpha });
 		break;
 	case 4:
-		togeSetColor4(colorAlpha);
+		GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, colorAlpha });
 		break;
 	}
-#else
-	switch (type) {
-	case 0:
-		idx %= 24;
-		color = *(GXColor*)&unk_80423070;
-		color.a = colorAlpha;
-		color.r = color_rotation_data[idx + 0];
-		color.g = color_rotation_data[idx + 1];
-		color.b = color_rotation_data[idx + 2];
-		GXSetTevColor(1, color);
-		break;
-	case 1:
-		color = dat_8041e328;
-		color.a = colorAlpha;
-		GXSetTevColor(1, color);
-		break;
-	case 2:
-		color = dat_8041e32c;
-		color.a = colorAlpha;
-		GXSetTevColor(1, color);
-		break;
-	case 3:
-		color = dat_8041e330;
-		color.a = colorAlpha;
-		GXSetTevColor(1, color);
-		break;
-	case 4:
-		color = dat_8041e334;
-		color.a = colorAlpha;
-		GXSetTevColor(1, color);
-		break;
-	}
-#endif
 
 	GXBegin(0x80, 0, 4);
 	GXPosition3f32(-8.0f, 8.0f, 0.0f);
@@ -292,37 +175,17 @@ void effTogeFlushDisp(CameraId cameraId, void* param) {
 		GXLoadPosMtxImm(mtxPos, 0);
 		GXSetCurrentMtx(0);
 
-#ifdef MUST_MATCH
 		switch (type) {
 		case 3:
-			togeSetColorA3(alpha);
+			GXSetTevColor(1, (GXColor){ 0xF1, 0x4B, 0x41, alpha });
 			break;
 		case 4:
-			togeSetColorA4(alpha);
+			GXSetTevColor(1, (GXColor){ 0xC9, 0xC0, 0xCF, alpha });
 			break;
 		default:
-			togeSetColorAD(alpha);
+			GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, alpha });
 			break;
 		}
-#else
-		switch (type) {
-		case 3:
-			color = dat_8041e338;
-			color.a = alpha;
-			GXSetTevColor(1, color);
-			break;
-		case 4:
-			color = dat_8041e33c;
-			color.a = alpha;
-			GXSetTevColor(1, color);
-			break;
-		default:
-			color = dat_8041e340;
-			color.a = alpha;
-			GXSetTevColor(1, color);
-			break;
-		}
-#endif
 
 		GXBegin(0x80, 0, 4);
 		GXPosition3f32(-4.0f, 4.0f, 0.0f);

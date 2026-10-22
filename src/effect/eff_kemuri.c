@@ -35,10 +35,6 @@ extern const f32 float_neg4_8041c6c8;
 extern const f32 float_0p5_8041c6cc;
 extern const f32 float_4_8041c6d0;
 extern const f32 float_6p4_8041c6d4;
-extern const GXColor unk_80423010;
-extern const GXColor unk_80423014;
-extern const GXColor dat_8041c680;
-extern const GXColor dat_8041c684;
 
 extern const f32 float_0p0625_8041c6d8;
 extern const f32 float_neg0p2_8041c6dc;
@@ -346,7 +342,7 @@ void effKemuriDisp(CameraId camId, void* param) {
 	GXSetCurrentMtx(GX_PNMTX0);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-	GXSetChanMatColor(GX_COLOR0A0, dat_8041c670);
+	GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	GXSetNumTevStages(3);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -358,7 +354,7 @@ void effKemuriDisp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
-	GXSetTevColor(GX_TEVREG0, dat_8041c674);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ 0x80, 0x80, 0x80, 0x80 });
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -380,13 +376,9 @@ void effKemuriDisp(CameraId camId, void* param) {
 	for (i = 1; i < effect->count; i++, data++) {
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
-				GXColor color = dat_8041c678;
-
-				GXSetChanMatColor(GX_COLOR0A0, color);
+				GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0x00, 0x00, 0x00, 0x60 });
 			} else {
-				GXColor color = dat_8041c67c;
-
-				GXSetChanMatColor(GX_COLOR0A0, color);
+				GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			}
 
 			{
@@ -480,11 +472,6 @@ void effKemuriDisp(CameraId camId, void* param) {
 #endif
 
 // Draws two camera-facing textured quads for the secondary smoke effect.
-static inline GXColor kemuriTevColor(u8 alpha, GXColor c) {
-	c.a = alpha;
-	return c;
-}
-
 // 100% matched: the p8/p12/n12p8 preheader locals (declared p8,p12,n12p8 and assigned
 // n12p8,p12,p8) and the quad's x6/y4/px/py locals reproduce retail's volatile-FPR colouring.
 #ifdef MUST_MATCH
@@ -575,9 +562,9 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			effGetTexObj(0xD, &texobj);
 			GXLoadTexObj(&texobj, GX_TEXMAP0);
 			if (i == 0) {
-				GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423010));
+				GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, data->alpha });
 			} else {
-				GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, dat_8041c680));
+				GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 			}
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
@@ -640,11 +627,11 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 		if (i == 0) {
 			effGetTexObj(0xC, &texobj);
 			GXLoadTexObj(&texobj, GX_TEXMAP0);
-			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423014));
+			GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, data->alpha });
 		} else {
 			effGetTexObj(0xB, &texobj);
 			GXLoadTexObj(&texobj, GX_TEXMAP0);
-			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, dat_8041c684));
+			GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 		}
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
@@ -703,12 +690,6 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 }
 
 
-const GXColor dat_8041c670 = { 0xff, 0xff, 0xff, 0xff };
-const GXColor dat_8041c674 = { 0x80, 0x80, 0x80, 0x80 };
-const GXColor dat_8041c678 = { 0x0, 0x0, 0x0, 0x60 };
-const GXColor dat_8041c67c = { 0xff, 0xff, 0xff, 0xff };
-const GXColor dat_8041c680 = { 0xff, 0xff, 0xff, 0x0 };
-const GXColor dat_8041c684 = { 0xff, 0xff, 0xff, 0x0 };
 const f32 float_12_8041c688 = 12.0f;
 const f32 float_8_8041c68c = 8.0f;
 const f32 float_12p8_8041c690 = 12.8000002f;
@@ -758,15 +739,6 @@ const u8 touchdown_scale[60] = { 0x80, 0x80, 0x82, 0x7f, 0x84, 0x7e, 0x87, 0x7d,
 __declspec(section ".data")
 #endif
 const u8 heavy_scale[60] = { 0x80, 0x80, 0x84, 0x80, 0x89, 0x81, 0x8e, 0x82, 0x93, 0x83, 0x99, 0x85, 0x9e, 0x86, 0xa4, 0x87, 0xaa, 0x88, 0xb0, 0x89, 0xb6, 0x8a, 0xbb, 0x8b, 0xc1, 0x8d, 0xc7, 0x8e, 0xcd, 0x8f, 0xd2, 0x90, 0xd8, 0x91, 0xdd, 0x92, 0xe2, 0x93, 0xe6, 0x94, 0xeb, 0x95, 0xef, 0x96, 0xf2, 0x96, 0xf6, 0x97, 0xf9, 0x98, 0xfb, 0x98, 0xfd, 0x99, 0xfe, 0x99, 0xff, 0x99, 0xff, 0x99 };
-#ifdef MUST_MATCH
-// MWCC emits uninitialized objects in reverse declaration order.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") const GXColor unk_80423014;
-__declspec(section ".sdata") const GXColor unk_80423010;
-#else
-const GXColor unk_80423014 = { 0, 0, 0, 0 };
-const GXColor unk_80423010 = { 0, 0, 0, 0 };
-#endif
 
 #ifdef MUST_MATCH
 #pragma force_active on
