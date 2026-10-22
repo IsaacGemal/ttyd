@@ -2118,6 +2118,11 @@ void monosiri_disp(CameraId camId, void* param) {
     }
 }
 
+// The section's trailing .sbss2 gap, after monosiri_disp's colour template.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_80423054_sbss2[4];
+#pragma section ".sdata" ".sbss"
+
 // .sdata2 colour words and short region strings, in the original's address
 // order. The GXColor words are the shadow/page/tab tints the draw functions
 // load as flat colours.

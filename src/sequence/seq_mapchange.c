@@ -60,6 +60,11 @@ char _next_area[0x20];
 char _next_map[0x20];
 char _next_bero[0x20];
 
+// .sbss2 gap after the fade colour's template.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_80422F64_sbss2[4];
+#pragma section ".sdata" ".sbss"
+
 // .bss
 #define REL_BSS_SIZE 0xF10
 u8 rel_bss[REL_BSS_SIZE];
