@@ -19,6 +19,11 @@
 // register seeded from the first Vec template, so let MWCC pool it instead of rematerialising lis/addi.
 #pragma pool_data on
 
+// .sbss2: the 4-byte section-tail gap after effFukidashiDisp's colour templates.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_8042300C_sbss2[4];
+#pragma section ".sdata" ".sbss"
+
 __declspec(section ".data") u8 lbl_8036BEA0[8] ATTRIBUTE_ALIGN(16) = {
 	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
 };

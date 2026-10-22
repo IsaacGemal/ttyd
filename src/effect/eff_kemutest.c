@@ -11,6 +11,15 @@
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
+#ifdef MUST_MATCH
+/* The retail unit owns this padding after its .sbss2 colour template. */
+#pragma section ".sdata" ".sbss2"
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_10_804232DC_sbss2;
+#pragma force_active reset
+#pragma section ".sdata" ".sbss"
+#endif
+
 typedef struct {
 	f32 v[4];
 } effKemuTestQuad;
