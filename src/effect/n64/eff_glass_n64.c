@@ -7,13 +7,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2 zero GXColor scratch objects (declared in reverse: they are placed in reverse of declaration order)
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_8042312c;
-__declspec(section ".sdata") GXColor unk_80423128;
-__declspec(section ".sdata") GXColor unk_80423124;
-__declspec(section ".sdata") GXColor unk_80423120;
-
 // .data vertex arrays, local to this file.
 static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
 	0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008, 0xFFF80000, 0x04000000, 0x000000FF,
@@ -130,33 +123,6 @@ void effGlassMain(EffectEntry* effect) {
 }
 
 /* effGlassDisp matches with the colour writes and the frame conversion in inlines. */
-/* Setting each colour inside a void inline (rather than assigning a local then passing it)
-   reproduces the original's per-call by-value colour slots, local 0x18/copy 0x1c, 0x10/0x14, 0x08/0x0c
-   (same shape as effHitDisp). */
-static inline void effGlassSetColor1(effGlassData* data, s32 a) {
-	GXColor color = unk_80423120;
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = a;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-static inline void effGlassSetColor2(effGlassData* data, s32 a) {
-	GXColor color = unk_80423124;
-	color.r = data->color2R;
-	color.g = data->color2G;
-	color.b = data->color2B;
-	color.a = a;
-	GXSetTevColor(GX_TEVREG1, color);
-}
-static inline void effGlassSetColor3(effGlassData* data, s32 a) {
-	GXColor color = unk_80423128;
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = a;
-	GXSetTevColor(GX_TEVREG0, color);
-}
 /* Calling the cast through an inline makes mwcc allocate the frame conversion's scratch slot
    first (0x100) instead of last, matching the original. */
 static inline s32 effGlassFrame(f32 x) {
@@ -233,15 +199,15 @@ void effGlassDisp(CameraId camId, void* param) {
 	PSMTXConcat(scale, trans, scale);
 	GXLoadTexMtxImm(scale, GX_TEXMTX1, GX_MTX2x4);
 
-	effGlassSetColor1(data, dataAlpha);
-	effGlassSetColor2(data, tileAlpha);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->color1R, data->color1G, data->color1B, dataAlpha });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->color2R, data->color2G, data->color2B, tileAlpha });
 	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
 	if (type == 1 && (s32)(4.0f * data->angle) == 3) {
-		effGlassSetColor3(data, dataAlpha * tileAlpha / 255);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ data->color1R, data->color1G, data->color1B, dataAlpha * tileAlpha / 255 });
 		GXSetNumChans(1);
 		GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 		GXSetNumTevStages(1);
