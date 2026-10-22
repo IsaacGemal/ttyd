@@ -10,7 +10,6 @@
 #include "system.h"
 #include "peach.h"
 #include <string.h>
-#include "matching.h"
 #include "motion/mot_slit.h"
 #include "koopa_motion.h"
 #include "motion/mot_jabara.h"
