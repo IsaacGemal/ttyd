@@ -797,7 +797,6 @@ USER_FUNC(evt_npc_jump_position_nohit) {
     // and copies it to r29 later, exactly as the original does. With `s32` it is born in r29.
     int elapsed;
     f32 t;
-    Vec endPos;
 
     if (isFirstCall) {
         sfxFlag = 0;
@@ -845,15 +844,10 @@ USER_FUNC(evt_npc_jump_position_nohit) {
     return EVT_RETURN_DONE;
 }
 
-// The per-frame block matches with two shapes. (1) declare t/dy/delta in that order and compute
-// the second intpl quotient as one statement `delta = (dy - delta) / t;` before the calls, so both
-// divisions hoist ahead of the first `_intplGetFloat` (giving dy/t/delta = f3/f2/f4 and
-// speed/arcHeight = f31/f30). (2) `delta = subf32(a, b);` (an inlined trivially-small
-// helper) must come before the two `dx`/`dz` subtractions; the inlined call makes MWCC keep f2
-// busy for it, so the `dx` load temp is coloured f3 as in the original (`lfs f3, 0x164` /
-// `fsubs f27, f3, f1`) while delta/dx keep f26/f27. The natural form (plain `delta = a - b;`
-// after dx/dz) compiles to the same logic but leaves the dx temp on f2 (99.97%).
-static inline f32 subf32(f32 x, f32 y) { return x - y; }
+// The per-frame block: t/dy/delta are declared in that order and the second intpl quotient is one statement
+// `delta = (dy - delta) / t;` before the calls, so both divisions hoist ahead of the first `_intplGetFloat` (giving
+// dy/t/delta = f3/f2/f4 and speed/arcHeight = f31/f30). `delta = a - b;` comes before the two `dx`/`dz` subtractions,
+// as in the original (after them the dx load temp is coloured f2 instead of f3).
 
 USER_FUNC(evt_npc_glide_position) {
     s32* args = event->args;
@@ -933,15 +927,20 @@ USER_FUNC(evt_npc_glide_position) {
     delta = (dy - delta) / t;
     a = _intplGetFloat(intplType, dy / t);
     b = _intplGetFloat(intplType, delta);
-    delta = subf32(a, b);
+    delta = a - b;
     dx = npc->jumpTargetPos.x - npc->jumpStartPos.x;
     dz = npc->jumpTargetPos.z - npc->jumpStartPos.z;
     npc->moveOffset.x += dx * delta;
     npc->moveOffset.z += dz * delta;
 
     if (npc->jumpFlags & 2) {
+#ifdef MUST_MATCH
+        // match-only: the named zero gives retail's operand order, `fcmpu dx, 0.0`
         f32 zero = 0.0f;
         if (dx != zero || dz != zero) {
+#else
+        if (dx != 0.0f || dz != 0.0f) {
+#endif
             if (npc != fbatGetPointer()->target ||
                 (fbatGetPointer()->mode != 5 && fbatGetPointer()->mode != 6)) {
                 npcTuningRy(npc, angleABf(0.0f, 0.0f, dx, dx));
@@ -1421,8 +1420,13 @@ USER_FUNC(evt_npc_flag_onoff) {
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     switch (type) {
         case 0: {
-            u32* flags = (u32*)&npc->flags;
-            *flags = *flags & ~mask;
+#ifdef MUST_MATCH
+            // match-only: the u32 temp loads the flags into r4 for retail's `andc r0, r4, r31`
+            u32 clear = ~mask;
+            npc->flags &= clear;
+#else
+            npc->flags &= ~mask;
+#endif
             break;
         }
         case 1:
@@ -1529,19 +1533,19 @@ f32 _get_target_dir(EventEntry* event, NpcEntry* npc, const char* target) {
 USER_FUNC(evt_get_target_dir) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    s32 target = evtGetValue(event, args[1]);
+    const char* target = (const char*)evtGetValue(event, args[1]);
     s32 out = args[2];
     NpcEntry* npc = evtNpcNameToPtr(event, name);
-    evtSetFloat(event, out, _get_target_dir(event, npc, (const char*)target));
+    evtSetFloat(event, out, _get_target_dir(event, npc, target));
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_set_dir_to_target) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    s32 target = evtGetValue(event, args[1]);
+    const char* target = (const char*)evtGetValue(event, args[1]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
-    npc->direction = _get_target_dir(event, npc, (const char*)target);
+    npc->direction = _get_target_dir(event, npc, target);
     return EVT_RETURN_DONE;
 }
 
@@ -1930,8 +1934,8 @@ USER_FUNC(evt_npc_set_btlsetup_work) {
     const char* name = (const char*)evtGetValue(event, args[0]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     s32 index = evtGetValue(event, args[1]);
-    s32 value = evtGetValue(event, args[2]);
-    npcSetBtlSetupWork(npc, index, (void*)value);
+    void* value = (void*)evtGetValue(event, args[2]);
+    npcSetBtlSetupWork(npc, index, value);
     return EVT_RETURN_DONE;
 }
 
@@ -2362,7 +2366,8 @@ void _kamek_houki_kemuri(NpcEntry* npc, s32 arg1) {
         effect = effKemuri10N64Entry(0, a2, (18.0f * npc->scale.x) + npc->position.y, npc->position.z, a5, 0.0f, 0.0f,
                                      npc->scale.x);
         if (!strcmp(gp->currentMapName, "kpa_01")) {
-            ((effKemuri10Data*)effect->userdata)->camId = 7;
+            effKemuri10Data* data = effect->userdata;
+            data->camId = 7;
         }
     }
 }
@@ -2386,7 +2391,6 @@ USER_FUNC(evt_npc_kamek_move_position) {
     f32 dist;
     f32 dist1, dist2;
     f32 step;
-    s32 sfxFlag;
 
     npc->jumpFlags |= 0x10;
     if (moveFlags & 0x2) {
@@ -2547,7 +2551,7 @@ USER_FUNC(evt_fbat_trans_floor_position) {
 
     distance = evtGetFloat(event, *args++);
 
-    if (hitCheckFilter(0, x, 1.0f + y, z, 0.0f, -1.0f, 0.0f, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ)) {
+    if (hitCheckFilter(NULL, x, 1.0f + y, z, 0.0f, -1.0f, 0.0f, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ)) {
         y = (hitY + floor);
     }
 
