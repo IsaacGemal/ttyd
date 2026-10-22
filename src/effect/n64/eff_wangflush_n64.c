@@ -6,12 +6,6 @@
 #include <dolphin/gx.h>
 #include "math_ext.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804232c4;
-__declspec(section ".sdata") GXColor unk_804232c0;
-
-
 extern const f32 float_deg2rad_80420114;
 extern const f32 float_0p03125_80420118;
 extern const f32 float_0_8042011c;
@@ -119,26 +113,6 @@ static u32 size16x16_tex64x64_vtx[16] = {
 	0x00000000, 0x00000000,
 };
 
-// Inlined in the original; the helper scope reproduces the stack slots the compiler
-// picks for the by-value GXColor copy (type color: local at 0x10, outgoing copy at
-// 0x14; alpha color: local at 0x8, outgoing copy at 0xc).
-static inline void effWangFlushSetTypeColor(s32 idx, s32 alpha) {
-	GXColor color = unk_804232c0;
-
-	color.r = color_rotation_data[idx];
-	color.g = color_rotation_data[idx + 1];
-	color.b = color_rotation_data[idx + 2];
-	color.a = alpha;
-	GXSetTevColor(1, color);
-}
-
-static inline void effWangFlushSetAlphaColor(s32 alpha) {
-	GXColor color = (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 };
-
-	color.a = alpha;
-	GXSetTevColor(1, color);
-}
-
 void effWangFlushDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 idx;
@@ -185,7 +159,8 @@ void effWangFlushDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtxD, 0);
 		GXSetCurrentMtx(0);
 		idx %= 24;
-		effWangFlushSetTypeColor(idx, field28);
+		GXSetTevColor(1, (GXColor){ color_rotation_data[idx], color_rotation_data[idx + 1],
+		                            color_rotation_data[idx + 2], field28 });
 		GXBegin(0x90, 0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
@@ -201,7 +176,7 @@ void effWangFlushDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtxC, mtxD, mtxD);
 		GXLoadPosMtxImm(mtxD, 0);
 		GXSetCurrentMtx(0);
-		effWangFlushSetAlphaColor(alpha);
+		GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, alpha });
 		GXBegin(0x90, 0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}

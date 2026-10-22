@@ -313,19 +313,10 @@ void effRadiationMain(EffectEntry* effect) {
 }
 #pragma opt_dead_assignments reset
 
-// .sdata2/.rodata constants and .data/.sdata vertex arrays used by effRadiationDisp
+// .data/.sdata vertex arrays used by effRadiationDisp
 // (original symbols from config/G8MJ01/symbols.txt).
-extern const GXColor dat_8041fa90;
-extern const GXColor dat_8041fa94;
 extern u32 size150x20_tex32x32[14];
 extern u32 size300x40_tex32x32[11];
-
-// Building the colour in an inline is what makes the two call sites keep
-// their own GXColor temporary (0x10/0x14 and 0x8/0xc); the natural assignment reuses one slot.
-static inline GXColor radiationSetColor(s32 alpha, GXColor color) {
-	color.a = alpha;
-	return color;
-}
 
 void effRadiationDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -420,7 +411,7 @@ void effRadiationDisp(CameraId camId, void* param) {
 			}
 			PSMTXScale(scale, scaleX, scaleY, scaleZ);
 			PSMTXConcat(work, scale, work);
-			GXSetTevColor(GX_TEVREG0, radiationSetColor(data->alpha, dat_8041fa90));
+			GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0xFA, data->alpha });
 		} else {
 			PSMTXRotRad(rot, 'y', 0.017453292f * data->rotY);
 			PSMTXConcat(work, rot, work);
@@ -428,7 +419,7 @@ void effRadiationDisp(CameraId camId, void* param) {
 			PSMTXConcat(work, rot, work);
 			PSMTXTrans(trans2, data->offset, 0.0f, 0.0f);
 			PSMTXConcat(work, trans2, work);
-			GXSetTevColor(GX_TEVREG0, radiationSetColor(data->alpha, dat_8041fa94));
+			GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0xB5, data->alpha });
 		}
 
 		PSMTXConcat(cam->view, work, work);
@@ -457,8 +448,3 @@ void effRadiationDisp(CameraId camId, void* param) {
 		}
 	}
 }
-
-// .sdata2 colour constants (0xFFFFFA00 / 0xFFFFB500 as GXColor bytes). Defined after the code
-// so they stay real objects and land before the compiler's pooled float literals.
-const GXColor dat_8041fa90 = { 0xFF, 0xFF, 0xFA, 0x00 };
-const GXColor dat_8041fa94 = { 0xFF, 0xFF, 0xB5, 0x00 };

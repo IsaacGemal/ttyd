@@ -8,12 +8,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423274;
-__declspec(section ".sdata") GXColor unk_80423270;
-
-
 // .sdata2 shared float pool
 extern const f32 float_deg2rad_8041fde0;
 extern const f32 float_0p03125_8041fde4;
@@ -141,23 +135,6 @@ void effStampMain(EffectEntry* effect) {
     dispEntry(4, dispCalcZ(&position2), 2, effStampDisp, effect);
 }
 
-static inline void effStampSetTevReg0(effStampData* data) {
-    GXColor color = unk_80423270;
-    color.r = data->tevReg0R;
-    color.g = data->tevReg0G;
-    color.b = data->tevReg0B;
-    color.a = data->alpha;
-    GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void effStampSetTevReg1(effStampData* data) {
-    GXColor color = unk_80423274;
-    color.r = data->tevReg1R;
-    color.g = data->tevReg1G;
-    color.b = data->tevReg1B;
-    GXSetTevColor(GX_TEVREG1, color);
-}
-
 void effStampDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effStampData* data;
@@ -187,8 +164,8 @@ void effStampDisp(CameraId camId, void* param) {
     PSMTXConcat(mtx, rotMtx, mtx);
     PSMTXConcat(cam->view, mtx, viewMtx);
 
-    effStampSetTevReg0(data);
-    effStampSetTevReg1(data);
+    GXSetTevColor(GX_TEVREG0, (GXColor){ data->tevReg0R, data->tevReg0G, data->tevReg0B, data->alpha });
+    GXSetTevColor(GX_TEVREG1, (GXColor){ data->tevReg1R, data->tevReg1G, data->tevReg1B, 0 });
 
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
