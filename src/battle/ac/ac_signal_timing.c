@@ -12,21 +12,8 @@
 #include <string.h>
 #pragma pool_data on // the original addresses its .rodata through one base register
 
-// .sdata2 constants used by this unit. Order matches the original .sdata2 (report).
-const u32 dat_804216d0 = 0xFFFFFFFF;
-const u32 dat_804216d4 = 0xFFFFFFFF;
-const u32 dat_804216d8 = 0xFFFFFFFF;
-const u32 dat_804216dc = 0xFFFFFFFF;
-
-// The original unit's .rodata: 14 separate zero vectors, the int->float magic double, then the
-// SFX names. The vectors must be separate `vec3_*` objects (not a `vec3[14]` array) so MWCC
-// matches the original's 14 symbols; the named double and strings are the original's objects.
-// The compiler still pools its own anonymous copy of the magic double at the end (+0xf8), which
-// actionCommandDisp then loads instead of the named one at +0xa8 (see the note on that function).
-const Vec vec3_802fedc8 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fedd4 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fede0 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fedec = {0.0f, 0.0f, 0.0f};
+// The original unit's .rodata: the templates of actionCommandDisp's 14 zero Vec literals, the
+// int->float magic double, then the SFX names.
 
 // Local to this file in the original (`.fn actionCommandDisp, local`).
 static void actionCommandDisp(f32 x, f32 y);
@@ -394,15 +381,10 @@ void battleAcDelete_SignalTiming(BattleWork* work) {
 #define ICON_DISP_B(v, f, id, s) iconDispGx((s), (v), (f), (id))
 #endif
 
-// Match-only: MWCC hoists the loop-invariant zero-vector copies out of the loops (the target
-// reloads them each pass). A volatile copy keeps the load in the loop; the non-volatile reads
-// of the other vectors are direct source-object reads.
-
 // The assignment order below (work, ac, camGetPtr, num, bd, count) is what makes MWCC colour
-// work=r31, bd=r28, num=r27, count=r26 as the original; every zero vector is read directly by
-// symbol and the offset expressions are inlined in the icon loops so the multiply lands where
-// the target has it. The 3rd loop's copy stays a volatile read (the target reloads it each
-// pass).
+// work=r31, bd=r28, num=r27, count=r26 as the original; every zero vector is a (Vec) literal
+// and the offset expressions are inlined in the icon loops so the multiply lands where the
+// target has it.
 //  - the offset expressions must be written so the last constant binds to the loop-invariant
 //    term: `(i * 0x30 + (field * 0x21 - 0xfa))` and `(num * 0x30 - 0x1a + (field * 32))`
 //    (left-grouped or field-first forms reassociate and cost ~10-100 diffs); the level tests
@@ -431,12 +413,12 @@ static void actionCommandDisp(f32 x, f32 y) {
 
     if (!(ac->acFlag & 1)) {
         if (bd->inWindow != 0) {
-            Vec t = vec3_802fedc8;
+            Vec t = (Vec){0.0f, 0.0f, 0.0f};
             t.x = -200.f + x;
             t.y = 70.f + y;
             iconDispGx(1.0f, &t, 0x10, 0x65);
         } else {
-            Vec t = vec3_802fedd4;
+            Vec t = (Vec){0.0f, 0.0f, 0.0f};
             t.x = -200.f + x;
             t.y = 70.f + y;
             iconDispGx(1.0f, &t, 0x10, 0x64);
@@ -463,19 +445,14 @@ static void actionCommandDisp(f32 x, f32 y) {
             break;
         }
         {
-            Vec t = vec3_802fede0;
+            Vec t = (Vec){0.0f, 0.0f, 0.0f};
             t.x = -288.0f + x;
             f31 = 25.0f + y;
             t.y = f31;
             iconDispGx(1.0f, &t, 0x10, 0x8F);
         }
         for (i = 1; i < limit; i++) {
-#ifdef MUST_MATCH
-            // Volatile copy: retail reloads the template Vec every iteration instead of hoisting it.
-            Vec t = *(volatile Vec*)&vec3_802fedec;
-#else
-            Vec t = vec3_802fedec;
-#endif
+            Vec t = (Vec){0.0f, 0.0f, 0.0f};
             t.x = x + (f32)(i * 0x10 - 0x120);
             t.y = f31;
             iconDispGx(1.0f, &t, 0x10, 0x8E);
@@ -511,7 +488,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
         }
         PSMTXConcat(mtx, scale, mtx2);
-        iconNumberDispGx(mtx2, number, 0, *(GXColor*)&dat_804216d0);
+        iconNumberDispGx(mtx2, number, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     }
 
     for (i = 0; i < ac->acParams[6]; i++) {
@@ -589,7 +566,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             } else if (bd->signalCount <= i + ac->acParams[6]) {
                 if (i >= num - 1) {
                     btlDispTexPlane(x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28, 0.0f, 0.8f, 0.8f,
-                                    0x40, *(GXColor*)&dat_804216d4, 0);
+                                    0x40, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, 0);
                 }
             } else {
                 Vec t = (Vec){0.0f, 0.0f, 0.0f};
@@ -604,10 +581,10 @@ static void actionCommandDisp(f32 x, f32 y) {
     for (i = 0; i < num; i++) {
         if (bd->states[i] == 1) {
             btlDispTexPlane(x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28, 0.0f, 1.0f, 1.0f, 0x3E,
-                            *(GXColor*)&dat_804216d8, 0);
+                            (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, 0);
         } else if (bd->states[i] == -1) {
             btlDispTexPlane(x + (f32)((i * 0x30 + (ac->acParams[6] * 0x21 - 0xfa))), f28, 0.0f, 1.0f, 1.0f, 0x3F,
-                            *(GXColor*)&dat_804216dc, 0);
+                            (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, 0);
         }
     }
 }

@@ -19,9 +19,6 @@ typedef struct TimingWideDecWork {
 	s32 endTimer;     // 0x10, end timer
 } TimingWideDecWork;
 
-// rodata vectors, one array (the target uses one base register and offsets).
-extern const Vec vec3_802fd630[12];
-
 // sdata2 constants.
 
 static void actionCommandDisp(f32 x, f32 y);
@@ -293,7 +290,6 @@ void battleAcDelete_TimingWide(BattleWork* work) {
 }
 
 static void actionCommandDisp(f32 x, f32 y) {
-	Vec* vecs = (Vec*)vec3_802fd630;
 	BattleWork* work = _battleWorkPointer;
 	BattleActions* ac = &work->actionCommands;
 	BattleACDispParams* disp = &ac->dispParams;
@@ -338,13 +334,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 	switch (dec->phase) {
 	case 0:
 		if (dec->pressMode > 0) {
-			Vec v = vecs[0];
+			Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 			v.x = -200.f + x;
 			v.y = 50.f + y;
 			iconDispGx(1.0f, &v, 0x10, down);
 		}
 		else {
-			Vec v = vecs[1];
+			Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 			v.x = -200.f + x;
 			v.y = 50.f + y;
 			iconDispGx(1.0f, &v, 0x10, up);
@@ -357,13 +353,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 	case 6:
 		if (!(ac->acFlag & 0x10)) {
 			if (dec->pressMode > 0) {
-				Vec v = vecs[2];
+				Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 				v.x = -200.f + x;
 				v.y = 50.f + y;
 				iconDispGx(1.0f, &v, 0x10, down);
 			}
 			else {
-				Vec v = vecs[3];
+				Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 				v.x = -200.f + x;
 				v.y = 50.f + y;
 				iconDispGx(1.0f, &v, 0x10, up);
@@ -371,13 +367,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 		}
 		else {
 			if (dec->pressMode > 0) {
-				Vec v = vecs[4];
+				Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 				v.x = -200.f + x;
 				v.y = 50.f + y;
 				iconDispGx(1.0f, &v, 0x10, up);
 			}
 			else {
-				Vec v = vecs[5];
+				Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 				v.x = -200.f + x;
 				v.y = 50.f + y;
 				iconDispGx(1.0f, &v, 0x10, down);
@@ -389,13 +385,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 			if (dec->frame >= ac->acParams[2] &&
 			    dec->frame < ac->acParams[3]) {
 				if (dec->pressMode > 0) {
-					Vec v = vecs[6];
+					Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 					v.x = -200.f + x;
 					v.y = 50.f + y;
 					iconDispGx(1.0f, &v, 0x10, up);
 				}
 				else {
-					Vec v = vecs[7];
+					Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 					v.x = -200.f + x;
 					v.y = 50.f + y;
 					iconDispGx(1.0f, &v, 0x10, down);
@@ -403,13 +399,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 			}
 			else {
 				if (dec->pressMode > 0) {
-					Vec v = vecs[8];
+					Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 					v.x = -200.f + x;
 					v.y = 50.f + y;
 					iconDispGx(1.0f, &v, 0x10, down);
 				}
 				else {
-					Vec v = vecs[9];
+					Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 					v.x = -200.f + x;
 					v.y = 50.f + y;
 					iconDispGx(1.0f, &v, 0x10, up);
@@ -418,13 +414,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 		}
 		else {
 			if (dec->frame >= ac->acParams[2]) {
-				Vec v = vecs[10];
+				Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 				v.x = -200.f + x;
 				v.y = 50.f + y;
 				iconDispGx(1.0f, &v, 0x10, down);
 			}
 			else {
-				Vec v = vecs[11];
+				Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 				v.x = -200.f + x;
 				v.y = 50.f + y;
 				iconDispGx(1.0f, &v, 0x10, up);
@@ -437,5 +433,3 @@ static void actionCommandDisp(f32 x, f32 y) {
 
 	(*(s32*)&disp->field_0x0[0])++;
 }
-
-const Vec vec3_802fd630[12] = { 0 };

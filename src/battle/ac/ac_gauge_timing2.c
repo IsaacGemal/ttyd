@@ -18,12 +18,6 @@ __declspec(section ".sdata2") s32 dat_80421ad8 = -1;
 #else
 const s32 dat_80421ad8 = -1;
 #endif
-extern const s32 dat_80421adc;
-extern const s32 dat_80421ae0;
-extern const s32 dat_80421ae4;
-extern const s32 dat_80421ae8;
-extern const s32 dat_80421aec;
-extern const s32 dat_80421af0;
 
 // .rodata objects of this unit: ten zero Vecs, then the float-conversion doubles.
 const Vec vec3_802fffe0 = { 0.0f, 0.0f, 0.0f };
@@ -380,10 +374,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	btlDispGXInit2DRasta();
 	GXLoadPosMtxImm(cam->view, 0);
 
-	{
-		GXColor color = *(GXColor*)&dat_80421adc;
-		btlDispTexPlane(f31, f27, 0.0f, 1.0f, 1.0f, 0x43, color, 0);
-	}
+	btlDispTexPlane(f31, f27, 0.0f, 1.0f, 1.0f, 0x43, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, 0);
 
 	f26 = 2.0f + (8.0f + f31);
 
@@ -391,20 +382,17 @@ static void actionCommandDisp(f32 x, f32 y) {
 	for (i = 0; i < n; i++) {
 		s32 off = i * 4;
 		if (i != n - 1) {
-			GXColor color = *(GXColor*)&dat_80421ae0;
-			btlDispTexPlane(f26 + (f32)off, f27, 0.0f, 1.0f, 1.0f, 0x44, color, 0);
+			btlDispTexPlane(f26 + (f32)off, f27, 0.0f, 1.0f, 1.0f, 0x44, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, 0);
 		}
 		else {
-			GXColor color = *(GXColor*)&dat_80421ae4;
-			btlDispTexPlane(f26 + (f32)off + (f32)rem, f27, 0.0f, 1.0f, 1.0f, 0x44, color, 0);
+			btlDispTexPlane(f26 + (f32)off + (f32)rem, f27, 0.0f, 1.0f, 1.0f, 0x44, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, 0);
 		}
 	}
 	}
 
 	{
 		f32 t16 = 16.0f + (-288.0f + x);
-		GXColor color = *(GXColor*)&dat_80421ae8;
-		btlDispTexPlane(t16 + (f32)count, f27, 0.0f, -1.0f, 1.0f, 0x43, color, 0);
+		btlDispTexPlane(t16 + (f32)count, f27, 0.0f, -1.0f, 1.0f, 0x43, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, 0);
 	}
 
 	{
@@ -505,8 +493,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				break;
 			}
 			if (icon != 0x45) {
-				GXColor color = *(GXColor*)&dat_80421aec;
-				btlDispTexPlane(f31 + (f32)dec->total * dec->value[i] / 100.f, ty, 0.0f, 1.0f, 1.0f, icon, color, 0);
+				btlDispTexPlane(f31 + (f32)dec->total * dec->value[i] / 100.f, ty, 0.0f, 1.0f, 1.0f, icon, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, 0);
 			}
 		}
 
@@ -519,16 +506,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 			PSMTXTrans(mtx, tx + (f32)dec->total - 60.f, sy, 0.0f);
 			PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
 			PSMTXConcat(mtx, scale, mtx2);
-			iconNumberDispGx(mtx2, number, 0, *(GXColor*)&dat_80421af0);
+			iconNumberDispGx(mtx2, number, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		}
 	}
 }
-
-// Named .sdata2 objects: the six -1 words the display code passes as GXColors. Defined after the code
-// so MWCC emits them ahead of its own literal pool.
-const s32 dat_80421adc = -1;
-const s32 dat_80421ae0 = -1;
-const s32 dat_80421ae4 = -1;
-const s32 dat_80421ae8 = -1;
-const s32 dat_80421aec = -1;
-const s32 dat_80421af0 = -1;

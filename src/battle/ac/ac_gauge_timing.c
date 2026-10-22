@@ -47,11 +47,6 @@ const s32 dat_80421870 = -1;
 #define float_180_804218d0 180.0f
 #define float_270_804218d4 270.0f
 
-// .rodata: 17 separate zero Vecs (not one array), then the compiler's conversion pool. As
-// separate objects they make MWCC anchor the int->float pool entry to the first vec's base.
-const Vec vec3_802ff860 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802ff86c = {0.0f, 0.0f, 0.0f};
-
 // GaugeTiming work area at BattleWork+0x1F4C (inside BattleActions.field_0x2BC). No header declares it.
 typedef struct GaugeTimingWork {
     s32 frame;      // 0x00, frames since the state started
@@ -401,10 +396,10 @@ void battleAcDelete_GaugeTiming(BattleWork* work) {
 
 // 100%. The int->float magic must be MWCC's own anonymous pool entry: do not define
 // `double_to_int_802ff930` in the source, or the compiler emits a second anonymous copy after the
-// named one and the loads move to `0xe0(r28)`. The 17 zero Vecs must be separate objects (the
-// original names each at a 0xc stride): that makes MWCC anchor the pool entry to the first vec and
-// emit the target's `lfd fN, 0xd0(r30)` (with `double_12_802ff938` also left to the pool, which is
-// why battleAcMain compares against the literal 12.0).
+// named one and the loads move to `0xe0(r28)`. After the 17 zero Vec literal templates, MWCC anchors
+// the pool entry to the first template and emits the target's `lfd fN, 0xd0(r30)` (with
+// `double_12_802ff938` also left to the pool, which is why battleAcMain compares against the
+// literal 12.0).
 // The gauge loop's `176 * (100/(count+1) * (i+1)) / 100` is split into `f32 t`/`u` steps that
 // straddle the icon test, which reproduces the target's `fdivs; fmuls; beq; fmuls; fdivs`
 // schedule; separating `u` from `t` keeps the intermediate in the target's f0; naming
@@ -453,7 +448,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         {
             s32 icon =
                 (dec->gauge >= (f32)ac->acParams[3]) ? 0x95 : 0x91;
-            Vec v = vec3_802ff860;
+            Vec v = (Vec){0.0f, 0.0f, 0.0f};
             v.x = float_16_80421880 + (float_176_80421884 + (float_neg288_80421888 + x));
             v.y = float_18_8042188c + y;
             iconDispGx(float_1_80421878, &v, 0x10, icon);
@@ -487,12 +482,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                 icon = (dec->inZone != 0) ? 0x95 : 0x91;
                 u = float_176_80421884 * u;
                 u = u / float_100_80421874;
-#ifdef MUST_MATCH
-                // volatile: stops MWCC hoisting the vec3_802ff86c copy out of the loop (the target reloads it each pass).
-                v = *(volatile Vec*)&vec3_802ff86c;
-#else
-                v = vec3_802ff86c;
-#endif
+                v = (Vec){0.0f, 0.0f, 0.0f};
                 bx = float_neg288_80421888 + x;
                 v.x = bx + u;
                 v.y = float_20_804218a8 + y;

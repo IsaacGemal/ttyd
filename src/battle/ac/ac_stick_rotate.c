@@ -27,28 +27,6 @@ typedef struct StickRotateWork {
     s32 endTimer;      // 0x14, frames the result display waits after the action command
 } StickRotateWork;
 
-// The original emits nine separate zero Vecs into .rodata (vec3_802fd560 ... vec3_802fd5c0), one per
-// `Vec v = {0}` initializer, and reads them from one base register; one array reproduces that.
-#ifdef MUST_MATCH
-#define STICK_VEC_BASE const Vec* vec = vec3_802fd560;
-#define STICK_ZERO_VEC(i) (vec[i])
-const Vec vec3_802fd560[9] = {
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-};
-#else
-#define STICK_VEC_BASE
-#define STICK_ZERO_VEC(i) ((Vec){ 0.0f, 0.0f, 0.0f })
-#endif
-
-
 static void actionCommandDisp(f32 x, f32 y);
 
 s32 _GetInputDir(void) {
@@ -451,19 +429,18 @@ static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
     StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
-    STICK_VEC_BASE
 
     switch (ac->mAcState) {
         case 0x63:
         case 0x64: {
-            Vec v = STICK_ZERO_VEC(0);
+            Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
             v.x = -200.0f + x;
             v.y = 70.0f + y;
             iconDispGx(1.0f, &v, 0x10, 0x79);
             break;
         }
         case 0x3E8: {
-            Vec v = STICK_ZERO_VEC(1);
+            Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
             v.x = -200.0f + x;
             v.y = 70.0f + y;
             iconDispGx(1.0f, &v, 0x10, _get_icon_id(sr->expectDir));
@@ -472,20 +449,20 @@ static void actionCommandDisp(f32 x, f32 y) {
         case 0x3E9:
             if (sr->stepFrames < ac->acParams[4]) {
                 if (sr->steps <= 1) {
-                    Vec v = STICK_ZERO_VEC(2);
+                    Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
                     v.x = -200.0f + x;
                     v.y = 70.0f + y;
                     iconDispGx(1.0f, &v, 0x10,
                                _get_icon_id(sr->expectDir));
                 } else {
-                    Vec v = STICK_ZERO_VEC(3);
+                    Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
                     v.x = -200.0f + x;
                     v.y = 70.0f + y;
                     iconDispGx(1.0f, &v, 0x10,
                                _get_icon_id(sr->prevDir));
                 }
             } else {
-                Vec v = STICK_ZERO_VEC(4);
+                Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
                 v.x = -200.0f + x;
                 v.y = 70.0f + y;
                 iconDispGx(1.0f, &v, 0x10, _get_icon_id(sr->expectDir));
@@ -496,7 +473,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         case 0x3EC:
         case 0x3ED:
         case 0x3EE: {
-            Vec v = STICK_ZERO_VEC(5);
+            Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
             v.x = -200.0f + x;
             v.y = 70.0f + y;
             iconDispGx(1.0f, &v, 0x10, 0x79);
@@ -511,12 +488,11 @@ void actionCommandDisp2(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
     StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
-    STICK_VEC_BASE
 
     switch (ac->mAcState) {
         case 0x63:
         case 0x64: {
-            Vec v = STICK_ZERO_VEC(6);
+            Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
             v.x = -200.0f + x;
             v.y = 70.0f + y;
             iconDispGx(1.0f, &v, 0x10, 0x79);
@@ -546,7 +522,7 @@ void actionCommandDisp2(f32 x, f32 y) {
                     }
                 }
             }
-            v = STICK_ZERO_VEC(7);
+            v = (Vec){ 0.0f, 0.0f, 0.0f };
             v.x = -200.0f + x;
             v.y = 70.0f + y;
             iconDispGx(1.0f, &v, 0x10, _get_icon_id(sr->iconDir));
@@ -557,7 +533,7 @@ void actionCommandDisp2(f32 x, f32 y) {
         case 0x3EC:
         case 0x3ED:
         case 0x3EE: {
-            Vec v = STICK_ZERO_VEC(8);
+            Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
             v.x = -200.0f + x;
             v.y = 70.0f + y;
             iconDispGx(1.0f, &v, 0x10, 0x79);
