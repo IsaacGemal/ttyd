@@ -7,10 +7,6 @@
 #include <dolphin/mtx.h>
 #include "mario/mario.h"
 
-// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor gap_10_8042308C_sbss2;
-__declspec(section ".sdata") GXColor unk_80423088;
 #include <stdlib.h>
 
 // .sdata color tables (original symbols col_r/col_g/col_b at 0x80412D28-0x80412D33).
@@ -224,17 +220,6 @@ void effWhirlwindMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos2), 2, effWhirlwindDisp, effect);
 }
 
-// TEV colour setup for one particle; kept as an inline so the 4-byte colour scratch lands in the
-// low stack slot the original uses (same idiom as eff_bush_n64's bushSetColor).
-static inline void whirlwindSetColor(u8 r, u8 g, u8 b, u8 a) {
-	GXColor color = unk_80423088;
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
 void effWhirlwindDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -301,7 +286,7 @@ void effWhirlwindDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(trans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 
-		whirlwindSetColor(data->tevReg0R, data->tevReg0G, data->tevReg0B, alpha);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ data->tevReg0R, data->tevReg0G, data->tevReg0B, alpha });
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x48);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 		tri2(4, 5, 1, 0, 4, 1, 0, 0);

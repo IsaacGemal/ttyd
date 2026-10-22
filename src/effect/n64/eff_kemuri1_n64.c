@@ -8,12 +8,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2 zero GXColor scratch the material colours are built from. The pragma pairs the default .sbss2
-// with a small-data section so the object lands where the original's does.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423168;
-#pragma section ".sdata" ".sbss"
-
 typedef struct effKemuri1Data {
 	u16 type; //0x0
 	u8 align_2[2]; //0x2, TODO: verify align
@@ -327,7 +321,7 @@ void effKemuri1Main(EffectEntry* effect) {
 // its outgoing copy (0x8/0xc and 0x10), so the TEV colour's by-value temp lands at 0x14 as the
 // original's does (the plain `GXColor color` local would take 0x14 instead). Same shape as eff_kemuri8.
 static inline void kemuri1SetChanMatColorB(u8 r, u8 g, u8 b) {
-	GXColor c = unk_80423168;
+	GXColor c = { 0, 0, 0, 0 };
 	c.r = r;
 	c.g = g;
 	c.b = b;

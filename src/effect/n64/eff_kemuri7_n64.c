@@ -17,7 +17,6 @@ u32 foot_vtx[14] = {
 };
 
 // .sdata2 constants (defined by this unit in the original).
-extern const u32 dat_8041f3e8;
 extern const f32 float_0p03125_8041f3ec;
 extern const f32 float_0_8041f3f0;
 extern const f32 float_neg1_8041f3f4;
@@ -28,14 +27,6 @@ extern const f32 float_15_8041f404;
 extern const f32 float_180_8041f408;
 
 // .data vertex array defined by this unit.
-
-// Build the TEV register colour as the original does; the inline keeps the GXColor
-// local at r1+0x8 with its outgoing copy at r1+0xc.
-static inline void kemuri7SetColor(u8 alpha) {
-    GXColor color = *(GXColor*)&dat_8041f3e8;
-    color.a = alpha;
-    GXSetTevColor(1, color);
-}
 
 typedef struct effKemuri7Data {
     s32 active;                  // 0x0: cleared once the puff expires
@@ -188,7 +179,7 @@ void effKemuri7Disp(CameraId camId, void* param) {
         if (data->active == 0) {
             continue;
         }
-        kemuri7SetColor(data->alpha);
+        GXSetTevColor(1, (GXColor){ 0x70, 0x60, 0x18, data->alpha });
         PSMTXConcat(cam->view, data->matrix, work);
         if (data->direction == float_0_8041f3f0) {
             PSMTXScale(scale, float_neg1_8041f3f4, float_1_8041f3f8, float_1_8041f3f8);
@@ -201,7 +192,6 @@ void effKemuri7Disp(CameraId camId, void* param) {
 }
 
 // The pool constants, defined after the code that loads them (defined before, the compiler folds them).
-const u32 dat_8041f3e8 = 0x70601800;
 const f32 float_0p03125_8041f3ec = 0.03125f;
 const f32 float_0_8041f3f0 = 0.0f;
 const f32 float_neg1_8041f3f4 = -1.0f;
