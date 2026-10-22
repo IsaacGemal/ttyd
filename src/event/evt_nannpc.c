@@ -160,7 +160,6 @@ static inline BOOL nannpcHitWall(NanNpcEntry* entry, f32 vlen, Vec pos, Vec dir)
 }
 
 static inline void nannpcMoveEntry(NanNpcEntry* entry) {
-    f32 zero = 0.0f;
     f32 vlen;
     Vec pos;
     Vec velNorm;
@@ -169,7 +168,7 @@ static inline void nannpcMoveEntry(NanNpcEntry* entry) {
         return;
     }
     vlen = PSVECMag(&entry->velocity);
-    if (vlen == zero) {
+    if (!vlen) {
         return;
     }
     if (vlen > 10.0f) {
@@ -494,14 +493,14 @@ USER_FUNC(evt_nannpc_set_subfunc) {
     return EVT_RETURN_DONE;
 }
 
-// The explicit `offset` induction variable (a named form of the strength reduction `&work->entries[i]`
+// MUST_MATCH: the explicit `offset` induction variable (a named form of the strength reduction `&work->entries[i]`
 // produces) plus this declaration order reproduces the original's callee-saved colouring (work=r23,
 // offset=r26, name=r27; i/id/entry/poses/vec all match). The mask stays on `name`; writing it on `id`
 // compiles but lands the mask in the wrong register.
 USER_FUNC(evt_nannpc_entry) {
     const char* name;
-    s32 offset;
 #ifdef MUST_MATCH
+    s32 offset;
     // MUST_MATCH: the 64-bit id leaves a dead sign word (`srawi`) after evtGetValue that the backend
     // only deletes after scheduling; it holds the hoisted `id & 0x80000000` mask behind `li offset`
     // in the loop preheader, as in the original. As an s32 the mask is scheduled between the two `li`s.
@@ -520,15 +519,23 @@ USER_FUNC(evt_nannpc_entry) {
     id = evtGetValue(event, args[0]);
     work = nanNPCWork;
 
+#ifdef MUST_MATCH
     for (i = 0, offset = 0; i < work->count; offset += sizeof(NanNpcEntry), i++) {
         entry = (NanNpcEntry*)((u8*)work->entries + offset);
+#else
+    for (i = 0; i < work->count; i++) {
+        entry = &work->entries[i];
+#endif
         name = (const char*)id;
 
         if (!((s32)name & 0x80000000)) {
             sprintf(makestring, "%06x", (s32)name);
             name = makestring;
         }
-        (void)strcmp(entry->name, name);
+#ifdef MUST_MATCH
+        // The original calls strcmp here and discards the result.
+        strcmp(entry->name, name);
+#endif
         if (entry->pose != NULL) {
             continue;
         }
