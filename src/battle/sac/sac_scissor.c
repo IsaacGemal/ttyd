@@ -116,15 +116,10 @@ ScissorWork* GetScissorPtr(void) {
     return (ScissorWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: calling fabs through a helper makes MWCC evaluate the second argument
-// first, so the original's |dy|-before-|dx| schedule comes out.
-static inline f32 scissor_abs(f32 x) {
+// fabsf as the SDK defines it (fake_tgmath.h); math_ext.h only declares it.
+extern inline float fabsf(float x) {
     return __fabsf(x);
 }
-#else
-#define scissor_abs(x) __fabs(x)
-#endif
 
 s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
     f32 d1x, d1y, d2x, d2y;
@@ -176,9 +171,9 @@ s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx,
     if (type1 == 0 && type2 == 0) {
         f32 m1, m2, den;
 
-        if (scissor_abs(d1x) > scissor_abs(d1y)) {
+        if (fabsf(d1x) > fabsf(d1y)) {
             m1 = d1y / d1x;
-            if (scissor_abs(d2x) > scissor_abs(d2y)) {
+            if (fabsf(d2x) > fabsf(d2y)) {
                 m2 = d2y / d2x;
                 if (m1 - m2 != 0.0f) {
                     den = m1 - m2;
@@ -199,7 +194,7 @@ s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx,
             }
         } else {
             m1 = d1x / d1y;
-            if (scissor_abs(d2x) > scissor_abs(d2y)) {
+            if (fabsf(d2x) > fabsf(d2y)) {
                 m2 = d2y / d2x;
                 if (m1 * m2 != 1.0f) {
                     den = 1.0f - m1 * m2;

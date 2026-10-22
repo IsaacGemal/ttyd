@@ -403,21 +403,6 @@ s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, 
     return 0;
 }
 
-// MUST_MATCH: MWCC emits the original's inline 6-iteration copy loop only when `points` is copied
-// from a named 48-byte template. A `ZubaStarPoints4` local initializer (or an unused file-scope one)
-// makes this compiler loop forever, and copying from the extern dat_802ff6d4 makes it form that
-// symbol's address with lis/addi instead of the original's single `addi r4, r29, 0x68`. A local
-// `static const Vec[4]` (not `ZubaStarPoints4`, which hangs) gives the r29-relative copy. The
-// natural form is under #else.
-#ifdef MUST_MATCH
-static const Vec zubastar_points_init[4] = {
-    { 0.0f, 240.0f, 0.0f },
-    { 304.0f, 240.0f, 0.0f },
-    { 304.0f, -240.0f, 0.0f },
-    { 0.0f, -240.0f, 0.0f },
-};
-#endif
-
 // .text:0x85C | 0x8022F128 | size: 0xDF8
 // Reconstruction of the SAC mini-game's main event callback. There are three state machines, each a
 // switch on work->phase, work->sequence and work->gaugePhase. Case 0x19 of the first
@@ -425,16 +410,12 @@ static const Vec zubastar_points_init[4] = {
 // split point in it before calling zubastar_bunkatu.
 s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
-#ifdef MUST_MATCH
-    ZubaStarPoints4 points = *(const ZubaStarPoints4*)zubastar_points_init;
-#else
     Vec points[4] = {
         { 0.0f, 240.0f, 0.0f },
         { 304.0f, 240.0f, 0.0f },
         { 304.0f, -240.0f, 0.0f },
         { 0.0f, -240.0f, 0.0f },
     };
-#endif
     s32 audienceNum = BattleAudience_GetAudienceNum();
     s32 i;
     s32 j;
@@ -442,19 +423,11 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     (void)event;
     if (isFirstCall) {
         work->tex = smartAlloc(GXGetTexBufferSize(0x190, 0x1E0, 4, 0, 0), 1);
-#ifdef MUST_MATCH
-        points.v[0] = (Vec){ -96.0f, 240.0f, 0.0f };
-        points.v[1] = (Vec){ 304.0f, 240.0f, 0.0f };
-        points.v[2] = (Vec){ 304.0f, -240.0f, 0.0f };
-        points.v[3] = (Vec){ -96.0f, -240.0f, 0.0f };
-        zubastar_create_takaku(4, points.v);
-#else
         points[0] = (Vec){ -96.0f, 240.0f, 0.0f };
         points[1] = (Vec){ 304.0f, 240.0f, 0.0f };
         points[2] = (Vec){ 304.0f, -240.0f, 0.0f };
         points[3] = (Vec){ -96.0f, -240.0f, 0.0f };
         zubastar_create_takaku(4, points);
-#endif
         work->cursor = (Vec){ 0.0f, -1000.0f, 0.0f };
     }
 

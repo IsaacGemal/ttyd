@@ -116,10 +116,9 @@ typedef struct GuardFrames {
 #ifdef MUST_MATCH
 // The tables are const in retail, but the compiler only keeps retail's direct-symbol `lwzu` reads
 // when the globals are declared non-const; an unqualified `const` turns them into `@sda21` accesses.
-// `volatile` on the first table stops CSE from reusing the base register for the loaded word.
-extern volatile GuardFrames N_normal_guard_frames[];
+extern GuardFrames N_normal_guard_frames[];
 extern GuardFrames N_superguard_frames[];
-__declspec(section ".rodata") volatile GuardFrames N_normal_guard_frames[1] = {
+__declspec(section ".rodata") GuardFrames N_normal_guard_frames[1] = {
 	{ 0x0A, 0x09, 0x08, 0x08, 0x07, 0x06, 0x05 }
 };
 __declspec(section ".rodata") GuardFrames N_superguard_frames[1] = {
@@ -132,10 +131,6 @@ const GuardFrames N_normal_guard_frames[1] = { { 0x0A, 0x09, 0x08, 0x08, 0x07, 0
 const GuardFrames N_superguard_frames[1] = { { 0x05, 0x04, 0x03, 0x03, 0x02, 0x01, 0x01 } };
 #endif
 
-// Every instruction matches. The two guard-frame tables are independent global copies, so the
-// scheduler is free to emit them in either order; the redundant pointer cast below pins the normal
-// table's `lwzu` ahead of the super table's, matching retail. It changes load order only, so it is
-// kept under MUST_MATCH with the plain element read in the natural build.
 s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	BattleWork* work = _battleWorkPointer;
 	BattleWorkPad* pad = &work->actionCommands.pad;
@@ -150,11 +145,7 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	s32 normalFrames;
 	s32 trigger;
 
-#ifdef MUST_MATCH
-	normal = *(GuardFrames*)&N_normal_guard_frames[0];
-#else
 	normal = N_normal_guard_frames[0];
-#endif
 	super = N_superguard_frames[0];
 	work->actionCommands.mDefenseResult = 0;
 
