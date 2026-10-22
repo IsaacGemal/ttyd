@@ -49,15 +49,14 @@ __declspec(section ".sdata") u32 gap_07_80415C34_sdata[3] = { 0 };
 #pragma explicit_zero_data reset
 
 // .data
-static s32 evt_shake[] = {
-	EVT_CMD(2, OPCODE_IF_EQUAL), 0xFE363C81, 0x00000000,
-	EVT_CMD(5, OPCODE_USER_FUNC), (s32)evt_cam_shake, 0x00000005, FLOAT(0.009765625f), FLOAT(0.009765625f), 0x00000032,
-	EVT_CMD(0, OPCODE_ELSE),
-	EVT_CMD(5, OPCODE_USER_FUNC), (s32)evt_cam_shake, 0x00000005, FLOAT(0.01953125f), FLOAT(0.01953125f), 0x00000064,
-	EVT_CMD(0, OPCODE_END_IF),
-	EVT_CMD(0, OPCODE_END_EVENT),
-	OPCODE_END_SCRIPT
-};
+static EVT_BEGIN(evt_shake)
+    IF_INT_EQUAL(LW(1), 0)
+        CALL(evt_cam_shake, 5, FLOAT(0.01f), FLOAT(0.01f), 50)
+    ELSE
+        CALL(evt_cam_shake, 5, FLOAT(0.02f), FLOAT(0.02f), 100)
+    END_IF
+    RETURN
+EVT_END()
 
 // The .data trailing 12 zero bytes (target gap_05_803ADD14_data), same recipe as above.
 #pragma explicit_zero_data on

@@ -1567,155 +1567,160 @@ USER_FUNC(recover_cmd_disable) {
 
 
 
-// TODO: type
-s32 genki_evt_common[345] = {
-    0x0003005B, (s32)(void*)btlevtcmd_GetUnitId, 0xFFFFFFFC, 0xFE363C8D,
-    0x0003005B, (s32)(void*)btlevtcmd_GetBodyId, 0xFE363C8D, 0xFE363C8E,
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C8D, 0x0000001B,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x00020032, 0xFE363C8D, 0xFFFFFFFF, 0x00000021,
-    0x0001005B, (s32)(void*)btlevtcmd_reset_move_color_lv_all, 0x0002005B, (s32)(void*)btlevtcmd_CommandPayWeaponCost,
-    0xFFFFFFFE, 0x0000006E, 0x0003005B, (s32)(void*)main_genki,
-    0xFE363C8D, 0xFE363C8F, 0x00000070, 0x0001005E,
-    (s32)(void*)sac_start_camera_evt, 0x0001000A, 0x000001F4, 0x0001005B,
-    (s32)(void*)sac_enemy_slide_go, 0x0006005B, (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE,
-    (s32)(void*)"SFX_BTL_SAC_START1", 0xF1194D80, 0x00000000, 0xF1194D80,
-    0x0001005E, (s32)(void*)sac_mario_item_on_evt, 0x0001000A, 0x000001F4,
-    0x0006005B, (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)"SFX_BTL_SAC_START2",
-    0xF1194D80, 0x00000000, 0xFE363C8B, 0x00020018,
-    0xFE363C8F, 0x00000000, 0x0001005B, (s32)(void*)star_appear,
-    0x00000020, 0x0001005B, (s32)(void*)star_stone_appear, 0x00000021,
-    0x0000006E, 0x0001005E, (s32)(void*)sac_start_stardust, 0x00000070,
-    0x00010009, 0x00000064, 0x0006005B, (s32)(void*)btlevtcmd_snd_se,
-    0xFFFFFFFE, (s32)(void*)"SFX_BTL_SAC_HEART_SHOOT1", 0xF1194D80, 0x00000000,
-    0xFE363C8A, 0x0002005B, (s32)(void*)evt_snd_sfxoff, 0xFE363C8B,
-    0x0003005B, (s32)(void*)evt_btl_camera_set_mode, 0x00000000, 0x00000000,
-    0x00010009, 0x00000028, 0x0001005E, (s32)(void*)sac_mario_item_on_end_evt,
-    0x0004005B, (s32)(void*)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE, 0x00000001,
-    0x0000002A, 0x0003005B, (s32)(void*)btlevtcmd_SetMoveSpeed, 0xFFFFFFFE,
-    0xF24A8680, 0x0005005B, (s32)(void*)btlevtcmd_GetPos, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0008005B,
-    (s32)(void*)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFFFFFFB5, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x0004005B, (s32)(void*)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001,
-    (s32)(void*)str_80421D3C, 0x00010009, 0x00000028, 0x0002005B,
-    (s32)(void*)evt_snd_sfxoff, 0xFE363C8A, 0x0001005B, (s32)(void*)sac_ac_help_on,
-    0x0001005B, (s32)(void*)start_game, 0x0001005B, (s32)(void*)wait_game_end,
-    0x0001005B, (s32)(void*)sac_ac_help_off, 0x0004005B, (s32)(void*)get_score,
-    0xFE363C8A, 0xFE363C8B, 0xFE363C8C, 0x00010009,
-    0x00000046, 0x0004005B, (s32)(void*)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE,
-    0x00000001, 0x0000002A, 0x0005005B, (s32)(void*)btlevtcmd_GetHomePos,
-    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0003005B, (s32)(void*)btlevtcmd_SetMoveSpeed, 0xFFFFFFFE, 0xF24A8680,
-    0x0008005B, (s32)(void*)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0x0004005B, (s32)(void*)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE,
-    0x00000001, 0x00000028, 0x0001005B, (s32)(void*)status_on,
-    0x0003005B, (s32)(void*)evt_btl_camera_set_mode, 0x00000000, 0x00000007,
-    0x0004005B, (s32)(void*)evt_btl_camera_set_homing_unit, 0x00000000, 0xFFFFFFFE,
-    0xFFFFFFFF, 0x0003005B, (s32)(void*)evt_btl_camera_set_zoom, 0x00000000,
-    0x000000C8, 0x0003005B, (s32)(void*)evt_btl_camera_set_moveSpeedLv, 0x00000000,
-    0x00000002, 0x0003005B, (s32)(void*)evt_btl_camera_set_zoomSpeedLv, 0x00000000,
-    0x00000002, 0x00020032, 0xFE363C8F, 0xFE363C8A,
-    0x00020035, 0xFE363C8F, 0xFE363C8B, 0x00020035,
-    0xFE363C8F, 0xFE363C8C, 0x0002001D, 0xFE363C8F,
-    0x00000001, 0x0001005B, (s32)(void*)sac_wao, 0x00000021,
-    0x00020019, 0xFE363C8D, 0xFFFFFFFF, 0x0003005B,
-    (s32)(void*)evt_snd_sfxon, (s32)(void*)"SFX_HP_RECOVER_SHINE2", 0x00000000, 0x00020032,
-    0xFE363C89, 0xFFFFFFFE, 0x0001005E, (s32)(void*)status_recover_evt,
-    0x0004005B, (s32)(void*)btlevtcmd_RecoverHp, 0xFFFFFFFE, 0x00000001,
-    0xFE363C8A, 0x0005005B, (s32)(void*)btlevtcmd_GetPos, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000F005B,
-    (s32)(void*)evt_eff, (s32)(void*)&float_0_80421d44, (s32)(void*)"stardust", 0x00000002,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
-    0x00000032, 0x00000032, 0x00000064, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00020032,
-    0xFE363C89, 0xFE363C8D, 0x0001005E, (s32)(void*)status_recover_evt,
-    0x0002005B, (s32)(void*)btlevtcmd_StartWaitEvent, 0xFE363C8D, 0x0004005B,
-    (s32)(void*)btlevtcmd_RecoverHp, 0xFE363C8D, 0xFE363C8E, 0xFE363C8B,
-    0x0005005B, (s32)(void*)btlevtcmd_GetPos, 0xFE363C8D, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000F005B, (s32)(void*)evt_eff,
-    (s32)(void*)&float_0_80421d44, (s32)(void*)"stardust", 0x00000002, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000032, 0x00000032,
-    0x00000032, 0x00000064, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0004005B, (s32)(void*)btlevtcmd_RecoverFp,
-    0xFFFFFFFE, 0x00000001, 0xFE363C8C, 0x00000020,
-    0x0003005B, (s32)(void*)evt_snd_sfxon, (s32)(void*)"SFX_HP_RECOVER_SHINE2", 0x00000000,
-    0x00020032, 0xFE363C89, 0xFFFFFFFE, 0x0001005E,
-    (s32)(void*)status_recover_evt, 0x0004005B, (s32)(void*)btlevtcmd_RecoverHp, 0xFFFFFFFE,
-    0x00000001, 0xFE363C8A, 0x0005005B, (s32)(void*)btlevtcmd_GetPos,
-    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000F005B, (s32)(void*)evt_eff, (s32)(void*)&float_0_80421d44, (s32)(void*)"stardust",
-    0x00000002, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000032, 0x00000032, 0x00000032, 0x00000064,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0004005B, (s32)(void*)btlevtcmd_RecoverFp, 0xFFFFFFFE, 0x00000001,
-    0xFE363C8C, 0x00000021, 0x0001000A, 0x000003E8,
-    0x0001005B, (s32)(void*)sac_enemy_slide_return, 0x0001000A, 0x000003E8,
-    0x0003005B, (s32)(void*)evt_btl_camera_set_mode, 0x00000000, 0x00000000,
-    0x0001000A, 0x000003E8, 0x0001005B, (s32)(void*)end_genki,
-    0x0002005B, (s32)(void*)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(genki_evt_common)
+    CALL(btlevtcmd_GetUnitId, -4, LW(13))
+    CALL(btlevtcmd_GetBodyId, LW(13), LW(14))
+    CALL(btlevtcmd_CheckStatus, LW(13), 27, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        SET_VALUE(LW(13), -1)
+    END_IF
+    CALL(btlevtcmd_reset_move_color_lv_all)
+    CALL(btlevtcmd_CommandPayWeaponCost, -2)
+    BEGIN_SIBLING_EVENT
+        CALL(main_genki, LW(13), LW(15))
+    END_SIBLING_EVENT
+    CALL_CHILD(sac_start_camera_evt)
+    WAIT_MS(500)
+    CALL(sac_enemy_slide_go)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL_CHILD(sac_mario_item_on_evt)
+    WAIT_MS(500)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START2"), EVTDAT_POINTER_MAX, 0, LW(11))
+    IF_INT_EQUAL(LW(15), 0)
+        CALL(star_appear)
+    ELSE
+        CALL(star_stone_appear)
+    END_IF
+    BEGIN_SIBLING_EVENT
+        CALL_CHILD(sac_start_stardust)
+    END_SIBLING_EVENT
+    WAIT_FRAMES(100)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_HEART_SHOOT1"), EVTDAT_POINTER_MAX, 0, LW(10))
+    CALL(evt_snd_sfxoff, LW(11))
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    WAIT_FRAMES(40)
+    CALL_CHILD(sac_mario_item_on_end_evt)
+    CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 42)
+    CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(3.0f))
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_MovePosition, -2, -75, LW(1), LW(2), 0, -1, 0)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, PTR((void*)str_80421D3C))
+    WAIT_FRAMES(40)
+    CALL(evt_snd_sfxoff, LW(10))
+    CALL(sac_ac_help_on)
+    CALL(start_game)
+    CALL(wait_game_end)
+    CALL(sac_ac_help_off)
+    CALL(get_score, LW(10), LW(11), LW(12))
+    WAIT_FRAMES(70)
+    CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 42)
+    CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(3.0f))
+    CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
+    CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 40)
+    CALL(status_on)
+    CALL(evt_btl_camera_set_mode, 0, 7)
+    CALL(evt_btl_camera_set_homing_unit, 0, -2, -1)
+    CALL(evt_btl_camera_set_zoom, 0, 200)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
+    CALL(evt_btl_camera_set_zoomSpeedLv, 0, 2)
+    SET_VALUE(LW(15), LW(10))
+    ADD(LW(15), LW(11))
+    ADD(LW(15), LW(12))
+    IF_INT_GREATER_OR_EQUAL(LW(15), 1)
+        CALL(sac_wao)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(13), -1)
+        CALL(evt_snd_sfxon, STRING("SFX_HP_RECOVER_SHINE2"), 0)
+        SET_VALUE(LW(9), -2)
+        CALL_CHILD(status_recover_evt)
+        CALL(btlevtcmd_RecoverHp, -2, 1, LW(10))
+        CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+        CALL(evt_eff, PTR((void*)&float_0_80421d44), STRING("stardust"), 2, LW(0), LW(1), LW(2), 50, 50, 50, 100, 0, 0, 0, 0)
+        SET_VALUE(LW(9), LW(13))
+        CALL_CHILD(status_recover_evt)
+        CALL(btlevtcmd_StartWaitEvent, LW(13))
+        CALL(btlevtcmd_RecoverHp, LW(13), LW(14), LW(11))
+        CALL(btlevtcmd_GetPos, LW(13), LW(0), LW(1), LW(2))
+        CALL(evt_eff, PTR((void*)&float_0_80421d44), STRING("stardust"), 2, LW(0), LW(1), LW(2), 50, 50, 50, 100, 0, 0, 0, 0)
+        CALL(btlevtcmd_RecoverFp, -2, 1, LW(12))
+    ELSE
+        CALL(evt_snd_sfxon, STRING("SFX_HP_RECOVER_SHINE2"), 0)
+        SET_VALUE(LW(9), -2)
+        CALL_CHILD(status_recover_evt)
+        CALL(btlevtcmd_RecoverHp, -2, 1, LW(10))
+        CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+        CALL(evt_eff, PTR((void*)&float_0_80421d44), STRING("stardust"), 2, LW(0), LW(1), LW(2), 50, 50, 50, 100, 0, 0, 0, 0)
+        CALL(btlevtcmd_RecoverFp, -2, 1, LW(12))
+    END_IF
+    WAIT_MS(1000)
+    CALL(sac_enemy_slide_return)
+    WAIT_MS(1000)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    WAIT_MS(1000)
+    CALL(end_genki)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 status_recover_evt[180] = {
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000001,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000021,
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000002,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x00000021,
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000003,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000003,
-    0x00000000, 0x00000000, 0x00000000, 0x00000021,
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000004,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000021,
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000005,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000005,
-    0x00000000, 0x00000000, 0x00000000, 0x00000021,
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000008,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000008,
-    0x00000000, 0x00000000, 0x00000000, 0x00000021,
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000009,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000009,
-    0x00000000, 0x00000000, 0x00000000, 0x00000021,
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x0000000D,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x0000000D,
-    0x00000000, 0x00000000, 0x00000000, 0x00000021,
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x0000000B,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x0000000B,
-    0x00000000, 0x00000000, 0x00000000, 0x00000021,
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x0000000F,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x0000000F,
-    0x00000000, 0x00000000, 0x00000000, 0x00000021,
-    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000014,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000014,
-    0x00000000, 0x00000000, 0x00000000, 0x00000021,
-    0x0001005B, (s32)(void*)recover_cmd_disable, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(status_recover_evt)
+    CALL(btlevtcmd_CheckStatus, LW(9), 1, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OnOffStatus, LW(9), 1, 0, 0, 0)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(9), 2, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OnOffStatus, LW(9), 2, 0, 0, 0)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(9), 3, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OnOffStatus, LW(9), 3, 0, 0, 0)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(9), 4, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OnOffStatus, LW(9), 4, 0, 0, 0)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(9), 5, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OnOffStatus, LW(9), 5, 0, 0, 0)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(9), 8, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OnOffStatus, LW(9), 8, 0, 0, 0)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(9), 9, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OnOffStatus, LW(9), 9, 0, 0, 0)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(9), 13, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OnOffStatus, LW(9), 13, 0, 0, 0)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(9), 11, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OnOffStatus, LW(9), 11, 0, 0, 0)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(9), 15, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OnOffStatus, LW(9), 15, 0, 0, 0)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(9), 20, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OnOffStatus, LW(9), 20, 0, 0, 0)
+    END_IF
+    CALL(recover_cmd_disable)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 marioAttackEvent_Genki0[7] = {
-    0x00020032, 0xFE363C8F, 0x00000000, 0x0001005E,
-    (s32)(void*)genki_evt_common, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(marioAttackEvent_Genki0)
+    SET_VALUE(LW(15), 0)
+    CALL_CHILD(genki_evt_common)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 marioAttackEvent_Genki1[7] = {
-    0x00020032, 0xFE363C8F, 0x00000001, 0x0001005E,
-    (s32)(void*)genki_evt_common, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(marioAttackEvent_Genki1)
+    SET_VALUE(LW(15), 1)
+    CALL_CHILD(genki_evt_common)
+    RETURN
+EVT_END()
 

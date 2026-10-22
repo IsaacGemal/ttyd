@@ -112,21 +112,23 @@ static HitDamageReturn dmgReturnPt[2] = {
     {NULL, 0.0f, 0.0f, 0.0f},
 };
 
-// This is an event script, but its terminator is END_SCRIPT then END_EVENT (0x1, 0x2);
-// EVT_END() only emits END_SCRIPT, so it is kept as a raw array to preserve the bytes.
-static u32 hikaru_yuka_init[48] = {
-    0x0001005E, (u32)&hikaru_off, 0x0005005B, (u32)evt_hitobj_attr_onoff,
-    0x00000001, 0x00000001, (u32)"A_no1", 0x00000800,
-    0x0009005B, (u32)evt_mobj_itembox, (u32)"box", 0xFFFFFF01,
-    0x0000000A, 0xFFFFFFF6, 0x00000002, 0x00000000,
-    (u32)&evt_box, 0xF8406BD2, 0x0002005B, (u32)evt_hit_damage_return_set,
-    (u32)&dmgReturnPt, 0x0000006B, 0x0001005B, (u32)&ride_chk,
-    0x0000006D, 0x0000006B, 0x0001005B, (u32)&thunder_main,
-    0x0000006D, 0x0005005B, (u32)evt_mapobj_flag_onoff, 0x00000001,
-    0x00000000, (u32)"yukayu1", 0x00000001, 0x0005005B,
-    (u32)evt_mapobj_flag_onoff, 0x00000001, 0x00000001, (u32)"yukayu2",
-    0x00000001, 0x0004005B, (u32)evt_map_playanim, (u32)"denyuka",
-    0x00000001, 0x00000000, 0x00000001, 0x00000002,
+// The original has an END_EVENT word after its END_SCRIPT, so the array is closed by hand.
+static EVT_BEGIN(hikaru_yuka_init)
+    CALL_CHILD(hikaru_off)
+    CALL(evt_hitobj_attr_onoff, 1, 1, STRING("A_no1"), 2048)
+    CALL(evt_mobj_itembox, STRING("box"), -255, 10, -10, 2, 0, PTR(evt_box), GSWF(4178))
+    CALL(evt_hit_damage_return_set, PTR(dmgReturnPt))
+    BEGIN_INLINE_EVENT
+        CALL(ride_chk)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(thunder_main)
+    END_INLINE_EVENT
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("yukayu1"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yukayu2"), 1)
+    CALL(evt_map_playanim, STRING("denyuka"), 1, 0)
+    OPCODE_END_SCRIPT,
+    RETURN
 };
 
 EVT_BEGIN(aji_05_init_evt)

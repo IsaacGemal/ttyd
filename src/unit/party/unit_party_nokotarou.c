@@ -65,7 +65,7 @@ s32 partyNokotarouAttack_TsuranukiKoura[931];
 s32 nokotarou_appeal_event[34];
 static s32 party_win_reaction[16];
 static s32 attack_audience_event[263];
-u32 unk_evt_80390b30[16];
+s32 unk_evt_80390b30[16];
 static BattleUnitDefense defence;
 static BattleUnitDefenseAttr defence_attr;
 static BattleUnitDefense defence_turn;
@@ -2046,13 +2046,12 @@ static EVT_BEGIN(attack_audience_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 unk_evt_80390b30[16] = {
-    0x0004005B, (u32)btlevtcmd_SetPartsDefenceTable, 0xFE363C8A, 0xFE363C8B,
-    (u32)&defence, 0x0003005B, (u32)btlevtcmd_OffStatusFlag, 0xFE363C8A,
-    0x00000001, 0x0004005B, (u32)btlevtcmd_AnimeSetPoseTable, 0xFE363C8A,
-    0xFE363C8B, (u32)&pose_table_nokotarou_stay, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(unk_evt_80390b30)
+    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(&defence))
+    CALL(btlevtcmd_OffStatusFlag, LW(10), 1)
+    CALL(btlevtcmd_AnimeSetPoseTable, LW(10), LW(11), PTR(pose_table_nokotarou_stay))
+    RETURN
+EVT_END()
 
 static BattleUnitDefense defence = { { 1, 1, 1, 1, 1 } };
 

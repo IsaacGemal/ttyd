@@ -45,7 +45,12 @@ __declspec(section ".sdata") u32 gap_07_804117E4_sdata[7] = {0};
 static u32 inta_tex[8] = {0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000};
 
 //.sdata (local to this file in the original)
-static u32 screen_evt[7] = {0x0000006B, 0x0002005B, (u32)screen_evt_func, 0xFE363C80, 0x0000006D, 0x00000002, 0x00000001};
+static EVT_BEGIN(screen_evt)
+    BEGIN_INLINE_EVENT
+        CALL(screen_evt_func, LW(0))
+    END_INLINE_EVENT
+    RETURN
+EVT_END()
 
 //.sdata: the trailing zero word of the section
 #pragma explicit_zero_data on

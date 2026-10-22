@@ -261,40 +261,38 @@ __declspec(section ".data") s32 btlataudevtDummy[] = {
     0x00000000,
 };
 
-s32 btlataudevtDummyBody[] = {
-    0x0005005B, (s32)_get_attack_aud_no, 0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0003005B, (s32)_attack_aud, 0xFE363C83,
-    0x00000000,
-    0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE,
-    0x00000002, 0x00000001,
-};
+EVT_BEGIN(btlataudevtDummyBody)
+    CALL(_get_attack_aud_no, LW(3), LW(0), LW(1), LW(2))
+    CALL(_attack_aud, LW(3), 0)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
-s32 btlataudevtPresentItem_Damage[] = {
-    0x0002005B, (s32)_delete_present_item, 0xFE363C80,
-    0x0001006C, 0xFE363C8F,
-    0x0002005B, (s32)_damage, 0xFE363C80,
-    0x0000006D,
-    0x0002005B, (s32)btlevtcmd_WaitEventEnd, 0xFE363C8F,
-    0x00000002, 0x00000001,
-};
+EVT_BEGIN(btlataudevtPresentItem_Damage)
+    CALL(_delete_present_item, LW(0))
+    BEGIN_INLINE_EVENT_GET_ID(LW(15))
+        CALL(_damage, LW(0))
+    END_INLINE_EVENT
+    CALL(btlevtcmd_WaitEventEnd, LW(15))
+    RETURN
+EVT_END()
 
-s32 btlataudevtPresentItem_Get[] = {
-    0x0002005B, (s32)_get_present_target_id, 0xFE363C83,
-    0x0002005B, (s32)btlevtcmd_StopWaitEvent, 0xFFFFFFFE,
-    0x0003005B, (s32)btlevtcmd_GetUnitId, 0xFFFFFFFE, 0xFE363C80,
-    0x00020019, 0xFE363C80, 0xFE363C83,
-    0x0002005B, (s32)btlevtcmd_StopWaitEvent, 0xFE363C83,
-    0x00000021,
-    0x0001005B, (s32)_get_present_item,
-    0x0003005B, (s32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84,
-    0x0004005B, (s32)btlevtcmd_AnimeChangePoseType, 0xFE363C83, 0xFE363C84,
-    0x00000034,
-    0x0001005B, (s32)_get_item_announce,
-    0x0002005B, (s32)_delete_present_item, 0xF1194D80,
-    0x0003005B, (s32)btlevtcmd_GetUnitId, 0xFFFFFFFE, 0xFE363C80,
-    0x00020019, 0xFE363C80, 0xFE363C83,
-    0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFE363C83,
-    0x00000021,
-    0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE,
-    0x00000002, 0x00000001,
-};
+EVT_BEGIN(btlataudevtPresentItem_Get)
+    CALL(_get_present_target_id, LW(3))
+    CALL(btlevtcmd_StopWaitEvent, -2)
+    CALL(btlevtcmd_GetUnitId, -2, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), LW(3))
+        CALL(btlevtcmd_StopWaitEvent, LW(3))
+    END_IF
+    CALL(_get_present_item)
+    CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+    CALL(btlevtcmd_AnimeChangePoseType, LW(3), LW(4), 52)
+    CALL(_get_item_announce)
+    CALL(_delete_present_item, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_GetUnitId, -2, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), LW(3))
+        CALL(btlevtcmd_StartWaitEvent, LW(3))
+    END_IF
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()

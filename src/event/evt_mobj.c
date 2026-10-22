@@ -125,10 +125,11 @@ __declspec(section ".rodata") Vec mobj_vec3_802c3dc8_template[1] = {{0.0f, 0.0f,
 // vec3_802c3dd4: placeholder for the object the code copies (defining it hangs MWCC)
 __declspec(section ".rodata") Vec mobj_vec3_802c3dd4_template[1] = {{0.0f, 0.0f, 0.0f}};
 #pragma force_active reset
-static u32 evt_shake[] = {
-    0x0005005B, (u32)evt_cam_shake, 0x00000004, 0xF24A7A80,
-    0xF24A7A8A, 0x000000C8, 0x00000002, 0x00000001,
-};
+static EVT_BEGIN(evt_shake)
+    CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.01f), 200)
+    RETURN
+EVT_END()
+
 extern s32 mobj_save_blk_sysevt[];
 #define LVB_TEMPLATE(dst, src) (*(MobjNameTemplate*)(dst) = *(const MobjNameTemplate*)(src))
 s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
@@ -5042,12 +5043,16 @@ __declspec(section ".sdata2") u32 dat_8041a130 = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 kpa_pole_score_color = 0xFFFFFFFF;
 
 // .sdata
-s32 kpa_powerup_evt[7] = {
-    0x0004005B, (s32)kpa_powerup, 0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000002, 0x00000001,
-};
-s32 evt_fire[8] = {
-    0x0005005B, (s32)fire_func, 0xFE363C80, 0xFE363C81, 0xFE363C82, 0xFE363C83, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(kpa_powerup_evt)
+    CALL(kpa_powerup, LW(0), LW(1), LW(2))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_fire)
+    CALL(fire_func, LW(0), LW(1), LW(2), LW(3))
+    RETURN
+EVT_END()
+
 // trailing zero word that ends the unit's .sdata: needs explicit_zero_data to be emitted and force_active to survive the linker.
 #pragma explicit_zero_data on
 #pragma force_active on
@@ -5105,190 +5110,227 @@ __declspec(section ".data") static f32 negone_one_360[2] = {-1.0f, 1.0f};
 __declspec(section ".data") f32 lbl_80309D10[2] = {-1.0f, 1.0f};
 __declspec(section ".data") static f32 one_negone_359[2] = {1.0f, -1.0f};
 __declspec(section ".data") f32 lbl_80309D20[2] = {1.0f, -1.0f};
-s32 evt_lock_sound[20] = {
-    0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)sfx_mobj_lock_swing1, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x0001000A, 0x000000C8, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)sfx_mobj_unlock1, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x00000002, 0x00000001,
-};
-s32 evt_box_sound1[20] = {
-    0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)sfx_mobj_treasure_box_swing1, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x0001000A, 0x000000C8, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)sfx_mobj_treasure_box_open1, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x00000002, 0x00000001,
-};
-s32 evt_box_sound2[20] = {
-    0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)sfx_mobj_treasure_box_swing2, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x0001000A, 0x000000C8, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)sfx_mobj_treasure_box_open2, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x00000002, 0x00000001,
-};
-s32 evt_box_sound3[23] = {
-    0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)sfx_mobj_blackbox_swing1, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0xFE363C8F, 0x0001000A, 0x000000C8, 0x0002005B,
-    (s32)evt_snd_sfxoff, 0xFE363C8F, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)sfx_mobj_blackbox_open1, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000002, 0x00000001,
-};
-s32 mobj_save_blk_sysevt[41] = {
-    0x00010063, 0x00000000, 0x0002005B, (s32)evt_mario_key_onoff,
-    0x00000000, 0x00020032, 0xFBD3E28A, 0x00000000,
-    0x00020018, 0xF8405C69, 0x00000000, 0x00020032,
-    0xF8405C69, 0x00000001, 0x0005005B, (s32)evt_msg_print,
-    0x00000000, (s32)str_save_first_hit, 0x00000000, 0x00000000,
-    0x00020032, 0xFBD3E28A, 0x00000001, 0x00000021,
-    0x0002001D, 0xF5DE0180, 0x00000007, 0x00020032,
-    0xF8405C6C, 0x00000001, 0x00000021, 0x00020032,
-    0xFE363C80, 0x00000000, 0x0001005E, (s32)evt_memcard_save,
-    0x0002005B, (s32)evt_mario_key_onoff, 0x00000001, 0x00000002,
-    0x00000001,
-};
-s32 kpa_pole[280] = {
-    0x0002005B, (s32)evt_cam_letter_box_disable, 0x00000001, 0x0003005B,
-    (s32)evt_cam_letter_box_onoff, 0x00000000, 0x00000000, 0x0002005B,
-    (s32)evt_mario_cont_onoff, 0x00000000, 0x0001005B, (s32)evt_mario_cam_y_on,
-    0x0001005B, (s32)kpa_disp_pole_init, 0x0001005B, (s32)kpa_clear_jump_data,
-    0x0002005B, (s32)kpa_get_hata_name, 0xFE363C8F, 0x0004005B,
-    (s32)evt_mario_set_dir, 0x0000005A, 0x00000000, 0x00000000,
-    0x0002005B, (s32)kpa_chg_pose, (s32)str_KPA2_G_1, 0x0005005B,
-    (s32)evt_mario_get_pos, 0x00000000, 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)sfx_kuppa_post_jump1,
-    0xFE363C81, 0xFE363C82, 0xFE363C83, 0x00000000,
-    0x0003005B, (s32)evt_mobj_get_x_position, 0xFE363C8F, 0xFE363C84,
-    0x0002005B, (s32)kpa_get_width, 0xFE363C85, 0x0002003C,
-    0xFE363C85, 0xF24A7CE6, 0x0002003B, 0xFE363C84,
-    0xFE363C85, 0x0004005B, (s32)evt_mario_set_pos, 0xFE363C84,
-    0xFE363C82, 0xFE363C83, 0x0002005B, (s32)kpa_score_to_str,
-    0xFE363C80, 0x00020034, 0xFE363C8E, 0xF24A8280,
-    0x00020034, 0xFE363C8D, 0xF24A8280, 0x00020034,
-    0xFE363C87, 0xF24B4280, 0x0000006B, 0x0005005B,
-    (s32)evt_mobj_get_position, 0xFE363C8F, 0xFE363C83, 0xFE363C84,
-    0xFE363C85, 0x0002003A, 0xFE363C83, 0xF24A9880,
-    0x0005005B, (s32)kpa_disp_pole_score_main, 0xFE363C83, 0xFE363C87,
-    0xFE363C85, 0xFE363C8D, 0x0000006D, 0x0005005B,
-    (s32)evt_mario_get_pos, 0x00000000, 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)sfx_kuppa_post_slide1,
-    0xFE363C81, 0xFE363C82, 0xFE363C83, 0xFE363C8A,
-    0x0001006C, 0xFE363C86, 0x00010005, 0x00000000,
-    0x0003005B, (s32)evt_mobj_get_y_position, 0xFE363C8F, 0xFE363C84,
-    0x0002003B, 0xFE363C84, 0xFE363C8E, 0x0003005B,
-    (s32)evt_mobj_set_y_position, 0xFE363C8F, 0xFE363C84, 0x00010009,
-    0x00000001, 0x0002001C, 0xFE363C84, 0x00000019,
-    0x0003005B, (s32)evt_mobj_set_y_position, 0xFE363C8F, 0xF24ADE80,
-    0x00000007, 0x00000021, 0x00000006, 0x0000006D,
-    0x00010005, 0x00000000, 0x0005005B, (s32)evt_mario_get_pos,
-    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0002003B, 0xFE363C81, 0xF24A8280, 0x0004005B,
-    (s32)evt_mario_set_pos, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0002001C, 0xFE363C81, 0xF24ADE80, 0x0004005B,
-    (s32)evt_mario_set_pos, 0xFE363C80, 0xF24ADE80, 0xFE363C82,
-    0x00000007, 0x00000021, 0x00010009, 0x00000001,
-    0x00000006, 0x00010005, 0x00000000, 0x0002006A,
-    0xFE363C86, 0xFE363C87, 0x00020018, 0xFE363C87,
-    0x00000000, 0x00000007, 0x00000021, 0x00010009,
-    0x00000001, 0x00000006, 0x0002005B, (s32)evt_snd_sfxoff,
-    0xFE363C8A, 0x0001000A, 0x000000C8, 0x0005005B,
-    (s32)evt_cam_get_pos, 0x00000004, 0xFE363C84, 0xFE363C85,
-    0xFE363C86, 0x0005005B, (s32)evt_cam_get_at, 0x00000004,
-    0xFE363C87, 0xFE363C88, 0xFE363C89, 0x0009005B,
-    (s32)evt_cam3d_evt_set, 0xFE363C84, 0xFE363C85, 0xFE363C86,
-    0xFE363C87, 0xFE363C88, 0xFE363C89, 0x00000000,
-    0x0000000B, 0x00010009, 0x00000001, 0x0002005B,
-    (s32)kpa_get_width, 0xFE363C83, 0x0005005B, (s32)evt_mario_get_pos,
-    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0002003C, 0xFE363C83, 0xF24A7F4C, 0x0002003A,
-    0xFE363C80, 0xFE363C83, 0x0005005B, (s32)evt_cam3d_get_shift,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0xFE363C83,
-    0x000B005B, (s32)evt_cam3d_event_from_road, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0xFE363C84, 0xFE363C85,
-    0xFE363C86, 0xFE363C87, 0xFE363C88, 0xFE363C89,
-    0x0009005B, (s32)evt_cam3d_evt_set, 0xFE363C84, 0xFE363C85,
-    0xFE363C86, 0xFE363C87, 0xFE363C88, 0xFE363C89,
-    0x0000012C, 0x00000000, 0x0001000A, 0x000000C8,
-    0x0004005B, (s32)evt_mario_set_pos, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0004005B, (s32)evt_mario_set_dir, 0x0000010E,
-    0x00000000, 0x00000000, 0x0002005B, (s32)evt_mario_set_mov_spd,
-    0x00000000, 0x0001000A, 0x000000C8, 0x00020035,
-    0xFE363C80, 0x00000014, 0x0004005B, (s32)evt_mario_set_pos,
-    0xFE363C80, 0x00000000, 0x0000000A, 0x00010009,
-    0x00000001, 0x0002005B, (s32)evt_mario_cont_onoff, 0x00000001,
-    0x0003005B, (s32)evt_cam3d_evt_off, 0x000000C8, 0x0000000B,
-    0x0001000A, 0x000000C8, 0x00000002, 0x00000001,
-};
-s32 kpa_pole_move[151] = {
-    0x0002005B, (s32)evt_cam_letter_box_disable, 0x00000001, 0x0003005B,
-    (s32)evt_cam_letter_box_onoff, 0x00000000, 0x00000000, 0x0002005B,
-    (s32)evt_mario_key_onoff, 0x00000000, 0x0002005B, (s32)kpa_get_pole_name,
-    0xFE363C8E, 0x0002005B, (s32)kpa_get_hata_name, 0xFE363C8F,
-    0x0003005B, (s32)evt_mobj_get_x_position, 0xFE363C8E, 0xFE363C80,
-    0x0003005B, (s32)evt_mobj_get_y_position, 0xFE363C8E, 0xFE363C81,
-    0x0003005B, (s32)evt_mobj_get_z_position, 0xFE363C8E, 0xFE363C82,
-    0x00020034, 0xFE363C86, 0xF24A8280, 0x00020034,
-    0xFE363C87, 0xF24A9E80, 0x00020034, 0xFE363C88,
-    0xF24A91B3, 0x0003005B, (s32)evt_mobj_get_x_position, 0xFE363C8F,
-    0xFE363C83, 0x0003005B, (s32)evt_mobj_get_y_position, 0xFE363C8F,
-    0xFE363C84, 0x0003005B, (s32)evt_mobj_get_z_position, 0xFE363C8F,
-    0xFE363C85, 0x00020034, 0xFE363C89, 0xF24A8280,
-    0x00020034, 0xFE363C8B, 0xF24A91B3, 0x00020034,
-    0xFE363C8C, 0xF24A7E80, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)sfx_kuppa_post_throw1, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0xFE363C8D, 0x00010005, 0x00000064, 0x0002003A,
-    0xFE363C80, 0xFE363C86, 0x0002003A, 0xFE363C81,
-    0xFE363C87, 0x0002003A, 0xFE363C82, 0xFE363C88,
-    0x0002003A, 0xFE363C83, 0xFE363C89, 0x00020034,
-    0xFE363C84, 0xF24D4A80, 0x0002003C, 0xFE363C84,
-    0xFE363C8C, 0x0002003A, 0xFE363C84, 0xFE363C81,
-    0x0002003A, 0xFE363C85, 0xFE363C8B, 0x0005005B,
-    (s32)evt_mobj_set_position, 0xFE363C8E, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_mobj_set_scale, 0xFE363C8E,
-    0xFE363C8C, 0xFE363C8C, 0xFE363C8C, 0x0005005B,
-    (s32)evt_mobj_set_position, 0xFE363C8F, 0xFE363C83, 0xFE363C84,
-    0xFE363C85, 0x0005005B, (s32)evt_mobj_set_scale, 0xFE363C8F,
-    0xFE363C8C, 0xFE363C8C, 0xFE363C8C, 0x0002003A,
-    0xFE363C86, 0xF24A7A80, 0x0002003A, 0xFE363C87,
-    0xF24A774D, 0x0002003A, 0xFE363C88, 0xF24A7A80,
-    0x0002003A, 0xFE363C89, 0xF24A7A80, 0x0002003A,
-    0xFE363C8B, 0xF24A7A80, 0x0002003A, 0xFE363C8C,
-    0xF24A7AA8, 0x0002001B, 0xFE363C8C, 0x00000003,
-    0x00020034, 0xFE363C8C, 0xF24A8680, 0x00000021,
-    0x00010009, 0x00000001, 0x00000006, 0x0002005B,
-    (s32)evt_snd_sfxoff, 0xFE363C8D, 0x0002005B, (s32)evt_mario_key_onoff,
-    0x00000001, 0x00000002, 0x00000001,
-};
-s32 kpa_move_to_toride[110] = {
-    0x0002005B, (s32)evt_mario_key_onoff, 0x00000000, 0x0001005B,
-    (s32)evt_mario_wait_landon, 0x00020032, 0xF9718885, 0x00000001,
-    0x0002005B, (s32)evt_sub_get_mapname, 0xFE363C80, 0x0002000C,
-    0xFE363C80, (s32)str_kpa_06, 0x0005005B, (s32)evt_mapobj_get_position,
-    (s32)str_toride, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000020, 0x0005005B, (s32)evt_mapobj_get_position, (s32)str_toride_,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000021,
-    0x0002005B, (s32)kpa_get_level, 0xFE363C86, 0x00010022,
-    0xFE363C86, 0x00010028, 0x00000001, 0x00020035,
-    0xFE363C80, 0x00000064, 0x00010024, 0x00000002,
-    0x0002005B, (s32)kpa_get_width, 0xFE363C87, 0x0002003C,
-    0xFE363C87, 0xF24A7F4C, 0x0002003B, 0xFE363C80,
-    0xFE363C87, 0x00010024, 0x00000003, 0x0002005B,
-    (s32)kpa_get_width, 0xFE363C87, 0x0002003C, 0xFE363C87,
-    0xF24A7F4C, 0x0002003B, 0xFE363C80, 0xFE363C87,
-    0x00000031, 0x0005005B, (s32)evt_mario_get_pos, 0x00000000,
-    0xFE363C83, 0xFE363C84, 0xFE363C85, 0x0004005B,
-    (s32)evt_mario_mov_pos2, 0xFE363C80, 0xFE363C85, 0x0000005A,
-    0x0002001D, 0xFE363C86, 0x00000002, 0x0005005B,
-    (s32)evt_mario_get_pos, 0x00000000, 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)sfx_kuppa_struggle1,
-    0xFE363C81, 0xFE363C82, 0xFE363C83, 0xFE363C8A,
-    0x0003005B, (s32)evt_mario_dispflag_onoff, 0x00000001, 0x00000002,
-    0x0001000A, 0x000007D0, 0x0003005B, (s32)evt_mario_dispflag_onoff,
-    0x00000000, 0x00000002, 0x0002005B, (s32)evt_snd_sfxoff,
-    0xFE363C8A, 0x0002005B, (s32)kpa_chg_pose, (s32)str_KPA2_S_1,
-    0x00000021, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000001,
-    0x00000002, 0x00000001,
-};
+EVT_BEGIN(evt_lock_sound)
+    WAIT_MS(100)
+    CALL(evt_snd_sfxon_3d, PTR(sfx_mobj_lock_swing1), LW(0), LW(1), LW(2), 0)
+    WAIT_MS(200)
+    CALL(evt_snd_sfxon_3d, PTR(sfx_mobj_unlock1), LW(0), LW(1), LW(2), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_box_sound1)
+    WAIT_MS(100)
+    CALL(evt_snd_sfxon_3d, PTR(sfx_mobj_treasure_box_swing1), LW(0), LW(1), LW(2), 0)
+    WAIT_MS(200)
+    CALL(evt_snd_sfxon_3d, PTR(sfx_mobj_treasure_box_open1), LW(0), LW(1), LW(2), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_box_sound2)
+    WAIT_MS(100)
+    CALL(evt_snd_sfxon_3d, PTR(sfx_mobj_treasure_box_swing2), LW(0), LW(1), LW(2), 0)
+    WAIT_MS(200)
+    CALL(evt_snd_sfxon_3d, PTR(sfx_mobj_treasure_box_open2), LW(0), LW(1), LW(2), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_box_sound3)
+    WAIT_MS(100)
+    CALL(evt_snd_sfxon_3d, PTR(sfx_mobj_blackbox_swing1), LW(0), LW(1), LW(2), LW(15))
+    WAIT_MS(200)
+    CALL(evt_snd_sfxoff, LW(15))
+    CALL(evt_snd_sfxon_3d, PTR(sfx_mobj_blackbox_open1), LW(0), LW(1), LW(2), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(mobj_save_blk_sysevt)
+    SET_TYPE(0)
+    CALL(evt_mario_key_onoff, 0)
+    SET_VALUE(LF(10), 0)
+    IF_INT_EQUAL(GSWF(233), 0)
+        SET_VALUE(GSWF(233), 1)
+        CALL(evt_msg_print, 0, PTR(str_save_first_hit), 0, 0)
+        SET_VALUE(LF(10), 1)
+    END_IF
+    IF_INT_GREATER_OR_EQUAL(GSW(0), 7)
+        SET_VALUE(GSWF(236), 1)
+    END_IF
+    SET_VALUE(LW(0), 0)
+    CALL_CHILD(evt_memcard_save)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kpa_pole)
+    CALL(evt_cam_letter_box_disable, 1)
+    CALL(evt_cam_letter_box_onoff, 0, 0)
+    CALL(evt_mario_cont_onoff, 0)
+    CALL(evt_mario_cam_y_on)
+    CALL(kpa_disp_pole_init)
+    CALL(kpa_clear_jump_data)
+    CALL(kpa_get_hata_name, LW(15))
+    CALL(evt_mario_set_dir, 90, 0, 0)
+    CALL(kpa_chg_pose, PTR(str_KPA2_G_1))
+    CALL(evt_mario_get_pos, 0, LW(1), LW(2), LW(3))
+    CALL(evt_snd_sfxon_3d, PTR(sfx_kuppa_post_jump1), LW(1), LW(2), LW(3), 0)
+    CALL(evt_mobj_get_x_position, LW(15), LW(4))
+    CALL(kpa_get_width, LW(5))
+    MULTIPLY_FLOAT(LW(5), FLOAT(0.6f))
+    SUBTRACT_FLOAT(LW(4), LW(5))
+    CALL(evt_mario_set_pos, LW(4), LW(2), LW(3))
+    CALL(kpa_score_to_str, LW(0))
+    SET_FLOAT_VALUE(LW(14), FLOAT(2.0f))
+    SET_FLOAT_VALUE(LW(13), FLOAT(2.0f))
+    SET_FLOAT_VALUE(LW(7), FLOAT(50.0f))
+    BEGIN_INLINE_EVENT
+        CALL(evt_mobj_get_position, LW(15), LW(3), LW(4), LW(5))
+        ADD_FLOAT(LW(3), FLOAT(7.5f))
+        CALL(kpa_disp_pole_score_main, LW(3), LW(7), LW(5), LW(13))
+    END_INLINE_EVENT
+    CALL(evt_mario_get_pos, 0, LW(1), LW(2), LW(3))
+    CALL(evt_snd_sfxon_3d, PTR(sfx_kuppa_post_slide1), LW(1), LW(2), LW(3), LW(10))
+    BEGIN_INLINE_EVENT_GET_ID(LW(6))
+        LOOP(0)
+            CALL(evt_mobj_get_y_position, LW(15), LW(4))
+            SUBTRACT_FLOAT(LW(4), LW(14))
+            CALL(evt_mobj_set_y_position, LW(15), LW(4))
+            WAIT_FRAMES(1)
+            IF_INT_LESS_OR_EQUAL(LW(4), 25)
+                CALL(evt_mobj_set_y_position, LW(15), FLOAT(25.0f))
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    LOOP(0)
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        SUBTRACT_FLOAT(LW(1), FLOAT(2.0f))
+        CALL(evt_mario_set_pos, LW(0), LW(1), LW(2))
+        IF_INT_LESS_OR_EQUAL(LW(1), FLOAT(25.0f))
+            CALL(evt_mario_set_pos, LW(0), FLOAT(25.0f), LW(2))
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    LOOP(0)
+        IS_EVENT_RUNNING(LW(6), LW(7))
+        IF_INT_EQUAL(LW(7), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(10))
+    WAIT_MS(200)
+    CALL(evt_cam_get_pos, 4, LW(4), LW(5), LW(6))
+    CALL(evt_cam_get_at, 4, LW(7), LW(8), LW(9))
+    CALL(evt_cam3d_evt_set, LW(4), LW(5), LW(6), LW(7), LW(8), LW(9), 0, 11)
+    WAIT_FRAMES(1)
+    CALL(kpa_get_width, LW(3))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    MULTIPLY_FLOAT(LW(3), FLOAT(1.2f))
+    ADD_FLOAT(LW(0), LW(3))
+    CALL(evt_cam3d_get_shift, LW(0), LW(1), LW(2), LW(3))
+    CALL(evt_cam3d_event_from_road, LW(0), LW(1), LW(2), LW(3), LW(4), LW(5), LW(6), LW(7), LW(8), LW(9))
+    CALL(evt_cam3d_evt_set, LW(4), LW(5), LW(6), LW(7), LW(8), LW(9), 300, 0)
+    WAIT_MS(200)
+    CALL(evt_mario_set_pos, LW(0), LW(1), LW(2))
+    CALL(evt_mario_set_dir, 270, 0, 0)
+    CALL(evt_mario_set_mov_spd, 0)
+    WAIT_MS(200)
+    ADD(LW(0), 20)
+    CALL(evt_mario_set_pos, LW(0), 0, 10)
+    WAIT_FRAMES(1)
+    CALL(evt_mario_cont_onoff, 1)
+    CALL(evt_cam3d_evt_off, 200, 11)
+    WAIT_MS(200)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kpa_pole_move)
+    CALL(evt_cam_letter_box_disable, 1)
+    CALL(evt_cam_letter_box_onoff, 0, 0)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(kpa_get_pole_name, LW(14))
+    CALL(kpa_get_hata_name, LW(15))
+    CALL(evt_mobj_get_x_position, LW(14), LW(0))
+    CALL(evt_mobj_get_y_position, LW(14), LW(1))
+    CALL(evt_mobj_get_z_position, LW(14), LW(2))
+    SET_FLOAT_VALUE(LW(6), FLOAT(2.0f))
+    SET_FLOAT_VALUE(LW(7), FLOAT(9.0f))
+    SET_FLOAT_VALUE(LW(8), FLOAT(5.8f))
+    CALL(evt_mobj_get_x_position, LW(15), LW(3))
+    CALL(evt_mobj_get_y_position, LW(15), LW(4))
+    CALL(evt_mobj_get_z_position, LW(15), LW(5))
+    SET_FLOAT_VALUE(LW(9), FLOAT(2.0f))
+    SET_FLOAT_VALUE(LW(11), FLOAT(5.8f))
+    SET_FLOAT_VALUE(LW(12), FLOAT(1.0f))
+    CALL(evt_snd_sfxon_3d, PTR(sfx_kuppa_post_throw1), LW(0), LW(1), LW(2), LW(13))
+    LOOP(100)
+        ADD_FLOAT(LW(0), LW(6))
+        ADD_FLOAT(LW(1), LW(7))
+        ADD_FLOAT(LW(2), LW(8))
+        ADD_FLOAT(LW(3), LW(9))
+        SET_FLOAT_VALUE(LW(4), FLOAT(180.0f))
+        MULTIPLY_FLOAT(LW(4), LW(12))
+        ADD_FLOAT(LW(4), LW(1))
+        ADD_FLOAT(LW(5), LW(11))
+        CALL(evt_mobj_set_position, LW(14), LW(0), LW(1), LW(2))
+        CALL(evt_mobj_set_scale, LW(14), LW(12), LW(12), LW(12))
+        CALL(evt_mobj_set_position, LW(15), LW(3), LW(4), LW(5))
+        CALL(evt_mobj_set_scale, LW(15), LW(12), LW(12), LW(12))
+        ADD_FLOAT(LW(6), FLOAT(0.0f))
+        ADD_FLOAT(LW(7), FLOAT(-0.8f))
+        ADD_FLOAT(LW(8), FLOAT(0.0f))
+        ADD_FLOAT(LW(9), FLOAT(0.0f))
+        ADD_FLOAT(LW(11), FLOAT(0.0f))
+        ADD_FLOAT(LW(12), FLOAT(0.04f))
+        IF_INT_GREATER(LW(12), 3)
+            SET_FLOAT_VALUE(LW(12), FLOAT(3.0f))
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(13))
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kpa_move_to_toride)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_mario_wait_landon)
+    SET_VALUE(LSWF(5), 1)
+    CALL(evt_sub_get_mapname, LW(0))
+    IF_STR_EQUAL(LW(0), PTR(str_kpa_06))
+        CALL(evt_mapobj_get_position, PTR(str_toride), LW(0), LW(1), LW(2))
+    ELSE
+        CALL(evt_mapobj_get_position, PTR(str_toride_), LW(0), LW(1), LW(2))
+    END_IF
+    CALL(kpa_get_level, LW(6))
+    SWITCH(LW(6))
+        CASE_LESS_OR_EQUAL(1)
+        ADD(LW(0), 100)
+        CASE_EQUAL(2)
+        CALL(kpa_get_width, LW(7))
+        MULTIPLY_FLOAT(LW(7), FLOAT(1.2f))
+        SUBTRACT_FLOAT(LW(0), LW(7))
+        CASE_EQUAL(3)
+        CALL(kpa_get_width, LW(7))
+        MULTIPLY_FLOAT(LW(7), FLOAT(1.2f))
+        SUBTRACT_FLOAT(LW(0), LW(7))
+    END_SWITCH
+    CALL(evt_mario_get_pos, 0, LW(3), LW(4), LW(5))
+    CALL(evt_mario_mov_pos2, LW(0), LW(5), 90)
+    IF_INT_GREATER_OR_EQUAL(LW(6), 2)
+        CALL(evt_mario_get_pos, 0, LW(1), LW(2), LW(3))
+        CALL(evt_snd_sfxon_3d, PTR(sfx_kuppa_struggle1), LW(1), LW(2), LW(3), LW(10))
+        CALL(evt_mario_dispflag_onoff, 1, 2)
+        WAIT_MS(2000)
+        CALL(evt_mario_dispflag_onoff, 0, 2)
+        CALL(evt_snd_sfxoff, LW(10))
+        CALL(kpa_chg_pose, PTR(str_KPA2_S_1))
+    END_IF
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
 // jumptable_8030A78C: generated by the switch in the referencing function
 // jumptable_8030A7C4: generated by the switch in the referencing function
 // jumptable_8030A7FC: generated by the switch in the referencing function

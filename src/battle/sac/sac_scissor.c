@@ -33,7 +33,7 @@ extern BattleWork* _battleWorkPointer;
 #pragma pool_data on // the original addresses its .rodata through one base register
 
 // Data objects defined at the end of this file and scripts owned by sac_common.
-extern u32 marioAttackEvent_Scissor[];
+extern s32 marioAttackEvent_Scissor[];
 extern s32 sac_start_camera_evt[];
 extern s32 sac_mario_item_on_evt[];
 extern s32 sac_mario_item_on_end_evt[];
@@ -1298,80 +1298,111 @@ __declspec(section ".sdata2") char str_img[4] = "img";
 __declspec(section ".sdata2") char str_80421730[4] = "A_1";
 
 // .data:0x180..0x630
-u32 marioAttackEvent_Scissor[300] = {
-    0x0001005B, (u32)(void*)&scissor_init, 0x0000006E, 0x0001005B,
-    (u32)(void*)&star_control, 0x00000070, 0x0001005E, (u32)(void*)&sac_start_camera_evt,
-    0x0001000A, 0x000001F4, 0x0006005B, (u32)(void*)&btlevtcmd_snd_se,
-    0xFFFFFFFE, (u32)(void*)"SFX_BTL_SAC_START1", 0xF1194D80, 0x00000000,
-    0xF1194D80, 0x0001005E, (u32)(void*)&sac_mario_item_on_evt, 0x0001000A,
-    0x000001F4, 0x0006005B, (u32)(void*)&btlevtcmd_snd_se, 0xFFFFFFFE,
-    (u32)(void*)"SFX_BTL_SAC_START2", 0xF1194D80, 0x00000000, 0xFE363C8B,
-    0x0001005B, (u32)(void*)&star_stone_appear, 0x0000006E, 0x0001005E,
-    (u32)(void*)&sac_start_stardust, 0x00000070, 0x00010009, 0x00000064,
-    0x0006005B, (u32)(void*)&btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)"SFX_BTL_SAC_START3",
-    0xF1194D80, 0x00000000, 0xF1194D80, 0x0002005B,
-    (u32)(void*)&evt_snd_sfxoff, 0xFE363C8B, 0x0003005B, (u32)(void*)&evt_btl_camera_set_mode,
-    0x00000000, 0x00000000, 0x00010009, 0x00000028,
-    0x0001005E, (u32)(void*)&sac_mario_item_on_end_evt, 0x0001005E, (u32)(void*)&sac_mario_back_home,
-    0x0004005B, (u32)(void*)&btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001,
-    (u32)(void*)str_80421720, 0x0000006E, 0x00010009, 0x0000001E,
-    0x0003005B, (u32)(void*)&evt_btl_camera_set_mode, 0x00000000, 0x00000003,
-    0x000A005B, (u32)(void*)&evt_btl_camera_set_moveto, 0x00000000, 0x0000004B,
-    0x00000069, 0x00000258, 0x0000004B, 0x00000037,
-    0x00000000, 0x0000001E, 0x00000000, 0x00000070,
-    0x0001005B, (u32)(void*)&wait_star_standby, 0x0000006E, 0x0001005B,
-    (u32)(void*)&scissor_timer_main, 0x00000070, 0x0000006E, 0x0002005B,
-    (u32)(void*)&sac_cheer, 0x00000001, 0x00000070, 0x0001005B,
-    (u32)(void*)&sac_ac_help_on, 0x00010005, 0x00000000, 0x00020032,
-    0xFE363C8A, (u32)(void*)"OFF_d_bom", 0x0002005B, (u32)(void*)&evt_paper_entry,
-    0xFE363C8A, 0x0002005B, (u32)(void*)&evt_offscreen_entry, (u32)(void*)str_ofs,
-    0x0002005B, (u32)(void*)&evt_img_entry, (u32)(void*)str_img, 0x0003005B,
-    (u32)(void*)&evt_img_set_paper, (u32)(void*)str_img, 0xFE363C8A, 0x0003005B,
-    (u32)(void*)&evt_img_onoff, (u32)(void*)str_img, 0x00000000, 0x0001005B,
-    (u32)(void*)&scissor_control, 0x0002005B, (u32)(void*)&scissor_timer_get, 0xFE363C80,
-    0x0002001C, 0xFE363C80, 0x0000003B, 0x0003005B,
-    (u32)(void*)&evt_img_onoff, (u32)(void*)str_img, 0x00000000, 0x0003005B,
-    (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_img, 0x00000000, 0x0002005B,
-    (u32)(void*)&evt_img_release, (u32)(void*)str_img, 0x0002005B, (u32)(void*)&evt_offscreen_delete,
-    (u32)(void*)str_ofs, 0x0002005B, (u32)(void*)&evt_paper_delete, 0xFE363C8A,
-    0x00010004, 0x0000005A, 0x00000021, 0x00010009,
-    0x00000001, 0x0001005B, (u32)(void*)&scissor_tess, 0x00010009,
-    0x00000001, 0x0001005B, (u32)(void*)&scissor_offscreen, 0x0009005B,
-    (u32)(void*)&evt_img_alloc_capture, (u32)(void*)str_img, 0x00000000, (u32)(void*)str_ofs,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00010009, 0x00000001, 0x0002005B,
-    (u32)(void*)&scissor_ofscreen_ok, 0xFE363C80, 0x00020019, 0xFE363C80,
-    0x00000000, 0x0003005B, (u32)(void*)&evt_snd_sfxon, (u32)(void*)"SFX_BTL_SAC_KAKONDEPON2",
-    0x00000000, 0x0003005B, (u32)(void*)&evt_img_onoff, (u32)(void*)str_img,
-    0x00000001, 0x0003005B, (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_img,
-    0x00000002, 0x0002005B, (u32)(void*)&scissor_damage, 0xFE363C80,
-    0x0002001D, 0xFE363C80, 0x00000002, 0x0005005B,
-    (u32)(void*)&btlevtcmd_ACSuccessEffect, 0xFE363C80, 0x0000004B, 0x00000064,
-    0xFFFFFF9C, 0x00000021, 0x0003005B, (u32)(void*)&evt_img_set_paper_anim,
-    (u32)(void*)str_img, (u32)(void*)str_80421730, 0x0002005B, (u32)(void*)&evt_img_clear_virtual_point,
-    (u32)(void*)str_img, 0x00010009, 0x0000003C, 0x00000021,
-    0x0003005B, (u32)(void*)&evt_img_onoff, (u32)(void*)str_img, 0x00000000,
-    0x0003005B, (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_img, 0x00000000,
-    0x0002005B, (u32)(void*)&evt_img_release, (u32)(void*)str_img, 0x0002005B,
-    (u32)(void*)&evt_offscreen_delete, (u32)(void*)str_ofs, 0x0002005B, (u32)(void*)&evt_paper_delete,
-    0xFE363C8A, 0x0002005B, (u32)(void*)&scissor_timer_get, 0xFE363C80,
-    0x0002001C, 0xFE363C80, 0x0000003B, 0x00010004,
-    0x0000005A, 0x00000021, 0x00000006, 0x00010003,
-    0x0000005A, 0x0001005B, (u32)(void*)&sac_ac_help_off, 0x0001005B,
-    (u32)(void*)&sac_cheer_end, 0x0003005B, (u32)(void*)&btlevtcmd_GetSelectEnemy, 0xFE363C83,
-    0xFE363C84, 0x0001005B, (u32)(void*)&btlevtcmd_WaitGuardMove, 0x0002005B,
-    (u32)(void*)&btlevtcmd_CommandPayWeaponCost, 0xFFFFFFFE, 0x0003005B, (u32)(void*)&btlevtcmd_CommandGetWeaponAddress,
-    0xFFFFFFFE, 0xFE363C80, 0x0002005B, (u32)(void*)&btlevtcmd_WeaponAftereffect,
-    0xFE363C80, 0x00010003, 0x0000005F, 0x00020018,
-    0xFE363C83, 0xFFFFFFFF, 0x00010004, 0x00000061,
-    0x00000021, 0x0003005B, (u32)(void*)&btlevtcmd_GetTotalDamage, 0xFE363C83,
-    0xFE363C80, 0x0002001D, 0xFE363C80, 0x00000001,
-    0x0007005B, (u32)(void*)&btlevtcmd_CheckDamage, 0xFFFFFFFE, 0xFE363C83,
-    0xFE363C84, (u32)(void*)weapon_scissor_finish, 0x00000100, 0xFE363C85,
-    0x00000021, 0x0003005B, (u32)(void*)&btlevtcmd_GetSelectNextEnemy, 0xFE363C83,
-    0xFE363C84, 0x00010004, 0x0000005F, 0x00010003,
-    0x00000061, 0x0003005B, (u32)(void*)&evt_btl_camera_set_mode, 0x00000000,
-    0x00000000, 0x0001000A, 0x000003E8, 0x0001005B,
-    (u32)(void*)&scissor_end, 0x00010003, 0x00000063, 0x0002005B,
-    (u32)(void*)&btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(marioAttackEvent_Scissor)
+    CALL(scissor_init)
+    BEGIN_SIBLING_EVENT
+        CALL(star_control)
+    END_SIBLING_EVENT
+    CALL_CHILD(sac_start_camera_evt)
+    WAIT_MS(500)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL_CHILD(sac_mario_item_on_evt)
+    WAIT_MS(500)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START2"), EVTDAT_POINTER_MAX, 0, LW(11))
+    CALL(star_stone_appear)
+    BEGIN_SIBLING_EVENT
+        CALL_CHILD(sac_start_stardust)
+    END_SIBLING_EVENT
+    WAIT_FRAMES(100)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(evt_snd_sfxoff, LW(11))
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    WAIT_FRAMES(40)
+    CALL_CHILD(sac_mario_item_on_end_evt)
+    CALL_CHILD(sac_mario_back_home)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, PTR(str_80421720))
+    BEGIN_SIBLING_EVENT
+        WAIT_FRAMES(30)
+        CALL(evt_btl_camera_set_mode, 0, 3)
+        CALL(evt_btl_camera_set_moveto, 0, 75, 105, 600, 75, 55, 0, 30, 0)
+    END_SIBLING_EVENT
+    CALL(wait_star_standby)
+    BEGIN_SIBLING_EVENT
+        CALL(scissor_timer_main)
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        CALL(sac_cheer, 1)
+    END_SIBLING_EVENT
+    CALL(sac_ac_help_on)
+    LOOP(0)
+        SET_VALUE(LW(10), STRING("OFF_d_bom"))
+        CALL(evt_paper_entry, LW(10))
+        CALL(evt_offscreen_entry, PTR(str_ofs))
+        CALL(evt_img_entry, PTR(str_img))
+        CALL(evt_img_set_paper, PTR(str_img), LW(10))
+        CALL(evt_img_onoff, PTR(str_img), 0)
+        CALL(scissor_control)
+        CALL(scissor_timer_get, LW(0))
+        IF_INT_LESS_OR_EQUAL(LW(0), 59)
+            CALL(evt_img_onoff, PTR(str_img), 0)
+            CALL(evt_img_set_shadow, PTR(str_img), 0)
+            CALL(evt_img_release, PTR(str_img))
+            CALL(evt_offscreen_delete, PTR(str_ofs))
+            CALL(evt_paper_delete, LW(10))
+            GOTO(90)
+        END_IF
+        WAIT_FRAMES(1)
+        CALL(scissor_tess)
+        WAIT_FRAMES(1)
+        CALL(scissor_offscreen)
+        CALL(evt_img_alloc_capture, PTR(str_img), 0, PTR(str_ofs), 1, 0, 0, 0, 0)
+        WAIT_FRAMES(1)
+        CALL(scissor_ofscreen_ok, LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            CALL(evt_snd_sfxon, STRING("SFX_BTL_SAC_KAKONDEPON2"), 0)
+            CALL(evt_img_onoff, PTR(str_img), 1)
+            CALL(evt_img_set_shadow, PTR(str_img), 2)
+            CALL(scissor_damage, LW(0))
+            IF_INT_GREATER_OR_EQUAL(LW(0), 2)
+                CALL(btlevtcmd_ACSuccessEffect, LW(0), 75, 100, -100)
+            END_IF
+            CALL(evt_img_set_paper_anim, PTR(str_img), PTR(str_80421730))
+            CALL(evt_img_clear_virtual_point, PTR(str_img))
+            WAIT_FRAMES(60)
+        END_IF
+        CALL(evt_img_onoff, PTR(str_img), 0)
+        CALL(evt_img_set_shadow, PTR(str_img), 0)
+        CALL(evt_img_release, PTR(str_img))
+        CALL(evt_offscreen_delete, PTR(str_ofs))
+        CALL(evt_paper_delete, LW(10))
+        CALL(scissor_timer_get, LW(0))
+        IF_INT_LESS_OR_EQUAL(LW(0), 59)
+            GOTO(90)
+        END_IF
+    END_LOOP
+    LABEL(90)
+    CALL(sac_ac_help_off)
+    CALL(sac_cheer_end)
+    CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_CommandPayWeaponCost, -2)
+    CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(0))
+    CALL(btlevtcmd_WeaponAftereffect, LW(0))
+    LABEL(95)
+    IF_INT_EQUAL(LW(3), -1)
+        GOTO(97)
+    END_IF
+    CALL(btlevtcmd_GetTotalDamage, LW(3), LW(0))
+    IF_INT_GREATER_OR_EQUAL(LW(0), 1)
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_scissor_finish), 256, LW(5))
+    END_IF
+    CALL(btlevtcmd_GetSelectNextEnemy, LW(3), LW(4))
+    GOTO(95)
+    LABEL(97)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    WAIT_MS(1000)
+    CALL(scissor_end)
+    LABEL(99)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()

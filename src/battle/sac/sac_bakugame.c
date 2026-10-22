@@ -1545,96 +1545,127 @@ void bakuGameDisp3D(CameraId camId, void* param) {
 void bakuGameDispStar(CameraId camId, void* param) {
 }
 
-s32 marioAttackEvent_BakuGame[119] = {
-    0x0001005B, (s32)(void*)btlevtcmd_WaitGuardMove, 0x0002005B, (s32)(void*)btlevtcmd_CommandPayWeaponCost,
-    0xFFFFFFFE, 0x0003005B, (s32)(void*)btlevtcmd_CommandGetWeaponAddress, 0xFFFFFFFE,
-    0xFE363C80, 0x0002005B, (s32)(void*)btlevtcmd_WeaponAftereffect, 0xFE363C80,
-    0x0001005B, (s32)(void*)btlevtcmd_reset_move_color_lv_all, 0x0001005B, (s32)(void*)init_bakugame,
-    0x0000006E, 0x0001005B, (s32)(void*)main_star, 0x00000070,
-    0x0001005E, (s32)(void*)sac_start_camera_evt, 0x0001000A, 0x000001F4,
-    0x0006005B, (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)"SFX_BTL_SAC_START1",
-    0xF1194D80, 0x00000000, 0xF1194D80, 0x0001005E,
-    (s32)(void*)sac_mario_item_on_evt, 0x0001000A, 0x000001F4, 0x0006005B,
-    (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)"SFX_BTL_SAC_START2", 0xF1194D80,
-    0x00000000, 0xFE363C8B, 0x0001005B, (s32)(void*)star_stone_appear,
-    0x0000006E, 0x0001005E, (s32)(void*)sac_start_stardust, 0x00000070,
-    0x00010009, 0x00000064, 0x0006005B, (s32)(void*)btlevtcmd_snd_se,
-    0xFFFFFFFE, (s32)(void*)"SFX_BTL_SAC_START3", 0xF1194D80, 0x00000000,
-    0xF1194D80, 0x0002005B, (s32)(void*)evt_snd_sfxoff, 0xFE363C8B,
-    0x0003005B, (s32)(void*)evt_btl_camera_set_mode, 0x00000000, 0x00000000,
-    0x00010009, 0x00000028, 0x0001005E, (s32)(void*)sac_mario_item_on_end_evt,
-    0x0001005E, (s32)(void*)sac_mario_back_home, 0x0001005B, (s32)(void*)bakuGameBombEntry,
-    0x0001005B, (s32)(void*)sac_ac_help_on, 0x0004005B, (s32)(void*)bakuGameMain,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0001005B,
-    (s32)(void*)sac_ac_help_off, 0x0001005B, (s32)(void*)end_bakugame, 0x0000006B,
-    0x0001005B, (s32)(void*)bakuGameHeihoReturn, 0x0000006D, 0x0004005B,
-    (s32)(void*)bakuGameDecideWeapon, 0xFE363C81, 0xFE363C82, 0xFE363C89,
-    0x00010009, 0x00000005, 0x00010022, 0xFE363C80,
-    0x00010024, 0x00000000, 0x0001005E, (s32)(void*)hitCheck_MarioTeam,
-    0x0000002E, 0x00010024, 0x00000001, 0x0001005E,
-    (s32)(void*)hitCheck_EnemyTeam, 0x0000002E, 0x00010024, 0x00000002,
-    0x0001005E, (s32)(void*)hitCheck_AudienceTeam, 0x0000002E, 0x00000031,
-    0x00010003, 0x00000063, 0x0002005B, (s32)(void*)btlevtcmd_StartWaitEvent,
-    0xFFFFFFFE, 0x00000002, 0x00000001,
-};
-s32 hitCheck_MarioTeam[146] = {
-    0x0003005B, (s32)(void*)btlevtcmd_GetUnitId, 0xFFFFFFFC, 0xFE363C83,
-    0x00020018, 0xFE363C83, 0xFFFFFFFF, 0x00010004,
-    0x00000032, 0x00000021, 0x0004005B, (s32)(void*)btlevtcmd_CheckStatus,
-    0xFE363C83, 0x0000001B, 0xFE363C80, 0x00020019,
-    0xFE363C80, 0x00000000, 0x00010004, 0x00000032,
-    0x00000021, 0x0003005B, (s32)(void*)btlevtcmd_GetBodyId, 0xFE363C83,
-    0xFE363C84, 0x0006005B, (s32)(void*)btlevtcmd_GetHitPos, 0xFE363C83,
-    0xFE363C84, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
-    0x0005005B, (s32)(void*)btlevtcmd_ACSuccessEffect, 0xFE363C82, 0xFE363C8A,
-    0xFE363C8B, 0xFE363C8C, 0x0007005B, (s32)(void*)btlevtcmd_CheckDamage,
-    0xFFFFFFFE, 0xFE363C83, 0xFE363C84, 0xFE363C89,
-    0x00000100, 0xFE363C85, 0x00010003, 0x00000032,
-    0x0003005B, (s32)(void*)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83,
-    0x00020018, 0xFE363C83, 0xFFFFFFFF, 0x00010004,
-    0x00000063, 0x00000021, 0x0004005B, (s32)(void*)btlevtcmd_CheckStatus,
-    0xFE363C83, 0x0000001B, 0xFE363C80, 0x00020019,
-    0xFE363C80, 0x00000000, 0x00010004, 0x00000063,
-    0x00000021, 0x0003005B, (s32)(void*)btlevtcmd_GetBodyId, 0xFE363C83,
-    0xFE363C84, 0x0003005B, (s32)(void*)btlevtcmd_GetFaceDirection, 0xFE363C83,
-    0xFE363C80, 0x00020018, 0xFE363C80, 0xFFFFFFFF,
-    0x00010005, 0x00000005, 0x0005005B, (s32)(void*)btlevtcmd_AddRotate,
-    0xFE363C83, 0x00000000, 0x00000012, 0x00000000,
-    0x00010009, 0x00000001, 0x00000006, 0x0004005B,
-    (s32)(void*)btlevtcmd_AnimeChangePoseType, 0xFE363C83, 0xFE363C84, 0x00000027,
-    0x00010005, 0x00000005, 0x0005005B, (s32)(void*)btlevtcmd_AddRotate,
-    0xFE363C83, 0x00000000, 0x00000012, 0x00000000,
-    0x00010009, 0x00000001, 0x00000006, 0x0002005B,
-    (s32)(void*)btlevtcmd_ResetFaceDirection, 0xFE363C83, 0x0005005B, (s32)(void*)btlevtcmd_SetRotate,
-    0xFE363C83, 0x00000000, 0x00000000, 0x00000000,
-    0x00000021, 0x0006005B, (s32)(void*)btlevtcmd_GetHitPos, 0xFE363C83,
-    0xFE363C84, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
-    0x00020019, 0xFE363C82, 0xFFFFFFFF, 0x0005005B,
-    (s32)(void*)btlevtcmd_ACSuccessEffect, 0xFE363C82, 0xFE363C8A, 0xFE363C8B,
-    0xFE363C8C, 0x00000021, 0x0007005B, (s32)(void*)btlevtcmd_CheckDamage,
-    0xFFFFFFFE, 0xFE363C83, 0xFE363C84, 0xFE363C89,
-    0x00000100, 0xFE363C85, 0x00010003, 0x00000063,
-    0x00000002, 0x00000001,
-};
-s32 hitCheck_EnemyTeam[53] = {
-    0x0003005B, (s32)(void*)btlevtcmd_GetSelectEnemy, 0xFE363C83, 0xFE363C84,
-    0x00010003, 0x0000000A, 0x0006005B, (s32)(void*)btlevtcmd_GetHitPos,
-    0xFE363C83, 0xFE363C84, 0xFE363C8A, 0xFE363C8B,
-    0xFE363C8C, 0x0005005B, (s32)(void*)btlevtcmd_CheckPartsAttribute, 0xFE363C83,
-    0xFE363C84, 0x00004000, 0xFE363C80, 0x00020018,
-    0xFE363C80, 0x00000000, 0x00020019, 0xFE363C82,
-    0xFFFFFFFF, 0x0005005B, (s32)(void*)btlevtcmd_ACSuccessEffect, 0xFE363C82,
-    0xFE363C8A, 0xFE363C8B, 0xFE363C8C, 0x00000021,
-    0x0007005B, (s32)(void*)btlevtcmd_CheckDamage, 0xFFFFFFFE, 0xFE363C83,
-    0xFE363C84, 0xFE363C89, 0x00000100, 0xFE363C85,
-    0x00000021, 0x0003005B, (s32)(void*)btlevtcmd_GetSelectNextEnemy, 0xFE363C83,
-    0xFE363C84, 0x00020019, 0xFE363C83, 0xFFFFFFFF,
-    0x00010004, 0x0000000A, 0x00000021, 0x00000002,
-    0x00000001,
-};
-s32 hitCheck_AudienceTeam[15] = {
-    0x0002005B, (s32)(void*)evt_audience_abnormal_natural_all, 0x00000064, 0x00020019,
-    0xFE363C82, 0xFFFFFFFF, 0x0005005B, (s32)(void*)btlevtcmd_ACSuccessEffect,
-    0xFE363C82, 0x00000000, 0x00000064, 0x00000000,
-    0x00000021, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(marioAttackEvent_BakuGame)
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_CommandPayWeaponCost, -2)
+    CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(0))
+    CALL(btlevtcmd_WeaponAftereffect, LW(0))
+    CALL(btlevtcmd_reset_move_color_lv_all)
+    CALL(init_bakugame)
+    BEGIN_SIBLING_EVENT
+        CALL(main_star)
+    END_SIBLING_EVENT
+    CALL_CHILD(sac_start_camera_evt)
+    WAIT_MS(500)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL_CHILD(sac_mario_item_on_evt)
+    WAIT_MS(500)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START2"), EVTDAT_POINTER_MAX, 0, LW(11))
+    CALL(star_stone_appear)
+    BEGIN_SIBLING_EVENT
+        CALL_CHILD(sac_start_stardust)
+    END_SIBLING_EVENT
+    WAIT_FRAMES(100)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(evt_snd_sfxoff, LW(11))
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    WAIT_FRAMES(40)
+    CALL_CHILD(sac_mario_item_on_end_evt)
+    CALL_CHILD(sac_mario_back_home)
+    CALL(bakuGameBombEntry)
+    CALL(sac_ac_help_on)
+    CALL(bakuGameMain, LW(0), LW(1), LW(2))
+    CALL(sac_ac_help_off)
+    CALL(end_bakugame)
+    BEGIN_INLINE_EVENT
+        CALL(bakuGameHeihoReturn)
+    END_INLINE_EVENT
+    CALL(bakuGameDecideWeapon, LW(1), LW(2), LW(9))
+    WAIT_FRAMES(5)
+    SWITCH(LW(0))
+        CASE_EQUAL(0)
+        CALL_CHILD(hitCheck_MarioTeam)
+        CASE_END
+        CASE_EQUAL(1)
+        CALL_CHILD(hitCheck_EnemyTeam)
+        CASE_END
+        CASE_EQUAL(2)
+        CALL_CHILD(hitCheck_AudienceTeam)
+        CASE_END
+    END_SWITCH
+    LABEL(99)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hitCheck_MarioTeam)
+    CALL(btlevtcmd_GetUnitId, -4, LW(3))
+    IF_INT_EQUAL(LW(3), -1)
+        GOTO(50)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(3), 27, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        GOTO(50)
+    END_IF
+    CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+    CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(10), LW(11), LW(12))
+    CALL(btlevtcmd_ACSuccessEffect, LW(2), LW(10), LW(11), LW(12))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(9), 256, LW(5))
+    LABEL(50)
+    CALL(btlevtcmd_GetUnitId, -3, LW(3))
+    IF_INT_EQUAL(LW(3), -1)
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, LW(3), 27, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+    CALL(btlevtcmd_GetFaceDirection, LW(3), LW(0))
+    IF_INT_EQUAL(LW(0), -1)
+        LOOP(5)
+            CALL(btlevtcmd_AddRotate, LW(3), 0, 18, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+        CALL(btlevtcmd_AnimeChangePoseType, LW(3), LW(4), 39)
+        LOOP(5)
+            CALL(btlevtcmd_AddRotate, LW(3), 0, 18, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+        CALL(btlevtcmd_ResetFaceDirection, LW(3))
+        CALL(btlevtcmd_SetRotate, LW(3), 0, 0, 0)
+    END_IF
+    CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(10), LW(11), LW(12))
+    IF_INT_NOT_EQUAL(LW(2), -1)
+        CALL(btlevtcmd_ACSuccessEffect, LW(2), LW(10), LW(11), LW(12))
+    END_IF
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(9), 256, LW(5))
+    LABEL(99)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hitCheck_EnemyTeam)
+    CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
+    LABEL(10)
+    CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(10), LW(11), LW(12))
+    CALL(btlevtcmd_CheckPartsAttribute, LW(3), LW(4), 16384, LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        IF_INT_NOT_EQUAL(LW(2), -1)
+            CALL(btlevtcmd_ACSuccessEffect, LW(2), LW(10), LW(11), LW(12))
+        END_IF
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(9), 256, LW(5))
+    END_IF
+    CALL(btlevtcmd_GetSelectNextEnemy, LW(3), LW(4))
+    IF_INT_NOT_EQUAL(LW(3), -1)
+        GOTO(10)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hitCheck_AudienceTeam)
+    CALL(evt_audience_abnormal_natural_all, 100)
+    IF_INT_NOT_EQUAL(LW(2), -1)
+        CALL(btlevtcmd_ACSuccessEffect, LW(2), 0, 100, 0)
+    END_IF
+    RETURN
+EVT_END()

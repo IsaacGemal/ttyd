@@ -387,1849 +387,1825 @@ USER_FUNC(_2d_dead_jump) {
     }
 }
 
-s32 enemy_common_dead_event[156] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x00000000, 0x0002005B, (s32)evt_npc_set_damage_anim, (s32)"me",
-    0x0001000A, 0x000001F4, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000F005B, (s32)evt_eff, 0x00000000, (s32)"kemuri_test",
-    0x00000004, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0xF24A7DB3, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0003005B, (s32)evt_snd_sfxon, (s32)"SFX_ENEMY_DIE1", 0x00000000,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0003005B, (s32)evt_npc_get_drop_coin,
-    (s32)"me", 0xFE363C83, 0x0002001B, 0xFE363C83,
-    0x00000000, 0x00010005, 0xFE363C83, 0x0009005B,
-    (s32)evt_item_entry, 0x00000000, 0x00000079, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000000A, 0xFFFFFFFF,
-    0x00000000, 0x00000006, 0x00000021, 0x0003005B,
-    (s32)evt_npc_get_drop_heart, (s32)"me", 0xFE363C83, 0x0002001B,
-    0xFE363C83, 0x00000000, 0x00010005, 0xFE363C83,
-    0x0009005B, (s32)evt_item_entry, 0x00000000, 0x0000007B,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0000000A,
-    0xFFFFFFFF, 0x00000000, 0x00000006, 0x00000021,
-    0x0003005B, (s32)evt_npc_get_drop_flower, (s32)"me", 0xFE363C83,
-    0x0002001B, 0xFE363C83, 0x00000000, 0x00010005,
-    0xFE363C83, 0x0009005B, (s32)evt_item_entry, 0x00000000,
-    0x0000007C, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0000000A, 0xFFFFFFFF, 0x00000000, 0x00000006,
-    0x00000021, 0x0003005B, (s32)evt_npc_get_drop_item, (s32)"me",
-    0xFE363C83, 0x00020019, 0xFE363C83, 0x00000000,
-    0x0009005B, (s32)evt_item_entry, 0x00000000, 0xFE363C83,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000009,
-    0xFFFFFFFF, 0x00000000, 0x00000021, 0x0002005B,
-    (s32)evt_npc_getback_item_entry, (s32)"me", 0x0003005B, (s32)evt_npc_get_drop_fixitem,
-    (s32)"me", 0xFE363C83, 0x00020019, 0xFE363C83,
-    0x00000000, 0x0009005B, (s32)evt_item_entry, 0x00000000,
-    0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000009, 0xFFFFFFFF, 0x00000000, 0x00000021,
-    0x0002005B, (s32)evt_npc_delete, (s32)"me", 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 enemy_event_dead_event_sub[36] = {
-    0x0002005B, (s32)evt_npc_set_damage_anim, 0xFE363C8A, 0x0001000A,
-    0x000001F4, 0x0005005B, (s32)evt_npc_get_position, 0xFE363C8A,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000F005B,
-    (s32)evt_eff, 0x00000000, (s32)"kemuri_test", 0x00000004,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0xF24A7DB3,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0003005B,
-    (s32)evt_snd_sfxon, (s32)"SFX_ENEMY_DIE1", 0x00000000, 0x0002005B,
-    (s32)evt_npc_delete, 0xFE363C8A, 0x00000002, 0x00000001,
-};
-s32 enemy_common_blow_event[13] = {
-    0x0002005B, (s32)evt_npc_set_confuse_anim, (s32)"me", 0x0002005B,
-    (s32)_wait_blow_end, (s32)"me", 0x0001000A, 0x000007D0,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 enemy_2d_common_dead_event[415] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x10000000, 0x0002005B, (s32)pressCheck,
-    0xFE363C8F, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_set_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0x000000C8, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000F005B,
-    (s32)evt_eff, 0x00000000, (s32)"kemuri_test", 0x00000004,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0xF24A7DB3,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0003005B,
-    (s32)evt_snd_sfxon, (s32)"SFX_ENEMY_DIE1", 0x00000000, 0x0002005B,
-    (s32)evt_npc_set_damage_anim, (s32)"me", 0x0003005B, (s32)evt_npc_get_kpencount_type,
-    (s32)"me", 0xFE363C80, 0x00010022, 0xFE363C80,
-    0x0001002D, 0x00000001, 0x00020018, 0xFE363C8F,
-    0x00000000, 0x0002005B, (s32)evt_npc_calc_score, (s32)"me",
-    0x0001005C, (s32)&_2d_dead_rotate_event, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0003005B, (s32)_2d_get_dead_jump_offset, (s32)"me", 0xFE363C83,
-    0x00020035, 0xFE363C80, 0xFE363C83, 0x0009005B,
-    (s32)_2d_dead_jump, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000258, 0xF24B1A80, 0xF24A7A80,
-    0xFFFFFED4, 0x00000020, 0x0002005B, (s32)evt_npc_calc_score,
-    (s32)"me", 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"me", 0x00020000, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00000400, 0x0004005B,
-    (s32)evt_npc_status_onoff, 0x00000000, (s32)"me", 0x00000002,
-    0x0002005B, (s32)evt_npc_set_talk_anim, (s32)"me", 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00020036, 0xFE363C81, 0x00000005,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00010009, 0x0000001E,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000006E, 0x00010005,
-    0x0000001E, 0x0005005B, (s32)evt_npc_add_rotate, (s32)"me",
-    0x00000000, 0x00000000, 0x00000001, 0x00010009,
-    0x00000001, 0x00000006, 0x00000070, 0x00020036,
-    0xFE363C80, 0x00000028, 0x00020036, 0xFE363C81,
-    0x00000014, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000001F4,
-    0x00000000, 0xFFFFFFF6, 0x00000004, 0x00000000,
-    0x00010005, 0x00000000, 0x0000006E, 0x00010005,
-    0x0000003C, 0x0005005B, (s32)evt_npc_add_rotate, (s32)"me",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00010009,
-    0x00000001, 0x00000006, 0x00000070, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00020035, 0xFE363C80, 0x00000050,
-    0x00020036, 0xFE363C81, 0x00000014, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000003E8, 0x00000000, 0xFFFFFFF6,
-    0x00000004, 0x00000000, 0x0000006E, 0x00010005,
-    0x0000003C, 0x0005005B, (s32)evt_npc_add_rotate, (s32)"me",
-    0x00000000, 0x00000000, 0x00000001, 0x00010009,
-    0x00000001, 0x00000006, 0x00000070, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00020036, 0xFE363C80, 0x00000050,
-    0x00020036, 0xFE363C81, 0x00000014, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000003E8, 0x00000000, 0xFFFFFFF6,
-    0x00000004, 0x00000000, 0x0002001C, 0xFE363C81,
-    0xFFFFFF38, 0x00000007, 0x00000021, 0x00000006,
-    0x00000021, 0x0001002D, 0x00000002, 0x0002005B,
-    (s32)evt_npc_calc_score, (s32)"me", 0x0001005C, (s32)&_2d_dead_rotate_event,
-    0x0004005B, (s32)evt_npc_status_onoff, 0x00000001, (s32)"me",
-    0x00400000, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0003005B,
-    (s32)_2d_get_dead_jump_offset, (s32)"me", 0xFE363C83, 0x00020035,
-    0xFE363C80, 0xFE363C83, 0x0009005B, (s32)_2d_dead_jump,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000258, 0xF24B1A80, 0xF24B7E80, 0xFFFFFED4,
-    0x0001002D, 0x00000004, 0x0002005B, (s32)evt_npc_calc_score,
-    (s32)"me", 0x0001005C, (s32)&_2d_dead_rotate_event, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0003005B, (s32)_2d_get_dead_jump_offset, (s32)"me",
-    0xFE363C83, 0x00020035, 0xFE363C80, 0xFE363C83,
-    0x0009005B, (s32)_2d_dead_jump, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000258, 0xF24B1A80,
-    0xF24B7E80, 0xFFFFFED4, 0x0001002D, 0x00000020,
-    0x0001005C, (s32)&_2d_dead_rotate_event, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0003005B, (s32)_2d_get_dead_jump_offset, (s32)"me", 0xFE363C83,
-    0x00020035, 0xFE363C80, 0xFE363C83, 0x0009005B,
-    (s32)_2d_dead_jump, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000258, 0xF24B1A80, 0xF24B7E80,
-    0xFFFFFED4, 0x0001002D, 0x00000008, 0x0002005B,
-    (s32)evt_npc_calc_score, (s32)"me", 0x0001005C, (s32)&_2d_dead_rotate_event,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0003005B, (s32)_2d_get_dead_jump_offset,
-    (s32)"me", 0xFE363C83, 0x00020035, 0xFE363C80,
-    0xFE363C83, 0x0009005B, (s32)_2d_dead_jump, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000258,
-    0xF24B1A80, 0xF24B7E80, 0xFFFFFED4, 0x0001002D,
-    0x00000010, 0x0002005B, (s32)evt_npc_calc_score, (s32)"me",
-    0x0001005C, (s32)&_2d_dead_rotate_event, 0x0004005B, (s32)evt_npc_status_onoff,
-    0x00000001, (s32)"me", 0x00400000, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0003005B, (s32)_2d_get_dead_jump_offset, (s32)"me",
-    0xFE363C83, 0x00020035, 0xFE363C80, 0xFE363C83,
-    0x0009005B, (s32)_2d_dead_jump, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000258, 0xF24B1A80,
-    0xF24B7E80, 0xFFFFFED4, 0x0000002A, 0x0001000A,
-    0x000001F4, 0x00000031, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 _2d_dead_rotate_event[16] = {
-    0x00020032, 0xFE363C80, 0xFFFFFFF4, 0x00010005,
-    0x0000000F, 0x0005005B, (s32)evt_npc_add_rotate, (s32)"me",
-    0x00000000, 0x00000000, 0xFE363C80, 0x00010009,
-    0x00000001, 0x00000006, 0x00000002, 0x00000001,
-};
-s32 unk_evt_8033d458[13] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0002005B, (s32)evt_npc_set_stay_anim,
-    (s32)"me", 0x00010003, 0x00000000, 0x0001000A,
-    0x000001F4, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 npc_urouro_move_event[21] = {
-    0x0001005E, (s32)&npc_urouro_init_event, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0007005B, (s32)urouro_init_func, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0xF24C0A80, 0xF24AF280, 0x00000000,
-    0x0002005B, (s32)urouro_main_func, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 npc_urouro_return_event[37] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_set_dir_to_home, (s32)"me",
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24C0A80,
-    0x0007005B, (s32)evt_npc_move_position, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0x00000000, 0xF24B1A80, 0x00000004,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 kuriboo_move_event[39] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0003005B, (s32)evt_sub_random,
-    0x00000168, 0xFE363C83, 0x00010003, 0x00000000,
-    0x0001000A, 0x000001F4, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0004005B, (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80,
-    0xF24E3A80, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24C0A80, 0x0007005B,
-    (s32)evt_npc_move_position, (s32)"me", 0xFE363C80, 0xFE363C82,
-    0x000007D0, 0xF24B1A80, 0x00000004, 0x00010004,
-    0x00000000, 0x00000002, 0x00000001,
-};
-s32 kuriboo_find_event[54] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0009005B, (s32)evt_npc_jump_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000012C, 0x00000000,
-    0xF24ACA80, 0x00000000, 0x0008005B, (s32)evt_npc_homing_target,
-    (s32)"me", (s32)"mario", 0x00000000, 0xF24C5A80,
-    0xF24AA280, 0xF24B6A80, 0x00000004, 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 kuriboo_lost_event[31] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me",
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 kuriboo_return_event[37] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_set_dir_to_home, (s32)"me",
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24C0A80,
-    0x0007005B, (s32)evt_npc_move_position, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0x00000000, 0xF24B1A80, 0x00000004,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 patakuri_move_event[148] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_sub_random, 0x00000168,
-    0xFE363C83, 0x00010003, 0x00000000, 0x0002005B,
-    (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me", 0x0004005B,
-    (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80, 0xF24E3A80,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x00000032, 0xF24A5280,
-    0x00000000, 0x00000003, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x00000032, 0xF24AA280, 0x00000000, 0x00000003,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x00000032, 0xF24A5280,
-    0x00000000, 0x00000003, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x00000032, 0xF24AA280, 0x00000000, 0x00000003,
-    0x00010004, 0x00000000, 0x00000002, 0x00000001,
-};
-s32 patakuri_find_event[90] = {
-    0x0002005B, (s32)evt_npc_set_run_anim, (s32)"me", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0004005B, (s32)evt_get_target_dir, (s32)"me", (s32)"mario",
-    0xFE363C80, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C81, 0xFE363C82, 0xFE363C83, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C81, 0xFE363C83, 0xFE363C80,
-    0xF24C0A80, 0x0003005B, (s32)evt_npc_set_ry, (s32)"me",
-    0xFE363C80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x00000032, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x00000000, 0x0000004B,
-    0xF249B280, 0x00000000, 0x00000003, 0x0002005B,
-    (s32)evt_npc_sound_data_reset, (s32)"me", 0x0002005B, (s32)evt_npc_set_stay_anim,
-    (s32)"me", 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C81, 0xFE363C82, 0xFE363C83, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C81, 0xFE363C82, 0xFE363C83,
-    0x00000032, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C81, 0xFE363C82, 0xFE363C83,
-    0x000003E8, 0x00000000, 0x00000000, 0x00000000,
-    0x00000001, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 patakuri_lost_event[31] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 patakuri_return_event[170] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me",
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x00000032, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x000003E8, 0x00000000,
-    0x00000000, 0x00000000, 0x00000001, 0x0002005B,
-    (s32)evt_npc_set_walk_anim, (s32)"me", 0x0002005B, (s32)evt_set_dir_to_home,
-    (s32)"me", 0x0003005B, (s32)evt_npc_get_dir, (s32)"me",
-    0xFE363C83, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000032, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000000,
-    0xF24A5280, 0x00000000, 0x00000003, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000032, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000001F4, 0x00000000, 0xF24AA280, 0x00000000,
-    0x00000003, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000032, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000000,
-    0xF24A5280, 0x00000000, 0x00000003, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000032, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000001F4, 0x00000000, 0xF24AA280, 0x00000000,
-    0x00000003, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 nokonoko_shell_return_event[50] = {
-    0x0004005B, (s32)evt_npc_get_unitwork, (s32)"me", 0x00000001,
-    0xFE363C8F, 0x00020018, 0xFE363C8F, 0x00000001,
-    0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000,
-    0x00000001, 0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me",
-    0x00000001, 0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0009005B, (s32)evt_npc_jump_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0000012C,
-    0x00000000, 0xF24ACA80, 0x00000000, 0x00000021,
-    0x00000002, 0x00000001,
-};
-s32 nokonoko_init_event[28] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00120018, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x0004005B, (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000,
-    0x00000000, 0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me",
-    0x00000001, 0x00000000, 0x00000002, 0x00000001,
-};
-s32 nokonoko_move_event[58] = {
-    0x0001005E, (s32)&nokonoko_shell_return_event, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x0003005B, (s32)evt_sub_random, 0x00000168, 0xFE363C83,
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x00010003,
-    0x00000000, 0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me",
-    0x0001000A, 0x000001F4, 0x0002005B, (s32)evt_npc_set_walk_anim,
-    (s32)"me", 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80, 0xF24E3A80,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x000007D0,
-    0xF24B1A80, 0x00000004, 0x00010004, 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 nokonoko_find_event[172] = {
-    0x0001005E, (s32)&nokonoko_shell_return_event, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000,
-    0x00000000, 0x000C005B, (s32)evt_eff_fukidashi, 0x00000001,
-    0x00000000, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0000001E, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0009005B, (s32)evt_npc_jump_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000012C, 0x00000000,
-    0xF24ACA80, 0x00000000, 0x0007005B, (s32)evt_npc_sound_data_set,
-    (s32)"me", (s32)"SFX_FLD_ENM_NOKO_MOVE1", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0004005B, (s32)evt_npc_set_unitwork,
-    (s32)"me", 0x00000001, 0x00000001, 0x0003005B,
-    (s32)evt_npc_set_attack_mode, (s32)"me", 0x0000000B, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"NKT_A_1", 0x0004005B,
-    (s32)evt_get_target_dir, (s32)"me", (s32)"mario", 0xFE363C83,
-    0x0003005B, (s32)evt_npc_set_ry, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)"SFX_FLD_ENM_NOKO_SHELL1", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24E7A80, 0x0000006E,
-    0x00010005, 0x00000000, 0x0004005B, (s32)evt_npc_get_unitwork,
-    (s32)"me", 0x00000000, 0xFE363C8F, 0x00020018,
-    0xFE363C8F, 0x00000001, 0x00000007, 0x00000021,
-    0x0005005B, (s32)evt_npc_add_rotate, (s32)"me", 0x00000000,
-    0x00000028, 0x00000000, 0x00010009, 0x00000001,
-    0x00000006, 0x00000070, 0x0001000A, 0x00000064,
-    0x0001006F, 0xFE363C8E, 0x00010005, 0x00000000,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
-    0x0000000A, 0x000F005B, (s32)evt_eff, (s32)"",
-    (s32)"kemuri_test", 0x00000000, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0xF24A7BB3, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00010009, 0x00000003, 0x00000006,
-    0x00000070, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x00000320, 0xF250BA80,
-    0x00000004, 0x0001005F, 0xFE363C8E, 0x0001005E,
-    (s32)&nokonoko_shell_return_event, 0x0001000A, 0x000001F4, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 nokonoko_lost_event[46] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0001005E,
-    (s32)&nokonoko_shell_return_event, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x00000000, 0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me",
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x000C005B, (s32)evt_eff_fukidashi,
-    0x00000001, 0x00000000, (s32)"me", 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000001E, 0x0002005B,
-    (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 nokonoko_return_event[55] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0001005E,
-    (s32)&nokonoko_shell_return_event, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x00000000, 0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me",
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me", 0x0002005B,
-    (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C83, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x00000000,
-    0xF24B1A80, 0x00000004, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 togenoko_shell_return_event[50] = {
-    0x0004005B, (s32)evt_npc_get_unitwork, (s32)"me", 0x00000001,
-    0xFE363C8F, 0x00020018, 0xFE363C8F, 0x00000001,
-    0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000,
-    0x00000001, 0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me",
-    0x00000001, 0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0009005B, (s32)evt_npc_jump_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0000012C,
-    0x00000000, 0xF24ACA80, 0x00000000, 0x00000021,
-    0x00000002, 0x00000001,
-};
-s32 togenoko_init_event[28] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00120018, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x0004005B, (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000,
-    0x00000000, 0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me",
-    0x00000001, 0x00000000, 0x00000002, 0x00000001,
-};
-s32 togenoko_move_event[58] = {
-    0x0001005E, (s32)&togenoko_shell_return_event, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x0003005B, (s32)evt_sub_random, 0x00000168, 0xFE363C83,
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x00010003,
-    0x00000000, 0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me",
-    0x0001000A, 0x000001F4, 0x0002005B, (s32)evt_npc_set_walk_anim,
-    (s32)"me", 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80, 0xF24E3A80,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x000007D0,
-    0xF24B1A80, 0x00000004, 0x00010004, 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 togenoko_find_event[172] = {
-    0x0001005E, (s32)&togenoko_shell_return_event, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000,
-    0x00000000, 0x000C005B, (s32)evt_eff_fukidashi, 0x00000001,
-    0x00000000, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0000001E, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0009005B, (s32)evt_npc_jump_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000012C, 0x00000000,
-    0xF24ACA80, 0x00000000, 0x0007005B, (s32)evt_npc_sound_data_set,
-    (s32)"me", (s32)"SFX_FLD_ENM_NOKO_MOVE1", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0004005B, (s32)evt_npc_set_unitwork,
-    (s32)"me", 0x00000001, 0x00000001, 0x0003005B,
-    (s32)evt_npc_set_attack_mode, (s32)"me", 0x0000000B, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"A_1", 0x0004005B,
-    (s32)evt_get_target_dir, (s32)"me", (s32)"mario", 0xFE363C83,
-    0x0003005B, (s32)evt_npc_set_ry, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)"SFX_FLD_ENM_NOKO_SHELL1", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24E7A80, 0x0000006E,
-    0x00010005, 0x00000000, 0x0004005B, (s32)evt_npc_get_unitwork,
-    (s32)"me", 0x00000000, 0xFE363C8F, 0x00020018,
-    0xFE363C8F, 0x00000001, 0x00000007, 0x00000021,
-    0x0005005B, (s32)evt_npc_add_rotate, (s32)"me", 0x00000000,
-    0x00000028, 0x00000000, 0x00010009, 0x00000001,
-    0x00000006, 0x00000070, 0x0001000A, 0x00000064,
-    0x0001006F, 0xFE363C8E, 0x00010005, 0x00000000,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
-    0x0000000A, 0x000F005B, (s32)evt_eff, (s32)"",
-    (s32)"kemuri_test", 0x00000000, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0xF24A7BB3, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00010009, 0x00000003, 0x00000006,
-    0x00000070, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x00000320, 0xF250BA80,
-    0x00000004, 0x0001005F, 0xFE363C8E, 0x0001005E,
-    (s32)&togenoko_shell_return_event, 0x0001000A, 0x000001F4, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 togenoko_lost_event[46] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0001005E,
-    (s32)&togenoko_shell_return_event, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x00000000, 0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me",
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x000C005B, (s32)evt_eff_fukidashi,
-    0x00000001, 0x00000000, (s32)"me", 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000001E, 0x0002005B,
-    (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 togenoko_return_event[55] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0001005E,
-    (s32)&togenoko_shell_return_event, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x00000000, 0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me",
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me", 0x0002005B,
-    (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C83, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x00000000,
-    0xF24B1A80, 0x00000004, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 patapata_move_event[123] = {
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0003005B, (s32)evt_sub_random,
-    0x00000168, 0xFE363C83, 0x0002005B, (s32)evt_npc_sound_data_reset,
-    (s32)"me", 0x00010003, 0x00000000, 0x0002005B,
-    (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me", 0x00020032,
-    0xFE363C8A, 0x00000000, 0x00010005, 0x00000000,
-    0x00020018, 0xFE363C8A, 0x00000000, 0x0004005B,
-    (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24A2A80, 0xF24ACA80,
-    0x00000021, 0x00020018, 0xFE363C8A, 0x00000002,
-    0x0004005B, (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24A2A80,
-    0xF24ACA80, 0x00000021, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24AF280, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000001F4,
-    0x00000000, 0xF24A5E80, 0x00000000, 0x00000002,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24AF280,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24A9680,
-    0x00000000, 0x00000002, 0x0002001D, 0xFE363C8A,
-    0x00000004, 0x00000007, 0x00000021, 0x00020035,
-    0xFE363C8A, 0x00000001, 0x00000006, 0x00010004,
-    0x00000000, 0x00000002, 0x00000001,
-};
-s32 patapata_find_event[131] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0003005B, (s32)evt_npc_pera_onoff, (s32)"me", 0x00000001,
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x00010005, 0x00000012,
-    0x0005005B, (s32)evt_npc_add_rotate, (s32)"me", 0x00000000,
-    0x0000000F, 0x00000000, 0x00010009, 0x00000001,
-    0x00000006, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"PTP_A_5", 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_PATA_MOVE2", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x00010005, 0x00000006,
-    0x0005005B, (s32)evt_npc_add_rotate, (s32)"me", 0x00000000,
-    0x0000000F, 0x00000000, 0x00010009, 0x00000001,
-    0x00000006, 0x0005005B, (s32)evt_npc_set_rotate, (s32)"me",
-    0x00000000, 0x00000000, 0x00000000, 0x0003005B,
-    (s32)evt_npc_set_attack_mode, (s32)"me", 0x0000000A, 0x0007005B,
-    (s32)evt_npc_sound_data_set, (s32)"me", (s32)"SFX_FLD_ENM_PATA_MOVE3", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0004005B,
-    (s32)evt_get_target_dir, (s32)"me", (s32)"mario", 0xFE363C80,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C81, 0xFE363C83, 0xFE363C80, 0xF24D9A80,
-    0x0003005B, (s32)evt_npc_set_ry, (s32)"me", 0xFE363C80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x000003E8, 0x00000000, 0xF249DA80,
-    0x00000004, 0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 patapata_lost_event[44] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x00000000, 0x000C005B, (s32)evt_eff_fukidashi, 0x00000001,
-    0x00000000, (s32)"me", 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0000001E, 0x0002005B, (s32)evt_npc_set_stay_anim,
-    (s32)"me", 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry,
-    (s32)"me", 0x0001000A, 0x000003E8, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 patapata_return_event[135] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x00000000, 0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me",
-    0x0001000A, 0x000001F4, 0x0002005B, (s32)evt_npc_set_walk_anim,
-    (s32)"me", 0x0002005B, (s32)evt_set_dir_to_home, (s32)"me",
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24AF280,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24A9680,
-    0x00000000, 0x00000002, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24AF280,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24A5E80,
-    0x00000000, 0x00000002, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24AF280,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24A9680,
-    0x00000000, 0x00000002, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24AF280,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24A5E80,
-    0x00000000, 0x00000002, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-u32 met_init_event_common[21] = {
-    0x0004005B, (u32)evt_npc_flag_onoff, 0x00000001, (u32)"me",
-    0x00000008, 0x0004005B, (u32)evt_npc_flag_onoff, 0x00000001,
-    (u32)"me", 0x00100010, 0x0004005B, (u32)evt_npc_status_onoff,
-    0x00000001, (u32)"me", 0x00000002, 0x0005005B,
-    (u32)evt_npc_set_rotate, (u32)"me", 0x00000000, 0x00000000,
-    0x00000000,
-};
-s32 met_set_anim_wait_event[48] = {
-    0x0004005B, (s32)evt_npc_get_btlsetup_work, (s32)"me", 0x00000000,
-    0xFE363C8F, 0x00020018, 0xFE363C8F, 0x00000000,
-    0x0004005B, (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000,
-    0xFE363C8F, 0x00020018, 0xFE363C8F, 0x00000000,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"MET_S_1",
-    0x00000020, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"TMT_S_1", 0x00000021, 0x00000020, 0x0004005B,
-    (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000, 0xFE363C8F,
-    0x00020018, 0xFE363C8F, 0x00000000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"SMT_S_1", 0x00000020,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"STM_S_1",
-    0x00000021, 0x00000021, 0x00000002, 0x00000001,
-};
-s32 met_set_anim_walk_event[48] = {
-    0x0004005B, (s32)evt_npc_get_btlsetup_work, (s32)"me", 0x00000000,
-    0xFE363C8F, 0x00020018, 0xFE363C8F, 0x00000000,
-    0x0004005B, (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000,
-    0xFE363C8F, 0x00020018, 0xFE363C8F, 0x00000000,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"MET_W_1",
-    0x00000020, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"TMT_W_1", 0x00000021, 0x00000020, 0x0004005B,
-    (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000, 0xFE363C8F,
-    0x00020018, 0xFE363C8F, 0x00000000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"SMT_W_1", 0x00000020,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"STM_W_1",
-    0x00000021, 0x00000021, 0x00000002, 0x00000001,
-};
-s32 met_init_event[19] = {
-    0x0001005E, (s32)&met_init_event_common, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00020000, 0x0004005B,
-    (s32)evt_npc_set_btlsetup_work, (s32)"me", 0x00000000, 0x00000000,
-    0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000,
-    0x00000000, 0x00000002, 0x00000001,
-};
-s32 met_init_event_ceil[14] = {
-    0x0001005E, (s32)&met_init_event_common, 0x0004005B, (s32)evt_npc_set_btlsetup_work,
-    (s32)"me", 0x00000000, 0x00000001, 0x0004005B,
-    (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000, 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 togemet_init_event[19] = {
-    0x0001005E, (s32)&met_init_event_common, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00020000, 0x0004005B,
-    (s32)evt_npc_set_btlsetup_work, (s32)"me", 0x00000000, 0x00000000,
-    0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000,
-    0x00000001, 0x00000002, 0x00000001,
-};
-s32 togemet_init_event_ceil[14] = {
-    0x0001005E, (s32)&met_init_event_common, 0x0004005B, (s32)evt_npc_set_btlsetup_work,
-    (s32)"me", 0x00000000, 0x00000001, 0x0004005B,
-    (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000, 0x00000001,
-    0x00000002, 0x00000001,
-};
-s32 met_move_event[54] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x0001005E, (s32)&met_set_anim_wait_event, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x0003005B, (s32)evt_sub_random, 0x00000168, 0xFE363C83,
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x00010003,
-    0x00000000, 0x0001000A, 0x000001F4, 0x0001005E,
-    (s32)&met_set_anim_walk_event, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80, 0xF24E3A80,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x000007D0,
-    0xF24B1A80, 0x00000004, 0x00010004, 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 met_find_event[269] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x0002005B, (s32)evt_npc_sound_data_reset,
-    (s32)"me", 0x0004005B, (s32)evt_npc_get_btlsetup_work, (s32)"me",
-    0x00000000, 0xFE363C8F, 0x00020018, 0xFE363C8F,
-    0x00000000, 0x000C005B, (s32)evt_eff_fukidashi, 0x00000001,
-    0x00000000, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0000001E, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0009005B, (s32)evt_npc_jump_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000012C, 0x00000000,
-    0xF24ACA80, 0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x0000000B, 0x0007005B, (s32)evt_npc_sound_data_set,
-    (s32)"me", (s32)"SFX_FLD_ENM_MET_ATTACK1", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0004005B, (s32)evt_npc_get_unitwork,
-    (s32)"me", 0x00000000, 0xFE363C8F, 0x00020018,
-    0xFE363C8F, 0x00000000, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"MET_A_1", 0x00000020, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"TMT_A_1", 0x00000021,
-    0x0004005B, (s32)evt_get_target_dir, (s32)"me", (s32)"mario",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"me",
-    0xFE363C83, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24E7A80, 0x0000006E, 0x00020032, 0xFE363C84,
-    0x00000000, 0x00020032, 0xFE363C8F, 0x00000000,
-    0x00010005, 0x00000000, 0x00010009, 0x00000001,
-    0x00020035, 0xFE363C8F, 0x00000001, 0x0002001D,
-    0xFE363C8F, 0x00000037, 0x00000007, 0x00000021,
-    0x00020035, 0xFE363C84, 0x00000028, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0xFE363C84,
-    0x00000000, 0x00000006, 0x00000070, 0x0001000A,
-    0x00000064, 0x0001006F, 0xFE363C8E, 0x00010005,
-    0x00000000, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
-    0xFE363C81, 0x0000000A, 0x000F005B, (s32)evt_eff,
-    (s32)"", (s32)"kemuri_test", 0x00000000, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0xF24A7BB3, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00010009, 0x00000003,
-    0x00000006, 0x00000070, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x00000320,
-    0xF250BA80, 0x00000004, 0x0001005F, 0xFE363C8E,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x0001005E, (s32)&met_set_anim_wait_event,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0009005B, (s32)evt_npc_jump_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0000012C, 0x00000000, 0xF24ACA80, 0x00000000,
-    0x00000020, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x0000000B, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"me", 0x00020000, 0x0004005B, (s32)evt_npc_get_unitwork,
-    (s32)"me", 0x00000000, 0xFE363C8F, 0x00020018,
-    0xFE363C8F, 0x00000000, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"SMT_A_1", 0x00000020, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"STM_A_1", 0x00000021,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0009005B, (s32)evt_npc_jump_position,
-    (s32)"me", 0xFE363C80, 0x00000000, 0xFE363C82,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x0004005B, (s32)evt_npc_set_btlsetup_work, (s32)"me", 0x00000000,
-    0x00000000, 0x0001005E, (s32)&met_set_anim_wait_event, 0x0001000A,
-    0x000003E8, 0x00000021, 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 met_lost_event[43] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0003005B,
-    (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000, 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0001005E, (s32)&met_set_anim_wait_event, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 met_return_event[51] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0003005B,
-    (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x0001005E, (s32)&met_set_anim_wait_event, 0x0001000A,
-    0x000001F4, 0x0001005E, (s32)&met_set_anim_walk_event, 0x0002005B,
-    (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C83, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x00000000,
-    0xF24B1A80, 0x00000004, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 patamet_move_event[151] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_sub_random, 0x00000168,
-    0xFE363C83, 0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me",
-    0x00010003, 0x00000000, 0x0002005B, (s32)evt_npc_set_stay_anim,
-    (s32)"me", 0x0001000A, 0x000001F4, 0x0002005B,
-    (s32)evt_npc_set_walk_anim, (s32)"me", 0x0004005B, (s32)evt_npc_get_loiter_dir,
-    0xFE363C83, 0xF24C5A80, 0xF24E3A80, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000032, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000032, 0xF24A5280, 0x00000000,
-    0x00000003, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000032, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x00000032,
-    0xF24AA280, 0x00000000, 0x00000003, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000032, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000032, 0xF24A5280, 0x00000000,
-    0x00000003, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000032, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x00000032,
-    0xF24AA280, 0x00000000, 0x00000003, 0x00010004,
-    0x00000000, 0x00000002, 0x00000001,
-};
-s32 patamet_find_event[108] = {
-    0x0007005B, (s32)evt_npc_sound_data_set, (s32)"me", (s32)"SFX_FLD_ENM_PATAMET_MOVE2",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0002005B, (s32)evt_npc_set_run_anim, (s32)"me", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0004005B, (s32)evt_get_target_dir, (s32)"me", (s32)"mario",
-    0xFE363C80, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C81, 0xFE363C82, 0xFE363C83, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C81, 0xFE363C83, 0xFE363C80,
-    0xF24C0A80, 0x0003005B, (s32)evt_npc_set_ry, (s32)"me",
-    0xFE363C80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x00000032, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x00000000, 0x0000004B,
-    0xF249B280, 0x00000000, 0x00000003, 0x0002005B,
-    (s32)evt_npc_sound_data_reset, (s32)"me", 0x0002005B, (s32)evt_npc_set_stay_anim,
-    (s32)"me", 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry,
-    (s32)"me", 0x0001000A, 0x000001F4, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x00000032, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x000003E8, 0x00000000,
-    0x00000000, 0x00000000, 0x00000001, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 patamet_lost_event[34] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0002005B,
-    (s32)evt_npc_set_stay_anim, (s32)"me", 0x000C005B, (s32)evt_eff_fukidashi,
-    0x00000001, 0x00000000, (s32)"me", 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000001E, 0x0002005B,
-    (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 patamet_return_event[143] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0002005B,
-    (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me", 0x0002005B,
-    (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C83, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000001F4,
-    0x00000000, 0xF24A5280, 0x00000000, 0x00000003,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24AA280,
-    0x00000000, 0x00000003, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000001F4,
-    0x00000000, 0xF24A5280, 0x00000000, 0x00000003,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24AA280,
-    0x00000000, 0x00000003, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 chorobon_move_event[69] = {
-    0x0005005B, (s32)evt_npc_set_scale, (s32)"me", 0x00000001,
-    0x00000001, 0x00000001, 0x0002005B, (s32)evt_npc_set_walk_anim,
-    (s32)"me", 0x00010003, 0x00000000, 0x0003005B,
-    (s32)evt_sub_random, 0x00000003, 0xFE363C84, 0x00020035,
-    0xFE363C84, 0x00000002, 0x00010005, 0xFE363C84,
-    0x0003005B, (s32)evt_sub_random, 0x00000168, 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0x00000032,
-    0x0009005B, (s32)evt_npc_jump_position, (s32)"me", 0xFE363C80,
-    0xFFFFD8F0, 0xFE363C82, 0x0000012C, 0x00000000,
-    0xF24AF280, 0x00000000, 0x00000006, 0x0004005B,
-    (s32)evt_get_target_dir, (s32)"me", (s32)"mario", 0xFE363C83,
-    0x0003005B, (s32)evt_npc_set_ry, (s32)"me", 0xFE363C83,
-    0x0003005B, (s32)evt_sub_random, 0x000001F4, 0xFE363C84,
-    0x00020035, 0xFE363C84, 0x0000000A, 0x0001000A,
-    0xFE363C84, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 chorobon_find_event[63] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x00010005, 0x00000003, 0x0004005B,
-    (s32)evt_get_target_dir, (s32)"me", (s32)"mario", 0xFE363C83,
-    0x0003005B, (s32)evt_npc_set_ry, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0x00000032,
-    0x0009005B, (s32)evt_npc_jump_position, (s32)"me", 0xFE363C80,
-    0xFFFFD8F0, 0xFE363C82, 0x0000012C, 0x00000000,
-    0xF24AF280, 0x00000000, 0x0001000A, 0x00000032,
-    0x00000006, 0x0005005B, (s32)evt_npc_set_scale, (s32)"me",
-    0x00000001, 0x00000001, 0x00000001, 0x0002005B,
-    (s32)evt_npc_set_walk_anim, (s32)"me", 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 chorobon_lost_event[14] = {
-    0x0005005B, (s32)evt_npc_set_scale, (s32)"me", 0x00000001,
-    0x00000001, 0x00000001, 0x0002005B, (s32)evt_npc_set_walk_anim,
-    (s32)"me", 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 chorobon_return_event[43] = {
-    0x0005005B, (s32)evt_npc_set_scale, (s32)"me", 0x00000001,
-    0x00000001, 0x00000001, 0x0002005B, (s32)evt_npc_set_walk_anim,
-    (s32)"me", 0x0002005B, (s32)evt_set_dir_to_home, (s32)"me",
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0x00000032,
-    0x0009005B, (s32)evt_npc_jump_position, (s32)"me", 0xFE363C80,
-    0xFFFFD8F0, 0xFE363C82, 0x0000012C, 0x00000000,
-    0xF24AF280, 0x00000000, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 pansy_move_event[42] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0003005B, (s32)evt_sub_random,
-    0x00000168, 0xFE363C83, 0x0002005B, (s32)evt_npc_sound_data_reset,
-    (s32)"me", 0x00010003, 0x00000000, 0x0001000A,
-    0x000001F4, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80, 0xF24E3A80,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x000007D0,
-    0xF24B1A80, 0x00000004, 0x00010004, 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 pansy_find_event[46] = {
-    0x0007005B, (s32)evt_npc_sound_data_set, (s32)"me", (s32)"SFX_FLD_ENM_PANZI_MOVE2",
-    (s32)"SFX_FLD_ENM_PANZI_MOVE2", 0x00007530, 0x00000000, 0x00000000,
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0008005B, (s32)evt_npc_homing_target,
-    (s32)"me", (s32)"mario", 0x00000000, 0xF24C0A80,
-    0xF24AA280, 0xF24B6A80, 0x00000004, 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 pansy_lost_event[35] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"PAN_S_1", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 pansy_return_event[45] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"PAN_S_1", 0x0001000A,
-    0x000001F4, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"PAN_W_1", 0x0002005B, (s32)evt_set_dir_to_home, (s32)"me",
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24C0A80,
-    0x0007005B, (s32)evt_npc_move_position, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0x00000000, 0xF24B1A80, 0x00000004,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 twinkling_pansy_move_event[42] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0003005B, (s32)evt_sub_random,
-    0x00000168, 0xFE363C83, 0x0002005B, (s32)evt_npc_sound_data_reset,
-    (s32)"me", 0x00010003, 0x00000000, 0x0001000A,
-    0x000001F4, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80, 0xF24E3A80,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x000007D0,
-    0xF24B1A80, 0x00000004, 0x00010004, 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 twinkling_pansy_find_event[54] = {
-    0x0007005B, (s32)evt_npc_sound_data_set, (s32)"me", (s32)"SFX_FLD_ENM_PANZI_MOVE2",
-    (s32)"SFX_FLD_ENM_PANZI_MOVE2", 0x00007530, 0x00000000, 0x00000000,
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C83, 0x00020035, 0xFE363C83,
-    0x000000B4, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24F2A80, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x000003E8, 0xF24F2A80,
-    0x00000006, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 twinkling_pansy_lost_event[35] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"PAN_S_1_K", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 twinkling_pansy_return_event[45] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"PAN_S_1_K", 0x0001000A,
-    0x000001F4, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"PAN_W_1_K", 0x0002005B, (s32)evt_set_dir_to_home, (s32)"me",
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24C0A80,
-    0x0007005B, (s32)evt_npc_move_position, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0x00000000, 0xF24B1A80, 0x00000004,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 karon_init_event[36] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0002005B, (s32)mahoon_get_groupname,
-    0xFE363C8A, 0x0006005B, (s32)evt_npc_slave_entry, (s32)"me",
-    0x00000000, 0xFE363C8A, 0xFE363C80, (s32)&enemy_slave_common_dead_event,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, 0xFE363C80,
-    0x20000000, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    0xFE363C80, 0x00000020, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"slave_0", (s32)"KRN_H_1", 0x0003005B, (s32)evt_npc_set_width,
-    (s32)"slave_0", 0x00000018, 0x0003005B, (s32)evt_npc_set_height,
-    (s32)"slave_0", 0x00000008, 0x00000002, 0x00000001,
-};
-s32 karon_move_event[57] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"slave_0", 0x00000080, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"S_1", 0x0003005B,
-    (s32)evt_sub_random, 0x00000168, 0xFE363C83, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00200000,
-    0x0003005B, (s32)evt_sub_random, 0x00000168, 0xFE363C83,
-    0x00010003, 0x00000000, 0x0001000A, 0x000001F4,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)evt_npc_get_loiter_dir,
-    0xFE363C83, 0xF24C5A80, 0xF24E3A80, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x000007D0, 0xF24B1A80,
-    0x00000004, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 karon_find_event[150] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00200000, 0x0000006E,
-    0x00010003, 0x00000000, 0x0005005B, (s32)evt_npc_add_rotate,
-    (s32)"slave_0", 0x00000000, 0x00000000, 0x0000001E,
-    0x00010009, 0x00000001, 0x00010004, 0x00000000,
-    0x00000070, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"KRN_A_1", 0x0001000A, 0x000000FA, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C82, 0xFE363C83,
-    0xFE363C84, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_KARON_BONE_THROW1",
-    0xFE363C82, 0xFE363C83, 0xFE363C84, 0x00000000,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"KRN_A_2",
-    0x0001000A, 0x00000096, 0x0000006E, 0x0001000A,
-    0x000003E8, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"KRN_S_1", 0x00000070, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"slave_0", 0x00000000, 0x00000000, 0x00000000,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
-    0x00000019, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"slave_0", 0x00000080,
-    0x0005005B, (s32)evt_mario_get_pos, 0x00000000, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"slave_0", 0x00000020, 0x0003005B,
-    (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x0000000C, 0x0009005B,
-    (s32)evt_npc_jump_position, (s32)"slave_0", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000003E8, 0x00000000, 0xF24BA680,
-    0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0",
-    0x00000000, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"slave_0", 0x00000020, 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"slave_0", 0x00000000, 0xFFFFFC18, 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00200000, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 karon_lost_event[18] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0002005B,
-    (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 karon_return_event[37] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_set_dir_to_home, (s32)"me",
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24C0A80,
-    0x0007005B, (s32)evt_npc_move_position, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0x00000000, 0xF24B1A80, 0x00000004,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 karon_blow_event[19] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000020, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0",
-    0x00000000, 0xFFFFFC18, 0x00000000, 0x0001005E,
-    (s32)&enemy_common_blow_event, 0x00000002, 0x00000001,
-};
-s32 honenoko2_init_event[18] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00000400, 0x0004005B,
-    (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000, 0x00000001,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"KRN_Z_2",
-    0x00000002, 0x00000001,
-};
-s32 honenoko2_move_event[49] = {
-    0x00010071, (s32)"[EVENT] HONENOKO MOVE\n", 0x00010003, 0x00000000,
-    0x0004005B, (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0003005B, (s32)evt_npc_wait_msec, (s32)"me", 0x000003E8,
-    0x00010004, 0x00000000, 0x00000021, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00000400,
-    0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000,
-    0x00000001, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"KRN_D_2", 0x0003005B, (s32)evt_npc_wait_msec, (s32)"me",
-    0x000000AA, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"KRN_Z_2", 0x0003005B, (s32)evt_npc_wait_msec, (s32)"me",
-    0x0000000A, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 honenoko2_find_event[58] = {
-    0x00010071, (s32)"[EVENT] HONENOKO FIND\n", 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00000400, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"KRN_D_3", 0x0003005B,
-    (s32)evt_npc_wait_msec, (s32)"me", 0x000000AA, 0x0004005B,
-    (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000, 0x00000000,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"KRN_D_4",
-    0x0003005B, (s32)evt_npc_wait_msec, (s32)"me", 0x000000AA,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00000400, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0008005B, (s32)evt_npc_homing_target,
-    (s32)"me", (s32)"mario", 0x00000000, 0xF24C5A80,
-    0xF24AA280, 0xF24B6A80, 0x00000004, 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 honenoko2_lost_event[36] = {
-    0x00010071, (s32)"[EVENT] HONENOKO LOST\n", 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00000400, 0x0003005B,
-    (s32)evt_npc_wait_msec, (s32)"me", 0x000003E8, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00000400,
-    0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000,
-    0x00000001, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"KRN_D_2", 0x00010009, 0x0000000A, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"KRN_Z_2", 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 honenoko2_return_event[46] = {
-    0x00010071, (s32)"[EVENT] HONENOKO RETURN\n", 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"KRN_S_1", 0x0003005B, (s32)evt_npc_wait_msec,
-    (s32)"me", 0x000003E8, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"KRN_W_1", 0x0002005B, (s32)evt_set_dir_to_home,
-    (s32)"me", 0x0003005B, (s32)evt_npc_get_dir, (s32)"me",
-    0xFE363C83, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x00000000, 0xF24B1A80,
-    0x00000004, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 killer_init_event[19] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00020000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me", 0x00000040,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000004, 0x00000002, 0x00000001,
-};
-s32 killer_move_event[79] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00020000, 0x0004005B,
-    (s32)evt_npc_status_onoff, 0x00000000, (s32)"me", 0x00000004,
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x0000000B, 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C83, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0x000007D0, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x00000000,
-    0x000000C8, 0x00000004, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00020035, 0xFE363C81, 0x0000000F, 0x000F005B,
-    (s32)evt_eff, (s32)"", (s32)"kemuri_test", 0x00000011,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0xF24A7E80,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0005005B,
-    (s32)evt_npc_set_position, (s32)"me", 0x00000000, 0xFFFFFC18,
-    0x00000000, 0x00000002, 0x00000001,
-};
-s32 killer_dead_event[156] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x00000000, 0x0002005B, (s32)evt_npc_set_damage_anim, (s32)"me",
-    0x0001000A, 0x000001F4, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000F005B, (s32)evt_eff, 0x00000000, (s32)"kemuri_test",
-    0x00000004, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0xF24A7DB3, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0003005B, (s32)evt_snd_sfxon, (s32)"SFX_ENEMY_DIE1", 0x00000000,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0003005B, (s32)evt_npc_get_drop_coin,
-    (s32)"me", 0xFE363C83, 0x0002001B, 0xFE363C83,
-    0x00000000, 0x00010005, 0xFE363C83, 0x0009005B,
-    (s32)evt_item_entry, 0x00000000, 0x00000079, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000008, 0xFFFFFFFF,
-    0x00000000, 0x00000006, 0x00000021, 0x0003005B,
-    (s32)evt_npc_get_drop_heart, (s32)"me", 0xFE363C83, 0x0002001B,
-    0xFE363C83, 0x00000000, 0x00010005, 0xFE363C83,
-    0x0009005B, (s32)evt_item_entry, 0x00000000, 0x0000007B,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000008,
-    0xFFFFFFFF, 0x00000000, 0x00000006, 0x00000021,
-    0x0003005B, (s32)evt_npc_get_drop_flower, (s32)"me", 0xFE363C83,
-    0x0002001B, 0xFE363C83, 0x00000000, 0x00010005,
-    0xFE363C83, 0x0009005B, (s32)evt_item_entry, 0x00000000,
-    0x0000007C, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000008, 0xFFFFFFFF, 0x00000000, 0x00000006,
-    0x00000021, 0x0003005B, (s32)evt_npc_get_drop_item, (s32)"me",
-    0xFE363C83, 0x00020019, 0xFE363C83, 0x00000000,
-    0x0009005B, (s32)evt_item_entry, 0x00000000, 0xFE363C83,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000009,
-    0xFFFFFFFF, 0x00000000, 0x00000021, 0x0002005B,
-    (s32)evt_npc_getback_item_entry, (s32)"me", 0x0003005B, (s32)evt_npc_get_drop_fixitem,
-    (s32)"me", 0xFE363C83, 0x00020019, 0xFE363C83,
-    0x00000000, 0x0009005B, (s32)evt_item_entry, 0x00000000,
-    0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000009, 0xFFFFFFFF, 0x00000000, 0x00000021,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"me", 0x00000000,
-    0xFFFFFC18, 0x00000000, 0x00000002, 0x00000001,
-};
-s32 killer_cannon_init_event[13] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C80, 0x0004005B, (s32)evt_npc_set_unitwork,
-    (s32)"me", 0x00000000, 0xFE363C80, 0x00000002,
-    0x00000001,
-};
-s32 killer_cannon_move_event[157] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_get_unitwork,
-    (s32)"me", 0x00000000, 0xFE363C80, 0x0003005B,
-    (s32)evt_npc_set_ry, (s32)"me", 0xFE363C80, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"KTA_S_1", 0x00020032,
-    0xFE363C8A, 0x00000000, 0x00010003, 0x00000000,
-    0x0001000A, 0x00000BB8, 0x00010003, 0x00000001,
-    0x0001000A, 0x00000064, 0x00020035, 0xFE363C8A,
-    0x00000001, 0x00020018, 0xFE363C8A, 0x00000002,
-    0x00020032, 0xFE363C8A, 0x00000000, 0x00000021,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"KTA_A_1",
-    0x0001000A, 0x000000C8, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C82, 0xFE363C83, 0xFE363C84,
-    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_KILLER_CANNON1", 0xFE363C82,
-    0xFE363C83, 0xFE363C84, 0x00000000, 0x0001000A,
-    0x000000C8, 0x0003005B, (s32)evt_npc_get_dir, (s32)"me",
-    0xFE363C81, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C82, 0xFE363C83, 0xFE363C84, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C82, 0xFE363C84, 0xFE363C81,
-    0x0000001E, 0x00020035, 0xFE363C83, 0x0000001E,
-    0x000F005B, (s32)evt_eff, (s32)"", (s32)"kemuri_test",
-    0x00000012, 0xFE363C82, 0xFE363C83, 0xFE363C84,
-    0xF24A8080, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C81,
-    0x0003005B, (s32)killer_make_name, 0xFE363C8A, 0xFE363C80,
-    0x0003005B, (s32)evt_npc_set_ry, 0xFE363C80, 0xFE363C81,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C82,
-    0xFE363C83, 0xFE363C84, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C82, 0xFE363C84, 0xFE363C81, 0x0000001E,
-    0x00020035, 0xFE363C83, 0x0000000B, 0x0003005B,
-    (s32)killer_make_name, 0xFE363C8A, 0xFE363C80, 0x0005005B,
-    (s32)evt_npc_set_position, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xFE363C84, 0x0003005B, (s32)killer_make_name, 0xFE363C8A,
-    0xFE363C80, 0x0003005B, (s32)evt_npc_set_anim, 0xFE363C80,
-    (s32)"KIL_S_1", 0x0003005B, (s32)killer_make_name, 0xFE363C8A,
-    0xFE363C80, 0x0004005B, (s32)evt_npc_change_interrupt, 0xFE363C80,
-    0x00000001, (s32)&killer_move_event, 0x0003005B, (s32)killer_make_name,
-    0xFE363C8A, 0xFE363C80, 0x0002005B, (s32)evt_npc_restart_regular_event,
-    0xFE363C80, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 sambo_move_event[22] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"me", 0x00100010, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"SNB_S_1", 0x00010003, 0x00000000,
-    0x00010009, 0x00000001, 0x00010004, 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 sambo_find_event[33] = {
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"SNB_S_1",
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0008005B, (s32)evt_npc_homing_target, (s32)"me",
-    (s32)"mario", 0x00000000, 0xF24C0A80, 0xF24A9680,
-    0xF24B6A80, 0x00000004, 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 sambo_lost_event[22] = {
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"SNB_S_1",
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 sambo_return_event[30] = {
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"SNB_S_1",
-    0x0002005B, (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B,
-    (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83, 0x0005005B,
-    (s32)evt_npc_get_home_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x00000000, 0xF24C0A80,
-    0x00000004, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 sinnosuke_init_event[26] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00000008, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"me", 0x00100410, 0x0004005B, (s32)evt_npc_status_onoff,
-    0x00000001, (s32)"me", 0x00000002, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me", 0x10000000,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 sinnosuke_move_event[21] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00100410, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"SIS_Z_3", 0x00010003, 0x00000000, 0x00010009,
-    0x00000001, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 sinnosuke_find_event[146] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"SIS_Z_3", 0x000C005B, (s32)evt_eff_fukidashi, 0x00000001,
-    0x00000000, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0000001E, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00020032, 0xFE363C8F, 0x00000000, 0x00010005,
-    0x00000000, 0x00010009, 0x00000001, 0x00020035,
-    0xFE363C8F, 0x0000001E, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0xFE363C8F, 0x00000000,
-    0x0002001D, 0xFE363C8F, 0x0000010E, 0x00000007,
-    0x00000021, 0x00000006, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"SIS_S_1", 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x0000010E, 0x00000000,
-    0x00010005, 0x00000000, 0x00010009, 0x00000001,
-    0x00020035, 0xFE363C8F, 0x0000001E, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0xFE363C8F,
-    0x00000000, 0x0002001D, 0xFE363C8F, 0x00000168,
-    0x00000007, 0x00000021, 0x00000006, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x00010005, 0x00000000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"SIS_A_1a", 0x0001000A,
-    0x0000012C, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x0000000D, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C83, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x00000000,
-    0xF24D9A80, 0x00000006, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"SIS_S_1", 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0001000A, 0x000000C8,
-    0x00000006, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x00000000, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 sinnosuke_lost_event[36] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"SIS_S_1",
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry,
-    (s32)"me", 0x0001000A, 0x000003E8, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 sinnosuke_return_event[94] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"SIS_W_1",
-    0x0005005B, (s32)evt_npc_get_home_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x00000000,
-    0xF24AF280, 0x00000004, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"SIS_S_1", 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00020032, 0xFE363C8F, 0x00000000, 0x00010005,
-    0x00000000, 0x00010009, 0x00000001, 0x00020035,
-    0xFE363C8F, 0x0000001E, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0xFE363C8F, 0x00000000,
-    0x0002001D, 0xFE363C8F, 0x0000010E, 0x00000007,
-    0x00000021, 0x00000006, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"SIS_Z_3", 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x0000010E, 0x00000000,
-    0x00010005, 0x00000000, 0x00010009, 0x00000001,
-    0x00020035, 0xFE363C8F, 0x0000001E, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0xFE363C8F,
-    0x00000000, 0x0002001D, 0xFE363C8F, 0x00000168,
-    0x00000007, 0x00000021, 0x00000006, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 sinemon_init_event[26] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00000008, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"me", 0x00100410, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00020000, 0x0004005B,
-    (s32)evt_npc_status_onoff, 0x00000001, (s32)"me", 0x00000002,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 sinemon_move_event[26] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00100410, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"me", 0x00020000, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"SIN_Z_3", 0x00010003, 0x00000000,
-    0x00010009, 0x00000001, 0x00010004, 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 sinemon_find_event[146] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"SIN_Z_3", 0x000C005B, (s32)evt_eff_fukidashi, 0x00000001,
-    0x00000000, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0000001E, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00020032, 0xFE363C8F, 0x00000000, 0x00010005,
-    0x00000000, 0x00010009, 0x00000001, 0x00020035,
-    0xFE363C8F, 0x0000001E, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0xFE363C8F, 0x00000000,
-    0x0002001D, 0xFE363C8F, 0x0000010E, 0x00000007,
-    0x00000021, 0x00000006, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"SIN_S_1", 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x0000010E, 0x00000000,
-    0x00010005, 0x00000000, 0x00010009, 0x00000001,
-    0x00020035, 0xFE363C8F, 0x0000001E, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0xFE363C8F,
-    0x00000000, 0x0002001D, 0xFE363C8F, 0x00000168,
-    0x00000007, 0x00000021, 0x00000006, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x00010005, 0x00000000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"SIN_A_1a", 0x0001000A,
-    0x0000012C, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x0000000E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C83, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x00000000,
-    0xF24D9A80, 0x00000006, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"SIN_S_1", 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0001000A, 0x000000C8,
-    0x00000006, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me",
-    0x00000000, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 sinemon_lost_event[36] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"SIN_S_1",
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry,
-    (s32)"me", 0x0001000A, 0x000003E8, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 sinemon_return_event[94] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"SIN_W_1",
-    0x0005005B, (s32)evt_npc_get_home_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x00000000,
-    0xF24AF280, 0x00000004, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"SIN_S_1", 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00020032, 0xFE363C8F, 0x00000000, 0x00010005,
-    0x00000000, 0x00010009, 0x00000001, 0x00020035,
-    0xFE363C8F, 0x0000001E, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0xFE363C8F, 0x00000000,
-    0x0002001D, 0xFE363C8F, 0x0000010E, 0x00000007,
-    0x00000021, 0x00000006, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"SIN_Z_3", 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x0000010E, 0x00000000,
-    0x00010005, 0x00000000, 0x00010009, 0x00000001,
-    0x00020035, 0xFE363C8F, 0x0000001E, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0xFE363C8F,
-    0x00000000, 0x0002001D, 0xFE363C8F, 0x00000168,
-    0x00000007, 0x00000021, 0x00000006, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 togedaruma_move_event[49] = {
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0001005E, (s32)&enemy_common_flag_init_event,
-    0x0003005B, (s32)evt_sub_random, 0x00000168, 0xFE363C83,
-    0x00010003, 0x00000000, 0x0001000A, 0x000001F4,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)evt_npc_get_loiter_dir,
-    0xFE363C83, 0xF24C5A80, 0xF24E3A80, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x000007D0, 0xF24B1A80,
-    0x00000004, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 togedaruma_find_event[61] = {
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x000C005B, (s32)evt_eff_fukidashi,
-    0x00000001, 0x00000000, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000001E, 0x0004005B,
-    (s32)evt_get_target_dir, (s32)"me", (s32)"mario", 0xFE363C80,
-    0x0003005B, (s32)evt_npc_set_ry, (s32)"me", 0xFE363C80,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x0000000F,
-    0x0000006E, 0x00010005, 0x00000000, 0x00010009,
-    0x00000001, 0x0005005B, (s32)evt_npc_add_rotate, (s32)"me",
-    0x00000000, 0x0000002D, 0x00000000, 0x00000006,
-    0x00000070, 0x0008005B, (s32)evt_npc_homing_target, (s32)"me",
-    (s32)"mario", 0x00000000, 0xF24C5A80, 0xF24AA280,
-    0xF24B6A80, 0x00000004, 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 togedaruma_lost_event[38] = {
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x000C005B, (s32)evt_eff_fukidashi,
-    0x00000001, 0x00000000, (s32)"me", 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000001E, 0x0002005B,
-    (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 togedaruma_return_event[44] = {
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x00000000, 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B,
-    (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24C0A80, 0x0007005B,
-    (s32)evt_npc_move_position, (s32)"me", 0xFE363C80, 0xFE363C82,
-    0x00000000, 0xF24B1A80, 0x00000004, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 barriern_init_event[37] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0006005B, (s32)evt_npc_slave_entry,
-    (s32)"me", 0x00000000, (s32)"c_baria", 0xFE363C80,
-    (s32)&enemy_slave_common_dead_event, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    0xFE363C80, 0x20000000, 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"slave_0", 0x00000000, 0xFFFFFC18, 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00020000, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"slave_0", 0x00020000, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"slave_0", 0x00000020, 0x00000002,
-    0x00000001,
-};
-s32 barriern_move_event[89] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00000400, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0", 0x00000080,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000020, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"S_1", 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"me", 0x00200000, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00020000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"slave_0", 0x00020000,
-    0x00010003, 0x00000000, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"S_3", 0x00010009, 0x0000003C,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"S_1",
-    0x00010009, 0x0000003C, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0004005B, (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80,
-    0xF24E3A80, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24C0A80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0000001E, 0x00000032, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000007D0, 0xF24B1A80, 0x00000000, 0x00000000,
-    0x00000001, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 barriern2_move_event[70] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00000400, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00020000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"slave_0",
-    0x00020000, 0x00010003, 0x00000000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"S_3", 0x00010009,
-    0x0000003C, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"S_1", 0x00010009, 0x0000003C, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0004005B, (s32)evt_npc_get_loiter_dir, 0xFE363C83,
-    0xF24C5A80, 0xF24E3A80, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24C0A80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0000001E, 0x00000032, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000003E8, 0xF24C5A80, 0x00000000,
-    0x00000000, 0x00000001, 0x00010004, 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 barriern_dead_event[17] = {
-    0x0004005B, (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000,
-    0xFE363C8A, 0x0002005B, (s32)evt_snd_sfxoff, 0xFE363C8A,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000080, 0x0001005E, (s32)&enemy_common_dead_event, 0x00000002,
-    0x00000001,
-};
-s32 barriern_find_event[189] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00200000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00000400,
-    0x00010003, 0x00000000, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"A_2", 0x00010009, 0x0000001E,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"A_3",
-    0x00010009, 0x0000000A, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"A_4", 0x0000006E, 0x00020034,
-    0xFE363C8F, 0x00000000, 0x00010005, 0x0000003C,
-    0x0002003A, 0xFE363C8F, 0xF24A7A9E, 0x0005005B,
-    (s32)evt_npc_set_scale, (s32)"slave_0", 0x00000001, 0xFE363C8F,
-    0x00000001, 0x00010009, 0x00000001, 0x00000006,
-    0x00000070, 0x0003005B, (s32)evt_npc_set_anim, (s32)"slave_0",
-    (s32)"Z_3", 0x0003005B, (s32)evt_npc_blur_onoff, 0x00000001,
-    (s32)"slave_0", 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"slave_0", 0x00000080, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)"SFX_FLD_ENM_BARRI_ATTACK1", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_BARRI_ATTACK2",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0xFE363C8A,
-    0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000,
-    0xFE363C8A, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C83, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF2524A80,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"slave_0",
-    0x00000020, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0",
-    0x00000011, 0x000A005B, (s32)evt_npc_glide_position, (s32)"slave_0",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000004E2,
-    0x0000000A, 0x00000000, 0x00000000, 0x00000001,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000000,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0", 0x00000000,
-    0xFFFFFC18, 0x00000000, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"slave_0", 0x00000020, 0x0004005B,
-    (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000, 0xFE363C8A,
-    0x0002005B, (s32)evt_snd_sfxoff, 0xFE363C8A, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"S_3", 0x00010009,
-    0x0000001E, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"S_1", 0x00010009, 0x0000001E, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00200000,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(enemy_common_dead_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1024)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_damage_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_eff, 0, STRING("kemuri_test"), 4, LW(0), LW(1), LW(2), FLOAT(0.8f), 0, 0, 0, 0, 0, 0, 0)
+    CALL(evt_snd_sfxon, STRING("SFX_ENEMY_DIE1"), 0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_drop_coin, STRING("me"), LW(3))
+    IF_INT_GREATER(LW(3), 0)
+        LOOP(LW(3))
+            CALL(evt_item_entry, 0, 121, LW(0), LW(1), LW(2), 10, -1, 0)
+        END_LOOP
+    END_IF
+    CALL(evt_npc_get_drop_heart, STRING("me"), LW(3))
+    IF_INT_GREATER(LW(3), 0)
+        LOOP(LW(3))
+            CALL(evt_item_entry, 0, 123, LW(0), LW(1), LW(2), 10, -1, 0)
+        END_LOOP
+    END_IF
+    CALL(evt_npc_get_drop_flower, STRING("me"), LW(3))
+    IF_INT_GREATER(LW(3), 0)
+        LOOP(LW(3))
+            CALL(evt_item_entry, 0, 124, LW(0), LW(1), LW(2), 10, -1, 0)
+        END_LOOP
+    END_IF
+    CALL(evt_npc_get_drop_item, STRING("me"), LW(3))
+    IF_INT_NOT_EQUAL(LW(3), 0)
+        CALL(evt_item_entry, 0, LW(3), LW(0), LW(1), LW(2), 9, -1, 0)
+    END_IF
+    CALL(evt_npc_getback_item_entry, STRING("me"))
+    CALL(evt_npc_get_drop_fixitem, STRING("me"), LW(3))
+    IF_INT_NOT_EQUAL(LW(3), 0)
+        CALL(evt_item_entry, 0, LW(3), LW(0), LW(1), LW(2), 9, -1, 0)
+    END_IF
+    CALL(evt_npc_delete, STRING("me"))
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(enemy_event_dead_event_sub)
+    CALL(evt_npc_set_damage_anim, LW(10))
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, LW(10), LW(0), LW(1), LW(2))
+    CALL(evt_eff, 0, STRING("kemuri_test"), 4, LW(0), LW(1), LW(2), FLOAT(0.8f), 0, 0, 0, 0, 0, 0, 0)
+    CALL(evt_snd_sfxon, STRING("SFX_ENEMY_DIE1"), 0)
+    CALL(evt_npc_delete, LW(10))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(enemy_common_blow_event)
+    CALL(evt_npc_set_confuse_anim, STRING("me"))
+    CALL(_wait_blow_end, STRING("me"))
+    WAIT_MS(2000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(enemy_2d_common_dead_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 268435456)
+    CALL(pressCheck, LW(15))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_set_position, STRING("me"), LW(0), LW(1), 200)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_eff, 0, STRING("kemuri_test"), 4, LW(0), LW(1), LW(2), FLOAT(0.8f), 0, 0, 0, 0, 0, 0, 0)
+    CALL(evt_snd_sfxon, STRING("SFX_ENEMY_DIE1"), 0)
+    CALL(evt_npc_set_damage_anim, STRING("me"))
+    CALL(evt_npc_get_kpencount_type, STRING("me"), LW(0))
+    SWITCH(LW(0))
+        CASE_FLAG(1)
+        IF_INT_EQUAL(LW(15), 0)
+            CALL(evt_npc_calc_score, STRING("me"))
+            SPAWN_EVENT(_2d_dead_rotate_event)
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(_2d_get_dead_jump_offset, STRING("me"), LW(3))
+            ADD(LW(0), LW(3))
+            CALL(_2d_dead_jump, STRING("me"), LW(0), LW(1), LW(2), 600, FLOAT(40.0f), FLOAT(0.0f), -300)
+        ELSE
+            CALL(evt_npc_calc_score, STRING("me"))
+            CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+            CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+            CALL(evt_npc_status_onoff, 0, STRING("me"), 2)
+            CALL(evt_npc_set_talk_anim, STRING("me"))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            SUBTRACT(LW(1), 5)
+            CALL(evt_npc_set_position, STRING("me"), LW(0), LW(1), LW(2))
+            WAIT_FRAMES(30)
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            BEGIN_SIBLING_EVENT
+                LOOP(30)
+                    CALL(evt_npc_add_rotate, STRING("me"), 0, 0, 1)
+                    WAIT_FRAMES(1)
+                END_LOOP
+            END_SIBLING_EVENT
+            SUBTRACT(LW(0), 40)
+            SUBTRACT(LW(1), 20)
+            CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, -10, 4, 0)
+            LOOP(0)
+                BEGIN_SIBLING_EVENT
+                    LOOP(60)
+                        CALL(evt_npc_add_rotate, STRING("me"), 0, 0, -1)
+                        WAIT_FRAMES(1)
+                    END_LOOP
+                END_SIBLING_EVENT
+                CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+                ADD(LW(0), 80)
+                SUBTRACT(LW(1), 20)
+                CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 1000, 0, -10, 4, 0)
+                BEGIN_SIBLING_EVENT
+                    LOOP(60)
+                        CALL(evt_npc_add_rotate, STRING("me"), 0, 0, 1)
+                        WAIT_FRAMES(1)
+                    END_LOOP
+                END_SIBLING_EVENT
+                CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+                SUBTRACT(LW(0), 80)
+                SUBTRACT(LW(1), 20)
+                CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 1000, 0, -10, 4, 0)
+                IF_INT_LESS_OR_EQUAL(LW(1), -200)
+                    BREAK_LOOP
+                END_IF
+            END_LOOP
+        END_IF
+        CASE_FLAG(2)
+        CALL(evt_npc_calc_score, STRING("me"))
+        SPAWN_EVENT(_2d_dead_rotate_event)
+        CALL(evt_npc_status_onoff, 1, STRING("me"), 4194304)
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(_2d_get_dead_jump_offset, STRING("me"), LW(3))
+        ADD(LW(0), LW(3))
+        CALL(_2d_dead_jump, STRING("me"), LW(0), LW(1), LW(2), 600, FLOAT(40.0f), FLOAT(65.0f), -300)
+        CASE_FLAG(4)
+        CALL(evt_npc_calc_score, STRING("me"))
+        SPAWN_EVENT(_2d_dead_rotate_event)
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(_2d_get_dead_jump_offset, STRING("me"), LW(3))
+        ADD(LW(0), LW(3))
+        CALL(_2d_dead_jump, STRING("me"), LW(0), LW(1), LW(2), 600, FLOAT(40.0f), FLOAT(65.0f), -300)
+        CASE_FLAG(32)
+        SPAWN_EVENT(_2d_dead_rotate_event)
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(_2d_get_dead_jump_offset, STRING("me"), LW(3))
+        ADD(LW(0), LW(3))
+        CALL(_2d_dead_jump, STRING("me"), LW(0), LW(1), LW(2), 600, FLOAT(40.0f), FLOAT(65.0f), -300)
+        CASE_FLAG(8)
+        CALL(evt_npc_calc_score, STRING("me"))
+        SPAWN_EVENT(_2d_dead_rotate_event)
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(_2d_get_dead_jump_offset, STRING("me"), LW(3))
+        ADD(LW(0), LW(3))
+        CALL(_2d_dead_jump, STRING("me"), LW(0), LW(1), LW(2), 600, FLOAT(40.0f), FLOAT(65.0f), -300)
+        CASE_FLAG(16)
+        CALL(evt_npc_calc_score, STRING("me"))
+        SPAWN_EVENT(_2d_dead_rotate_event)
+        CALL(evt_npc_status_onoff, 1, STRING("me"), 4194304)
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(_2d_get_dead_jump_offset, STRING("me"), LW(3))
+        ADD(LW(0), LW(3))
+        CALL(_2d_dead_jump, STRING("me"), LW(0), LW(1), LW(2), 600, FLOAT(40.0f), FLOAT(65.0f), -300)
+        CASE_DEFAULT
+        WAIT_MS(500)
+    END_SWITCH
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(_2d_dead_rotate_event)
+    SET_VALUE(LW(0), -12)
+    LOOP(15)
+        CALL(evt_npc_add_rotate, STRING("me"), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(unk_evt_8033d458)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    LABEL(0)
+    WAIT_MS(500)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(npc_urouro_move_event)
+    CALL_CHILD(npc_urouro_init_event)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(urouro_init_func, STRING("me"), LW(0), LW(2), FLOAT(100.0f), FLOAT(30.0f), 0)
+    CALL(urouro_main_func, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(npc_urouro_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kuriboo_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kuriboo_find_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position, STRING("me"), LW(0), LW(1), LW(2), 300, 0, FLOAT(20.0f), 0)
+    CALL(evt_npc_homing_target, STRING("me"), STRING("mario"), 0, FLOAT(120.0f), FLOAT(10.0f), FLOAT(60.0f), 4)
+    WAIT_MS(500)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kuriboo_lost_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kuriboo_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patakuri_move_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(10.0f), 0, 3)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patakuri_find_event)
+    CALL(evt_npc_set_run_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_npc_add_dirdist, LW(1), LW(3), LW(0), FLOAT(100.0f))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_fbat_trans_floor_position, LW(1), LW(2), LW(3), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(2), LW(3), 0, 75, FLOAT(-50.0f), 0, 3)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_fbat_trans_floor_position, LW(1), LW(2), LW(3), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(2), LW(3), 1000, 0, 0, 0, 1)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patakuri_lost_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patakuri_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_fbat_trans_floor_position, LW(1), LW(2), LW(3), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(2), LW(3), 1000, 0, 0, 0, 1)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(10.0f), 0, 3)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(nokonoko_shell_return_event)
+    CALL(evt_npc_get_unitwork, STRING("me"), 1, LW(15))
+    IF_INT_EQUAL(LW(15), 1)
+        CALL(evt_npc_set_unitwork, STRING("me"), 0, 1)
+        CALL(evt_npc_set_unitwork, STRING("me"), 1, 0)
+        CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+        CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+        CALL(evt_npc_set_stay_anim, STRING("me"))
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position, STRING("me"), LW(0), LW(1), LW(2), 300, 0, FLOAT(20.0f), 0)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(nokonoko_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1179672)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_get_unitwork, STRING("me"), 0, 0)
+    CALL(evt_npc_set_unitwork, STRING("me"), 1, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(nokonoko_move_event)
+    CALL_CHILD(nokonoko_shell_return_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    LABEL(0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(nokonoko_find_event)
+    CALL_CHILD(nokonoko_shell_return_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 0)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position, STRING("me"), LW(0), LW(1), LW(2), 300, 0, FLOAT(20.0f), 0)
+    CALL(evt_npc_sound_data_set, STRING("me"), STRING("SFX_FLD_ENM_NOKO_MOVE1"), 0, 0, 0, 0)
+    CALL(evt_npc_set_unitwork, STRING("me"), 1, 1)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 11)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("NKT_A_1"))
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(3))
+    CALL(evt_npc_set_ry, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_NOKO_SHELL1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(256.0f))
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(15))
+            IF_INT_EQUAL(LW(15), 1)
+                BREAK_LOOP
+            END_IF
+            CALL(evt_npc_add_rotate, STRING("me"), 0, 40, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    WAIT_MS(100)
+    BEGIN_SIBLING_EVENT_GET_ID(LW(14))
+        LOOP(0)
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            ADD(LW(1), 10)
+            CALL(evt_eff, STRING(""), STRING("kemuri_test"), 0, LW(0), LW(1), LW(2), FLOAT(0.3f), 0, 0, 0, 0, 0, 0, 0)
+            WAIT_FRAMES(3)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 800, FLOAT(400.0f), 4)
+    DELETE_EVENT(LW(14))
+    CALL_CHILD(nokonoko_shell_return_event)
+    WAIT_MS(500)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(nokonoko_lost_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL_CHILD(nokonoko_shell_return_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(nokonoko_return_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL_CHILD(nokonoko_shell_return_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togenoko_shell_return_event)
+    CALL(evt_npc_get_unitwork, STRING("me"), 1, LW(15))
+    IF_INT_EQUAL(LW(15), 1)
+        CALL(evt_npc_set_unitwork, STRING("me"), 0, 1)
+        CALL(evt_npc_set_unitwork, STRING("me"), 1, 0)
+        CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+        CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+        CALL(evt_npc_set_stay_anim, STRING("me"))
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position, STRING("me"), LW(0), LW(1), LW(2), 300, 0, FLOAT(20.0f), 0)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togenoko_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1179672)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_get_unitwork, STRING("me"), 0, 0)
+    CALL(evt_npc_set_unitwork, STRING("me"), 1, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togenoko_move_event)
+    CALL_CHILD(togenoko_shell_return_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    LABEL(0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togenoko_find_event)
+    CALL_CHILD(togenoko_shell_return_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 0)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position, STRING("me"), LW(0), LW(1), LW(2), 300, 0, FLOAT(20.0f), 0)
+    CALL(evt_npc_sound_data_set, STRING("me"), STRING("SFX_FLD_ENM_NOKO_MOVE1"), 0, 0, 0, 0)
+    CALL(evt_npc_set_unitwork, STRING("me"), 1, 1)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 11)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("A_1"))
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(3))
+    CALL(evt_npc_set_ry, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_NOKO_SHELL1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(256.0f))
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(15))
+            IF_INT_EQUAL(LW(15), 1)
+                BREAK_LOOP
+            END_IF
+            CALL(evt_npc_add_rotate, STRING("me"), 0, 40, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    WAIT_MS(100)
+    BEGIN_SIBLING_EVENT_GET_ID(LW(14))
+        LOOP(0)
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            ADD(LW(1), 10)
+            CALL(evt_eff, STRING(""), STRING("kemuri_test"), 0, LW(0), LW(1), LW(2), FLOAT(0.3f), 0, 0, 0, 0, 0, 0, 0)
+            WAIT_FRAMES(3)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 800, FLOAT(400.0f), 4)
+    DELETE_EVENT(LW(14))
+    CALL_CHILD(togenoko_shell_return_event)
+    WAIT_MS(500)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togenoko_lost_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL_CHILD(togenoko_shell_return_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togenoko_return_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL_CHILD(togenoko_shell_return_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patapata_move_event)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    LABEL(0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    SET_VALUE(LW(10), 0)
+    LOOP(0)
+        IF_INT_EQUAL(LW(10), 0)
+            CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(-20.0f), FLOAT(20.0f))
+        END_IF
+        IF_INT_EQUAL(LW(10), 2)
+            CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(-20.0f), FLOAT(20.0f))
+        END_IF
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(30.0f))
+        CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+        CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-7.0f), 0, 2)
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(30.0f))
+        CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+        CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(7.0f), 0, 2)
+        IF_INT_GREATER_OR_EQUAL(LW(10), 4)
+            BREAK_LOOP
+        END_IF
+        ADD(LW(10), 1)
+    END_LOOP
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patapata_find_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_pera_onoff, STRING("me"), 1)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    LOOP(18)
+        CALL(evt_npc_add_rotate, STRING("me"), 0, 15, 0)
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PTP_A_5"))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_PATA_MOVE2"), LW(0), LW(1), LW(2), 0)
+    LOOP(6)
+        CALL(evt_npc_add_rotate, STRING("me"), 0, 15, 0)
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 10)
+    CALL(evt_npc_sound_data_set, STRING("me"), STRING("SFX_FLD_ENM_PATA_MOVE3"), 0, 0, 0, 0)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_npc_add_dirdist, LW(1), LW(3), LW(0), FLOAT(200.0f))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_fbat_trans_floor_position, LW(1), LW(2), LW(3), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(2), LW(3), 1000, 0, FLOAT(-40.0f), 4, 0)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patapata_lost_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patapata_return_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(30.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(7.0f), 0, 2)
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(30.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-7.0f), 0, 2)
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(30.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(7.0f), 0, 2)
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(30.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-7.0f), 0, 2)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+// Has no END_SCRIPT of its own: a script running it goes on into met_set_anim_wait_event below.
+EVT_BEGIN(met_init_event_common)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 8)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1048592)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+};
+
+EVT_BEGIN(met_set_anim_wait_event)
+    CALL(evt_npc_get_btlsetup_work, STRING("me"), 0, LW(15))
+    IF_INT_EQUAL(LW(15), 0)
+        CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(15))
+        IF_INT_EQUAL(LW(15), 0)
+            CALL(evt_npc_set_anim, STRING("me"), STRING("MET_S_1"))
+        ELSE
+            CALL(evt_npc_set_anim, STRING("me"), STRING("TMT_S_1"))
+        END_IF
+    ELSE
+        CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(15))
+        IF_INT_EQUAL(LW(15), 0)
+            CALL(evt_npc_set_anim, STRING("me"), STRING("SMT_S_1"))
+        ELSE
+            CALL(evt_npc_set_anim, STRING("me"), STRING("STM_S_1"))
+        END_IF
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(met_set_anim_walk_event)
+    CALL(evt_npc_get_btlsetup_work, STRING("me"), 0, LW(15))
+    IF_INT_EQUAL(LW(15), 0)
+        CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(15))
+        IF_INT_EQUAL(LW(15), 0)
+            CALL(evt_npc_set_anim, STRING("me"), STRING("MET_W_1"))
+        ELSE
+            CALL(evt_npc_set_anim, STRING("me"), STRING("TMT_W_1"))
+        END_IF
+    ELSE
+        CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(15))
+        IF_INT_EQUAL(LW(15), 0)
+            CALL(evt_npc_set_anim, STRING("me"), STRING("SMT_W_1"))
+        ELSE
+            CALL(evt_npc_set_anim, STRING("me"), STRING("STM_W_1"))
+        END_IF
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(met_init_event)
+    CALL_CHILD(met_init_event_common)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 131072)
+    CALL(evt_npc_set_btlsetup_work, STRING("me"), 0, 0)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(met_init_event_ceil)
+    CALL_CHILD(met_init_event_common)
+    CALL(evt_npc_set_btlsetup_work, STRING("me"), 0, 1)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togemet_init_event)
+    CALL_CHILD(met_init_event_common)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 131072)
+    CALL(evt_npc_set_btlsetup_work, STRING("me"), 0, 0)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togemet_init_event_ceil)
+    CALL_CHILD(met_init_event_common)
+    CALL(evt_npc_set_btlsetup_work, STRING("me"), 0, 1)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(met_move_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL_CHILD(met_set_anim_wait_event)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    LABEL(0)
+    WAIT_MS(500)
+    CALL_CHILD(met_set_anim_walk_event)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(met_find_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_get_btlsetup_work, STRING("me"), 0, LW(15))
+    IF_INT_EQUAL(LW(15), 0)
+        CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position, STRING("me"), LW(0), LW(1), LW(2), 300, 0, FLOAT(20.0f), 0)
+        CALL(evt_npc_set_attack_mode, STRING("me"), 11)
+        CALL(evt_npc_sound_data_set, STRING("me"), STRING("SFX_FLD_ENM_MET_ATTACK1"), 0, 0, 0, 0)
+        CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(15))
+        IF_INT_EQUAL(LW(15), 0)
+            CALL(evt_npc_set_anim, STRING("me"), STRING("MET_A_1"))
+        ELSE
+            CALL(evt_npc_set_anim, STRING("me"), STRING("TMT_A_1"))
+        END_IF
+        CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(3))
+        CALL(evt_npc_set_ry, STRING("me"), LW(3))
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(256.0f))
+        BEGIN_SIBLING_EVENT
+            SET_VALUE(LW(4), 0)
+            SET_VALUE(LW(15), 0)
+            LOOP(0)
+                WAIT_FRAMES(1)
+                ADD(LW(15), 1)
+                IF_INT_GREATER_OR_EQUAL(LW(15), 55)
+                    BREAK_LOOP
+                END_IF
+                ADD(LW(4), 40)
+                CALL(evt_npc_set_rotate, STRING("me"), 0, LW(4), 0)
+            END_LOOP
+        END_SIBLING_EVENT
+        WAIT_MS(100)
+        BEGIN_SIBLING_EVENT_GET_ID(LW(14))
+            LOOP(0)
+                CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+                ADD(LW(1), 10)
+                CALL(evt_eff, STRING(""), STRING("kemuri_test"), 0, LW(0), LW(1), LW(2), FLOAT(0.3f), 0, 0, 0, 0, 0, 0, 0)
+                WAIT_FRAMES(3)
+            END_LOOP
+        END_SIBLING_EVENT
+        CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 800, FLOAT(400.0f), 4)
+        DELETE_EVENT(LW(14))
+        CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+        CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+        CALL_CHILD(met_set_anim_wait_event)
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position, STRING("me"), LW(0), LW(1), LW(2), 300, 0, FLOAT(20.0f), 0)
+    ELSE
+        CALL(evt_npc_set_attack_mode, STRING("me"), 11)
+        CALL(evt_npc_flag_onoff, 1, STRING("me"), 131072)
+        CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(15))
+        IF_INT_EQUAL(LW(15), 0)
+            CALL(evt_npc_set_anim, STRING("me"), STRING("SMT_A_1"))
+        ELSE
+            CALL(evt_npc_set_anim, STRING("me"), STRING("STM_A_1"))
+        END_IF
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position, STRING("me"), LW(0), 0, LW(2), 0, 0, 0, 0)
+        CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+        CALL(evt_npc_set_btlsetup_work, STRING("me"), 0, 0)
+        CALL_CHILD(met_set_anim_wait_event)
+        WAIT_MS(1000)
+    END_IF
+    WAIT_MS(500)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(met_lost_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL_CHILD(met_set_anim_wait_event)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(met_return_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL_CHILD(met_set_anim_wait_event)
+    WAIT_MS(500)
+    CALL_CHILD(met_set_anim_walk_event)
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patamet_move_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    LABEL(0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(10.0f), 0, 3)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patamet_find_event)
+    CALL(evt_npc_sound_data_set, STRING("me"), STRING("SFX_FLD_ENM_PATAMET_MOVE2"), 0, 0, 0, 0)
+    CALL(evt_npc_set_run_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_npc_add_dirdist, LW(1), LW(3), LW(0), FLOAT(100.0f))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_fbat_trans_floor_position, LW(1), LW(2), LW(3), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(2), LW(3), 0, 75, FLOAT(-50.0f), 0, 3)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_fbat_trans_floor_position, LW(1), LW(2), LW(3), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(2), LW(3), 1000, 0, 0, 0, 1)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patamet_lost_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patamet_return_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(10.0f), 0, 3)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(chorobon_move_event)
+    CALL(evt_npc_set_scale, STRING("me"), 1, 1, 1)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    LABEL(0)
+    CALL(evt_sub_random, 3, LW(4))
+    ADD(LW(4), 2)
+    LOOP(LW(4))
+        CALL(evt_sub_random, 360, LW(3))
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), 50)
+        CALL(evt_npc_jump_position, STRING("me"), LW(0), -10000, LW(2), 300, 0, FLOAT(30.0f), 0)
+    END_LOOP
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(3))
+    CALL(evt_npc_set_ry, STRING("me"), LW(3))
+    CALL(evt_sub_random, 500, LW(4))
+    ADD(LW(4), 10)
+    WAIT_MS(LW(4))
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(chorobon_find_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    LOOP(3)
+        CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(3))
+        CALL(evt_npc_set_ry, STRING("me"), LW(3))
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), 50)
+        CALL(evt_npc_jump_position, STRING("me"), LW(0), -10000, LW(2), 300, 0, FLOAT(30.0f), 0)
+        WAIT_MS(50)
+    END_LOOP
+    CALL(evt_npc_set_scale, STRING("me"), 1, 1, 1)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(chorobon_lost_event)
+    CALL(evt_npc_set_scale, STRING("me"), 1, 1, 1)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(chorobon_return_event)
+    CALL(evt_npc_set_scale, STRING("me"), 1, 1, 1)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), 50)
+    CALL(evt_npc_jump_position, STRING("me"), LW(0), -10000, LW(2), 300, 0, FLOAT(30.0f), 0)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(pansy_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    LABEL(0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(pansy_find_event)
+    CALL(evt_npc_sound_data_set, STRING("me"), STRING("SFX_FLD_ENM_PANZI_MOVE2"), STRING("SFX_FLD_ENM_PANZI_MOVE2"), 30000, 0, 0)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_homing_target, STRING("me"), STRING("mario"), 0, FLOAT(100.0f), FLOAT(10.0f), FLOAT(60.0f), 4)
+    WAIT_MS(500)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(pansy_lost_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PAN_S_1"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(pansy_return_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PAN_S_1"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PAN_W_1"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(twinkling_pansy_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    LABEL(0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(twinkling_pansy_find_event)
+    CALL(evt_npc_sound_data_set, STRING("me"), STRING("SFX_FLD_ENM_PANZI_MOVE2"), STRING("SFX_FLD_ENM_PANZI_MOVE2"), 30000, 0, 0)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(3))
+    ADD(LW(3), 180)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(300.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 1000, FLOAT(300.0f), 6)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(twinkling_pansy_lost_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PAN_S_1_K"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(twinkling_pansy_return_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PAN_S_1_K"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PAN_W_1_K"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(karon_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(mahoon_get_groupname, LW(10))
+    CALL(evt_npc_slave_entry, STRING("me"), 0, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_flag_onoff, 1, LW(0), 536870912)
+    CALL(evt_npc_flag_onoff, 1, LW(0), 32)
+    CALL(evt_npc_set_anim, STRING("slave_0"), STRING("KRN_H_1"))
+    CALL(evt_npc_set_width, STRING("slave_0"), 24)
+    CALL(evt_npc_set_height, STRING("slave_0"), 8)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(karon_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(karon_find_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 2097152)
+    BEGIN_SIBLING_EVENT
+        LABEL(0)
+        CALL(evt_npc_add_rotate, STRING("slave_0"), 0, 0, 30)
+        WAIT_FRAMES(1)
+        GOTO(0)
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_A_1"))
+    WAIT_MS(250)
+    CALL(evt_npc_get_position, STRING("me"), LW(2), LW(3), LW(4))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_KARON_BONE_THROW1"), LW(2), LW(3), LW(4), 0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_A_2"))
+    WAIT_MS(150)
+    BEGIN_SIBLING_EVENT
+        WAIT_MS(1000)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_S_1"))
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_rotate, STRING("slave_0"), 0, 0, 0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    ADD(LW(1), 25)
+    CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 128)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 32)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 12)
+    CALL(evt_npc_jump_position, STRING("slave_0"), LW(0), LW(1), LW(2), 1000, 0, FLOAT(75.0f), 0)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(karon_lost_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(karon_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(karon_blow_event)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL_CHILD(enemy_common_blow_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(honenoko2_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 1)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_Z_2"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(honenoko2_move_event)
+    DEBUG_PUT_MSG(STRING("[EVENT] HONENOKO MOVE\n"))
+    LABEL(0)
+    CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(evt_npc_wait_msec, STRING("me"), 1000)
+        GOTO(0)
+    END_IF
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 1)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_D_2"))
+    CALL(evt_npc_wait_msec, STRING("me"), 170)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_Z_2"))
+    CALL(evt_npc_wait_msec, STRING("me"), 10)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(honenoko2_find_event)
+    DEBUG_PUT_MSG(STRING("[EVENT] HONENOKO FIND\n"))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_D_3"))
+    CALL(evt_npc_wait_msec, STRING("me"), 170)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_D_4"))
+    CALL(evt_npc_wait_msec, STRING("me"), 170)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1024)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_homing_target, STRING("me"), STRING("mario"), 0, FLOAT(120.0f), FLOAT(10.0f), FLOAT(60.0f), 4)
+    WAIT_MS(500)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(honenoko2_lost_event)
+    DEBUG_PUT_MSG(STRING("[EVENT] HONENOKO LOST\n"))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_wait_msec, STRING("me"), 1000)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 1)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_D_2"))
+    WAIT_FRAMES(10)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_Z_2"))
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(honenoko2_return_event)
+    DEBUG_PUT_MSG(STRING("[EVENT] HONENOKO RETURN\n"))
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_S_1"))
+    CALL(evt_npc_wait_msec, STRING("me"), 1000)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KRN_W_1"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(killer_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 64)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 4)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(killer_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    CALL(evt_npc_status_onoff, 0, STRING("me"), 4)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 11)
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), 2000)
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, 200, 4)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    ADD(LW(1), 15)
+    CALL(evt_eff, STRING(""), STRING("kemuri_test"), 17, LW(0), LW(1), LW(2), FLOAT(1.0f), 0, 0, 0, 0, 0, 0, 0)
+    CALL(evt_npc_set_position, STRING("me"), 0, -1000, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(killer_dead_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1024)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_damage_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_eff, 0, STRING("kemuri_test"), 4, LW(0), LW(1), LW(2), FLOAT(0.8f), 0, 0, 0, 0, 0, 0, 0)
+    CALL(evt_snd_sfxon, STRING("SFX_ENEMY_DIE1"), 0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_drop_coin, STRING("me"), LW(3))
+    IF_INT_GREATER(LW(3), 0)
+        LOOP(LW(3))
+            CALL(evt_item_entry, 0, 121, LW(0), LW(1), LW(2), 8, -1, 0)
+        END_LOOP
+    END_IF
+    CALL(evt_npc_get_drop_heart, STRING("me"), LW(3))
+    IF_INT_GREATER(LW(3), 0)
+        LOOP(LW(3))
+            CALL(evt_item_entry, 0, 123, LW(0), LW(1), LW(2), 8, -1, 0)
+        END_LOOP
+    END_IF
+    CALL(evt_npc_get_drop_flower, STRING("me"), LW(3))
+    IF_INT_GREATER(LW(3), 0)
+        LOOP(LW(3))
+            CALL(evt_item_entry, 0, 124, LW(0), LW(1), LW(2), 8, -1, 0)
+        END_LOOP
+    END_IF
+    CALL(evt_npc_get_drop_item, STRING("me"), LW(3))
+    IF_INT_NOT_EQUAL(LW(3), 0)
+        CALL(evt_item_entry, 0, LW(3), LW(0), LW(1), LW(2), 9, -1, 0)
+    END_IF
+    CALL(evt_npc_getback_item_entry, STRING("me"))
+    CALL(evt_npc_get_drop_fixitem, STRING("me"), LW(3))
+    IF_INT_NOT_EQUAL(LW(3), 0)
+        CALL(evt_item_entry, 0, LW(3), LW(0), LW(1), LW(2), 9, -1, 0)
+    END_IF
+    CALL(evt_npc_set_position, STRING("me"), 0, -1000, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(killer_cannon_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_get_dir, STRING("me"), LW(0))
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, LW(0))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(killer_cannon_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KTA_S_1"))
+    SET_VALUE(LW(10), 0)
+    LABEL(0)
+    WAIT_MS(3000)
+    LABEL(1)
+    WAIT_MS(100)
+    ADD(LW(10), 1)
+    IF_INT_EQUAL(LW(10), 2)
+        SET_VALUE(LW(10), 0)
+    END_IF
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KTA_A_1"))
+    WAIT_MS(200)
+    CALL(evt_npc_get_position, STRING("me"), LW(2), LW(3), LW(4))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_KILLER_CANNON1"), LW(2), LW(3), LW(4), 0)
+    WAIT_MS(200)
+    CALL(evt_npc_get_dir, STRING("me"), LW(1))
+    CALL(evt_npc_get_position, STRING("me"), LW(2), LW(3), LW(4))
+    CALL(evt_npc_add_dirdist, LW(2), LW(4), LW(1), 30)
+    ADD(LW(3), 30)
+    CALL(evt_eff, STRING(""), STRING("kemuri_test"), 18, LW(2), LW(3), LW(4), FLOAT(1.5f), 0, 0, 0, 0, 0, 0, 0)
+    CALL(evt_npc_get_dir, STRING("me"), LW(1))
+    CALL(killer_make_name, LW(10), LW(0))
+    CALL(evt_npc_set_ry, LW(0), LW(1))
+    CALL(evt_npc_get_position, STRING("me"), LW(2), LW(3), LW(4))
+    CALL(evt_npc_add_dirdist, LW(2), LW(4), LW(1), 30)
+    ADD(LW(3), 11)
+    CALL(killer_make_name, LW(10), LW(0))
+    CALL(evt_npc_set_position, LW(0), LW(2), LW(3), LW(4))
+    CALL(killer_make_name, LW(10), LW(0))
+    CALL(evt_npc_set_anim, LW(0), STRING("KIL_S_1"))
+    CALL(killer_make_name, LW(10), LW(0))
+    CALL(evt_npc_change_interrupt, LW(0), 1, PTR(killer_move_event))
+    CALL(killer_make_name, LW(10), LW(0))
+    CALL(evt_npc_restart_regular_event, LW(0))
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sambo_move_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1048592)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SNB_S_1"))
+    LABEL(0)
+    WAIT_FRAMES(1)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sambo_find_event)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SNB_S_1"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_homing_target, STRING("me"), STRING("mario"), 0, FLOAT(100.0f), FLOAT(7.0f), FLOAT(60.0f), 4)
+    WAIT_MS(500)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sambo_lost_event)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SNB_S_1"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sambo_return_event)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SNB_S_1"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_home_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(100.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sinnosuke_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 8)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1049616)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 268435456)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sinnosuke_move_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1049616)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIS_Z_3"))
+    LABEL(0)
+    WAIT_FRAMES(1)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sinnosuke_find_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIS_Z_3"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    SET_VALUE(LW(15), 0)
+    LOOP(0)
+        WAIT_FRAMES(1)
+        ADD(LW(15), 30)
+        CALL(evt_npc_set_rotate, STRING("me"), 0, LW(15), 0)
+        IF_INT_GREATER_OR_EQUAL(LW(15), 270)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIS_S_1"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 270, 0)
+    LOOP(0)
+        WAIT_FRAMES(1)
+        ADD(LW(15), 30)
+        CALL(evt_npc_set_rotate, STRING("me"), 0, LW(15), 0)
+        IF_INT_GREATER_OR_EQUAL(LW(15), 360)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    LOOP(0)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("SIS_A_1a"))
+        WAIT_MS(300)
+        CALL(evt_npc_set_attack_mode, STRING("me"), 13)
+        CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(3))
+        CALL(evt_npc_set_ry, STRING("me"), LW(3))
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+        CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(200.0f), 6)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("SIS_S_1"))
+        CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+        WAIT_MS(200)
+    END_LOOP
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sinnosuke_lost_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIS_S_1"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sinnosuke_return_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIS_W_1"))
+    CALL(evt_npc_get_home_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(30.0f), 4)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIS_S_1"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    SET_VALUE(LW(15), 0)
+    LOOP(0)
+        WAIT_FRAMES(1)
+        ADD(LW(15), 30)
+        CALL(evt_npc_set_rotate, STRING("me"), 0, LW(15), 0)
+        IF_INT_GREATER_OR_EQUAL(LW(15), 270)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIS_Z_3"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 270, 0)
+    LOOP(0)
+        WAIT_FRAMES(1)
+        ADD(LW(15), 30)
+        CALL(evt_npc_set_rotate, STRING("me"), 0, LW(15), 0)
+        IF_INT_GREATER_OR_EQUAL(LW(15), 360)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sinemon_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 8)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1049616)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 131072)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sinemon_move_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1049616)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 131072)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIN_Z_3"))
+    LABEL(0)
+    WAIT_FRAMES(1)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sinemon_find_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIN_Z_3"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    SET_VALUE(LW(15), 0)
+    LOOP(0)
+        WAIT_FRAMES(1)
+        ADD(LW(15), 30)
+        CALL(evt_npc_set_rotate, STRING("me"), 0, LW(15), 0)
+        IF_INT_GREATER_OR_EQUAL(LW(15), 270)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIN_S_1"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 270, 0)
+    LOOP(0)
+        WAIT_FRAMES(1)
+        ADD(LW(15), 30)
+        CALL(evt_npc_set_rotate, STRING("me"), 0, LW(15), 0)
+        IF_INT_GREATER_OR_EQUAL(LW(15), 360)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    LOOP(0)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("SIN_A_1a"))
+        WAIT_MS(300)
+        CALL(evt_npc_set_attack_mode, STRING("me"), 14)
+        CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(3))
+        CALL(evt_npc_set_ry, STRING("me"), LW(3))
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+        CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(200.0f), 6)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("SIN_S_1"))
+        CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+        WAIT_MS(200)
+    END_LOOP
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sinemon_lost_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIN_S_1"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sinemon_return_event)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIN_W_1"))
+    CALL(evt_npc_get_home_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(30.0f), 4)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIN_S_1"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    SET_VALUE(LW(15), 0)
+    LOOP(0)
+        WAIT_FRAMES(1)
+        ADD(LW(15), 30)
+        CALL(evt_npc_set_rotate, STRING("me"), 0, LW(15), 0)
+        IF_INT_GREATER_OR_EQUAL(LW(15), 270)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_npc_set_anim, STRING("me"), STRING("SIN_Z_3"))
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 270, 0)
+    LOOP(0)
+        WAIT_FRAMES(1)
+        ADD(LW(15), 30)
+        CALL(evt_npc_set_rotate, STRING("me"), 0, LW(15), 0)
+        IF_INT_GREATER_OR_EQUAL(LW(15), 360)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togedaruma_move_event)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togedaruma_find_event)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_set_attack_mode, STRING("me"), 15)
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            WAIT_FRAMES(1)
+            CALL(evt_npc_add_rotate, STRING("me"), 0, 45, 0)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(evt_npc_homing_target, STRING("me"), STRING("mario"), 0, FLOAT(120.0f), FLOAT(10.0f), FLOAT(60.0f), 4)
+    WAIT_MS(500)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togedaruma_lost_event)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togedaruma_return_event)
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    WAIT_MS(500)
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(barriern_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_slave_entry, STRING("me"), 0, STRING("c_baria"), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_flag_onoff, 1, LW(0), 536870912)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 131072)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(barriern_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 131072)
+    LABEL(0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_3"))
+    WAIT_FRAMES(60)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    WAIT_FRAMES(60)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 30, 50)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 2000, FLOAT(40.0f), 0, 0, 1)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(barriern2_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 131072)
+    LABEL(0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_3"))
+    WAIT_FRAMES(60)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    WAIT_FRAMES(60)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 30, 50)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 1000, FLOAT(120.0f), 0, 0, 1)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(barriern_dead_event)
+    CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(10))
+    CALL(evt_snd_sfxoff, LW(10))
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL_CHILD(enemy_common_dead_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(barriern_find_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 2097152)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    LABEL(0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("A_2"))
+    WAIT_FRAMES(30)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("A_3"))
+    WAIT_FRAMES(10)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("A_4"))
+    BEGIN_SIBLING_EVENT
+        SET_FLOAT_VALUE(LW(15), 0)
+        LOOP(60)
+            ADD_FLOAT(LW(15), FLOAT(0.03f))
+            CALL(evt_npc_set_scale, STRING("slave_0"), 1, LW(15), 1)
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_anim, STRING("slave_0"), STRING("Z_3"))
+    CALL(evt_npc_blur_onoff, 1, STRING("slave_0"))
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 128)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_BARRI_ATTACK1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_BARRI_ATTACK2"), LW(0), LW(1), LW(2), LW(10))
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, LW(10))
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(3))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(500.0f))
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 32)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 17)
+    CALL(evt_npc_glide_position, STRING("slave_0"), LW(0), LW(1), LW(2), 1250, 10, 0, 0, 1)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(10))
+    CALL(evt_snd_sfxoff, LW(10))
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_3"))
+    WAIT_FRAMES(30)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    WAIT_FRAMES(30)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
 
 // The `t` temp below only exists to steer MWCC's float-register colouring: without it the branch offset
 // lands in f1 and the 20.0f literal in f0, the reverse of the original. The natural form is under #else.
@@ -2324,1533 +2300,1385 @@ static void piders_draw_yarn_sub(CameraId cameraId, void* param) {
     GXEnd();
 }
 
-s32 barriern_lost_event[17] = {
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"S_3",
-    0x00010009, 0x0000003C, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"S_1", 0x00010009, 0x0000003C,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 barriern_return_event[42] = {
-    0x0002005B, (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B,
-    (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24C0A80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0000001E, 0x00000032, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000007D0, 0xF24B1A80, 0x00000000, 0x00000000,
-    0x00000001, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 barriern_blow_event[27] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000000,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0", 0x00000000,
-    0xFFFFFC18, 0x00000000, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"slave_0", 0x00000020, 0x0004005B,
-    (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000, 0xFE363C8A,
-    0x0002005B, (s32)evt_snd_sfxoff, 0xFE363C8A, 0x0001005E,
-    (s32)&enemy_common_blow_event, 0x00000002, 0x00000001,
-};
-s32 piders_move_event[111] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"PAI_S_1", 0x0000006E, 0x00010005, 0x00000000,
-    0x00010009, 0x00000001, 0x0001005B, (s32)piders_draw_yawn,
-    0x00000006, 0x00000070, 0x0000006E, 0x00010005,
-    0x00000000, 0x0005005B, (s32)evt_npc_get_home_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020032,
-    0xFE363C83, 0xFE363C81, 0x00020036, 0xFE363C81,
-    0x0000000A, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000096,
-    0x00000000, 0x00000000, 0x00000004, 0x00000000,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C83, 0xFE363C82, 0x00000096, 0x00000000,
-    0x00000000, 0x00000004, 0x00000000, 0x00010009,
-    0x00000064, 0x00000006, 0x00000070, 0x0000006E,
-    0x0005005B, (s32)evt_npc_set_rotate, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x00010005, 0x00000014,
-    0x0005005B, (s32)evt_npc_add_rotate, (s32)"me", 0x00000000,
-    0x00000002, 0x00000000, 0x00010009, 0x00000001,
-    0x00000006, 0x00010005, 0x00000000, 0x00010005,
-    0x00000028, 0x0005005B, (s32)evt_npc_add_rotate, (s32)"me",
-    0x00000000, 0xFFFFFFFE, 0x00000000, 0x00010009,
-    0x00000001, 0x00000006, 0x00010005, 0x00000028,
-    0x0005005B, (s32)evt_npc_add_rotate, (s32)"me", 0x00000000,
-    0x00000002, 0x00000000, 0x00010009, 0x00000001,
-    0x00000006, 0x00000006, 0x00000070, 0x00010003,
-    0x00000000, 0x00010009, 0x00000001, 0x00010004,
-    0x00000000, 0x00000002, 0x00000001,
-};
-s32 piders_find_event[206] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00000400, 0x0000006E, 0x00010005, 0x00000000,
-    0x00010009, 0x00000001, 0x0001005B, (s32)piders_draw_yawn,
-    0x00000006, 0x00000070, 0x0005005B, (s32)evt_npc_set_rotate,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x0000006B, 0x00010005, 0x0000000A, 0x0005005B,
-    (s32)evt_npc_add_rotate, (s32)"me", 0x00000000, 0x00000006,
-    0x00000000, 0x00010009, 0x00000001, 0x00000006,
-    0x00010005, 0x00000016, 0x0005005B, (s32)evt_npc_add_rotate,
-    (s32)"me", 0x00000000, 0xFFFFFFFB, 0x00000000,
-    0x00010009, 0x00000001, 0x00000006, 0x00010005,
-    0x00000014, 0x0005005B, (s32)evt_npc_add_rotate, (s32)"me",
-    0x00000000, 0x00000004, 0x00000000, 0x00010009,
-    0x00000001, 0x00000006, 0x00010005, 0x00000010,
-    0x0005005B, (s32)evt_npc_add_rotate, (s32)"me", 0x00000000,
-    0xFFFFFFFD, 0x00000000, 0x00010009, 0x00000001,
-    0x00000006, 0x00010005, 0x0000000E, 0x0005005B,
-    (s32)evt_npc_add_rotate, (s32)"me", 0x00000000, 0x00000002,
-    0x00000000, 0x00010009, 0x00000001, 0x00000006,
-    0x00010005, 0x0000000A, 0x0005005B, (s32)evt_npc_add_rotate,
-    (s32)"me", 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x00010009, 0x00000001, 0x00000006, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x0000006D, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_PAIDA_MOVE1", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x0002005B,
-    (s32)piders_get_height, 0xFE363C8F, 0x00020032, 0xFE363C8E,
-    0xFE363C8F, 0x00020038, 0xFE363C8E, 0x00000003,
-    0x0005005B, (s32)evt_npc_get_home_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00020032, 0xFE363C83,
-    0xFE363C81, 0x00020036, 0xFE363C81, 0xFE363C8F,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000000,
-    0x00000000, 0x00000004, 0x00000000, 0x00010009,
-    0x0000003C, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_PAIDA_MOVE2",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x00020035, 0xFE363C81, 0xFE363C8E, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000002BC, 0x00000000, 0x00000014,
-    0x00000004, 0x00000000, 0x00020035, 0xFE363C81,
-    0xFE363C8E, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_PAIDA_MOVE2",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000002BC, 0x00000000,
-    0x00000014, 0x00000004, 0x00000000, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_PAIDA_MOVE2", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C83, 0xFE363C82,
-    0x00000258, 0x00000000, 0x00000000, 0x00000004,
-    0x00000000, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 piders_blow_event[13] = {
-    0x0000006E, 0x00010005, 0x00000000, 0x00010009,
-    0x00000001, 0x0001005B, (s32)piders_draw_yawn, 0x00000006,
-    0x00000070, 0x0001005E, (s32)&enemy_common_blow_event, 0x00000002,
-    0x00000001,
-};
-s32 pakkun_attack_event[74] = {
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)"SFX_FLD_ENM_PAKKUN_ATTACK1", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"PKF_A_1A", 0x0001000A, 0x000000C8, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"PKF_A_1B", 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"slave_0", 0x00000020,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000012,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)evt_npc_facedirection_add,
-    (s32)"me", 0xFE363C80, 0x0000001E, 0x0005005B,
-    (s32)evt_npc_set_position, (s32)"slave_0", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0001000A, 0x000000C8, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"PKF_A_1C", 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0", 0x00000020,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000000,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0", 0x00000000,
-    0xFFFFFC18, 0x00000000, 0x0001000A, 0x000000C8,
-    0x00000002, 0x00000001,
-};
-s32 pakkun_init_event[34] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00100018, 0x0006005B, (s32)evt_npc_slave_entry, (s32)"me",
-    0x00000000, (s32)"c_pakflwr", 0xFE363C80, (s32)&enemy_slave_common_dead_event,
-    0x0003005B, (s32)evt_npc_set_tribe, (s32)"slave_0", (s32)"パックンフラワー",
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000080, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0",
-    0x00000000, 0xFFFFFC18, 0x00000000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0", 0x00000020,
-    0x00000002, 0x00000001,
-};
-s32 pakkun_move_event[17] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00200000, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"PKF_S_1", 0x00010003, 0x00000000, 0x00010009,
-    0x00000001, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 pakkun_find_event[106] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00200000, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_PAKKUN_MOVE1", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00000020, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"PKF_E_2", 0x00010009,
-    0x0000000A, 0x0005005B, (s32)evt_mario_get_pos, 0x00000000,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0003005B,
-    (s32)evt_sub_random, 0x0000000A, 0xFE363C83, 0x0002005B,
-    (s32)evt_mario_get_mov_spd, 0xFE363C84, 0x0002003C, 0xFE363C84,
-    0xF24A7C80, 0x0002003A, 0xFE363C83, 0xFE363C84,
-    0x0002003A, 0xFE363C83, 0x0000001E, 0x0004005B,
-    (s32)evt_npc_facedirection_add, (s32)"mario", 0xFE363C80, 0xFE363C83,
-    0x0007005B, (s32)evt_npc_move_position, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0x000000C8, 0x00000000, 0x00000004,
-    0x0004005B, (s32)evt_get_target_dir, (s32)"me", (s32)"mario",
-    0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry, (s32)"me",
-    0xFE363C80, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_PAKKUN_MOVE2", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"PKF_E_1", 0x00010009, 0x0000000A,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000020, 0x00010009, 0x00000014, 0x0001005E,
-    (s32)&pakkun_attack_event, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 pakkun_return_event[81] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00200000, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_PAKKUN_MOVE2", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"PKF_E_1", 0x00010009, 0x0000000A,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000020, 0x00010009, 0x00000014, 0x0001005E,
-    (s32)&pakkun_attack_event, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"me", 0x00000020, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"PKF_E_2", 0x00010009, 0x0000000A,
-    0x0005005B, (s32)evt_npc_get_home_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x000000C8,
-    0x00000000, 0x00000004, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"PKF_E_1", 0x00010009, 0x0000000A,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000020, 0x00010009, 0x00000019, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00200000,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 dokugassun_init_event[14] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00020000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me", 0x10000000,
-    0x00000002, 0x00000001,
-};
-s32 dokugassun_move_event[153] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_sub_random, 0x00000168,
-    0xFE363C83, 0x00010003, 0x00000000, 0x0001000A,
-    0x000001F4, 0x0004005B, (s32)evt_npc_get_loiter_dir, 0xFE363C83,
-    0xF24C5A80, 0xF24E3A80, 0x0002005B, (s32)evt_npc_sound_data_reset,
-    (s32)"me", 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000000A, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000001,
-    0xF24A9280, 0x00000000, 0x00000002, 0x0007005B,
-    (s32)evt_npc_sound_data_set, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0000000A, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000001F4, 0x00000001, 0xF24A6280, 0x00000000,
-    0x00000002, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000000A, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000001,
-    0xF24A9280, 0x00000000, 0x00000002, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0000000A, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000001F4, 0x00000001, 0xF24A9280, 0x00000000,
-    0x00000002, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 dokugassun_find_event[69] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me", 0x00000400,
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0001000A, 0x000000C8, 0x0004005B,
-    (s32)evt_get_target_dir, (s32)"me", (s32)"mario", 0xFE363C80,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C81, 0xFE363C83, 0xFE363C80, 0xF24D9A80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x0000000A, 0x000001F4, 0x0003005B,
-    (s32)evt_npc_set_ry, (s32)"me", 0xFE363C80, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x000003E8, 0x00000001, 0x00000000,
-    0x00000004, 0x00000001, 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 dokugassun_lost_event[27] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00000400,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"S_1",
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 dokugassun_return_event[158] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"S_1", 0x0001000A, 0x000001F4, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"W_1", 0x0002005B,
-    (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C83, 0x0002005B, (s32)evt_npc_sound_data_reset,
-    (s32)"me", 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000000A, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000001,
-    0xF24A6280, 0x00000000, 0x00000002, 0x0007005B,
-    (s32)evt_npc_sound_data_set, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0000000A, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000001F4, 0x00000001, 0xF24A9280, 0x00000000,
-    0x00000002, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000000A, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000001,
-    0xF24A6280, 0x00000000, 0x00000002, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0000000A, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000001F4, 0x00000001, 0xF24A9280, 0x00000000,
-    0x00000002, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 basabasa_init_event[17] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00100418, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00020000, 0x00000002,
-    0x00000001,
-};
-s32 basabasa_move_event[67] = {
-    0x0005005B, (s32)evt_npc_get_home_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C83, 0xFE363C84, 0xFE363C85,
-    0x0002001A, 0xFE363C84, 0xFE363C81, 0x0002005B,
-    (s32)evt_npc_set_walk_anim, (s32)"me", 0x0002005B, (s32)evt_set_dir_to_home,
-    (s32)"me", 0x0003005B, (s32)evt_npc_get_dir, (s32)"me",
-    0xFE363C83, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0005005B, (s32)evt_npc_get_home_position, (s32)"me",
-    0xFE363C84, 0xFE363C81, 0xFE363C85, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF249B280,
-    0x00000000, 0x00000002, 0x00000021, 0x00010003,
-    0x00000000, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"BSA_S_2", 0x00010009, 0x0000003C, 0x00010004,
-    0x00000000, 0x00000002, 0x00000001,
-};
-s32 basabasa_find_event[69] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00200000, 0x0002005B, (s32)evt_npc_set_run_anim, (s32)"me",
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C81, 0xFE363C82, 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_home_position, (s32)"me", 0xFE363C84,
-    0xFE363C85, 0xFE363C86, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C81, 0xFE363C83, 0xFE363C80, 0xF24C0A80,
-    0x0003005B, (s32)evt_npc_set_ry, (s32)"me", 0xFE363C80,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C81,
-    0xFE363C85, 0xFE363C83, 0x00000000, 0x0000004B,
-    0xF2484A80, 0x00000000, 0x00000000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00200000,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 basabasa_lost_event[31] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 basabasa_return_event[44] = {
-    0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me", 0x0002005B,
-    (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C83, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0005005B, (s32)evt_npc_get_home_position,
-    (s32)"me", 0xFE363C84, 0xFE363C81, 0xFE363C85,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000000,
-    0xF249B280, 0x00000000, 0x00000002, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 basabasa2_move_event[148] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_sub_random, 0x00000168,
-    0xFE363C83, 0x00010003, 0x00000000, 0x0002005B,
-    (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me", 0x0004005B,
-    (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80, 0xF24E3A80,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000050, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x00000032, 0xF24A5280,
-    0x00000000, 0x00000003, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000050,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x00000032, 0xF24AA280, 0x00000000, 0x00000003,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000050, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x00000032, 0xF24A5280,
-    0x00000000, 0x00000003, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000050,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x00000032, 0xF24AA280, 0x00000000, 0x00000003,
-    0x00010004, 0x00000000, 0x00000002, 0x00000001,
-};
-s32 basabasa2_find_event[60] = {
-    0x0002005B, (s32)evt_npc_set_run_anim, (s32)"me", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0004005B, (s32)evt_get_target_dir, (s32)"me", (s32)"mario",
-    0xFE363C80, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C81, 0xFE363C82, 0xFE363C83, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C81, 0xFE363C83, 0xFE363C80,
-    0xF24C0A80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x00000050, 0x000001F4,
-    0x0003005B, (s32)evt_npc_set_ry, (s32)"me", 0xFE363C80,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x00000000, 0x0000004B,
-    0xF2493A80, 0x00000000, 0x00000000, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 basabasa2_lost_event[31] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 basabasa2_return_event[140] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me",
-    0x0002005B, (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B,
-    (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000050, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000001F4, 0x00000000, 0xF24A5280, 0x00000000,
-    0x00000003, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000050, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000000,
-    0xF24AA280, 0x00000000, 0x00000003, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000050, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000001F4, 0x00000000, 0xF24A5280, 0x00000000,
-    0x00000003, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000050, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000000,
-    0xF24AA280, 0x00000000, 0x00000003, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 teresa_move_event[165] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"me", 0x00200000, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00000020, 0x0006005B,
-    (s32)evt_npc_set_color, (s32)"me", 0x000000FF, 0x000000FF,
-    0x000000FF, 0x000000FF, 0x0003005B, (s32)evt_sub_random,
-    0x00000168, 0xFE363C83, 0x00010003, 0x00000000,
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me",
-    0x0004005B, (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80,
-    0xF24E3A80, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000032, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x00000032,
-    0xF24A5280, 0x00000000, 0x00000003, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000032, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000032, 0xF24AA280, 0x00000000,
-    0x00000003, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000032, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x00000032,
-    0xF24A5280, 0x00000000, 0x00000003, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000032, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000032, 0xF24AA280, 0x00000000,
-    0x00000003, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 teresa_find_event[60] = {
-    0x0002005B, (s32)evt_npc_set_run_anim, (s32)"me", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0004005B, (s32)evt_get_target_dir, (s32)"me", (s32)"mario",
-    0xFE363C80, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C81, 0xFE363C82, 0xFE363C83, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C81, 0xFE363C83, 0xFE363C80,
-    0xF24C0A80, 0x0003005B, (s32)evt_npc_set_ry, (s32)"me",
-    0xFE363C80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x00000032, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x00000000, 0x0000004B,
-    0xF249DA80, 0x00000000, 0x00000000, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 teresa_lost_event[31] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 teresa_return_event[104] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me",
-    0x0002005B, (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B,
-    (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me", 0x00200000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00000020, 0x00020032, 0xFE363C80, 0x000000FF,
-    0x00010005, 0x00000010, 0x0006005B, (s32)evt_npc_set_color,
-    (s32)"me", 0x000000FF, 0x000000FF, 0x000000FF,
-    0xFE363C80, 0x00020036, 0xFE363C80, 0x00000010,
-    0x0001000A, 0x0000001E, 0x00000006, 0x0006005B,
-    (s32)evt_npc_set_color, (s32)"me", 0x000000FF, 0x000000FF,
-    0x000000FF, 0x00000000, 0x0001000A, 0x000001F4,
-    0x0005005B, (s32)evt_npc_get_home_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00020032, 0xFE363C80, 0x00000000, 0x00010005,
-    0x00000010, 0x00020035, 0xFE363C80, 0x00000010,
-    0x0002001B, 0xFE363C80, 0x000000FF, 0x00020032,
-    0xFE363C80, 0x000000FF, 0x00000021, 0x0006005B,
-    (s32)evt_npc_set_color, (s32)"me", 0x000000FF, 0x000000FF,
-    0x000000FF, 0xFE363C80, 0x0001000A, 0x0000001E,
-    0x00000006, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"me", 0x00000020, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00200000, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 bubble_move_event[159] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_sub_random, 0x00000168,
-    0xFE363C83, 0x00010003, 0x00000000, 0x0002005B,
-    (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0002005B,
-    (s32)evt_npc_set_walk_anim, (s32)"me", 0x0004005B, (s32)evt_npc_get_loiter_dir,
-    0xFE363C83, 0xF24C5A80, 0xF24E3A80, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000014, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000032, 0xF24A6680, 0x00000000,
-    0x00000003, 0x0007005B, (s32)evt_npc_sound_data_set, (s32)"me",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000014, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x00000032,
-    0xF24A8E80, 0x00000000, 0x00000003, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000014, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000032, 0xF24A6680, 0x00000000,
-    0x00000003, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000014, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x00000032,
-    0xF24A8E80, 0x00000000, 0x00000003, 0x00010004,
-    0x00000000, 0x00000002, 0x00000001,
-};
-s32 bubble_find_event[63] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0002005B,
-    (s32)evt_npc_set_run_anim, (s32)"me", 0x000C005B, (s32)evt_eff_fukidashi,
-    0x00000001, 0x00000000, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000001E, 0x0004005B,
-    (s32)evt_get_target_dir, (s32)"me", (s32)"mario", 0xFE363C80,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C81, 0xFE363C83, 0xFE363C80, 0xF24C0A80,
-    0x0003005B, (s32)evt_npc_set_ry, (s32)"me", 0xFE363C80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x00000014, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x00000000, 0x0000005A, 0xF24A7A80,
-    0x00000000, 0x00000002, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 bubble_lost_event[34] = {
-    0x0002005B, (s32)evt_npc_sound_data_reset, (s32)"me", 0x0002005B,
-    (s32)evt_npc_set_stay_anim, (s32)"me", 0x000C005B, (s32)evt_eff_fukidashi,
-    0x00000001, 0x00000000, (s32)"me", 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000001E, 0x0002005B,
-    (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 bubble_return_event[151] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me",
-    0x0002005B, (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B,
-    (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83, 0x0002005B,
-    (s32)evt_npc_sound_data_reset, (s32)"me", 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000014,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000001F4,
-    0x00000000, 0xF24A6680, 0x00000000, 0x00000003,
-    0x0007005B, (s32)evt_npc_sound_data_set, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000014, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24A8E80,
-    0x00000000, 0x00000003, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000014,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000001F4,
-    0x00000000, 0xF24A6680, 0x00000000, 0x00000003,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000014, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24A8E80,
-    0x00000000, 0x00000003, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 hbom_move_event[41] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0003005B, (s32)evt_sub_random,
-    0x00000168, 0xFE363C83, 0x00010003, 0x00000000,
-    0x0001000A, 0x000001F4, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0004005B, (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80,
-    0xF24E3A80, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24C0A80, 0x0007005B,
-    (s32)evt_npc_move_position, (s32)"me", 0xFE363C80, 0xFE363C82,
-    0x000007D0, 0xF24ACA80, 0x00000004, 0x0001000A,
-    0x000003E8, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 hbom_find_event[54] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0009005B, (s32)evt_npc_jump_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000012C, 0x00000000,
-    0xF24ACA80, 0x00000000, 0x0008005B, (s32)evt_npc_homing_target,
-    (s32)"me", (s32)"mario", 0x00000000, 0xF24B6A80,
-    0xF24AA280, 0xF24B6A80, 0x00000004, 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 hbom_lost_event[31] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me",
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 hbom_return_event[37] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_set_dir_to_home, (s32)"me",
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24C0A80,
-    0x0007005B, (s32)evt_npc_move_position, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0x00000000, 0xF24AF280, 0x00000004,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 zakowiz_init_event[38] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0006005B, (s32)evt_npc_slave_entry,
-    (s32)"me", 0x00000000, (s32)"c_zako_m", 0xFE363C80,
-    (s32)&enemy_slave_common_dead_event, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    0xFE363C80, 0x20000000, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, 0xFE363C80, 0x00000020, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"slave_0", (s32)"B_1A", 0x0003005B,
-    (s32)evt_npc_set_width, (s32)"slave_0", 0x0000000A, 0x0003005B,
-    (s32)evt_npc_set_height, (s32)"slave_0", 0x0000000A, 0x0004005B,
-    (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000, 0x00000001,
-    0x00000002, 0x00000001,
-};
-s32 zakowiz_move_event[70] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"slave_0", 0x00000080, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"S_1", 0x0003005B,
-    (s32)evt_sub_random, 0x00000168, 0xFE363C83, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00200000,
-    0x00010003, 0x00000000, 0x0001000A, 0x000001F4,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)evt_npc_get_loiter_dir,
-    0xFE363C83, 0xF24C5A80, 0xF24E3A80, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x000007D0, 0xF24B1A80,
-    0x00000004, 0x0002005B, (s32)npc_check_wall_stop, 0xFE363C80,
-    0x00020018, 0xFE363C80, 0x00000001, 0x0002005B,
-    (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000003E8, 0x00000021, 0x00010004, 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 zakowiz_find_event[159] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00200000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"A_1B", 0x0001000A,
-    0x000001F4, 0x0000006E, 0x0001000A, 0x000002BC,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"S_1",
-    0x00000070, 0x0005005B, (s32)evt_npc_set_rotate, (s32)"slave_0",
-    0x00000000, 0x00000000, 0x00000000, 0x0003005B,
-    (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x00020035,
-    0xFE363C81, 0x00000019, 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"slave_0", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"slave_0",
-    0x00000080, 0x0005005B, (s32)evt_mario_get_pos, 0x00000000,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"slave_0", (s32)"B_1A", 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"slave_0", 0x00000020,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x0000000C,
-    0x0009005B, (s32)evt_npc_jump_position, (s32)"slave_0", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000003E8, 0x00000000,
-    0xF24BA680, 0x00000000, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"slave_0", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000F005B, (s32)evt_eff, (s32)"", (s32)"kemuri_test",
-    0x00000010, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0xF24A7E80, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000020, 0x0003005B, (s32)evt_npc_set_anim, (s32)"slave_0",
-    (s32)"B_2", 0x0001000A, 0x0000012C, 0x0005005B,
-    (s32)evt_npc_set_position, (s32)"slave_0", 0x00000000, 0xFFFFFC18,
-    0x00000000, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"me", 0x00200000, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 zakowiz_lost_event[18] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0002005B,
-    (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 zakowiz_return_event[37] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_set_dir_to_home, (s32)"me",
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24C0A80,
-    0x0007005B, (s32)evt_npc_move_position, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0x00000000, 0xF24B1A80, 0x00000004,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 zakowiz_blow_event[19] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000020, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0",
-    0x00000000, 0xFFFFFC18, 0x00000000, 0x0001005E,
-    (s32)&enemy_common_blow_event, 0x00000002, 0x00000001,
-};
-s32 hannya_move_event[37] = {
-    0x0003005B, (s32)evt_sub_random, 0x00000168, 0xFE363C83,
-    0x00010003, 0x00000000, 0x0001000A, 0x000003E8,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)evt_npc_get_loiter_dir,
-    0xFE363C83, 0xF24C5A80, 0xF24E3A80, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x000007D0, 0xF24B1A80,
-    0x00000004, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 hannya_find_event[86] = {
-    0x0002005B, (s32)evt_npc_set_run_anim, (s32)"me", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0004005B, (s32)evt_get_target_dir, (s32)"me", (s32)"mario",
-    0xFE363C80, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C81, 0xFE363C82, 0xFE363C83, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_HANNYA_MOVE1", 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0x00000000, 0x0005005B, (s32)evt_npc_get_home_position,
-    (s32)"me", 0xFE363C84, 0xFE363C85, 0xFE363C86,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C81, 0xFE363C83,
-    0xFE363C80, 0xF24C0A80, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x0000000B, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00000400, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"A_3", 0x0007005B,
-    (s32)evt_npc_move_position, (s32)"me", 0xFE363C81, 0xFE363C83,
-    0x00000000, 0xF24D4A80, 0x00000006, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me", 0x00000400,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000,
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 hannya_lost_event[23] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 hannya_return_event[29] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000003E8, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000000,
-    (s32)"me", 0x00000002, 0x0005005B, (s32)evt_npc_get_home_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0007005B, (s32)evt_npc_move_position, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0x00000BB8, 0xF24B1A80, 0x00000004,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 mahoon_init_event[120] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0002005B, (s32)mahoon_get_groupname,
-    0xFE363C8A, 0x0006005B, (s32)evt_npc_slave_entry, (s32)"me",
-    0x00000000, 0xFE363C8A, 0xFE363C80, (s32)&enemy_slave_common_dead_event,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"slave_0", (s32)"MAH_S_2A",
-    0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0", 0x00000000,
-    0xFFFFFC18, 0x00000000, 0x0006005B, (s32)evt_npc_slave_entry,
-    (s32)"me", 0x00000001, 0xFE363C8A, 0xFE363C80,
-    (s32)&enemy_slave_common_dead_event, 0x0003005B, (s32)evt_npc_set_anim, (s32)"slave_1",
-    (s32)"MAH_S_2A", 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_1",
-    0x00000000, 0xFFFFFC18, 0x00000000, 0x0006005B,
-    (s32)evt_npc_slave_entry, (s32)"me", 0x00000002, 0xFE363C8A,
-    0xFE363C80, (s32)&enemy_slave_common_dead_event, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"slave_2", (s32)"MAH_S_2A", 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"slave_2", 0x00000000, 0xFFFFFC18, 0x00000000,
-    0x0006005B, (s32)evt_npc_slave_entry, (s32)"me", 0x00000003,
-    0xFE363C8A, 0xFE363C80, (s32)&enemy_slave_common_dead_event, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"slave_3", (s32)"MAH_S_2A", 0x0005005B,
-    (s32)evt_npc_set_position, (s32)"slave_3", 0x00000000, 0xFFFFFC18,
-    0x00000000, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"me", 0x00020000, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"slave_0", 0x00020000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"slave_1", 0x00020000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"slave_2",
-    0x00020000, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"slave_3", 0x00020000, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"slave_0", 0x00000020, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_1", 0x00000020,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_2",
-    0x00000020, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"slave_3", 0x00000020, 0x00000002, 0x00000001,
-};
-s32 mahoon_move_event[259] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0000006E, 0x00010005, 0x00000000,
-    0x00010009, 0x00000001, 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"slave_0", 0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"slave_1", 0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"slave_2", 0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"slave_3", 0xFE363C83, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x00020035, 0xFE363C81,
-    0x00000005, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24A1680, 0x00020035,
-    0xFE363C81, 0x00000005, 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"slave_1", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x00020035, 0xFE363C81, 0x0000001E, 0x0005005B,
-    (s32)evt_npc_set_position, (s32)"slave_2", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24A1680, 0x00020035, 0xFE363C81, 0x0000001E,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"slave_3", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000006, 0x00000070,
-    0x0003005B, (s32)evt_sub_random, 0x00000168, 0xFE363C83,
-    0x00010003, 0x00000000, 0x0002005B, (s32)evt_npc_set_stay_anim,
-    (s32)"me", 0x0001000A, 0x000001F4, 0x0002005B,
-    (s32)evt_npc_set_walk_anim, (s32)"me", 0x0004005B, (s32)evt_npc_get_loiter_dir,
-    0xFE363C83, 0xF24C5A80, 0xF24E3A80, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000014, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000032, 0xF24A6680, 0x00000000,
-    0x00000003, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000014, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x00000032,
-    0xF24A8E80, 0x00000000, 0x00000003, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x0006005B,
-    (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000014, 0x000001F4, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000032, 0xF24A6680, 0x00000000,
-    0x00000003, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000014, 0x000001F4,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x00000032,
-    0xF24A8E80, 0x00000000, 0x00000003, 0x00010004,
-    0x00000000, 0x00000002, 0x00000001,
-};
-s32 mahoon_dead_event[24] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000080, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"slave_1", 0x00000080, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"slave_2", 0x00000080, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_3", 0x00000080,
-    0x0001005E, (s32)&enemy_common_dead_event, 0x00000002, 0x00000001,
-};
-s32 mahoon_find_event[177] = {
-    0x0000006E, 0x00010005, 0x00000000, 0x00010009,
-    0x00000001, 0x0003005B, (s32)evt_npc_get_dir, (s32)"me",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_0",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_1",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_2",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_3",
-    0xFE363C83, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x00020035, 0xFE363C81, 0x00000005,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24A1680, 0x00020035, 0xFE363C81,
-    0x00000005, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_1",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x00020035,
-    0xFE363C81, 0x0000001E, 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"slave_2", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24A1680,
-    0x00020035, 0xFE363C81, 0x0000001E, 0x0005005B,
-    (s32)evt_npc_set_position, (s32)"slave_3", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000006, 0x00000070, 0x0002005B,
-    (s32)evt_npc_set_run_anim, (s32)"me", 0x000C005B, (s32)evt_eff_fukidashi,
-    0x00000001, 0x00000000, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000001E, 0x0004005B,
-    (s32)evt_get_target_dir, (s32)"me", (s32)"mario", 0xFE363C80,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x0005005B, (s32)evt_npc_get_home_position,
-    (s32)"me", 0xFE363C84, 0xFE363C85, 0xFE363C86,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C81, 0xFE363C83,
-    0xFE363C80, 0xF24C0A80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C81, 0xFE363C82, 0xFE363C83, 0x00000014,
-    0x000001F4, 0x0003005B, (s32)evt_npc_set_ry, (s32)"me",
-    0xFE363C80, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C81, 0xFE363C82, 0xFE363C83, 0x00000000,
-    0x00000087, 0xF24A7A80, 0x00000000, 0x00000000,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 mahoon_lost_event[142] = {
-    0x0000006E, 0x00010005, 0x00000000, 0x00010009,
-    0x00000001, 0x0003005B, (s32)evt_npc_get_dir, (s32)"me",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_0",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_1",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_2",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_3",
-    0xFE363C83, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x00020035, 0xFE363C81, 0x00000005,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24A1680, 0x00020035, 0xFE363C81,
-    0x00000005, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_1",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x00020035,
-    0xFE363C81, 0x0000001E, 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"slave_2", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24A1680,
-    0x00020035, 0xFE363C81, 0x0000001E, 0x0005005B,
-    (s32)evt_npc_set_position, (s32)"slave_3", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000006, 0x00000070, 0x0002005B,
-    (s32)evt_npc_set_stay_anim, (s32)"me", 0x000C005B, (s32)evt_eff_fukidashi,
-    0x00000001, 0x00000000, (s32)"me", 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000001E, 0x0002005B,
-    (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 mahoon_return_event[251] = {
-    0x0000006E, 0x00010005, 0x00000000, 0x00010009,
-    0x00000001, 0x0003005B, (s32)evt_npc_get_dir, (s32)"me",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_0",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_1",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_2",
-    0xFE363C83, 0x0003005B, (s32)evt_npc_set_ry, (s32)"slave_3",
-    0xFE363C83, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ADE80, 0x00020035, 0xFE363C81, 0x00000005,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24A1680, 0x00020035, 0xFE363C81,
-    0x00000005, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_1",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80,
-    0xFE363C82, 0xFE363C83, 0xF24ADE80, 0x00020035,
-    0xFE363C81, 0x0000001E, 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"slave_2", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24A1680,
-    0x00020035, 0xFE363C81, 0x0000001E, 0x0005005B,
-    (s32)evt_npc_set_position, (s32)"slave_3", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000006, 0x00000070, 0x0002005B,
-    (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me", 0x0002005B,
-    (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C83, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000014,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000001F4,
-    0x00000000, 0xF24A6680, 0x00000000, 0x00000003,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000014, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24A8E80,
-    0x00000000, 0x00000003, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000014,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000001F4,
-    0x00000000, 0xF24A6680, 0x00000000, 0x00000003,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000014, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24A8E80,
-    0x00000000, 0x00000003, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 kamec_init_event[54] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00100018, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x0002005B, (s32)mahoon_get_groupname,
-    0xFE363C8A, 0x0006005B, (s32)evt_npc_slave_entry, (s32)"me",
-    0x00000000, 0xFE363C8A, 0xFE363C80, (s32)&enemy_slave_common_dead_event,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, 0xFE363C80,
-    0x20000000, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    0xFE363C80, 0x00000020, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, 0xFE363C80, 0x00020000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"slave_0", (s32)"KMK_Z_1", 0x0003005B,
-    (s32)evt_npc_set_width, (s32)"slave_0", 0x0000000A, 0x0003005B,
-    (s32)evt_npc_set_height, (s32)"slave_0", 0x0000000A, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0", 0x00000080,
-    0x00000002, 0x00000001,
-};
-s32 kamec_move_event[177] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0003005B, (s32)evt_sub_random, 0x00000168,
-    0xFE363C83, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"slave_0", 0x00000080, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"slave_0", 0x00000020, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"KMK_S_2", 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00200000,
-    0x00010003, 0x00000000, 0x0002005B, (s32)evt_npc_set_stay_anim,
-    (s32)"me", 0x0001000A, 0x000001F4, 0x0002005B,
-    (s32)evt_npc_set_walk_anim, (s32)"me", 0x0004005B, (s32)evt_npc_get_loiter_dir,
-    0xFE363C83, 0xF24C5A80, 0xF24E3A80, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00000400,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x00000032, 0xF24A6680,
-    0x00000000, 0x00000003, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x00000032, 0xF24A8E80, 0x00000000, 0x00000003,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x00000032, 0xF24A6680,
-    0x00000000, 0x00000003, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x00000032, 0xF24A8E80, 0x00000000, 0x00000003,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00000400, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 kamec_find_event[150] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00200000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"KMK_A_3A", 0x0001000A,
-    0x000002BC, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"KMK_A_3B", 0x0001000A, 0x00000096, 0x0000006E,
-    0x0001000A, 0x000003E8, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"KMK_S_2", 0x00000070, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"slave_0", 0x00000000, 0x00000000,
-    0x00000000, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0003005B,
-    (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24ACA80, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)evt_mario_get_pos, 0x00000000, 0xFE363C83, 0xFE363C84,
-    0xFE363C85, 0x00020035, 0xFE363C84, 0x00000014,
-    0x0008005B, (s32)kamec_fire_magic, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0xFE363C84, 0xFE363C85,
-    0xFE363C8A, 0x0005005B, (s32)evt_mario_get_pos, 0x00000000,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
-    0xFE363C81, 0x00000014, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"slave_0", 0x00000020, 0x0003005B,
-    (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x0000000C, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"slave_0", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000003E8, 0x00000000, 0xF24A7A80,
-    0x00000000, 0x00000003, 0x0002005B, (s32)kamec_fire_magic_delete,
-    0xFE363C8A, 0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0",
-    0x00000000, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"slave_0", 0x00000020, 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"slave_0", 0x00000000, 0xFFFFFC18, 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00200000, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 kamec_lost_event[31] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x000C005B,
-    (s32)evt_eff_fukidashi, 0x00000001, 0x00000000, (s32)"me",
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000001E,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 kamec_return_event[150] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_set_walk_anim, (s32)"me",
-    0x0002005B, (s32)evt_set_dir_to_home, (s32)"me", 0x0003005B,
-    (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00000400,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24A6680,
-    0x00000000, 0x00000003, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000001F4,
-    0x00000000, 0xF24A8E80, 0x00000000, 0x00000003,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ADE80,
-    0x0006005B, (s32)evt_fbat_trans_floor_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000032, 0x000001F4, 0x000A005B,
-    (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000001F4, 0x00000000, 0xF24A6680,
-    0x00000000, 0x00000003, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24ADE80, 0x0006005B, (s32)evt_fbat_trans_floor_position,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
-    0x000001F4, 0x000A005B, (s32)evt_npc_glide_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000001F4,
-    0x00000000, 0xF24A8E80, 0x00000000, 0x00000003,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00000400, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 kamec_blow_event[19] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000020, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0",
-    0x00000000, 0xFFFFFC18, 0x00000000, 0x0001005E,
-    (s32)&enemy_common_blow_event, 0x00000002, 0x00000001,
-};
-s32 kamec2_init_event[54] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00100418, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x0002005B, (s32)mahoon_get_groupname,
-    0xFE363C8A, 0x0006005B, (s32)evt_npc_slave_entry, (s32)"me",
-    0x00000000, 0xFE363C8A, 0xFE363C80, (s32)&enemy_slave_common_dead_event,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, 0xFE363C80,
-    0x20000000, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    0xFE363C80, 0x00000020, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, 0xFE363C80, 0x00020000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"slave_0", (s32)"KMK_Z_1", 0x0003005B,
-    (s32)evt_npc_set_width, (s32)"slave_0", 0x0000000A, 0x0003005B,
-    (s32)evt_npc_set_height, (s32)"slave_0", 0x0000000A, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0", 0x00000080,
-    0x00000002, 0x00000001,
-};
-s32 kamec2_move_event[58] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0003005B, (s32)evt_sub_random,
-    0x00000168, 0xFE363C83, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"slave_0", 0x00000080, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0", 0x00000020,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"KMK_S_1",
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00200000, 0x00010003, 0x00000000, 0x0001000A,
-    0x000001F4, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)evt_npc_get_loiter_dir, 0xFE363C83, 0xF24C5A80, 0xF24E3A80,
-    0x0005005B, (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82,
-    0xFE363C83, 0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position,
-    (s32)"me", 0xFE363C80, 0xFE363C82, 0x000007D0,
-    0xF24B1A80, 0x00000004, 0x00010004, 0x00000000,
-    0x00000002, 0x00000001,
-};
-s32 kamec2_find_event[153] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00200000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"KMK_A_2A", 0x0001000A,
-    0x000002BC, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"KMK_A_2B", 0x0001000A, 0x00000096, 0x0000006E,
-    0x0001000A, 0x000003E8, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"KMK_S_1", 0x00000070, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"slave_0", 0x00000000, 0x00000000,
-    0x00000000, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
-    0xFE363C81, 0x0000001E, 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C83, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ACA80,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_mario_get_pos,
-    0x00000000, 0xFE363C83, 0xFE363C84, 0xFE363C85,
-    0x00020035, 0xFE363C84, 0x00000014, 0x0008005B,
-    (s32)kamec_fire_magic, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0xFE363C83, 0xFE363C84, 0xFE363C85, 0xFE363C8A,
-    0x0005005B, (s32)evt_mario_get_pos, 0x00000000, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
-    0x00000014, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"slave_0", 0x00000020, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"slave_0", 0x0000000C, 0x000A005B, (s32)evt_npc_glide_position,
-    (s32)"slave_0", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000003E8, 0x00000000, 0xF24A7A80, 0x00000000,
-    0x00000003, 0x0002005B, (s32)kamec_fire_magic_delete, 0xFE363C8A,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000020, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0",
-    0x00000000, 0xFFFFFC18, 0x00000000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00200000,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 kamec2_lost_event[31] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me",
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x0001000A, 0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt,
-    (s32)"me", 0x00000002, 0x00000001,
-};
-s32 kamec2_return_event[37] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_set_dir_to_home, (s32)"me",
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24C0A80,
-    0x0007005B, (s32)evt_npc_move_position, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0x00000000, 0xF24B1A80, 0x00000004,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 kamec2_blow_event[19] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000020, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0",
-    0x00000000, 0xFFFFFC18, 0x00000000, 0x0001005E,
-    (s32)&enemy_common_blow_event, 0x00000002, 0x00000001,
-};
-s32 hbross_init_event[36] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0002005B, (s32)mahoon_get_groupname,
-    0xFE363C8A, 0x0006005B, (s32)evt_npc_slave_entry, (s32)"me",
-    0x00000000, 0xFE363C8A, 0xFE363C80, (s32)&enemy_slave_common_dead_event,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, 0xFE363C80,
-    0x20000000, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    0xFE363C80, 0x00000020, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"slave_0", (s32)"BRO_A_1B", 0x0003005B, (s32)evt_npc_set_width,
-    (s32)"slave_0", 0x0000000A, 0x0003005B, (s32)evt_npc_set_height,
-    (s32)"slave_0", 0x0000000A, 0x00000002, 0x00000001,
-};
-s32 hbross_move_event[57] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"slave_0", 0x00000080, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"BRO_S_1", 0x0003005B,
-    (s32)evt_sub_random, 0x00000168, 0xFE363C83, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00200000,
-    0x0003005B, (s32)evt_sub_random, 0x00000168, 0xFE363C83,
-    0x00010003, 0x00000000, 0x0001000A, 0x000001F4,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)evt_npc_get_loiter_dir,
-    0xFE363C83, 0xF24C5A80, 0xF24E3A80, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0xF24C0A80, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x000007D0, 0xF24B1A80,
-    0x00000004, 0x00010004, 0x00000000, 0x00000002,
-    0x00000001,
-};
-s32 hbross_find_event[141] = {
-    0x000C005B, (s32)evt_eff_fukidashi, 0x00000001, 0x00000000,
-    (s32)"me", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000001E, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00200000, 0x0000006E,
-    0x00010003, 0x00000000, 0x0005005B, (s32)evt_npc_add_rotate,
-    (s32)"slave_0", 0x00000000, 0x00000000, 0x0000001E,
-    0x00010009, 0x00000001, 0x00010004, 0x00000000,
-    0x00000070, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"BRO_A_1A", 0x0001000A, 0x00000190, 0x0000006E,
-    0x0001000A, 0x000001F4, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"BRO_S_1", 0x00000070, 0x0005005B,
-    (s32)evt_npc_set_rotate, (s32)"slave_0", 0x00000000, 0x00000000,
-    0x00000000, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
-    0xFE363C81, 0x00000019, 0x0003005B, (s32)evt_npc_get_dir,
-    (s32)"me", 0xFE363C83, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24ACA80,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"slave_0", 0x00000080, 0x0005005B,
-    (s32)evt_mario_get_pos, 0x00000000, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"slave_0", 0x00000020, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"slave_0", 0x0000000C, 0x0009005B, (s32)evt_npc_jump_position,
-    (s32)"slave_0", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000003E8, 0x00000000, 0xF24BA680, 0x00000000,
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000020, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0",
-    0x00000000, 0xFFFFFC18, 0x00000000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00200000,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 hbross_lost_event[18] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0002005B,
-    (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A, 0x000001F4,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0001000A,
-    0x000003E8, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 hbross_return_event[37] = {
-    0x0002005B, (s32)evt_npc_set_stay_anim, (s32)"me", 0x0001000A,
-    0x000001F4, 0x0002005B, (s32)evt_set_dir_to_home, (s32)"me",
-    0x0003005B, (s32)evt_npc_get_dir, (s32)"me", 0xFE363C83,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0xF24C0A80,
-    0x0007005B, (s32)evt_npc_move_position, (s32)"me", 0xFE363C80,
-    0xFE363C82, 0x00000000, 0xF24B1A80, 0x00000004,
-    0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002,
-    0x00000001,
-};
-s32 hbross_blow_event[19] = {
-    0x0003005B, (s32)evt_npc_set_attack_mode, (s32)"slave_0", 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000020, 0x0005005B, (s32)evt_npc_set_position, (s32)"slave_0",
-    0x00000000, 0xFFFFFC18, 0x00000000, 0x0001005E,
-    (s32)&enemy_common_blow_event, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(barriern_lost_event)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_3"))
+    WAIT_FRAMES(60)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    WAIT_FRAMES(60)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(barriern_return_event)
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 30, 50)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 2000, FLOAT(40.0f), 0, 0, 1)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(barriern_blow_event)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(10))
+    CALL(evt_snd_sfxoff, LW(10))
+    CALL_CHILD(enemy_common_blow_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(piders_move_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PAI_S_1"))
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            WAIT_FRAMES(1)
+            CALL(piders_draw_yawn)
+        END_LOOP
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(evt_npc_get_home_position, STRING("me"), LW(0), LW(1), LW(2))
+            SET_VALUE(LW(3), LW(1))
+            SUBTRACT(LW(1), 10)
+            CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 150, 0, 0, 4, 0)
+            CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(3), LW(2), 150, 0, 0, 4, 0)
+            WAIT_FRAMES(100)
+        END_LOOP
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+        LOOP(20)
+            CALL(evt_npc_add_rotate, STRING("me"), 0, 2, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+        LOOP(0)
+            LOOP(40)
+                CALL(evt_npc_add_rotate, STRING("me"), 0, -2, 0)
+                WAIT_FRAMES(1)
+            END_LOOP
+            LOOP(40)
+                CALL(evt_npc_add_rotate, STRING("me"), 0, 2, 0)
+                WAIT_FRAMES(1)
+            END_LOOP
+        END_LOOP
+    END_SIBLING_EVENT
+    LABEL(0)
+    WAIT_FRAMES(1)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(piders_find_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1024)
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            WAIT_FRAMES(1)
+            CALL(piders_draw_yawn)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    BEGIN_INLINE_EVENT
+        LOOP(10)
+            CALL(evt_npc_add_rotate, STRING("me"), 0, 6, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+        LOOP(22)
+            CALL(evt_npc_add_rotate, STRING("me"), 0, -5, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+        LOOP(20)
+            CALL(evt_npc_add_rotate, STRING("me"), 0, 4, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+        LOOP(16)
+            CALL(evt_npc_add_rotate, STRING("me"), 0, -3, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+        LOOP(14)
+            CALL(evt_npc_add_rotate, STRING("me"), 0, 2, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+        LOOP(10)
+            CALL(evt_npc_add_rotate, STRING("me"), 0, -1, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+        CALL(evt_npc_set_rotate, STRING("me"), 0, 0, 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_PAIDA_MOVE1"), LW(0), LW(1), LW(2), 0)
+    CALL(piders_get_height, LW(15))
+    SET_VALUE(LW(14), LW(15))
+    DIVIDE(LW(14), 3)
+    CALL(evt_npc_get_home_position, STRING("me"), LW(0), LW(1), LW(2))
+    SET_VALUE(LW(3), LW(1))
+    SUBTRACT(LW(1), LW(15))
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, 0, 4, 0)
+    WAIT_FRAMES(60)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_PAIDA_MOVE2"), LW(0), LW(1), LW(2), 0)
+    ADD(LW(1), LW(14))
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 700, 0, 20, 4, 0)
+    ADD(LW(1), LW(14))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_PAIDA_MOVE2"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 700, 0, 20, 4, 0)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_PAIDA_MOVE2"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(3), LW(2), 600, 0, 0, 4, 0)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(piders_blow_event)
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            WAIT_FRAMES(1)
+            CALL(piders_draw_yawn)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL_CHILD(enemy_common_blow_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(pakkun_attack_event)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_PAKKUN_ATTACK1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PKF_A_1A"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PKF_A_1B"))
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 32)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 18)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_facedirection_add, STRING("me"), LW(0), 30)
+    CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+    WAIT_MS(200)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PKF_A_1C"))
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    WAIT_MS(200)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(pakkun_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1048600)
+    CALL(evt_npc_slave_entry, STRING("me"), 0, STRING("c_pakflwr"), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_set_tribe, STRING("slave_0"), STRING("パックンフラワー"))
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(pakkun_move_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PKF_S_1"))
+    LABEL(0)
+    WAIT_FRAMES(1)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(pakkun_find_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_PAKKUN_MOVE1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 32)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PKF_E_2"))
+    WAIT_FRAMES(10)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_sub_random, 10, LW(3))
+    CALL(evt_mario_get_mov_spd, LW(4))
+    MULTIPLY_FLOAT(LW(4), FLOAT(0.5f))
+    ADD_FLOAT(LW(3), LW(4))
+    ADD_FLOAT(LW(3), 30)
+    CALL(evt_npc_facedirection_add, STRING("mario"), LW(0), LW(3))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 200, 0, 4)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_PAKKUN_MOVE2"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PKF_E_1"))
+    WAIT_FRAMES(10)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 32)
+    WAIT_FRAMES(20)
+    CALL_CHILD(pakkun_attack_event)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(pakkun_return_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 2097152)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_PAKKUN_MOVE2"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PKF_E_1"))
+    WAIT_FRAMES(10)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 32)
+    WAIT_FRAMES(20)
+    CALL_CHILD(pakkun_attack_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 32)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PKF_E_2"))
+    WAIT_FRAMES(10)
+    CALL(evt_npc_get_home_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 200, 0, 4)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("PKF_E_1"))
+    WAIT_FRAMES(10)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 32)
+    WAIT_FRAMES(25)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(dokugassun_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 268435456)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(dokugassun_move_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 10, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 1, FLOAT(6.0f), 0, 2)
+    CALL(evt_npc_sound_data_set, STRING("me"), 0, 0, 0, 0, 0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 10, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 1, FLOAT(-6.0f), 0, 2)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 10, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 1, FLOAT(6.0f), 0, 2)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 10, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 1, FLOAT(6.0f), 0, 2)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(dokugassun_find_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1024)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    WAIT_MS(200)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_npc_add_dirdist, LW(1), LW(3), LW(0), FLOAT(200.0f))
+    CALL(evt_fbat_trans_floor_position, LW(1), LW(2), LW(3), 10, 500)
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(2), LW(3), 1000, 1, 0, 4, 1)
+    WAIT_MS(500)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(dokugassun_lost_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(dokugassun_return_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("W_1"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 10, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 1, FLOAT(-6.0f), 0, 2)
+    CALL(evt_npc_sound_data_set, STRING("me"), 0, 0, 0, 0, 0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 10, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 1, FLOAT(6.0f), 0, 2)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 10, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 1, FLOAT(-6.0f), 0, 2)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 10, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 1, FLOAT(6.0f), 0, 2)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1049624)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa_move_event)
+    CALL(evt_npc_get_home_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_position, STRING("me"), LW(3), LW(4), LW(5))
+    IF_INT_LESS(LW(4), LW(1))
+        CALL(evt_npc_set_walk_anim, STRING("me"))
+        CALL(evt_set_dir_to_home, STRING("me"))
+        CALL(evt_npc_get_dir, STRING("me"), LW(3))
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+        CALL(evt_npc_get_home_position, STRING("me"), LW(4), LW(1), LW(5))
+        CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-50.0f), 0, 2)
+    END_IF
+    LABEL(0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("BSA_S_2"))
+    WAIT_FRAMES(60)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa_find_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 2097152)
+    CALL(evt_npc_set_run_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_npc_get_home_position, STRING("me"), LW(4), LW(5), LW(6))
+    CALL(evt_npc_add_dirdist, LW(1), LW(3), LW(0), FLOAT(100.0f))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(5), LW(3), 0, 75, FLOAT(-140.0f), 0, 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa_lost_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa_return_event)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_npc_get_home_position, STRING("me"), LW(4), LW(1), LW(5))
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-50.0f), 0, 2)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa2_move_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 80, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 80, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 80, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 80, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(10.0f), 0, 3)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa2_find_event)
+    CALL(evt_npc_set_run_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_npc_add_dirdist, LW(1), LW(3), LW(0), FLOAT(100.0f))
+    CALL(evt_fbat_trans_floor_position, LW(1), LW(2), LW(3), 80, 500)
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(2), LW(3), 0, 75, FLOAT(-80.0f), 0, 0)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa2_lost_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa2_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 80, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 80, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 80, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 80, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(10.0f), 0, 3)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(teresa_move_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 32)
+    CALL(evt_npc_set_color, STRING("me"), 255, 255, 255, 255)
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-10.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(10.0f), 0, 3)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(teresa_find_event)
+    CALL(evt_npc_set_run_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_npc_add_dirdist, LW(1), LW(3), LW(0), FLOAT(100.0f))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_fbat_trans_floor_position, LW(1), LW(2), LW(3), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(2), LW(3), 0, 75, FLOAT(-40.0f), 0, 0)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(teresa_lost_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(teresa_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 2097152)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 32)
+    SET_VALUE(LW(0), 255)
+    LOOP(16)
+        CALL(evt_npc_set_color, STRING("me"), 255, 255, 255, LW(0))
+        SUBTRACT(LW(0), 16)
+        WAIT_MS(30)
+    END_LOOP
+    CALL(evt_npc_set_color, STRING("me"), 255, 255, 255, 0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_home_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_set_position, STRING("me"), LW(0), LW(1), LW(2))
+    SET_VALUE(LW(0), 0)
+    LOOP(16)
+        ADD(LW(0), 16)
+        IF_INT_GREATER(LW(0), 255)
+            SET_VALUE(LW(0), 255)
+        END_IF
+        CALL(evt_npc_set_color, STRING("me"), 255, 255, 255, LW(0))
+        WAIT_MS(30)
+    END_LOOP
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 32)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(bubble_move_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_sound_data_set, STRING("me"), 0, 0, 0, 0, 0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(5.0f), 0, 3)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(bubble_find_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_run_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_npc_add_dirdist, LW(1), LW(3), LW(0), FLOAT(100.0f))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_fbat_trans_floor_position, LW(1), LW(2), LW(3), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(2), LW(3), 0, 90, FLOAT(0.0f), 0, 2)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(bubble_lost_event)
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(bubble_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_sound_data_reset, STRING("me"))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_sound_data_set, STRING("me"), 0, 0, 0, 0, 0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(5.0f), 0, 3)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbom_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(20.0f), 4)
+    WAIT_MS(1000)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbom_find_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position, STRING("me"), LW(0), LW(1), LW(2), 300, 0, FLOAT(20.0f), 0)
+    CALL(evt_npc_homing_target, STRING("me"), STRING("mario"), 0, FLOAT(60.0f), FLOAT(10.0f), FLOAT(60.0f), 4)
+    WAIT_MS(500)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbom_lost_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbom_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(30.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zakowiz_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_slave_entry, STRING("me"), 0, STRING("c_zako_m"), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_flag_onoff, 1, LW(0), 536870912)
+    CALL(evt_npc_flag_onoff, 1, LW(0), 32)
+    CALL(evt_npc_set_anim, STRING("slave_0"), STRING("B_1A"))
+    CALL(evt_npc_set_width, STRING("slave_0"), 10)
+    CALL(evt_npc_set_height, STRING("slave_0"), 10)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zakowiz_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    LABEL(0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    CALL(npc_check_wall_stop, LW(0))
+    IF_INT_EQUAL(LW(0), 1)
+        CALL(evt_npc_reverse_ry, STRING("me"))
+        WAIT_MS(500)
+        CALL(evt_npc_reverse_ry, STRING("me"))
+        WAIT_MS(1000)
+    END_IF
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zakowiz_find_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 2097152)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("A_1B"))
+    WAIT_MS(500)
+    BEGIN_SIBLING_EVENT
+        WAIT_MS(700)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_rotate, STRING("slave_0"), 0, 0, 0)
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    ADD(LW(1), 25)
+    CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 128)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_npc_set_anim, STRING("slave_0"), STRING("B_1A"))
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 32)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 12)
+    CALL(evt_npc_jump_position, STRING("slave_0"), LW(0), LW(1), LW(2), 1000, 0, FLOAT(75.0f), 0)
+    CALL(evt_npc_get_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+    CALL(evt_eff, STRING(""), STRING("kemuri_test"), 16, LW(0), LW(1), LW(2), FLOAT(1.0f), 0, 0, 0, 0, 0, 0, 0)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_anim, STRING("slave_0"), STRING("B_2"))
+    WAIT_MS(300)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zakowiz_lost_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zakowiz_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zakowiz_blow_event)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL_CHILD(enemy_common_blow_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hannya_move_event)
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    WAIT_MS(1000)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hannya_find_event)
+    CALL(evt_npc_set_run_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_HANNYA_MOVE1"), LW(1), LW(2), LW(3), 0)
+    CALL(evt_npc_get_home_position, STRING("me"), LW(4), LW(5), LW(6))
+    CALL(evt_npc_add_dirdist, LW(1), LW(3), LW(0), FLOAT(100.0f))
+    CALL(evt_npc_set_attack_mode, STRING("me"), 11)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("A_3"))
+    CALL(evt_npc_move_position, STRING("me"), LW(1), LW(3), 0, FLOAT(180.0f), 6)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1024)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hannya_lost_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hannya_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_status_onoff, 0, STRING("me"), 2)
+    CALL(evt_npc_get_home_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 3000, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(mahoon_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(mahoon_get_groupname, LW(10))
+    CALL(evt_npc_slave_entry, STRING("me"), 0, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_set_anim, STRING("slave_0"), STRING("MAH_S_2A"))
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(evt_npc_slave_entry, STRING("me"), 1, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_set_anim, STRING("slave_1"), STRING("MAH_S_2A"))
+    CALL(evt_npc_set_position, STRING("slave_1"), 0, -1000, 0)
+    CALL(evt_npc_slave_entry, STRING("me"), 2, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_set_anim, STRING("slave_2"), STRING("MAH_S_2A"))
+    CALL(evt_npc_set_position, STRING("slave_2"), 0, -1000, 0)
+    CALL(evt_npc_slave_entry, STRING("me"), 3, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_set_anim, STRING("slave_3"), STRING("MAH_S_2A"))
+    CALL(evt_npc_set_position, STRING("slave_3"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 131072)
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_1"), 131072)
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_2"), 131072)
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_3"), 131072)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_1"), 32)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_2"), 32)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_3"), 32)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(mahoon_move_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            WAIT_FRAMES(1)
+            CALL(evt_npc_get_dir, STRING("me"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_0"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_1"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_2"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_3"), LW(3))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+            ADD(LW(1), 5)
+            CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(-25.0f))
+            ADD(LW(1), 5)
+            CALL(evt_npc_set_position, STRING("slave_1"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+            ADD(LW(1), 30)
+            CALL(evt_npc_set_position, STRING("slave_2"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(-25.0f))
+            ADD(LW(1), 30)
+            CALL(evt_npc_set_position, STRING("slave_3"), LW(0), LW(1), LW(2))
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(5.0f), 0, 3)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(mahoon_dead_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_1"), 128)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_2"), 128)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_3"), 128)
+    CALL_CHILD(enemy_common_dead_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(mahoon_find_event)
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            WAIT_FRAMES(1)
+            CALL(evt_npc_get_dir, STRING("me"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_0"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_1"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_2"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_3"), LW(3))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+            ADD(LW(1), 5)
+            CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(-25.0f))
+            ADD(LW(1), 5)
+            CALL(evt_npc_set_position, STRING("slave_1"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+            ADD(LW(1), 30)
+            CALL(evt_npc_set_position, STRING("slave_2"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(-25.0f))
+            ADD(LW(1), 30)
+            CALL(evt_npc_set_position, STRING("slave_3"), LW(0), LW(1), LW(2))
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_run_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_npc_get_home_position, STRING("me"), LW(4), LW(5), LW(6))
+    CALL(evt_npc_add_dirdist, LW(1), LW(3), LW(0), FLOAT(100.0f))
+    CALL(evt_fbat_trans_floor_position, LW(1), LW(2), LW(3), 20, 500)
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_glide_position, STRING("me"), LW(1), LW(2), LW(3), 0, 135, FLOAT(0.0f), 0, 0)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(mahoon_lost_event)
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            WAIT_FRAMES(1)
+            CALL(evt_npc_get_dir, STRING("me"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_0"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_1"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_2"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_3"), LW(3))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+            ADD(LW(1), 5)
+            CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(-25.0f))
+            ADD(LW(1), 5)
+            CALL(evt_npc_set_position, STRING("slave_1"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+            ADD(LW(1), 30)
+            CALL(evt_npc_set_position, STRING("slave_2"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(-25.0f))
+            ADD(LW(1), 30)
+            CALL(evt_npc_set_position, STRING("slave_3"), LW(0), LW(1), LW(2))
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(mahoon_return_event)
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            WAIT_FRAMES(1)
+            CALL(evt_npc_get_dir, STRING("me"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_0"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_1"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_2"), LW(3))
+            CALL(evt_npc_set_ry, STRING("slave_3"), LW(3))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+            ADD(LW(1), 5)
+            CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(-25.0f))
+            ADD(LW(1), 5)
+            CALL(evt_npc_set_position, STRING("slave_1"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+            ADD(LW(1), 30)
+            CALL(evt_npc_set_position, STRING("slave_2"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(-25.0f))
+            ADD(LW(1), 30)
+            CALL(evt_npc_set_position, STRING("slave_3"), LW(0), LW(1), LW(2))
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 20, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(5.0f), 0, 3)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1048600)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    CALL(mahoon_get_groupname, LW(10))
+    CALL(evt_npc_slave_entry, STRING("me"), 0, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_flag_onoff, 1, LW(0), 536870912)
+    CALL(evt_npc_flag_onoff, 1, LW(0), 32)
+    CALL(evt_npc_flag_onoff, 0, LW(0), 131072)
+    CALL(evt_npc_set_anim, STRING("slave_0"), STRING("KMK_Z_1"))
+    CALL(evt_npc_set_width, STRING("slave_0"), 10)
+    CALL(evt_npc_set_height, STRING("slave_0"), 10)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec_move_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KMK_S_2"))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    LABEL(0)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 50, FLOAT(5.0f), 0, 3)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1024)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec_find_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 2097152)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KMK_A_3A"))
+    WAIT_MS(700)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KMK_A_3B"))
+    WAIT_MS(150)
+    BEGIN_SIBLING_EVENT
+        WAIT_MS(1000)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("KMK_S_2"))
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_rotate, STRING("slave_0"), 0, 0, 0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(20.0f))
+    CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+    CALL(evt_mario_get_pos, 0, LW(3), LW(4), LW(5))
+    ADD(LW(4), 20)
+    CALL(kamec_fire_magic, LW(0), LW(1), LW(2), LW(3), LW(4), LW(5), LW(10))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    ADD(LW(1), 20)
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 32)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 12)
+    CALL(evt_npc_glide_position, STRING("slave_0"), LW(0), LW(1), LW(2), 1000, 0, FLOAT(0.0f), 0, 3)
+    CALL(kamec_fire_magic_delete, LW(10))
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec_lost_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_walk_anim, STRING("me"))
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(-5.0f), 0, 3)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(25.0f))
+    CALL(evt_fbat_trans_floor_position, LW(0), LW(1), LW(2), 50, 500)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 500, 0, FLOAT(5.0f), 0, 3)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1024)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec_blow_event)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL_CHILD(enemy_common_blow_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec2_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1049624)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    CALL(mahoon_get_groupname, LW(10))
+    CALL(evt_npc_slave_entry, STRING("me"), 0, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_flag_onoff, 1, LW(0), 536870912)
+    CALL(evt_npc_flag_onoff, 1, LW(0), 32)
+    CALL(evt_npc_flag_onoff, 0, LW(0), 131072)
+    CALL(evt_npc_set_anim, STRING("slave_0"), STRING("KMK_Z_1"))
+    CALL(evt_npc_set_width, STRING("slave_0"), 10)
+    CALL(evt_npc_set_height, STRING("slave_0"), 10)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec2_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KMK_S_1"))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    LABEL(0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec2_find_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 2097152)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KMK_A_2A"))
+    WAIT_MS(700)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("KMK_A_2B"))
+    WAIT_MS(150)
+    BEGIN_SIBLING_EVENT
+        WAIT_MS(1000)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("KMK_S_1"))
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_rotate, STRING("slave_0"), 0, 0, 0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    ADD(LW(1), 30)
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(20.0f))
+    CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+    CALL(evt_mario_get_pos, 0, LW(3), LW(4), LW(5))
+    ADD(LW(4), 20)
+    CALL(kamec_fire_magic, LW(0), LW(1), LW(2), LW(3), LW(4), LW(5), LW(10))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    ADD(LW(1), 20)
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 32)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 12)
+    CALL(evt_npc_glide_position, STRING("slave_0"), LW(0), LW(1), LW(2), 1000, 0, FLOAT(0.0f), 0, 3)
+    CALL(kamec_fire_magic_delete, LW(10))
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec2_lost_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 1, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec2_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec2_blow_event)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL_CHILD(enemy_common_blow_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbross_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(mahoon_get_groupname, LW(10))
+    CALL(evt_npc_slave_entry, STRING("me"), 0, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_flag_onoff, 1, LW(0), 536870912)
+    CALL(evt_npc_flag_onoff, 1, LW(0), 32)
+    CALL(evt_npc_set_anim, STRING("slave_0"), STRING("BRO_A_1B"))
+    CALL(evt_npc_set_width, STRING("slave_0"), 10)
+    CALL(evt_npc_set_height, STRING("slave_0"), 10)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbross_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("BRO_S_1"))
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_sub_random, 360, LW(3))
+    LABEL(0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_loiter_dir, LW(3), FLOAT(120.0f), FLOAT(240.0f))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 2000, FLOAT(40.0f), 4)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbross_find_event)
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 2097152)
+    BEGIN_SIBLING_EVENT
+        LABEL(0)
+        CALL(evt_npc_add_rotate, STRING("slave_0"), 0, 0, 30)
+        WAIT_FRAMES(1)
+        GOTO(0)
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_anim, STRING("me"), STRING("BRO_A_1A"))
+    WAIT_MS(400)
+    BEGIN_SIBLING_EVENT
+        WAIT_MS(500)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("BRO_S_1"))
+    END_SIBLING_EVENT
+    CALL(evt_npc_set_rotate, STRING("slave_0"), 0, 0, 0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    ADD(LW(1), 25)
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(20.0f))
+    CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 128)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 32)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 12)
+    CALL(evt_npc_jump_position, STRING("slave_0"), LW(0), LW(1), LW(2), 1000, 0, FLOAT(75.0f), 0)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbross_lost_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_MS(1000)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbross_return_event)
+    CALL(evt_npc_set_stay_anim, STRING("me"))
+    WAIT_MS(500)
+    CALL(evt_set_dir_to_home, STRING("me"))
+    CALL(evt_npc_get_dir, STRING("me"), LW(3))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), FLOAT(100.0f))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, FLOAT(40.0f), 4)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbross_blow_event)
+    CALL(evt_npc_set_attack_mode, STRING("slave_0"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL_CHILD(enemy_common_blow_event)
+    RETURN
+EVT_END()
 
 USER_FUNC(piders_draw_yawn) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
@@ -4134,107 +3962,116 @@ USER_FUNC(chain_main) {
     return EVT_RETURN_DONE;
 }
 
-s32 wanwan_init_event[64] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00000400, 0x0002005B,
-    (s32)mahoon_get_groupname, 0xFE363C8A, 0x0006005B, (s32)evt_npc_slave_entry,
-    (s32)"me", 0x00000000, 0xFE363C8A, 0xFE363C80,
-    (s32)&enemy_slave_common_dead_event, 0x0003005B, (s32)evt_npc_set_anim, 0xFE363C80,
-    (s32)"WAN_S_1B", 0x0001005E, (s32)&wanwan_init_event_sub, 0x0006005B,
-    (s32)evt_npc_slave_entry, (s32)"me", 0x00000001, 0xFE363C8A,
-    0xFE363C80, (s32)&enemy_slave_common_dead_event, 0x0003005B, (s32)evt_npc_set_anim,
-    0xFE363C80, (s32)"WAN_S_1B", 0x0001005E, (s32)&wanwan_init_event_sub,
-    0x0006005B, (s32)evt_npc_slave_entry, (s32)"me", 0x00000002,
-    0xFE363C8A, 0xFE363C80, (s32)&enemy_slave_common_dead_event, 0x0003005B,
-    (s32)evt_npc_set_anim, 0xFE363C80, (s32)"WAN_S_1B", 0x0001005E,
-    (s32)&wanwan_init_event_sub, 0x0006005B, (s32)evt_npc_slave_entry, (s32)"me",
-    0x00000003, 0xFE363C8A, 0xFE363C80, (s32)&enemy_slave_common_dead_event,
-    0x0003005B, (s32)evt_npc_set_anim, 0xFE363C80, (s32)"WAN_Z_2",
-    0x0001005E, (s32)&wanwan_init_event_sub, 0x00000002, 0x00000001,
-};
-s32 wanwan_init_event_sub[64] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, 0xFE363C80,
-    0x00000020, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    0xFE363C80, 0x00020000, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, 0xFE363C80, 0x00000010, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, 0xFE363C80, 0x00000200,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, 0xFE363C80,
-    0x00000400, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    0xFE363C80, 0x00000800, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, 0xFE363C80, 0x01000000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, 0xFE363C80, 0x00200000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, 0xFE363C80,
-    0x00000040, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    0xFE363C80, 0x00040000, 0x0005005B, (s32)evt_npc_get_home_position,
-    (s32)"me", 0xFE363C81, 0xFE363C82, 0xFE363C83,
-    0x0005005B, (s32)evt_npc_set_position, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0xFE363C83, 0x00000002, 0x00000001,
-};
-s32 wanwan_move_event[151] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00000400, 0x0003005B,
-    (s32)evt_npc_set_attack_mode, (s32)"me", 0x00000000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"WAN_S_1A", 0x0000006E,
-    0x00010005, 0x00000000, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_mario_get_pos, 0x00000000, 0xFE363C8A,
-    0xFE363C8B, 0xFE363C8C, 0x0002001D, 0xFE363C80,
-    0xFE363C8A, 0x0003005B, (s32)evt_npc_set_ry, (s32)"me",
-    0x0000010E, 0x00000020, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0x0000005A, 0x00000021, 0x00010009,
-    0x00000001, 0x00000006, 0x00000070, 0x0000006E,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00200000, 0x0001000A, 0x000005DC, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00200000,
-    0x00000070, 0x0000006E, 0x00010005, 0x00000000,
-    0x0001005B, (s32)chain_main, 0x00010009, 0x00000001,
-    0x00000006, 0x00000070, 0x0000006E, 0x00010005,
-    0x00000000, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"WAN_A_1", 0x0001000A, 0x000003E8, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"WAN_S_1A", 0x0001000A,
-    0x000001F4, 0x00000006, 0x00000070, 0x00010003,
-    0x00000000, 0x0005005B, (s32)evt_npc_get_home_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0003005B,
-    (s32)evt_sub_random, 0x00000168, 0xFE363C83, 0x0005005B,
-    (s32)evt_npc_add_dirdist, 0xFE363C80, 0xFE363C82, 0xFE363C83,
-    0x00000032, 0x0003005B, (s32)evt_sub_random, 0x0000000F,
-    0xFE363C84, 0x00020035, 0xFE363C84, 0x0000000F,
-    0x00020032, 0xFE363C85, 0xFE363C84, 0x00020032,
-    0xFE363C86, 0xFE363C84, 0x00020037, 0xFE363C86,
-    0x00000011, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_WAN_MOVE1",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x0009005B, (s32)evt_npc_jump_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0xFE363C86, 0x00000050,
-    0xFE363C85, 0x00000001, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)"SFX_FLD_ENM_WAN_LANDING1", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00010009, 0x00000001, 0x00010004,
-    0x00000000, 0x00000002, 0x00000001,
-};
-s32 wanwan_find_event[90] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00200000, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"WAN_A_1", 0x000C005B, (s32)evt_eff_fukidashi, 0x00000001,
-    0x00000000, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0000001E, 0x0003005B, (s32)evt_npc_set_attack_mode,
-    (s32)"me", 0x0000000C, 0x0000006E, 0x00010005,
-    0x00000000, 0x0001005B, (s32)chain_main, 0x00010009,
-    0x00000001, 0x00000006, 0x00000070, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_WAN_MOVE2",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_FLD_ENM_WAN_ATTACK2", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x0005005B,
-    (s32)evt_npc_get_home_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C83, 0x0005005B, (s32)evt_npc_add_dirdist,
-    0xFE363C80, 0xFE363C82, 0xFE363C83, 0x00000064,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x00000258,
-    0xF24A7A80, 0x00000000, 0x00000006, 0x0001000A,
-    0x000005DC, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
+EVT_BEGIN(wanwan_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(mahoon_get_groupname, LW(10))
+    CALL(evt_npc_slave_entry, STRING("me"), 0, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_set_anim, LW(0), STRING("WAN_S_1B"))
+    CALL_CHILD(wanwan_init_event_sub)
+    CALL(evt_npc_slave_entry, STRING("me"), 1, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_set_anim, LW(0), STRING("WAN_S_1B"))
+    CALL_CHILD(wanwan_init_event_sub)
+    CALL(evt_npc_slave_entry, STRING("me"), 2, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_set_anim, LW(0), STRING("WAN_S_1B"))
+    CALL_CHILD(wanwan_init_event_sub)
+    CALL(evt_npc_slave_entry, STRING("me"), 3, LW(10), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_set_anim, LW(0), STRING("WAN_Z_2"))
+    CALL_CHILD(wanwan_init_event_sub)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(wanwan_init_event_sub)
+    CALL(evt_npc_flag_onoff, 1, LW(0), 32)
+    CALL(evt_npc_flag_onoff, 0, LW(0), 131072)
+    CALL(evt_npc_flag_onoff, 0, LW(0), 16)
+    CALL(evt_npc_flag_onoff, 0, LW(0), 512)
+    CALL(evt_npc_flag_onoff, 0, LW(0), 1024)
+    CALL(evt_npc_flag_onoff, 0, LW(0), 2048)
+    CALL(evt_npc_flag_onoff, 1, LW(0), 16777216)
+    CALL(evt_npc_flag_onoff, 1, LW(0), 2097152)
+    CALL(evt_npc_flag_onoff, 1, LW(0), 64)
+    CALL(evt_npc_flag_onoff, 1, LW(0), 262144)
+    CALL(evt_npc_get_home_position, STRING("me"), LW(1), LW(2), LW(3))
+    CALL(evt_npc_set_position, LW(0), LW(1), LW(2), LW(3))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(wanwan_move_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("WAN_S_1A"))
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_mario_get_pos, 0, LW(10), LW(11), LW(12))
+            IF_INT_GREATER_OR_EQUAL(LW(0), LW(10))
+                CALL(evt_npc_set_ry, STRING("me"), 270)
+            ELSE
+                CALL(evt_npc_set_ry, STRING("me"), 90)
+            END_IF
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        CALL(evt_npc_flag_onoff, 1, STRING("me"), 2097152)
+        WAIT_MS(1500)
+        CALL(evt_npc_flag_onoff, 0, STRING("me"), 2097152)
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(chain_main)
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(evt_npc_set_anim, STRING("me"), STRING("WAN_A_1"))
+            WAIT_MS(1000)
+            CALL(evt_npc_set_anim, STRING("me"), STRING("WAN_S_1A"))
+            WAIT_MS(500)
+        END_LOOP
+    END_SIBLING_EVENT
+    LABEL(0)
+    CALL(evt_npc_get_home_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_sub_random, 360, LW(3))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), 50)
+    CALL(evt_sub_random, 15, LW(4))
+    ADD(LW(4), 15)
+    SET_VALUE(LW(5), LW(4))
+    SET_VALUE(LW(6), LW(4))
+    MULTIPLY(LW(6), 17)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_WAN_MOVE1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_jump_position, STRING("me"), LW(0), LW(1), LW(2), LW(6), 80, LW(5), 1)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_WAN_LANDING1"), LW(0), LW(1), LW(2), 0)
+    WAIT_FRAMES(1)
+    GOTO(0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(wanwan_find_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 2097152)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("WAN_A_1"))
+    CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    CALL(evt_npc_set_attack_mode, STRING("me"), 12)
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(chain_main)
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_WAN_MOVE2"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_FLD_ENM_WAN_ATTACK2"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_get_home_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(3))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(3), 100)
+    CALL(evt_npc_glide_position, STRING("me"), LW(0), LW(1), LW(2), 0, 600, FLOAT(0.0f), 0, 6)
+    WAIT_MS(1500)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
 
 USER_FUNC(camGetPos) {
     s32* args = event->args;
@@ -4480,500 +4317,601 @@ USER_FUNC(zakoEntryFall) {
     return EVT_RETURN_DONE;
 }
 
-s32 kuriboo2D_init_event[22] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x08000000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00000400,
-    0x0004005B, (s32)evt_npc_status_onoff, 0x00000000, (s32)"me",
-    0x00000004, 0x0002005B, (s32)limitSpd, 0xF250BA80,
-    0x00000002, 0x00000001,
-};
-s32 kuriboo2D_move_event[72] = {
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"S_1",
-    0x00010003, 0x00000000, 0x0004005B, (s32)evt_npc_status_onoff,
-    0x00000001, (s32)"me", 0x00001000, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xF1194D80,
-    0xF1194D80, 0x0002005B, (s32)camGetPos, 0xFE363C81,
-    0x00020036, 0xFE363C80, 0xFE363C81, 0x0002001C,
-    0xFE363C80, 0x000000FA, 0x00010004, 0x00000001,
-    0x00000021, 0x00010009, 0x00000001, 0x00010004,
-    0x00000000, 0x00010003, 0x00000001, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"W_1", 0x00010003,
-    0x00000002, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)evt_npc_facedirection_add, (s32)"me", 0xFE363C80, 0x000003E8,
-    0x0002005B, (s32)getSpdWalk, 0xFE363C83, 0x0007005B,
-    (s32)evt_npc_move_position, (s32)"me", 0xFE363C80, 0xFE363C82,
-    0x00000000, 0xFE363C83, 0x00000004, 0x0002005B,
-    (s32)evt_npc_reverse_ry, (s32)"me", 0x00010009, 0x00000001,
-    0x00010004, 0x00000002, 0x00000002, 0x00000001,
-};
-s32 kuriboo2D_find_event[70] = {
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0002001D, 0xFE363C81,
-    0xFFFFFF9C, 0x000C005B, (s32)evt_eff_fukidashi, 0x00000001,
-    0x00000000, (s32)"me", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0000001E, 0x00000021, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"R_1", 0x0004005B,
-    (s32)evt_get_target_dir, (s32)"me", (s32)"mario", 0xFE363C80,
-    0x0003005B, (s32)evt_npc_set_ry, (s32)"me", 0xFE363C80,
-    0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me", 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0004005B, (s32)evt_npc_facedirection_add, (s32)"me",
-    0xFE363C80, 0x000003E8, 0x0002005B, (s32)getSpdRun,
-    0xFE363C83, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x00000FA0, 0xFE363C83,
-    0x00000002, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"S_1", 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 zako2D_init_event[27] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x08000000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00000400,
-    0x0004005B, (s32)evt_npc_status_onoff, 0x00000001, (s32)"me",
-    0x00200000, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000000,
-    (s32)"me", 0x00000004, 0x0002005B, (s32)limitSpd,
-    0xF250BA80, 0x00000002, 0x00000001,
-};
-s32 zako2D_move_event[244] = {
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"S_1",
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x00010003, 0x00000000, 0x0004005B,
-    (s32)evt_npc_status_onoff, 0x00000001, (s32)"me", 0x00001000,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xF1194D80, 0xF1194D80, 0x0002005B, (s32)camGetPos,
-    0xFE363C81, 0x00020036, 0xFE363C80, 0xFE363C81,
-    0x0002001C, 0xFE363C80, 0x000000FA, 0x00010004,
-    0x00000001, 0x00000021, 0x00010009, 0x00000001,
-    0x00010004, 0x00000000, 0x00010003, 0x00000001,
-    0x0004005B, (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000,
-    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000001,
-    0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000,
-    0x00000000, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"Z_1", 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00000010, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00020000,
-    0x00010005, 0x00000023, 0x0004005B, (s32)evt_npc_status_onoff,
-    0x00000001, (s32)"me", 0x00001000, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00020035, 0xFE363C81, 0x00000001,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00010009, 0x00000001,
-    0x00000006, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"me", 0x00000010, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00020000, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"W_1", 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0004005B, (s32)evt_npc_facedirection_add, (s32)"me",
-    0xFE363C80, 0x00000032, 0x0009005B, (s32)evt_npc_jump_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x000001F4, 0xF24C0A80, 0xF24AF280, 0x00000001,
-    0x00000021, 0x0004005B, (s32)evt_npc_get_unitwork, (s32)"me",
-    0x00000000, 0xFE363C80, 0x00020018, 0xFE363C80,
-    0x00000002, 0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me",
-    0x00000000, 0x00000000, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"S_1", 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x00020000, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0009005B, (s32)evt_npc_jump_position, (s32)"me",
-    0xFE363C80, 0xFFFFFF9C, 0xFE363C82, 0x00000000,
-    0xF24C0A80, 0xF24A7A80, 0x00000001, 0x00000021,
-    0x0004005B, (s32)evt_npc_status_onoff, 0x00000000, (s32)"me",
-    0x00001000, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"W_1", 0x00010003, 0x0000000A, 0x0001006F,
-    0xFE363C8F, 0x00010005, 0x00000000, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0004005B, (s32)evt_npc_facedirection_add, (s32)"me",
-    0xFE363C80, 0x000003E8, 0x0002005B, (s32)getSpdWalk,
-    0xFE363C83, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x00000000, 0xFE363C83,
-    0x00000004, 0x0002005B, (s32)evt_npc_reverse_ry, (s32)"me",
-    0x00010009, 0x00000001, 0x00000006, 0x00000070,
-    0x00010003, 0x0000000B, 0x0002005B, (s32)cliffCheck,
-    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000001,
-    0x0001005F, 0xFE363C8F, 0x0002005B, (s32)evt_npc_reverse_ry,
-    (s32)"me", 0x00010009, 0x00000001, 0x00010004,
-    0x0000000A, 0x00000021, 0x00010009, 0x00000001,
-    0x00010004, 0x0000000B, 0x00000002, 0x00000001,
-};
-s32 zako2D_find_event[74] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00000400, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0002001D,
-    0xFE363C81, 0xFFFFFF9C, 0x000C005B, (s32)evt_eff_fukidashi,
-    0x00000001, 0x00000000, (s32)"me", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000001E, 0x00000021,
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"A_1",
-    0x0004005B, (s32)evt_get_target_dir, (s32)"me", (s32)"mario",
-    0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry, (s32)"me",
-    0xFE363C80, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)evt_npc_facedirection_add, (s32)"me", 0xFE363C80, 0x000003E8,
-    0x0002005B, (s32)getSpdRun, 0xFE363C83, 0x0007005B,
-    (s32)evt_npc_move_position, (s32)"me", 0xFE363C80, 0xFE363C82,
-    0x00000BB8, 0xFE363C83, 0x00000002, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"S_1", 0x00010003,
-    0x00000063, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 dokan2D_init_event[19] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00020000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me", 0x000000A0,
-    0x0004005B, (s32)evt_npc_status_onoff, 0x00000000, (s32)"me",
-    0x00000004, 0x00000002, 0x00000001,
-};
-s32 dokan2D_regl_event[48] = {
-    0x00010003, 0x00000000, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xF1194D80, 0xF1194D80,
-    0x0002005B, (s32)camGetPos, 0xFE363C81, 0x00020036,
-    0xFE363C80, 0xFE363C81, 0x0002001C, 0xFE363C80,
-    0x000000FA, 0x00010004, 0x00000001, 0x00000021,
-    0x00010009, 0x00000001, 0x00010004, 0x00000000,
-    0x00010003, 0x00000001, 0x0002005B, (s32)dokanCheck,
-    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000000,
-    0x00010004, 0x00000063, 0x00000021, 0x0001005B,
-    (s32)zakoEntryDokan, 0x00010009, 0x00000078, 0x00010004,
-    0x00000001, 0x00010003, 0x00000063, 0x0002005B,
-    (s32)evt_npc_delete, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 fall2D_init_event[19] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00020000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me", 0x000000A0,
-    0x0004005B, (s32)evt_npc_status_onoff, 0x00000000, (s32)"me",
-    0x00000004, 0x00000002, 0x00000001,
-};
-s32 fall2D_regl_event[34] = {
-    0x00010003, 0x00000000, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xF1194D80, 0xF1194D80,
-    0x0002005B, (s32)camGetPos, 0xFE363C81, 0x00020036,
-    0xFE363C80, 0xFE363C81, 0x0002001C, 0xFE363C80,
-    0x000000FA, 0x00010004, 0x00000001, 0x00000021,
-    0x00010009, 0x00000001, 0x00010004, 0x00000000,
-    0x00010003, 0x00000001, 0x0001005B, (s32)zakoEntryFall,
-    0x00010009, 0x00000078, 0x00010004, 0x00000001,
-    0x00000002, 0x00000001,
-};
-s32 zakoM2D_init_event[37] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x08000000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00000400,
-    0x0004005B, (s32)evt_npc_status_onoff, 0x00000000, (s32)"me",
-    0x00000004, 0x0002005B, (s32)limitSpd, 0xF250BA80,
-    0x0006005B, (s32)evt_npc_slave_entry, (s32)"me", 0x00000000,
-    (s32)"c_zako_km", 0xFE363C80, (s32)&enemy_slave_common_dead_event, 0x0005005B,
-    (s32)evt_npc_set_position, (s32)"slave_0", 0x00000000, 0xFFFFFC18,
-    0x00000000, 0x0001005B, (s32)set_bottle_flag_init, 0x00000002,
-    0x00000001,
-};
-s32 zakoM2D_move_event[95] = {
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"S_1",
-    0x00010003, 0x00000002, 0x0004005B, (s32)evt_npc_status_onoff,
-    0x00000001, (s32)"me", 0x00001000, 0x0004005B,
-    (s32)evt_npc_status_check, (s32)"me", 0x00000004, 0xFE363C80,
-    0x00020018, 0xFE363C80, 0x00000000, 0x00010004,
-    0x00000003, 0x00000021, 0x00010009, 0x00000001,
-    0x00010004, 0x00000002, 0x00010003, 0x00000003,
-    0x0000006E, 0x00010005, 0x00000000, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x00000064, 0x00000000,
-    0x00000000, 0x00010009, 0x00000001, 0x00000006,
-    0x00000070, 0x00010003, 0x00000000, 0x0004005B,
-    (s32)evt_npc_status_onoff, 0x00000001, (s32)"me", 0x00001000,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xF1194D80, 0xF1194D80, 0x0002005B, (s32)camGetPos,
-    0xFE363C81, 0x00020036, 0xFE363C80, 0xFE363C81,
-    0x0002001C, 0xFE363C80, 0x000000FA, 0x00010004,
-    0x00000001, 0x00000021, 0x00010009, 0x00000001,
-    0x00010004, 0x00000000, 0x00010003, 0x00000001,
-    0x0004005B, (s32)evt_get_target_dir, (s32)"me", (s32)"mario",
-    0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry, (s32)"me",
-    0xFE363C80, 0x00010009, 0x00000001, 0x00010004,
-    0x00000001, 0x00000002, 0x00000001,
-};
-s32 zakoM2D_find_event[179] = {
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"slave_0", (s32)"B_1",
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)evt_npc_facedirection_add,
-    (s32)"me", 0xFE363C80, 0x0000000A, 0x00020035,
-    0xFE363C81, 0x00000014, 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"slave_0", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"slave_0",
-    0x00000020, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000,
-    (s32)"slave_0", 0x00000080, 0x0002001D, 0xFE363C8A,
-    0x000000C8, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)evt_npc_facedirection_add, (s32)"me", 0xFE363C80, 0x00000064,
-    0x0009005B, (s32)evt_npc_jump_position, (s32)"slave_0", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0xF24F2A80,
-    0xF24F2A80, 0x00000000, 0x00000020, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0004005B, (s32)evt_npc_facedirection_add, (s32)"me",
-    0xFE363C80, 0xFE363C8A, 0x0002003C, 0xFE363C8A,
-    0xF24A8080, 0x0009005B, (s32)evt_npc_jump_position, (s32)"slave_0",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0xFE363C8A, 0xF24F2A80, 0x00000000, 0x00000021,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"slave_0", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)"SFX_CONDITION_FIRE1", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_ENM_3RD2_CRASH1",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x00020036, 0xFE363C81, 0x00000005, 0x00020035,
-    0xFE363C82, 0x000000C8, 0x000F005B, (s32)evt_eff,
-    (s32)"", (s32)"kemuri_test", 0x00000010, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0xF24A7E80, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00010005, 0x0000000C,
-    0x000F005B, (s32)evt_eff64, (s32)"", (s32)"glass_n64",
-    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0xF24A7E80, 0x0000001E, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000006, 0x0000006B, 0x0005005B, (s32)unk_800ece0c,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0000003C,
-    0x0000006D, 0x0003005B, (s32)evt_npc_set_anim, (s32)"slave_0",
-    (s32)"B_2", 0x00010009, 0x0000000A, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0", 0x00000080,
-    0x00010009, 0x0000003C, 0x0005005B, (s32)evt_npc_set_position,
-    (s32)"slave_0", 0x00000000, 0xFFFFFC18, 0x00000000,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000020, 0x00000002, 0x00000001,
-};
-s32 unk_evt_803497e8[88] = {
-    0x0000006E, 0x00010005, 0x00000000, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0007005B, (s32)evt_npc_move_position, (s32)"me",
-    0xFE363C80, 0xFE363C82, 0x00000064, 0x00000000,
-    0x00000000, 0x00010009, 0x00000001, 0x00000006,
-    0x00000070, 0x0004005B, (s32)evt_get_target_dir, (s32)"me",
-    (s32)"mario", 0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry,
-    (s32)"me", 0xFE363C80, 0x0005005B, (s32)evt_mario_get_pos,
-    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)evt_npc_get_position, (s32)"me", 0xFE363C8A,
-    0xFE363C8B, 0xFE363C8C, 0x0002003B, 0xFE363C8A,
-    0xFE363C80, 0x0002001A, 0xFE363C8A, 0x00000000,
-    0x0002003C, 0xFE363C8A, 0xF24A7680, 0x00000021,
-    0x0002001A, 0xFE363C8A, 0x0000001E, 0x00020034,
-    0xFE363C8A, 0xF24AF280, 0x00000021, 0x0003005B,
-    (s32)evt_npc_set_anim, (s32)"me", (s32)"A_1", 0x00010009,
-    0x00000040, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"A_2", 0x00010009, 0x00000018, 0x0000006E,
-    0x00010009, 0x00000018, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"S_1", 0x00000070, 0x0001005C,
-    (s32)&zakoM2D_find_event, 0x00010009, 0x00000064, 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 gesso2D_init_event[34] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000001, (s32)"me", 0x08000000, 0x0004005B,
-    (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me", 0x00000400,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000000, (s32)"me",
-    0x00020000, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x10000000, 0x0004005B, (s32)evt_npc_status_onoff,
-    0x00000001, (s32)"me", 0x00200000, 0x0004005B,
-    (s32)evt_npc_status_onoff, 0x00000000, (s32)"me", 0x00000004,
-    0x00000002, 0x00000001,
-};
-s32 gesso2D_move_event[262] = {
-    0x0003005B, (s32)evt_npc_set_anim, (s32)"me", (s32)"S_1",
-    0x00010003, 0x00000000, 0x0004005B, (s32)evt_npc_status_onoff,
-    0x00000001, (s32)"me", 0x00001000, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xF1194D80,
-    0xF1194D80, 0x0002005B, (s32)camGetPos, 0xFE363C81,
-    0x00020036, 0xFE363C80, 0xFE363C81, 0x0002001C,
-    0xFE363C80, 0x000000FA, 0x00010004, 0x00000001,
-    0x00000021, 0x00010009, 0x00000001, 0x00010004,
-    0x00000000, 0x0003005B, (s32)evt_npc_set_anim, (s32)"me",
-    (s32)"S_1", 0x00010003, 0x00000001, 0x00020034,
-    0xFE363C81, 0xF24A7A80, 0x00020034, 0xFE363C8D,
-    0xF24A7A80, 0x00010005, 0x00000000, 0x0005005B,
-    (s32)evt_npc_get_position, (s32)"me", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)evt_mario_get_pos, 0x00000000,
-    0xFE363C8A, 0xFE363C8B, 0xFE363C8C, 0x00010009,
-    0x00000001, 0x00020036, 0xFE363C80, 0xFE363C8A,
-    0x0002001D, 0xFE363C80, 0x0000012C, 0x00010004,
-    0x00000005, 0x00000021, 0x0002001C, 0xFE363C80,
-    0xFFFFFED4, 0x00010004, 0x00000005, 0x00000021,
-    0x0002001A, 0xFE363C81, 0xFE363C8B, 0x00000007,
-    0x00000021, 0x0002001A, 0xFE363C81, 0x0000005A,
-    0x00000007, 0x00000021, 0x00010003, 0x00000005,
-    0x0002005B, (s32)gesso_ground_check, 0xFE363C8F, 0x00020018,
-    0xFE363C8F, 0x00000000, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00020034, 0xFE363C8E, 0xFE363C81, 0x0002003B,
-    0xFE363C8E, 0xFE363C8D, 0x0002003A, 0xFE363C8D,
-    0xF24A7AE6, 0x0002001D, 0xFE363C8D, 0xF24A7E80,
-    0x00020034, 0xFE363C8D, 0xF24A7E80, 0x00000021,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"me", 0xFE363C80,
-    0xFE363C8E, 0xFE363C82, 0x00000021, 0x00000006,
-    0x0004005B, (s32)evt_get_target_dir, (s32)"me", (s32)"mario",
-    0xFE363C80, 0x0003005B, (s32)evt_npc_set_ry, (s32)"me",
-    0xFE363C80, 0x0005005B, (s32)evt_npc_get_position, (s32)"me",
-    0xFE363C8A, 0xFE363C8B, 0xFE363C8C, 0x0004005B,
-    (s32)evt_npc_facedirection_add, (s32)"me", 0xFE363C8A, 0x00000064,
-    0x00020035, 0xFE363C8B, 0x00000032, 0x0002001B,
-    0xFE363C8B, 0x0000015E, 0x00020032, 0xFE363C8B,
-    0x0000015E, 0x00000021, 0x00010005, 0x0000003C,
-    0x0002005B, (s32)gesso_ground_check, 0xFE363C8F, 0x00020018,
-    0xFE363C8F, 0x00000000, 0x0005005B, (s32)evt_npc_get_position,
-    (s32)"me", 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00020034, 0xFE363C8E, 0xFE363C81, 0x0002003B,
-    0xFE363C8E, 0xFE363C8D, 0x0002003A, 0xFE363C8D,
-    0xF24A7AE6, 0x0002001D, 0xFE363C8D, 0xF24A7E80,
-    0x00020034, 0xFE363C8D, 0xF24A7E80, 0x00000021,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"me", 0xFE363C80,
-    0xFE363C8E, 0xFE363C82, 0x00000021, 0x00010009,
-    0x00000001, 0x00000006, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"A_1", 0x0006005B, (s32)evt_snd_sfxon_3d,
-    (s32)"SFX_KUPPA_GESSO_MOVE1", 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
-    0x00000000, 0x0004005B, (s32)evt_npc_set_unitwork, (s32)"me",
-    0x00000000, 0x00000000, 0x0001006F, 0xFE363C8F,
-    0x000A005B, (s32)evt_npc_glide_position, (s32)"me", 0xFE363C8A,
-    0xFE363C8B, 0xFE363C8C, 0x000007D0, 0xF24B4280,
-    0x0000000A, 0x00000004, 0x00000000, 0x0004005B,
-    (s32)evt_npc_set_unitwork, (s32)"me", 0x00000000, 0x00000001,
-    0x00000070, 0x00010005, 0x00000000, 0x0004005B,
-    (s32)evt_npc_get_unitwork, (s32)"me", 0x00000000, 0xFE363C80,
-    0x00020018, 0xFE363C80, 0x00000001, 0x00000007,
-    0x00000021, 0x0002005B, (s32)upperCheck, 0xFE363C80,
-    0x00020018, 0xFE363C80, 0x00000001, 0x0001005F,
-    0xFE363C8F, 0x00000007, 0x00000021, 0x00010009,
-    0x00000001, 0x00000006, 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"me", (s32)"S_1", 0x00010004, 0x00000001,
-    0x00000002, 0x00000001,
-};
-s32 enemy_event_dead_event[10] = {
-    0x00020032, 0xFE363C8A, (s32)"me", 0x0001005E,
-    (s32)&enemy_event_dead_event_sub, 0x0002005B, (s32)evt_npc_return_interrupt, (s32)"me",
-    0x00000002, 0x00000001,
-};
-s32 enemy_slave_common_dead_event[8] = {
-    0x0002005B, (s32)evt_npc_delete, (s32)"me", 0x0002005B,
-    (s32)evt_npc_return_interrupt, (s32)"me", 0x00000002, 0x00000001,
-};
-s32 enemy_common_flag_init_event[12] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x10120418, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x00000002, 0x00000001,
-};
-s32 testenemynpc_init_event[4] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x00000002, 0x00000001,
-};
-s32 npc_urouro_init_event[12] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00000600, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x00000002, 0x00000001,
-};
-s32 kuriboo_init_event[4] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x00000002, 0x00000001,
-};
-s32 patakuri_init_event[12] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00100018, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x00000002, 0x00000001,
-};
-s32 patapata_init_event[12] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00110018, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x00000002, 0x00000001,
-};
-s32 patamet_init_event[12] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00100018, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x00000002, 0x00000001,
-};
-s32 chorobon_init_event[12] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00120018, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x00000002, 0x00000001,
-};
-s32 pansy_init_event[4] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x00000002, 0x00000001,
-};
-s32 twinkling_pansy_init_event[4] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x00000002, 0x00000001,
-};
-s32 karon_dead_event[9] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000080, 0x0001005E, (s32)&enemy_common_dead_event, 0x00000002,
-    0x00000001,
-};
-s32 sambo_init_event[12] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00000008, 0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001,
-    (s32)"me", 0x00100410, 0x00000002, 0x00000001,
-};
-s32 togedaruma_init_event[4] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x00000002, 0x00000001,
-};
-s32 piders_init_event[9] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_flag_onoff,
-    0x00000000, (s32)"me", 0x00020000, 0x00000002,
-    0x00000001,
-};
-s32 basabasa_dead_event[4] = {
-    0x0001005E, (s32)&enemy_common_dead_event, 0x00000002, 0x00000001,
-};
-s32 basabasa2_init_event[12] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00100018, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x00000002, 0x00000001,
-};
-s32 basabasa2_dead_event[4] = {
-    0x0001005E, (s32)&enemy_common_dead_event, 0x00000002, 0x00000001,
-};
-s32 teresa_init_event[12] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00100018, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x00000002, 0x00000001,
-};
-s32 teresa_dead_event[4] = {
-    0x0001005E, (s32)&enemy_common_dead_event, 0x00000002, 0x00000001,
-};
-s32 bubble_init_event[12] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"me",
-    0x00100018, 0x0004005B, (s32)evt_npc_status_onoff, 0x00000001,
-    (s32)"me", 0x00000002, 0x00000002, 0x00000001,
-};
-s32 hbom_init_event[4] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x00000002, 0x00000001,
-};
-s32 zakowiz_dead_event[9] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000080, 0x0001005E, (s32)&enemy_common_dead_event, 0x00000002,
-    0x00000001,
-};
-s32 hannya_init_event[9] = {
-    0x0001005E, (s32)&enemy_common_flag_init_event, 0x0004005B, (s32)evt_npc_status_onoff,
-    0x00000000, (s32)"me", 0x00000002, 0x00000002,
-    0x00000001,
-};
-s32 kamec_dead_event[9] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000080, 0x0001005E, (s32)&enemy_common_dead_event, 0x00000002,
-    0x00000001,
-};
-s32 kamec2_dead_event[9] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000080, 0x0001005E, (s32)&enemy_common_dead_event, 0x00000002,
-    0x00000001,
-};
-s32 hbross_dead_event[9] = {
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"slave_0",
-    0x00000080, 0x0001005E, (s32)&enemy_common_dead_event, 0x00000002,
-    0x00000001,
-};
-s32 zakoM2D_dead_event[9] = {
-    0x0004005B, (s32)evt_npc_status_onoff, 0x00000000, (s32)"slave_0",
-    0x00000004, 0x0001005E, (s32)&enemy_2d_common_dead_event, 0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(kuriboo2D_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 134217728)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_status_onoff, 0, STRING("me"), 4)
+    CALL(limitSpd, FLOAT(400.0f))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kuriboo2D_move_event)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    LABEL(0)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 4096)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+    CALL(camGetPos, LW(1))
+    SUBTRACT(LW(0), LW(1))
+    IF_INT_LESS_OR_EQUAL(LW(0), 250)
+        GOTO(1)
+    END_IF
+    WAIT_FRAMES(1)
+    GOTO(0)
+    LABEL(1)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("W_1"))
+    LABEL(2)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_facedirection_add, STRING("me"), LW(0), 1000)
+    CALL(getSpdWalk, LW(3))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, LW(3), 4)
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    WAIT_FRAMES(1)
+    GOTO(2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kuriboo2D_find_event)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    IF_INT_GREATER_OR_EQUAL(LW(1), -100)
+        CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    END_IF
+    CALL(evt_npc_set_anim, STRING("me"), STRING("R_1"))
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_reverse_ry, STRING("me"))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_facedirection_add, STRING("me"), LW(0), 1000)
+    CALL(getSpdRun, LW(3))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 4000, LW(3), 2)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zako2D_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 134217728)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2097152)
+    CALL(evt_npc_status_onoff, 0, STRING("me"), 4)
+    CALL(limitSpd, FLOAT(400.0f))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zako2D_move_event)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    LABEL(0)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 4096)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+    CALL(camGetPos, LW(1))
+    SUBTRACT(LW(0), LW(1))
+    IF_INT_LESS_OR_EQUAL(LW(0), 250)
+        GOTO(1)
+    END_IF
+    WAIT_FRAMES(1)
+    GOTO(0)
+    LABEL(1)
+    CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(0))
+    IF_INT_EQUAL(LW(0), 1)
+        CALL(evt_npc_set_unitwork, STRING("me"), 0, 0)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("Z_1"))
+        CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+        CALL(evt_npc_set_ry, STRING("me"), LW(0))
+        CALL(evt_npc_flag_onoff, 0, STRING("me"), 16)
+        CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+        LOOP(35)
+            CALL(evt_npc_status_onoff, 1, STRING("me"), 4096)
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            ADD(LW(1), 1)
+            CALL(evt_npc_set_position, STRING("me"), LW(0), LW(1), LW(2))
+            WAIT_FRAMES(1)
+        END_LOOP
+        CALL(evt_npc_flag_onoff, 1, STRING("me"), 16)
+        CALL(evt_npc_flag_onoff, 1, STRING("me"), 131072)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("W_1"))
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_facedirection_add, STRING("me"), LW(0), 50)
+        CALL(evt_npc_jump_position, STRING("me"), LW(0), LW(1), LW(2), 500, FLOAT(100.0f), FLOAT(30.0f), 1)
+    END_IF
+    CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(0))
+    IF_INT_EQUAL(LW(0), 2)
+        CALL(evt_npc_set_unitwork, STRING("me"), 0, 0)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+        CALL(evt_npc_flag_onoff, 1, STRING("me"), 131072)
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position, STRING("me"), LW(0), -100, LW(2), 0, FLOAT(100.0f), FLOAT(0.0f), 1)
+    END_IF
+    CALL(evt_npc_status_onoff, 0, STRING("me"), 4096)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("W_1"))
+    LABEL(10)
+    BEGIN_SIBLING_EVENT_GET_ID(LW(15))
+        LOOP(0)
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_facedirection_add, STRING("me"), LW(0), 1000)
+            CALL(getSpdWalk, LW(3))
+            CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 0, LW(3), 4)
+            CALL(evt_npc_reverse_ry, STRING("me"))
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    LABEL(11)
+    CALL(cliffCheck, LW(0))
+    IF_INT_EQUAL(LW(0), 1)
+        DELETE_EVENT(LW(15))
+        CALL(evt_npc_reverse_ry, STRING("me"))
+        WAIT_FRAMES(1)
+        GOTO(10)
+    END_IF
+    WAIT_FRAMES(1)
+    GOTO(11)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zako2D_find_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    IF_INT_GREATER_OR_EQUAL(LW(1), -100)
+        CALL(evt_eff_fukidashi, 1, 0, STRING("me"), 0, 0, 0, 0, 0, 0, 0, 30)
+    END_IF
+    CALL(evt_npc_set_anim, STRING("me"), STRING("A_1"))
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_facedirection_add, STRING("me"), LW(0), 1000)
+    CALL(getSpdRun, LW(3))
+    CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 3000, LW(3), 2)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    LABEL(99)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(dokan2D_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 160)
+    CALL(evt_npc_status_onoff, 0, STRING("me"), 4)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(dokan2D_regl_event)
+    LABEL(0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+    CALL(camGetPos, LW(1))
+    SUBTRACT(LW(0), LW(1))
+    IF_INT_LESS_OR_EQUAL(LW(0), 250)
+        GOTO(1)
+    END_IF
+    WAIT_FRAMES(1)
+    GOTO(0)
+    LABEL(1)
+    CALL(dokanCheck, LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        GOTO(99)
+    END_IF
+    CALL(zakoEntryDokan)
+    WAIT_FRAMES(120)
+    GOTO(1)
+    LABEL(99)
+    CALL(evt_npc_delete, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(fall2D_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 160)
+    CALL(evt_npc_status_onoff, 0, STRING("me"), 4)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(fall2D_regl_event)
+    LABEL(0)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+    CALL(camGetPos, LW(1))
+    SUBTRACT(LW(0), LW(1))
+    IF_INT_LESS_OR_EQUAL(LW(0), 250)
+        GOTO(1)
+    END_IF
+    WAIT_FRAMES(1)
+    GOTO(0)
+    LABEL(1)
+    CALL(zakoEntryFall)
+    WAIT_FRAMES(120)
+    GOTO(1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zakoM2D_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 134217728)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_status_onoff, 0, STRING("me"), 4)
+    CALL(limitSpd, FLOAT(400.0f))
+    CALL(evt_npc_slave_entry, STRING("me"), 0, STRING("c_zako_km"), LW(0), PTR(enemy_slave_common_dead_event))
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(set_bottle_flag_init)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zakoM2D_move_event)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    LABEL(2)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 4096)
+    CALL(evt_npc_status_check, STRING("me"), 4, LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        GOTO(3)
+    END_IF
+    WAIT_FRAMES(1)
+    GOTO(2)
+    LABEL(3)
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 100, 0, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    LABEL(0)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 4096)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+    CALL(camGetPos, LW(1))
+    SUBTRACT(LW(0), LW(1))
+    IF_INT_LESS_OR_EQUAL(LW(0), 250)
+        GOTO(1)
+    END_IF
+    WAIT_FRAMES(1)
+    GOTO(0)
+    LABEL(1)
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    WAIT_FRAMES(1)
+    GOTO(1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zakoM2D_find_event)
+    CALL(evt_npc_set_anim, STRING("slave_0"), STRING("B_1"))
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_facedirection_add, STRING("me"), LW(0), 10)
+    ADD(LW(1), 20)
+    CALL(evt_npc_set_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 32)
+    CALL(evt_npc_flag_onoff, 0, STRING("slave_0"), 128)
+    IF_INT_GREATER_OR_EQUAL(LW(10), 200)
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_facedirection_add, STRING("me"), LW(0), 100)
+        CALL(evt_npc_jump_position, STRING("slave_0"), LW(0), LW(1), LW(2), 0, FLOAT(300.0f), FLOAT(300.0f), 0)
+    ELSE
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_facedirection_add, STRING("me"), LW(0), LW(10))
+        MULTIPLY_FLOAT(LW(10), FLOAT(1.5f))
+        CALL(evt_npc_jump_position, STRING("slave_0"), LW(0), LW(1), LW(2), 0, LW(10), FLOAT(300.0f), 0)
+    END_IF
+    CALL(evt_npc_get_position, STRING("slave_0"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_CONDITION_FIRE1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_ENM_3RD2_CRASH1"), LW(0), LW(1), LW(2), 0)
+    SUBTRACT(LW(1), 5)
+    ADD(LW(2), 200)
+    CALL(evt_eff, STRING(""), STRING("kemuri_test"), 16, LW(0), LW(1), LW(2), FLOAT(1.0f), 0, 0, 0, 0, 0, 0, 0)
+    LOOP(12)
+        CALL(evt_eff64, STRING(""), STRING("glass_n64"), 0, LW(0), LW(1), LW(2), FLOAT(1.0f), 30, 0, 0, 0, 0, 0, 0)
+    END_LOOP
+    BEGIN_INLINE_EVENT
+        CALL(unk_800ece0c, LW(0), LW(1), LW(2), 60)
+    END_INLINE_EVENT
+    CALL(evt_npc_set_anim, STRING("slave_0"), STRING("B_2"))
+    WAIT_FRAMES(10)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    WAIT_FRAMES(60)
+    CALL(evt_npc_set_position, STRING("slave_0"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 32)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(unk_evt_803497e8)
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            CALL(evt_npc_move_position, STRING("me"), LW(0), LW(2), 100, 0, 0)
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_position, STRING("me"), LW(10), LW(11), LW(12))
+    SUBTRACT_FLOAT(LW(10), LW(0))
+    IF_INT_LESS(LW(10), 0)
+        MULTIPLY_FLOAT(LW(10), FLOAT(-1.0f))
+    END_IF
+    IF_INT_LESS(LW(10), 30)
+        SET_FLOAT_VALUE(LW(10), FLOAT(30.0f))
+    END_IF
+    CALL(evt_npc_set_anim, STRING("me"), STRING("A_1"))
+    WAIT_FRAMES(64)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("A_2"))
+    WAIT_FRAMES(24)
+    BEGIN_SIBLING_EVENT
+        WAIT_FRAMES(24)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    END_SIBLING_EVENT
+    SPAWN_EVENT(zakoM2D_find_event)
+    WAIT_FRAMES(100)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(gesso2D_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 134217728)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 1024)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 268435456)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2097152)
+    CALL(evt_npc_status_onoff, 0, STRING("me"), 4)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(gesso2D_move_event)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    LABEL(0)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 4096)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+    CALL(camGetPos, LW(1))
+    SUBTRACT(LW(0), LW(1))
+    IF_INT_LESS_OR_EQUAL(LW(0), 250)
+        GOTO(1)
+    END_IF
+    WAIT_FRAMES(1)
+    GOTO(0)
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    LABEL(1)
+    SET_FLOAT_VALUE(LW(1), FLOAT(0.0f))
+    SET_FLOAT_VALUE(LW(13), FLOAT(0.0f))
+    LOOP(0)
+        CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+        CALL(evt_mario_get_pos, 0, LW(10), LW(11), LW(12))
+        WAIT_FRAMES(1)
+        SUBTRACT(LW(0), LW(10))
+        IF_INT_GREATER_OR_EQUAL(LW(0), 300)
+            GOTO(5)
+        END_IF
+        IF_INT_LESS_OR_EQUAL(LW(0), -300)
+            GOTO(5)
+        END_IF
+        IF_INT_LESS(LW(1), LW(11))
+            BREAK_LOOP
+        END_IF
+        IF_INT_LESS(LW(1), 90)
+            BREAK_LOOP
+        END_IF
+        LABEL(5)
+        CALL(gesso_ground_check, LW(15))
+        IF_INT_EQUAL(LW(15), 0)
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            SET_FLOAT_VALUE(LW(14), LW(1))
+            SUBTRACT_FLOAT(LW(14), LW(13))
+            ADD_FLOAT(LW(13), FLOAT(0.1f))
+            IF_INT_GREATER_OR_EQUAL(LW(13), FLOAT(1.0f))
+                SET_FLOAT_VALUE(LW(13), FLOAT(1.0f))
+            END_IF
+            CALL(evt_npc_set_position, STRING("me"), LW(0), LW(14), LW(2))
+        END_IF
+    END_LOOP
+    CALL(evt_get_target_dir, STRING("me"), STRING("mario"), LW(0))
+    CALL(evt_npc_set_ry, STRING("me"), LW(0))
+    CALL(evt_npc_get_position, STRING("me"), LW(10), LW(11), LW(12))
+    CALL(evt_npc_facedirection_add, STRING("me"), LW(10), 100)
+    ADD(LW(11), 50)
+    IF_INT_GREATER(LW(11), 350)
+        SET_VALUE(LW(11), 350)
+    END_IF
+    LOOP(60)
+        CALL(gesso_ground_check, LW(15))
+        IF_INT_EQUAL(LW(15), 0)
+            CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+            SET_FLOAT_VALUE(LW(14), LW(1))
+            SUBTRACT_FLOAT(LW(14), LW(13))
+            ADD_FLOAT(LW(13), FLOAT(0.1f))
+            IF_INT_GREATER_OR_EQUAL(LW(13), FLOAT(1.0f))
+                SET_FLOAT_VALUE(LW(13), FLOAT(1.0f))
+            END_IF
+            CALL(evt_npc_set_position, STRING("me"), LW(0), LW(14), LW(2))
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_npc_set_anim, STRING("me"), STRING("A_1"))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_KUPPA_GESSO_MOVE1"), LW(10), LW(11), LW(12), 0)
+    CALL(evt_npc_set_unitwork, STRING("me"), 0, 0)
+    BEGIN_SIBLING_EVENT_GET_ID(LW(15))
+        CALL(evt_npc_glide_position, STRING("me"), LW(10), LW(11), LW(12), 2000, FLOAT(50.0f), 10, 4, 0)
+        CALL(evt_npc_set_unitwork, STRING("me"), 0, 1)
+    END_SIBLING_EVENT
+    LOOP(0)
+        CALL(evt_npc_get_unitwork, STRING("me"), 0, LW(0))
+        IF_INT_EQUAL(LW(0), 1)
+            BREAK_LOOP
+        END_IF
+        CALL(upperCheck, LW(0))
+        IF_INT_EQUAL(LW(0), 1)
+            DELETE_EVENT(LW(15))
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
+    GOTO(1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(enemy_event_dead_event)
+    SET_VALUE(LW(10), STRING("me"))
+    CALL_CHILD(enemy_event_dead_event_sub)
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(enemy_slave_common_dead_event)
+    CALL(evt_npc_delete, STRING("me"))
+    CALL(evt_npc_return_interrupt, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 269616152)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(testenemynpc_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(npc_urouro_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1536)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kuriboo_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patakuri_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1048600)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patapata_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1114136)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(patamet_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1048600)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(chorobon_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1179672)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(pansy_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(twinkling_pansy_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(karon_dead_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL_CHILD(enemy_common_dead_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sambo_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 8)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1049616)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(togedaruma_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(piders_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa_dead_event)
+    CALL_CHILD(enemy_common_dead_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa2_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1048600)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(basabasa2_dead_event)
+    CALL_CHILD(enemy_common_dead_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(teresa_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1048600)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(teresa_dead_event)
+    CALL_CHILD(enemy_common_dead_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(bubble_init_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("me"), 1048600)
+    CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbom_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zakowiz_dead_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL_CHILD(enemy_common_dead_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hannya_init_event)
+    CALL_CHILD(enemy_common_flag_init_event)
+    CALL(evt_npc_status_onoff, 0, STRING("me"), 2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec_dead_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL_CHILD(enemy_common_dead_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kamec2_dead_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL_CHILD(enemy_common_dead_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hbross_dead_event)
+    CALL(evt_npc_flag_onoff, 1, STRING("slave_0"), 128)
+    CALL_CHILD(enemy_common_dead_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(zakoM2D_dead_event)
+    CALL(evt_npc_status_onoff, 0, STRING("slave_0"), 4)
+    CALL_CHILD(enemy_2d_common_dead_event)
+    RETURN
+EVT_END()
 
 // TODO: type
 

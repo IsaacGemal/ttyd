@@ -36,8 +36,15 @@ const Vec vec3_802ccf54 = {0.0f, -1.0f, 0.0f};
 s32 m_w_7_sync[45] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 8, 7, 5, 3, 1, 0,
     0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 9, 8, 6, 4, 3, 2, 1, 0, 0, 0, 0, 0};
-s32 longQuake_evt[8] = {0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A8F, (s32)0xF24A7A8F, 0x258, 2, 1};
-static s32 quake_evt[8] = {0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A8F, (s32)0xF24A7A8F, 0xC8, 2, 1};
+EVT_BEGIN(longQuake_evt)
+    CALL(evt_cam_shake, 4, FLOAT(0.015f), FLOAT(0.015f), 600)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(quake_evt)
+    CALL(evt_cam_shake, 4, FLOAT(0.015f), FLOAT(0.015f), 200)
+    RETURN
+EVT_END()
 
 // The per-use work block stored in PartyEntry::useStruct (0x170) while Bobbery is active.
 typedef struct BomheiWork {

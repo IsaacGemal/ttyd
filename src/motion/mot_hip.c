@@ -18,15 +18,15 @@
 // Locals for symbols with no home header (see REPORT.md so they can move later).
 
 // Event scripts. The original symbols are local (.sdata), so keep them static.
-static s32 quake_evt[] = {
-    EVT_CMD(5, OPCODE_USER_FUNC), (s32)evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.01953125f), 0x6E,
-    EVT_CMD(0, OPCODE_END_EVENT), OPCODE_END_SCRIPT
-};
+static EVT_BEGIN(quake_evt)
+    CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.02f), 110)
+    RETURN
+EVT_END()
 
-static s32 quake_bgmode_evt[] = {
-    EVT_CMD(5, OPCODE_USER_FUNC), (s32)evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.009765625f), 0x6E,
-    EVT_CMD(0, OPCODE_END_EVENT), OPCODE_END_SCRIPT
-};
+static EVT_BEGIN(quake_bgmode_evt)
+    CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.01f), 110)
+    RETURN
+EVT_END()
 
 s32 marioChkHipAttack(void) {
     s32 res;

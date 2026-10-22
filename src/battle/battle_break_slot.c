@@ -43,39 +43,40 @@ u16 tex_id_list_small[] = { '+', '-', '/', '.', ',', 0 };
 u16 tex_id_list_big[] = { '0', '2', '4', '3', '1', 0 };
 
 // 0x8 bytes
-__declspec(section ".sdata") u32 star_effect[2] = {
-    0x00000002, 0x00000001,
-};
+__declspec(section ".sdata") EVT_BEGIN(star_effect)
+    RETURN
+EVT_END()
+
 // 0x24 bytes
-__declspec(section ".sdata") u32 msg_hp_max[9] = {
-    0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
-    0xFFFFFF33, (u32)(void*)"msg_slot_HP_max", 0x00000078, 0x00000002,
-    0x00000001,
-};
+__declspec(section ".sdata") EVT_BEGIN(msg_hp_max)
+    CALL(btlevtcmd_AnnounceMessage, 0, 0, -205, STRING("msg_slot_HP_max"), 120)
+    RETURN
+EVT_END()
+
 // 0x24 bytes
-__declspec(section ".sdata") u32 msg_fp_max[9] = {
-    0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
-    0xFFFFFF33, (u32)(void*)"msg_slot_FP_max", 0x00000078, 0x00000002,
-    0x00000001,
-};
+__declspec(section ".sdata") EVT_BEGIN(msg_fp_max)
+    CALL(btlevtcmd_AnnounceMessage, 0, 0, -205, STRING("msg_slot_FP_max"), 120)
+    RETURN
+EVT_END()
+
 // 0x24 bytes
-__declspec(section ".sdata") u32 msg_star_max[9] = {
-    0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
-    0xFFFFFF33, (u32)(void*)"msg_slot_SP_max", 0x00000078, 0x00000002,
-    0x00000001,
-};
+__declspec(section ".sdata") EVT_BEGIN(msg_star_max)
+    CALL(btlevtcmd_AnnounceMessage, 0, 0, -205, STRING("msg_slot_SP_max"), 120)
+    RETURN
+EVT_END()
+
 // 0x24 bytes
-__declspec(section ".sdata") u32 msg_super_max[9] = {
-    0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
-    0xFFFFFF33, (u32)(void*)"msg_slot_HPFPSP_max", 0x00000078, 0x00000002,
-    0x00000001,
-};
+__declspec(section ".sdata") EVT_BEGIN(msg_super_max)
+    CALL(btlevtcmd_AnnounceMessage, 0, 0, -205, STRING("msg_slot_HPFPSP_max"), 120)
+    RETURN
+EVT_END()
+
 // 0x24 bytes
-__declspec(section ".sdata") u32 msg_fault[9] = {
-    0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
-    0xFFFFFF33, (u32)(void*)"msg_slot_HPFPSP_half", 0x00000078, 0x00000002,
-    0x00000001,
-};
+__declspec(section ".sdata") EVT_BEGIN(msg_fault)
+    CALL(btlevtcmd_AnnounceMessage, 0, 0, -205, STRING("msg_slot_HPFPSP_half"), 120)
+    RETURN
+EVT_END()
+
 // trailing 4-byte gap the original has at the end of this unit's .sdata
 #pragma explicit_zero_data on
 __declspec(section ".sdata") u32 gap_07_80414144_sdata[1] = { 0 };
@@ -98,91 +99,75 @@ __declspec(section ".data") u32 lbl_803AB148[2] = { 0x3F800000, 0xBF800000 };
 __declspec(section ".data") static u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
 #pragma force_active reset
 
-// TODO: type (0x1ac bytes)
-__declspec(section ".data") u32 kinoko_effect[107] = {
-    0x0003005B, (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83,
-    0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84,
-    0x0003005B, (u32)btlevtcmd_GetMaxHp, 0xFE363C83, 0xFE363C85,
-    0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
-    0x00000032, 0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520,
-    (u32)(void*)str_recovery, 0x00000004, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0xFE363C85, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp, 0xFE363C83,
-    0xFE363C84, 0xFE363C85, 0x0003005B, (u32)btlevtcmd_AnimeChangePoseFromTable,
-    0xFE363C83, 0xFE363C84, 0x0003005B, (u32)btlevtcmd_GetUnitId,
-    0xFFFFFFFC, 0xFE363C83, 0x00020019, 0xFE363C83,
-    0xFFFFFFFF, 0x0004005B, (u32)btlevtcmd_CheckStatus, 0xFE363C83,
-    0x0000001B, 0xFE363C80, 0x00020018, 0xFE363C80,
-    0x00000000, 0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83,
-    0xFE363C84, 0x0003005B, (u32)btlevtcmd_GetMaxHp, 0xFE363C83,
-    0xFE363C85, 0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
-    0xFE363C81, 0x00000032, 0x000F005B, (u32)evt_eff,
-    (u32)(void*)&zero_80420520, (u32)(void*)str_recovery, 0x00000004, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0xFE363C85, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp,
-    0xFE363C83, 0xFE363C84, 0xFE363C85, 0x0003005B,
-    (u32)btlevtcmd_AnimeChangePoseFromTable, 0xFE363C83, 0xFE363C84, 0x00000021,
-    0x00000021, 0x00000002, 0x00000001,
-};
-// TODO: type (0xb0 bytes)
-__declspec(section ".data") u32 flower_effect[44] = {
-    0x0003005B, (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83,
-    0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84,
-    0x0003005B, (u32)btlevtcmd_GetMaxFp, 0xFE363C83, 0xFE363C85,
-    0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
-    0x00000032, 0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520,
-    (u32)(void*)str_recovery, 0x00000005, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0xFE363C85, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverFp, 0xFE363C83,
-    0xFE363C84, 0xFE363C85, 0x00000002, 0x00000001,
-};
-// TODO: type (0x25c bytes)
-__declspec(section ".data") u32 shine_effect[151] = {
-    0x0003005B, (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83,
-    0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84,
-    0x0003005B, (u32)btlevtcmd_GetMaxHp, 0xFE363C83, 0xFE363C85,
-    0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
-    0x00000032, 0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520,
-    (u32)(void*)str_recovery, 0x00000004, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0xFE363C85, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp, 0xFE363C83,
-    0xFE363C84, 0xFE363C85, 0x0003005B, (u32)btlevtcmd_AnimeChangePoseFromTable,
-    0xFE363C83, 0xFE363C84, 0x0003005B, (u32)btlevtcmd_GetUnitId,
-    0xFFFFFFFC, 0xFE363C83, 0x00020019, 0xFE363C83,
-    0xFFFFFFFF, 0x0004005B, (u32)btlevtcmd_CheckStatus, 0xFE363C83,
-    0x0000001B, 0xFE363C80, 0x00020018, 0xFE363C80,
-    0x00000000, 0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83,
-    0xFE363C84, 0x0003005B, (u32)btlevtcmd_GetMaxHp, 0xFE363C83,
-    0xFE363C85, 0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
-    0xFE363C81, 0x00000032, 0x000F005B, (u32)evt_eff,
-    (u32)(void*)&zero_80420520, (u32)(void*)str_recovery, 0x00000004, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0xFE363C85, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp,
-    0xFE363C83, 0xFE363C84, 0xFE363C85, 0x0003005B,
-    (u32)btlevtcmd_AnimeChangePoseFromTable, 0xFE363C83, 0xFE363C84, 0x00000021,
-    0x00000021, 0x00010009, 0x0000003C, 0x0003005B,
-    (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83, 0x0003005B,
-    (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84, 0x0003005B,
-    (u32)btlevtcmd_GetMaxFp, 0xFE363C83, 0xFE363C85, 0x0005005B,
-    (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00020035, 0xFE363C81, 0x00000032,
-    0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520, (u32)(void*)str_recovery,
-    0x00000005, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0xFE363C85, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0004005B, (u32)btlevtcmd_RecoverFp, 0xFE363C83, 0xFE363C84,
-    0xFE363C85, 0x00000002, 0x00000001,
-};
+__declspec(section ".data") EVT_BEGIN(kinoko_effect)
+    CALL(btlevtcmd_GetUnitId, -3, LW(3))
+    CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+    CALL(btlevtcmd_GetMaxHp, LW(3), LW(5))
+    CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
+    ADD(LW(1), 50)
+    CALL(evt_eff, PTR((void*)&zero_80420520), PTR((void*)str_recovery), 4, LW(0), LW(1), LW(2), LW(5), 0, 0, 0, 0, 0, 0, 0)
+    CALL(btlevtcmd_RecoverHp, LW(3), LW(4), LW(5))
+    CALL(btlevtcmd_AnimeChangePoseFromTable, LW(3), LW(4))
+    CALL(btlevtcmd_GetUnitId, -4, LW(3))
+    IF_INT_NOT_EQUAL(LW(3), -1)
+        CALL(btlevtcmd_CheckStatus, LW(3), 27, LW(0))
+        IF_INT_EQUAL(LW(0), 0)
+            CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+            CALL(btlevtcmd_GetMaxHp, LW(3), LW(5))
+            CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
+            ADD(LW(1), 50)
+            CALL(evt_eff, PTR((void*)&zero_80420520), PTR((void*)str_recovery), 4, LW(0), LW(1), LW(2), LW(5), 0, 0, 0, 0, 0, 0, 0)
+            CALL(btlevtcmd_RecoverHp, LW(3), LW(4), LW(5))
+            CALL(btlevtcmd_AnimeChangePoseFromTable, LW(3), LW(4))
+        END_IF
+    END_IF
+    RETURN
+EVT_END()
+
+__declspec(section ".data") EVT_BEGIN(flower_effect)
+    CALL(btlevtcmd_GetUnitId, -3, LW(3))
+    CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+    CALL(btlevtcmd_GetMaxFp, LW(3), LW(5))
+    CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
+    ADD(LW(1), 50)
+    CALL(evt_eff, PTR((void*)&zero_80420520), PTR((void*)str_recovery), 5, LW(0), LW(1), LW(2), LW(5), 0, 0, 0, 0, 0, 0, 0)
+    CALL(btlevtcmd_RecoverFp, LW(3), LW(4), LW(5))
+    RETURN
+EVT_END()
+
+__declspec(section ".data") EVT_BEGIN(shine_effect)
+    CALL(btlevtcmd_GetUnitId, -3, LW(3))
+    CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+    CALL(btlevtcmd_GetMaxHp, LW(3), LW(5))
+    CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
+    ADD(LW(1), 50)
+    CALL(evt_eff, PTR((void*)&zero_80420520), PTR((void*)str_recovery), 4, LW(0), LW(1), LW(2), LW(5), 0, 0, 0, 0, 0, 0, 0)
+    CALL(btlevtcmd_RecoverHp, LW(3), LW(4), LW(5))
+    CALL(btlevtcmd_AnimeChangePoseFromTable, LW(3), LW(4))
+    CALL(btlevtcmd_GetUnitId, -4, LW(3))
+    IF_INT_NOT_EQUAL(LW(3), -1)
+        CALL(btlevtcmd_CheckStatus, LW(3), 27, LW(0))
+        IF_INT_EQUAL(LW(0), 0)
+            CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+            CALL(btlevtcmd_GetMaxHp, LW(3), LW(5))
+            CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
+            ADD(LW(1), 50)
+            CALL(evt_eff, PTR((void*)&zero_80420520), PTR((void*)str_recovery), 4, LW(0), LW(1), LW(2), LW(5), 0, 0, 0, 0, 0, 0, 0)
+            CALL(btlevtcmd_RecoverHp, LW(3), LW(4), LW(5))
+            CALL(btlevtcmd_AnimeChangePoseFromTable, LW(3), LW(4))
+        END_IF
+    END_IF
+    WAIT_FRAMES(60)
+    CALL(btlevtcmd_GetUnitId, -3, LW(3))
+    CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+    CALL(btlevtcmd_GetMaxFp, LW(3), LW(5))
+    CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
+    ADD(LW(1), 50)
+    CALL(evt_eff, PTR((void*)&zero_80420520), PTR((void*)str_recovery), 5, LW(0), LW(1), LW(2), LW(5), 0, 0, 0, 0, 0, 0, 0)
+    CALL(btlevtcmd_RecoverFp, LW(3), LW(4), LW(5))
+    RETURN
+EVT_END()
+
 // TODO: type (0xc0 bytes)
 __declspec(section ".data") u32 weapon_doku_kinoko[48] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
@@ -213,26 +198,24 @@ __declspec(section ".data") u32 weapon_doku_kinoko_fp[48] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000064, 0x00000000, 0x00000000,
 };
-// TODO: type (0x104 bytes)
-__declspec(section ".data") u32 doku_kinoko_effect[65] = {
-    0x0003005B, (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83,
-    0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84,
-    0x0007005B, (u32)btlevtcmd_CheckDamage, 0xFFFFFFFD, 0xFE363C83,
-    0xFE363C84, (u32)&weapon_doku_kinoko, 0x00000000, 0xFE363C85,
-    0x0003005B, (u32)btlevtcmd_GetUnitId, 0xFFFFFFFC, 0xFE363C83,
-    0x00020019, 0xFE363C83, 0xFFFFFFFF, 0x0004005B,
-    (u32)btlevtcmd_CheckStatus, 0xFE363C83, 0x0000001B, 0xFE363C80,
-    0x00020018, 0xFE363C80, 0x00000000, 0x0003005B,
-    (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84, 0x0007005B,
-    (u32)btlevtcmd_CheckDamage, 0xFFFFFFFD, 0xFE363C83, 0xFE363C84,
-    (u32)&weapon_doku_kinoko, 0x00000100, 0xFE363C85, 0x00000021,
-    0x00000021, 0x00010009, 0x0000003C, 0x0003005B,
-    (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83, 0x0003005B,
-    (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84, 0x0007005B,
-    (u32)btlevtcmd_CheckDamage, 0xFFFFFFFD, 0xFE363C83, 0xFE363C84,
-    (u32)&weapon_doku_kinoko_fp, 0x00000100, 0xFE363C85, 0x00000002,
-    0x00000001,
-};
+__declspec(section ".data") EVT_BEGIN(doku_kinoko_effect)
+    CALL(btlevtcmd_GetUnitId, -3, LW(3))
+    CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+    CALL(btlevtcmd_CheckDamage, -3, LW(3), LW(4), PTR(weapon_doku_kinoko), 0, LW(5))
+    CALL(btlevtcmd_GetUnitId, -4, LW(3))
+    IF_INT_NOT_EQUAL(LW(3), -1)
+        CALL(btlevtcmd_CheckStatus, LW(3), 27, LW(0))
+        IF_INT_EQUAL(LW(0), 0)
+            CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+            CALL(btlevtcmd_CheckDamage, -3, LW(3), LW(4), PTR(weapon_doku_kinoko), 256, LW(5))
+        END_IF
+    END_IF
+    WAIT_FRAMES(60)
+    CALL(btlevtcmd_GetUnitId, -3, LW(3))
+    CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+    CALL(btlevtcmd_CheckDamage, -3, LW(3), LW(4), PTR(weapon_doku_kinoko_fp), 256, LW(5))
+    RETURN
+EVT_END()
 
 BattleBreakSlot* BattleBreakSlotGetPtr(void) {
     return &_battleWorkPointer->breakSlot;

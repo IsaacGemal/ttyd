@@ -153,29 +153,37 @@ static HitDamageReturn dmgReturnPt[2] = {
 
 
 
-// event script, left in the generated raw form (matches the original byte-for-byte)
-static u32 hikaru_yuka_init[83] = {
-    0x0001005E, (u32)&hikaru_off, 0x0005005B, (u32)evt_hitobj_attr_onoff,
-    0x00000001, 0x00000001, (u32)"A_no01", 0x00000800,
-    0x0009005B, (u32)evt_mobj_itembox, (u32)"box", 0x000000A0,
-    0x0000000A, 0xFFFFFFF6, 0x00000002, 0x00000000,
-    (u32)&evt_box, 0xF8406BD0, 0x0002005B, (u32)evt_hit_damage_return_set,
-    (u32)&dmgReturnPt, 0x0005005B, (u32)evt_mapobj_flag_onoff, 0x00000001,
-    0x00000000, (u32)"yukayu1", 0x00000001, 0x0005005B,
-    (u32)evt_mapobj_flag_onoff, 0x00000001, 0x00000001, (u32)"yukayu2",
-    0x00000001, 0x0004005B, (u32)evt_map_playanim, (u32)"denyuka",
-    0x00000001, 0x00000000, 0x0003005B, (u32)evt_sub_random,
-    0x0000012C, 0xFE363C80, 0x00010022, 0xFE363C80,
-    0x00010026, 0x00000064, 0x00020032, 0xFD050F8A,
-    0x00000000, 0x00010026, 0x000000C8, 0x00020032,
-    0xFD050F8A, 0x00000001, 0x0000002A, 0x00020032,
-    0xFD050F8A, 0x00000002, 0x00000031, 0x0002005B,
-    (u32)evt_mario_key_onoff, 0x00000000, 0x0002005B, (u32)evt_seq_wait,
-    0x00000002, 0x0002005B, (u32)evt_bero_exec_wait, 0x00010000,
-    0x0001005E, (u32)&hikaru_yuka, 0x0002005B, (u32)evt_mario_key_onoff,
-    0x00000001, 0x0000006B, 0x0001005B, (u32)&ride_chk,
-    0x0000006D, 0x0000006B, 0x0001005B, (u32)&thunder_main,
-    0x0000006D, 0x00000001, 0x00000002,
+// The original has an END_EVENT word after its END_SCRIPT, so the array is closed by hand.
+static EVT_BEGIN(hikaru_yuka_init)
+    CALL_CHILD(hikaru_off)
+    CALL(evt_hitobj_attr_onoff, 1, 1, STRING("A_no01"), 2048)
+    CALL(evt_mobj_itembox, STRING("box"), 160, 10, -10, 2, 0, PTR(evt_box), GSWF(4176))
+    CALL(evt_hit_damage_return_set, PTR(dmgReturnPt))
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("yukayu1"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yukayu2"), 1)
+    CALL(evt_map_playanim, STRING("denyuka"), 1, 0)
+    CALL(evt_sub_random, 300, LW(0))
+    SWITCH(LW(0))
+        CASE_LESS(100)
+        SET_VALUE(GW(10), 0)
+        CASE_LESS(200)
+        SET_VALUE(GW(10), 1)
+        CASE_DEFAULT
+        SET_VALUE(GW(10), 2)
+    END_SWITCH
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_seq_wait, 2)
+    CALL(evt_bero_exec_wait, 65536)
+    CALL_CHILD(hikaru_yuka)
+    CALL(evt_mario_key_onoff, 1)
+    BEGIN_INLINE_EVENT
+        CALL(ride_chk)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(thunder_main)
+    END_INLINE_EVENT
+    OPCODE_END_SCRIPT,
+    RETURN
 };
 
 static EVT_BEGIN(peach_evt_stg1)

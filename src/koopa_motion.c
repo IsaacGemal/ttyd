@@ -35,15 +35,15 @@ s32 _rateTbl[4] = {0, 0, 0, 0};
 s32 _rateTbl2[4] = {0, 0, 0, 0};
 f32 scaleDt[9] = {1.0f, 0.0f, 2.0f, 1.0f, 3.0f, 2.0f, 4.0f, 3.0f, 5.0f};
 
-s32 quake_kpaLandOn_evt[] = {
-    EVT_CMD(5, OPCODE_USER_FUNC), (s32)evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.009765625f), 0x1E,
-    EVT_CMD(0, OPCODE_END_EVENT), OPCODE_END_SCRIPT
-};
+EVT_BEGIN(quake_kpaLandOn_evt)
+    CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.01f), 30)
+    RETURN
+EVT_END()
 
-s32 quake_kpaHipAttack_evt[] = {
-    EVT_CMD(5, OPCODE_USER_FUNC), (s32)evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.01953125f), 0x3C,
-    EVT_CMD(0, OPCODE_END_EVENT), OPCODE_END_SCRIPT
-};
+EVT_BEGIN(quake_kpaHipAttack_evt)
+    CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.02f), 60)
+    RETURN
+EVT_END()
 
 // .sdata2
 extern const f32 float_0_80420da0;

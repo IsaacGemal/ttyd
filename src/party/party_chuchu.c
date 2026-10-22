@@ -34,7 +34,7 @@ typedef struct ChuchuSearchEntry {
 } ChuchuSearchEntry;
 
 extern ChuchuSearchEntry unk_8038bb34[];
-extern u32 msg_evt[];
+extern s32 msg_evt[];
 
 USER_FUNC(search_result) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -471,26 +471,15 @@ char* mobj_list[] = {
     NULL,
 };
 
-u32 msg_evt[] = {
-    0x0001005B,
-    (u32)set_msg,
-    0x0001005B,
-    (u32)search_result,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0005005B,
-    (u32)evt_msg_print,
-    0x00000000,
-    0xFE363C80,
-    0x00000000,
-    (u32)"party",
-    0x00000021,
-    0x0001005B,
-    (u32)post_msg,
-    0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(msg_evt)
+    CALL(set_msg)
+    CALL(search_result)
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(evt_msg_print, 0, LW(0), 0, STRING("party"))
+    END_IF
+    CALL(post_msg)
+    RETURN
+EVT_END()
 
 
 const Vec vec3_802f8288 = { 0.0f, 0.0f, 0.0f };
