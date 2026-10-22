@@ -254,7 +254,7 @@ char* ext_yuunpc_minigame3_data[18] = {
     "KNP_S_1", NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 };
 
-ExtMakeTextureEntry ext_yuunpc_minigame4_data[78] = {
+YuunpcPoseArg ext_yuunpc_minigame4_data[78] = {
     { "c_kinopiko", "KNF_S_1", 0.0f },
     { "c_roten", "S_1", 0.0f },
     { "c_jugemu", "JGM_S_1", 0.0f },
@@ -1384,7 +1384,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
     yuunpc_wp->count = extGetPoseNum();
     yuunpc_wp->entries = saved;
     memset(yuunpc_wp->entries, 0, yuunpc_wp->count * 0x70);
-    yuunpc_pose_init((YuunpcPoseArg*)ext_yuunpc_minigame4_data);
+    yuunpc_pose_init(ext_yuunpc_minigame4_data);
     yuunpc_set_jump_pose("c_kinopio", "KNP_R_1", 5.0f);
     yuunpc_set_jump_pose("c_bom_n", "R_1", 5.0f);
     yuunpc_set_jump_pose("c_tyusan", "CHU_R_1", 4.0f);

@@ -159,7 +159,7 @@ extend_data(29,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-static ExtMakeTextureEntry ext_moamoa_data[71] = {
+static MoamoaGroupDef ext_moamoa_data[71] = {
     { "c_n_moa_a", "S_1", 0.0f },
     { "c_n_moa_a", "S_1", 2.0f },
     { "c_n_moa_a", "S_1", 4.0f },
@@ -799,7 +799,7 @@ EVT_END()
 static void moamoa_pose_init(void) {
     char name[0x20];
     char anim[0x20];
-    MoamoaGroupDef* data = (MoamoaGroupDef*)ext_moamoa_data;
+    MoamoaGroupDef* data = ext_moamoa_data;
     s32 i = 0;
     s32 lastAnim;
 
