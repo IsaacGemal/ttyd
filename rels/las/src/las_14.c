@@ -234,7 +234,7 @@ static void _mapsetofs_all(CloudEntry* cp) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
-        if ((s8)cp->mapGrpName[i][0] == 0) {
+        if (cp->mapGrpName[i][0] == 0) {
             break;
         }
         mapGrpSetOffScreen(cp->mapGrpName[i], cp->offName);
@@ -245,7 +245,7 @@ static void _mapclsofs_all(CloudEntry* cp) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
-        if ((s8)cp->mapGrpName[i][0] == 0) {
+        if (cp->mapGrpName[i][0] == 0) {
             break;
         }
         mapGrpClearOffScreen(cp->mapGrpName[i]);
@@ -417,7 +417,7 @@ static USER_FUNC(evt_cloud_main) {
 
         img = imgNameToPtr(cp->imgName, inBattle);
         for (i = 0; i < 8; i++) {
-            if ((s8)cp->mapGrpName[i][0] == 0) {
+            if (cp->mapGrpName[i][0] == 0) {
                 break;
             }
             mapGrpClearOffScreen(cp->mapGrpName[i]);

@@ -60,7 +60,7 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 
 	for (i = 0; i < 100; i++) {
 		entry = &twodPtr[i];
-		if ((s8)entry->name[0] == 0) {
+		if (entry->name[0] == 0) {
 			continue;
 		}
 		if (!(entry->flags & 1)) {
@@ -138,7 +138,7 @@ USER_FUNC(evt_twoddisp_entry) {
 	for (i = 0; i < 100; i++) {
 		TwoDDisplayer* entry = &twodPtr[i];
 		strcmp(entry->name, name);
-		if ((s8)entry->name[0] == 0) {
+		if (entry->name[0] == 0) {
 			strcpy(entry->name, name);
 			entry->flags = 1;
 			entry->field_0x12 = 0;

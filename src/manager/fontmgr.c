@@ -262,7 +262,7 @@ void FontDrawCodeMtx(Mtx mtx, u16 code) {
 
 // Matched: a local `str` copied from the param `s` (declared between glyph and w) reproduces retail's
 // str=r28/glyph=r29/w=r27 split; assigning fx before PSMTXScale and fz before fy after it reproduces
-// the float-load schedule; `(s8)*str++` puts the single-byte pointer increment before the sign-extend.
+// the float-load schedule.
 void FontDrawString(f32 x, f32 y, const char* s) {
 	CameraEntry* cam;
 	Mtx mtx;
@@ -286,13 +286,13 @@ void FontDrawString(f32 x, f32 y, const char* s) {
 	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
 	fz = pos2.z;
 	fy = pos2.y;
-	while (*(s8*)str) {
-		if (_ismbblead(*(s8*)str)) {
+	while (*str) {
+		if (_ismbblead(*str)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)str);
 			str += 2;
 		}
 		else {
-			glyph = JUTFont_CodeToGlyph((s8)*str++);
+			glyph = JUTFont_CodeToGlyph(*str++);
 		}
 		w = FontGetWidthPtr(glyph)->width;
 		PSMTXTransApply(mtx, mtx2, fx, fy, fz);
@@ -307,8 +307,7 @@ void FontDrawString(f32 x, f32 y, const char* s) {
 }
 
 // Matched: a local `str` copied from the param `s` (between glyph and w) gives retail's w=r27/str=r28
-// split; assigning fx before PSMTXScale and fz before fy after it fixes the float-load schedule; the
-// sign-extended loop test `*(s8*)str` and `(s8)*str++` reproduce the extsb/increment order.
+// split; assigning fx before PSMTXScale and fz before fy after it fixes the float-load schedule.
 void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 	CameraEntry* cam;
 	Mtx mtx;
@@ -333,13 +332,13 @@ void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
 	fz = pos2.z;
 	fy = pos2.y;
-	while (*(s8*)str) {
-		if (_ismbblead(*(s8*)str)) {
+	while (*str) {
+		if (_ismbblead(*str)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)str);
 			str += 2;
 		}
 		else {
-			glyph = JUTFont_CodeToGlyph((s8)*str++);
+			glyph = JUTFont_CodeToGlyph(*str++);
 		}
 		w = FontGetWidthPtr(glyph)->width;
 		tx = (pitch < 0.0f) ? fx : fx + fontScale.x * (0.5f * (pitch - (f32)w));
@@ -359,7 +358,6 @@ void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 	}
 }
 
-// Matched: sign-extended loop test `*(s8*)text` and `(s8)*text++` fix the extsb/increment order.
 void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
 	CameraEntry* cam;
 	Mtx mtx2;
@@ -372,13 +370,13 @@ void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
 	cam = camGetCurPtr();
 	x = pos->x;
 	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
-	while (*(s8*)text) {
-		if (_ismbblead(*(s8*)text)) {
+	while (*text) {
+		if (_ismbblead(*text)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)text);
 			text += 2;
 		}
 		else {
-			glyph = JUTFont_CodeToGlyph((s8)*text++);
+			glyph = JUTFont_CodeToGlyph(*text++);
 		}
 		w = FontGetWidthPtr(glyph)->width;
 		f1 = (pitch < 0.0f) ? x : x + fontScale.x * (0.5f * (pitch - (f32)w));
@@ -425,14 +423,14 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 	y = 0.0f;
 	PSMTXConcat(cam->view, mtx, m);
 	GXLoadPosMtxImm(m, GX_PNMTX0);
-	while (*(s8*)msg) {
+	while (*msg) {
 		glyph = 0xFFFF;
-		if (_ismbblead(*(s8*)msg)) {
+		if (_ismbblead(*msg)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
 			msg += 2;
 		}
 		else {
-			switch ((s8)*msg) {
+			switch (*msg) {
 			case '\n':
 				x = 0.0f;
 				y -= 28.0f;
@@ -443,16 +441,16 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 				char arg2[128];
 				msg = msgGetCommand(msg + 1, arg1, arg2);
 				// '/r' is a multi-character constant (0x2f72, unsigned): the second test can never be true.
-				if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (s8)arg1[0] == '/r')) {
+				if (arg1[0] == 'R' || (arg1[0] == '/' && arg1[0] == '/r')) {
 					break;
 				}
-				if ((s8)*msg == '\n') {
+				if (*msg == '\n') {
 					msg++;
 				}
 				break;
 			}
 			default:
-				glyph = JUTFont_CodeToGlyph((s8)*msg++);
+				glyph = JUTFont_CodeToGlyph(*msg++);
 				break;
 			}
 		}
@@ -491,13 +489,13 @@ void FontDrawStringCenterMtx(Mtx mtx, const char* msg) {
 	offsetX = -(f32)FontGetMessageWidthLine(msg, NULL) * 0.5f;
 	PSMTXConcat(cam->view, mtx, m);
 	GXLoadPosMtxImm(m, GX_PNMTX0);
-	while (*(s8*)msg) {
-		if (_ismbblead(*(s8*)msg)) {
+	while (*msg) {
+		if (_ismbblead(*msg)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
 			msg += 2;
 		}
 		else {
-			glyph = JUTFont_CodeToGlyph((s8)*msg++);
+			glyph = JUTFont_CodeToGlyph(*msg++);
 		}
 		if (fontEdge) {
 			FontDrawStringCenterMtx_Edge(glyph, offsetX);
@@ -524,13 +522,13 @@ void FontDrawStringShake(const char* str, f32 x, f32 y) {
 
 	cam = camGetCurPtr();
 	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
-	while (*(s8*)str) {
-		if (_ismbblead(*(s8*)str)) {
+	while (*str) {
+		if (_ismbblead(*str)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)str);
 			str += 2;
 		}
 		else {
-			glyph = JUTFont_CodeToGlyph((s8)*str++);
+			glyph = JUTFont_CodeToGlyph(*str++);
 		}
 		offX = fontScale.x * (f32)(irand(10000) % 3) + x;
 		offY = fontScale.y * (f32)(irand(10000) % 3) + y;
@@ -579,14 +577,14 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 	char arg1[128];
 	char arg2[128];
 
-	while (*(s8*)msg) {
+	while (*msg) {
 		glyph = 0xFFFF;
-		if (_ismbblead(*(s8*)msg)) {
+		if (_ismbblead(*msg)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
 			msg += 2;
 		}
 		else {
-			switch ((s8)*msg) {
+			switch (*msg) {
 			case '\n':
 				x = x0;
 				yy -= 28;
@@ -624,7 +622,7 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 					Vec ipos;
 
 					camGetCurPtr();
-					if ((s8)arg2[0] >= '0' && (s8)arg2[0] <= '9') {
+					if (arg2[0] >= '0' && arg2[0] <= '9') {
 						sscanf(arg2, "%d%f%d%d%d", &id, &scale, &a1, &a2, &offset);
 					}
 					else {
@@ -648,16 +646,15 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 					}
 					x = (s32)((f32)x + ((f32)iw * scale + (f32)offset));
 				}
-				else if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (s8)arg1[0] == '/r')) {
+				else if (arg1[0] == 'R' || (arg1[0] == '/' && arg1[0] == '/r')) {
 					break;
 				}
-				if ((s8)*msg == '\n') {
+				if (*msg == '\n') {
 					msg++;
 				}
 				break;
 			default:
-				msg++;
-				glyph = JUTFont_CodeToGlyph((s8)*(msg - 1));
+				glyph = JUTFont_CodeToGlyph(*msg++);
 				break;
 			}
 		}
@@ -697,14 +694,14 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 	cam = camGetCurPtr();
 	x = 0;
 	y = 0;
-	while (*(s8*)msg) {
+	while (*msg) {
 		glyph = 0xFFFF;
-		if (_ismbblead(*(s8*)msg)) {
+		if (_ismbblead(*msg)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
 			msg += 2;
 		}
 		else {
-			switch ((s8)*msg) {
+			switch (*msg) {
 			case '\n':
 				x = x0;
 				y -= 28;
@@ -728,7 +725,7 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 					Vec ipos;
 
 					camGetCurPtr();
-					if ((s8)arg2[0] >= '0' && (s8)arg2[0] <= '9') {
+					if (arg2[0] >= '0' && arg2[0] <= '9') {
 						sscanf(arg2, "%d%f%d%d%d", &id, &scale, &a1, &a2, &offset);
 					}
 					else {
@@ -754,15 +751,15 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 				}
 				// Retail's `/r` test is dead: the compiler compares the sign-extended
 				// first byte against the two-char constant 0x2f72 ('/r'). Reproduce it.
-				else if ((s8)arg1[0] == 'R' || (s8)arg1[0] == '/' && (u32)(s8)arg1[0] == 0x2f72) {
+				else if (arg1[0] == 'R' || arg1[0] == '/' && (u32)arg1[0] == 0x2f72) {
 					break;
 				}
-				if ((s8)*msg == '\n') {
+				if (*msg == '\n') {
 					msg++;
 				}
 				break;
 			default:
-				glyph = JUTFont_CodeToGlyph((s8)*msg++);
+				glyph = JUTFont_CodeToGlyph(*msg++);
 				break;
 			}
 		}
@@ -806,14 +803,14 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 	u16 curwidth = 0;
 	s32 linecount = 0;
 
-	while (*(s8*)message != 0) {
+	while (*message != 0) {
 		glyph = 0xFFFF;
-		if (_ismbblead(*(s8*)message)) {
+		if (_ismbblead(*message)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)message);
 			message += 2;
 		}
 		else {
-			switch ((s8)*message) {
+			switch (*message) {
 			case '\n':
 				if (maxwidth < curwidth) {
 					maxwidth = curwidth;
@@ -837,7 +834,7 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 				message = msgGetCommand(message + 1, arg1, arg2);
 				if (strcmp(arg1, "icon") == 0) {
 					camGetCurPtr();
-					if ((s8)arg2[0] >= '0' && (s8)arg2[0] <= '9') {
+					if (arg2[0] >= '0' && arg2[0] <= '9') {
 						sscanf(arg2, "%d%f%d%d%d", &id, &scale, &a1, &a2, &offset);
 					}
 					else {
@@ -850,16 +847,16 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 					iconGetWidthHight(&width, &height, (u16)id);
 					curwidth = (f32)width * scale + offset + (f32)curwidth;
 				}
-				else if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (s8)arg1[0] == '/r')) {
+				else if (arg1[0] == 'R' || (arg1[0] == '/' && arg1[0] == '/r')) {
 					break;
 				}
-				if ((s8)*message == '\n') {
+				if (*message == '\n') {
 					message++;
 				}
 				break;
 			}
 			default:
-				glyph = JUTFont_CodeToGlyph((s8)*message++);
+				glyph = JUTFont_CodeToGlyph(*message++);
 				break;
 			}
 		}

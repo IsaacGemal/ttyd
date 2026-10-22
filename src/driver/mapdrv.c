@@ -3791,12 +3791,7 @@ MapFileJoint* mapSearchDmdJointSub2(MapFileJoint* joint, const char* name, const
 }
 
 MapFileJoint* mapSearchDmdJoint(MapFileJoint* joint, const char* name) {
-#ifdef MUST_MATCH
-	// Retail sign-extends the first byte before the compare (char is unsigned here).
-	if ((s8)*name != '|') {
-#else
 	if (*name != '|') {
-#endif
 		return mapSearchDmdJointSub(joint, name);
 	}
 	else {

@@ -176,7 +176,7 @@ void effPointGetDisp(CameraId camId, void* param) {
 				GXLoadPosMtxImm(mtxB8, 0);
 				GXSetCurrentMtx(0);
 				PSMTXScale(mtx88, 0.1f, 1.0f, 1.0f);
-				PSMTXTrans(mtxB8, (f32)((s8)buf[j] - '0'), 0.0f, 0.0f);
+				PSMTXTrans(mtxB8, (f32)(buf[j] - '0'), 0.0f, 0.0f);
 				PSMTXConcat(mtx88, mtxB8, mtxB8);
 				GXLoadTexMtxImm(mtxB8, 0x1e, 1);
 				GXBegin(0x80, 0, 4);
