@@ -20,12 +20,6 @@ extern GlobalWork* gp;
 extern const f32 float_0p017453_8041cba4;
 extern f32 float_20_8041cba8;
 extern f32 float_0p5_8041cbac;
-extern const GXColor dat_8041cba0;
-// effNiceMain's fade thresholds and per-type colours
-extern const GXColor dat_8041cb90;
-extern const GXColor dat_8041cb94;
-extern const GXColor dat_8041cb98;
-extern const GXColor dat_8041cb9c;
 
 //.sdata
 const char* anim_jp[] = {
@@ -160,12 +154,6 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 // current time from AnimationPose+0x24; both offsets fall in header padding, so raw
 // offsets are used. The four fade cases use distinct locals (time/end/base and time2...)
 // because a single shared set makes MWCC put `end` in f3 instead of the original f4.
-// Returning the colour by value from this helper puts the colour scratch and its outgoing argument copy
-// in retail's stack slots; the plain `color = ...; color.a = ...; call(color);` swaps them.
-static inline GXColor niceEvtColor(GXColor color, u8 alpha) {
-	color.a = alpha;
-	return color;
-}
 void effNiceMain(EffectEntry* effect) {
 	NiceEffectWork* data = effect->userdata;
 	AnimationPose* pose;
@@ -207,7 +195,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(dat_8041cb90, (u8)(s32)(255.0f * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, (u8)(s32)(255.0f * alpha) });
 			}
 			break;
 		case 2:
@@ -220,7 +208,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(dat_8041cb94, (u8)(s32)(255.0f * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, (u8)(s32)(255.0f * alpha) });
 			}
 			break;
 		case 3:
@@ -233,7 +221,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(dat_8041cb98, (u8)(s32)(255.0f * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, (u8)(s32)(255.0f * alpha) });
 			}
 			break;
 		case 4:
@@ -246,7 +234,7 @@ void effNiceMain(EffectEntry* effect) {
 					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(dat_8041cb9c, (u8)(s32)(255.0f * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, (u8)(s32)(255.0f * alpha) });
 			}
 			break;
 		case 6:
@@ -431,7 +419,7 @@ void effAcrobatDisp(CameraId camId, void* param) {
 	GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-	GXSetChanMatColor(GX_COLOR0A0, dat_8041cba0);
+	GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
 	GXSetNumTevStages(1);
@@ -486,12 +474,6 @@ void effAcrobatDisp(CameraId camId, void* param) {
 
 // The unit's named .sdata2 objects, in the original's order, defined after the code so a
 // const object is not folded into a literal at its uses.
-const GXColor dat_8041cb90 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_8041cb94 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_8041cb98 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_8041cb9c = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_8041cba0 = { 0xFF, 0xFF, 0xFF, 0xFF };
-
 const f32 float_0p017453_8041cba4 = 0.017453292f;
 __declspec(section ".sdata2") f32 float_20_8041cba8 = 20.0f;
 __declspec(section ".sdata2") f32 float_0p5_8041cbac = 0.5f;

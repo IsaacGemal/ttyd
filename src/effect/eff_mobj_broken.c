@@ -13,8 +13,6 @@
 #include "matching.h"
 
 // .sdata2 / .rodata constants (defined by the original unit's data).
-extern const Vec vec3_802fe634;
-extern const Vec vec3_802fe640;
 extern const f32 float_deg2rad_804210e8;
 extern const f32 float_0_804210ec;
 extern const f32 float_0p8_804210f0;
@@ -38,9 +36,6 @@ extern const f32 float_6p25_8042113c;
 extern const f32 float_12p5_80421140;
 extern const f32 float_0p5_80421144;
 extern const f32 float_0p0625_80421148;
-extern const GXColor dat_804210e0;
-extern const GXColor dat_804210e4;
-extern const GXColor dat_804210dc;
 
 // .rodata (0x802FE628..0x802FE670)
 #ifdef MUST_MATCH
@@ -348,8 +343,7 @@ void effMObjBrokenMain(EffectEntry* effect) {
 
 // The original keeps both cube loops' axis scratch vectors in one function-wide block
 // (`axis1`/`axis2` and their `tmpAxis` copies) instead of per-loop locals; that is what gives the
-// two passes their distinct stack slots. Reproducing the loop-invariant loads also needs the
-// MUST_MATCH quirk below.
+// two passes their distinct stack slots.
 void effMObjBrokenDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	MobjBrokenWork* data;
@@ -358,12 +352,6 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 	Vec axis2;
 	Vec tmpAxis1;
 	Vec tmpAxis2;
-#ifdef MUST_MATCH
-	// volatile keeps MWCC from hoisting the shared zero-Vec load out of the loop.
-	volatile const Vec* zeroAxis;
-#else
-	const Vec* zeroAxis;
-#endif
 	GXTexObj tex;
 	Mtx mtx;
 	Mtx rot;
@@ -407,7 +395,6 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 		GXLoadTexObj(&tex, 0);
 	}
 	GXSetChanMatColor(4, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
-	zeroAxis = &vec3_802fe634;
 	data = effect->userdata;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -420,9 +407,8 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 		kDeg360 = float_360_804210f8;
 		kOffset = float_5_804210fc;
 		kDegToRad = float_deg2rad_804210e8;
-		tmpAxis1 = *zeroAxis;
-		tmpAxis1.x = (f32)cos(kTwoPi * data->field_0x1C / kDeg360);
-		tmpAxis1.z = (f32)sin(kTwoPi * data->field_0x1C / kDeg360);
+		tmpAxis1 = (Vec){ (f32)cos(kTwoPi * data->field_0x1C / kDeg360), 0.0f,
+		                  (f32)sin(kTwoPi * data->field_0x1C / kDeg360) };
 		axis1 = tmpAxis1;
 		PSMTXTrans(mtx, kOffset + data->posX, data->posY - kOffset, data->posZ);
 		PSMTXScale(scale, data->scale, data->scale, data->scale);
@@ -439,14 +425,12 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 		GXSetCurrentMtx(0);
 		GXDrawCube();
 	}
-	GXSetChanMatColor(4, dat_804210dc);
-	zeroAxis = &vec3_802fe640;
+	GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	data = effect->userdata;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		tmpAxis2 = *zeroAxis;
-		tmpAxis2.x = (f32)cos(float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8);
-		tmpAxis2.z = (f32)sin(float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8);
+		tmpAxis2 = (Vec){ (f32)cos(float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8), 0.0f,
+		                  (f32)sin(float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8) };
 		axis2 = tmpAxis2;
 		PSMTXTrans(mtx, data->posX, data->posY, data->posZ);
 		PSMTXScale(scale, data->scale, data->scale, data->scale);
@@ -500,11 +484,11 @@ void effMObjBrokenDisp2(CameraId camId, void* param) {
 			}
 			if (pass == 0) {
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-				animPoseSetMaterialEvtColor(data->poseId, dat_804210e0);
+				animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
 			}
 			else {
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
-				animPoseSetMaterialEvtColor(data->poseId, dat_804210e4);
+				animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFE });
 			}
 			PSMTXTrans(mtx, data->posX + (1 - pass) * 4, data->posY - (1 - pass) * 4, data->posZ);
 			PSMTXScale(scale, data->scale, data->scale, data->scale);
@@ -520,9 +504,6 @@ void effMObjBrokenDisp2(CameraId camId, void* param) {
 }
 
 // Original data objects of this unit, in address order.
-const GXColor dat_804210dc = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_804210e0 = { 0x00, 0x00, 0x00, 0x80 };
-const GXColor dat_804210e4 = { 0xFF, 0xFF, 0xFF, 0xFE };
 const f32 float_deg2rad_804210e8 = 0.017453292f;
 const f32 float_0_804210ec = 0.0f;
 const f32 float_0p8_804210f0 = 0.8f;
@@ -548,5 +529,3 @@ const f32 float_6p25_8042113c = 6.25f;
 const f32 float_12p5_80421140 = 12.5f;
 const f32 float_0p5_80421144 = 0.5f;
 const f32 float_0p0625_80421148 = 0.0625f;
-const Vec vec3_802fe634 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fe640 = { 0.0f, 0.0f, 0.0f };

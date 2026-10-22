@@ -37,13 +37,6 @@ extern u8 diamond_2_2_dl_1_size_tbl[20];
 extern u8 diamond_7_dl_0_size_tbl[36];
 extern u8 diamond_7_dl_1_size_tbl[36];
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a
-// small-data section and place it by hand (declared in reverse: placed in reverse of declaration order).
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") s32 unk_804232ec;
-__declspec(section ".sdata") s32 unk_804232e8;
-__declspec(section ".sdata") s32 unk_804232e4;
-__declspec(section ".sdata") s32 unk_804232e0;
 u32 diamond_1_dl_0_0[8];
 u32 diamond_1_dl_0_1[8];
 u32 diamond_1_dl_0_2[8];
@@ -232,7 +225,6 @@ extern u8 diamond_7_color0_tbl[];
 extern Vec edge_color[7];
 
 static u8* color_tbl[7];
-extern const u32 dat_80420b48;
 
 EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
@@ -495,17 +487,6 @@ void effStarStoneMain(EffectEntry* effect) {
 		} \
 	}
 
-// Passing the constant GXColor in by value keeps the by-value temporary in the slot the original
-// uses; building the colour in the caller puts it 4 bytes low (same shape as effBattenDisp2).
-#ifdef MUST_MATCH
-static inline GXColor starStoneTevColor(GXColor c, effStarStoneData* data) {
-	c.r = data->tevReg0R;
-	c.g = data->tevReg0G;
-	c.b = data->tevReg0B;
-	c.a = data->tevReg0A;
-	return c;
-}
-#endif
 
 void effStarStoneDisp_1(CameraId camId, void* param) {
 	u32 i;
@@ -531,18 +512,7 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
-#ifdef MUST_MATCH
-	GXSetTevColor(GX_TEVREG0, starStoneTevColor(*(GXColor*)&unk_804232e0, data));
-#else
-	{
-		GXColor color = *(GXColor*)&unk_804232e0;
-		color.r = data->tevReg0R;
-		color.g = data->tevReg0G;
-		color.b = data->tevReg0B;
-		color.a = data->tevReg0A;
-		GXSetTevColor(GX_TEVREG0, color);
-	}
-#endif
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->tevReg0R, data->tevReg0G, data->tevReg0B, data->tevReg0A });
 
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	PSMTXScale(scaleMtx, 1.1f * data->scale, 1.1f * data->scale, 1.1f * data->scale);
@@ -595,18 +565,7 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
-#ifdef MUST_MATCH
-	GXSetTevColor(GX_TEVREG0, starStoneTevColor(*(GXColor*)&unk_804232e4, data));
-#else
-	{
-		GXColor color = *(GXColor*)&unk_804232e4;
-		color.r = data->tevReg0R;
-		color.g = data->tevReg0G;
-		color.b = data->tevReg0B;
-		color.a = data->tevReg0A;
-		GXSetTevColor(GX_TEVREG0, color);
-	}
-#endif
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->tevReg0R, data->tevReg0G, data->tevReg0B, data->tevReg0A });
 
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
@@ -697,18 +656,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
-#ifdef MUST_MATCH
-	GXSetTevColor(GX_TEVREG0, starStoneTevColor(*(GXColor*)&unk_804232e8, data));
-#else
-	{
-		GXColor color = *(GXColor*)&unk_804232e8;
-		color.r = data->tevReg0R;
-		color.g = data->tevReg0G;
-		color.b = data->tevReg0B;
-		color.a = data->tevReg0A;
-		GXSetTevColor(GX_TEVREG0, color);
-	}
-#endif
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->tevReg0R, data->tevReg0G, data->tevReg0B, data->tevReg0A });
 	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
 	GXSetZCompLoc(GX_TRUE);
 	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
@@ -783,18 +731,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
-#ifdef MUST_MATCH
-	GXSetTevColor(GX_TEVREG0, starStoneTevColor(*(GXColor*)&unk_804232ec, data));
-#else
-	{
-		GXColor color = *(GXColor*)&unk_804232ec;
-		color.r = data->tevReg0R;
-		color.g = data->tevReg0G;
-		color.b = data->tevReg0B;
-		color.a = data->tevReg0A;
-		GXSetTevColor(GX_TEVREG0, color);
-	}
-#endif
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->tevReg0R, data->tevReg0G, data->tevReg0B, data->tevReg0A });
 	if (type != 2) {
 		effGetTexObj(0x29, &texObj);
 		GXLoadTexObj(&texObj, GX_TEXMAP0);

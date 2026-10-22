@@ -11,17 +11,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-// .rodata constants, declared in their original order so MWCC can address the .rodata base + offset.
+// .rodata: this zero Vec opens the unit's .rodata (no code here reads it); the two Main functions' Vec
+// templates follow it, then the strings and double defined after effMugiKemuri2Main.
 const Vec vec3_802f3498 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f34a4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f34b0 = { 0.0f, 0.0f, 0.0f };
-const char str_EFF_Hana[12] = "EFF_Hana";
-const char str_EFF_Mugi[12] = "EFF_Mugi";
-const f64 double_0p005_802f34d8 = 0.005;
+extern const char str_EFF_Hana[12];
+extern const char str_EFF_Mugi[12];
 
 // .sdata2 constants.
-extern const GXColor dat_8041ca68;
-extern const GXColor dat_8041ca6c;
 extern const f32 float_deg2rad_8041ca70;
 extern const f32 float_0_8041ca74;
 
@@ -129,7 +125,6 @@ EffectEntry* effMugiKemuri2Entry(s32 type, f32 x, f32 y, f32 z, f32 baseAngle, f
 	return entry;
 }
 
-// The MUST_MATCH volatile reads below pin the prologue's load order.
 void effMugiKemuriMain(EffectEntry* effect) {
 	MugiKemuriWork* work;
 	MugiKemuriWork* w;
@@ -141,18 +136,8 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	BOOL anyActive;
 	const char* name;
 
-#ifdef MUST_MATCH
-	// Volatile reads pin the original's prologue order: the userdata load comes before the
-	// pos component loads, which come before the copy's stores.
-	work = *(MugiKemuriWork* volatile*)&effect->userdata;
-	pos = *(volatile Vec*)&vec3_802f34a4;
-#else
 	work = effect->userdata;
-	pos = vec3_802f34a4;
-#endif
-	pos.x = work->x;
-	pos.y = work->y;
-	pos.z = work->z;
+	pos = (Vec){ work->x, work->y, work->z };
 	disp = pos;
 	inBattle = gp->inBattle != 0;
 
@@ -222,7 +207,6 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMugiKemuriDisp, effect);
 }
 
-// As in effMugiKemuriMain, the MUST_MATCH volatile reads pin the prologue order.
 void effMugiKemuri2Main(EffectEntry* effect) {
 	MugiKemuriWork* work;
 	MugiKemuriWork* w;
@@ -235,17 +219,8 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 	s32 inBattle;
 	const char* name;
 
-#ifdef MUST_MATCH
-	// Same prologue ordering requirement as effMugiKemuriMain.
-	work = *(MugiKemuriWork* volatile*)&effect->userdata;
-	pos = *(volatile Vec*)&vec3_802f34b0;
-#else
 	work = effect->userdata;
-	pos = vec3_802f34b0;
-#endif
-	pos.x = work->x;
-	pos.y = work->y;
-	pos.z = work->z;
+	pos = (Vec){ work->x, work->y, work->z };
 	disp = pos;
 	inBattle = gp->inBattle != 0;
 
@@ -328,28 +303,14 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMugiKemuri2Disp, effect);
 }
 
-// Returning the colour from an inline makes mwcc put the local GXColor at r1+0x8 and the
-// outgoing-argument copy at r1+0xc, the way the original does; building it inline in the caller
-// puts that pair the other way round.
-static inline GXColor mugiKemuriColor(u8 alpha) {
-	GXColor c = dat_8041ca68;
-	c.a = alpha;
-	return c;
-}
-
-// Same stack-slot reason as mugiKemuriColor, for the second colour constant used by
-// effMugiKemuri2Disp (its original loads dat_8041ca6c).
-static inline GXColor mugiKemuri2Color(u8 alpha) {
-	GXColor c = dat_8041ca6c;
-	c.a = alpha;
-	return c;
-}
+const char str_EFF_Hana[12] = "EFF_Hana";
+const char str_EFF_Mugi[12] = "EFF_Mugi";
+const f64 double_0p005_802f34d8 = 0.005;
 
 void effMugiKemuriDisp(CameraId cameraId, void* param) {
 	EffectEntry* entry = param;
 	MugiKemuriWork* work = entry->userdata;
 	Mtx scale, trans, rotX, rotY, rotZ;
-	GXColor color;
 	s32 i;
 
 	for (i = 0; i < entry->count; i++, work++) {
@@ -367,8 +328,7 @@ void effMugiKemuriDisp(CameraId cameraId, void* param) {
 		PSMTXConcat(trans, scale, trans);
 		if (work->animPose != -1) {
 			animPoseSetMaterialFlagOn(work->animPose, 0x40);
-			color = mugiKemuriColor(work->alpha);
-			animPoseSetMaterialEvtColor(work->animPose, color);
+			animPoseSetMaterialEvtColor(work->animPose, (GXColor){ 0xFF, 0xFF, 0xFF, work->alpha });
 			animPoseMain(work->animPose);
 			animPoseDrawMtx(work->animPose, trans, 1, float_0_8041ca74, 15.0f);
 			animPoseDrawMtx(work->animPose, trans, 2, float_0_8041ca74, 15.0f);
@@ -381,7 +341,6 @@ void effMugiKemuri2Disp(CameraId cameraId, void* param) {
 	EffectEntry* entry = param;
 	MugiKemuriWork* work = entry->userdata;
 	Mtx scale, trans, rotX, rotY, rotZ;
-	GXColor color;
 	s32 i;
 
 	for (i = 0; i < entry->count; i++, work++) {
@@ -399,8 +358,7 @@ void effMugiKemuri2Disp(CameraId cameraId, void* param) {
 		PSMTXConcat(trans, scale, trans);
 		if (work->animPose != -1) {
 			animPoseSetMaterialFlagOn(work->animPose, 0x40);
-			color = mugiKemuri2Color(work->alpha);
-			animPoseSetMaterialEvtColor(work->animPose, color);
+			animPoseSetMaterialEvtColor(work->animPose, (GXColor){ 0xFF, 0xFF, 0xFF, work->alpha });
 			animPoseMain(work->animPose);
 			animPoseDrawMtx(work->animPose, trans, 1, float_0_8041ca74, 15.0f);
 			animPoseDrawMtx(work->animPose, trans, 2, float_0_8041ca74, 15.0f);
@@ -410,7 +368,5 @@ void effMugiKemuri2Disp(CameraId cameraId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041ca68 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_8041ca6c = { 0xFF, 0xFF, 0xFF, 0x00 };
 const f32 float_deg2rad_8041ca70 = 0.017453292f;
 const f32 float_0_8041ca74 = 0.0f;
