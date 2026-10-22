@@ -27,14 +27,6 @@
 
 extern ItemData itemDataTable[];
 
-// ItemData.icon_id is read unsigned (lhz) in the original; the header's s16 is kept because other files'
-// matches depend on it.
-#ifdef MUST_MATCH
-#define ICON_ID(field) (*(u16*)&(field))
-#else
-#define ICON_ID(field) ((u16)(field))
-#endif
-
 EVT_BEGIN(sound_evt)
 CALL(evt_snd_sfxon_3d, STRING("SFX_ITEM_WHAT3"), LW(0), LW(1), LW(2), 0)
 WAIT_MS(0x341)
@@ -94,7 +86,7 @@ void effNanigaDisp3(CameraId camId, void* param) {
 		iconDispGxCol(mtx, 0, 0x184, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	}
 	else {
-		iconDispGxCol(mtx, 0, ICON_ID(item->icon_id), (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+		iconDispGxCol(mtx, 0, item->icon_id, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	}
 }
 
@@ -205,7 +197,7 @@ void effNanigaDisp(CameraId camId, void* param) {
 	GXTexCoord2f32(0.0f, 1.0f);
 
 	for (i = 0; i < data->count + 5; i++) {
-		iconGetTexObj(&tex, ICON_ID(itemDataTable[data->itemList[i % data->count]].icon_id));
+		iconGetTexObj(&tex, itemDataTable[data->itemList[i % data->count]].icon_id);
 		GXLoadTexObj(&tex, 0);
 		PSMTXTrans(mtx, 0.0f, data->field_0x34 + -40.f * (f32)i, 0.0f);
 		PSMTXScale(scale, 0.9f, 0.9f, 0.9f);
