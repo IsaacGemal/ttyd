@@ -190,15 +190,6 @@ static WinMgrDesc window_desc[2];
 // came out swapped until the element was reached through a pointer
 // (`s32* e = &list[sel]; idx = *e;`) rather than a repeated subscript, which colours it as the
 // original. 100%.
-//
-// `winItemMailLine` only exists to defeat MWCC's CSE: written inline, the `work + 0x26C` of
-// the case-201 call argument is shared with the following `+= 1` / `+= 0xA`, so MWCC
-// materialises it into r31 and copies it into r4 (`addi r31, r28, 0x26c` / `mr r4, r31`),
-// where the original computes it straight into r4 and uses displacements afterwards. Going
-// through a (trivially inlined) function makes the address a separate value and restores the
-// original sequence.
-static inline u16* winItemMailLine(WindowWork* w) { return &w->mailLines; }
-
 
 void winMakeSkipList(WindowWork* work) {
     s32 i;
@@ -305,12 +296,12 @@ void winItemInit2(WindowWork* work) {
     work->targetY = (f32)(0x7D - work->itemTab * 0x28);
 
     t = 190.f * (f32)work->itemScrollRow[0];
-    work->field_0x22C = t;
-    work->field_0x224 = t;
+    work->field_0x22C[0] = t;
+    work->field_0x224[0] = t;
 
     t = 190.f * (f32)work->itemScrollRow[1];
-    work->field_0x230 = t;
-    work->field_0x228 = t;
+    work->field_0x22C[1] = t;
+    work->field_0x224[1] = t;
 
     work->field_0x238 = 320.f;
     work->field_0x234 = 320.f;
@@ -418,18 +409,16 @@ s32 winItemMain(WindowWork* work) {
                     winMgrOpen(work->useTargetWin[1]);
                 }
             } else {
-                idx = work->itemSel[sel];
-                idx2 = work->skipList[idx];
-                item = idx2;
-                if ((u32)(item - ITEM_SUPER_LUIGI1) <= 3 || item == ITEM_SUPER_LUIGI5) {
+                idx2 = work->skipList[work->itemSel[sel]];
+                if ((u32)(idx2 - ITEM_SUPER_LUIGI1) <= 3 || idx2 == ITEM_SUPER_LUIGI5) {
                     const char** book;
 
                     work->itemState = 100;
                     work->field_0x238 = -170.f;
                     work->field_0x240 = 160.f;
                     work->flags |= 0x8000;
-                    book = luigi_book_list[item - ITEM_SUPER_LUIGI1];
-                    work->field_0x2C8 = item - ITEM_SUPER_LUIGI1;
+                    book = luigi_book_list[idx2 - ITEM_SUPER_LUIGI1];
+                    work->field_0x2C8 = idx2 - ITEM_SUPER_LUIGI1;
                     work->field_0x2D0 = 0;
                     work->field_0x2CC = 0;
                     while (book[work->field_0x2CC] != 0) {
@@ -437,13 +426,13 @@ s32 winItemMain(WindowWork* work) {
                     }
                     work->field_0x2CC = (work->field_0x2CC + 1) / 2;
                     psndSFXOn((const char*)0x20012);
-                } else if (item == ITEM_MAILBOX_SP && pouchReceiveMailCount() != 0) {
+                } else if (idx2 == ITEM_MAILBOX_SP && pouchReceiveMailCount() != 0) {
                     work->itemState = 200;
                     work->field_0x248 = -144.0f;
                     work->field_0x250 = 180.f;
                     psndSFXOn((const char*)0x20012);
-                } else if (item == 0x4E) {
-                    work->useItemId = item;
+                } else if (idx2 == 0x4E) {
+                    work->useItemId = idx2;
                     psndSFXOn((const char*)0x20012);
                     return -2;
                 }
@@ -463,10 +452,14 @@ s32 winItemMain(WindowWork* work) {
             work->itemSel[sel] = work->itemScrollRow[sel] * 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->dirRep & 0xC000) {
-            // A pointer to the element (rather than the array subscript repeated) is what makes
-            // MWCC colour the base r5 / value r4 as the original does. It is built from the byte offset:
+#ifdef MUST_MATCH
+            // A pointer to the element (rather than the array subscript repeated) is what makes MWCC colour
+            // the base r5 / value r4 as the original does. The no-op cast makes the array an rvalue pointer:
             // `&work->itemSel[sel]` folds the 0x214 into an lwzx index instead of a load displacement.
-            s32* e = &((s32*)((u8*)work + 0x214))[sel];
+            s32* e = (s32*)work->itemSel + sel;
+#else
+            s32* e = &work->itemSel[sel];
+#endif
             idx = *e;
             if (idx % 2 != 0) {
                 s32 v = idx - 1;
@@ -513,7 +506,7 @@ s32 winItemMain(WindowWork* work) {
         work->targetX = (f32)((work->itemSel[sel] % 10 % 2) * 0xCC - 0x9B);
         work->targetY = (f32)(0x6E - (work->itemSel[sel] % 10 / 2) * 0x26);
         item = (work->itemTab == 0) ? pouchHaveItem(work->itemSel[sel])
-                                    : (s32)work->skipList[work->itemSel[sel]];
+                                    : work->skipList[work->itemSel[sel]];
         winMsgEntry(work, item, itemDataTable[item].description, NULL);
         break;
 
@@ -565,7 +558,7 @@ s32 winItemMain(WindowWork* work) {
             psndSFXOn((const char*)0x20036);
             work->itemState = 201;
             mail = mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
-            FontGetMessageWidthLine(msgSearch(mail->body), winItemMailLine(work));
+            FontGetMessageWidthLine(msgSearch(mail->body), &work->mailLines);
             work->mailLines += 1;
             work->mailScroll = 0;
             if (mail->flags & 0x1000) {
@@ -641,7 +634,7 @@ s32 winItemMain(WindowWork* work) {
 
         if (mail->flags & 0x1000) {
             work->mailTpl = (FileEntry*)fileAsyncf(FILE_TYPE_TPL, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
-            if ((u32)work->mailTpl != 0) {
+            if (work->mailTpl != NULL) {
                 work->mailTpl = fileAllocf(FILE_TYPE_TPL, STR_MAIL_TPL, getMarioStDvdRoot());
                 work->itemState += 1;
             }
@@ -653,25 +646,25 @@ s32 winItemMain(WindowWork* work) {
     }
 
     case 202:
-        if ((u32)work->mailLines > 8) {
+        if (work->mailLines > 8) {
             if (keyGetDirRep(0) & 0x100) {
                 if (work->mailScroll > 0) {
                     work->mailScroll -= 1;
                 }
             } else if (keyGetDirRep(0) & 0x200) {
-                if (work->mailScroll + 6 < (s32)work->mailLines) {
+                if (work->mailScroll + 6 < work->mailLines) {
                     work->mailScroll += 1;
                 }
             }
         }
         if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20036);
-            if ((u32)work->mailTpl != 0) {
+            if (work->mailTpl != NULL) {
                 fileFree(work->mailTpl);
             }
             work->itemState = 200;
         } else if (work->buttonTrg & 0x1000) {
-            if ((u32)work->mailTpl != 0) {
+            if (work->mailTpl != NULL) {
                 fileFree(work->mailTpl);
             }
             work->field_0x248 = 320.f;
@@ -823,10 +816,10 @@ s32 winItemMain(WindowWork* work) {
 }
 
 void winItemMain2(WindowWork* work) {
-    work->field_0x22C = 190.0f * (f32)work->itemScrollRow[0];
-    work->field_0x224 += (work->field_0x22C - work->field_0x224) / 4.0f;
-    work->field_0x230 = 190.0f * (f32)work->itemScrollRow[1];
-    work->field_0x228 += (work->field_0x230 - work->field_0x228) / 4.0f;
+    work->field_0x22C[0] = 190.0f * (f32)work->itemScrollRow[0];
+    work->field_0x224[0] += (work->field_0x22C[0] - work->field_0x224[0]) / 4.0f;
+    work->field_0x22C[1] = 190.0f * (f32)work->itemScrollRow[1];
+    work->field_0x224[1] += (work->field_0x22C[1] - work->field_0x224[1]) / 4.0f;
 
     work->field_0x234 += (work->field_0x238 - work->field_0x234) / 6.0f;
     work->field_0x23C += (work->field_0x240 - work->field_0x23C) / 6.0f;
@@ -889,7 +882,9 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     f32 rowY;
     f32 scroll;
     s32 half;
+#ifdef MUST_MATCH
     u8* entry;
+#endif
     s32 grayFlag;
     s32 item;
     s32 parity;
@@ -908,16 +903,27 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     GXSetScissor(0, 0x6D, 0x260, 0xC0);
     base = 100.0f + y;
 
+#ifdef MUST_MATCH
+    // Retail walks a pointer from `work` in steps of one skipList element and reads skipList[i] at +0x2E8 from
+    // it. That is MWCC's own strength reduction of work->skipList[i], but written that way the walk pointer and
+    // `half` trade registers (r25/r26); the explicit byte walk gives retail's order.
     for (i = 0, entry = (u8*)work; i < count; entry += 2, i++) {
+#else
+    for (i = 0; i < count; i++) {
+#endif
         parity = i % 2;
         half = i / 2;
 
         if (work->itemTab == 0) {
             item = pouchHaveItem(i);
         } else {
+#ifdef MUST_MATCH
             item = *(s16*)(entry + 0x2E8);
+#else
+            item = work->skipList[i];
+#endif
         }
-        scroll = (&work->field_0x224)[work->itemTab];
+        scroll = work->field_0x224[work->itemTab];
 
         grayFlag = ((work->itemTab != 0) || (itemDataTable[item].usable_locations & 4)) == 0;
         drawY = scroll + (20.0f + ((rowY = base - (f32)(half * 0x26)) - 10.0f));

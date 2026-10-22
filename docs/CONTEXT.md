@@ -6318,3 +6318,131 @@ its symbol name, `static`, section declspec and position unchanged. Build byte-i
   (the same 9 environment failures as the chapters above), run under `uv run --with pyelftools`, then configure.py
   rerun with the normal Python; fncast_lint and local_prototypes pass. All 39 changed objects also built with
   `configure.py --non-matching` (ci's natural step looks REL files up by their stem, so this was done by hand too).
+
+## The next twelve worst files by the cleanup index, deep-cleaned, fifth round (2026-10-22, Claude Opus 5.5 orchestrating five Claude Opus 5.5 workers, n9-q-worst5)
+
+Task (Isaac): take evt_mobj, battle_stage_object, pmario_sound, sound, win_root, winmgr, eff_starstone, tou, mot_hammer,
+evt_npc, win_item and filemgr (`cleanup_index.py --top 20` after #1124, under the Melee-family definition of #1119)
+each as a whole, as #1110 and #1114 did: raw offsets, MUST_MATCH, pragmas, gotos, function-pointer casts and puns
+typed away; guard existing unguarded hacks; no field renames without hard evidence, no data layout, no new pragmas,
+gotos, PAD_STACK or new MUST_MATCH regions except guards. All twelve had been through #1110 or #1114 already, so most
+of what is left is ABI or data layout (below).
+
+- **Method.** Untracked harness in build/w5/: try.sh (one unit with its ninja command into a temp dir, obj_equiv
+  against objects saved from d6d39c6f; `NM=1`, `OVL=` include overlay, `FN=` asm diff), regions.py and pragmas.py
+  (each MUST_MATCH region's `#else` / each pragma pair alone), sites.py (the index's sites by line), users.py and
+  hdrcheck.sh (every user of a header, matching and natural). Workers A (evt_mobj, evt_npc), B (battle_stage_object,
+  eff_starstone, filemgr), C (pmario_sound, sound), D (win_root, winmgr, win_item) and E (tou, mot_hammer) edited only
+  their own .c files, headers through a private overlay; their reports (with `Model:` lines) are in
+  build/w5/w/*/REPORT.md (the harness refused report files from subagents, so the orchestrator saved them from their
+  final messages). verify_commit.sh exports a commit's tree into build/w5/tree and compiles the 351 affected sources
+  (the twelve files and every user of the four changed headers) matching and natural, obj_equiv against the saved
+  objects: 0 problems at each of the five commits. The last commit's tree: `build/G8MJ01/ok` recreated, all 351
+  objects built under `configure.py --non-matching`, tools/ci.py PASS (tools/tests stubbed for the same 9
+  test_wave_launch environment errors, pyelftools through `uv run`), fncast_lint and local_prototypes clean.
+- **Counts** (`tools/cleanup_index.py`, d6d39c6f -> this branch): index **19.986 -> 19.953** per kLOC (13848 -> 13828
+  weighted; code lines 692,894 -> 693,020). raw_offset 215 -> 196, goto 106 -> 102, prim_ptr_cast 1983 -> 1966,
+  struct_ptr_cast 1464 -> 1461, deref_cast 526 -> 521, opt_pragma 332 -> 331; must_match 692 -> 732 (guards on hacks
+  that were unguarded), field_0x 4608 -> 4625 (named-field `#else` arms, the new WindowWork.field_0x1050). The twelve
+  files 2383 -> 2360 weighted. About 70 `(u32)` value casts removed from pmario_sound are not counted by the index.
+  Per file (weighted, per kLOC; categories that moved):
+  - evt_mobj 285 -> 284 (57.402 -> 56.789): goto 4 -> 0, must_match 10 -> 17
+  - battle_stage_object 262 -> 224 (94.756 -> 80.373): raw_offset 16 -> 2, prim_ptr_cast 50 -> 32, struct_ptr_cast
+    11 -> 10, must_match 2 -> 4, field_0x 116 -> 123
+  - pmario_sound 251 -> 243 (35.847 -> 34.685): raw_offset 12 -> 7, deref_cast 13 -> 12, prim_ptr_cast 16 -> 15,
+    struct_ptr_cast 2 -> 1, must_match 6 -> 10, field_0x 157 -> 159
+  - sound 233 -> 246 (114.048 -> 118.783): must_match 3 -> 15, raw_offset 2 -> 3, prim_ptr_cast 8 -> 7
+  - win_root 201 -> 209 (76.368 -> 79.741): field_0x 184 -> 192
+  - winmgr 198 -> 192 (88.630 -> 86.292): opt_pragma 3 -> 2, deref_cast 6 -> 3, must_match 10 -> 11
+  - eff_starstone 194 -> 196 (113.450 -> 113.821): must_match 0 -> 1, prim_ptr_cast 2 -> 3
+  - tou 179 -> 184 (48.774 -> 50.041): struct_ptr_cast 144 -> 143, deref_cast 6 -> 7, must_match 2 -> 6
+  - mot_hammer 173 -> 173 (196.368 -> 192.650): must_match 7 -> 10, field_0x 100 -> 97
+  - evt_npc 150 -> 150 (66.225 -> 66.050): prim_ptr_cast 130 -> 129, struct_ptr_cast 9 -> 8, must_match 0 -> 2
+  - win_item 132 -> 135 (129.032 -> 130.561): raw_offset 2 -> 1, prim_ptr_cast 32 -> 33, must_match 1 -> 5
+  - filemgr 125 -> 124 (148.633 -> 147.444): deref_cast 2 -> 0, prim_ptr_cast 6 -> 8, struct_ptr_cast 5 -> 6
+- **Typing.**
+  - pmario_sound.h: the ids and handles retail compares unsigned at every site (PaperSoundBGM.unk0/streamId,
+    PaperSoundEffect.unk0/unk18, PaperSoundEnv.field_0x14; evt_snd and seq_* already compare streamId != 0xFFFFFFFF)
+    are u32, as are the id/fade parameters of psndSFXOff, psndSFX_pos, psndSFX_dist, psndBGMOn_f_d, psndBGMOff_f_d,
+    psndENVOn_f_d/psndENVOff_f_d and __psndSFXOn's a6 (psndSFX_vol/pit keep s32: party_motion's documented local
+    prototypes). BGMListEntry.params is an anonymous union, `u32 params` first so the psbgmlist initialisers are
+    untouched, with a `field_0xC..field_0xF` byte view (volume, pan, reverb, starts-in-scope) for the six
+    `((u8*)&entry->params)[N]` reads. sound.h: SoundSSPlayCh/Ex take `const char* name` and `BOOL useAram`.
+    182 users EQUIV.
+  - battle_stage_object.h: _rate_mix/_rate_mix_3 take s8* (retail reads the chance bytes with extsb; the time and
+    strength fields are s8), _Nozzle_Change_Check takes u8*. The guarded arm's fourteen `(s8*)(s + N)` casts go with
+    it; its byte offsets from `(s8*)dst + 0x80` remain (the index no longer sees them once the casts are gone).
+  - win/win_main.h: win_root read the tattle list at 0x1050 as `&work->field_40[0x1010]`, 0xF2C bytes past the end of
+    a 0xE4-byte array (the union at 0x40 existed for that). WindowWork has `u8 field_0x1050[0x1B0]` there (LogWin's
+    `chars`; `LOGWIN(work)->chars` itself is 32 lines off, CSE of the address) and the union goes. win_item's four
+    floats at 0x224 are `field_0x224[2]`, `field_0x22C[2]` per tab (item_disp indexes them by itemTab).
+  - tou.c: the uninitialised .bss rank_work, disp_work, champion_belt_onoff and gans_wp take their types (RankWork,
+    DispWork, s32, GansWork*; same size and section; gans_wp has no other user).
+  - evt_mobj's eventCode/unk1D8 locals are s32* at their evtGetValue (41 store casts go; count-neutral, the cast is
+    at the ABI site now). filemgr's FILE_RELOC/FILE_UNRELOC assign instead of punning through `*(u32*)&`.
+- **Hand-expanded copies and invented inlines that went.** winmgr calls winMgrSetSize, winMgrOpen, winMgrHelpInit,
+  winMgrClose and winMgrDelete where it had their bodies written out (with the invented get10); pmario_sound's
+  psndMapChange calls psndSFXAllOff (the invented psndMapChangeMarkAll and the fade block were its inlined body);
+  evt_npc's subf32 (a plain subtraction in the same place is identical), win_item's winItemMailLine, win_root's
+  mail_vec. filemgr's TPL pack walk is SPM's PackTexPalette (SPM symbols.txt 0x8019E6C0, between fileInit and
+  fileGarbageDataAdrClear; disassembled, the same walk), so the inline takes that name; its unpack twin keeps
+  fileUnpackTpl, since SPM's UnpackTexPalette is the SDK texPalette.c global here.
+- **Other natural shapes that matched.** evt_mobj mobj_lv_blk_evt's four `goto run_event` as nested if/else-if.
+  winmgr: one defer_codegen region (the deferred group is now written in reverse retail order), the volatile
+  firstItem reads (the dead compare stays guarded), steering `it`/`items`/`table`/`lottery` temps. tou
+  evt_tou_print_ranking: `w->scroll += t * k` replaces the steering re-read through dwp (the load-pair swap #1123
+  recorded for a typed dwp goes with it). pmario_sound: psndSFXMain's view cast (compound assignment), the branchless
+  psndSFXChk/BGMChk test as `if (x == -1) return -1;`. sound SoundInit's force-register copies. Constant locals in
+  evt_mobj (scale, ten), tou disp_proc, win_root (two); win_root winHakoGX's `it[0xF0]` temps. Raw GSWF words in tou
+  as GSWF().
+- **Guarded** (unguarded before; plain forms re-tested first, natural `#else` arms): tou's monitorColor and the doInsert
+  copy of insert (under MUST_MATCH `#define insert doInsert`, winmgr's precedent; needed only because the guarded
+  defer_codegen keeps insert from inlining); mot_hammer's clampHammerType (was a MUST_MATCH-only invented inline, now
+  a guarded local), pose-time clamp temp, effUltraHammerEntry argument temps, hitEstimate's `five`; evt_mobj's
+  mobjSwitchAnimIndex and five `(s32)hit != 0` int tests (cmpwi; the pointer test is cmplwi); evt_npc's u32* flags pun
+  and `zero`; battle_stage_object's _Nozzle_Change_Check byte walk; eff_starstone's starStoneDLLoop; winmgr's
+  winMgrDispWaku0..5; win_item's itemSel no-op cast and skipList byte walk; pmario_sound's PaperSoundEffectU16 view
+  and doubled flag tests; sound's dead store, six redundant NULL stores, sdd_eff/sdd_dvd and SoundSSGetStream.
+- **Reverted by the orchestrator.** Invented local names (win_item keyItem/timer/rowOffset, evt_mobj grpName; the
+  register names stay). battle_stage_object's `#pragma pool_data on` removal (EQUIV, .line only): pool_data is data
+  layout, out of scope (lead below).
+- **Left, with what was tried** (details in the reports):
+  - ABI, by rule: `(const char*)evtGetValue`, `psndSFXOn*((const char*)0xNN)` (the s32 prototype is Isaac's open
+    call), userdata words, `(s32)&x` to evtSetValue. These are most of evt_mobj's and evt_npc's prim_ptr_cast.
+  - Data layout: eff_starstone's 173 ptr_to_int and battle_stage_object's 47 are initialised u32 tables; tou's
+    fighterDt/ruleDt casts (initialised u32 tables; tou2 has typed versions); the `*(GXColor*)&dat_*` puns forced by
+    u32 definitions; winmgr's templates; `*(s16*)&entry->pitch`.
+  - tou rank_wp/dwp (~100 struct casts): initialised .data pointers. `static RankWork* rank_wp = &rank_work;
+    static DispWork* dwp = &disp_work;` (tou2's form) is EQUIV with every cast gone (-104 weighted), not applied:
+    patch build/w5/w/E/tou_rankwp.patch. TOU_F32 and its defer_codegen (each use alone 2-116 lines).
+  - evt_mobj: 5 opt_propagation pairs (floatswitch_blue 3000 random shapes, koopa_badgeblk all 5040 placements; best
+    = no pragma, 8 and 10 lines), the jumpstand regions (670 shapes, best 26 = the `#else`), fire_func's userdata
+    reload (13). evt_npc: homing_target's userdata[1] (retail stores and reloads 0x7C), set_color's propagation (81
+    shapes, best 2).
+  - battle_stage_object: _combine_nozzle_weapon's `#else` (194 lines; only a sub-struct at 0x80 would give the shared
+    base). filemgr's CLUT region (every natural shape 10 lines, r3/r4). eff_starstone's userdata casts (4-30 lines:
+    reloads), the DL loop written in the caller (14-212).
+  - winmgr: the second defer_codegen pair (fully deferred, float_24/6/neg144 land at .sdata2+0xc0, not +0xe8), the
+    by-value macro block (300-894), the arrow Vec volatile reloads (599). win_item's walks (16; typed s16* walk 4).
+    win_root's three regions (36, 1, 59); its repeated drawing inlines (wazaQuad, winSortPanel, winBookQuad,
+    winRootTab*, WIN_KIRINUKI_*) stay plain: a natural form would be hundreds of expanded lines.
+  - pmario_sound: the gotos (5), psndENVOn_f_d's byte-offset stores (76-77), psndENVMain's volatile reloads (147 each,
+    588 together; each block is psndSFX_vol's body), calc3D (40), psndSFXChk's propagation (best 10), `((u8*)&res)[N]`
+    (a local union is EQUIV but needs member names). sound: SoundEfxSetPan's folded index (12), `goto unlock` (2),
+    SoundSSMain's macros (154).
+  - mot_hammer: 0x2A0/0x2A4/0x2B8 raw (no member of those types; the field_0xNN names are taken), the four volatile
+    camera blocks (32-168), the three pragma pairs (6, 11, 205 lines).
+- **For a reviewer.** The u32 retypes in pmario_sound.h rest on retail's unsigned compares. The BGMListEntry union
+  sits over a data table's member but leaves its initialisers as they were. winmgr's function order changed (the
+  deferred group in reverse retail order). tou's `#define insert doInsert`. win_root's new field_0x1050 could be named
+  `chars` from LogWin (the index would drop 8); left as a placeholder. sound's six NULL-store guards are noisy; they are
+  the dead-store family. filemgr's PackTexPalette is the one inline renamed (outside evidence: SPM's symbol).
+- **Leads.** tou_rankwp.patch (data-definition type only, same bytes and relocation). Per-file `-char signed` for
+  evt_mobj is EQUIV and would remove its 5 `*(s8*)childName` puns and 18 `(s8)` name casts (every char read in its asm
+  is extsb; a compiler-flag decision). `#pragma pool_data on` compiled out to the same object in battle_stage_object
+  and may be a no-op in party_chuchu, party_yoshi, party_move, party_hit, party_motion, mapdrv and system.c. mot_hammer's
+  0x2B8 is a sound handle (psndSFXOn_3D result, psndSFXOff, -1 when none), the evidence that named mot_hip's
+  motionSfxId0/1: an s32 member would clear 4 raw offsets here and in mot_stay/mot_jabara. An EffectEntry userdata union
+  would clear ~500 reload-forced casts tree-wide (naming decision). evt_mobj's `"o_"`/`"i_"` name templates as local
+  char arrays and dat_8041a130/kpa_pole_score_color as const GXColor are EQUIV (data). psndENVMain's reload blocks are
+  inlined psndSFX_vol calls; psndBGMMain's `psbgm[i & 0xF]` block looks like another inlined function.

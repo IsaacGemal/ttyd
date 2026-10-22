@@ -225,9 +225,10 @@ const char party_name_msg5[] = "name_party5";
 const char party_name_msg2[] = "name_party2";
 const char party_name_msg6[] = "name_party6";
 
-// Keeps the descriptor 0x14 load before 0x10 with retail registers.
-static inline s32 get10(WinMgrDesc* d) { return d->y; }
-
+#ifdef MUST_MATCH
+// The frame pieces winMgrDisp draws, as file-local inlines (our names, no outside evidence). Each inline's colour gets
+// its own stack slot as in retail; written in place (winMgrDisp's #else arm), even with one block-scoped colour per
+// piece, the colours land in other slots.
 static inline void winMgrDispWaku1(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
     GXColor color = *base;
     color.a = entry->alpha;
@@ -273,6 +274,7 @@ static inline void winMgrDispWaku0(Mtx mtx, WinMgrEntry* entry) {
     windowDispGX2_Waku_col(mtx, 0, color, (f32)entry->x, (f32)entry->y,
                            (f32)entry->width, (f32)entry->height, 20.0f);
 }
+#endif
 
 // Emit the display prefix immediately so its conversions and literals pool in retail order.
 #ifdef MUST_MATCH
@@ -284,12 +286,11 @@ void select_disp3_mario(WinMgrEntry* entry) {
 
     pouchGetPtr();
     if (!(wp->mEntries[select->descriptorId[2]].flags & 4)) {
-        WinMgrSelectItem* items = select->items;
         const char* help;
         char buf[0x48];
 
-        if (items[select->cursor].flags & 2) {
-            if (items[select->cursor].flags & 4) {
+        if (select->items[select->cursor].flags & 2) {
+            if (select->items[select->cursor].flags & 4) {
                 help = "helperr2";
             } else {
                 help = "helperr";
@@ -299,11 +300,11 @@ void select_disp3_mario(WinMgrEntry* entry) {
         }
         switch (select->kind) {
         case 9:
-            sprintf(buf, "%s_levelup%s", help, mario_status_labelname_table[items[select->cursor].id]);
+            sprintf(buf, "%s_levelup%s", help, mario_status_labelname_table[select->items[select->cursor].id]);
             break;
         case 10:
         default:
-            sprintf(buf, "%s_leveldown%s", help, mario_status_labelname_table[items[select->cursor].id]);
+            sprintf(buf, "%s_leveldown%s", help, mario_status_labelname_table[select->items[select->cursor].id]);
             break;
         }
         entry->message = msgSearch(buf);
@@ -317,12 +318,11 @@ void select_disp3_party(WinMgrEntry* entry) {
     u16 id;
 
     if (!(wp->mEntries[select->descriptorId[2]].flags & 4)) {
-        WinMgrSelectItem* items = select->items;
         const char* help;
         const char* lank;
         char buf[0x48];
 
-        if (items[select->cursor].flags & 2) {
+        if (select->items[select->cursor].flags & 2) {
             help = "helperr";
         } else {
             help = "help";
@@ -332,7 +332,7 @@ void select_disp3_party(WinMgrEntry* entry) {
         } else {
             lank = "lankdown";
         }
-        id = items[select->cursor].id;
+        id = select->items[select->cursor].id;
         sprintf(buf, "%s_%s_lank%d%s", help, lank,
                 pouch->partyData[party_id_table[id]].techLevel + 1, party_labelname_table[id]);
         entry->message = msgSearch(buf);
@@ -344,9 +344,7 @@ void select_disp3(WinMgrEntry* entry) {
     WinMgrSelect* select = entry->param;
 
     if (!(wp->mEntries[select->descriptorId[2]].flags & 4)) {
-        WinMgrSelectItem* items = select->items;
-        u16 id = items[select->cursor].id;
-        ItemData* item = &itemDataTable[id];
+        ItemData* item = &itemDataTable[select->items[select->cursor].id];
 
         entry->message = msgSearch(item->description);
         winMgrHelpDraw(entry);
@@ -651,7 +649,7 @@ void select_disp_mario(WinMgrEntry* entry) {
 #ifdef MUST_MATCH
         // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
         // removed but the compare stays. The natural code has no such compare.
-        if (*(volatile s32*)&select->firstItem) {
+        if (select->firstItem) {
             zero = zero;
         }
 #endif
@@ -873,7 +871,7 @@ void select_disp_party(WinMgrEntry* entry) {
 #ifdef MUST_MATCH
         // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
         // removed but the compare stays. The natural code has no such compare.
-        if (*(volatile s32*)&select->firstItem) {
+        if (select->firstItem) {
             zero = zero;
         }
 #endif
@@ -1116,7 +1114,7 @@ void select_disp_party(WinMgrEntry* entry) {
 // to reproduce the original schedule.
 // Native conversions in select_disp_luigi and select_disp_party pool the signed/unsigned doubles
 // at .rodata+0x468/+0x4c0. The dead `lwz r0, 0x38(r25); cmpwi r0, 0x0` pair at the top of the
-// item loop is reproduced by `if (*(volatile s32*)&select->firstItem) { zero = zero; }`.
+// item loop is reproduced by `if (select->firstItem) { zero = zero; }`.
 void select_disp(WinMgrEntry* entry) {
     WinMgrSelect* select = entry->param;
     s32 i;
@@ -1189,7 +1187,7 @@ void select_disp(WinMgrEntry* entry) {
 #ifdef MUST_MATCH
         // Reproduces the target's dead `lwz r0,0x38; cmpwi r0,0` before winFontInit: the self-store is
         // removed but the compare stays. The natural code has no such compare.
-        if (*(volatile s32*)&select->firstItem) {
+        if (select->firstItem) {
             zero = zero;
         }
 #endif
@@ -1390,10 +1388,91 @@ const f32 float_24_80421aa0 = 24.0f;
 const f32 float_6_80421aa4 = 6.0f;
 const f32 float_neg144_80421aa8 = -144.0f;
 
-// Defer this middle group in reverse retail order so winMgrSelectEntry can inline its real callees.
+// Defer the rest of the file, written in reverse retail order (deferred functions are emitted last first), so
+// winMgrSelectEntry can inline its real callees.
 #ifdef MUST_MATCH
 #pragma defer_codegen on
 #endif
+
+s32 party_can_rank_up(EventEntry* event) {
+    s32* args = event->args;
+    PouchData* pouch = pouchGetPtr();
+    s32 i;
+    s32 mode;
+    s32 val;
+
+    for (i = 0; party_id_table[i] != 0; i++) {
+        if (partyChkJoin(party_id_table[i])) {
+            mode = evtGetValue(event, 0xF8406022);
+            if (mode == 0) {
+                if (pouch->partyData[party_id_table[i]].techLevel < 1) {
+                    val = 0;
+                } else {
+                    val = 1;
+                }
+            } else {
+                if (pouch->partyData[party_id_table[i]].techLevel < 2) {
+                    val = 0;
+                } else {
+                    val = 2;
+                }
+            }
+            if (val == 0) {
+                evtSetValue(event, args[0], 1);
+                return 2;
+            }
+        }
+    }
+    evtSetValue(event, args[0], 0);
+    return 2;
+}
+
+s32 party_can_transfer_rank(EventEntry* event) {
+    s32* args = event->args;
+    PouchData* pouch = pouchGetPtr();
+    s32 i;
+    s32 count;
+    s32 zeroFlag;
+    s32 nonZeroFlag;
+    s32 mode;
+    s32 val;
+
+    zeroFlag = 0;
+    count = 0;
+    nonZeroFlag = 0;
+
+    for (i = 0; party_id_table[i] != 0; i++) {
+        if (partyChkJoin(party_id_table[i])) {
+            count++;
+            if (pouch->partyData[party_id_table[i]].techLevel != 0) {
+                nonZeroFlag = 1;
+            }
+            mode = evtGetValue(event, 0xF8406022);
+            if (mode == 0) {
+                if (pouch->partyData[party_id_table[i]].techLevel < 1) {
+                    val = 0;
+                } else {
+                    val = 1;
+                }
+            } else {
+                if (pouch->partyData[party_id_table[i]].techLevel < 2) {
+                    val = 0;
+                } else {
+                    val = 2;
+                }
+            }
+            if (val == 0) {
+                zeroFlag = 1;
+            }
+        }
+    }
+    if (count > 1 && zeroFlag && nonZeroFlag) {
+        evtSetValue(event, args[0], 1);
+    } else {
+        evtSetValue(event, args[0], 0);
+    }
+    return 2;
+}
 
 void winMgrInit(void) {
     wp->mNumEntries = 32;
@@ -1413,6 +1492,7 @@ void winMgrDisp(CameraId camId, void* param) {
     PSMTXScale(scalemtx, entry->scale, entry->scale, entry->scale);
     PSMTXConcat(rotmtx, scalemtx, scalemtx);
 
+#ifdef MUST_MATCH
     winMgrDispWaku0(scalemtx, entry);
 
     switch (entry->description->frameStyle) {
@@ -1432,6 +1512,52 @@ void winMgrDisp(CameraId camId, void* param) {
         winMgrDispWaku5(scalemtx, entry, &waku5_color);
         break;
     }
+#else
+    {
+        GXColor color = { 0, 0, 0, 0 };
+
+        color.r = entry->description->color[0];
+        color.g = entry->description->color[1];
+        color.b = entry->description->color[2];
+        color.a = entry->alpha;
+        windowDispGX2_Waku_col(scalemtx, 0, color, (f32)entry->x, (f32)entry->y, (f32)entry->width,
+                               (f32)entry->height, 20.0f);
+
+        switch (entry->description->frameStyle) {
+        case 0:
+        case 2:
+            break;
+        case 1:
+            color = waku1_color;
+            color.a = entry->alpha;
+            windowDispGX2_Waku_col(scalemtx, 0, color, (f32)(entry->x + (entry->width - 150) / 2),
+                                   (f32)(entry->y + 14), 150.0f, 28.0f, 8.0f);
+            break;
+        case 3:
+            color = waku3a_color;
+            color.a = entry->alpha;
+            windowDispGX2_Waku_col(scalemtx, 0, color, (f32)(entry->x + 10), (f32)(entry->y + 14), 100.0f, 28.0f,
+                                   8.0f);
+            color = waku3b_color;
+            color.a = entry->alpha;
+            windowDispGX2_Waku_col(scalemtx, 0, color, (f32)(entry->x + entry->width / 2 - 10),
+                                   (f32)(entry->y + 14), 100.0f, 28.0f, 8.0f);
+            break;
+        case 4:
+        case 5:
+            color = waku4_color;
+            color.a = entry->alpha;
+            windowDispGX2_Waku_col(scalemtx, 0, color, (f32)(entry->x + (entry->width * 3 / 5 - 120) * 2 / 3),
+                                   (f32)(entry->y + 14), 120.0f, 28.0f, 8.0f);
+            color = waku5_color;
+            color.a = entry->alpha;
+            windowDispGX2_Waku_col(scalemtx, 0, color,
+                                   (f32)(entry->x + entry->width * 3 / 5 + (entry->width * 2 / 5 - 85) / 3),
+                                   (f32)(entry->y + 14), 85.0f, 28.0f, 8.0f);
+            break;
+        }
+    }
+#endif
 
     if (entry->description->disp) {
         entry->description->disp(entry);
@@ -1685,17 +1811,13 @@ void winMgrHelpDraw(WinMgrEntry* entry) {
     Mtx mtx1;
     Mtx mtx2;
     char buf[0x400];
-    lottery_info* lottery;
-    s16 n;
 
     if (entry->flags & 4) {
         return;
     }
     GXSetScissor(0, 0x180, 0x260, 0x38);
     if (strcmp(entry->message, msgSearch("msg_lottery_number\000")) == 0) {
-        lottery = lotteryGetPtr();
-        n = lottery->mTicketNum;
-        sprintf(buf, entry->message, n);
+        sprintf(buf, entry->message, lotteryGetPtr()->mTicketNum);
         FontDrawStart();
         FontDrawMessage(-0xd2, (s32)(28.0f * entry->scrollPos + WINMGR_F32(float_neg144_80421aa8)), buf);
     } else {
@@ -1747,7 +1869,6 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     PouchData* pouch = pouchGetPtr();
     InformantWork* jdt = &_jdt;
     WinMgrSelect* select;
-    WinMgrSelectTbl* table;
     s32 descId;
     s32 i;
     WinMgrDesc* desc;
@@ -1775,7 +1896,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         descId = 0;
     }
     desc = select_desc_tbl[descId].descriptors;
-    select->numDescriptors = (s32)select_desc_tbl[descId].numDescriptors;
+    select->numDescriptors = select_desc_tbl[descId].numDescriptors;
     for (i = 0; i < select->numDescriptors; i++) {
         select->descriptorId[i] = winMgrEntry(desc++);
         winMgrSetParam(select->descriptorId[i], select);
@@ -1792,10 +1913,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         memset(select->items, 0, 0x1e8);
         select->numItems = 0;
         if (firstItem != 0) {
-            {
-                WinMgrSelectItem* it = &select->items[select->numItems++];
-                it->id = firstItem;
-            }
+            select->items[select->numItems++].id = firstItem;
         }
         for (i = 0; i < 0x79; i++) {
             item = pouchKeyItem(i);
@@ -1818,10 +1936,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         memset(select->items, 0, 0x54);
         select->numItems = 0;
         if (firstItem != 0) {
-            {
-                WinMgrSelectItem* it = &select->items[select->numItems++];
-                it->id = firstItem;
-            }
+            select->items[select->numItems++].id = firstItem;
         }
         for (i = 0; i < 0x14; i++) {
             item = pouchHaveItem(i);
@@ -1836,10 +1951,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         memset(select->items, 0, 0x324);
         select->numItems = 0;
         if (firstItem != 0) {
-            {
-                WinMgrSelectItem* it = &select->items[select->numItems++];
-                it->id = firstItem;
-            }
+            select->items[select->numItems++].id = firstItem;
         }
         for (i = 0; i < 0xc8; i++) {
             item = pouchHaveBadge(i);
@@ -1853,10 +1965,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         memset(select->items, 0, 0x84);
         select->numItems = 0;
         if (firstItem != 0) {
-            {
-                WinMgrSelectItem* it = &select->items[select->numItems++];
-                it->id = firstItem;
-            }
+            select->items[select->numItems++].id = firstItem;
         }
         for (i = 0; i < 0x20; i++) {
             item = pouchKeepItem(i);
@@ -2055,9 +2164,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
             memset(select->items, 0, (n + 1) * 4);
             select->numItems = 0;
             if (firstItem != 0) {
-                WinMgrSelectItem* it = &select->items[select->numItems++];
-
-                it->id = firstItem;
+                select->items[select->numItems++].id = firstItem;
             }
             for (i = 0; list[i] != -1; ) {
                 select->items[select->numItems++].id = list[i++];
@@ -2067,18 +2174,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     }
 
     if (select->numItems < 8) {
-        s32 f20 = desc->width;
-        s32 f1C = get10(desc);
-        s32 f18 = desc->x;
-        s32 f24 = desc->height - (8 - select->numItems) * 0x18;
-        WinMgrEntry* e = &wp->mEntries[select->descriptorId[0]];
-
-        if (e->flags & 1) {
-            e->x = f18;
-            e->y = f1C;
-            e->width = f20;
-            e->height = f24;
-        }
+        winMgrSetSize(select->descriptorId[0], desc->x, desc->y, desc->width, desc->height - (8 - select->numItems) * 0x18);
     }
     return select;
 }
@@ -2117,17 +2213,13 @@ s32 winMgrSelect(WinMgrSelect* select) {
         if (select->firstItem != 0 && select->cursor == 0 && (flags & 0x100)) {
             return -1;
         }
-        {
-            WinMgrSelectItem* items = select->items;
-            return items[select->cursor].id;
-        }
+        return select->items[select->cursor].id;
     }
     return 0;
 }
 
 s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
     u16 flags = select->flags;
-    WinMgrSelectItem* items;
     InformantWork* jdt = &_jdt;
     s32 itemId;
     const char* msg;
@@ -2138,8 +2230,7 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             return -1;
         }
 
-        items = select->items;
-        itemId = items[select->cursor].id;
+        itemId = select->items[select->cursor].id;
 
         switch (select->kind) {
         case 6:
@@ -2288,11 +2379,6 @@ s32 winMgrSelectCursor(WinMgrSelect* select) {
     return select->cursor;
 }
 
-// select_main emits first, then MWCC flushes the deferred group immediately after it.
-#ifdef MUST_MATCH
-#pragma defer_codegen off
-#endif
-
 void select_main(WinMgrEntry* entry) {
     s32 count;
     WinMgrSelect* select = entry->param;
@@ -2303,22 +2389,10 @@ void select_main(WinMgrEntry* entry) {
     switch (select->state) {
     case 0:
         for (i = 0; i < (count = select->numDescriptors); i++) {
-            WinMgrEntry* e = &wp->mEntries[select->descriptorId[i]];
-
-            if (e->flags & 1) {
-                e->state = 1;
-                e->animStep = 0;
-                e->scrollPos = 0;
-                e->scrollRows = 0;
-                e->message = 0;
-            }
+            winMgrOpen(select->descriptorId[i]);
         }
         if (count >= 3) {
-            WinMgrEntry* e = &wp->mEntries[select->descriptorId[2]];
-
-            e->scrollPos = 0;
-            e->scrollRows = 0;
-            e->message = 0;
+            winMgrHelpInit(winMgrGetPtr(select->descriptorId[2]));
         }
         psndSFXOn((const char*)0x2002A);
         statusWinForceOpen();
@@ -2387,12 +2461,7 @@ void select_main(WinMgrEntry* entry) {
         break;
     case 2:
         for (i = 0; i < select->numDescriptors; i++) {
-            WinMgrEntry* e = &wp->mEntries[select->descriptorId[i]];
-
-            if (e->flags & 1) {
-                e->state = 2;
-                e->animStep = 0;
-            }
+            winMgrClose(select->descriptorId[i]);
         }
         psndSFXOn((const char*)0x2002B);
         statusWinForceOff();
@@ -2403,9 +2472,7 @@ void select_main(WinMgrEntry* entry) {
             break;
         }
         for (i = 0; i < select->numDescriptors; i++) {
-            WinMgrEntry* e = &wp->mEntries[select->descriptorId[i]];
-
-            e->flags &= ~1;
+            winMgrDelete(select->descriptorId[i]);
         }
         select->flags |= 0x1000;
         select->state++;
@@ -2413,84 +2480,4 @@ void select_main(WinMgrEntry* entry) {
     case 4:
         break;
     }
-}
-
-s32 party_can_transfer_rank(EventEntry* event) {
-    s32* args = event->args;
-    PouchData* pouch = pouchGetPtr();
-    s32 i;
-    s32 count;
-    s32 zeroFlag;
-    s32 nonZeroFlag;
-    s32 mode;
-    s32 val;
-
-    zeroFlag = 0;
-    count = 0;
-    nonZeroFlag = 0;
-
-    for (i = 0; party_id_table[i] != 0; i++) {
-        if (partyChkJoin(party_id_table[i])) {
-            count++;
-            if (pouch->partyData[party_id_table[i]].techLevel != 0) {
-                nonZeroFlag = 1;
-            }
-            mode = evtGetValue(event, 0xF8406022);
-            if (mode == 0) {
-                if (pouch->partyData[party_id_table[i]].techLevel < 1) {
-                    val = 0;
-                } else {
-                    val = 1;
-                }
-            } else {
-                if (pouch->partyData[party_id_table[i]].techLevel < 2) {
-                    val = 0;
-                } else {
-                    val = 2;
-                }
-            }
-            if (val == 0) {
-                zeroFlag = 1;
-            }
-        }
-    }
-    if (count > 1 && zeroFlag && nonZeroFlag) {
-        evtSetValue(event, args[0], 1);
-    } else {
-        evtSetValue(event, args[0], 0);
-    }
-    return 2;
-}
-
-s32 party_can_rank_up(EventEntry* event) {
-    s32* args = event->args;
-    PouchData* pouch = pouchGetPtr();
-    s32 i;
-    s32 mode;
-    s32 val;
-
-    for (i = 0; party_id_table[i] != 0; i++) {
-        if (partyChkJoin(party_id_table[i])) {
-            mode = evtGetValue(event, 0xF8406022);
-            if (mode == 0) {
-                if (pouch->partyData[party_id_table[i]].techLevel < 1) {
-                    val = 0;
-                } else {
-                    val = 1;
-                }
-            } else {
-                if (pouch->partyData[party_id_table[i]].techLevel < 2) {
-                    val = 0;
-                } else {
-                    val = 2;
-                }
-            }
-            if (val == 0) {
-                evtSetValue(event, args[0], 1);
-                return 2;
-            }
-        }
-    }
-    evtSetValue(event, args[0], 0);
-    return 2;
 }

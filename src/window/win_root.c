@@ -83,13 +83,6 @@ u8 enemy_monoshiri_sort_table[0xE8] = {
     }
 
 
-static inline Vec mail_vec(const Vec* base, f32 x, f32 y) {
-    Vec v = *base;
-    v.x = x;
-    v.y = y;
-    return v;
-}
-
 #define WIN_MAIL_TEX(w) (*(w)->winTpl->data)
 
 // The loop both comparators run: find `tag` in the 26-entry table, formatting each
@@ -610,11 +603,8 @@ void winRootDisp(CameraId camId, WindowWork* work) {
     if (!(work->flags & 0x8000)) {
         winTexInit(*work->winTpl->data);
 
-        {
-            f32 two = 2.0f;
-            winTexSet(0, (Vec){two + work->posX, work->posY - two, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
-                      (GXColor){0x00, 0x00, 0x00, 0x80});
-        }
+        winTexSet(0, (Vec){2.0f + work->posX, work->posY - 2.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
+                  (GXColor){0x00, 0x00, 0x00, 0x80});
         winTexSet(0, (Vec){work->posX, work->posY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, bgcolor);
     }
 }
@@ -1682,14 +1672,12 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                         if (swGet(LOGWIN(work)->cardIcon[idx] + 0x80) == 0) {
                             continue;
                         }
-                        { ItemData* it = &itemDataTable[LOGWIN(work)->cardIcon[idx]];
-                        iconId = it[0xF0].icon_id; }
+                        iconId = itemDataTable[LOGWIN(work)->cardIcon[idx] + 0xF0].icon_id;
                     } else {
                         if (swGet(LOGWIN(work)->badgeIcon[idx] + 0x41) == 0) {
                             continue;
                         }
-                        { ItemData* it = &itemDataTable[LOGWIN(work)->badgeIcon[idx]];
-                        iconId = it[0xB3].icon_id; }
+                        iconId = itemDataTable[LOGWIN(work)->badgeIcon[idx] + 0xB3].icon_id;
                     }
                     winIconSet(iconId, (Vec){((x + (f32)(col * 0x38)) + 24.0f) + 4.0f, ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - 28.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
@@ -2339,11 +2327,11 @@ int compare_func2_r(const void* a, const void* b) {
 
 void sort_7_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func1);
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func2);
+        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func1);
+        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func2);
     } else {
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func1_r);
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func2_r);
+        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func1_r);
+        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     LOGWIN(work)->charSel = 0;
@@ -2410,11 +2398,11 @@ int compare_func3_r(const void* a, const void* b) {
 
 void sort_7_3_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func1);
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func3);
+        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func1);
+        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func3);
     } else {
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func1_r);
-        qqsort(&work->field_40[0x1010], LOGWIN(work)->charCnt, 2, compare_func3_r);
+        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func1_r);
+        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func3_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     LOGWIN(work)->charSel = 0;

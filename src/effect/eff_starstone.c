@@ -620,17 +620,19 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	}
 }
 
-// The original walks each display-list table with a small inline helper.  With the loop written as
-// an inlined helper (its parameters become the induction variables), MWCC colours the first loop's
-// counter r26 and its size induction r23; written directly in the caller the two come out swapped.
+#ifdef MUST_MATCH
+// MUST_MATCH: starStoneDLLoop has no outside evidence. Written as an inline (its parameters become the
+// induction variables), MWCC colours the first loop's counter r26 and its size induction r23; the loop
+// written directly in the caller swaps the two.
 static inline void starStoneDLLoop(u32* tbl, effStarStoneData* data, u8* sztbl, u32 n) {
-	u32 ctr;
+	s32 ctr;
 	for (ctr = 0; ctr < n; ctr++) {
-		if ((data->flags & 1) || (s32)ctr != 0) {
+		if ((data->flags & 1) || ctr != 0) {
 			GXCallDisplayList((void*)tbl[ctr], sztbl[ctr] << 5);
 		}
 	}
 }
+#endif
 
 void effStarStoneDisp_2(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -687,7 +689,18 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
 	GXSetArray(GX_VA_TEX0, diamond_2_2_texcoord0_tbl, 4);
+#ifdef MUST_MATCH
 	starStoneDLLoop(diamond_2_2_dl_0_tbl, data, diamond_2_2_dl_0_size_tbl, 0x13);
+#else
+	{
+		s32 i;
+		for (i = 0; i < 0x13; i++) {
+			if ((data->flags & 1) || i != 0) {
+				GXCallDisplayList((void*)diamond_2_2_dl_0_tbl[i], diamond_2_2_dl_0_size_tbl[i] << 5);
+			}
+		}
+	}
+#endif
 
 	PSMTXTrans(mtx, data->x + data->spreadBX, data->y, data->z + data->spreadBZ);
 	PSMTXScale(scaleMtx, 1.1f * data->scale, 1.1f * data->scale, 1.1f * data->scale);
@@ -713,7 +726,18 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
 	GXSetArray(GX_VA_TEX0, diamond_2_2_texcoord0_tbl, 4);
+#ifdef MUST_MATCH
 	starStoneDLLoop(diamond_2_2_dl_1_tbl, data, diamond_2_2_dl_1_size_tbl, 0x13);
+#else
+	{
+		s32 i;
+		for (i = 0; i < 0x13; i++) {
+			if ((data->flags & 1) || i != 0) {
+				GXCallDisplayList((void*)diamond_2_2_dl_1_tbl[i], diamond_2_2_dl_1_size_tbl[i] << 5);
+			}
+		}
+	}
+#endif
 
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
@@ -768,7 +792,18 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
 	GXSetArray(GX_VA_TEX0, diamond_2_2_texcoord0_tbl, 4);
+#ifdef MUST_MATCH
 	starStoneDLLoop(diamond_2_2_dl_0_tbl, data, diamond_2_2_dl_0_size_tbl, 0x13);
+#else
+	{
+		s32 i;
+		for (i = 0; i < 0x13; i++) {
+			if ((data->flags & 1) || i != 0) {
+				GXCallDisplayList((void*)diamond_2_2_dl_0_tbl[i], diamond_2_2_dl_0_size_tbl[i] << 5);
+			}
+		}
+	}
+#endif
 
 	PSMTXTrans(mtx, data->x + data->spreadBX, data->y, data->z + data->spreadBZ);
 	PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
@@ -794,7 +829,18 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
 	GXSetArray(GX_VA_TEX0, diamond_2_2_texcoord0_tbl, 4);
+#ifdef MUST_MATCH
 	starStoneDLLoop(diamond_2_2_dl_1_tbl, data, diamond_2_2_dl_1_size_tbl, 0x13);
+#else
+	{
+		s32 i;
+		for (i = 0; i < 0x13; i++) {
+			if ((data->flags & 1) || i != 0) {
+				GXCallDisplayList((void*)diamond_2_2_dl_1_tbl[i], diamond_2_2_dl_1_size_tbl[i] << 5);
+			}
+		}
+	}
+#endif
 }
 
 
