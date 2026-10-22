@@ -41,15 +41,10 @@ EffectEntry* effBreakEntry(s32 type, s32 maxTimer, f32 x, f32 y, f32 z) {
     s32 i;
 
     entry = effEntry();
-#ifdef MUST_MATCH
-    // The original emits a redundant language test that stores 7 on both paths.
-    count = 7;
-    if ((u32)gp->language != 0) {
-        count = 7;
+    count = sizeof(tex_jp) / sizeof(tex_jp[0]) + 1;
+    if (gp->language != 0) {
+        count = sizeof(tex_us) / sizeof(tex_us[0]) + 1;
     }
-#else
-    count = 7;
-#endif
     entry->type = str_Break;
     entry->count = count;
     data = __memAlloc(HEAP_EFFECT, count * sizeof(BreakEffect));

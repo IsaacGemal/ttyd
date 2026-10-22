@@ -1250,7 +1250,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 			continue;
 		}
 
-		if ((u32)gp->language == 0 && (s8)check >= '0' && (s8)check <= '9') {
+		if (gp->language == 0 && (s8)check >= '0' && (s8)check <= '9') {
 			glyph = kanjiSearch((u16)(check + 0x10000 - 0x7DE1));
 		}
 		else {

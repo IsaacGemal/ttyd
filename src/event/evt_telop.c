@@ -246,7 +246,7 @@ void telop(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
         // Match-only: the empty then-block makes MWCC lay the assignment out of line, emitting the
         // original's `bge body; b join`; the natural `>=` test gives a `cror`/`bne` pair instead.
-        if ((u32)gp->language != 0) {
+        if (gp->language != 0) {
             if ((f32)msgWidth / (width - float_100_8041e7d8) < scale) {
                 scale = scale;
             } else {

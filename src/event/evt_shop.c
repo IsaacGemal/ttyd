@@ -809,7 +809,7 @@ void point_disp(WinMgrEntry* entry) {
 		s32 delta;
 
 		PSMTXTrans(mtx, SHOP_F32(float_10_8041bc3c) + (SHOP_F32(float_30_8041bc40) + (f32)entry->x), (f32)entry->y - SHOP_F32(float_36_8041bc44), SHOP_F32(float_0_8041bc34));
-		if ((u32)gp->language == 0) {
+		if (gp->language == 0) {
 			PSMTXScale(scale, SHOP_F32(float_1p1_8041bc48), SHOP_F32(float_1p1_8041bc48), SHOP_F32(float_1p1_8041bc48));
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGx2(mtx, 0x10, 0x1F1);

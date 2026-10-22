@@ -254,7 +254,7 @@ void effMain(void) {
 			}
 		}
 	}
-	if ((u32)wp->language != (u32)gp->language) {
+	if (wp->language != gp->language) {
 		if (wp->handle) {
 			fileFree(wp->handle);
 			wp->handle = NULL;

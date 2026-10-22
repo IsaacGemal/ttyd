@@ -176,7 +176,7 @@ void unitwin_point_disp(WinMgrEntry* entry) {
 		Mtx scale;
 
 		PSMTXTrans(mtx, 10.0f + (30.0f + (f32)entry->x), (f32)entry->y - 36.0f, float_0_8041db00[0]);
-		if ((u32)gp->language == 0) {
+		if (gp->language == 0) {
 			PSMTXScale(scale, float_1p1_8041db30[0], float_1p1_8041db30[0], float_1p1_8041db30[0]);
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGx2(mtx, 0x10, 0x1F1);
