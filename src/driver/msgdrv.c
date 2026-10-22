@@ -19,7 +19,6 @@ void FontDrawColor(GXColor color);
 
 extern GlobalWork* gp;
 
-extern GXColor dat_8041a510;
 
 const char R_no_messages_JP[] = "<col ff0000ff>\x83\x81\x83\x62\x83\x5A\x81\x5B\x83\x57\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1</col>\n<key>"; /*"メッセージがありません"*/
 const char R_no_messages_US[] = "<col ff0000ff>No messages.<col>\n<key>";
@@ -2027,10 +2026,17 @@ void selectWindow_Main(WindowEntry* window) {
 	dispEntry(8, 400.f - (f32)window->priority, 0, selectWindow_Disp, window);
 }
 
+// .sdata2 colour words read by name in the message renderer, defined here so they precede
+// selectWindow_Disp's colour template.
+__declspec(section ".sdata2") u32 dat_8041a500 = 0xDCC8DCFF;
+__declspec(section ".sdata2") u32 dat_8041a504 = 0x00D914FF;
+__declspec(section ".sdata2") u32 dat_8041a508 = 0xDCC8DCFF;
+__declspec(section ".sdata2") u32 dat_8041a50c = 0x00D914FF;
+
 // Builds the waku colour in one expression so MWCC lands it in the same stack slot as the
 // original (a plain local followed by `color.a = ...` puts it one slot higher).
 static inline GXColor selectWindowColor(u8 a) {
-	GXColor c = dat_8041a510;
+	GXColor c = { 0xFF, 0xFF, 0xFF, 0x00 };
 	c.a = a;
 	return c;
 }
@@ -2055,13 +2061,6 @@ void selectWindow_Disp(CameraId camId, void* param) {
 
 	iconDispGxAlpha(&pos, 0x14, 0x1F0, (u8)window->alpha, 1.0f);
 }
-
-// .sdata2 colour words read by name in the message renderer.
-__declspec(section ".sdata2") u32 dat_8041a500 = 0xDCC8DCFF;
-__declspec(section ".sdata2") u32 dat_8041a504 = 0x00D914FF;
-__declspec(section ".sdata2") u32 dat_8041a508 = 0xDCC8DCFF;
-__declspec(section ".sdata2") u32 dat_8041a50c = 0x00D914FF;
-__declspec(section ".sdata2") GXColor dat_8041a510 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
 // Named .sdata2 constants kept by tools/pool_plan.py, defined after the code in the original's order.
 #pragma explicit_zero_data on
