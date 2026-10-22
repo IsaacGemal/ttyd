@@ -93,7 +93,7 @@ u32 nozle_3_dl_0_13[16];
 u32 nozle_3_dl_0_14[16];
 u32 nozle_3_dl_0_15[16];
 u32 nozle_3_dl_0_16[16];
-u32 nozle_3_dl_0_tbl[17];
+void* nozle_3_dl_0_tbl[17];
 u32 nozle_3_dl_1_0[48];
 u32 nozle_3_dl_1_1[48];
 u32 nozle_3_dl_1_2[40];
@@ -111,7 +111,7 @@ u32 nozle_3_dl_1_13[16];
 u32 nozle_3_dl_1_14[16];
 u32 nozle_3_dl_1_15[16];
 u32 nozle_3_dl_1_16[16];
-u32 nozle_3_dl_1_tbl[17];
+void* nozle_3_dl_1_tbl[17];
 u32 nozle_4_vertex_tbl[48];
 u32 nozle_4_texcoord0_tbl[32];
 u32 nozle_4_texcoord1_tbl[32];
@@ -149,9 +149,9 @@ static u8 scale_dt[44];
 
 extern s32 negone_one[];
 extern s32 one_negone[];
-u32 nozle_1_dl_0_tbl[10];
-u32 nozle_1_dl_1_tbl[10];
-u32 nozle_4_dl_0_tbl[8];
+void* nozle_1_dl_0_tbl[10];
+void* nozle_1_dl_1_tbl[10];
+void* nozle_4_dl_0_tbl[8];
 
 // clang-format off
 
@@ -162,35 +162,35 @@ u32 nozle_4_dl_0_tbl[8];
 static inline void nozleDrawDL1_0(void) {
 	u32 j;
 	for (j = 0; j < 10; j++) {
-		GXCallDisplayList((void*)nozle_1_dl_0_tbl[j], nozle_1_dl_0_size_tbl[j] << 5);
+		GXCallDisplayList(nozle_1_dl_0_tbl[j], nozle_1_dl_0_size_tbl[j] << 5);
 	}
 }
 
 static inline void nozleDrawDL1_1(void) {
 	u32 j;
 	for (j = 0; j < 10; j++) {
-		GXCallDisplayList((void*)nozle_1_dl_1_tbl[j], nozle_1_dl_1_size_tbl[j] << 5);
+		GXCallDisplayList(nozle_1_dl_1_tbl[j], nozle_1_dl_1_size_tbl[j] << 5);
 	}
 }
 
 static inline void nozleDrawDL3_1(void) {
 	u32 j;
 	for (j = 0; j < 0x11; j++) {
-		GXCallDisplayList((void*)nozle_3_dl_1_tbl[j], nozle_3_dl_1_size_tbl[j] << 5);
+		GXCallDisplayList(nozle_3_dl_1_tbl[j], nozle_3_dl_1_size_tbl[j] << 5);
 	}
 }
 
 static inline void nozleDrawDL3_0(void) {
 	u32 j;
 	for (j = 0; j < 0x11; j++) {
-		GXCallDisplayList((void*)nozle_3_dl_0_tbl[j], nozle_3_dl_0_size_tbl[j] << 5);
+		GXCallDisplayList(nozle_3_dl_0_tbl[j], nozle_3_dl_0_size_tbl[j] << 5);
 	}
 }
 
 static inline void nozleDrawDL4_0(void) {
 	u32 j;
 	for (j = 0; j < 8; j++) {
-		GXCallDisplayList((void*)nozle_4_dl_0_tbl[j], nozle_4_dl_0_size_tbl[j] << 5);
+		GXCallDisplayList(nozle_4_dl_0_tbl[j], nozle_4_dl_0_size_tbl[j] << 5);
 	}
 }
 
@@ -989,13 +989,10 @@ u32 nozle_3_dl_0_16[16] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 nozle_3_dl_0_tbl[17] = {
-    (u32)&nozle_3_dl_0_0, (u32)&nozle_3_dl_0_1, (u32)&nozle_3_dl_0_2, (u32)&nozle_3_dl_0_3,
-    (u32)&nozle_3_dl_0_4, (u32)&nozle_3_dl_0_5, (u32)&nozle_3_dl_0_6, (u32)&nozle_3_dl_0_7,
-    (u32)&nozle_3_dl_0_8, (u32)&nozle_3_dl_0_9, (u32)&nozle_3_dl_0_10, (u32)&nozle_3_dl_0_11,
-    (u32)&nozle_3_dl_0_12, (u32)&nozle_3_dl_0_13, (u32)&nozle_3_dl_0_14, (u32)&nozle_3_dl_0_15,
-    (u32)&nozle_3_dl_0_16,
+void* nozle_3_dl_0_tbl[17] = {
+    nozle_3_dl_0_0, nozle_3_dl_0_1, nozle_3_dl_0_2, nozle_3_dl_0_3, nozle_3_dl_0_4, nozle_3_dl_0_5, nozle_3_dl_0_6,
+    nozle_3_dl_0_7, nozle_3_dl_0_8, nozle_3_dl_0_9, nozle_3_dl_0_10, nozle_3_dl_0_11, nozle_3_dl_0_12,
+    nozle_3_dl_0_13, nozle_3_dl_0_14, nozle_3_dl_0_15, nozle_3_dl_0_16,
 };
 #pragma explicit_zero_data on
 #pragma force_active on
@@ -1163,13 +1160,10 @@ u32 nozle_3_dl_1_16[16] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 nozle_3_dl_1_tbl[17] = {
-    (u32)&nozle_3_dl_1_0, (u32)&nozle_3_dl_1_1, (u32)&nozle_3_dl_1_2, (u32)&nozle_3_dl_1_3,
-    (u32)&nozle_3_dl_1_4, (u32)&nozle_3_dl_1_5, (u32)&nozle_3_dl_1_6, (u32)&nozle_3_dl_1_7,
-    (u32)&nozle_3_dl_1_8, (u32)&nozle_3_dl_1_9, (u32)&nozle_3_dl_1_10, (u32)&nozle_3_dl_1_11,
-    (u32)&nozle_3_dl_1_12, (u32)&nozle_3_dl_1_13, (u32)&nozle_3_dl_1_14, (u32)&nozle_3_dl_1_15,
-    (u32)&nozle_3_dl_1_16,
+void* nozle_3_dl_1_tbl[17] = {
+    nozle_3_dl_1_0, nozle_3_dl_1_1, nozle_3_dl_1_2, nozle_3_dl_1_3, nozle_3_dl_1_4, nozle_3_dl_1_5, nozle_3_dl_1_6,
+    nozle_3_dl_1_7, nozle_3_dl_1_8, nozle_3_dl_1_9, nozle_3_dl_1_10, nozle_3_dl_1_11, nozle_3_dl_1_12,
+    nozle_3_dl_1_13, nozle_3_dl_1_14, nozle_3_dl_1_15, nozle_3_dl_1_16,
 };
 #pragma explicit_zero_data on
 #pragma force_active on
@@ -1323,11 +1317,9 @@ u32 nozle_1_dl_0_9[8] = {
     0x03030000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 nozle_1_dl_0_tbl[10] = {
-    (u32)&nozle_1_dl_0_0, (u32)&nozle_1_dl_0_1, (u32)&nozle_1_dl_0_2, (u32)&nozle_1_dl_0_3,
-    (u32)&nozle_1_dl_0_4, (u32)&nozle_1_dl_0_5, (u32)&nozle_1_dl_0_6, (u32)&nozle_1_dl_0_7,
-    (u32)&nozle_1_dl_0_8, (u32)&nozle_1_dl_0_9,
+void* nozle_1_dl_0_tbl[10] = {
+    nozle_1_dl_0_0, nozle_1_dl_0_1, nozle_1_dl_0_2, nozle_1_dl_0_3, nozle_1_dl_0_4, nozle_1_dl_0_5, nozle_1_dl_0_6,
+    nozle_1_dl_0_7, nozle_1_dl_0_8, nozle_1_dl_0_9,
 };
 
 // TODO: type
@@ -1371,11 +1363,9 @@ u32 nozle_1_dl_1_9[8] = {
     0x06060000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 nozle_1_dl_1_tbl[10] = {
-    (u32)&nozle_1_dl_1_0, (u32)&nozle_1_dl_1_1, (u32)&nozle_1_dl_1_2, (u32)&nozle_1_dl_1_3,
-    (u32)&nozle_1_dl_1_4, (u32)&nozle_1_dl_1_5, (u32)&nozle_1_dl_1_6, (u32)&nozle_1_dl_1_7,
-    (u32)&nozle_1_dl_1_8, (u32)&nozle_1_dl_1_9,
+void* nozle_1_dl_1_tbl[10] = {
+    nozle_1_dl_1_0, nozle_1_dl_1_1, nozle_1_dl_1_2, nozle_1_dl_1_3, nozle_1_dl_1_4, nozle_1_dl_1_5, nozle_1_dl_1_6,
+    nozle_1_dl_1_7, nozle_1_dl_1_8, nozle_1_dl_1_9,
 };
 
 // TODO: type
@@ -1424,10 +1414,9 @@ u32 nozle_4_color0_tbl[3] = {
     0xFFFFFF7F, 0xFFFFFF4C, 0xFFFFFF00,
 };
 
-// TODO: type
-u32 nozle_4_dl_0_tbl[8] = {
-    (u32)&nozle_4_dl_0_0, (u32)&nozle_4_dl_0_1, (u32)&nozle_4_dl_0_2, (u32)&nozle_4_dl_0_3,
-    (u32)&nozle_4_dl_0_4, (u32)&nozle_4_dl_0_5, (u32)&nozle_4_dl_0_6, (u32)&nozle_4_dl_0_7,
+void* nozle_4_dl_0_tbl[8] = {
+    nozle_4_dl_0_0, nozle_4_dl_0_1, nozle_4_dl_0_2, nozle_4_dl_0_3, nozle_4_dl_0_4, nozle_4_dl_0_5, nozle_4_dl_0_6,
+    nozle_4_dl_0_7,
 };
 
 // TODO: type

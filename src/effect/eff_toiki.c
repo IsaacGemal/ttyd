@@ -7,7 +7,7 @@
 
 extern u32 queen_toiki_vertex_tbl[96];
 extern u32 queen_toiki_texcoord0_tbl[48];
-extern u32 queen_toiki_dl_0_tbl[14];
+extern void* queen_toiki_dl_0_tbl[14];
 extern u32 queen_toiki_normal_tbl[8];
 extern u32 queen_toiki_color0_tbl[8];
 extern u8 queen_toiki_dl_0_size_tbl[16];
@@ -34,7 +34,7 @@ u32 queen_toiki_dl_0_13[8];
 // this inline function gives the original's r29/r30/r31. The size table and the increment order are also
 // part of the colouring: `sz` must be initialised in the for-init and incremented before `dl`.
 static inline void toikiDrawDL(void) {
-	u8** dl = (u8**)queen_toiki_dl_0_tbl;
+	void** dl = queen_toiki_dl_0_tbl;
 	u8* sz;
 	u32 j;
 
@@ -292,12 +292,10 @@ u32 queen_toiki_dl_0_2[16] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 queen_toiki_dl_0_tbl[14] = {
-    (u32)&queen_toiki_dl_0_0, (u32)&queen_toiki_dl_0_1, (u32)&queen_toiki_dl_0_2, (u32)&queen_toiki_dl_0_3,
-    (u32)&queen_toiki_dl_0_4, (u32)&queen_toiki_dl_0_5, (u32)&queen_toiki_dl_0_6, (u32)&queen_toiki_dl_0_7,
-    (u32)&queen_toiki_dl_0_8, (u32)&queen_toiki_dl_0_9, (u32)&queen_toiki_dl_0_10, (u32)&queen_toiki_dl_0_11,
-    (u32)&queen_toiki_dl_0_12, (u32)&queen_toiki_dl_0_13,
+void* queen_toiki_dl_0_tbl[14] = {
+    queen_toiki_dl_0_0, queen_toiki_dl_0_1, queen_toiki_dl_0_2, queen_toiki_dl_0_3, queen_toiki_dl_0_4,
+    queen_toiki_dl_0_5, queen_toiki_dl_0_6, queen_toiki_dl_0_7, queen_toiki_dl_0_8, queen_toiki_dl_0_9,
+    queen_toiki_dl_0_10, queen_toiki_dl_0_11, queen_toiki_dl_0_12, queen_toiki_dl_0_13,
 };
 
 // TODO: type
