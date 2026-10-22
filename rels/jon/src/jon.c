@@ -2329,9 +2329,9 @@ s32 wanwan_set_home_pos(EventEntry* event, BOOL isFirstCall) {
     s32 y = evtGetValue(event, args[1]);
     s32 z = evtGetValue(event, args[2]);
 
-    ((NpcSetupInfo*)npcEnt_wanwan)->territoryBase.x = (f32)x;
-    ((NpcSetupInfo*)npcEnt_wanwan)->territoryBase.y = (f32)y;
-    ((NpcSetupInfo*)npcEnt_wanwan)->territoryBase.z = (f32)z;
+    npcEnt_wanwan->territoryBase.x = (f32)x;
+    npcEnt_wanwan->territoryBase.y = (f32)y;
+    npcEnt_wanwan->territoryBase.z = (f32)z;
     return EVT_RETURN_DONE;
 }
 

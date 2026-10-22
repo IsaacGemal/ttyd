@@ -220,7 +220,7 @@ static BattleUnitKindPart parts_christine[1] = {
         &defence_attr_christine,                           // defenseAttr
         0x00000009,                                        // attributes
         0,                                                 // counterAttributes
-        (struct BattleDispPose*)pose_table_christine_stay, // poseTable
+        pose_table_christine_stay, // poseTable
     },
 };
 
