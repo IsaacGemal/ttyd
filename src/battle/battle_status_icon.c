@@ -6,12 +6,6 @@
 #include <string.h>
 
 extern BattleWork* _battleWorkPointer;
-extern GXColor dat_804221ec;
-extern s32 dat_80422200;
-extern s32 dat_80422204;
-extern f32 float_0p10207_80422208;
-extern s32 dat_8042220c;
-extern s32 dat_80422210;
 
 typedef struct IconDispTableEntry IconDispTableEntry;
 struct IconDispTableEntry {
@@ -21,48 +15,6 @@ struct IconDispTableEntry {
 	s32 flags;
 };
 
-// .rodata objects of this unit: 22 Vecs, then the int->float conversion doubles.
-const Vec vec3_803011e8 = {1.0f, 1.0f, 1.0f};
-const Vec vec3_803011f4 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_80301200 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_8030120c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_80301218 = {1.0f, 1.0f, 1.0f};
-const Vec vec3_80301224 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_80301230 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_8030123c = {0.0f, 4.0f, 0.0f};
-const Vec vec3_80301248 = {1.0f, 1.0f, 1.0f};
-const Vec vec3_80301254 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_80301260 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_8030126c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_80301278 = {1.0f, 1.0f, 1.0f};
-const Vec vec3_80301284 = {1.0f, 1.0f, 1.0f};
-const Vec vec3_80301290 = {0.8f, 0.8f, 1.0f};
-const Vec vec3_8030129c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_803012a8 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_803012b4 = {0.0f, 0.0f, 0.0f};
-// The four Vecs _bsi_regeneration copies. Non-const and pinned to .rodata under MUST_MATCH so MWCC
-// reaches them (and the u8->f32 mask) through the .rodata base register; see the note above the
-// function. Defined const otherwise.
-#ifdef MUST_MATCH
-__declspec(section ".rodata") Vec vec3_803012c0 = {1.0f, 1.0f, 1.0f};
-#else
-const Vec vec3_803012c0 = {1.0f, 1.0f, 1.0f};
-#endif
-#ifdef MUST_MATCH
-__declspec(section ".rodata") Vec vec3_803012cc = {0.0f, 0.0f, 0.0f};
-#else
-const Vec vec3_803012cc = {0.0f, 0.0f, 0.0f};
-#endif
-#ifdef MUST_MATCH
-__declspec(section ".rodata") Vec vec3_803012d8 = {0.0f, 0.0f, 0.0f};
-#else
-const Vec vec3_803012d8 = {0.0f, 0.0f, 0.0f};
-#endif
-#ifdef MUST_MATCH
-__declspec(section ".rodata") Vec vec3_803012e4 = {0.0f, 0.0f, 0.0f};
-#else
-const Vec vec3_803012e4 = {0.0f, 0.0f, 0.0f};
-#endif
 
 IconDispTableEntry _disp_table[] = {
 	{STATUS_SLEEP, _bsi_default_turn, 15, 1},
@@ -210,21 +162,13 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 				PSMTXIdentity(mtx2);
 				PSMTXTrans(mtxPos, pos2.x, pos2.y, pos2.z);
 				PSMTXConcat(mtxPos, mtx2, mtx2);
-				iconNumberDispGx(mtx2, entry->turnCount, 1, dat_804221ec);
+				iconNumberDispGx(mtx2, entry->turnCount, 1, (GXColor){ 0xff, 0xff, 0xff, 0xff });
 			}
 		}
 	}
 }
 
-// Icon parameter table base; fields accessed at +0x60..+0x8C are Vec entries 8..11.
-// -1 sentinel written to entry+0x3C.
-extern s32 dat_804221fc;
-extern s32 dat_804221f8;
-extern s32 dat_804221f4;
-extern s32 dat_804221f0;
-
 BOOL _bsi_default_turn(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
-	const Vec* vec = &vec3_803011e8;
 	s32 type = disp->id;
 	s32 turnCount;
 	s8 turns;
@@ -253,22 +197,20 @@ BOOL _bsi_default_turn(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
 	entry->texId = disp->texId;
-	entry->scale = vec[0];
-	entry->pivot = vec[1];
-	entry->rotation = vec[2];
-	entry->color = *(GXColor*)&dat_804221f0;
+	entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
+	entry->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
+	entry->rotation = (Vec){ 0.0f, 0.0f, 0.0f };
+	entry->color = (GXColor){ 0xff, 0xff, 0xff, 0xff };
 	entry->flags = disp->flags;
-	entry->offset = vec[3];
+	entry->offset = (Vec){ 0.0f, 0.0f, 0.0f };
 	return TRUE;
 }
 
 BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
-	const Vec* vec = &vec3_803011e8;
 	s32 type = disp->id;
 	s8 turns;
 	s8 strength;
 	s32 turnCount;
-	Vec tmp;
 	f32* counter = &unit->mStatusIconWork.mGuruguruAngle;
 
 	if (!BtlUnit_CheckStatus(unit, type)) {
@@ -282,21 +224,16 @@ BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
 	entry->texId = disp->texId;
-	entry->scale = vec[4];
-	entry->pivot = vec[5];
-	// MWCC forwards vec[6].x/.y straight to the entry but keeps .z in a stack temporary which the
-	// counter store then reuses; assigning entry->rotation and then .z omits that temporary.
-	tmp = vec[6];
-	tmp.z = *counter;
-	entry->rotation = tmp;
-	entry->color = *(GXColor*)&dat_804221f4;
+	entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
+	entry->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
+	entry->rotation = (Vec){ 0.0f, 0.0f, *counter };
+	entry->color = (GXColor){ 0xff, 0xff, 0xff, 0xff };
 	entry->flags = disp->flags;
-	entry->offset = vec[7];
+	entry->offset = (Vec){ 0.0f, 4.0f, 0.0f };
 	return TRUE;
 }
 
 BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
-	const Vec* vec = &vec3_803011e8;
 	s32 type = disp->id;
 	s32 turnCount;
 	s8 turns;
@@ -313,12 +250,12 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
 	entry->texId = disp->texId;
-	entry->scale = vec[8];
-	entry->pivot = vec[9];
-	entry->rotation = vec[10];
-	entry->color = *(GXColor*)&dat_804221f8;
+	entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
+	entry->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
+	entry->rotation = (Vec){ 0.0f, 0.0f, 0.0f };
+	entry->color = (GXColor){ 0xff, 0xff, 0xff, 0xff };
 	entry->flags = disp->flags;
-	entry->offset = vec[11];
+	entry->offset = (Vec){ 0.0f, 0.0f, 0.0f };
 
 	*counter = *counter + 1;
 	if (*counter & 0x10) {
@@ -328,7 +265,6 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 }
 
 BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
-	const Vec* vec = &vec3_803011e8;
 	s32 type = disp->id;
 	s32 turnCount;
 	s8 turns;
@@ -342,7 +278,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		return FALSE;
 	}
 
-	entry->scale = vec[12];
+	entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
 
 	switch (*counter) {
 	case 0:
@@ -350,7 +286,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		*duration = irand(6) + 4;
 		// fallthrough
 	case 1:
-		entry->scale = vec[13];
+		entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
 		*duration = *duration - 1;
 		if (*duration < 0) {
 			*counter = *counter + 1;
@@ -358,7 +294,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		}
 		break;
 	case 2:
-		entry->scale = vec[14];
+		entry->scale = (Vec){ 0.8f, 0.8f, 1.0f };
 		*duration = *duration - 1;
 		if (*duration < 0) {
 			*duration = irand(6) + 4;
@@ -372,21 +308,14 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
 	entry->texId = disp->texId;
-	entry->pivot = vec[15];
-	entry->rotation = vec[16];
-	entry->color = *(GXColor*)&dat_804221fc;
+	entry->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
+	entry->rotation = (Vec){ 0.0f, 0.0f, 0.0f };
+	entry->color = (GXColor){ 0xff, 0xff, 0xff, 0xff };
 	entry->flags = disp->flags;
-	entry->offset = vec[17];
+	entry->offset = (Vec){ 0.0f, 0.0f, 0.0f };
 	return TRUE;
 }
 
-// The original copies four Vecs straight out of .rodata (vec3_803012c0..vec3_803012e4) and reads
-// the u8->f32 mask as `lfd f2, 0x108(r31)`, i.e. through the .rodata base register r31 that also
-// serves the copies. A const source lets MWCC fold the copy to an absolute relocation and pool its
-// own copy of the mask instead, so the four objects below are non-const and pinned to .rodata under
-// MUST_MATCH (like itemdrv's vec3_802cac1c): that makes the compiler materialise each copy's source
-// address from the .rodata base and reuse it for the mask, and keeps the target's load/store
-// interleaving. The values and therefore the .rodata bytes are unchanged.
 BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
 	s32 type = disp->id;
 	s16* counter;
@@ -396,16 +325,15 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 	s8 strength;
 	GXColor startColor;
 	GXColor endColor;
-	GXColor color;
 
 	if (type == STATUS_HP_REGEN) {
-		startColor = *(GXColor*)&dat_80422200;
-		endColor = *(GXColor*)&dat_80422204;
+		startColor = (GXColor){ 0xed, 0x14, 0x5b, 0xff };
+		endColor = (GXColor){ 0xff, 0xea, 0x05, 0xff };
 		counter = &unit->mStatusIconWork.mRegenHpCounter;
 	}
 	else if (type == STATUS_FP_REGEN) {
-		startColor = *(GXColor*)&float_0p10207_80422208;
-		endColor = *(GXColor*)&dat_8042220c;
+		startColor = (GXColor){ 0x3d, 0xd1, 0x09, 0xff };
+		endColor = (GXColor){ 0x61, 0xe9, 0xe7, 0xff };
 		counter = &unit->mStatusIconWork.mRegenFpCounter;
 	}
 	else {
@@ -427,29 +355,13 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 	turnCount = turns >= 0 ? turns : -turns;
 	entry->turnCount = turnCount;
 	entry->texId = disp->texId;
-	entry->scale = vec3_803012c0;
-	entry->pivot = vec3_803012cc;
-	entry->rotation = vec3_803012d8;
-	color = *(GXColor*)&dat_80422210;
-	color.r = intplGetValue(0xb, offset, 0x168, (f32)startColor.r, (f32)endColor.r);
-	color.g = intplGetValue(0xb, offset, 0x168, (f32)startColor.g, (f32)endColor.g);
-	color.b = intplGetValue(0xb, offset, 0x168, (f32)startColor.b, (f32)endColor.b);
-	entry->color = color;
+	entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
+	entry->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
+	entry->rotation = (Vec){ 0.0f, 0.0f, 0.0f };
+	entry->color = (GXColor){ intplGetValue(0xb, offset, 0x168, (f32)startColor.r, (f32)endColor.r),
+	                          intplGetValue(0xb, offset, 0x168, (f32)startColor.g, (f32)endColor.g),
+	                          intplGetValue(0xb, offset, 0x168, (f32)startColor.b, (f32)endColor.b), 0xff };
 	entry->flags = disp->flags;
-	entry->offset = vec3_803012e4;
+	entry->offset = (Vec){ 0.0f, 0.0f, 0.0f };
 	return TRUE;
 }
-
-// .sdata2 named objects this unit owns, in the original's address order.
-#pragma force_active on
-__declspec(section ".sdata2") GXColor dat_804221ec = { 0xff, 0xff, 0xff, 0xff };
-__declspec(section ".sdata2") s32 dat_804221f0 = 0xffffffff;
-__declspec(section ".sdata2") s32 dat_804221f4 = 0xffffffff;
-__declspec(section ".sdata2") s32 dat_804221f8 = 0xffffffff;
-__declspec(section ".sdata2") s32 dat_804221fc = 0xffffffff;
-__declspec(section ".sdata2") s32 dat_80422200 = 0xed145bff;
-__declspec(section ".sdata2") s32 dat_80422204 = 0xffea05ff;
-__declspec(section ".sdata2") f32 float_0p10207_80422208 = 0.10206984728574753f;
-__declspec(section ".sdata2") s32 dat_8042220c = 0x61e9e7ff;
-__declspec(section ".sdata2") s32 dat_80422210 = 0x000000ff;
-#pragma force_active reset
