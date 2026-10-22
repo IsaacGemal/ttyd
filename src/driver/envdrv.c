@@ -40,8 +40,6 @@ const EnvTevMtxData dat_802f9338 = {
 
 // .sdata2
 const GXColor dat_8041e510 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_8041e514 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_8041e518 = { 0xFF, 0xFF, 0xFF, 0xA0 };
 
 //.data
 static EnvironmentGlare envGlare0 = {
@@ -572,27 +570,9 @@ void envDisp_DepthOfField(void) {
 #undef GXPosition3f32
 #endif
 
-#ifdef MUST_MATCH
-// A by-value GXColor built as `color = dat; color.a = a;` and then passed (#else) lands its local at the
-// higher slot (sp+0x10 here) and the argument copy at sp+0xC, the wrong way round. Building the colour in
-// an inline that returns it puts the return temporary at sp+0xC and the argument at sp+0x10. The default
-// (duration == 0) colour goes through a void helper too, or its argument temp takes sp+0x8 and pushes
-// the if-branch temporaries back up.
-static inline GXColor envDisp_MakeBlurColor(u8 alpha) {
-    GXColor color = dat_8041e514;
-    color.a = alpha;
-    return color;
-}
-static inline void envDisp_SetBlurColorDefault(void) {
-    GXSetTevKColor(GX_KCOLOR0, dat_8041e518);
-}
-#endif
 void envDisp_Blur(void) {
     EnvironmentWork* wp = envGetWork();
     EnvironmentBlur* blur = &wp->unk98;
-#ifndef MUST_MATCH
-    GXColor color;
-#endif
     CameraEntry* cam;
     s32 alpha;
     f32 ratio;
@@ -630,19 +610,10 @@ void envDisp_Blur(void) {
             } else {
                 alpha = (s32)(120.0f * (1.0f - ratio) + 128.0f);
             }
-#ifdef MUST_MATCH
-            GXSetTevKColor(GX_KCOLOR0, envDisp_MakeBlurColor(alpha));
+            GXSetTevKColor(GX_KCOLOR0, (GXColor){ 0xFF, 0xFF, 0xFF, alpha });
         } else {
-            envDisp_SetBlurColorDefault();
+            GXSetTevKColor(GX_KCOLOR0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xA0 });
         }
-#else
-            color = dat_8041e514;
-            color.a = alpha;
-            GXSetTevKColor(GX_KCOLOR0, color);
-        } else {
-            GXSetTevKColor(GX_KCOLOR0, dat_8041e518);
-        }
-#endif
 
         GXLoadTexObj(&wp->envBlurObj, GX_TEXMAP0);
         GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);

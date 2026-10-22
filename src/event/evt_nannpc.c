@@ -74,19 +74,6 @@ static Mtx mt_544 = {
 __declspec(section ".sdata") static u32 gap_07_804113E8_sdata[6] = {0};
 #pragma force_active reset
 #pragma explicit_zero_data reset
-// Non-const (so the compiler does not hoist the loop loads out of evt_nannpc_init) but forced into
-// .rodata to keep the original's section. Declared global to match the original's symbol linkage.
-__declspec(section ".rodata") Vec vec3_802f2ff8[6] = {
-    {0.0f, -1000.0f, 0.0f},
-    {0.0f, -1000.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, -1000.0f, 0.0f},
-    {0.0f, -1000.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-};
-// The original's `dat_8041c5xx` are global, read-only `.sdata2` constants; section is forced so
-// they get the exact symbol names and placement.
-__declspec(section ".sdata2") GXColor dat_8041c568 = {0xFF, 0xFF, 0xFF, 0xFF};
 
 // Look up an entry by numeric id (formatted as "%06x") or by the string the id
 // points at. Small enough that the original compiler inlined it everywhere.
@@ -275,10 +262,7 @@ static inline void nannpcExtSetup(void) {
     GXSetTevAlphaIn(0, 7, 4, 1, 7);
     GXSetNumChans(0);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-    {
-        GXColor color = dat_8041c568;
-        GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, color);
-    }
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     GXSetNumTexGens(1);
     GXSetNumTevStages(1);
 }
@@ -412,7 +396,6 @@ void nannpc_ext_dispent(void) {
 
 USER_FUNC(evt_nannpc_init) {
     NanNpcWork* work;
-    Vec* vec = (Vec*)vec3_802f2ff8;
     s32* args = event->args;
     s32 a0 = evtGetValue(event, args[0]);
     s16* src = (s16*)evtGetValue(event, args[1]);
@@ -451,9 +434,9 @@ USER_FUNC(evt_nannpc_init) {
         entry->pose = NULL;
         entry->flags = 0;
         entry->field_0x16 = 0;
-        entry->position = vec[0];
-        entry->homePosition = vec[1];
-        entry->hoseiPosition = vec[2];
+        entry->position = (Vec){0.0f, -1000.0f, 0.0f};
+        entry->homePosition = (Vec){0.0f, -1000.0f, 0.0f};
+        entry->hoseiPosition = (Vec){0.0f, 0.0f, 0.0f};
         entry->width = 32.0f;
         entry->range = 32.0f;
         entry->startTime = 0;
@@ -528,12 +511,10 @@ USER_FUNC(evt_nannpc_entry) {
 #endif
     s32 i;
     NanNpcEntry* entry;
-    Vec* vec;
     s32* args;
     ExtPose* poses;
     NanNpcWork* work;
 
-    vec = (Vec*)vec3_802f2ff8;
     args = event->args;
     poses = extGetPosePtr();
     id = evtGetValue(event, args[0]);
@@ -555,9 +536,9 @@ USER_FUNC(evt_nannpc_entry) {
         entry->pose = &poses[i];
         entry->flags = 0;
         entry->field_0x16 = 0;
-        entry->position = vec[3];
-        entry->homePosition = vec[4];
-        entry->hoseiPosition = vec[5];
+        entry->position = (Vec){0.0f, -1000.0f, 0.0f};
+        entry->homePosition = (Vec){0.0f, -1000.0f, 0.0f};
+        entry->hoseiPosition = (Vec){0.0f, 0.0f, 0.0f};
         entry->width = 32.0f;
         entry->range = 32.0f;
         entry->startTime = 0;
