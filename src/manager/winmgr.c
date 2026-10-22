@@ -2081,14 +2081,8 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
             memset(select->items, 0, max * 4);
             select->numItems = 0;
             for (i = 0; i < BADGE_COUNT; i++) {
-#ifdef MUST_MATCH
-                // No-op cast: the value is already s16, but the cast changes the object.
-                s32 v = (s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN));
-#else
-                s32 v = badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN));
-#endif
-
-                if (v - badgeShop_ThrowCheck(i + BADGE_MIN) > 0) {
+                if (badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN)) -
+                        badgeShop_ThrowCheck(i + BADGE_MIN) > 0) {
                     select->items[select->numItems].id = i + BADGE_MIN;
                     if (itemDataTable[BADGE_MIN + i].star_piece_price > pouchGetStarPiece()) {
                         select->items[select->numItems].flags |= 3;

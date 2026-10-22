@@ -934,13 +934,7 @@ USER_FUNC(evt_npc_glide_position) {
     npc->moveOffset.z += dz * delta;
 
     if (npc->jumpFlags & 2) {
-#ifdef MUST_MATCH
-        // match-only: the named zero gives retail's operand order, `fcmpu dx, 0.0`
-        f32 zero = 0.0f;
-        if (dx != zero || dz != zero) {
-#else
-        if (dx != 0.0f || dz != 0.0f) {
-#endif
+        if (dx || dz) {
             if (npc != fbatGetPointer()->target ||
                 (fbatGetPointer()->mode != 5 && fbatGetPointer()->mode != 6)) {
                 npcTuningRy(npc, angleABf(0.0f, 0.0f, dx, dx));
@@ -1416,19 +1410,12 @@ USER_FUNC(evt_npc_flag_onoff) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
-    s32 mask = evtGetValue(event, args[2]);
+    int mask = evtGetValue(event, args[2]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     switch (type) {
-        case 0: {
-#ifdef MUST_MATCH
-            // match-only: the u32 temp loads the flags into r4 for retail's `andc r0, r4, r31`
-            u32 clear = ~mask;
-            npc->flags &= clear;
-#else
+        case 0:
             npc->flags &= ~mask;
-#endif
             break;
-        }
         case 1:
             npc->flags |= mask;
     }
