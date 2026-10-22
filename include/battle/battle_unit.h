@@ -326,12 +326,12 @@ typedef struct BattleDataEntry {
 
 // TODO: move/rename?
 typedef struct BattleUnitDefense {
-    u8 defenses[5]; // 0x0
+    s8 defenses[5]; // 0x0
 } BattleUnitDefense;
 
 // TODO: move/rename?
 typedef struct BattleUnitDefenseAttr {
-    u8 defenseAttrs[5]; // 0x0
+    s8 defenseAttrs[5]; // 0x0
 } BattleUnitDefenseAttr;
 
 typedef struct BattleUnitKindPart {

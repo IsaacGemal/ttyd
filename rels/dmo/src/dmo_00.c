@@ -51,13 +51,13 @@ typedef struct DemoWork {
     f32 scale;            // demo_scale ramps 0.6 -> 1.5
     f32 posX;
     f32 posY;             // adjust: -105 * sin(pi/2 * fade)
-    void* captureBuf;     // GXCopyTex destination: *(void**)captureBuf is the buffer
+    void** captureBuf;    // GXCopyTex destination: *captureBuf is the buffer
     FileEntry* tplFile;   // demo.tpl
     s32 winOpen;          // demo_winonoff argument, nonzero = window opening
     s32 winAlpha;         // 0..0xCC, steps of 10 per frame
 } DemoWork;
 static DemoWork work;
-u32 buf[128];
+char buf[512];
 
 // clang-format off
 extend_data(0,
@@ -127,13 +127,13 @@ void demo_cap(void) {
         if (wp->captured == 0) {
             GXSetTexCopySrc(0, 0, 608, 480);
             GXSetTexCopyDst(608, 480, 6, 0);
-            GXCopyTex(*(void**)wp->captureBuf, 0);
+            GXCopyTex(*wp->captureBuf, 0);
             GXTexModeSync();
             wp->captured = 1;
         } else if (wp->fade != 0.0f) {
             GXSetTexCopySrc(0, 0, 608, 480);
             GXSetTexCopyDst(608, 480, 6, 0);
-            GXCopyTex(*(void**)wp->captureBuf, 0);
+            GXCopyTex(*wp->captureBuf, 0);
             GXTexModeSync();
         }
     }
@@ -162,7 +162,7 @@ void demo_desk(CameraId cameraId, void* param) {
     GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->fade)) });
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 0);
+    TEXGetGXTexObjFromPalette(wp->tplFile->data[0], &texObj, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 4);
@@ -223,7 +223,7 @@ void demo_img(CameraId cameraId, void* param) {
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->fade)) });
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, wp->page + 8);
+    TEXGetGXTexObjFromPalette(wp->tplFile->data[0], &texObj, wp->page + 8);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
@@ -287,7 +287,7 @@ void demo_book(CameraId cameraId, void* param) {
 
     GXSetProjection(cam->projection, cam->projType);
     GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 2);
+    TEXGetGXTexObjFromPalette(wp->tplFile->data[0], &texObj, 2);
     w = (f32)GXGetTexObjWidth(&texObj);
     PSMTXTrans(m1, wp->posX, wp->posY, 0.0f);
     PSMTXScale(m2, wp->scale, wp->scale, wp->scale);
@@ -304,7 +304,7 @@ void demo_book(CameraId cameraId, void* param) {
     GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->fade)) });
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 1);
+    TEXGetGXTexObjFromPalette(wp->tplFile->data[0], &texObj, 1);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 4);
@@ -317,7 +317,7 @@ void demo_book(CameraId cameraId, void* param) {
     GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 2);
+    TEXGetGXTexObjFromPalette(wp->tplFile->data[0], &texObj, 2);
     GXLoadTexObj(&texObj, 0);
     w = (f32)GXGetTexObjWidth(&texObj);
     h = (f32)GXGetTexObjHeight(&texObj);
@@ -337,7 +337,7 @@ void demo_book(CameraId cameraId, void* param) {
     GXLoadPosMtxImm(m1, 0);
     GXSetCurrentMtx(0);
     if (wp->page >= 0) {
-        TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, wp->page + 3);
+        TEXGetGXTexObjFromPalette(wp->tplFile->data[0], &texObj, wp->page + 3);
         GXLoadTexObj(&texObj, 0);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         h95 = h * 0.95f;
@@ -367,7 +367,7 @@ void demo_book(CameraId cameraId, void* param) {
     PSMTXConcat(m1, m3, m3);
     GXLoadPosMtxImm(m3, 0);
     GXSetCurrentMtx(0);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 1);
+    TEXGetGXTexObjFromPalette(wp->tplFile->data[0], &texObj, 1);
     GXLoadTexObj(&texObj, 0);
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(0.0f, h / 2.0f, 0.0f);
@@ -379,7 +379,7 @@ void demo_book(CameraId cameraId, void* param) {
     GXPosition3f32(0.0f, -h / 2.0f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
     GXSetCullMode(GX_CULL_FRONT);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 2);
+    TEXGetGXTexObjFromPalette(wp->tplFile->data[0], &texObj, 2);
     GXLoadTexObj(&texObj, 0);
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(0.0f, h / 2.0f, 0.0f);
@@ -418,7 +418,7 @@ void demo_window(CameraId cameraId, void* param) {
     GXSetZCompLoc(GX_TRUE);
     GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
     GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
-    TEXGetGXTexObjFromPalette((TEXPalette*)wp->tplFile->data[0], &texObj, 0xD);
+    TEXGetGXTexObjFromPalette(wp->tplFile->data[0], &texObj, 0xD);
     GXLoadTexObj(&texObj, 0);
     w = (f32)GXGetTexObjWidth(&texObj);
     h = (f32)GXGetTexObjHeight(&texObj);
@@ -530,7 +530,7 @@ USER_FUNC(eff_cam1) {
 USER_FUNC(make_msg) {
     u16 lines;
     u16 width = FontGetMessageWidthLine(msgSearch((const char*)evtGetValue(event, event->args[0])), &lines);
-    sprintf((char*)buf, "<clear><wpos %d %d %d %d><once_stop>", -width / 2 - 0x3e, lines * 0x1c / 2 - 0x54, 0x190,
+    sprintf(buf, "<clear><wpos %d %d %d %d><once_stop>", -width / 2 - 0x3e, lines * 0x1c / 2 - 0x54, 0x190,
             0xc8);
     return EVT_RETURN_DONE;
 }

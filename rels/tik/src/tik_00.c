@@ -414,7 +414,7 @@ USER_FUNC(uranai_cap_evt) {
 
 void card_tev(MapTevCallback* param) {
     if (uranai_wp->field_0xE4 != 0) {
-        GXLoadTexObj(smartTexObj(&uranai_wp->texObj, (void**)uranai_wp->buffer), GX_TEXMAP0);
+        GXLoadTexObj(smartTexObj(&uranai_wp->texObj, &uranai_wp->buffer->address), GX_TEXMAP0);
         GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
         GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);

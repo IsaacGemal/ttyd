@@ -204,7 +204,7 @@ void effOnpuDisp(CameraId camId, void* param) {
     GXLoadPosMtxImm(mtx, GX_PNMTX0);
     GXSetCurrentMtx(GX_PNMTX0);
     GXSetCullMode(GX_CULL_NONE);
-    effSetVtxDescN64((effVtxArray*)size16x32_tex16x32_vtx);
+    effSetVtxDescN64(size16x32_tex16x32_vtx);
     GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

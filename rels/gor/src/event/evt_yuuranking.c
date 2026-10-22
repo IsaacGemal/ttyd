@@ -19,7 +19,7 @@ void FontDrawColor(GXColor* color);
 extern const f32 float_1000_gor_0001cd80;
 
 typedef struct YuRankWork {
-    s32 eventEntry;   // 0x00
+    EventEntry* eventEntry; // 0x00
     u16 freeFlags;    // 0x04
     u16 pad_06;       // 0x06
     u32 flags2;       // 0x08
@@ -886,8 +886,8 @@ USER_FUNC(evt_yuuranking_alloc_10_text_A47C) {
         work->flags2 |= 4;
     }
     evt = evtEntry(main_evt, 0, 0);
-    work->eventEntry = (s32)evt;
-    ((EventEntry*)work->eventEntry)->lwData[0] = (s32)work;
+    work->eventEntry = evt;
+    work->eventEntry->lwData[0] = (s32)work;
     return 2;
 }
 
@@ -898,7 +898,7 @@ USER_FUNC(evt_yuuranking_alloc_10_text_A47C) {
 #undef A14R
 #undef A74F
 USER_FUNC(evt_yuuranking_free_10_text_A3F8) {
-    YuRankWork* wp = (YuRankWork*)_wp;
+    YuRankWork* wp = _wp;
 
     if (wp == NULL) {
         return 2;
@@ -915,7 +915,7 @@ USER_FUNC(evt_yuuranking_free_10_text_A3F8) {
 }
 
 USER_FUNC(yuuranking_wait_button_10_text_A37C) {
-    YuRankWork* wp = (YuRankWork*)_wp;
+    YuRankWork* wp = _wp;
 
     if (isFirstCall) {
         wp->flags2 |= 2;
@@ -931,7 +931,7 @@ USER_FUNC(yuuranking_wait_button_10_text_A37C) {
 }
 
 static USER_FUNC(yuuranking_get_monte) {
-    YuRankWork* wp = (YuRankWork*)_wp;
+    YuRankWork* wp = _wp;
 
     evtSetValue(event, event->args[0], wp->monte);
     return 2;

@@ -63,7 +63,7 @@ static s32 party_win_reaction[9];
     cmd->mWeaponTable[*count].mIcon =                                                      \
         cmd->mWeaponTable[*count].mWeaponParams->icon;                                     \
     cmd->mWeaponTable[*count].mName =                                                      \
-        (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                   \
+        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                          \
     (*count)++;
 
 USER_FUNC(_sanders_make_extra_work_area) {

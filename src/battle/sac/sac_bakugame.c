@@ -1515,7 +1515,7 @@ void bakuGameDisp3D(CameraId camId, void* param) {
         GXSetTevAlphaIn(0, 7, 5, 4, 7);
         GXSetTevOrder(0, 0, 0, 4);
         file = BattleAudienceBaseGetPtr()->normalTex;
-        pal = *(TEXPalette**)file->data;
+        pal = *file->data;
         TEXGetGXTexObjFromPalette(pal, &texObj, baku->texIndex);
         GXLoadTexObj(&texObj, 0);
         PSMTXTrans(trans, baku->heihoPos.x, baku->heihoPos.y, baku->heihoPos.z);

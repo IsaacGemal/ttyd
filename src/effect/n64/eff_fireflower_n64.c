@@ -303,9 +303,9 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
 			if (data->type != 0) {
-				effSetVtxDescN64((effVtxArray*)size16x16_tex16x16_vtx);
+				effSetVtxDescN64(size16x16_tex16x16_vtx);
 			} else {
-				effSetVtxDescN64((effVtxArray*)size4x4_tex4x4_vtx);
+				effSetVtxDescN64(size4x4_tex4x4_vtx);
 			}
 			GXBegin(0x90, 0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -350,7 +350,7 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, trans, trans);
 	GXLoadPosMtxImm(trans, 0);
 	GXSetCurrentMtx(0);
-	effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_vtx);
+	effSetVtxDescN64(size32x32_tex32x32_vtx);
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

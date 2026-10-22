@@ -4,6 +4,7 @@
 #include <dolphin/mtx.h>
 #include <dolphin/os.h>
 #include "evt/evt_cmd.h"
+#include "driver/extdrv.h"
 
 typedef struct NanNpcEntry NanNpcEntry;
 
@@ -14,7 +15,7 @@ typedef struct TobikakariSpot TobikakariSpot;
 
 struct NanNpcEntry {
     char name[16];                  // 0x0
-    void* pose;                     // 0x10
+    ExtPose* pose;                  // 0x10
     u16 flags;                      // 0x14
     s16 field_0x16;                 // 0x16
     Vec position;                   // 0x18

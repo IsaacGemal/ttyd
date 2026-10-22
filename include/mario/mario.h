@@ -134,7 +134,7 @@ typedef struct MarioWork {
     u32 field_0x14;                // 0x14
     const char* animName;          // 0x18
     const char* paperAnimName;     // 0x1C
-    u8 field_0x20[4];              // 0x20
+    s32 field_0x20;                // 0x20
     u8 field_0x24[0x28 - 0x24];    // 0x24
     u16 poseTime;                  // 0x28, paper pose frame passed to animPoseSetLocalTime; every reader loads it unsigned
     u8 field_0x2A[0x2E - 0x2A];    // 0x2A
@@ -229,19 +229,19 @@ typedef struct MarioWork {
     s32 wallHoldTimer;             // 0x1D0, counts down from 14 before wallDist can drop (marioCheckWall)
     void* touchNpc;                // 0x1D4, returned by marioGetTouchNpcPtr
     s32 field_0x1D8;               // 0x1D8
-    void* actionHitObj;            // 0x1DC, front hit for an A press: mario_hit sets it on the press frame, mario_motion's action check reads it (mario_balloon, party_yoshi and mot_ship touch it raw)
-    void* hitobjFront;             // 0x1E0, front-wall HitEntry from searchFrontWall (marioCheckWall, mot_roll)
-	void* hitobjStandOn;           // 0x1E4, 0x1E8 US HitEntry
-	void* hitobjJumpFrom;          // 0x1E8, 0x1EC US HitEntry
-	void* hitobjPush;              // 0x1EC JP, 0x1F0 US HitEntry
-    void* hitobjWall;              // 0x1F0, front-wall HitEntry mario_hit's wall checks store on either branch (also when hitobjPush is not set), party_yoshi's too; unlike hitobjFront never swapped for hitobjBalloon; read by marioChkToge, mot_roll, mot_ship, koopa_motion and party_yoshi
-    void* hitobjHead;              // 0x1F4, marioSearchHead result
-    void* hitobjUnder;             // 0x1F8, marioSearchUnder result (mario_hit)
-    void* hitobjHammer;            // 0x1FC, hit the hammer struck: mot_hammer copies its hitEstimate target (0x200) at impact and the case-0x14 front ray stores its hit; cleared at each marioMotion; mobjdrv and casedrv test it for hammer triggers
-    s32 field_0x200;               // 0x200
-    void* hitobjDamageReturn;      // 0x204, hit whose damage return position mot_damage uses
-    void* hitobjStandOnPrev;       // 0x208, hitobjStandOn copied at the end of the frame (mario.c)
-    void* hitobjBalloon;           // 0x20C, balloon hit from the front-wall search
+    struct HitEntry* actionHitObj; // 0x1DC, front hit for an A press: mario_hit sets it on the press frame, mario_motion's action check reads it (mario_balloon, party_yoshi and mot_ship touch it raw)
+    struct HitEntry* hitobjFront;  // 0x1E0, front-wall HitEntry from searchFrontWall (marioCheckWall, mot_roll)
+	struct HitEntry* hitobjStandOn; // 0x1E4, 0x1E8 US HitEntry
+	struct HitEntry* hitobjJumpFrom; // 0x1E8, 0x1EC US HitEntry
+	struct HitEntry* hitobjPush;   // 0x1EC JP, 0x1F0 US HitEntry
+    struct HitEntry* hitobjWall;   // 0x1F0, front-wall HitEntry mario_hit's wall checks store on either branch (also when hitobjPush is not set), party_yoshi's too; unlike hitobjFront never swapped for hitobjBalloon; read by marioChkToge, mot_roll, mot_ship, koopa_motion and party_yoshi
+    struct HitEntry* hitobjHead;   // 0x1F4, marioSearchHead result
+    struct HitEntry* hitobjUnder;  // 0x1F8, marioSearchUnder result (mario_hit)
+    struct HitEntry* hitobjHammer; // 0x1FC, hit the hammer struck: mot_hammer copies its hitEstimate target (0x200) at impact and the case-0x14 front ray stores its hit; cleared at each marioMotion; mobjdrv and casedrv test it for hammer triggers
+    struct HitEntry* field_0x200;  // 0x200
+    struct HitEntry* hitobjDamageReturn; // 0x204, hit whose damage return position mot_damage uses
+    struct HitEntry* hitobjStandOnPrev; // 0x208, hitobjStandOn copied at the end of the frame (mario.c)
+    struct HitEntry* hitobjBalloon; // 0x20C, balloon hit from the front-wall search
     f32 frontWallDist;             // 0x210, searchFrontWall distance, reset to 1000 each check (marioCheckWall, dou10_yoko_yari)
     f32 slopeAngle;                // 0x214, angle of the ground normal from vertical (mario_hit, mot_roll)
     f32 slopeTiltX;                // 0x218, tilt about X: gndCentiPlain of the normal's z/y (mario_hit, mot_roll)
@@ -274,7 +274,13 @@ typedef struct MarioWork {
     Vec slitFloorPos;              // 0x26C, floor point marioGetSlitFloorPos returns (copied from position in slit state 0x5A)
     s32 sfxIds[3];                 // 0x278, sound handles, 0xFFFFFFFF when none (mot_jump, mot_stay, peach, marioSoundInit)
     u32 inputMask;                 // 0x284, button mask set from evt_mario; 0 means unmasked (marioUpdateKeyData)
-    void* motStruct;               // 0x288, motion userdata, TODO rename?
+    union {
+        void* motStruct;                         // 0x288, motion userdata, TODO rename?
+        struct JabaraWork* jabaraWork;           // 0x288, mot_jabara
+        struct MotionPlaneData* motionPlaneData; // 0x288, mot_plane
+        struct MotRoll* motRoll;                 // 0x288, mot_roll
+        struct MotionShipData* motionShipData;   // 0x288, mot_ship
+    };
     struct KpaWork* koopaWork;     // 0x28C, the koopa character's work (koopa.h, KPA); marioReInit keeps it across its memset
     f32 dirEventStart;             // 0x290, start yaw of marioSetDirEventMain
     f32 dirEventTarget;            // 0x294, target yaw is 270 minus this

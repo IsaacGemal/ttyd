@@ -135,7 +135,7 @@ static u32 sintbl[450] = {
 
 USER_FUNC(evt_moving_floor_alloc) {
     s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)_mapAlloc(sizeof(MovingFloorWork));
+    MovingFloorWork* work = _mapAlloc(sizeof(MovingFloorWork));
 
     memset(work, 0, sizeof(MovingFloorWork));
     work->mode = event->lwData[6];
@@ -406,7 +406,7 @@ USER_FUNC(evt_moving_floor_main) {
     f32 dt;
     u32 idx;
 
-    tick = ((s32*)&event->lifetime)[1] - ((s32*)&work->prevLifetime)[1];
+    tick = (s32)event->lifetime - (s32)work->prevLifetime;
     us = OSTicksToMicroseconds(tick);
     dt = (f32)us;
     {

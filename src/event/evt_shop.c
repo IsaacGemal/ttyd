@@ -209,7 +209,7 @@ USER_FUNC(evt_shop_main_func) {
 	s32 selected = 0;
 	MarioWork* mario = marioGetPtr();
 	PartyEntry* party = partyGetPtr(0);
-	HitEntry* hit = (HitEntry*)mario->hitobjStandOn;
+	HitEntry* hit = mario->hitobjStandOn;
 	s32 buttons;
 	s32 i;
 
@@ -328,7 +328,7 @@ USER_FUNC(evt_shop_main_func) {
 			sprintf(name, shop_icon_name_fmt, i);
 			if (wp->acquired[i] & 1) {
 				iconFlagOn(name, 2);
-			} else if (*(u32*)obj & 1) {
+			} else if (obj->flags & 1) {
 				iconFlagOn(name, 2);
 			} else {
 				iconFlagOff(name, 2);
@@ -607,28 +607,28 @@ USER_FUNC(point_disp_onoff) {
 
 USER_FUNC(evt_shop_setup) {
 	s32* args;
-	s32 v0;
-	s32 v1;
-	s32 v2;
-	s32 v3;
+	ShopObj* v0;
+	s32* v1;
+	ShopperData* v2;
+	ItemDbEntry* v3;
 	NpcEntry* npc;
 	s32 i;
 	ShopWork* wp;
 
 	args = event->args;
-	v0 = evtGetValue(event, args[0]);
-	v1 = evtGetValue(event, args[1]);
-	v2 = evtGetValue(event, args[2]);
-	v3 = evtGetValue(event, args[3]);
+	v0 = (ShopObj*)evtGetValue(event, args[0]);
+	v1 = (s32*)evtGetValue(event, args[1]);
+	v2 = (ShopperData*)evtGetValue(event, args[2]);
+	v3 = (ItemDbEntry*)evtGetValue(event, args[3]);
 
-	wp = (ShopWork*)_mapAlloc(0xD8);
+	wp = _mapAlloc(0xD8);
 	memset(wp, 0, 0xD8);
 	_wp = wp;
 	strncpy(mapname, gp->currentMapName, 15);
-	wp->objs = (ShopObj*)v0;
-	wp->items = (s32*)v1;
-	wp->shopper = (ShopperData*)v2;
-	wp->itemDbOverrides = (ItemDbEntry*)v3;
+	wp->objs = v0;
+	wp->items = v1;
+	wp->shopper = v2;
+	wp->itemDbOverrides = v3;
 	wp->numItems = 6;
 
 	for (i = 0; i < wp->numItems; i++) {
@@ -638,7 +638,7 @@ USER_FUNC(evt_shop_setup) {
 		mapObjGetPos(wp->objs[i].name, &pos);
 		mapObjFlagOn(wp->objs[i].name, 0x4000);
 		sprintf(buf, shop_icon_name_fmt, i);
-		iconEntry(buf, *(u16*)&itemDataTable[wp->items[i * 2]].icon_id);
+		iconEntry(buf, itemDataTable[wp->items[i * 2]].icon_id);
 		iconSetPos(buf, pos.x, SHOP_F32(shop_icon_y_offset) + pos.y, pos.z);
 		iconFlagOn(buf, 0x40);
 		wp->acquired[i] = 0;
@@ -661,7 +661,7 @@ USER_FUNC(evt_shop_setup) {
 			wp->acquired[i] |= 1;
 		}
 	}
-	npc = npcNameToPtr(((ShopperData*)v2)->name);
+	npc = npcNameToPtr(v2->name);
 	npc->talkEvt = shopper_talk_evt;
 	wp->mainEvt = evtEntryType(main_evt, 0, 0x20, 0);
 	wp->mainEvt->lwData[0] = (s32)wp;

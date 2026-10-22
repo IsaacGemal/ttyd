@@ -186,7 +186,7 @@ void effExplosionDisp(CameraId camId, void* param) {
 	}
 
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_vtx);
+	effSetVtxDescN64(size32x32_tex32x32_vtx);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

@@ -280,7 +280,7 @@ static inline void winMgrDispWaku0(Mtx mtx, WinMgrEntry* entry) {
 #endif
 
 void select_disp3_mario(WinMgrEntry* entry) {
-    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    WinMgrSelect* select = entry->param;
 
     pouchGetPtr();
     if (!(wp->mEntries[select->descriptorId[2]].flags & 4)) {
@@ -312,7 +312,7 @@ void select_disp3_mario(WinMgrEntry* entry) {
 }
 
 void select_disp3_party(WinMgrEntry* entry) {
-    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    WinMgrSelect* select = entry->param;
     PouchData* pouch = pouchGetPtr();
     u16 id;
 
@@ -341,7 +341,7 @@ void select_disp3_party(WinMgrEntry* entry) {
 }
 
 void select_disp3(WinMgrEntry* entry) {
-    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    WinMgrSelect* select = entry->param;
 
     if (!(wp->mEntries[select->descriptorId[2]].flags & 4)) {
         WinMgrSelectItem* items = select->items;
@@ -377,7 +377,7 @@ void select_main3(WinMgrEntry* entry) {
 }
 
 void select_disp2(WinMgrEntry* entry) {
-    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    WinMgrSelect* select = entry->param;
     const char* msg;
     u16 width;
     u16 x;
@@ -434,7 +434,7 @@ void select_disp2(WinMgrEntry* entry) {
 
 // The first native signed int-to-float conversion pools the .rodata+0x468 double here.
 void select_disp_luigi(WinMgrEntry* entry) {
-    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    WinMgrSelect* select = entry->param;
     s32 i;
     InformantInfo* info;
     Mtx mtx1;
@@ -491,8 +491,8 @@ void select_disp_luigi(WinMgrEntry* entry) {
         }
 
         winFontInit();
-        saved = ((char*)info->initEndPos)[info->tagEndPos];
-        ((char*)info->initEndPos)[info->tagEndPos] = 0;
+        saved = info->initEndPos[info->tagEndPos];
+        info->initEndPos[info->tagEndPos] = 0;
         {
             GXColor color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             f32 rowY;
@@ -503,9 +503,9 @@ void select_disp_luigi(WinMgrEntry* entry) {
             rowY = (f32)(entry->y - 0x20 - i * 0x18);
             tmpRow.y = select->baseY + (zero + rowY);
             posRow = tmpRow;
-            winFontSet(posRow, scaleRow, color, (const char*)info->initEndPos);
+            winFontSet(posRow, scaleRow, color, info->initEndPos);
         }
-        ((char*)info->initEndPos)[info->tagEndPos] = saved;
+        info->initEndPos[info->tagEndPos] = saved;
 
         if (select->kind == 0x11 && !(select->items[i].flags & 1)) {
             GXColor color;
@@ -591,7 +591,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
 // The target's dead `lwz r0,0x38(r24); cmpwi r0,0` before the first winFontInit is reproduced by
 // `if (select->firstItem) { zero = zero; }` (the dead store is removed, the compare stays).
 void select_disp_mario(WinMgrEntry* entry) {
-    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    WinMgrSelect* select = entry->param;
     s32 i;
     Vec posName, tmpName, scaleName;
     Vec posIcon, tmpIcon, scaleIcon;
@@ -819,7 +819,7 @@ void select_disp_mario(WinMgrEntry* entry) {
 // r0,0x0` before the first winFontInit is reproduced by `if (select->firstItem) { zero = zero; }`
 // (the dead store is removed, the compare stays).
 void select_disp_party(WinMgrEntry* entry) {
-    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    WinMgrSelect* select = entry->param;
     PouchData* pouch = pouchGetPtr();
     s32 i;
     Vec posName, tmpName, scaleName, scaleTmp;
@@ -1118,7 +1118,7 @@ void select_disp_party(WinMgrEntry* entry) {
 // at .rodata+0x468/+0x4c0. The dead `lwz r0, 0x38(r25); cmpwi r0, 0x0` pair at the top of the
 // item loop is reproduced by `if (*(volatile s32*)&select->firstItem) { zero = zero; }`.
 void select_disp(WinMgrEntry* entry) {
-    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    WinMgrSelect* select = entry->param;
     s32 i;
     s32 value;
     ItemData* item;
@@ -1208,7 +1208,7 @@ void select_disp(WinMgrEntry* entry) {
             rowY = (f32)(entry->y - 0x2c - i * 0x18);
             tmpRow.y = select->baseY + (zero + rowY);
             posRow = tmpRow;
-            winIconSet(*(u16*)&item->icon_id, posRow, scaleRow, color);
+            winIconSet(item->icon_id, posRow, scaleRow, color);
         }
         winFontInit();
         {
@@ -1227,7 +1227,7 @@ void select_disp(WinMgrEntry* entry) {
         hasValue = 0;
         switch (select->kind) {
         case 11:
-            value = ((ItemDataView*)item)->buy_price;
+            value = item->buy_price;
             hasValue = 1;
             break;
         case 3:
@@ -1240,15 +1240,15 @@ void select_disp(WinMgrEntry* entry) {
             hasValue = 1;
             break;
         case 14:
-            value = ((ItemDataView*)item)->buy_price * 12 / 10;
+            value = item->buy_price * 12 / 10;
             hasValue = 1;
             break;
         case 15:
-            value = ((ItemDataView*)item)->buy_price * (evtGetValue(0, 0xF5DE06A9) + 11) / 10;
+            value = item->buy_price * (evtGetValue(0, 0xF5DE06A9) + 11) / 10;
             hasValue = 1;
             break;
         case 16:
-            value = (((ItemDataView*)item)->buy_price * 2 + 2) / 3;
+            value = (item->buy_price * 2 + 2) / 3;
             hasValue = 1;
             break;
         }
@@ -1397,7 +1397,7 @@ const f32 float_neg144_80421aa8 = -144.0f;
 
 void winMgrInit(void) {
     wp->mNumEntries = 32;
-    wp->mEntries = (WinMgrEntry*)__memAlloc(HEAP_DEFAULT, wp->mNumEntries * sizeof(WinMgrEntry));
+    wp->mEntries = __memAlloc(HEAP_DEFAULT, wp->mNumEntries * sizeof(WinMgrEntry));
     memset(wp->mEntries, 0, wp->mNumEntries * sizeof(WinMgrEntry));
 }
 
@@ -1407,7 +1407,7 @@ void winMgrReInit(void) {
 
 void winMgrDisp(CameraId camId, void* param) {
     Mtx rotmtx, scalemtx;
-    WinMgrEntry* entry = (WinMgrEntry*)param;
+    WinMgrEntry* entry = param;
 
     PSMTXRotRad(rotmtx, 'z', entry->rotation * 0.017453292f);
     PSMTXScale(scalemtx, entry->scale, entry->scale, entry->scale);
@@ -1755,7 +1755,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     s32 type;
     u16 item;
 
-    select = (WinMgrSelect*)__memAlloc(HEAP_DEFAULT, 0x3c);
+    select = __memAlloc(HEAP_DEFAULT, 0x3c);
     memset(select, 0, 0x3c);
 
     select->kind = kind;
@@ -1788,7 +1788,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     type = select->kind;
     switch (type) {
     case 0:
-        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x1e8);
+        select->items = __memAlloc(HEAP_DEFAULT, 0x1e8);
         memset(select->items, 0, 0x1e8);
         select->numItems = 0;
         if (firstItem != 0) {
@@ -1814,7 +1814,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     case 1:
     case 3:
     case 4:
-        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x54);
+        select->items = __memAlloc(HEAP_DEFAULT, 0x54);
         memset(select->items, 0, 0x54);
         select->numItems = 0;
         if (firstItem != 0) {
@@ -1832,7 +1832,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         break;
     case 2:
     case 12:
-        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x324);
+        select->items = __memAlloc(HEAP_DEFAULT, 0x324);
         memset(select->items, 0, 0x324);
         select->numItems = 0;
         if (firstItem != 0) {
@@ -1849,7 +1849,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         }
         break;
     case 5:
-        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x84);
+        select->items = __memAlloc(HEAP_DEFAULT, 0x84);
         memset(select->items, 0, 0x84);
         select->numItems = 0;
         if (firstItem != 0) {
@@ -1867,7 +1867,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         break;
     case 6:
     case 7:
-        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x1c);
+        select->items = __memAlloc(HEAP_DEFAULT, 0x1c);
         memset(select->items, 0, 0x1c);
         select->numItems = 0;
         for (i = 0; party_id_table[i] != 0; i++) {
@@ -1887,7 +1887,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         }
         break;
     case 8:
-        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x1c);
+        select->items = __memAlloc(HEAP_DEFAULT, 0x1c);
         memset(select->items, 0, 0x1c);
         select->numItems = 0;
         for (i = 0; party_id_table[i] != 0; i++) {
@@ -1907,7 +1907,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         mario_status_point_table[0] = &pouchGetPtr()->baseMaxHP;
         mario_status_point_table[1] = &pouchGetPtr()->baseMaxFP;
         mario_status_point_table[2] = &pouchGetPtr()->maximumBP;
-        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0xc);
+        select->items = __memAlloc(HEAP_DEFAULT, 0xc);
         memset(select->items, 0, 0xc);
         for (i = 0; i < 3; i++) {
             s32 canDown = 0;
@@ -1937,7 +1937,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         mario_status_point_table[0] = &pouchGetPtr()->baseMaxHP;
         mario_status_point_table[1] = &pouchGetPtr()->baseMaxFP;
         mario_status_point_table[2] = &pouchGetPtr()->maximumBP;
-        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 8);
+        select->items = __memAlloc(HEAP_DEFAULT, 8);
         memset(select->items, 0, 8);
         select->numItems = 0;
         for (i = 0; i < 3; i++) {
@@ -1952,7 +1952,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         }
         break;
     case 11:
-        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x18c);
+        select->items = __memAlloc(HEAP_DEFAULT, 0x18c);
         memset(select->items, 0, 0x18c);
         select->numItems = 0;
         for (i = 0; i < BADGE_COUNT; i++) {
@@ -1968,7 +1968,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         {
             s32 max = getBadgeStarmaniacTableMaxCount();
 
-            select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, max * 4);
+            select->items = __memAlloc(HEAP_DEFAULT, max * 4);
             memset(select->items, 0, max * 4);
             select->numItems = 0;
             for (i = 0; i < BADGE_COUNT; i++) {
@@ -1991,7 +1991,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         }
         break;
     case 14:
-        select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, 0x10);
+        select->items = __memAlloc(HEAP_DEFAULT, 0x10);
         memset(select->items, 0, 0x10);
         select->numItems = 0;
         for (i = 0; i < 4; i++) {
@@ -2006,7 +2006,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         {
             s32 max = getBadgeBottakuru100TableMaxCount();
 
-            select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, max * 4);
+            select->items = __memAlloc(HEAP_DEFAULT, max * 4);
             memset(select->items, 0, max * 4);
             select->numItems = 0;
             for (i = 0; i < max; i++) {
@@ -2018,7 +2018,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         {
             s32 max = getBadgeBteresaTableMaxCount();
 
-            select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, max * 4);
+            select->items = __memAlloc(HEAP_DEFAULT, max * 4);
             memset(select->items, 0, max * 4);
             select->numItems = 0;
             for (i = 0; i < 0x152; i++) {
@@ -2034,7 +2034,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
             u8* unk = (type == 0x11) ? jdt->unk14.perfectNewjohoReadFlag : jdt->unk14.luigiNewjohoReadFlag;
 
             select->numItems = jdt->count;
-            select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, (select->numItems + 1) * 4);
+            select->items = __memAlloc(HEAP_DEFAULT, (select->numItems + 1) * 4);
             memset(select->items, 0, (select->numItems + 1) * 4);
             for (i = 0; i < select->numItems; i++) {
                 select->items[i].id = i;
@@ -2051,7 +2051,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
 
             while (list[n++] != -1)
                 ;
-            select->items = (WinMgrSelectItem*)__memAlloc(HEAP_DEFAULT, (n + 1) * 4);
+            select->items = __memAlloc(HEAP_DEFAULT, (n + 1) * 4);
             memset(select->items, 0, (n + 1) * 4);
             select->numItems = 0;
             if (firstItem != 0) {
@@ -2084,8 +2084,10 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
 }
 
 int winMgrSelectCmpStarPrice(const void* a, const void* b) {
-    u32 va = itemDataTable[((const WinMgrSelectItem*)a)->id].star_piece_price;
-    u32 vb = itemDataTable[((const WinMgrSelectItem*)b)->id].star_piece_price;
+    const WinMgrSelectItem* itemA = a;
+    const WinMgrSelectItem* itemB = b;
+    u32 va = itemDataTable[itemA->id].star_piece_price;
+    u32 vb = itemDataTable[itemB->id].star_piece_price;
 
     if (va > vb) {
         return 1;
@@ -2094,8 +2096,10 @@ int winMgrSelectCmpStarPrice(const void* a, const void* b) {
 }
 
 int winMgrSelectCmpTypeSort(const void* a, const void* b) {
-    s32 va = itemDataTable[((const WinMgrSelectItem*)a)->id].type_sort_order;
-    s32 vb = itemDataTable[((const WinMgrSelectItem*)b)->id].type_sort_order;
+    const WinMgrSelectItem* itemA = a;
+    const WinMgrSelectItem* itemB = b;
+    s32 va = itemDataTable[itemA->id].type_sort_order;
+    s32 vb = itemDataTable[itemB->id].type_sort_order;
 
     if (va > vb) {
         return 1;
@@ -2209,7 +2213,7 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
         case 11:
             event->lwData[1] = itemId;
             event->lwData[2] = (s32)itemDataTable[itemId].id;
-            event->lwData[3] = ((ItemDataView*)itemDataTable)[itemId].buy_price;
+            event->lwData[3] = itemDataTable[itemId].buy_price;
             event->lwData[4] = itemDataTable[itemId].bp_cost;
             break;
         case 12:
@@ -2227,25 +2231,25 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
         case 14:
             event->lwData[1] = itemId;
             event->lwData[2] = (s32)itemDataTable[itemId].id;
-            event->lwData[3] = ((ItemDataView*)itemDataTable)[itemId].buy_price * 12 / 10;
+            event->lwData[3] = itemDataTable[itemId].buy_price * 12 / 10;
             event->lwData[4] = itemDataTable[itemId].bp_cost;
             break;
         case 15:
             event->lwData[1] = itemId;
             event->lwData[2] = (s32)itemDataTable[itemId].id;
-            event->lwData[3] = ((ItemDataView*)itemDataTable)[itemId].buy_price * (evtGetValue(0, 0xF5DE06A9) + 11) / 10;
+            event->lwData[3] = itemDataTable[itemId].buy_price * (evtGetValue(0, 0xF5DE06A9) + 11) / 10;
             event->lwData[4] = itemDataTable[itemId].bp_cost;
             break;
         case 16:
             event->lwData[1] = itemId;
             event->lwData[2] = (s32)itemDataTable[itemId].id;
-            event->lwData[3] = (((ItemDataView*)itemDataTable)[itemId].buy_price * 2 + 2) / 3;
+            event->lwData[3] = (itemDataTable[itemId].buy_price * 2 + 2) / 3;
             event->lwData[4] = itemDataTable[itemId].bp_cost;
             break;
         case 17:
-            sprintf((char*)jdt->infoEnd, "%s_%04d", jdt->prefix, jdt->info[itemId].storyId);
+            sprintf(jdt->infoEnd, "%s_%04d", jdt->prefix, jdt->info[itemId].storyId);
             sprintf(buf, "jperfect_title_%04d", jdt->info[itemId].storyId);
-            *(s32*)&jdt->unk10 = itemId;
+            jdt->unk10 = itemId;
             msg = msgSearch(buf);
             event->lwData[1] = (s32)jdt->infoEnd;
             event->lwData[2] = (s32)msg;
@@ -2257,10 +2261,10 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
             }
             break;
         case 18:
-            sprintf((char*)jdt->infoEnd, "%s_%04d", jdt->prefix, jdt->info[itemId].storyId);
-            *(s32*)&jdt->unk10 = itemId;
+            sprintf(jdt->infoEnd, "%s_%04d", jdt->prefix, jdt->info[itemId].storyId);
+            jdt->unk10 = itemId;
             event->lwData[1] = (s32)jdt->infoEnd;
-            event->lwData[2] = jdt->info[itemId].initEndPos;
+            event->lwData[2] = (s32)jdt->info[itemId].initEndPos;
             event->lwData[3] = jdt->info[itemId].tagEndPos;
             if (johoya_get(jdt->unk14.luigiNewjohoReadFlag, jdt->info[itemId].storyId) != 0) {
                 event->lwData[4] = 0;
@@ -2274,11 +2278,8 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
     return 0;
 }
 
-void winMgrSelectDelete(WinMgrSelect* select) {
-    // The original took the pointer as `void*` and cast it to WinMgrSelect*; that cast makes the
-    // compiler copy the incoming r3 through r0 before the first call (asm: mr r0, r3 / mr r31, r0).
-    // Keep the header's WinMgrSelect* signature and reproduce the copy with the same no-op cast.
-    WinMgrSelect* s = (WinMgrSelect*)(void*)select;
+void winMgrSelectDelete(void* select) {
+    WinMgrSelect* s = select;
     __memFree(HEAP_DEFAULT, s->items);
     __memFree(HEAP_DEFAULT, s);
 }
@@ -2294,7 +2295,7 @@ s32 winMgrSelectCursor(WinMgrSelect* select) {
 
 void select_main(WinMgrEntry* entry) {
     s32 count;
-    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    WinMgrSelect* select = entry->param;
     s32 newIndex;
     s32 off;
     s32 i;

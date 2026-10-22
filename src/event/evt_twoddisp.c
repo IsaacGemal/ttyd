@@ -110,7 +110,7 @@ USER_FUNC(evt_twoddisp_init) {
 	entry->uwBase = event->uwBase;
 	entry->ufBase = event->ufBase;
 	twodID = entry->eventId;
-	twodPtr = (TwoDDisplayer*)_mapAlloc(0x1450);
+	twodPtr = _mapAlloc(0x1450);
 	for (i = 0; (s32)i < 100; i++) {
 		TwoDDisplayer* entry = &twodPtr[i];
 		entry->name[0] = 0;

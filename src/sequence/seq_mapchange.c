@@ -216,7 +216,7 @@ void seq_mapChangeMain(SequenceWork* work) {
                         area = str_tou2;
                     }
                 }
-                file = (FileEntry*)fileAllocf(FILE_TYPE_RAW, str_relPathFormat, getMarioStDvdRoot(), area);
+                file = fileAllocf(FILE_TYPE_RAW, str_relPathFormat, getMarioStDvdRoot(), area);
                 if (file != NULL) {
                     if (strncmp(area, str_tst, 3) == 0) {
                         gp->relocationBase = _mapAlloc((u32)file->data[1]);

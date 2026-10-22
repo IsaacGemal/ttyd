@@ -517,9 +517,9 @@ void envDisp_DepthOfField(void) {
     GXSetProjection(camGetPtr(CAMERA_2D)->projection, cam->projType);
     GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
     GXSetCurrentMtx(0);
-    texobj = smartTexObj(&wp->captureObj, (void**)wp->capture);
+    texobj = smartTexObj(&wp->captureObj, &wp->capture->address);
     GXLoadTexObj(texobj, 0);
-    texobj = smartTexObj(&wp->captureObj2, (void**)wp->capture2);
+    texobj = smartTexObj(&wp->captureObj2, &wp->capture2->address);
     GXLoadTexObj(texobj, 1);
     GXSetNumChans(0);
     GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);

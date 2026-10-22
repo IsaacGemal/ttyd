@@ -96,9 +96,9 @@ static f32 randf(f32 min, f32 max) {
     return r * d + min;
 }
 
-f32 computeAngle(ExtPose* pose, NpcEntry* npc) {
+f32 computeAngle(ExtPose* pose, MarioWork* mario) {
     Mtx* m = pose->matrix;
-    f32 angle = angleABf(npc->position.x, npc->position.z, (*m)[0][3], (*m)[2][3]);
+    f32 angle = angleABf(mario->position.x, mario->position.z, (*m)[0][3], (*m)[2][3]);
 
     if (0.0f <= angle && angle < 90.0f) {
         return 90.0f - angle;
@@ -127,13 +127,13 @@ void computeMtx(ExtPose* pose, f32 angle) {
     (*pose->matrix)[2][2] = m[2][2];
 }
 
-s32 computeAlpha(TeresaEntry* p, NpcEntry* npc, f32 angle) {
+s32 computeAlpha(TeresaEntry* p, MarioWork* mario, f32 angle) {
     f32 a;
 
     if (angle > 180.0f) {
         angle = 360.0f - angle;
     }
-    a = npc->moveDir - 180.0f;
+    a = mario->dispReqDir - 180.0f;
     if (a < 0.0f) {
         a += 360.0f;
     }
@@ -1058,10 +1058,10 @@ static void senteresa_ext_main(void) {
                 if (pTeresa[i].phase > 3.1415927f) {
                     pTeresa[i].phase -= 3.1415927f;
                 }
-                angle = computeAngle(pose, (NpcEntry*)mario);
+                angle = computeAngle(pose, mario);
                 pTeresa[i].alpha += 3;
                 old = pTeresa[i].alpha;
-                computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                computeAlpha(&pTeresa[i], mario, angle);
                 if (pTeresa[i].alpha < old) {
                     pTeresa[i].state++;
                     g_nNumEndProc[0]++;
@@ -1106,8 +1106,8 @@ static void senteresa_ext_main(void) {
                 if (pTeresa[i].phase > 3.1415927f) {
                     pTeresa[i].phase -= 3.1415927f;
                 }
-                angle = computeAngle(pose, (NpcEntry*)mario);
-                computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                angle = computeAngle(pose, mario);
+                computeAlpha(&pTeresa[i], mario, angle);
                 if (g_nNumEndProc[0] == 200) {
                     pTeresa[i].timer = i + 1;
                     pTeresa[i].state++;
@@ -1159,9 +1159,9 @@ static void senteresa_ext_main(void) {
                 if (pTeresa[i].angle > 360.0f) {
                     pTeresa[i].angle -= 360.0f;
                 }
-                angle = computeAngle(pose, (NpcEntry*)mario);
+                angle = computeAngle(pose, mario);
                 computeMtx(pose, angle);
-                ret = computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                ret = computeAlpha(&pTeresa[i], mario, angle);
                 if (g_nNumHuttobasu[0] >= 20) {
                     break;
                 }
@@ -1221,9 +1221,9 @@ static void senteresa_ext_main(void) {
                         }
                     }
                 }
-                angle = computeAngle(pose, (NpcEntry*)mario);
+                angle = computeAngle(pose, mario);
                 computeMtx(pose, angle);
-                computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                computeAlpha(&pTeresa[i], mario, angle);
                 break;
             }
             case 6: {
@@ -1234,8 +1234,8 @@ static void senteresa_ext_main(void) {
                 (*pose->matrix)[0][3] = mario->position.x + pTeresa[i].offsetX;
                 (*pose->matrix)[1][3] = mario->position.y + pTeresa[i].offsetY;
                 (*pose->matrix)[2][3] = mario->position.z + pTeresa[i].offsetZ;
-                angle = computeAngle(pose, (NpcEntry*)mario);
-                ret = computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                angle = computeAngle(pose, mario);
+                ret = computeAlpha(&pTeresa[i], mario, angle);
                 if (!hammer) {
                     break;
                 }
@@ -1282,9 +1282,9 @@ static void senteresa_ext_main(void) {
                 if (pTeresa[i].angle > 360.0f) {
                     pTeresa[i].angle -= 360.0f;
                 }
-                angle = computeAngle(pose, (NpcEntry*)mario);
+                angle = computeAngle(pose, mario);
                 computeMtx(pose, angle);
-                ret = computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                ret = computeAlpha(&pTeresa[i], mario, angle);
                 pTeresa[i].timer--;
                 if (ret == 0 || pTeresa[i].timer == 0) {
                     pTeresa[i].timer = rand() % 300 + 200;
@@ -1323,9 +1323,9 @@ static void senteresa_ext_main(void) {
                 if (pTeresa[i].angle > 360.0f) {
                     pTeresa[i].angle -= 360.0f;
                 }
-                angle = computeAngle(pose, (NpcEntry*)mario);
+                angle = computeAngle(pose, mario);
                 computeMtx(pose, angle);
-                computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                computeAlpha(&pTeresa[i], mario, angle);
                 pTeresa[i].timer--;
                 if (pTeresa[i].timer == 0) {
                     pose->flags = 3;

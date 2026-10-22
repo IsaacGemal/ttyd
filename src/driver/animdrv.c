@@ -825,8 +825,9 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
             AnimationPose* paper = &wp->poses[pose->paperId];
             AnimationPoseFile* file = &wp->files[paper->fileId];
             FileEntry* handle = file->handle;
+            AnimationPoseData* data = *handle->data;
 
-            if (!strcmp((*(AnimationPoseData**)(handle->data))->fileName, animName)) {
+            if (!strcmp(data->fileName, animName)) {
                 s32 f = (pose->flags & 2) ? 1 : 0;
 
                 if (f == someflag) {
@@ -1715,10 +1716,10 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
         bind = &texBinds[bindId];
         palId = bind->palId;
         if (bind->texType == 0) {
-            desc = TEXGet((TEXPalette*)*texFile->handle->data, palId);
+            desc = TEXGet(*texFile->handle->data, palId);
 
             if (desc->CLUTHeader) {
-                desc = TEXGet((TEXPalette*)*texFile->handle->data, palId);
+                desc = TEXGet(*texFile->handle->data, palId);
                 animSetMaterial_WrapMode(desc, wrapFlags, &wrapS, &wrapT);
                 mipmap = (desc->textureHeader->minLOD != desc->textureHeader->maxLOD);
                 GXInitTlutObj(&tlutObj, desc->CLUTHeader->data, desc->CLUTHeader->format,
@@ -1732,7 +1733,7 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
                 GXLoadTlut(&tlutObj, 0);
                 GXLoadTexObj(&texObj, i);
             } else {
-                desc = TEXGet((TEXPalette*)*texFile->handle->data, palId);
+                desc = TEXGet(*texFile->handle->data, palId);
                 wrapS = desc->textureHeader->wrapS;
                 wrapT = desc->textureHeader->wrapT;
                 if (wrapFlags >= 0) {
@@ -2138,7 +2139,7 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
                     }
                 }
 
-                texIds = (s8*)draw->texArrayIds;
+                texIds = draw->texArrayIds;
                 firstId = draw->firstIdTex;
                 drawCall = &wp->mpCurPoseData->drawCalls[draw->firstDrawCall];
                 texCount = draw->texCount;
@@ -2276,14 +2277,14 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 keyFrame1, s32 keyFrame2, f32 
 
         if (wp->mpCurPose->flags & 0x40) {
             Vec pos = vec3_802c2dc8[0];
-            Vec* buffer = (Vec*)wp->mpCurPose->groupWorldPos->address;
+            Vec* buffer = wp->mpCurPose->groupWorldPos->address;
             pos.x = (*g_modeling_mtx)[0][3];
             pos.y = (*g_modeling_mtx)[1][3];
             pos.z = (*g_modeling_mtx)[2][3];
             buffer[groupId] = pos;
         }
         if (wp->mpCurPose->flags & 0x80) {
-            Mtx* dest = (Mtx*)wp->mpCurPose->groupWorldMtx->address;
+            Mtx* dest = wp->mpCurPose->groupWorldMtx->address;
             PSMTXCopy(*g_modeling_mtx, dest[groupId]);
         }
         if ((wp->mpCurPose->flags & 0x20) && groupId == *wp->mpCurPose->vivianGroupNo) {
@@ -3027,9 +3028,9 @@ void animPaperPoseDispSub(s32 unused, void* param) {
     GXSetTexCopySrc(left, top, w, h);
     GXSetTexCopyDst(w, h, 5, 0);
     pose->paperTexData[0] = smartAlloc(GXGetTexBufferSize(w, h, 5, 0, 0), 3);
-    GXCopyTex(*(void**)pose->paperTexData[0], 1);
+    GXCopyTex(pose->paperTexData[0]->address, 1);
     GXPixModeSync();
-    GXInitTexObj(&pose->paperTexObj[0], *(void**)pose->paperTexData[0], w, h, 5, 0, 0, 0);
+    GXInitTexObj(&pose->paperTexObj[0], pose->paperTexData[0]->address, w, h, 5, 0, 0, 0);
     pose->paperTexData[1] = NULL;
 }
 
@@ -3054,7 +3055,7 @@ u32 anim_ext_tex_size;
 
 extern GXColor dat_80419a3c;
 extern GXColor dat_80419a40;
-void animPoseDisp_MakeExtTexture(const char* name, void* animName, f32 f1, void* texObj, void* base,
+void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 f1, void* texObj, void* base,
                                  f32 f2, s32* out0, s32* out1, s32* out2, s32* out3) {
     s32 i;
     s32 found;
@@ -3090,7 +3091,7 @@ void animPoseDisp_MakeExtTexture(const char* name, void* animName, f32 f1, void*
         // the outer copy (r30) live, i.e. the original did not share one `pose` variable. Using the
         // shadow reproduces the target's non-CSEd pair (see the animPoseDrawMtx note).
         AnimationPose* p = &wp->poses[i];
-        found = animPoseSearchAnimIdx(p, (const char*)animName);
+        found = animPoseSearchAnimIdx(p, animName);
         if (found != p->animId) {
             p->animId = found;
             if (p->paperId != -1 && (p->flags & 2)) {

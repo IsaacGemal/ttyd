@@ -290,7 +290,7 @@ void magic2_2_line_dl(void) {
 	GXSetTevColorIn(2, 0xF, 8, 6, 0);
 	GXSetTevAlphaIn(2, 7, 4, 5, 0);
 	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)stg_magic2_2_line_v);
+	effSetVtxDescN64(stg_magic2_2_line_v);
 	GXBegin(0x90, 0, 0x48);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	tri2(4, 5, 1, 0, 4, 1, 0, 0);
@@ -335,7 +335,7 @@ void magic2_4_dl(void) {
 	GXSetTevColorIn(2, 0xF, 8, 6, 0);
 	GXSetTevAlphaIn(2, 7, 4, 1, 0);
 	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)stg_magic2_1_v);
+	effSetVtxDescN64(stg_magic2_1_v);
 	GXBegin(0x90, 0, 0x48);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	tri2(4, 5, 1, 0, 4, 1, 0, 0);

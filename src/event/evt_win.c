@@ -335,7 +335,7 @@ USER_FUNC(evt_unitwin_select_func) {
 	s32 selected = 0;
 	MarioWork* mario = marioGetPtr();
 	PartyEntry* party = partyGetPtr(0);
-	HitEntry* hit = (HitEntry*)mario->hitobjStandOn;
+	HitEntry* hit = mario->hitobjStandOn;
 	s32 buttons;
 	s32 i;
 
@@ -436,7 +436,7 @@ USER_FUNC(evt_unitwin_select_func) {
 			sprintf(name, str_uwn_d, i);
 			if (wp->taken[i] & 1) {
 				iconFlagOn(name, 2);
-			} else if (*(u32*)obj & 1) {
+			} else if (obj->flags & 1) {
 				iconFlagOn(name, 2);
 			} else {
 				iconFlagOff(name, 2);
@@ -516,7 +516,7 @@ static inline const char* unitwin_party_name(s32 i) {
 // informant list), which MWCC strength-reduces into a per-loop offset register; the loop counter `i`
 // and a few flags are function-scope locals reused by every block.
 void evt_unitwin_disp_func(CameraId cameraId, void* param) {
-	UnitWinWork* wp = (UnitWinWork*)param;
+	UnitWinWork* wp = param;
 	PouchData* pouch = pouchGetPtr();
 	s32 i;
 	s32 blink;
@@ -567,7 +567,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					if (item >= BADGE_MIN && item < BADGE_MAX) {
 						price = itemDataTable[item].discount_price;
 					} else {
-						price = ((ItemDataView*)&itemDataTable[item])->buy_price;
+						price = itemDataTable[item].buy_price;
 					}
 				}
 				PSMTXTrans(mtx, float_8_8041daf0[0] + (float_neg304_8041daf4[0] + sx),
@@ -698,7 +698,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			ItemData* data = &itemDataTable[it];
 
 			if (it != 0) {
-				iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, 0x10, ((ItemDataView*)data)->icon_id);
+				iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, 0x10, data->icon_id);
 				FontDrawStart();
 				FontDrawString(36.0f, wp->listY + (f32)(0x50 - dispCnt * 0x18), data->id);
 				if ((f32)dispCnt == wp->cursorRow) {
@@ -875,7 +875,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 						icolor = (GXColor){ 0xA0, 0xA0, 0xA0, 0xFF };
 					}
 				}
-				iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, (u16)(flag | 0x10), ((ItemDataView*)data)->icon_id);
+				iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, (u16)(flag | 0x10), data->icon_id);
 				FontDrawStart();
 				FontDrawScale(0.800000011920929f);
 				{
@@ -888,25 +888,25 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 
 					switch (wp->mode) {
 					case 0xE:
-						price = ((ItemDataView*)data)->buy_price * 12 / 10;
+						price = data->buy_price * 12 / 10;
 						sprintf(buf, "%2d", price);
 						scale = 1.0f;
 						x = 0;
 						break;
 					case 0xF:
-						price = ((ItemDataView*)data)->buy_price * (evtGetValue(NULL, 0xF5DE06A9) + 11) / 10;
+						price = data->buy_price * (evtGetValue(NULL, 0xF5DE06A9) + 11) / 10;
 						sprintf(buf, "%3d", price);
 						scale = 1.0f;
 						x = -0xE;
 						break;
 					case 0x10:
-						price = (((ItemDataView*)data)->buy_price * 2 + 2) / 3;
+						price = (data->buy_price * 2 + 2) / 3;
 						sprintf(buf, "%4d", price);
 						scale = 0.800000011920929f;
 						x = -0x14;
 						break;
 					case 0xB:
-						sprintf(buf, "%2d", ((ItemDataView*)data)->buy_price);
+						sprintf(buf, "%2d", data->buy_price);
 						scale = 1.0f;
 						x = 0;
 						break;
@@ -951,7 +951,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		s32 mode50 = wp->mode;
 		u32 scX, scY, scW, scH;
 		InformantInfo* info;
-		const u8* prefix;
+		u8* prefix;
 		InformantWork* jdt = &_jdt;
 		s32 listOff;
 
@@ -991,7 +991,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			char saved;
 			GXColor tcolor;
 
-			if (johoya_get((u8*)prefix, info->storyId) != 0) {
+			if (johoya_get(prefix, info->storyId) != 0) {
 				sprintf(buf, "");
 				tcolor = (GXColor){ 0xA0, 0xA0, 0xA0, 0xFF };
 			} else {
@@ -999,12 +999,12 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				tcolor = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 			}
 			FontDrawStart();
-			saved = ((char*)info->initEndPos)[info->tagEndPos];
-			((char*)info->initEndPos)[info->tagEndPos] = 0;
+			saved = info->initEndPos[info->tagEndPos];
+			info->initEndPos[info->tagEndPos] = 0;
 			FontDrawColor(tcolor);
 			FontDrawScale(0.800000011920929f);
-			FontDrawString(1.0f, wp->listY + (f32)(0x50 - i * 0x18), (char*)info->initEndPos);
-			((char*)info->initEndPos)[info->tagEndPos] = saved;
+			FontDrawString(1.0f, wp->listY + (f32)(0x50 - i * 0x18), info->initEndPos);
+			info->initEndPos[info->tagEndPos] = saved;
 			if (wp->mode == 0x11) {
 				FontDrawStart();
 				FontDrawColor(tcolor);

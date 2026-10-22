@@ -86,7 +86,7 @@ WinMgrEntry* winMgrGetPtr(s32 id);
 void winMgrHelpInit(WinMgrEntry* entry);
 void winMgrHelpMain(WinMgrEntry* entry);
 void winMgrHelpDraw(WinMgrEntry* entry);
-void winMgrSelectDelete(WinMgrSelect* select);
+void winMgrSelectDelete(void* select);
 WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel);
 s32 winMgrSelect(WinMgrSelect* select);
 s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event);

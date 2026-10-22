@@ -132,6 +132,7 @@ BOOL parseGet1Next(s32 type, void* data) {
 	s32 k;
 	s32 len;
 	s32 i;
+	Vec* vec;
 	s32 tokenStart;
 	s32 state;
 
@@ -139,9 +140,10 @@ BOOL parseGet1Next(s32 type, void* data) {
 	switch (type) {
 	case 3:
 		// Three-component (x, y, z) value: parse each part as a float.
-		result *= parseGet1Next(2, &((Vec*)data)->x);
-		result *= parseGet1Next(2, &((Vec*)data)->y);
-		result *= parseGet1Next(2, &((Vec*)data)->z);
+		vec = data;
+		result *= parseGet1Next(2, &vec->x);
+		result *= parseGet1Next(2, &vec->y);
+		result *= parseGet1Next(2, &vec->z);
 		return result;
 	default: {
 		p = &((s32*)&parse.field_0x4)[parse.field_0x54];

@@ -164,7 +164,7 @@ void effKemuri5Disp(CameraId camId, void* param) {
     effGetTexObjN64(0x4E, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetCullMode(GX_CULL_NONE);
-    effSetVtxDescN64((effVtxArray*)kmr_a_1_v);
+    effSetVtxDescN64(kmr_a_1_v);
 
     for (i = 0; i < effect->count; i++, data++) {
         if (data->alive == 0) {

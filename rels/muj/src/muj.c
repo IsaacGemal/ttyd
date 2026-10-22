@@ -459,8 +459,9 @@ static USER_FUNC(tornade_alpha_func) {
     s32 name = evtGetValue(event, args[0]);
     f32 alpha = evtGetFloat(event, args[1]);
     EffectEntry* effect = effNameToPtr((const char*)name);
+    effKamekiTornadeData* data = effect->userdata;
 
-    ((effKamekiTornadeData*)effect->userdata)->alphaScale = alpha;
+    data->alphaScale = alpha;
     return EVT_RETURN_DONE;
 }
 

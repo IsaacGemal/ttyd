@@ -451,7 +451,7 @@ EVT_END()
 static void moamoa_pose_init(void) {
     char name[0x20];
     char anim[0x20];
-    MoamoaGroupDef* entry = (MoamoaGroupDef*)ext_moamoa_data;
+    MoamoaGroupDef* entry = ext_moamoa_data;
     s32 i = 0;
     s32 start;
 

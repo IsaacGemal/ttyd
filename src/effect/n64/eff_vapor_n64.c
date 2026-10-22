@@ -248,7 +248,7 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	}
 
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)size64x64_tex32x32_vtx);
+	effSetVtxDescN64(size64x64_tex32x32_vtx);
 	frame2 = frame;
 	if (frame >= 0x1E) {
 		frame2 = 0x1D;

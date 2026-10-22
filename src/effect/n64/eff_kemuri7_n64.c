@@ -173,7 +173,7 @@ void effKemuri7Disp(CameraId camId, void* param) {
     effGetTexObjN64(0x4f, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetCullMode(GX_CULL_NONE);
-    effSetVtxDescN64((effVtxArray*)foot_vtx);
+    effSetVtxDescN64(foot_vtx);
 
     for (i = 0; i < effect->count; i++, data++) {
         if (data->active == 0) {

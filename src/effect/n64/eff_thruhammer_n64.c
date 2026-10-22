@@ -170,7 +170,7 @@ void effThruHammerDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	effGetTexObjN64(0x24, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP1);
-	effSetVtxDescN64((effVtxArray*)stg_thruhammer_v);
+	effSetVtxDescN64(stg_thruhammer_v);
 
 	PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);

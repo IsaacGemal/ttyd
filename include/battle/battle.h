@@ -95,7 +95,7 @@ typedef enum BattleSeqEndStep {
 struct BattleWorkCommandAction {
     u32 mType;      // 0x0
     BOOL mEnabled;  // 0x4
-    char* mName;    // 0x8
+    const char* mName; // 0x8
     u16 mIcon;      // 0xC
     u8 pad_0xE[2];  // 0xE
     u32 field_0x10; // 0x10, mDisabled?
@@ -104,7 +104,7 @@ struct BattleWorkCommandAction {
 struct BattleWorkCommandWeapon {
     BattleWeapon* mWeaponParams; // 0x0
     u32 field_0x4;               // 0x4
-    char* mName;                 // 0x8
+    const char* mName;           // 0x8
     u16 mIcon;                   // 0xC
     u8 pad_0xE[2];               // 0xE
     u32 mIndex;                  // 0x10
@@ -116,7 +116,7 @@ struct BattleWorkCommandOperation {
     u32 mType;          // 0x0
     BOOL mEnabled;      // 0x4
     u32 field_0x8;      // 0x8, mDisabled?
-    char* mName;        // 0xC
+    const char* mName;  // 0xC
     u16 mIcon;          // 0x10
     u8 pad_0x12[2];     // 0x12
     char* mDescription; // 0x14
@@ -126,7 +126,7 @@ struct BattleWorkCommandOperation {
 struct BattleWorkCommandParty {
     BattleUnitType mPartyId; // 0x0
     BOOL mEnabled;           // 0x4
-    char* mName;             // 0x8
+    const char* mName;       // 0x8
     u16 mIcon;               // 0xC
     u8 pad_0xE[2];           // 0xE
     char* mDescription;      // 0x10
@@ -136,7 +136,7 @@ struct BattleWorkCommandParty {
 
 struct BattleWorkCommandMultiItem {
     BOOL mEnabled;      // 0x0
-    char* mName;        // 0x4
+    const char* mName;  // 0x4
     char* mDescription; // 0x8
     u16 mIcon;          // 0xC
     u8 pad_0xE[2];      // 0xE

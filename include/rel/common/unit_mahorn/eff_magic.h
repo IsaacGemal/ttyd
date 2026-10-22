@@ -42,7 +42,7 @@ static USER_FUNC(eff_magic_get_posX) {
     s32 id = BattleTransID(event, evtGetValue(event, *args++));
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     effect = (EffectEntry*)unit->work[7];
-    data = (effMahorn2Data*)effect->userdata;
+    data = effect->userdata;
     for (i = 0; i < effect->count; i++, data++) {
         if (data->type == 3) {
             evtSetFloat(event, *args++, data->position.x);

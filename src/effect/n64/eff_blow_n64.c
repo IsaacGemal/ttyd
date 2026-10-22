@@ -389,7 +389,7 @@ void effBlowDisp(CameraId camId, void* param) {
 	}
     GXLoadTexMtxImm(scale, 0x1E, 1);
     GXSetCullMode(0);
-    effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+    effSetVtxDescN64(size16x16_tex32x32_vtx);
 
     PSMTXTrans(base, data->x, data->y, data->z);
     deg2rad = float_deg2rad_8041e98c;

@@ -66,5 +66,5 @@ void effPlayMayaAnim(void* anim);
 void effCalcMayaAnim(void* anim);
 void effDeleteMayaAnim(void* anim);
 void effDrawMayaPoly(void* data);
-void effCalcMayaAnimMatrix(void* anim, void* data, void* matrix, void* frame);
+void effCalcMayaAnimMatrix(void* anim, void* data, void* matrix, f32* alpha);
 // .sdata2 float words this unit reads by name

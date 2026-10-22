@@ -21,10 +21,6 @@ typedef struct DispWork {
     s32 page;         // 0x8, which page of the ranking is shown
 } DispWork;
 
-typedef struct PoseUser {
-    Vec* locators; // 0x0
-} PoseUser;
-
 extern voidfunctionptr _ctors[];
 extern voidfunctionptr _dtors[];
 

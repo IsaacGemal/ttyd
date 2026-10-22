@@ -190,7 +190,7 @@ void effKemuri12Disp(CameraId camId, void* param) {
         break;
     }
     GXSetCullMode(GX_CULL_NONE);
-    effSetVtxDescN64((effVtxArray*)vtx);
+    effSetVtxDescN64(vtx);
 
     switch (type) {
     case 0:

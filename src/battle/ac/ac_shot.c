@@ -275,7 +275,8 @@ s32 battleAcResult_Shot(BattleWork* work) {
 }
 
 void battleAcDisp_Shot(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleWork* work = param;
+    BattleActions* ac = &work->actionCommands;
     s32 state = ac->mAcState;
     BattleACDispParams* disp = &ac->dispParams;
 

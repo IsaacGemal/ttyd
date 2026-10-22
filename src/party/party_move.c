@@ -33,7 +33,7 @@
 // reverse of the original's address order so MWCC lays them out last-declared-first.
 s32 writeId[2];
 s32 readId[2];
-u8 footmarkBuf[0xA00];
+Footmark footmarkBuf[2][0x50];
 
 // This unit's first four .sdata2 pool words; the original emits them before the compiler's
 // pooled literals, so they stay named objects defined after the code.
@@ -54,7 +54,7 @@ static void flyMain(PartyEntry* party);
 
 Footmark* partyGetFootmarkPtr(u32 index) {
     u32 id = readId[index];
-    return (Footmark*)(footmarkBuf + index * 0x500) + id;
+    return &footmarkBuf[index][id];
 }
 
 s32 partyGetFootmarkReadId(u32 index) {
@@ -349,7 +349,7 @@ void partyNextReadId(u32 index) {
 void partyGetReadId(u32 index, f32* x, f32* y, f32* z) {
     Footmark* footmark;
     u32 id = readId[index];
-    footmark = (Footmark*)(footmarkBuf + index * 0x500) + id;
+    footmark = &footmarkBuf[index][id];
     *x = footmark->pos.x;
     *y = footmark->pos.y;
     *z = footmark->pos.z;
@@ -358,7 +358,7 @@ void partyGetReadId(u32 index, f32* x, f32* y, f32* z) {
 void partyGetReadId2(u32 index, Vec* out) {
     Footmark* footmark;
     u32 id = readId[index];
-    footmark = (Footmark*)(footmarkBuf + index * 0x500) + id;
+    footmark = &footmarkBuf[index][id];
     out->x = footmark->pos.x;
     out->y = footmark->pos.y;
     out->z = footmark->pos.z;
@@ -368,7 +368,7 @@ void partyGetReadId2(u32 index, Vec* out) {
 void partyClearFootmark(void) {
     MarioWork* mario = marioGetPtr();
     Vec pos = mario->position;
-    Footmark* f = (Footmark*)footmarkBuf;
+    Footmark* f = footmarkBuf[0];
     u32 i;
 
     for (i = 0; i < 0x50; i++) {
@@ -401,7 +401,7 @@ void partyClearFootmark2(void) {
     } else {
         pos = mario->position;
     }
-    f = (Footmark*)(footmarkBuf + 0x500);
+    f = footmarkBuf[1];
     for (i = 0; i < 0x50; i++) {
         f->pos = pos;
         f->field_0 = 0;
@@ -420,7 +420,7 @@ static inline void partyRecordFootmarkSub(PartyEntry* party, Vec* pos, s32 flags
     s32 id;
 
     marioGetPtr();
-    f = (Footmark*)(footmarkBuf + slot * 0x500);
+    f = footmarkBuf[slot];
     id = writeId[slot];
     f = &f[id];
     if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
@@ -430,7 +430,7 @@ static inline void partyRecordFootmarkSub(PartyEntry* party, Vec* pos, s32 flags
                 if (writeId[slot] >= 0x50) {
                     writeId[slot] = 0;
                 }
-                f = (Footmark*)(footmarkBuf + slot * 0x500 + writeId[slot] * 0x10);
+                f = &footmarkBuf[slot][writeId[slot]];
                 f->pos = *pos;
                 if (flags & 1) {
                     f->field_0 |= 1;
@@ -486,7 +486,7 @@ void partyRecordFootmark(PartyEntry* party) {
                 Footmark* f;
                 party->field_51 = 1;
                 mp = marioGetPtr()->position;
-                f = (Footmark*)footmarkBuf;
+                f = footmarkBuf[0];
                 for (i = 0; i < 0x50; i++) {
                     f->pos = mp;
                     f->field_0 = 0;
@@ -1137,7 +1137,7 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
             u32 i1;
 
             pos1 = marioGetPtr()->position;
-            f1 = (Footmark*)footmarkBuf;
+            f1 = footmarkBuf[0];
             for (i1 = 0; i1 < 0x50; i1++) {
                 f1->pos = pos1;
                 f1->field_0 = 0;
@@ -1171,7 +1171,7 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
                 } else {
                     pos = m2->position;
                 }
-                f = (Footmark*)(footmarkBuf + 0x500);
+                f = footmarkBuf[1];
                 for (i = 0; i < 0x50; i++) {
                     f->pos = pos;
                     f->field_0 = 0;
@@ -1341,11 +1341,11 @@ void partyIdleMain(PartyEntry* party) {
         work->field_4C = 0;
     }
     if (work->runMode != 0x0D) {
-        if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
+        if (work->groundHit != NULL && (hitGetAttr(work->groundHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
-        } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
+        } else if (work->field_12C != NULL && (hitGetAttr(work->field_12C) & 0x800)) {
             partyChgRunMode(party, 0x0D);
-        } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
+        } else if (work->headHit != NULL && (hitGetAttr(work->headHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
         }
     }
@@ -1362,7 +1362,7 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
     work->flags |= PARTY_FLAG_IS_GROUNDED;
     if (!(work->flags & PARTY_FLAG_IS_PARTNER)) {
         Vec pos = marioGetPtr()->position;
-        Footmark* f = (Footmark*)footmarkBuf;
+        Footmark* f = footmarkBuf[0];
         for (i = 0; i < 0x50; i++) {
             f->pos = pos;
             f->field_0 = 0;
@@ -1386,7 +1386,7 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
         } else {
             pos = player->position;
         }
-        f = (Footmark*)(footmarkBuf + 0x500);
+        f = footmarkBuf[1];
         for (i = 0; i < 0x50; i++) {
             f->pos = pos;
             f->field_0 = 0;
@@ -1423,7 +1423,7 @@ void partyMoveWalk(PartyEntry* party) {
         party->flags |= PARTY_FLAG_IS_GROUNDED;
         if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
             Vec mp = marioGetPtr()->position;
-            Footmark* f = (Footmark*)footmarkBuf;
+            Footmark* f = footmarkBuf[0];
             for (i = 0; i < 0x50; i++) {
                 f->pos = mp;
                 f->field_0 = 0;
@@ -1447,7 +1447,7 @@ void partyMoveWalk(PartyEntry* party) {
             } else {
                 pos = m->position;
             }
-            f = (Footmark*)(footmarkBuf + 0x500);
+            f = footmarkBuf[1];
             for (i = 0; i < 0x50; i++) {
                 f->pos = pos;
                 f->field_0 = 0;
@@ -1523,7 +1523,7 @@ static inline void partyWalkFootmarkSub(Vec* pos, s32 flags, s32 slot) {
 
     marioGetPtr();
     id = writeId[slot];
-    f = (Footmark*)(footmarkBuf + slot * 0x500 + id * 0x10);
+    f = &footmarkBuf[slot][id];
     if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
         if (f->pos.x != pos->x || f->pos.y != pos->y || f->pos.z != pos->z) {
             /* the named temp makes the compiler keep readId in r3 and id + 1 in r0 */
@@ -1533,7 +1533,7 @@ static inline void partyWalkFootmarkSub(Vec* pos, s32 flags, s32 slot) {
                 if (writeId[slot] >= 0x50) {
                     writeId[slot] = 0;
                 }
-                f = (Footmark*)(footmarkBuf + slot * 0x500 + writeId[slot] * 0x10);
+                f = &footmarkBuf[slot][writeId[slot]];
                 f->pos = *pos;
                 if (flags & 1) {
                     f->field_0 |= 1;
@@ -1652,11 +1652,11 @@ void party_move_mode_stay(PartyEntry* party) {
         work->field_4C = 0;
     }
     if (work->runMode != 0x0D) {
-        if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
+        if (work->groundHit != NULL && (hitGetAttr(work->groundHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
-        } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
+        } else if (work->field_12C != NULL && (hitGetAttr(work->field_12C) & 0x800)) {
             partyChgRunMode(party, 0x0D);
-        } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
+        } else if (work->headHit != NULL && (hitGetAttr(work->headHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
         }
     }
@@ -1707,11 +1707,11 @@ void party_move_mode_walk(PartyEntry* party) {
         work->field_4C = 0;
     }
     if (work->runMode != 0x0D) {
-        if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
+        if (work->groundHit != NULL && (hitGetAttr(work->groundHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
-        } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
+        } else if (work->field_12C != NULL && (hitGetAttr(work->field_12C) & 0x800)) {
             partyChgRunMode(party, 0x0D);
-        } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
+        } else if (work->headHit != NULL && (hitGetAttr(work->headHit) & 0x800)) {
             partyChgRunMode(party, 0x0D);
         }
     }
@@ -1924,7 +1924,7 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
     party->flags |= PARTY_FLAG_IS_GROUNDED;
     if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
         Vec mp = marioGetPtr()->position;
-        Footmark* f = (Footmark*)footmarkBuf;
+        Footmark* f = footmarkBuf[0];
         for (i = 0; i < 0x50; i++) {
             f->pos = mp;
             f->field_0 = 0;
@@ -1948,7 +1948,7 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
         } else {
             pos = m->position;
         }
-        f = (Footmark*)(footmarkBuf + 0x500);
+        f = footmarkBuf[1];
         for (i = 0; i < 0x50; i++) {
             f->pos = pos;
             f->field_0 = 0;
@@ -1994,7 +1994,7 @@ static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot) {
 
     marioGetPtr();
     id = writeId[slot];
-    f = (Footmark*)(footmarkBuf + slot * 0x500 + id * 0x10);
+    f = &footmarkBuf[slot][id];
     if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
         if (f->pos.x != pos->x || f->pos.y != pos->y || f->pos.z != pos->z) {
             /* the named temp makes the compiler keep readId in r3 and id + 1 in r0 */
@@ -2004,7 +2004,7 @@ static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot) {
                 if (writeId[slot] >= 0x50) {
                     writeId[slot] = 0;
                 }
-                f = (Footmark*)(footmarkBuf + slot * 0x500 + writeId[slot] * 0x10);
+                f = &footmarkBuf[slot][writeId[slot]];
                 f->pos = *pos;
                 if (flags & 1) {
                     f->field_0 |= 1;
@@ -2110,11 +2110,11 @@ void walkMain(PartyEntry* party) {
             work->field_4C = 0;
         }
         if (work->runMode != 0x0D) {
-            if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
+            if (work->groundHit != NULL && (hitGetAttr(work->groundHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
+            } else if (work->field_12C != NULL && (hitGetAttr(work->field_12C) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
+            } else if (work->headHit != NULL && (hitGetAttr(work->headHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             }
         }
@@ -2162,11 +2162,11 @@ void walkMain(PartyEntry* party) {
             work->field_4C = 0;
         }
         if (work->runMode != 0x0D) {
-            if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
+            if (work->groundHit != NULL && (hitGetAttr(work->groundHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
+            } else if (work->field_12C != NULL && (hitGetAttr(work->field_12C) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
+            } else if (work->headHit != NULL && (hitGetAttr(work->headHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             }
         }
@@ -2309,11 +2309,11 @@ static void flyMain(PartyEntry* party) {
             work->field_4C = 0;
         }
         if (work->runMode != 0x0D) {
-            if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
+            if (work->groundHit != NULL && (hitGetAttr(work->groundHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
+            } else if (work->field_12C != NULL && (hitGetAttr(work->field_12C) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
+            } else if (work->headHit != NULL && (hitGetAttr(work->headHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             }
         }
@@ -2361,11 +2361,11 @@ static void flyMain(PartyEntry* party) {
             work->field_4C = 0;
         }
         if (work->runMode != 0x0D) {
-            if (work->groundHit != NULL && (hitGetAttr((HitEntry*)work->groundHit) & 0x800)) {
+            if (work->groundHit != NULL && (hitGetAttr(work->groundHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
+            } else if (work->field_12C != NULL && (hitGetAttr(work->field_12C) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
-            } else if (work->headHit != NULL && (hitGetAttr((HitEntry*)work->headHit) & 0x800)) {
+            } else if (work->headHit != NULL && (hitGetAttr(work->headHit) & 0x800)) {
                 partyChgRunMode(party, 0x0D);
             }
         }

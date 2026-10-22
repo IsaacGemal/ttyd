@@ -241,7 +241,7 @@ void effMagic3Disp(CameraId camId, void* param) {
 	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
 	GXSetTevAlphaIn(0, 7, 1, 4, 7);
 	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)size32x16_tex64x32_vtx);
+	effSetVtxDescN64(size32x16_tex64x32_vtx);
 	angle = float_deg2rad_8041f710;
 	for (i = 0; i < effect->count; i++, data++) {
 		PSMTXTrans(mtx1, data->x, data->y, data->z);

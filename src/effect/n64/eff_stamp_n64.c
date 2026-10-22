@@ -175,7 +175,7 @@ void effStampDisp(CameraId camId, void* param) {
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     data++;
     GXSetCullMode(GX_CULL_NONE);
-    effSetVtxDescN64((effVtxArray*)size16x16_tex64x32_vtx);
+    effSetVtxDescN64(size16x16_tex64x32_vtx);
 
     deg2rad = float_deg2rad_8041fde0;
     for (i = 1; i < effect->count; i++, data++) {

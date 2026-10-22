@@ -137,7 +137,7 @@ void effCoinDisp(CameraId camId, void* param) {
 	effGetTexObjN64(0x84, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+	effSetVtxDescN64(size16x16_tex32x32_vtx);
 	GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0x0F, 0xFF });
 
 	data++;

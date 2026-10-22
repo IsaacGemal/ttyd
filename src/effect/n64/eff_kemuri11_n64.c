@@ -438,7 +438,7 @@ void effKemuri11Disp(CameraId camId, void* param) {
         break;
     }
 
-    effSetVtxDescN64((effVtxArray*)stg_thruhammer_v);
+    effSetVtxDescN64(stg_thruhammer_v);
     PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
     PSMTXRotRad(m1, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041f4e8);
     PSMTXConcat(m0, m1, m2);

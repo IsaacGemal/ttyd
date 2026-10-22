@@ -42,11 +42,11 @@ void marioBalloonOff(void) {
 void marioBalloonMain(void) {
     MarioWork* mario = marioGetPtr();
     s32 valid;
-    void* hit;
-    void* hit1;
-    void* hit2;
-    void* hit3;
-    void* hit4;
+    NpcEntry* hit;
+    HitEntry* hit1;
+    HitEntry* hit2;
+    HitEntry* hit3;
+    HitEntry* hit4;
     // Not set on the item-box path, yet read after it: the original does the same (it compares r29, which
     // only the hit and NPC paths assign). Initializing it changes the code, so only the matching build
     // leaves it unset.
@@ -77,11 +77,11 @@ void marioBalloonMain(void) {
     hit1 = mario->actionHitObj;
     valid = 0;
     if (hit1 != NULL) {
-        attr = hitGetAttr((HitEntry*)hit1);
+        attr = hitGetAttr(hit1);
         if (attr & 0x00800000) {
             valid = 0;
         } else if ((u32)attr & 0x80000000) {
-            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)hit1)) == 1) {
+            if (mobjGetHint(mobjHitObjPtrToPtr(hit1)) == 1) {
                 valid = 1;
             }
         } else {
@@ -103,9 +103,9 @@ void marioBalloonMain(void) {
     hit2 = mario->hitobjFront;
     valid = 0;
     if (hit2 != NULL) {
-        attr = hitGetAttr((HitEntry*)hit2);
+        attr = hitGetAttr(hit2);
         if ((u32)attr & 0x80000000) {
-            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)hit2)) == 1) {
+            if (mobjGetHint(mobjHitObjPtrToPtr(hit2)) == 1) {
                 valid = 1;
             }
         } else {
@@ -120,7 +120,7 @@ void marioBalloonMain(void) {
                 valid = 0;
             }
         }
-        if (marioChkBero((HitEntry*)hit2)) {
+        if (marioChkBero(hit2)) {
             valid = 0;
         }
     }
@@ -132,12 +132,12 @@ void marioBalloonMain(void) {
     hit3 = mario->hitobjStandOn;
     valid = 0;
     if (hit3 != NULL) {
-        attr = hitGetAttr((HitEntry*)hit3);
+        attr = hitGetAttr(hit3);
         if (attr & 0x00800000) {
             valid = 0;
         } else {
             if ((u32)attr & 0x80000000) {
-                if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)hit3)) == 1) {
+                if (mobjGetHint(mobjHitObjPtrToPtr(hit3)) == 1) {
                     valid = 1;
                 }
             } else {
@@ -152,7 +152,7 @@ void marioBalloonMain(void) {
                     valid = 0;
                 }
             }
-            if (marioChkBero((HitEntry*)hit3)) {
+            if (marioChkBero(hit3)) {
                 valid = 0;
             }
         }
@@ -169,10 +169,10 @@ void marioBalloonMain(void) {
         // The original calls marioGetPtr() and discards the result here (the pointer already lives in r31).
         marioGetPtr();
 #endif
-        if (!((u32)hitGetAttr((HitEntry*)hit4) & 0x80000000)) {
+        if (!((u32)hitGetAttr(hit4) & 0x80000000)) {
             valid = -1;
         } else {
-            obj = mobjHitObjPtrToPtr((HitEntry*)hit4);
+            obj = mobjHitObjPtrToPtr(hit4);
             if (strcmp(obj->animName, "MOBJ_TreasureBox") == 0 || strcmp(obj->animName, "MOBJ_BigTreasureBox") == 0) {
                 valid = 1;
                 if (mobjCheckItemboxOpen(obj) != 1) {
@@ -187,10 +187,10 @@ void marioBalloonMain(void) {
             // Second copy: the original again calls marioGetPtr() and discards the result.
             marioGetPtr();
 #endif
-            if (!((u32)hitGetAttr((HitEntry*)hit4) & 0x80000000)) {
+            if (!((u32)hitGetAttr(hit4) & 0x80000000)) {
                 valid = -1;
             } else {
-                obj = mobjHitObjPtrToPtr((HitEntry*)hit4);
+                obj = mobjHitObjPtrToPtr(hit4);
                 if (strcmp(obj->animName, "MOBJ_TreasureBox") == 0 || strcmp(obj->animName, "MOBJ_BigTreasureBox") == 0) {
                     valid = 1;
                     if (mobjCheckItemboxOpen(obj) != 1) {
@@ -204,8 +204,8 @@ void marioBalloonMain(void) {
 
     hit = fbatNpcTalkCheck();
     if (hit != NULL) {
-        if (!(((NpcEntry*)hit)->flags & 0x80000000)) {
-            balloonType = ((NpcEntry*)hit)->balloonType;
+        if (!(hit->flags & 0x80000000)) {
+            balloonType = hit->balloonType;
             ret = TRUE;
         }
         if (mario->field_0x264 != (u32)hit) {
@@ -233,7 +233,7 @@ void marioBalloonMain(void) {
                 return;
             }
             m2->dispFlags |= 0x02000000;
-            m2->field_0x260 = (u32)effMarioBalloonEntry(balloonType, (NpcEntry*)hit);
+            m2->field_0x260 = (u32)effMarioBalloonEntry(balloonType, hit);
             m2->field_0x264 = (u32)hit;
             return;
         } else {

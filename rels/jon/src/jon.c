@@ -2418,8 +2418,8 @@ void raster_disp(CameraId camera, void* param) {
         amplitude = 127.0f;
     }
 
-    tex = (u8*)smartAlloc(GXGetTexBufferSize(0x260, 0x1e0, GX_TF_RGBA8, GX_FALSE, GX_FALSE), 3)->address;
-    image = (u8*)smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, GX_FALSE), 3)->address;
+    tex = smartAlloc(GXGetTexBufferSize(0x260, 0x1e0, GX_TF_RGBA8, GX_FALSE, GX_FALSE), 3)->address;
+    image = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, GX_FALSE), 3)->address;
     phase = 6.2831855f * phase;
 
     for (i = 0; i < 0x40; i++) {

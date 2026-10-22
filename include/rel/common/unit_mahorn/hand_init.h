@@ -23,7 +23,7 @@ static USER_FUNC(hand_init) {
     for (partNum = 2; partNum <= 5; partNum++, index++) {
         Vec* dest;
         BtlUnit_SetAnim(BtlUnit_GetPartsPtr(unit, partNum), "MAH_Z_2");
-        dest = (Vec*)__memAlloc(HEAP_BATTLE, sizeof(Vec));
+        dest = __memAlloc(HEAP_BATTLE, sizeof(Vec));
         unit->work[index] = (s32)dest;
         dest->x = 0.0f;
         dest->y = 0.0f;

@@ -256,15 +256,17 @@ static USER_FUNC(effitemgetchange_cam) {
     s32 name = evtGetValue(event, args[0]);
     s32 cam = evtGetValue(event, args[1]);
     EffectEntry* effect = effNameToPtr((char*)name);
-    ((effItemGetData*)effect->userdata)->camId = cam;
+    effItemGetData* data = effect->userdata;
+    data->camId = cam;
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(effitemgetchange_cam_ptr) {
     s32* args = event->args;
-    s32 ptr = evtGetValue(event, args[0]);
+    EffectEntry* effect = (EffectEntry*)evtGetValue(event, args[0]);
     s32 cam = evtGetValue(event, args[1]);
-    ((effItemGetData*)((EffectEntry*)ptr)->userdata)->camId = cam;
+    effItemGetData* data = effect->userdata;
+    data->camId = cam;
     return EVT_RETURN_DONE;
 }
 
@@ -272,14 +274,16 @@ static USER_FUNC(effitemget_open) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
     EffectEntry* effect = effNameToPtr((char*)name);
-    ((effItemGetData*)effect->userdata)->scaleMode = 1;
+    effItemGetData* data = effect->userdata;
+    data->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(effitemget_open_ptr) {
     s32* args = event->args;
-    s32 ptr = evtGetValue(event, args[0]);
-    ((effItemGetData*)((EffectEntry*)ptr)->userdata)->scaleMode = 1;
+    EffectEntry* effect = (EffectEntry*)evtGetValue(event, args[0]);
+    effItemGetData* data = effect->userdata;
+    data->scaleMode = 1;
     return EVT_RETURN_DONE;
 }
 
@@ -355,8 +359,10 @@ static USER_FUNC(lect_npc_balloon_on_off) {
     s32 on = evtGetValue(event, args[1]);
     if (on != 0) {
         EffectEntry* effect = effMarioBalloonEntry(1, npc);
+        EffMarioBalloonData* data;
         eff = effect;
-        ((EffMarioBalloonData*)effect->userdata)->cameraId = 7;
+        data = effect->userdata;
+        data->cameraId = 7;
     } else {
         effDelete(eff);
     }
@@ -368,7 +374,8 @@ static USER_FUNC(efffukidashichange_cam) {
     s32 name = evtGetValue(event, args[0]);
     s32 cam = evtGetValue(event, args[1]);
     EffectEntry* effect = effNameToPtr((char*)name);
-    ((effFukidashiData*)effect->userdata)->camId = cam;
+    effFukidashiData* data = effect->userdata;
+    data->camId = cam;
     return EVT_RETURN_DONE;
 }
 

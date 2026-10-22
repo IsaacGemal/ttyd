@@ -159,9 +159,9 @@ void* aramMgrToAramAsync(void* data, u32 size) {
 }
 
 void* aramMgrToAram(void* data, u32 size) {
-	void* work = aramMgrToAramAsync(data, size);
+	ARAMWorkNode* work = aramMgrToAramAsync(data, size);
 
-	while (!(((ARAMWorkNode*)work)->flags & 4)) {
+	while (!(work->flags & 4)) {
 	}
 	return work;
 }

@@ -498,7 +498,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
     case 2:
         if (pouchGetHammerLv() > 0) {
             u16 iconId = itemDataTable[pouchGetHammerLv() + 8].icon_id;
-            winTexInit(*(TEXPalette**)work->winTpl->data);
+            winTexInit(*work->winTpl->data);
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
             fukiDrawR(iconId, x, 72.0f + y, 230.0f);
@@ -507,7 +507,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
     case 3:
         if (pouchGetJumpLv() > 0) {
             u16 iconId = itemDataTable[pouchGetJumpLv() + 5].icon_id;
-            winTexInit(*(TEXPalette**)work->winTpl->data);
+            winTexInit(*work->winTpl->data);
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
             fukiDrawR(iconId, x, 20.0f + y, 210.0f);
@@ -516,7 +516,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
     case 7:
         if (pouchCheckItem(2) != 0) {
             u16 iconId = itemDataTable[2].icon_id;
-            winTexInit(*(TEXPalette**)work->winTpl->data);
+            winTexInit(*work->winTpl->data);
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
             fukiDrawL(iconId, x, 90.0f + y, 80.0f);
@@ -525,7 +525,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
     case 8:
         if (pouchCheckItem(4) != 0) {
             u16 iconId = itemDataTable[4].icon_id;
-            winTexInit(*(TEXPalette**)work->winTpl->data);
+            winTexInit(*work->winTpl->data);
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
             fukiDrawL(iconId, x, 20.0f + y, 80.0f);
@@ -534,7 +534,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
     case 9:
         if (pouchCheckItem(5) != 0) {
             u16 iconId = itemDataTable[5].icon_id;
-            winTexInit(*(TEXPalette**)work->winTpl->data);
+            winTexInit(*work->winTpl->data);
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
             fukiDrawL(iconId, x, 130.0f + y, 30.0f);
@@ -543,7 +543,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
     case 10:
         if (pouchCheckItem(3) != 0) {
             u16 iconId = itemDataTable[3].icon_id;
-            winTexInit(*(TEXPalette**)work->winTpl->data);
+            winTexInit(*work->winTpl->data);
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
             fukiDrawL(iconId, x, 60.0f + y, 30.0f);
@@ -600,7 +600,7 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
                - 0.8f * (f32)FontGetMessageWidth(buf)
                - 10.0f, headerY, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white, buf);
     }
-    winTexInit(*(TEXPalette**)work->winTpl->data);
+    winTexInit(*work->winTpl->data);
     winTexSet(0xB0, (Vec){x - 255.0f, 112.0f + y, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
     winFontInit();
     winFontSet((Vec){x - 240.0f, 124.0f + y, 0.0f}, (Vec){0.7f, 0.7f, 0.7f}, black, msgSearch(BattleGetRankNameLabel(pouch->level)));
@@ -624,7 +624,7 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
         const char* tagTbl[3] = { "msg_menu_mario_ruby_hp", "msg_menu_mario_ruby_fp", "msg_menu_mario_ruby_bp" };
         rawW = (f32)FontGetMessageWidth(rawTbl[i]);
         halfTagW = 0.5f * (f32)FontGetMessageWidth(msgSearch(tagTbl[i]));
-        winTexInit(*(TEXPalette**)work->winTpl->data);
+        winTexInit(*work->winTpl->data);
         GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
         GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
         winTexSet(0xAF, (Vec){rowTexX, ((y - 38.0f) - (f32)(i * 34)) - 4.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, colTbl[i]);
@@ -648,7 +648,7 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
     fpTextY = 4.0f + (12.0f + fpRowY);
     winFontSetR((Vec){statX, fpTextY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, black, "%s", winZenkakuStr(pouch->currentFP));
     winFontSetR((Vec){statX, 4.0f + (12.0f + bpRowY), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, black, "%s", winZenkakuStr(pouch->maximumBP));
-    winTexInit(*(TEXPalette**)work->winTpl->data);
+    winTexInit(*work->winTpl->data);
     slashX = 190.0f + (x - 270.0f);
     winTexSet(0x10, (Vec){slashX, hpIconY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
     winTexSet(0x10, (Vec){slashX, fpIconY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
@@ -729,7 +729,7 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
         winFontSetR((Vec){listValueX, timeRowY, 0.0f}, (Vec){0.9f, 0.9f, 0.9f}, black, "%s", winZenkakuPadStr(mins, 2));
     }
 
-    winTexInit(*(TEXPalette**)work->winTpl->data);
+    winTexInit(*work->winTpl->data);
     for (i = 0; i < 4; i++) {
         winTexSet(0x11, (Vec){10.0f + (190.0f + x), 10.0f + (y - (f32)(i * 28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, loopWhite);
     }

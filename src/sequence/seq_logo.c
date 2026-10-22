@@ -256,7 +256,7 @@ void seq_logoMain(SequenceWork* work) {
 				first = fileAllocf(FILE_TYPE_RAW, "%s/b/first", getMarioStDvdRoot());
 				if (first) {
 					// Pins decode's live range ahead of the byte swap so the two locals colour as the original.
-					decode = (u8*)0;
+					decode = NULL;
 					size = *(u32*)*first->data;
 					size = ((size & 0xFF) << 16) | (size & 0xFF00) | ((size >> 16) & 0xFF);
 					decode = __memAlloc(HEAP_DEFAULT, size);

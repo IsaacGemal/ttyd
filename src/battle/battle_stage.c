@@ -948,7 +948,7 @@ void tou_gamen_screen_tev(void* param) {
 	s32 zero = 0;
 	MapTevCallback* tev = (MapTevCallback*)((u8*)param + zero);
 #else
-	MapTevCallback* tev = (MapTevCallback*)param;
+	MapTevCallback* tev = param;
 #endif
 
 	if (screen_wp->captured == 0) {
@@ -956,7 +956,7 @@ void tou_gamen_screen_tev(void* param) {
 	}
 
 	if (screen_wp->noiseMode != 0) {
-		buf = (u8*)screen_wp->texBuffer;
+		buf = screen_wp->texBuffer;
 
 		for (i = 0; i < 0x40; i++) {
 			for (j = 0; j < 0x40; j++) {

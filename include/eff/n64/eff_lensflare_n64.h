@@ -3,8 +3,16 @@
 #include <dolphin/types.h>
 #include "driver/camdrv.h"
 #include "driver/effdrv.h"
+// userdata is an array of six of these; the head (index 0) is also read as LensflareData.
 typedef struct LensflareEntry {
-    u8 pad_0[0x20]; // 0x00
+    s32 field_0;    // 0x00
+    s32 field_4;    // 0x04
+    f32 x;          // 0x08, head only
+    f32 y;          // 0x0C, head only
+    f32 z;          // 0x10, head only
+    s32 field_14;   // 0x14, alpha: the head's fade, each entry's cos-curve brightness
+    s32 field_18;   // 0x18, head only
+    s32 field_1C;   // 0x1C, head only
     f32 field_20;   // 0x20
     f32 field_24;   // 0x24
     f32 field_28;   // 0x28

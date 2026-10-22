@@ -40,6 +40,7 @@ typedef struct effKemuri9Data {
     s32 nextTexFrame; // 0x34
     s32 frame;       // 0x38
     s32 lifetime;    // 0x3C
+    effKemuri9Particle particles[]; // 0x40
 } effKemuri9Data;
 
 EffectEntry* effKemuri9N64Entry(s32 type, s32 count, s32 a2, f32 x, f32 y, f32 z, f32 a6, f32 a7) {
@@ -71,7 +72,7 @@ EffectEntry* effKemuri9N64Entry(s32 type, s32 count, s32 a2, f32 x, f32 y, f32 z
     data->lifetime = a2;
     data->frame = 0;
 
-    p = (effKemuri9Particle*)(data + 1);
+    p = data->particles;
     for (i = 1; i < count + 1; i++, p++) {
         p->x = 0.0f;
         p->y = 0.0f;

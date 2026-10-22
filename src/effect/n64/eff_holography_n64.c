@@ -1220,7 +1220,7 @@ void effHolographyDisp(CameraId camId, void* param) {
 	if (vtxIndex < 0) {
 		vtxIndex = 0;
 	}
-	effSetVtxDescN64((effVtxArray*)((holographyVtxData*)ach_01_v)->frames[vtxIndex]);
+	effSetVtxDescN64(((holographyVtxData*)ach_01_v)->frames[vtxIndex]);
 
 	effHolographySetColor2(frame);
 

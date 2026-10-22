@@ -171,7 +171,7 @@ void effPikkyoloDisp(CameraId camId, void* param) {
 	PSMTXScale(scaleMtx, 0.0625f, 0.015625f, 0.0f);
 	GXLoadTexMtxImm(scaleMtx, 0x1e, 1);
 	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)size16x16_tex16x16_vtx);
+	effSetVtxDescN64(size16x16_tex16x16_vtx);
 
 	for (i = 0; i < effect->count; i++, data++) {
 		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);

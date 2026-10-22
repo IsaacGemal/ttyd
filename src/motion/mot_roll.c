@@ -131,9 +131,9 @@ void marioResetRollSpd(void) {
     if (mario->currMotionId == 0x16) {
         if (marioGetPtr()->motStruct != NULL) {
             zero = 0.0f;
-            ((MotRoll*)marioGetPtr()->motStruct)->velX = zero;
+            marioGetPtr()->motRoll->velX = zero;
             zero = 0.0f;
-            ((MotRoll*)marioGetPtr()->motStruct)->velY = zero;
+            marioGetPtr()->motRoll->velY = zero;
         }
         mario->baseSpeed = 0.0f;
     }
@@ -456,8 +456,8 @@ void marioReInit_roll(void) {
     mario->wPlayerCollisionBox.x = 14.8f;
     mario->wPlayerCollisionBox.y = 14.8f;
     mario->mBaseDashSpeed = rollData[0];
-    ((MotRoll*)marioGetPtr()->motStruct)->velX = 0.0f;
-    ((MotRoll*)marioGetPtr()->motStruct)->velY = 0.0f;
+    marioGetPtr()->motRoll->velX = 0.0f;
+    marioGetPtr()->motRoll->velY = 0.0f;
     mario->dispPivot.x = -6.0f;
     mario->dispPivot.y = 6.0f;
     mario->dispOfs.x = 6.0f;
@@ -663,8 +663,8 @@ void mot_roll(void) {
         m2->wPlayerCollisionBox.y = 14.8f;
         m2->mBaseDashSpeed = rollData[0];
         f28 = 0.0f;
-        ((MotRoll*)marioGetPtr()->motStruct)->velX = 0.0f;
-        ((MotRoll*)marioGetPtr()->motStruct)->velY = 0.0f;
+        marioGetPtr()->motRoll->velX = 0.0f;
+        marioGetPtr()->motRoll->velY = 0.0f;
         m2->dispPivot.x = -6.0f;
         m2->dispPivot.y = 6.0f;
         m2->dispOfs.x = 6.0f;
@@ -678,8 +678,8 @@ void mot_roll(void) {
             mario->baseSpeed = 0.0f;
         }
         rollSetCamParam(0.4f, 0.01f, 2.0f);
-        ((MotRoll*)marioGetPtr()->motStruct)->unk8 = 0;
-        ((MotRoll*)marioGetPtr()->motStruct)->state = 0;
+        marioGetPtr()->motRoll->unk8 = 0;
+        marioGetPtr()->motRoll->state = 0;
         psndSFXOn_3D((char*)0x179, &mario->position);
         psndSFXOn_3D((char*)0x9F, &mario->position);
         mario->currSubMotionId = 1;
@@ -822,12 +822,12 @@ void mot_roll(void) {
     }
 
     f26 = mario->rollScaleY;
-    if (((MotRoll*)marioGetPtr()->motStruct)->unk8 != 0) {
-        ((MotRoll*)marioGetPtr()->motStruct)->unk8 = 0;
-        ((MotRoll*)marioGetPtr()->motStruct)->state = 1;
+    if (marioGetPtr()->motRoll->unk8 != 0) {
+        marioGetPtr()->motRoll->unk8 = 0;
+        marioGetPtr()->motRoll->state = 1;
         f26 = 1.0f;
     }
-    switch (((MotRoll*)marioGetPtr()->motStruct)->state) {
+    switch (marioGetPtr()->motRoll->state) {
     case 1:
         if (f26 < 1.4f) {
             f32 k = 1.0f;
@@ -837,7 +837,7 @@ void mot_roll(void) {
             }
         }
         if (mario->airTimer == 0) {
-            ((MotRoll*)marioGetPtr()->motStruct)->state = 2;
+            marioGetPtr()->motRoll->state = 2;
         }
         break;
     case 2:
@@ -845,7 +845,7 @@ void mot_roll(void) {
             f26 = 0.4f * (0.35f - f26) + f26;
             if (f26 <= 0.4f) {
                 f26 = 0.4f;
-                ((MotRoll*)marioGetPtr()->motStruct)->state = 3;
+                marioGetPtr()->motRoll->state = 3;
             }
         }
         break;
@@ -853,7 +853,7 @@ void mot_roll(void) {
         if (f26 < 1.0f) {
             f26 = 0.5f * (1.05f - f26) + f26;
             if (f26 >= 1.0f) {
-                ((MotRoll*)marioGetPtr()->motStruct)->state = 0;
+                marioGetPtr()->motRoll->state = 0;
                 f26 = 1.0f;
             }
         }
@@ -865,8 +865,8 @@ void mot_roll(void) {
 
     if (mario->hitobjStandOn == NULL && mario->hitobjFront != NULL &&
         !marioChkBero(mario->hitobjFront)) {
-        f29 = ((MotRoll*)marioGetPtr()->motStruct)->velX;
-        fqm = ((MotRoll*)marioGetPtr()->motStruct)->velY;
+        f29 = marioGetPtr()->motRoll->velX;
+        fqm = marioGetPtr()->motRoll->velY;
         f29 = f29 + 0.2f * (-f29);
         fqm = fqm + 0.2f * (-fqm);
         if (fabsf(f29) < 1.0f) {
@@ -875,8 +875,8 @@ void mot_roll(void) {
         if (fabsf(fqm) < 1.0f) {
             fqm = 0.0f;
         }
-        ((MotRoll*)marioGetPtr()->motStruct)->velX = f29;
-        ((MotRoll*)marioGetPtr()->motStruct)->velY = fqm;
+        marioGetPtr()->motRoll->velX = f29;
+        marioGetPtr()->motRoll->velY = fqm;
     }
 
     if (mario->hitobjStandOn != NULL) {
@@ -926,8 +926,8 @@ void mot_roll(void) {
         mario->airTimer = mario->airTimer + 1;
     }
 
-    f29 = ((MotRoll*)marioGetPtr()->motStruct)->velX;
-    f28 = ((MotRoll*)marioGetPtr()->motStruct)->velY;
+    f29 = marioGetPtr()->motRoll->velX;
+    f28 = marioGetPtr()->motRoll->velY;
     f30 = 0.0f;
     ay = f30;
 
@@ -1128,8 +1128,8 @@ void mot_roll(void) {
     }
     }
 
-    ((MotRoll*)marioGetPtr()->motStruct)->velX = f29;
-    ((MotRoll*)marioGetPtr()->motStruct)->velY = f28;
+    marioGetPtr()->motRoll->velX = f29;
+    marioGetPtr()->motRoll->velY = f28;
     f31 = -f28;
     f30 = angleABf(0.0f, 0.0f, f29, f31);
     spd = 3.1415927f * f30 / 180.0f;

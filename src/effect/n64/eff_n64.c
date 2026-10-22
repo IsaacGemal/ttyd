@@ -175,12 +175,12 @@ void effTexSetupN64(void) {
 
 	wp->effTexture = NULL;
 	wp->effTextureLoaded = FALSE;
-	wp->effTexture = (TEXPalette*)arcOpen("effect_n64.tpl", 0, 0);
+	wp->effTexture = arcOpen("effect_n64.tpl", 0, 0);
 	if (!wp->effTexture) {
 		sprintf(path, "%s/e/jp/effect_n64.tpl", getMarioStDvdRoot());
 		entry = DVDMgrOpen(path, 2, 0);
 		length = OSRoundUp32B(DVDMgrGetLength(entry));
-		wp->effTexture = (TEXPalette*)__memAlloc(HEAP_DEFAULT, length);
+		wp->effTexture = __memAlloc(HEAP_DEFAULT, length);
 		entry->info.cb.userData = entry;
 		DVDMgrReadAsync(entry, wp->effTexture, length, 0, _callback_tpl);
 	} else {
@@ -224,7 +224,9 @@ s32 effTblRandN64(u32 rand, s32 index) {
 	return rand2 % (s32)(rand + 1);
 }
 
-void effSetVtxDescN64(effVtxArray* array) {
+void effSetVtxDescN64(void* array) {
+	effVtxArray* vtx = array;
+
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
 	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
@@ -232,9 +234,9 @@ void effSetVtxDescN64(effVtxArray* array) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 5);
-	GXSetArray(GX_VA_POS, array->pos, 0xE);
-	GXSetArray(GX_VA_CLR0, array->clr0, 0xE);
-	GXSetArray(GX_VA_TEX0, array->tex0, 0xE);
+	GXSetArray(GX_VA_POS, vtx->pos, 0xE);
+	GXSetArray(GX_VA_CLR0, vtx->clr0, 0xE);
+	GXSetArray(GX_VA_TEX0, vtx->tex0, 0xE);
 }
 
 void tri1(s32 x, s32 y, s32 z, s32 unused) {

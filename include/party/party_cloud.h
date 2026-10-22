@@ -13,7 +13,7 @@ typedef struct PartyCloud {
     s32 sweepDown1; //0x14, 1 while sweepOffset1 is decreasing
     f32 sweepOffset2; //0x18, angle offset from unk4 for the second hit ray in getHitBreatheout2, same motion as sweepOffset1
     s32 sweepDown2; //0x1C, 1 while sweepOffset2 is decreasing
-    s32 hitBreathout[4]; //0x20, cloudGetHitBreathout(n) returns [n]
+    struct HitEntry* hitBreathout[4]; //0x20, cloudGetHitBreathout(n) returns [n]
     s32 useTimer; //0x30, frames left in an event-driven use (cloud_use)
     s32 sfxId; //0x34, sound handle, 0xFFFFFFFF when none
     s16 mode; //0x38, cycles 0/1/2 per frame: hit-ray height 8/20/40 above Mario (getHitBreatheout2)
@@ -24,7 +24,7 @@ void cloudGetAt(Vec* position);
 void cloudResetAt();
 f32 cloudGetBreathDir(void);
 f32 cloudGetBreathDist(void);
-s32 cloudGetHitBreathout(s32 param_1);
+struct HitEntry* cloudGetHitBreathout(s32 param_1);
 u8 cloudGetStatus();
 void cloudBobInit(PartyEntry* party);
 void cloudBobUpdate(PartyEntry* party);

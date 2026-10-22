@@ -283,14 +283,14 @@ void effCrystalDisp(CameraId camId, void* param) {
 		PSMTXConcat(base, rot, rot);
 		GXLoadPosMtxImm(rot, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		effSetVtxDescN64((effVtxArray*)size108x108_tex32x32_vtx);
+		effSetVtxDescN64(size108x108_tex32x32_vtx);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 		PSMTXRotRad(rot, 'z', 0.017453292f * (f32)(-timer * 8));
 		PSMTXConcat(base, rot, rot);
 		GXLoadPosMtxImm(rot, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		effSetVtxDescN64((effVtxArray*)size100x100_tex32x32_vtx);
+		effSetVtxDescN64(size100x100_tex32x32_vtx);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	} else {
@@ -309,7 +309,7 @@ void effCrystalDisp(CameraId camId, void* param) {
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
 		GXLoadPosMtxImm(base, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		effSetVtxDescN64((effVtxArray*)size100x100_tex32x32_vtx);
+		effSetVtxDescN64(size100x100_tex32x32_vtx);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}

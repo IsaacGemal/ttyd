@@ -603,7 +603,7 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
             GXClearVtxDesc();
             GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
             GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_TEX_ST, GX_RGBA4, 10);
-            GXSetArray(GX_VA_POS, (u8*)wakka_vertex_tbl, 6);
+            GXSetArray(GX_VA_POS, wakka_vertex_tbl, 6);
             GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
             GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_TEX_S, GX_RGB8, 6);
             GXSetArray(GX_VA_NRM, &wakka_normal_tbl, 3);
@@ -612,7 +612,7 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
             GXSetArray(GX_VA_CLR0, &wakka_color0_tbl, 4);
             GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
             GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_RGBA4, 13);
-            GXSetArray(GX_VA_TEX0, (u8*)wakka_texcoord0_tbl, 4);
+            GXSetArray(GX_VA_TEX0, wakka_texcoord0_tbl, 4);
             wakkaDrawDL();
         }
     }

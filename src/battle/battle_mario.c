@@ -261,7 +261,7 @@ USER_FUNC(_record_renzoku_count) {
     record = (u8*)_battleWorkPointer + 0x16F24;
     pouch = pouchGetPtr();
     if (count > record[0]) {
-        if (count > *(u16*)&pouch->mPowerBounceRecord) {
+        if (count > pouch->mPowerBounceRecord) {
             pouch->mPowerBounceRecord = count;
             BattleAudience_Case_JumpNewRecord();
         }
@@ -398,6 +398,7 @@ USER_FUNC(_mario_fire_ball_controll) {
     s32* args = event->args;
     BattleUnit* unit;
     EffectEntry* effect;
+    effFireData* data;
     s32 value0, value1;
     BattleUnitPart* part;
 
@@ -414,9 +415,8 @@ USER_FUNC(_mario_fire_ball_controll) {
         effDelete(effect);
         return EVT_RETURN_DONE;
     }
-    BtlUnit_GetPartsPos(part, &((effFireData*)effect->userdata)->position.x,
-                        &((effFireData*)effect->userdata)->position.y,
-                        &((effFireData*)effect->userdata)->position.z);
+    data = effect->userdata;
+    BtlUnit_GetPartsPos(part, &data->position.x, &data->position.y, &data->position.z);
     return EVT_RETURN_BLOCK;
 }
 

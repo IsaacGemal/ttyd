@@ -75,7 +75,7 @@ s32 msgWindowOpen_SE_Data[12][2] = {
 // active, gap_08, msgSortDvdData, msgSEflag, msgWork)
 MessageWork msgWork;
 BOOL msgSEflag; //msgSEInit and related functions are unused
-void* msgSortDvdData; //TODO: re-type
+const char* msgSortDvdData;
 u16 gap_08_80418812_sbss;
 u16 active; //TODO: re-type
 
@@ -138,7 +138,7 @@ void msgLoad(const char* filename, s32 index) {
 	// must also be split into their own declarations, not `u32 r27, r30;`). Any other order moves
 	// dvd/offset/lookup and loses the match.
 	char dvdpath[128]; //TODO: double check size
-	u32 r30;
+	const char* r30;
 	MessageEntry* entry;
 	MsgLookupEntry* lookup;
 	int i;
@@ -200,16 +200,16 @@ void msgLoad(const char* filename, s32 index) {
 	else {
 		r27 = 0;
 		entry->lookup = smartAlloc(entry->count * sizeof(MsgLookupEntry), 0);
-		r30 = (u32)entry->address;
+		r30 = entry->address;
 		lookup = entry->lookup->address;
 		i = 0;
 		while (i < (s32)entry->count) {
 			lookup->startaddr = r27;
-			r27 += strlen((const char*)r30) + 1;
-			r30 += strlen((const char*)r30) + 1;
+			r27 += strlen(r30) + 1;
+			r30 += strlen(r30) + 1;
 			lookup->endaddr = r27;
-			r27 += strlen((const char*)r30) + 1;
-			r30 += strlen((const char*)r30) + 1;
+			r27 += strlen(r30) + 1;
+			r30 += strlen(r30) + 1;
 			i++;
 			lookup++;
 		}
@@ -250,7 +250,9 @@ s32 msgMain(smartEntry* smart) {
 	if (data->scrollTarget > data->scrollY) {
 		data->scrollY += 0.36f * (f32)OSTicksToMilliseconds(gp->renderTime - data->lastFrameTime);
 		if (!(data->flags & 0x80)) {
-			i = (((MessageData*)smart->address)->flags & 0x100) ? 0x500 : 0x100;
+			MessageData* d = smart->address;
+
+			i = (d->flags & 0x100) ? 0x500 : 0x100;
 			mask = i | 0x200;
 			button = keyGetButtonTrg(0);
 			if (button & mask) {
@@ -283,7 +285,9 @@ s32 msgMain(smartEntry* smart) {
 	default:
 		time = (s32)OSTicksToMilliseconds(gp->renderTime - data->lastFrameTime);
 		if (!(data->flags & 0x80)) {
-			i = (((MessageData*)smart->address)->flags & 0x100) ? 0x500 : 0x100;
+			MessageData* d = smart->address;
+
+			i = (d->flags & 0x100) ? 0x500 : 0x100;
 			mask = i | 0x200;
 			button = keyGetButtonTrg(0);
 			if (button & mask) {
@@ -386,8 +390,10 @@ s32 msgMain(smartEntry* smart) {
 				data->callback(5, smart);
 			}
 			if (entry->arg & 0x10) {
-				if (((MessageData*)smart->address)->window->type != WINDOW_TYPE_SMALL && !msgSEflag) {
-					psndSFXOnVol(0x20044, ((MessageData*)smart->address)->sfxVolume);
+				MessageData* d = smart->address;
+
+				if (d->window->type != WINDOW_TYPE_SMALL && !msgSEflag) {
+					psndSFXOnVol(0x20044, d->sfxVolume);
 					msgSEflag = 1;
 				}
 			}
@@ -1284,8 +1290,10 @@ MessageWork* L_msgGetWork(void) {
 }
 
 int msg_compare(const void* a, const void* b) {
-	s32 result = strcmp((const char*)((u32)msgSortDvdData + *(const u32*)a),
-	                    (const char*)((u32)msgSortDvdData + *(const u32*)b));
+	const MsgLookupEntry* entryA = a;
+	const MsgLookupEntry* entryB = b;
+	s32 result = strcmp(msgSortDvdData + entryA->startaddr,
+	                    msgSortDvdData + entryB->startaddr);
 
 	if (result > 0) {
 		return 1;
@@ -1336,7 +1344,7 @@ BOOL _ismbblead(u32 a1) {
 	return FALSE;
 }
 
-char* msgGetCommand(char* str, char* arg1, char* arg2) {
+const char* msgGetCommand(const char* str, char* arg1, char* arg2) {
 	s32 i;
 	char c;
 	s32 state = 0;
@@ -1567,11 +1575,13 @@ void msgWindow_Main(WindowEntry* window) {
 		}
 		data->talkAnimTimer--;
 		if (data->talkAnimTimer == 0) {
-			if (((MessageData*)smart->address)->flags & 8) {
-				BtlUnit_ChangeStayAnim(((MessageData*)smart->address)->battleUnitId);
+			MessageData* d = smart->address;
+
+			if (d->flags & 8) {
+				BtlUnit_ChangeStayAnim(d->battleUnitId);
 			}
 			else {
-				npcSetStayPose(((MessageData*)smart->address)->text);
+				npcSetStayPose(d->text);
 			}
 			data->talkAnimOn = 0;
 		}
@@ -1649,10 +1659,11 @@ void msgWindow_Main(WindowEntry* window) {
 		}
 		break;
 	case 3: {
+		MessageData* d = window->userdata->address;
 		u32 mask;
 		u32 button;
 
-		mask = (((MessageData*)window->userdata->address)->flags & 0x100) ? 0x500 : 0x100;
+		mask = (d->flags & 0x100) ? 0x500 : 0x100;
 		button = keyGetButtonTrg(0);
 		if (button & (mask | 0x200)) {
 			window->state = 1;
@@ -1723,10 +1734,11 @@ void msgWindow_Main(WindowEntry* window) {
 		break;
 	}
 	case 11: {
+		MessageData* d = window->userdata->address;
 		u32 mask;
 		u32 button;
 
-		mask = (((MessageData*)window->userdata->address)->flags & 0x100) ? 0x500 : 0x100;
+		mask = (d->flags & 0x100) ? 0x500 : 0x100;
 		button = keyGetButtonTrg(0);
 		if (button & mask) {
 			window->state = 0xa;

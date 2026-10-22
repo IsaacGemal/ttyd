@@ -1526,7 +1526,7 @@ EVT_END()
 static u32 gap_05_00000024_bss;
 ExtFanWork* fan_wp;
 static void pose_init(void) {
-    ExtFanData* data = (ExtFanData*)ext_fan_data;
+    ExtFanData* data = ext_fan_data;
     char name[0x20];
     char motion[0x20];
     s32 i = 0;

@@ -247,7 +247,7 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 
 	for (i = 0; i < 7; i++) {
 		vtx = smartAlloc(0x1C0, 3)->address;
-		effSetVtxDescN64((effVtxArray*)vtx);
+		effSetVtxDescN64(vtx);
 
 		/* first half: the 0..15 ring */
 		PSMTXTrans(work, 10.f * data->nodeX[i], 10.f * data->nodeY[i],

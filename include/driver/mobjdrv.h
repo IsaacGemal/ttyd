@@ -80,7 +80,11 @@ typedef struct MapObjectEntry {
 typedef struct MapObjectWork {
     s32 count;                // 0x0
     MapObjectEntry* entries;  // 0x4
-    u8 field_0x8[0x1C - 0x8]; // 0x8
+    HitEntry* field_0x8;      // 0x8
+    HitEntry* field_0xC;      // 0xC
+    HitEntry* field_0x10;     // 0x10
+    HitEntry* field_0x14;     // 0x14
+    HitEntry* field_0x18;     // 0x18
 } MapObjectWork;
 
 void mobjInit(void);

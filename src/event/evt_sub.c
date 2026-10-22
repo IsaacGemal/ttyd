@@ -69,9 +69,9 @@ void FontDrawColor(GXColor* color);
 
 typedef struct SplineWork {
 	s32 type;      // 0x0
-	s32 knots;     // 0x4
+	s32* knots;    // 0x4
 	s32 points;    // 0x8
-	s32 tangents;  // 0xC
+	s32* tangents; // 0xC
 	s32 step;      // 0x10
 	s32 steps;     // 0x14
 	s32 mode;      // 0x18
@@ -244,10 +244,10 @@ USER_FUNC(evt_sub_spline_init) {
 	SplineWork* work = _mapAlloc(0x30);
 	event->lwData[15] = (s32)work;
 	work->type = count;
-	work->knots = (s32)_mapAlloc(count * 4);
+	work->knots = _mapAlloc(count * 4);
 	work->points = c;
-	work->tangents = (s32)_mapAlloc(count * 0xC);
-	spline_maketable(count, work->points, (s32*)work->knots, (s32*)work->tangents);
+	work->tangents = _mapAlloc(count * 0xC);
+	spline_maketable(count, work->points, work->knots, work->tangents);
 	work->timeBased = a;
 	work->mode = b;
 	work->step = 0;
@@ -272,7 +272,7 @@ USER_FUNC(evt_sub_spline_get_value) {
 		f31 = (f32)(diff / (OS_TIMER_CLOCK / 1000));
 		f1 = intplGetValue(work->mode, (s32)f31, work->endTime, 0.0f, 1.0f);
 	}
-	spline_getvalue(out, work->type, work->points, work->knots, work->tangents, f1);
+	spline_getvalue(out, work->type, work->points, (s32)work->knots, (s32)work->tangents, f1);
 	evtSetValue(event, args[0], (s32)(1024.0f * out[0]) + 0xF24A7A80);
 	evtSetValue(event, args[1], (s32)(1024.0f * out[1]) + 0xF24A7A80);
 	evtSetValue(event, args[2], (s32)(1024.0f * out[2]) + 0xF24A7A80);
@@ -288,8 +288,8 @@ USER_FUNC(evt_sub_spline_get_value) {
 			return EVT_RETURN_DONE;
 		}
 	}
-	_mapFree((void*)work->knots);
-	_mapFree((void*)work->tangents);
+	_mapFree(work->knots);
+	_mapFree(work->tangents);
 	_mapFree(work);
 	evtSetValue(event, args[3], 0);
 	return EVT_RETURN_DONE;
@@ -309,7 +309,7 @@ USER_FUNC(evt_sub_spline_get_value_manual) {
 		t = work->steps;
 	}
 	t = frame / t;
-	spline_getvalue(out, work->type, work->points, work->knots, work->tangents, t);
+	spline_getvalue(out, work->type, work->points, (s32)work->knots, (s32)work->tangents, t);
 	evtSetValue(event, args[1], (s32)(1024.0f * out[0]) + 0xF24A7A80);
 	evtSetValue(event, args[2], (s32)(1024.0f * out[1]) + 0xF24A7A80);
 	evtSetValue(event, args[3], (s32)(1024.0f * out[2]) + 0xF24A7A80);
@@ -319,8 +319,8 @@ USER_FUNC(evt_sub_spline_get_value_manual) {
 
 USER_FUNC(evt_sub_spline_free) {
 	SplineWork* work = (SplineWork*)event->lwData[15];
-	_mapFree((void*)work->knots);
-	_mapFree((void*)work->tangents);
+	_mapFree(work->knots);
+	_mapFree(work->tangents);
 	_mapFree(work);
 	return EVT_RETURN_DONE;
 }
@@ -785,7 +785,7 @@ USER_FUNC(evt_sub_get_coin) {
 		work[0] = coin;
 		work[1] = 0;
 		psndBGMOff(0x3800);
-		psndBGMOn(0x201, (char*)"BGM_FF_GET_ITEM1");
+		psndBGMOn(0x201, "BGM_FF_GET_ITEM1");
 		event->userdata[2] = 0xC8;
 		event->savedTime = gp->renderTime;
 		event->userdata[0] = 1;

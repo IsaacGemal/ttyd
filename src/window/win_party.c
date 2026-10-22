@@ -311,10 +311,10 @@ void winPartyMain2(WindowWork* work) {
 
 
 
-#define WIN_PARTY_TEX(w) (*(TEXPalette**)(w)->winTpl->data)
+#define WIN_PARTY_TEX(w) (*(w)->winTpl->data)
 // the party member shown in pose slot n, and its animation pose
-#define WIN_PARTY_ID(w, n) (((WindowWork*)(w))->partyId[(n)])
-#define WIN_PARTY_POSE(w, n) (((WindowWork*)(w))->partyPose[(n)])
+#define WIN_PARTY_ID(w, n) ((w)->partyId[(n)])
+#define WIN_PARTY_POSE(w, n) ((w)->partyPose[(n)])
 
 void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     WindowWork* work = param;
@@ -389,7 +389,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
         winIconSet(0x19F, (Vec){starX, iconY, 0.0f}, (Vec){0.82f, 0.82f, 0.82f}, white);
         cy = 4.0f + (top - 32.0f);
         for (i = 0; i < work->wazaCount - 2; i++) {
-            winIconSet(((ItemDataView*)itemDataTable)[ITEM_SHINE_SPRITE].icon_id,
+            winIconSet(itemDataTable[ITEM_SHINE_SPRITE].icon_id,
                        (Vec){starX + (f32)(i * 34), cy, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, loopWhite);
         }
     }

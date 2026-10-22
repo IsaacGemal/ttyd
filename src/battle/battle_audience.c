@@ -1074,8 +1074,8 @@ void BattleAudienceSettingAudience(void) {
 	s32 order[12];
 	s32 weights[12];
 	s32 counts[13];
-	s32 typeWeights[11];
-	f32 deltaMultiplier[65];
+	BattleAudienceTypeWeights typeWeights;
+	BattleAudienceDeltaMultiplierTable deltaMultiplier;
 	s32 list[200];
 	f32 oldAudience;
 	s32 mode;
@@ -1084,16 +1084,16 @@ void BattleAudienceSettingAudience(void) {
 	s32 total;
 	BattleWorkField19068* force;
 	PouchData* pouch;
-	u8* setupBase;
+	s32* setupBase;
 	s32 listTotal;
 	BattleAudience* audience;
 
 	force = &_battleWorkPointer->field_19068;
 	audience = BattleAudienceBaseGetPtr();
-	setupBase = (u8*)_battleWorkPointer->fbatInfo->setup + offsetof(NpcBattleInfo, audienceMode);
+	setupBase = &_battleWorkPointer->fbatInfo->setup->audienceMode;
 	pouch = pouchGetPtr();
 
-	*(BattleAudienceDeltaMultiplierTable*)deltaMultiplier =
+	deltaMultiplier =
 	    *(const BattleAudienceDeltaMultiplierTable*)R_audience_delta_multiplier;
 
 	switch (pouch->rank) {
@@ -1116,7 +1116,7 @@ void BattleAudienceSettingAudience(void) {
 	}
 
 	deltaIdx = (pouch->level - 1 < 0x41) ? pouch->level - 1 : 0x40;
-	audience->mAudienceDeltaMultiplier = deltaMultiplier[deltaIdx];
+	audience->mAudienceDeltaMultiplier = deltaMultiplier.v[deltaIdx];
 
 	if (force->forceFlags & 0x10000) {
 		audience->mTargetAudienceCount = (f32)force->forceAudienceCount;
@@ -1130,7 +1130,7 @@ void BattleAudienceSettingAudience(void) {
 		    0.01f * ((pouchGetAudienceNum() - audience->mAudienceDeltaMultiplier) * (f32)(irand(10) - 13 + irand(10))) + oldAudience;
 	}
 
-	switch (*(s32*)setupBase) {
+	switch (*setupBase) {
 	case 0:
 	case 1:
 		audience->mAddedAudienceCount = 0.0f;
@@ -1146,7 +1146,7 @@ void BattleAudienceSettingAudience(void) {
 		break;
 	}
 
-	switch (*(s32*)setupBase) {
+	switch (*setupBase) {
 	case 2:
 		for (i = 0; i < 12; i++) {
 			if (i == 1 || i == 7) {
@@ -1181,12 +1181,12 @@ void BattleAudienceSettingAudience(void) {
 		mode = 1;
 		break;
 	default: {
-		*(BattleAudienceTypeWeights*)typeWeights = *(const BattleAudienceTypeWeights*)R_num_audience_type_weights;
+		typeWeights = *(const BattleAudienceTypeWeights*)R_num_audience_type_weights;
 		sum = 0;
 		j = irand(100);
 		maxKinds = 12;
 		for (i = 1; i <= 11; i++) {
-			sum += typeWeights[i - 1];
+			sum += typeWeights.v[i - 1];
 			if (j < sum) {
 				maxKinds = i;
 				break;
@@ -1361,7 +1361,7 @@ void BattleAudienceSettingAudience(void) {
 		}
 	}
 
-	switch (*(s32*)setupBase) {
+	switch (*setupBase) {
 	case 2:
 		while ((kind = BattleAudience_NoUsedHaitiRand()) != -1) {
 			if (kind % 20 <= 9) {
@@ -2477,7 +2477,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		}
 
 		if (member->type <= AUDIENCE_PIRANHA_PLANT) {
-			TEXGetGXTexObjFromPalette((TEXPalette*)audience->normalTex->data[0], &texObj, member->texIndex);
+			TEXGetGXTexObjFromPalette(audience->normalTex->data[0], &texObj, member->texIndex);
 			GXLoadTexObj(&texObj, GX_TEXMAP0);
 			{
 				f32 w = (f32)GXGetTexObjWidth(&texObj);
@@ -2495,7 +2495,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		else {
 			for (j = 0; j < 2; j++) {
 				if (member->type == audience->guestType[j]) {
-					TEXGetGXTexObjFromPalette((TEXPalette*)audience->guestTex[j]->data[0], &texObj,
+					TEXGetGXTexObjFromPalette(audience->guestTex[j]->data[0], &texObj,
 					                          member->texIndex);
 					GXLoadTexObj(&texObj, GX_TEXMAP0);
 					{
@@ -4080,7 +4080,7 @@ void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b) {
 		sound->sfxId = BattleAudienceSound1(name, r, l);
 	}
 	if (sound->sfxId != -1) {
-		*(s32*)sound |= 1;
+		sound->flags |= 1;
 		sound->timeLeft = a + b;
 		sound->mFadeoutTime = b;
 		vol = psndSFX_get_vol(sound->sfxId);
@@ -4136,7 +4136,7 @@ void BattleAudienceSoundWhistleKind(s32 kind) {
 		break;
 	}
 	if (sound->sfxId != -1) {
-		*(s32*)sound |= 1;
+		sound->flags |= 1;
 		sound->timeLeft = -1;
 		sound->mFadeoutTime = 0;
 		vol = psndSFX_get_vol(sound->sfxId);
@@ -4409,14 +4409,14 @@ void BattleAudienceSoundSetVolAll(u8 a2, s32 a3) {
 }
 
 BOOL BattleAudienceSoundCheck(s32 index) {
-	return *(s32*)BattleAudienceSoundGetPtr(index) & 1;
+	return BattleAudienceSoundGetPtr(index)->flags & 1;
 }
 
 void BattleAudienceSoundStop(s32 index) {
 	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(index);
-	if (*(s32*)sound & 1) {
+	if (sound->flags & 1) {
 		psndSFXOff(sound->sfxId);
-		*(s32*)sound &= ~1;
+		sound->flags &= ~1;
 	}
 }
 
@@ -4476,11 +4476,11 @@ void BattleAudienceSoundMain(void) {
 	sound = BattleAudienceSoundGetPtr(0);
 	for (; i < 0x18; i++, sound++) {
 		if (psndSFXChk(sound->sfxId) == -1) {
-			*(s32*)sound &= ~1;
+			sound->flags &= ~1;
 		}
 		else if (sound->timeLeft == 0) {
 			psndSFXOff(sound->sfxId);
-			*(s32*)sound &= ~1;
+			sound->flags &= ~1;
 		}
 		else {
 			if (sound->mForceFadeLength > 0) {
@@ -4809,18 +4809,18 @@ const s32 dat_802f993c[] = {
 
 void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 tbl1[16];
-	s32 tbl2[48];
+	BattleAudienceFallOffsetTable1 tbl1;
+	BattleAudienceFallOffsetTable2 tbl2;
 	s32 i;
 	s32 id;
 	f32 one = 1.0f;
 
 	// Struct assignment gives the original's lwzu/stwu copy loop; memcpy doesn't.
 	{
-		*(BattleAudienceFallOffsetTable1*)tbl1 = *(const BattleAudienceFallOffsetTable1*)dat_802f98fc;
+		tbl1 = *(const BattleAudienceFallOffsetTable1*)dat_802f98fc;
 	}
 	{
-		*(BattleAudienceFallOffsetTable2*)tbl2 = *(const BattleAudienceFallOffsetTable2*)dat_802f993c;
+		tbl2 = *(const BattleAudienceFallOffsetTable2*)dat_802f993c;
 	}
 
 	switch (type) {
@@ -4836,7 +4836,7 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 			}
 		}
 		for (i = 0; i < 8; i++) {
-			id = BattleAudience_GetAudienceNoFromOffset(index, tbl1[i * 2], tbl1[i * 2 + 1]);
+			id = BattleAudience_GetAudienceNoFromOffset(index, tbl1.v[i * 2], tbl1.v[i * 2 + 1]);
 			if (id != -1 && (u8)BattleAudience_GetEscapeChangeOK(id)) {
 				BattleAudience_ChangeStatus(id, 0xC);
 				audience->mTargetAudienceCount -= 1.0f;
@@ -4850,7 +4850,7 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 			}
 		}
 		for (i = 0; i < 0x18; i++) {
-			id = BattleAudience_GetAudienceNoFromOffset(index, tbl2[i * 2], tbl2[i * 2 + 1]);
+			id = BattleAudience_GetAudienceNoFromOffset(index, tbl2.v[i * 2], tbl2.v[i * 2 + 1]);
 			if (id != -1 && (u8)BattleAudience_GetEscapeChangeOK(id)) {
 				BattleAudience_ChangeStatus(id, 0xC);
 				audience->mTargetAudienceCount -= 1.0f;

@@ -248,7 +248,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 	shadow = type % 10;
 	for (i = 1; i >= 0; i--) {
-		work = (effStageClearWork*)effect->userdata;
+		work = effect->userdata;
 		work++;
 
 		for (j = 1; j < effect->count; j++, work++) {

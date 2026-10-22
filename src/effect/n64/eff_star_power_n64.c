@@ -213,6 +213,7 @@ void effStarPowerMain(EffectEntry* effect) {
 }
 
 void effStarPowerDisp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
     s32 halfAlpha;
     EffStarPowerData* data;
     CameraEntry* cam;
@@ -232,7 +233,7 @@ void effStarPowerDisp(CameraId camId, void* param) {
     f32 scaleVal;
 
     cam = camGetPtr(camId);
-    data = ((EffectEntry*)param)->userdata;
+    data = effect->userdata;
     color1R = data->color1R;
     color1G = data->color1G;
     color1B = data->color1B;
@@ -326,7 +327,7 @@ void effStarPowerDisp(CameraId camId, void* param) {
         GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
         GXSetTevColorIn(0, 4, 2, 0xa, 0xf);
         GXSetTevAlphaIn(0, 7, 1, 4, 7);
-        effSetVtxDescN64((effVtxArray*)(testsrc_akari_v + 0x118));
+        effSetVtxDescN64(testsrc_akari_v + 0x118);
         GXBegin(0x90, 0, 0x3c);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
         tri2(4, 0, 3, 0, 4, 3, 5, 0);
@@ -380,7 +381,7 @@ void effStarPowerDisp(CameraId camId, void* param) {
     GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 4, 2, 0xa, 0xf);
     GXSetTevAlphaIn(0, 7, 7, 7, 1);
-    effSetVtxDescN64((effVtxArray*)testsrc_akari_v);
+    effSetVtxDescN64(testsrc_akari_v);
     GXBegin(0x90, 0, 0x3c);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     tri2(4, 0, 3, 0, 4, 3, 5, 0);

@@ -404,7 +404,7 @@ void noiseDisp(CameraId cameraId, void* param) {
 
     cam = camGetPtr(cameraId);
     entry = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_I8, GX_FALSE, 0), 3);
-    data = (u8*)entry->address;
+    data = entry->address;
     for (i = 0; i < 0x40; i++) {
         for (j = 0; j < 0x40; j++) {
             s32 base, row, col, mask, pct, off;

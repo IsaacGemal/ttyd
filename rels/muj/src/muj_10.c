@@ -676,8 +676,9 @@ static s32 tornade_alpha_func(EventEntry* event, BOOL isFirstCall) {
     s32 value = evtGetValue(event, args[0]);
     f32 alpha = evtGetFloat(event, args[1]);
     EffectEntry* effect = effNameToPtr((const char*)value);
+    effKamekiTornadeData* data = effect->userdata;
 
-    ((effKamekiTornadeData*)effect->userdata)->alphaScale = alpha;
+    data->alphaScale = alpha;
     return EVT_RETURN_DONE;
 }
 // clang-format on

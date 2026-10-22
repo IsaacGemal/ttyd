@@ -162,7 +162,7 @@ void BattleStageObjectInit(void) {
 
 	wp = _battleWorkPointer;
 	base = &wp->field_180C0;
-	stage = *(BattleStageData**)wp->fbatInfo->setup;
+	stage = wp->fbatInfo->setup->stageData;
 	count = stage->mNumObjects;
 	data = stage->mObjects;
 	memset(wp->stageObjects, 0, sizeof(wp->stageObjects));
@@ -1516,9 +1516,9 @@ USER_FUNC(_set_mobj_rotate_x) {
 	switch (layer) {
 		case 0:
 		case 1: {
-			char* sfx[2];
-			sfx[0] = (char*)"SFX_BTL_STAGE_SET_FALL1";
-			sfx[1] = (char*)"SFX_BTL_STAGE_SET_FALL3";
+			const char* sfx[2];
+			sfx[0] = "SFX_BTL_STAGE_SET_FALL1";
+			sfx[1] = "SFX_BTL_STAGE_SET_FALL3";
 
 			for (i = 0; i < 32; i++) {
 				obj = &wp->stageObjects[i];
@@ -1530,9 +1530,9 @@ USER_FUNC(_set_mobj_rotate_x) {
 					} else {
 						if (obj->mNumFramesFalling == 0) {
 							if (layer == 0) {
-								psndSFXOn_3D((char*)sfx[0], &obj->mPosition);
+								psndSFXOn_3D(sfx[0], &obj->mPosition);
 							} else {
-								psndSFXOn_3D((char*)sfx[1], &obj->mPosition);
+								psndSFXOn_3D(sfx[1], &obj->mPosition);
 							}
 						}
 						obj->mNumFramesFalling++;
@@ -2530,7 +2530,7 @@ USER_FUNC(_object_fall_attack) {
 	dst = *args++;
 	flag = 0;
 	if (isFirstCall) {
-		alloc = (ObjectFallAttackWork*)BattleAlloc(0xEC);
+		alloc = BattleAlloc(0xEC);
 		event->userdata[0] = (s32)alloc;
 		event->userdata[1] = 0;
 		memset(alloc, 0, 0xEC);

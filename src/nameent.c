@@ -477,7 +477,7 @@ void nameEntDisp(CameraId cameraId, void* param) {
 	*camGetCurPtr() = *camGetPtr(CAMERA_2D);
 	GXSetProjection(camGetPtr(CAMERA_2D)->projection, camGetPtr(CAMERA_2D)->projType);
 	nameBG();
-	winTexInit((TEXPalette*)wp->tpl->data[0]);
+	winTexInit(wp->tpl->data[0]);
 	winTexSet(0x2A, (Vec){ -130.0f, 160.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white2);
 	for (i = 0; i < 8; i++) {
 		winTexSet(0x29, nameEntMkVec((Vec){ 0.0f, 160.0f, 0.0f }, (f32)(-106 + i * 32)), (Vec){ 1.0f, 1.0f, 1.0f }, white);
@@ -498,16 +498,16 @@ void nameEntDisp(CameraId cameraId, void* param) {
 	}
 	for (i = 0; i < 4; i++) {
 		if (wp->cursorCol >= 10 && wp->cursorRow - 4 == i) {
-			winTexInit((TEXPalette*)wp->tpl->data[0]);
+			winTexInit(wp->tpl->data[0]);
 			winTexSet(0x33, (Vec){ 160.0f, (f32)(-20 - i * 34), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0, 0, 0, 0x40 });
-			winTexInit_x2((TEXPalette*)wp->tpl->data[0]);
+			winTexInit_x2(wp->tpl->data[0]);
 			winTexSet_x2(i + 0x25, 0x33, (Vec){ 154.0f, (f32)(-14 - i * 34), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white);
 		} else {
-			winTexInit_x2((TEXPalette*)wp->tpl->data[0]);
+			winTexInit_x2(wp->tpl->data[0]);
 			winTexSet_x2(i + 0x25, 0x33, (Vec){ 160.0f, (f32)(-20 - i * 34), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white);
 		}
 	}
-	winTexInit((TEXPalette*)wp->tpl->data[0]);
+	winTexInit(wp->tpl->data[0]);
 	winTexSet(0x24, (Vec){ wp->charCursorX + 2.0f, wp->charCursorY - 2.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0, 0, 0, 0x80 });
 	winTexSet(0x24, (Vec){ wp->charCursorX, wp->charCursorY, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white2);
 	FontDrawStart();
@@ -531,8 +531,8 @@ void nameEntDisp(CameraId cameraId, void* param) {
 		if (wp->type == 4) {
 			okMsg = msgSearch("msg_nameent_ok_01");
 		}
-		nameWinGX(-180.0f, 130.0f, 360.0f, 100.0f, (TEXPalette*)wp->tpl->data[0], 1);
-		nameWinGX(-80.0f, 10.0f, 160.0f, 120.0f, (TEXPalette*)wp->tpl->data[0], 1);
+		nameWinGX(-180.0f, 130.0f, 360.0f, 100.0f, wp->tpl->data[0], 1);
+		nameWinGX(-80.0f, 10.0f, 160.0f, 120.0f, wp->tpl->data[0], 1);
 		FontDrawStart();
 		FontDrawColor(&(GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawEdge();
@@ -543,7 +543,7 @@ void nameEntDisp(CameraId cameraId, void* param) {
 		{ f32 wf = -(f32)FontGetMessageWidth(noMsg); f32 h = 0.5f; FontDrawString(wf * h, -60.0f, noMsg); }
 		FontDrawEdgeOff();
 	}
-	winTexInit((TEXPalette*)wp->tpl->data[0]);
+	winTexInit(wp->tpl->data[0]);
 	winTexSet(0, (Vec){ wp->x1 + 2.0f, wp->y1 - 2.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0, 0, 0, 0x80 });
 	winTexSet(0, (Vec){ wp->x1, wp->y1, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white2);
 	*camGetCurPtr() = saved;
@@ -594,7 +594,7 @@ void nameBG(void) {
 	GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
 	GXSetCurrentMtx(0);
 
-	TEXGetGXTexObjFromPalette((TEXPalette*)wp->tpl->data[0], &texObj1, 0x22);
+	TEXGetGXTexObjFromPalette(wp->tpl->data[0], &texObj1, 0x22);
 	GXInitTexObjLOD(&texObj1, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 	GXLoadTexObj(&texObj1, GX_TEXMAP0);
 	GXSetNumTexGens(1);
@@ -615,7 +615,7 @@ void nameBG(void) {
 	GXPosition3f32(-272.0f, 240.0f, 0.0f);
 	GXTexCoord2f32(1.0f, 0.0f);
 
-	TEXGetGXTexObjFromPalette((TEXPalette*)wp->tpl->data[0], &texObj2, 0x21);
+	TEXGetGXTexObjFromPalette(wp->tpl->data[0], &texObj2, 0x21);
 	GXInitTexObjLOD(&texObj2, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 	GXLoadTexObj(&texObj2, GX_TEXMAP0);
 	GXSetNumTexGens(1);
@@ -636,7 +636,7 @@ void nameBG(void) {
 	GXPosition3f32(272.0f, 240.0f, 0.0f);
 	GXTexCoord2f32(1.0f, 0.0f);
 
-	TEXGetGXTexObjFromPalette((TEXPalette*)wp->tpl->data[0], &texObj3, 0x23);
+	TEXGetGXTexObjFromPalette(wp->tpl->data[0], &texObj3, 0x23);
 	GXInitTexObjLOD(&texObj3, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 	GXLoadTexObj(&texObj3, GX_TEXMAP0);
 	GXSetNumTexGens(1);
@@ -665,7 +665,7 @@ void nameBG(void) {
 		f32 xs; \
 		f64 hh; \
 		f64 ww; \
-		TEXGetGXTexObjFromPalette((TEXPalette*)wp->tpl->data[0], &texObj, (id_)); \
+		TEXGetGXTexObjFromPalette(wp->tpl->data[0], &texObj, (id_)); \
 		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1); \
 		GXLoadTexObj(&texObj, GX_TEXMAP0); \
 		GXSetNumTexGens(1); \
@@ -860,7 +860,7 @@ static inline void nameWinQuad(f32 x, f32 y, f32 w, f32 h) {
 		f64 hh2; \
 		f64 ww2; \
 		GXSetNumTexGens(2); \
-		TEXGetGXTexObjFromPalette((TEXPalette*)(tex), &texObj, (id0)); \
+		TEXGetGXTexObjFromPalette((tex), &texObj, (id0)); \
 		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1); \
 		GXLoadTexObj(&texObj, GX_TEXMAP0); \
 		GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY); \
@@ -870,10 +870,10 @@ static inline void nameWinQuad(f32 x, f32 y, f32 w, f32 h) {
 		xs = (f32)ww / (f32)GXGetTexObjWidth(&texObj); \
 		PSMTXScale(mtx, xs, yscale, 1.0f); \
 		GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4); \
-		TEXGetGXTexObjFromPalette((TEXPalette*)(tex), &texObj, (id1)); \
+		TEXGetGXTexObjFromPalette((tex), &texObj, (id1)); \
 		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1); \
 		GXLoadTexObj(&texObj, GX_TEXMAP1); \
-		TEXGetGXTexObjFromPalette((TEXPalette*)(tex), &texObj, (id2)); \
+		TEXGetGXTexObjFromPalette((tex), &texObj, (id2)); \
 		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1); \
 		GXLoadTexObj(&texObj, GX_TEXMAP2); \
 		GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY); \

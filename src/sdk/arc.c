@@ -14,7 +14,7 @@ BOOL ARCInitHandle(void* arcStart, ARCHandle* handle) {
 	FSTEntry* entry;
 	ARCHeader* header;
 
-	header = (ARCHeader*)arcStart;
+	header = arcStart;
 	if (header->magic != 0x55AA382D) {
 #ifdef MUST_MATCH
 		OSPanic(__FILE__, 0x46, "ARCInitHandle: bad archive format");
@@ -24,7 +24,7 @@ BOOL ARCInitHandle(void* arcStart, ARCHandle* handle) {
 	}
 	handle->archiveStartAddr = arcStart;
 	entry = (FSTEntry*)((u32)arcStart + header->fstStart);
-	handle->FSTStart = (void*)entry; //relative->absolute
+	handle->FSTStart = entry; //relative->absolute
 	handle->fileStart = (void*)((u32)arcStart + header->fileStart); //relative->absolute
 	handle->entryNum = entry->entrySizeOrNext; //entry 0 size is entry count
 	handle->FSTStringStart = (char*)&entry[handle->entryNum];
@@ -34,7 +34,7 @@ BOOL ARCInitHandle(void* arcStart, ARCHandle* handle) {
 }
 
 BOOL ARCOpen(ARCHandle* handle, const char* filename, ARCFileInfo* info) {
-	FSTEntry* fst = (FSTEntry*)handle->FSTStart;
+	FSTEntry* fst = handle->FSTStart;
 	s32 entry;
 	char currentDir[128];
 
@@ -81,7 +81,7 @@ s32 ARCConvertPathToEntrynum(ARCHandle* handle, const char* path) {
 	FSTEntry* fst;
 
 	dirLookAt = handle->currDir;
-	fst = (FSTEntry*)handle->FSTStart;
+	fst = handle->FSTStart;
 	while (1) {
 		if (*pathPtr == '\0') {
 			return (s32)dirLookAt;
@@ -151,7 +151,7 @@ u32 myStrncpy(char* dest, signed char* src, u32 maxlen) {
 }
 
 static u32 entryToPath(ARCHandle* handle, u32 entry, char* path, u32 maxlen) {
-	FSTEntry* fst = (FSTEntry*)handle->FSTStart;
+	FSTEntry* fst = handle->FSTStart;
 	char* name;
 	u32 loc;
 
@@ -175,7 +175,7 @@ static u32 entryToPath(ARCHandle* handle, u32 entry, char* path, u32 maxlen) {
 }
 
 BOOL ARCConvertEntrynumToPath(ARCHandle* handle, s32 entrynum, char* path, u32 maxlen) {
-	FSTEntry* fst = (FSTEntry*)handle->FSTStart;
+	FSTEntry* fst = handle->FSTStart;
 	u32 loc;
 
 	loc = entryToPath(handle, (u32)entrynum, path, maxlen);

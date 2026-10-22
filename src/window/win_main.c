@@ -229,7 +229,7 @@ void winMain(void) {
                 } else {
                     wp->openTabId = 0;
                 }
-                *(u16*)camGetPtr(CAMERA_2D) |= 0x200;
+                camGetPtr(CAMERA_2D)->flags |= 0x200;
                 if (gp->flags & 0x1000) {
                     wp->openTabId = 1;
                 }
@@ -310,7 +310,7 @@ void winMain(void) {
                 break;
 
             case 3:
-                *(u16*)camGetPtr(CAMERA_2D) &= ~0x200;
+                camGetPtr(CAMERA_2D)->flags &= ~0x200;
                 if (mario->characterId == 2) {
                     if (kpaGetStageViewType() == 0) {
                         marioCtrlOn();
@@ -454,7 +454,7 @@ void winDisp(CameraId camId, void* param) {
 }
 
 void winDispKoopa(CameraId camId, void* param) {
-    winTexTpl = (TEXPalette*)*wp->winTpl->data;
+    winTexTpl = *wp->winTpl->data;
     GXSetCullMode(GX_CULL_NONE);
     winDispKoopaSetFog();
     GXSetNumChans(0);
@@ -537,12 +537,14 @@ USER_FUNC(itemUseFunc) {
             break;
 
         case 0xC8: {
+            RecoveryData* data;
             f32* target;
             if (item->hp_restored == 0) {
                 cnt = 0x12C;
                 break;
             }
-            target = &((RecoveryData*)effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + party->height, party->position.z)->userdata)->field_40;
+            data = effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + party->height, party->position.z)->userdata;
+            target = &data->field_40;
             *target = (-party->height) * MATCH_F32(float_0p5_8041dc98);
             cnt++;
             break;

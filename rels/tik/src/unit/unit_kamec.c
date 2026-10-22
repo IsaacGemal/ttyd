@@ -1113,6 +1113,7 @@ static USER_FUNC(eff_magic) {
     BattleWork* work;
     BattleUnit* unit;
     EffectEntry* effect;
+    effMagic1Data* data;
     f32 a1, a2, a3;
     f32 x, y, z;
     s8 dir;
@@ -1133,7 +1134,8 @@ static USER_FUNC(eff_magic) {
     z += 5.0f;
     effect = effMagic1N64Entry(0, a4, x, y, z, a1, a2, a3);
     unit->work[5] = (s32)effect;
-    ((effMagic1Data*)effect->userdata)->scale = unit->mSizeMultiplier;
+    data = effect->userdata;
+    data->scale = unit->mSizeMultiplier;
     return EVT_RETURN_DONE;
 }
 

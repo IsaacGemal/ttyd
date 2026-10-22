@@ -1004,8 +1004,9 @@ static USER_FUNC(starstone_set_ry) {
     s32 name = evtGetValue(event, args[0]);
     f32 value = evtGetFloat(event, args[1]);
     EffectEntry* entry = effNameToPtr((const char*)name);
+    effStarStoneData* data = entry->userdata;
 
-    ((effStarStoneData*)entry->userdata)->rotY = value;
+    data->rotY = value;
     return EVT_RETURN_DONE;
 }
 

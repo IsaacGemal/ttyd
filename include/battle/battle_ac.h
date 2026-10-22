@@ -14,7 +14,9 @@ typedef s32 (*BattleACResultCallback)(BattleWork* work);
 typedef void (*BattleACDeleteCallback)(BattleWork* work);
 
 typedef struct BattleACDispParams {
-    u8 field_0x0[0xC - 0x0];    // 0x0
+    s32 field_0x0;              // 0x0, frame counter the disp functions increment
+    s32 field_0x4;              // 0x4
+    u8 field_0x8[0xC - 0x8];    // 0x8
     s32 field_0xC;              // 0xC, RGBA tint of the gauge (BattleAcDrawGauge flag 1), stored whole from each AC's constant
     u8 field_0x10;              // 0x10
     s8 dg;                      // 0x11, step added to field_0xC's g byte while the gauge flashes (-0x10 or 0x10)
@@ -24,7 +26,7 @@ typedef struct BattleACDispParams {
     f32 iconY;                  // 0x18, see actionCommandDisp
     u8 field_0x1C[0x20 - 0x1C]; // 0x1C
     s32 counter;                // 0x20, counts down (ac_button_down) or up (ac_air_gauge)
-    u8 field_0x24[0x28 - 0x24]; // 0x24
+    s32 field_0x24;             // 0x24, third argument of actionCommandDisp (ac_lst_rc_keep, ac_stick_keep_left)
     f32 value;                  // 0x28, ac_air_gauge's gauge value
 } BattleACDispParams;
 
@@ -52,7 +54,7 @@ typedef struct BattleActions {
     u8 field_0x8A[0x8C - 0x8A];      // 0x8A
     BattleWorkPad pad;               // 0x8C
     s32 gaugeSe;                     // 0x288
-    u8 field_0x28C[0x290 - 0x28C];   // 0x28C
+    f32 field_0x28C;                 // 0x28C, gauge sound pitch value (BattleAcGaugeSeUpdate)
     BattleACDispParams dispParams;   // 0x290 (BattleWork+0x1F20), used by ac_button_down and ac_air_gauge
     u8 field_0x2BC[0x30C - 0x2BC];   // 0x2BC
 } BattleActions;

@@ -165,7 +165,8 @@ s32 battleAcResult_TimingA(BattleWork* work) {
 // the BattleWork*), state read first, is what makes MWCC materialise the disp base in r31
 // (`addi r31, r4, 0x1f20`) and load the state from r4, as the original does.
 void battleAcDisp_TimingA(CameraId camId, void* param) {
-	BattleActions* ac = &((BattleWork*)param)->actionCommands;
+	BattleWork* work = param;
+	BattleActions* ac = &work->actionCommands;
 	s32 state = ac->mAcState;
 	BattleACDispParams* disp = &ac->dispParams;
 
@@ -223,7 +224,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		iconDispGx(1.0f, &v, 0x10, 0x64);
 	}
 
-	(*(s32*)&disp->field_0x0[0])++;
+	disp->field_0x0++;
 }
 
 // TODO: type

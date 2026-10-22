@@ -13,7 +13,9 @@ void effRippleSetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
 }
 
 void effRippleSetCamId(EffectEntry* effect, s32 camId) {
-    ((EffRippleData*)effect->userdata)->camId = camId;
+    EffRippleData* data = effect->userdata;
+
+    data->camId = camId;
 }
 
 void effRippleSetPosition(EffectEntry* effect, f32 x, f32 y, f32 z) {

@@ -296,7 +296,7 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)size2x8_tex8x16_vtx);
+	effSetVtxDescN64(size2x8_tex8x16_vtx);
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {

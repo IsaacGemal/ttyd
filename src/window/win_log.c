@@ -42,7 +42,7 @@ typedef struct MonosiriWork {
     f32 targetY;       // 0x1C
     s32 poseId;        // 0x20
     s32 poseId2;       // 0x24
-    void* alloc;       // 0x28
+    smartEntry* alloc; // 0x28
     s32 alpha;         // 0x2C
 } MonosiriWork;
 
@@ -235,7 +235,7 @@ static inline void winLogAddTab0(LogWin* w, s32 tabType, const char** msg_help, 
 #define LOG_ADD_3(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
 #define LOG_ADD_4(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
 #endif
-#define LOG_TEXPAL() (*(TEXPalette**)work->winTpl->data)
+#define LOG_TEXPAL() (*work->winTpl->data)
 #define HALF_FOV_TAN 0.21816615760326385
 typedef struct TattleCamEntry {
     s32 kind;
@@ -692,7 +692,7 @@ s32 winLogMain(WindowWork* work) {
                     root = getMarioStDvdRoot();
                     // (s32) add defeats the CSE with the fileAsyncf string above, so MWCC recomputes it
                     // into r4 (as the original) instead of pinning it in r28 across the call.
-                    w->mapTpl = (FileEntry*)fileAllocf(FILE_TYPE_TPL, "%s/w/jp/%s", root, tpl);
+                    w->mapTpl = fileAllocf(FILE_TYPE_TPL, "%s/w/jp/%s", root, tpl);
                 }
                 if (w->mapMarioPose == -1) {
                     if (w->flags & 0x2000) {
@@ -748,7 +748,7 @@ s32 winLogMain(WindowWork* work) {
                     w->rows[w->sel].phase = 0x14;
                     w->state = 0;
                     w->e30 = -480.f;
-                    fileFree((FileEntry*)w->mapTpl);
+                    fileFree(w->mapTpl);
                     w->mapTpl = 0;
                     if (w->mapMarioPose != -1) {
                         animPoseRelease(w->mapMarioPose);
@@ -1475,7 +1475,7 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         top = 120.f + y;
         GXSetScissor((u32)(((304.0f + x) - 230.f) - 2.0f),
                      (u32)((240.f - top) - 2.0f), 0x1D0, 0xF4);
-        winTexInit((TEXPalette*)w->mapTpl->data[0]);
+        winTexInit(w->mapTpl->data[0]);
         winTexSet(0, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx, ty), (Vec){1.0f, 1.0f, 1.0f}, c1);
         winTexInit(LOG_TEXPAL());
         for (i = 0; (u32)i < 0x5D; i++) {
@@ -1755,7 +1755,7 @@ void monosiriMain(void* work) {
                 w->file1 = fileAllocf(FILE_TYPE_TPL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), lang[gp->language]);
                 w->file2 = fileAllocf(FILE_TYPE_RAW, "%s/w/jp/mono.dat", getMarioStDvdRoot());
                 w->state++;
-                TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &texObj, 0x37);
+                TEXGetGXTexObjFromPalette(w->file1->data[0], &texObj, 0x37);
                 size = GXGetTexBufferSize(GXGetTexObjWidth(&texObj), GXGetTexObjHeight(&texObj), 5, 0, 0);
                 w->alloc = smartAlloc(size, 0);
             }
@@ -1899,7 +1899,7 @@ void capture(CameraId camId, void* param) {
     GXGetViewportv(vp);
     GXGetProjectionv(proj);
     GXGetScissor(&sl, &st, &sw, &sh);
-    TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
+    TEXGetGXTexObjFromPalette(w->file1->data[0], &obj, 0x37);
     tw = GXGetTexObjWidth(&obj);
     th = GXGetTexObjHeight(&obj);
     GXSetViewport(0.0f, 0.0f, (f32)tw, (f32)th, 0.0f, 1.0f);
@@ -1913,7 +1913,7 @@ void capture(CameraId camId, void* param) {
     }
     C_MTXLookAt(view, &(Vec){cx, cy, dist}, &(Vec){0.0f, 1.0f, 0.0f}, &(Vec){cx, cy, 0.0f});
     {
-        tbl = (TattleCamEntry*)w->file2->data[0];
+        tbl = w->file2->data[0];
         n = (u32)w->file2->data[1] >> 4;
         for (i = 0; i < n; i++, tbl++) {
             if (tbl->kind == w->unitKind) {
@@ -1949,9 +1949,9 @@ void capture(CameraId camId, void* param) {
     animPoseDrawMtx(w->poseId, tmp, 3, 0.0f, 1.0f);
     animPosePeraOn(w->poseId);
     if (w->unitKind == 0x6B) {
-        Vec* verts = (Vec*)animPoseGetAnimPosePtr(w->poseId)->groupWorldPos->address;
-        s32* counts = (s32*)((smartEntry*)smartAlloc(moamoa_chain_count * 4, 3))->address;
-        s32* order = (s32*)((smartEntry*)smartAlloc(0x7D0, 3))->address;
+        Vec* verts = animPoseGetAnimPosePtr(w->poseId)->groupWorldPos->address;
+        s32* counts = smartAlloc(moamoa_chain_count * 4, 3)->address;
+        s32* order = smartAlloc(0x7D0, 3)->address;
         int j;
 
         memset(counts, 0, moamoa_chain_count * 4);
@@ -1983,7 +1983,7 @@ void capture(CameraId camId, void* param) {
     GXReadBoundingBox(&bl, &bt, &br, &bb);
     GXSetTexCopySrc(0, 0, tw, th);
     GXSetTexCopyDst(tw, th, 5, 0);
-    GXCopyTex(*(void**)w->alloc, 1);
+    GXCopyTex(w->alloc->address, 1);
     GXPixModeSync();
     GXSetViewport(vp[0], vp[1], vp[2], vp[3], vp[4], vp[5]);
     GXSetProjectionv(proj);
@@ -2012,18 +2012,18 @@ void monosiri_disp(CameraId camId, void* param) {
         f32 wdt;
         s32 unitKind;
 
-        winHalfBookGX((void*)w->file1->data[0], x, y, 0);
+        winHalfBookGX(w->file1->data[0], x, y, 0);
         {
             u16 tw;
             u16 th;
 
-            TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
+            TEXGetGXTexObjFromPalette(w->file1->data[0], &obj, 0x37);
             tw = GXGetTexObjWidth(&obj);
             th = GXGetTexObjHeight(&obj);
-            TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
+            TEXGetGXTexObjFromPalette(w->file1->data[0], &obj, 0x37);
             GXInitTexObjLOD(&obj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
             GXLoadTexObj(&obj, 0);
-            GXInitTexObj(&obj, *(void**)w->alloc, tw, th, 5, 0, 0, 0);
+            GXInitTexObj(&obj, w->alloc->address, tw, th, 5, 0, 0, 0);
         }
         GXInitTexObjLOD(&obj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
         GXLoadTexObj(&obj, 1);

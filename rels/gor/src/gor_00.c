@@ -75,7 +75,7 @@ static f32* ckp0;
 static f32* ckp1;
 static f32* ckpw;
 u32 inemuri_sfx_id;
-u32 unk_gor_bss00000000;
+char* unk_gor_bss00000000[1];
 s32 tentyou_talk[14];
 s32 tenin_talk[14];
 static s32 borodo2_talk[13];
@@ -4919,6 +4919,7 @@ USER_FUNC(fune_yure_func) {
     f32 target = evtGetFloat(event, args[1]);
     s32 done;
     f32 speed;
+    f32* value = (f32*)&event->lwData[0];
 
     if (target == 0.0f) {
         evtSetFloat(event, args[2], 0.0f);
@@ -4929,19 +4930,19 @@ USER_FUNC(fune_yure_func) {
     done = 0;
     speed = 2.0f * target / sysMsec2FrameFloat(2000.0f);
     if (type == 0) {
-        *(f32*)&event->lwData[0] += speed;
-        if (*(f32*)&event->lwData[0] >= target) {
-            *(f32*)&event->lwData[0] = target;
+        *value += speed;
+        if (*value >= target) {
+            *value = target;
             done = 1;
         }
     } else {
-        *(f32*)&event->lwData[0] -= speed;
-        if (*(f32*)&event->lwData[0] <= -target) {
-            *(f32*)&event->lwData[0] = -target;
+        *value -= speed;
+        if (*value <= -target) {
+            *value = -target;
             done = 1;
         }
     }
-    evtSetFloat(event, args[2], *(f32*)&event->lwData[0]);
+    evtSetFloat(event, args[2], *value);
     evtSetValue(event, args[3], done);
     return EVT_RETURN_DONE;
 }
@@ -5656,16 +5657,16 @@ static USER_FUNC(fune_eff) {
         event->userdata[0] = (s32)effFunemizuEntry(0, 0.0f, -1000.0f, 0.0f, 0.0f, 0.0f);
         event->userdata[1] = (s32)effFunemizuEntry(2, 0.0f, -1000.0f, 0.0f, 0.0f, 0.0f);
         mapObjGetPos("S_fune_a", &pos);
-        *(f32*)&event->userdata[2] = pos.x;
+        event->userdataf[2] = pos.x;
         *(f32*)&event->field_84 = pos.z;
     }
 
     e1 = (EffectEntry*)event->userdata[0];
     e2 = (EffectEntry*)event->userdata[1];
-    oldX = *(f32*)&event->userdata[2];
+    oldX = event->userdataf[2];
     oldZ = *(f32*)&event->field_84;
     mapObjGetPos("S_fune_a", &pos);
-    *(f32*)&event->userdata[2] = pos.x;
+    event->userdataf[2] = pos.x;
     *(f32*)&event->field_84 = pos.z;
     dist = distABf(oldX, oldZ, pos.x, pos.z);
     angle = angleABf(oldX, oldZ, pos.x, pos.z);

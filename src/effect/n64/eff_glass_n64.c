@@ -201,7 +201,7 @@ void effGlassDisp(CameraId camId, void* param) {
 	GXSetTevColor(GX_TEVREG0, (GXColor){ data->color1R, data->color1G, data->color1B, dataAlpha });
 	GXSetTevColor(GX_TEVREG1, (GXColor){ data->color2R, data->color2G, data->color2B, tileAlpha });
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+	effSetVtxDescN64(size16x16_tex32x32_vtx);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
@@ -215,7 +215,7 @@ void effGlassDisp(CameraId camId, void* param) {
 		GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 		GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
 		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
-		effSetVtxDescN64((effVtxArray*)size48x48_tex32x32_vtx);
+		effSetVtxDescN64(size48x48_tex32x32_vtx);
 		GXLoadPosMtxImm(viewMtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xc);

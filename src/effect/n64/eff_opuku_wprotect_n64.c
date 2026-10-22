@@ -288,7 +288,7 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXConcat(cam->view, trans, trans);
 
-	p = (WprotectVtx*)smartAlloc(0x460, HEAP_EFFECT)->address;
+	p = smartAlloc(0x460, HEAP_EFFECT)->address;
 	vtx = p;
 	point = (WprotectPoint*)point_data;
 	counter = gp->retraceCount >> 1;
@@ -349,7 +349,7 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 			PSMTXConcat(trans, bubble, bubble);
 			GXLoadPosMtxImm(bubble, GX_PNMTX0);
 			GXSetCurrentMtx(GX_PNMTX0);
-			effSetVtxDescN64((effVtxArray*)size8x8_tex32x32_vtx);
+			effSetVtxDescN64(size8x8_tex32x32_vtx);
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 		}
@@ -383,7 +383,7 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	PSMTXConcat(trans, scale, scale);
 	GXLoadPosMtxImm(scale, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
-	effSetVtxDescN64((effVtxArray*)vtx);
+	effSetVtxDescN64(vtx);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 60);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	tri2(4, 0, 3, 0, 4, 3, 5, 0);
@@ -395,7 +395,7 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	tri2(22, 23, 4, 0, 22, 4, 5, 0);
 	tri2(24, 25, 26, 0, 24, 26, 27, 0);
 	tri2(26, 28, 29, 0, 26, 29, 27, 0);
-	effSetVtxDescN64((effVtxArray*)(vtx + 28));
+	effSetVtxDescN64(vtx + 28);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 24);
 	tri2(0, 2, 6, 0, 0, 6, 1, 0);
 	tri2(3, 7, 4, 0, 3, 4, 8, 0);

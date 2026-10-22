@@ -535,54 +535,52 @@ void mobjMain(void) {
     }
 
     if (gp->inBattle == 0) {
-        HitEntry** hp = (HitEntry**)wp;
-
         if (mario->hitobjHammer != NULL) {
-            if (hp[2] == NULL ||
-                strcmp(hitGetName(hp[2]), hitGetName(mario->hitobjHammer)) != 0) {
-                hp[2] = mario->hitobjHammer;
+            if (wp->field_0x8 == NULL ||
+                strcmp(hitGetName(wp->field_0x8), hitGetName(mario->hitobjHammer)) != 0) {
+                wp->field_0x8 = mario->hitobjHammer;
             }
         } else {
-            hp[2] = NULL;
+            wp->field_0x8 = NULL;
         }
 
         if (mario->hitobjHead != NULL) {
-            if (hp[3] == NULL ||
-                strcmp(hitGetName(hp[3]), hitGetName(mario->hitobjHead)) != 0) {
+            if (wp->field_0xC == NULL ||
+                strcmp(hitGetName(wp->field_0xC), hitGetName(mario->hitobjHead)) != 0) {
                 HitEntry* tmp = mario->hitobjHead;
 
-                hp[3] = tmp;
+                wp->field_0xC = tmp;
                 v24 = tmp;
             }
         } else {
-            hp[3] = NULL;
+            wp->field_0xC = NULL;
         }
 
         if (mario->hitobjStandOn != NULL) {
-            if (hp[4] == NULL ||
-                strcmp(hitGetName(hp[4]), hitGetName(mario->hitobjStandOn)) != 0) {
-                hp[4] = mario->hitobjStandOn;
+            if (wp->field_0x10 == NULL ||
+                strcmp(hitGetName(wp->field_0x10), hitGetName(mario->hitobjStandOn)) != 0) {
+                wp->field_0x10 = mario->hitobjStandOn;
             }
         } else {
-            hp[4] = NULL;
+            wp->field_0x10 = NULL;
         }
 
         if (mario->hitobjFront != NULL) {
-            if (hp[5] == NULL ||
-                strcmp(hitGetName(hp[5]), hitGetName(mario->hitobjFront)) != 0) {
-                hp[5] = mario->hitobjFront;
+            if (wp->field_0x14 == NULL ||
+                strcmp(hitGetName(wp->field_0x14), hitGetName(mario->hitobjFront)) != 0) {
+                wp->field_0x14 = mario->hitobjFront;
             }
         } else {
-            hp[5] = NULL;
+            wp->field_0x14 = NULL;
         }
 
         if (party != NULL && party->frontHit != NULL) {
-            if (hp[6] == NULL ||
-                strcmp(hitGetName(hp[6]), hitGetName(party->frontHit)) != 0) {
-                hp[6] = party->frontHit;
+            if (wp->field_0x18 == NULL ||
+                strcmp(hitGetName(wp->field_0x18), hitGetName(party->frontHit)) != 0) {
+                wp->field_0x18 = party->frontHit;
             }
         } else {
-            hp[6] = NULL;
+            wp->field_0x18 = NULL;
         }
     }
 
@@ -634,11 +632,11 @@ void mobjMain(void) {
                 v22 = 0;
                 hitObj = entry->hitObj[0].hitObject;
                 if (mario->characterId != 2) {
-                    if ((entry->flags & 0x10000) && mario->hitobjHammer == (void*)hitObj &&
+                    if ((entry->flags & 0x10000) && mario->hitobjHammer == hitObj &&
                         marioGetPtr()->position.y <= float_5_8041a0ec + entry->position.y) {
                         v22 = 1;
                         entry->triggerFlag = 0x10000;
-                    } else if ((entry->flags & MOBJ_FLAG_TRIGGER_HEAD) && v24 == (void*)hitObj) {
+                    } else if ((entry->flags & MOBJ_FLAG_TRIGGER_HEAD) && v24 == hitObj) {
                         v22 = 1;
                         entry->triggerFlag = MOBJ_FLAG_TRIGGER_HEAD;
                     } else if ((entry->flags & MOBJ_FLAG_TRIGGER_STAND_ON) && mario->hitobjStandOn == hitObj) {
@@ -649,7 +647,7 @@ void mobjMain(void) {
                         v22 = 1;
                         entry->triggerFlag = MOBJ_FLAG_TRIGGER_HIP_DROP;
                     } else if (unk_8005bb80() != 0 && (entry->flags & 0x40000) &&
-                               mario->hitobjFront == (void*)hitObj && (mario->buttonNew & 0x100) &&
+                               mario->hitobjFront == hitObj && (mario->buttonNew & 0x100) &&
                                v25 == 0) {
                         v22 = 1;
                         entry->triggerFlag = 0x40000;
@@ -683,7 +681,7 @@ void mobjMain(void) {
 
                     if (entry->flags & MOBJ_FLAG_TRIGGER_KPA_HEAD) {
                         for (j = 0; j < 10; j++) {
-                            if (kpaGetHitobjHead(j) == (void*)hitObj) {
+                            if (kpaGetHitobjHead(j) == hitObj) {
                                 v22 = 1;
                                 entry->triggerFlag = MOBJ_FLAG_TRIGGER_KPA_HEAD;
                                 break;
@@ -692,7 +690,7 @@ void mobjMain(void) {
                     }
                     if (entry->flags & MOBJ_FLAG_TRIGGER_KPA_HIP) {
                         for (j = 0; j < 10 && v22 == 0; j++) {
-                            if (kpaGetHitobjRide(j) == (void*)hitObj) {
+                            if (kpaGetHitobjRide(j) == hitObj) {
                                 if (kpaHipAttackCheck() != 0) {
                                     v22 = 1;
                                     entry->triggerFlag = MOBJ_FLAG_TRIGGER_KPA_HIP;
@@ -701,13 +699,13 @@ void mobjMain(void) {
                             }
                         }
                     }
-                    if ((entry->flags & MOBJ_FLAG_TRIGGER_KPA_LV3) && kpaGetHitobj() == (void*)hitObj && kpaGetLevel() == 3) {
+                    if ((entry->flags & MOBJ_FLAG_TRIGGER_KPA_LV3) && kpaGetHitobj() == hitObj && kpaGetLevel() == 3) {
                         v22 = 1;
                         entry->triggerFlag = MOBJ_FLAG_TRIGGER_KPA_LV3;
-                    } else if ((entry->flags & MOBJ_FLAG_TRIGGER_KPA_FLAME) && kpaGetHitFlame() == (void*)hitObj) {
+                    } else if ((entry->flags & MOBJ_FLAG_TRIGGER_KPA_FLAME) && kpaGetHitFlame() == hitObj) {
                         v22 = 1;
                         entry->triggerFlag = MOBJ_FLAG_TRIGGER_KPA_FLAME;
-                    } else if ((entry->flags & 0x80000) && mario->hitobjFront == (void*)hitObj) {
+                    } else if ((entry->flags & 0x80000) && mario->hitobjFront == hitObj) {
                         v22 = 1;
                         entry->triggerFlag = 0x80000;
                     } else if ((entry->flags & MOBJ_FLAG_TRIGGER_STAND_ON) && mario->hitobjStandOn == hitObj) {

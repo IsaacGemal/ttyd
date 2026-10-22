@@ -103,7 +103,7 @@ s32 iri_16_tyutyu_talk[445];
 s32 cooking_evt[852];
 // .bss order is last-declared-first: the original has item_tbl at 0x0 and
 // iri_09_item_tbl at 0x54, so iri_09_item_tbl is declared first.
-void* iri_09_item_tbl[1];
+s32* iri_09_item_tbl[1];
 static u32 item_tbl[21];
 
 // clang-format off
@@ -3946,7 +3946,7 @@ static USER_FUNC(yami_view) {
     camUp = vec3_gor_0001602c;
     camPos = vec3_gor_00016020;
     camPos.z = 100.0f + value;
-    C_MTXLookAt(mtx, (Point3d*)&camPos, &camUp, (Point3d*)&target);
+    C_MTXLookAt(mtx, &camPos, &camUp, &target);
     envSetYamiView(mtx);
     return EVT_RETURN_DONE;
 }
@@ -4260,9 +4260,9 @@ USER_FUNC(iri_09_item_tbl_make) {
     s32 i;
 
     for (i = 0; i < n; i++) {
-        ((s32*)iri_09_item_tbl[0])[i] = 0x8F;
+        iri_09_item_tbl[0][i] = 0x8F;
     }
-    ((s32*)iri_09_item_tbl[0])[i] = -1;
+    iri_09_item_tbl[0][i] = -1;
     evtSetValue(event, args[1], (s32)iri_09_item_tbl[0]);
     return EVT_RETURN_DONE;
 }

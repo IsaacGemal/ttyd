@@ -34,7 +34,7 @@ MapError error_data[32];
 GXColor paper_ambient;
 GXColor paperCraft_ambient;
 GXTexObj projTexObj;
-void* projTexImgRef;
+void** projTexImgRef;
 Mtx projMtx;
 BOOL __mapdrv_make_dl;
 BOOL mapDispDisabled;
@@ -737,7 +737,7 @@ static inline void mapLoadAnimTable(BOOL group) {
 
 static inline void mapLoadHeader(MapWork* wp, BOOL group, MapHeader* header) {
 	u32 entryDatSize = wp->entries[group].datSize;
-	u8* data = (u8*)wp->entries[group].dat;
+	u8* data = wp->entries[group].dat;
 	u32 sizeCheck;
 
 	if (header != NULL) {
@@ -850,7 +850,7 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	header = &wp->entries[group].header;
 	mapLoadHeader(wp, group, &wp->entries[group].header);
 
-	info = (MapFileInfo*)mapLoadFindChunk(header, "information");
+	info = mapLoadFindChunk(header, "information");
 	wp->entries[group].textureTable = mapLoadFindChunk(header, "texture_table");
 	wp->entries[group].lightTable = mapLoadFindChunk(header, "light_table");
 	wp->entries[group].fogTable = mapLoadFindChunk(header, "fog_table");
@@ -1166,7 +1166,7 @@ void bmapLoad(const char* map1, const char* map2) {
 
 
 void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* jointPtr) {
-	MapAnimData* joint = (MapAnimData*)jointPtr;
+	MapAnimData* joint = jointPtr;
 	MapAnimKey* key;
 	s32 count;
 	s32 i, k;
@@ -2228,7 +2228,7 @@ void _mapDispMapObj_NoMaterial(s32 camId, MapObject* obj) {
 }
 
 void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2) {
-	MapObject* o = (MapObject*)a2;
+	MapObject* o = a2;
 
 	_mapDispMapObj_NoMaterial((s32)obj, o);
 	// the redundant casts colour the camera id to r30 and o to r31
@@ -2771,7 +2771,7 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 		PSMTXConcat(projMtx, mtx, mtx2);
 		GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 		GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
-		GXLoadTexObj(smartTexObj(&projTexObj, (void**)projTexImgRef), texMap);
+		GXLoadTexObj(smartTexObj(&projTexObj, projTexImgRef), texMap);
 		GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
 		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 		GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_2, GX_TRUE, GX_TEVPREV);
@@ -4023,13 +4023,13 @@ void mapSetFog(u32 color, f32 near, f32 far, GXColor color2) {
 	entry->fogColor = color2;
 }
 
-void mapGetFog(u32* c, f32* near, f32* far, u32* c2) {
+void mapGetFog(u32* c, f32* near, f32* far, GXColor* c2) {
 	MapEntry* entry = &mapWork[activeGroup].entries[0];
 
 	*c = entry->fogType;
 	*near = entry->fogStart;
 	*far = entry->fogEnd;
-	*c2 = *(u32*)&entry->fogColor;
+	*c2 = entry->fogColor;
 }
 
 void mapFogOn(void) {
@@ -4223,8 +4223,8 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 	Vec* points = (Vec*)a;
 	f32* knots = (f32*)b;
 	Vec* tangents = (Vec*)c;
-	f32* dt = (f32*)_mapAlloc(count * sizeof(f32));
-	Vec* mat = (Vec*)_mapAlloc(count * sizeof(Vec));
+	f32* dt = _mapAlloc(count * sizeof(f32));
+	Vec* mat = _mapAlloc(count * sizeof(Vec));
 	s32 i;
 	f32 knprev;
 
@@ -4347,7 +4347,7 @@ BOOL mapCheckData(MapHeader* header, const char* map, const char* date) {
 	MapFileInfo* info;
 
 	sprintf(path, "%s/m/%s/d", getMapDataDvdRoot(), map);
-	info = (MapFileInfo*)mapLoadFindChunk(header, "information");
+	info = mapLoadFindChunk(header, "information");
 	if (strcmp(info->version, "ver1.01") && strcmp(info->version, "ver1.02")) {
 		mapErrorEntry(0, path);
 		return FALSE;

@@ -248,7 +248,7 @@ USER_FUNC(evt_msg_print_insert) {
     s32* args = event->args;
     s32 varargCount = (event->args[-2] >> 16) - 5;
     s32 a0 = evtGetValue(event, *args++);
-    s32 a1 = evtGetValue(event, *args++);
+    const char* a1 = (const char*)evtGetValue(event, *args++);
     s32 a2 = evtGetValue(event, *args++);
     s32 a3 = evtGetValue(event, *args++);
     s32 values[4];
@@ -259,7 +259,7 @@ USER_FUNC(evt_msg_print_insert) {
         values[i] = evtGetValue(event, *args++);
     }
     if (isFirstCall) {
-        char* fmt = (a0 & 1) ? (char*)a1 : (char*)msgSearch((const char*)a1);
+        const char* fmt = (a0 & 1) ? a1 : msgSearch(a1);
 
         switch (varargCount) {
         case 0:
@@ -284,14 +284,14 @@ USER_FUNC(evt_msg_print_insert) {
 USER_FUNC(evt_msg_print_add) {
     s32* args = event->args;
     s32 flag = evtGetValue(event, *args++);
-    s32 msg = evtGetValue(event, *args);
+    const char* msg = (const char*)evtGetValue(event, *args);
 
     if (isFirstCall) {
         if (!(flag & 1)) {
-            msgWindow_Add(msgSearch((const char*)msg), event->printWindowId);
+            msgWindow_Add(msgSearch(msg), event->printWindowId);
         }
         else {
-            msgWindow_Add((const char*)msg, event->printWindowId);
+            msgWindow_Add(msg, event->printWindowId);
         }
     }
     if (windowCheckID(event->printWindowId)) {
@@ -304,7 +304,7 @@ USER_FUNC(evt_msg_print_add_insert) {
     s32* args = event->args;
     s32 varargCount = (event->args[-2] >> 16) - 3;
     s32 a0 = evtGetValue(event, *args++);
-    s32 a1 = evtGetValue(event, *args++);
+    const char* a1 = (const char*)evtGetValue(event, *args++);
     s32 values[4];
     char buf[0x500];
     s32 i;
@@ -313,7 +313,7 @@ USER_FUNC(evt_msg_print_add_insert) {
         values[i] = evtGetValue(event, *args++);
     }
     if (isFirstCall) {
-        char* fmt = (a0 & 1) ? (char*)a1 : (char*)msgSearch((const char*)a1);
+        const char* fmt = (a0 & 1) ? a1 : msgSearch(a1);
 
         switch (varargCount) {
         case 0:
@@ -379,12 +379,12 @@ USER_FUNC(evt_msg_select) {
             msg = "DIRECT";
         }
         event->selectWindowId = msgWindow_Entry(message, 0, 0x14);
-        ((MessageData*)windowGetPointer(event->selectWindowId)->userdata->address)->tag = msg;
+        MSGWORK(windowGetPointer(event->selectWindowId))->tag = msg;
     }
     if (windowCheckID(event->selectWindowId)) {
         return EVT_RETURN_BLOCK;
     }
-    event->lwData[0] = ((MessageData*)windowGetPointer(event->selectWindowId)->userdata->address)->selectCursor;
+    event->lwData[0] = MSGWORK(windowGetPointer(event->selectWindowId))->selectCursor;
     windowDeleteID(event->selectWindowId);
     return EVT_RETURN_DONE;
 }
@@ -430,6 +430,6 @@ USER_FUNC(evt_msg_pri) {
 USER_FUNC(evt_msg_npc) {
     const char* name = (const char*)evtGetValue(event, *event->args);
     WindowEntry* window = windowGetPointer(event->printWindowId);
-    strcpy(((MessageData*)window->userdata->address)->text, name);
+    strcpy(MSGWORK(window)->text, name);
     return EVT_RETURN_DONE;
 }

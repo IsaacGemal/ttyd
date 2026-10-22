@@ -287,7 +287,7 @@ void effKemuri10Disp(CameraId camId, void* param) {
     PSMTXConcat(cam->view, m0, m0);
     GXLoadPosMtxImm(m0, GX_PNMTX0);
     GXSetCurrentMtx(GX_PNMTX0);
-    effSetVtxDescN64((effVtxArray*)stg_houki_kemuri_v);
+    effSetVtxDescN64(stg_houki_kemuri_v);
     GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xc0);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     tri2(3, 2, 4, 0, 3, 4, 5, 0);

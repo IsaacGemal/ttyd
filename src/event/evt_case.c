@@ -103,8 +103,8 @@ USER_FUNC(evt_del_case_evt) {
 
 	if (flag == 0) {
 		CaseEntry* entry = caseIdToPtr(caseId);
-		if (evtCheckID(*(s32*)entry->field_0x94)) {
-			evtDeleteID(*(s32*)entry->field_0x94);
+		if (evtCheckID(entry->field_0x94)) {
+			evtDeleteID(entry->field_0x94);
 		}
 	}
 	caseDelete(caseId);

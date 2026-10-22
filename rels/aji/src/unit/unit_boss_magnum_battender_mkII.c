@@ -28,6 +28,7 @@
 #include "eff/n64/eff_kumokumo_n64.h"
 #include "manager/evtmgr_cmd.h"
 #include "math_trig.h"
+#include "memory.h"
 #include "pmario_sound.h"
 #include <stdlib.h>
 
@@ -72,7 +73,7 @@ EffectEntry* eff_tor[1];
 s32 torCount[1];
 EffectEntry* eff_jet[2];
 s32 jetCount[1];
-static u32 list[1];
+static s32* list[1];
 EffectEntry* eff_suikomi[1];
 s32 screamId[1];
 s32 scream_fade_timer[1];
@@ -1867,7 +1868,6 @@ static USER_FUNC(waku_main) {
     BattleUnitPart* part3;
     AnimationPose* pose;
     Vec* positions;
-    u8* tbl;
     s32 id;
     s32 poseId;
     s32 group;
@@ -1882,8 +1882,7 @@ static USER_FUNC(waku_main) {
     animPoseGetAnimBaseDataPtr(poseId);
     pose = animPoseGetAnimPosePtr(poseId);
     group = animPoseGetGroupIdx(poseId, "locator17");
-    tbl = (u8*)pose->groupWorldPos;
-    positions = (Vec*)(*(u8**)tbl);
+    positions = pose->groupWorldPos->address;
     BtlUnit_SetPartsPos(part3, positions[group].x, positions[group].y, positions[group].z);
     {
         f32 yaw = camGetPtr(4)->viewYaw;
@@ -2048,10 +2047,10 @@ USER_FUNC(aud_suikomi) {
 
     if (isFirstCall) {
         found = 0;
-        if (list[0] != 0) {
-            BattleFree((void*)list[0]);
+        if (list[0] != NULL) {
+            BattleFree(list[0]);
         }
-        list[0] = (u32)BattleAlloc(0x50);
+        list[0] = BattleAlloc(0x50);
         for (i = 0; i < 200; i++) {
             if ((u8)BattleAudience_GetExist(i) == 1) {
                 temp[found] = i;
@@ -2072,7 +2071,7 @@ USER_FUNC(aud_suikomi) {
             aud->interpFramesTotal = 60 + i * 3;
             aud->counter = 0;
             aud->mRotation.y = 0.0f;
-            ((s32*)list[0])[i] = temp[i];
+            list[0][i] = temp[i];
         }
         unit = BattleGetUnitPtr(_battleWorkPointer, transId);
         BtlUnit_GetPos(unit, &x, &y, &z);
@@ -2085,7 +2084,7 @@ USER_FUNC(aud_suikomi) {
     for (i = 0; i < 200; i++) {
         s32 j;
         for (j = 0; j < 20; j++) {
-            if (i != ((s32*)list[0])[j]) {
+            if (i != list[0][j]) {
                 continue;
             }
             aud = BattleAudienceGetPtr(i);
@@ -2172,8 +2171,8 @@ USER_FUNC(aud_fire_hit) {
     parts = BtlUnit_GetPartsPtr(unit2, BtlUnit_GetBodyPartsId(unit2));
     BtlUnit_GetHitPos(unit2, parts, &hx, &hy, &hz);
     for (i = start; i < start + 2; i++) {
-        aud = BattleAudienceGetPtr(((s32*)list[0])[i]);
-        BattleAudience_SetAnim(((s32*)list[0])[i], 9, 0);
+        aud = BattleAudienceGetPtr(list[0][i]);
+        BattleAudience_SetAnim(list[0][i], 9, 0);
         position = vec3_aji_00016210;
         position.x = posx;
         position.y = posy;
@@ -2186,7 +2185,7 @@ USER_FUNC(aud_fire_hit) {
         aud->baseSize.x = 1.0f;
         aud->flags |= 4;
         ev = evtEntry(aud_hit_event, 0, 0x20);
-        ev->lwData[0] = ((s32*)list[0])[i];
+        ev->lwData[0] = list[0][i];
         ev->lwData[1] = FLOAT(hx);
         ev->lwData[2] = FLOAT(hy);
         ev->lwData[3] = FLOAT(hz);
@@ -2236,8 +2235,8 @@ USER_FUNC(aud_fire_no_hit) {
     parts = BtlUnit_GetPartsPtr(unit2, BtlUnit_GetBodyPartsId(unit2));
     BtlUnit_GetHitPos(unit2, parts, &hx, &hy, &hz);
     for (i = start; i < start + 2; i++) {
-        aud = BattleAudienceGetPtr(((s32*)list[0])[i]);
-        BattleAudience_SetAnim(((s32*)list[0])[i], 9, 0);
+        aud = BattleAudienceGetPtr(list[0][i]);
+        BattleAudience_SetAnim(list[0][i], 9, 0);
         position = vec3_aji_0001621c;
         position.x = posx;
         position.y = posy;
@@ -2250,7 +2249,7 @@ USER_FUNC(aud_fire_no_hit) {
         aud->baseSize.x = 1.0f;
         aud->flags |= 4;
         ev = evtEntry(aud_hit_event, 0, 0x20);
-        ev->lwData[0] = ((s32*)list[0])[i];
+        ev->lwData[0] = list[0][i];
         ev->lwData[1] = FLOAT(-275.0f);
         ev->lwData[2] = FLOAT((hy - 20.0f));
         ev->lwData[3] = FLOAT(hz);

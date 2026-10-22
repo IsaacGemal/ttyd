@@ -25,12 +25,12 @@
 #define TECH_MENU_ENTRY(table)                                                        \
     cmd->mWeaponTable[*count].mIndex = -1;                                            \
     cmd->mWeaponTable[*count].mItem = 0;                                              \
-    cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                 \
+    cmd->mWeaponTable[*count].mWeaponParams = (table);                                \
     cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
     cmd->mWeaponTable[*count].mIcon =                                                 \
         cmd->mWeaponTable[*count].mWeaponParams->icon;                                \
     cmd->mWeaponTable[*count].mName =                                                 \
-        (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);               \
+        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                      \
     (*count)++;
 
 extern s32 _check_aud_item_type[];

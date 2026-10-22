@@ -51,7 +51,7 @@ EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 targetRadius,
 void effBalloonMain(EffectEntry* effect) {
 	s32 life;
 	effBalloonN64Data* data = effect->userdata;
-	BalloonSeg* segs = (BalloonSeg*)data->pad;
+	BalloonSeg* segs = data->field_0x24;
 	Vec position = initializeVec((Vec*)&data->x);
 	f32 radius;
 	f32 angle;
@@ -106,11 +106,11 @@ void effBalloonMain(EffectEntry* effect) {
 #endif
 			segs++;
 		}
-		*(f32*)&data->pad[0xA0] = 0.0f;
+		data->field_0x24[20].x = 0.0f;
 		if (life < 100) {
-			*(f32*)&data->pad[0xA4] += 1.0f;
+			data->field_0x24[20].y += 1.0f;
 		} else {
-			*(f32*)&data->pad[0xA4] = 1.2f * radius;
+			data->field_0x24[20].y = 1.2f * radius;
 		}
 		dispEntry(4, dispCalcZ(&position), 2, effBalloonDisp, effect);
 	}
@@ -230,13 +230,13 @@ void effBalloonDisp(CameraId camId, void* param) {
 	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->field_0x10);
 	PSMTXConcat(transMtx, rotMtx, concatMtx);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
-	PSMTXTrans(transMtx, *(f32*)&data->pad[0xA0], *(f32*)&data->pad[0xA4], 0.0f);
+	PSMTXTrans(transMtx, data->field_0x24[20].x, data->field_0x24[20].y, 0.0f);
 	PSMTXConcat(rotMtx, transMtx, resultMtx);
 	PSMTXConcat(concatMtx, resultMtx, resultMtx);
 	effBalloonSetVtx(vtx + 1, &balloon_vtx[0], resultMtx);
 
 	for (i = 0; i < 20; i++) {
-		PSMTXTrans(transMtx, *(f32*)(data->pad + i * 8), *(f32*)(data->pad + i * 8 + 4),
+		PSMTXTrans(transMtx, data->field_0x24[i].x, data->field_0x24[i].y,
 		           0.0f);
 		PSMTXConcat(resultMtx, transMtx, transMtx);
 		effBalloonSetVtx(&vtx[i + 2], &balloon_vtx[i + 2], transMtx);
@@ -247,7 +247,7 @@ void effBalloonDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(cam->view, 0);
 	GXSetCurrentMtx(GX_PNMTX0);
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)vtx);
+	effSetVtxDescN64(vtx);
 
 	if (life < 100) {
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);

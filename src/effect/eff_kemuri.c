@@ -80,7 +80,7 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 	entry->type = "Kemuri";
 #endif
 	entry->count = numEffects;
-	data = (effKemuriData*)__memAlloc(HEAP_EFFECT, sizeof(effKemuriData) * numEffects);
+	data = __memAlloc(HEAP_EFFECT, sizeof(effKemuriData) * numEffects);
 	entry->userdata = data;
 	entry->callback = effKemuriMain;
 
@@ -149,7 +149,7 @@ EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 f
 
 	entry->type = "Kemuri2";
 	entry->count = 1;
-	data = (effKemuri2Data*)__memAlloc(HEAP_EFFECT, sizeof(effKemuri2Data));
+	data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri2Data));
 	entry->userdata = data;
 	memset(data, 0, sizeof(effKemuri2Data));
 	entry->callback = effKemuri2Main;

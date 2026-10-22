@@ -3627,7 +3627,7 @@ USER_FUNC(btlevtcmd_DispItemIcon) {
     e = evtGetValue(event, args[4]);
     if (isFirstCall) {
         event->userdata[0] = e;
-        entry = itemEntry((const char*)0, (ItemType)d, 0x11, (f32)a, (f32)b, (f32)c, -1, 0);
+        entry = itemEntry(NULL, (ItemType)d, 0x11, (f32)a, (f32)b, (f32)c, -1, 0);
         event->userdata[1] = (s32)entry;
         return 0;
     }
@@ -3864,7 +3864,7 @@ USER_FUNC(btlevtcmd_PreCheckCounter) {
     BattleUnit* attacker;
     BattleUnit* target;
     BattleUnitPart* part;
-    u8 work[0x30];
+    CounterPreCheckWork work;
     s32 btlId, targetId, partId, value, retIndex, out, result;
 
     out = 0;
@@ -3892,7 +3892,7 @@ USER_FUNC(btlevtcmd_CommandPreCheckCounter) {
     BattleUnit* attacker;
     BattleUnit* target;
     BattleUnitPart* part;
-    u8 work[0x30];
+    CounterPreCheckWork work;
     s32 btlId, targetId, partId, retIndex, out, result;
 
     out = 0;
@@ -3985,7 +3985,7 @@ USER_FUNC(btlevtcmd_DamageDirect) {
     s32 a = evtGetValue(event, args[4]);
     s32 b = evtGetValue(event, args[5]);
 
-    BattleDamageDirect(-5, unit, (s32)part, damage, 0, flags, a, b);
+    BattleDamageDirect(-5, unit, part, damage, 0, flags, a, b);
     return EVT_RETURN_DONE;
 }
 
@@ -4232,7 +4232,7 @@ USER_FUNC(btlevtcmd_GetConfuseActEvent) {
         evt = BattleSetConfuseAct(_battleWorkPointer, unit);
         i++;
         if (i > 20) {
-            evt = (void*)subsetevt_confuse_flustered;
+            evt = subsetevt_confuse_flustered;
         }
     }
     evtSetValue(event, retIndex, (s32)evt);

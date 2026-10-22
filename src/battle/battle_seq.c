@@ -2669,7 +2669,7 @@ s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
 
 	p = wp;
 	for (i = 0; i < 64; i++) {
-		unit = BattleGetUnitPtr((BattleWork*)p, i);
+		unit = BattleGetUnitPtr(p, i);
 		if (unit) {
 			while (unit->phaseEventId) {
 				if (evtCheckID(unit->phaseEventId)) {

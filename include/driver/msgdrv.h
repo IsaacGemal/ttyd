@@ -107,6 +107,6 @@ void selectWindow_Main(WindowEntry* window);
 void selectWindow_Disp(CameraId camId, void* param);
 void msgWindow_Disp(CameraId camId, void* param);
 s32 msgMain(smartEntry* smart);
-char* msgGetCommand(char* str, char* arg1, char* arg2);
+const char* msgGetCommand(const char* str, char* arg1, char* arg2);
 s32 msgIconStr2ID(const char* str);
 BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y);

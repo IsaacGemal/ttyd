@@ -814,7 +814,7 @@ s32 scissor_timer_main(void) {
 
 s32 scissor_control(s32 unused, s32 reset) {
     ScissorWork* work = GetScissorPtr();
-    ScissorPoint* points = (ScissorPoint*)work->pointBuf;
+    ScissorPoint* points = work->pointBuf;
     s32 i;
 
     if (reset != 0) {
@@ -945,7 +945,7 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
             if ((part->attributes & kUnknown_0x4000) || (part->attributes & kUnk_ImmuneToDamageOrStatus) || (part->attributes & kNotTargetable)) {
                 continue;
             }
-            if ((s8)part->defenseAttr->defenseAttrs[0] == 4 || (s8)part->defenseAttr->defenseAttrs[0] == 2) {
+            if (part->defenseAttr->defenseAttrs[0] == 4 || part->defenseAttr->defenseAttrs[0] == 2) {
                 continue;
             }
             scissor_damage_sub(unit, &out);

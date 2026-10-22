@@ -295,7 +295,7 @@ void pturn_main_dispp(CameraId camId, void* param) {
             PSMTXScale(scale, float_0p03125_8041fa6c, float_0p03125_8041fa6c, float_0_8041fa68);
             GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
             GXSetCullMode(GX_CULL_NONE);
-            effSetVtxDescN64((effVtxArray*)size48x48_tex32x32_pturn_vtx);
+            effSetVtxDescN64(size48x48_tex32x32_pturn_vtx);
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);
         }
@@ -363,7 +363,7 @@ void pturn_num_dispp(CameraId camId, void* param) {
                 { f32 z1 = MATCH_F32(float_0_8041fa68); PSMTXTrans(trans, z1, (f32)offsetA, z1); }
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_pturn_vtx);
+                effSetVtxDescN64(size24x24_tex32x32_pturn_vtx);
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
             } else {
@@ -371,14 +371,14 @@ void pturn_num_dispp(CameraId camId, void* param) {
                 { f32 z2 = MATCH_F32(float_0_8041fa68); PSMTXTrans(trans, z2, (f32)offsetB, z2); }
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_r_pturn_vtx);
+                effSetVtxDescN64(size16x24_tex32x32_r_pturn_vtx);
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
                 PSMTXScale(scale, float_0p03125_8041fa6c, float_0p0026042_8041fa70, MATCH_F32(float_0_8041fa68));
                 { f32 z3 = MATCH_F32(float_0_8041fa68); PSMTXTrans(trans, z3, (f32)offsetC, z3); }
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_l_pturn_vtx);
+                effSetVtxDescN64(size16x24_tex32x32_l_pturn_vtx);
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
             }

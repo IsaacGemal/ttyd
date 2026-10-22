@@ -152,7 +152,7 @@ void mot_damage(void) {
 		if ((++mario->multiTimer) == 2) {
 			mario->currSubMotionId = 0xB;
 			psndSFXOn_3D((const char*)0x195, &mario->position);
-			if ((HitEntry*)mario->hitobjDamageReturn != NULL) {
+			if (mario->hitobjDamageReturn != NULL) {
 				evtEntry(evt_gazigazi, 0, 0);
 			}
 		}
@@ -180,7 +180,7 @@ void mot_damage(void) {
 				break;
 			}
 		}
-		hit = (HitEntry*)mario->hitobjDamageReturn;
+		hit = mario->hitobjDamageReturn;
 		if (hit != NULL) {
 			Vec* p = hitGetDamageReturnPos(hit);
 			Vec tmp = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -257,8 +257,8 @@ void mot_damage(void) {
 		if (spd <= -10.0f) {
 			spd = -10.0f;
 		}
-		if ((HitEntry*)mario->hitobjDamageReturn != NULL) {
-			rp = hitGetDamageReturnPos((HitEntry*)mario->hitobjDamageReturn);
+		if (mario->hitobjDamageReturn != NULL) {
+			rp = hitGetDamageReturnPos(mario->hitobjDamageReturn);
 			floorY = rp->y;
 		} else {
 			floorY = mario->position.y;
@@ -390,7 +390,7 @@ void mot_damageToge(void) {
 		if (mario->position.y < mario->damageRootY + 500.0f) {
 			break;
 		}
-		hit = (HitEntry*)mario->hitobjDamageReturn;
+		hit = mario->hitobjDamageReturn;
 		if (hit != NULL) {
 			Vec* p = hitGetDamageReturnPos(hit);
 			Vec tmp = (Vec){ 0.0f, 0.0f, 0.0f };

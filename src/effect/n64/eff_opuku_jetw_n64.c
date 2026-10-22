@@ -262,7 +262,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
         GXSetTevColor(GX_TEVREG0, (GXColor){ red, green, blue, alpha });
         GXLoadPosMtxImm(work, 0);
         GXSetCurrentMtx(0);
-        effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+        effSetVtxDescN64(size16x16_tex32x32_vtx);
         GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
@@ -286,7 +286,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             GXLoadPosMtxImm(trans, 0);
             GXSetCurrentMtx(0);
             GXSetTevColor(GX_TEVREG0, (GXColor){ red, green, blue, (alpha * table[col].alphaScale) >> 8 });
-            effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+            effSetVtxDescN64(size16x16_tex32x32_vtx);
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);
         }

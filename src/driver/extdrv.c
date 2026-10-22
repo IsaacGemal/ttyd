@@ -354,10 +354,13 @@ void extMain(void) {
 }
 
 static int compare(const void* a, const void* b) {
-	if (((const ExtSortEntry*)a)->key > ((const ExtSortEntry*)b)->key) {
+	const ExtSortEntry* entryA = a;
+	const ExtSortEntry* entryB = b;
+
+	if (entryA->key > entryB->key) {
 		return 1;
 	}
-	if (((const ExtSortEntry*)a)->key < ((const ExtSortEntry*)b)->key) {
+	if (entryA->key < entryB->key) {
 		return -1;
 	}
 	return 0;

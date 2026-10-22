@@ -285,6 +285,7 @@ void effFunemizuDisp(CameraId camId, void* param) {
 	s32 i;
 	u8* sz;
 	u8** dl;
+	FunemizuMapEntry* entry;
 	f32 zero;
 	f32 z;
 	f32 oneR;
@@ -294,7 +295,7 @@ void effFunemizuDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	type = data->type;
 
-	for (p = (FunemizuMapEntry*)unk_803b0640; p; p++) {
+	for (p = unk_803b0640; p; p++) {
 		if (p->name == NULL) {
 			break;
 		}
@@ -303,12 +304,12 @@ void effFunemizuDisp(CameraId camId, void* param) {
 			goto found; // both searches skip the default store after them
 		}
 	}
-	for (dl = (u8**)unk_803b0640; dl; dl += 2) {
-		if (((FunemizuMapEntry*)dl)->name == NULL) {
+	for (entry = unk_803b0640; entry; entry++) {
+		if (entry->name == NULL) {
 			break;
 		}
-		if (strncmp(((FunemizuMapEntry*)dl)->name, gp->currentMapName, 3) == 0) {
-			colorVal = ((FunemizuMapEntry*)dl)->value;
+		if (strncmp(entry->name, gp->currentMapName, 3) == 0) {
+			colorVal = entry->value;
 			goto found;
 		}
 	}

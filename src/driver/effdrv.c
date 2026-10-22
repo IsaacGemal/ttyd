@@ -431,9 +431,9 @@ static inline void effMayaAnimInterp(EffectMayaKey* prev, EffectMayaKey* cur, f3
 	}
 }
 
-void effCalcMayaAnimMatrix(void* animPtr, void* trackPtr, void* matrix, void* alpha) {
-	EffectMayaAnim* anim = (EffectMayaAnim*)animPtr;
-	EffectMayaTrack* track = (EffectMayaTrack*)trackPtr;
+void effCalcMayaAnimMatrix(void* animPtr, void* trackPtr, void* matrix, f32* alpha) {
+	EffectMayaAnim* anim = animPtr;
+	EffectMayaTrack* track = trackPtr;
 	f32 v[22];
 	Mtx tr, s, tmp2, scPiv, scPivInv, scPivT, rotPiv, rotPivInv, rotPivT, rx, ry, rz, tmp;
 	EffectMayaKey* prev;
@@ -481,13 +481,14 @@ void effCalcMayaAnimMatrix(void* animPtr, void* trackPtr, void* matrix, void* al
 		PSMTXConcat(tr, tmp2, tmp);
 		PSMTXConcat(tmp, s, matrix);
 
-		*(f32*)alpha = v[21] > 1.0f ? 1.0f : (v[21] < 0.0f ? 0.0f : v[21]);
+		*alpha = v[21] > 1.0f ? 1.0f : (v[21] < 0.0f ? 0.0f : v[21]);
 		break;
 	}
 }
 
 void* effMayaAnimAlloc(void* animData) {
-	u32 size = *((EffectMayaAnimData*)animData)->count * 0x34 + 0x18;
+	EffectMayaAnimData* data = animData;
+	u32 size = *data->count * 0x34 + 0x18;
 	EffectMayaAnim* anim = __memAlloc(HEAP_EFFECT, size);
 
 	memset(anim, 0, size);
@@ -500,7 +501,7 @@ void effDeleteMayaAnim(void* anim) {
 }
 
 void effPlayMayaAnim(void* animPtr) {
-	EffectMayaAnim* anim = (EffectMayaAnim*)animPtr;
+	EffectMayaAnim* anim = animPtr;
 
 	anim->startTime = OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
 	anim->field_0x4 = 0.0f;
@@ -508,7 +509,7 @@ void effPlayMayaAnim(void* animPtr) {
 }
 
 void effCalcMayaAnim(void* animPtr) {
-	EffectMayaAnim* anim = (EffectMayaAnim*)animPtr;
+	EffectMayaAnim* anim = animPtr;
 	s32 i;
 
 	if (!(anim->flags & 1)) {
@@ -531,7 +532,7 @@ void effCalcMayaAnim(void* animPtr) {
 }
 
 void effDrawMayaPoly(void* data_) {
-	EffectMayaPolyList* data = (EffectMayaPolyList*)data_;
+	EffectMayaPolyList* data = data_;
 	s32 i;
 	s32 j;
 

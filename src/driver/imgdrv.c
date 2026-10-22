@@ -153,7 +153,7 @@ void imgDisp(CameraId camId, void* param) {
 			PSMTXScale(mtxS, c / (f32)shadow->bboxW,
 			           d / (f32)shadow->bboxH, 1.0f);
 			PSMTXConcat(mtxT, mtxS, mats[i]);
-			texObjs[i] = (GXTexObj*)shadow->texObjData;
+			texObjs[i] = &shadow->texObjData;
 			texDatas[i] = shadow->imageData;
 		}
 		if (texObjs[i] != NULL) {
@@ -345,8 +345,8 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 					}
 					memcpy(shadow->imageData->address, imageA->address, sizeA);
 					DCFlushRange(shadow->imageData->address, sizeA);
-					GXInitTexObj((GXTexObj*)&shadow->texObjData[0], shadow->imageData->address, widthA, heightA, fmtTexA, GX_CLAMP, GX_CLAMP, GX_FALSE);
-					GXInitTexObjLOD((GXTexObj*)&shadow->texObjData[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+					GXInitTexObj(&shadow->texObjData, shadow->imageData->address, widthA, heightA, fmtTexA, GX_CLAMP, GX_CLAMP, GX_FALSE);
+					GXInitTexObjLOD(&shadow->texObjData, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 					offscreenGetBoundingBox(pose, &shadow->bboxX, &shadow->bboxY, &shadow->bboxW, &shadow->bboxH);
 					shadow->bboxW -= shadow->bboxX;
 					shadow->bboxH -= shadow->bboxY;
@@ -363,7 +363,7 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 
 			offscreenGetTexObj(pose, &texObj, &image);
 			if (texObj != NULL) {
-				*(GXTexObj*)&shadow->texObjData[0] = *texObj;
+				shadow->texObjData = *texObj;
 				shadow->imageData = image;
 				offscreenGetBoundingBox(pose, &shadow->bboxX, &shadow->bboxY, &shadow->bboxW, &shadow->bboxH);
 				shadow->bboxW -= shadow->bboxX;
@@ -400,8 +400,8 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 				GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
 				GXCopyTex(image->address, GX_FALSE);
 				GXPixModeSync();
-				GXInitTexObj((GXTexObj*)&shadow->texObjData[0], image->address, width, height, fmtTex, GX_CLAMP, GX_CLAMP, GX_FALSE);
-				GXInitTexObjLOD((GXTexObj*)&shadow->texObjData[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+				GXInitTexObj(&shadow->texObjData, image->address, width, height, fmtTex, GX_CLAMP, GX_CLAMP, GX_FALSE);
+				GXInitTexObjLOD(&shadow->texObjData, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 				shadow->imageData = image;
 				shadow->flags &= ~0x100;
 			}
@@ -438,8 +438,8 @@ void imgCapture_Prim(ImageEntry* entry, s32 id) {
 			GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
 			GXCopyTex(imageB->address, GX_FALSE);
 			GXPixModeSync();
-			GXInitTexObj((GXTexObj*)&shadow->texObjData[0], imageB->address, widthB, heightB, fmtTexB, GX_CLAMP, GX_CLAMP, GX_FALSE);
-			GXInitTexObjLOD((GXTexObj*)&shadow->texObjData[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+			GXInitTexObj(&shadow->texObjData, imageB->address, widthB, heightB, fmtTexB, GX_CLAMP, GX_CLAMP, GX_FALSE);
+			GXInitTexObjLOD(&shadow->texObjData, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 			shadow->imageData = imageB;
 			shadow->flags &= ~0x10;
 		}
@@ -686,7 +686,7 @@ void imgShadowDisp(CameraId camId, void* param) {
 					0.0f);
 				PSMTXScale(mtxScale, v2 / (f32)shadow->bboxW, v3 / (f32)shadow->bboxH, 1.0f);
 				PSMTXConcat(mtxTrans, mtxScale, mtx[i]);
-				texObj[i] = (GXTexObj*)shadow->texObjData;
+				texObj[i] = &shadow->texObjData;
 				texData[i] = shadow->imageData;
 			}
 		}

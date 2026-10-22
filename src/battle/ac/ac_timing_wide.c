@@ -229,7 +229,8 @@ s32 battleAcResult_TimingWide(BattleWork* work) {
 }
 
 void battleAcDisp_TimingWide(CameraId camId, void* param) {
-	BattleActions* ac = &((BattleWork*)param)->actionCommands;
+	BattleWork* work = param;
+	BattleActions* ac = &work->actionCommands;
 	BattleACDispParams* disp = &ac->dispParams;
 	TimingWideDecWork* dec = (TimingWideDecWork*)&ac->field_0x2BC[0];
 	s32 flag;
@@ -431,5 +432,5 @@ static void actionCommandDisp(f32 x, f32 y) {
 		break;
 	}
 
-	(*(s32*)&disp->field_0x0[0])++;
+	disp->field_0x0++;
 }

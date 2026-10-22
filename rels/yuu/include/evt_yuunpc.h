@@ -14,14 +14,10 @@ typedef struct YuunpcEntry {
     u16 pad_06;       //0x6
     f32 field_8;      //0x8
     Vec field_C;      //0xC
-    f32 field_18;     //0x18
-    f32 field_1C;     //0x1C
-    f32 field_20;     //0x20
-    f32 field_24;     //0x24
-    f32 field_28;     //0x28
-    f32 field_2C;     //0x2C
-    Vec field_30;     //0x30
-    f32 field_3C;     //0x3C
+    Vec field_18;     //0x18
+    Vec field_24;     //0x24  position
+    Vec field_30;     //0x30  velocity
+    f32 field_3C;     //0x3C  velocity scale
     f32 field_40;     //0x40
     f32 field_44;     //0x44
     f32 field_48;     //0x48
@@ -72,25 +68,6 @@ typedef struct YuunpcWp {
     YuunpcPoseEntry poseEntries[32];  //0x414
 } YuunpcWp;
 
-typedef struct YuunpcMapWork {
-    u8 pad_00[0xC];  //0x0
-    Vec field_0C;    //0xC
-    Vec field_18;    //0x18
-    Vec field_24;    //0x24  position
-    Vec field_30;    //0x30  velocity
-    f32 field_3C;    //0x3C  velocity scale
-    f32 field_40;    //0x40
-    u8 pad_44[4];    //0x44
-    f32 field_48;    //0x48
-} YuunpcMapWork;
-
-typedef struct ErrPer {
-    u8 pad_00[4];  //0x0
-    s16 field_4;   //0x4
-    u16 pad_06;    //0x6
-    f32 field_8;   //0x8
-} ErrPer;
-
 void ext_yuunpc_minigame4_main(void);
 void ext_yuunpc_minigame3_main(void);
 void ext_yuunpc_minigame2_main(void);
@@ -103,10 +80,10 @@ s32 yuunpc_juni(Vec* pos);
 u16 yuunpc_wp_flag_check(u16 mask);
 void yuunpc_wp_flag_off(u16 mask);
 void yuunpc_wp_flag_on(u16 mask);
-void errper_set_rtn(ErrPer* p);
-s32 goalincheck(YuunpcMapWork* p);
-s32 fallcheck(YuunpcMapWork* p);
-s32 hitcheck(YuunpcMapWork* p);
+void errper_set_rtn(YuunpcEntry* p);
+s32 goalincheck(YuunpcEntry* p);
+s32 fallcheck(YuunpcEntry* p);
+s32 hitcheck(YuunpcEntry* p);
 void yuunpc_pose_minigame3_main(void);
 void ext_yuunpc_minigame3_init(void);  // TODO: real signature
 void yuunpc_pose_minigame2_main(void);

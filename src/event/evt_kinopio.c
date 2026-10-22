@@ -531,7 +531,7 @@ USER_FUNC(offset) {
 }
 
 USER_FUNC(breakfast) {
-    ItemEntry* item = itemNameToPtr((char*)str_breakfast);
+    ItemEntry* item = itemNameToPtr(str_breakfast);
     if (item == NULL || !(item->flags & 1)) {
         if ((*wp)->field_0 != 0) {
             itemEntry(str_breakfast, (*wp)->field_0, 0x10, (*wp)->field_4, (*wp)->field_8, (*wp)->field_C, -1, 0);

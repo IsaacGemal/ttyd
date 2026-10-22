@@ -456,10 +456,10 @@ s32 pouchRemoveItemIndex(s32 id, s32 index) {
 	return FALSE;
 }
 
-void pouchHiraganaToKatakana(char* src, char* dst) {
+void pouchHiraganaToKatakana(const char* src, char* dst) {
 	u16 c;
 	int len = strlen(src) / 2;
-	char* s = src;
+	const char* s = src;
 	char* d = dst;
 	int i;
 
@@ -489,10 +489,11 @@ void pouchHiraganaToKatakana(char* src, char* dst) {
 // the target. The two conversion loops already matched. Under MUST_MATCH `b` is read through a plain
 // `s16*`: a `const` read of both (or only b) puts id_b, not str, in r31.
 int comp_aiueo(const void* a, const void* b) {
-	u16 buf_a[64];
-	u16 buf_b[64];
+	char buf_a[128];
+	char buf_b[128];
 	const char* str;
-	s16 id_a = *(const s16*)a;
+	const s16* pa = a;
+	s16 id_a = *pa;
 #ifdef MUST_MATCH
 	// Match-only: spelling the access as itemDataTable[id].name lets MWCC colour the base r31 and
 	// the msgSearch result r30; the explicit base local gives the original's r30/r31. MUST_MATCH
@@ -517,7 +518,7 @@ int comp_aiueo(const void* a, const void* b) {
 		str = msgSearch(itemDataTable[id_a].name);
 #endif
 		len = strlen(str) / 2;
-		buf = buf_a;
+		buf = (u16*)buf_a;
 		for (i = 0; i < len; i++) {
 			c = *(u16*)str;
 			if (c >= 0x829F && c < 0x82DE) {
@@ -530,7 +531,7 @@ int comp_aiueo(const void* a, const void* b) {
 			str += 2;
 			buf++;
 		}
-		((u8*)buf_a)[i * 2] = 0;
+		buf_a[i * 2] = 0;
 	}
 	{
 		s32 i;
@@ -544,7 +545,7 @@ int comp_aiueo(const void* a, const void* b) {
 		str = msgSearch(itemDataTable[id_b].name);
 #endif
 		len = strlen(str) / 2;
-		buf = buf_b;
+		buf = (u16*)buf_b;
 		for (i = 0; i < len; i++) {
 			c = *(u16*)str;
 			if (c >= 0x829F && c < 0x82DE) {
@@ -557,15 +558,17 @@ int comp_aiueo(const void* a, const void* b) {
 			str += 2;
 			buf++;
 		}
-		((u8*)buf_b)[i * 2] = 0;
+		buf_b[i * 2] = 0;
 	}
 
-	return strcmp((const char*)buf_a, (const char*)buf_b);
+	return strcmp(buf_a, buf_b);
 }
 
 int comp_kind(const void* a, const void* b) {
-	s32 va = itemDataTable[*(const s16*)a].type_sort_order;
-	s32 vb = itemDataTable[*(const s16*)b].type_sort_order;
+	const s16* pa = a;
+	const s16* pb = b;
+	s32 va = itemDataTable[*pa].type_sort_order;
+	s32 vb = itemDataTable[*pb].type_sort_order;
 
 	if (va > vb) {
 		return 1;
@@ -578,10 +581,11 @@ int comp_kind(const void* a, const void* b) {
 
 // comp_aiueo with the strcmp operands swapped; the same `const` read of `a` gives its prologue.
 int comp_aiueo_r(const void* a, const void* b) {
-	u16 buf_a[64];
-	u16 buf_b[64];
+	char buf_a[128];
+	char buf_b[128];
 	const char* str;
-	s16 id_a = *(const s16*)a;
+	const s16* pa = a;
+	s16 id_a = *pa;
 #ifdef MUST_MATCH
 	// Match-only: see comp_aiueo.
 	const char* base = (const char*)&itemDataTable[0].name;
@@ -604,7 +608,7 @@ int comp_aiueo_r(const void* a, const void* b) {
 		str = msgSearch(itemDataTable[id_a].name);
 #endif
 		len = strlen(str) / 2;
-		buf = buf_a;
+		buf = (u16*)buf_a;
 		for (i = 0; i < len; i++) {
 			c = *(u16*)str;
 			if (c >= 0x829F && c < 0x82DE) {
@@ -617,7 +621,7 @@ int comp_aiueo_r(const void* a, const void* b) {
 			str += 2;
 			buf++;
 		}
-		((u8*)buf_a)[i * 2] = 0;
+		buf_a[i * 2] = 0;
 	}
 	{
 		s32 i;
@@ -631,7 +635,7 @@ int comp_aiueo_r(const void* a, const void* b) {
 		str = msgSearch(itemDataTable[id_b].name);
 #endif
 		len = strlen(str) / 2;
-		buf = buf_b;
+		buf = (u16*)buf_b;
 		for (i = 0; i < len; i++) {
 			c = *(u16*)str;
 			if (c >= 0x829F && c < 0x82DE) {
@@ -644,15 +648,17 @@ int comp_aiueo_r(const void* a, const void* b) {
 			str += 2;
 			buf++;
 		}
-		((u8*)buf_b)[i * 2] = 0;
+		buf_b[i * 2] = 0;
 	}
 
-	return strcmp((const char*)buf_b, (const char*)buf_a);
+	return strcmp(buf_b, buf_a);
 }
 
 int comp_kind_r(const void* a, const void* b) {
-	s32 va = itemDataTable[*(const s16*)a].type_sort_order;
-	s32 vb = itemDataTable[*(const s16*)b].type_sort_order;
+	const s16* pa = a;
+	const s16* pb = b;
+	s32 va = itemDataTable[*pa].type_sort_order;
+	s32 vb = itemDataTable[*pb].type_sort_order;
 
 	if (va < vb) {
 		return 1;
@@ -1272,7 +1278,7 @@ void pouchSetPartyColor(PartyId partnerId, s32 color) {
 	mpp->partyData[partnerId].flags = (u16)((mpp->partyData[partnerId].flags & 0x1FFF) | ((color & 7) << 13));
 }
 
-void pouchSetYoshiName(char* name) {
+void pouchSetYoshiName(const char* name) {
 	strcpy(mpp->yoshiName, name);
 }
 

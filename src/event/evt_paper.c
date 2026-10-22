@@ -5,13 +5,13 @@
 
 USER_FUNC(evt_paper_entry) {
 	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
+	const char* name = (const char*)evtGetValue(event, args[0]);
 	s32 inBattle = gp->inBattle != 0;
 
-	if (!animGroupBaseAsync((const char*)name, inBattle, NULL)) {
+	if (!animGroupBaseAsync(name, inBattle, NULL)) {
 		return EVT_RETURN_BLOCK;
 	}
-	animPaperPoseEntry((const char*)name, inBattle);
+	animPaperPoseEntry(name, inBattle);
 	return EVT_RETURN_DONE;
 }
 

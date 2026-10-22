@@ -2611,6 +2611,7 @@ static USER_FUNC(starstone_entry) {
     radius = evtGetFloat(event, args[3]);
     for (i = 0; i < 7; i++) {
         EffectEntry* effect;
+        effStarStoneData* data;
 
         a = (f32)i * 6.2831855f / 7.0f;
         c = cos(a);
@@ -2618,7 +2619,8 @@ static USER_FUNC(starstone_entry) {
         sprintf(name, "starstone%d", i);
         effect = effStarStoneEntry(i, radius * c + x0, y, radius * s + z0, 1.0f);
         effSetName(effect, name);
-        ((effStarStoneData*)effect->userdata)->flags &= ~4;
+        data = effect->userdata;
+        data->flags &= ~4;
     }
     return EVT_RETURN_DONE;
 }
@@ -2662,10 +2664,12 @@ static USER_FUNC(starstone_set_ry) {
 
     for (i = 0; i < 7; i++) {
         EffectEntry* effect;
+        effStarStoneData* data;
 
         sprintf(name, "starstone%d", i);
         effect = effNameToPtr(name);
-        ((effStarStoneData*)effect->userdata)->rotY = ry;
+        data = effect->userdata;
+        data->rotY = ry;
     }
     return EVT_RETURN_DONE;
 }
@@ -2759,10 +2763,12 @@ USER_FUNC(mist_add_vy) {
 
     for (i = 0; i < 10; i++) {
         EffectEntry* effect;
+        MistWork* data;
 
         sprintf(name, "mist%d", i);
         effect = effNameToPtr(name);
-        ((MistWork*)effect->userdata)->y += vy;
+        data = effect->userdata;
+        data->y += vy;
     }
     return EVT_RETURN_DONE;
 }

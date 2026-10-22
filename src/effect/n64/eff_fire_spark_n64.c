@@ -240,7 +240,7 @@ void effFireSparkDisp(CameraId camId, void* param) {
     effGetTexObjN64(0x65, &texobj);
     GXLoadTexObj(&texobj, GX_TEXMAP1);
     GXSetCullMode(GX_CULL_NONE);
-    effSetVtxDescN64((effVtxArray*)size4x4_tex32x32_vtx);
+    effSetVtxDescN64(size4x4_tex32x32_vtx);
 
     data++;
     for (i = 1; i < effect->count; i++, data++) {

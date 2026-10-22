@@ -414,7 +414,7 @@ USER_FUNC(evt_bero_get_into_info) {
 				if (kind == 0x2710) {
 					kind = 0x2710;
 				} else {
-					switch (*(u16*)&entry->kinddirArg1 & 0xFFF) {
+					switch (entry->kinddirArg1 & 0xFFF) {
 					case 0:
 					case 1:
 						for (i = 0; (u32)i < 8U; i++) {
@@ -470,7 +470,7 @@ USER_FUNC(evt_bero_get_into_info) {
 				if (kind == 0x2710) {
 					kind = 0x2710;
 				} else {
-					switch (*(u16*)&entry->kinddirArg1 & 0xFFF) {
+					switch (entry->kinddirArg1 & 0xFFF) {
 					case 0:
 					case 1:
 						for (kind = 0; (u32)kind < 8U; kind++) {
@@ -558,7 +558,7 @@ USER_FUNC(evt_bero_get_info_num) {
 	id = evtGetValue(event, event->args[0]);
 	entry = BeroINFOARR[id];
 	event->lwData[3] = (s32)entry->hitName;
-	event->lwData[4] = *(u16*)&entry->kinddirArg1;
+	event->lwData[4] = entry->kinddirArg1;
 	kind = entry->kinddirArg3;
 	{
 		
@@ -581,7 +581,7 @@ USER_FUNC(evt_bero_get_info_num) {
 		if (kind == 0x2710) {
 			kind = 0x2710;
 		} else {
-			switch (*(u16*)&entry->kinddirArg1 & 0xFFF) {
+			switch (entry->kinddirArg1 & 0xFFF) {
 			case 0:
 			case 1:
 				for (kind = 0; (u32)kind < 8U; kind++) {
@@ -612,7 +612,7 @@ USER_FUNC(evt_bero_get_info_num) {
 	event->lwData[9] = BeroSW[id];
 	event->lwData[10] = entry->field_0x20;
 	if (entry->field_0x20 == -1) {
-		switch (*(u16*)&entry->kinddirArg1 & 0xFFF) {
+		switch (entry->kinddirArg1 & 0xFFF) {
 		case 0xF00:
 			event->lwData[10] = 0;
 			break;
@@ -721,7 +721,7 @@ USER_FUNC(bero_get_position_normal) {
 	return EVT_RETURN_DONE;
 }
 
-void bero_get_position_pipe_sub(s32 reverse, s32 length, s32 hitName, s32 kind, Vec* start, Vec* end) {
+void bero_get_position_pipe_sub(s32 reverse, s32 length, const char* hitName, s32 kind, Vec* start, Vec* end) {
 	f32 hitX = 0.0f;
 	f32 hitY = 0.0f;
 	f32 hitZ = 0.0f;
@@ -740,7 +740,7 @@ void bero_get_position_pipe_sub(s32 reverse, s32 length, s32 hitName, s32 kind, 
 		off = -off;
 	case 2:
 		if (reverse == 0) {
-			hitObjGetPos((const char*)hitName, start);
+			hitObjGetPos(hitName, start);
 			start->x -= off;
 			end->x = start->x + (f32)length;
 			end->y = start->y;
@@ -748,7 +748,7 @@ void bero_get_position_pipe_sub(s32 reverse, s32 length, s32 hitName, s32 kind, 
 			hitCheckFilter(NULL, end->x, end->y, end->z, 0.0f, -1.0f, 0.0f, &hitX, &hitY,
 			               &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
 		} else {
-			hitObjGetPos((const char*)hitName, end);
+			hitObjGetPos(hitName, end);
 			end->x -= off;
 			start->x = end->x + (f32)length;
 			start->y = end->y;
@@ -764,12 +764,12 @@ void bero_get_position_pipe_sub(s32 reverse, s32 length, s32 hitName, s32 kind, 
 		length = -length;
 	case 8:
 		if (reverse == 0) {
-			hitObjGetPos((const char*)hitName, start);
+			hitObjGetPos(hitName, start);
 			end->x = start->x;
 			end->y = start->y + (f32)length;
 			end->z = start->z;
 		} else {
-			hitObjGetPos((const char*)hitName, end);
+			hitObjGetPos(hitName, end);
 			start->x = end->x;
 			start->y = end->y + (f32)length;
 			start->z = end->z;
@@ -778,8 +778,8 @@ void bero_get_position_pipe_sub(s32 reverse, s32 length, s32 hitName, s32 kind, 
 	case 7:
 	case 0x2710:
 	default:
-		hitObjGetPos((const char*)hitName, start);
-		hitObjGetPos((const char*)hitName, end);
+		hitObjGetPos(hitName, start);
+		hitObjGetPos(hitName, end);
 		break;
 	}
 }
@@ -796,7 +796,7 @@ USER_FUNC(bero_get_position_pipe_pure) {
 	reverse = evtGetValue(event, args[0]);
 	length = (s32)evtGetFloat(event, args[1]);
 	kind = event->lwData[5];
-	bero_get_position_pipe_sub(reverse, length, event->lwData[3], kind, &start, &end);
+	bero_get_position_pipe_sub(reverse, length, (const char*)event->lwData[3], kind, &start, &end);
 	BeroSX = start.x;
 	BeroSY = kind == 8 ? start.y - 37.5f : start.y;
 	BeroSZ = start.z;
@@ -822,7 +822,7 @@ USER_FUNC(bero_get_position_pipe2) {
 	Vec bpt, bat;
 	CameraParams work;
 
-	bero_get_position_pipe_sub(reverse, length, event->lwData[3], event->lwData[5], &start, &end);
+	bero_get_position_pipe_sub(reverse, length, (const char*)event->lwData[3], event->lwData[5], &start, &end);
 	end.y += 1.0f;
 	camRoadReset();
 	camShiftReset();

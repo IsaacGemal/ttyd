@@ -14,7 +14,7 @@ void yuuminigame_disp_3roll(CameraId cameraId, void* param);
 void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall);
 void yuuminigame_main_4slit(EventEntry* event, BOOL isFirstCall);
 void yuuminigame_disp_4slit(CameraId cameraId, void* param);
-extern void* yuunpc_yuuminigame4_ptr;
+extern struct YuuminigameWork* yuunpc_yuuminigame4_ptr;
 void yuunpc_wp_flag_off(u16 mask);
 void ext_yuunpc_minigame4_init_sub(void);
 void yuucounter_flag_on(u32 mask);

@@ -47,7 +47,7 @@ typedef struct MonteEntry {
     u8 unk4;                    // 0x04
     u8 pad_05[0x08 - 0x05];     // 0x05
     MonteEntryField8 field_0x8; // 0x08
-    void* work;                 // 0x40
+    YuuminigameWork* work;      // 0x40
 } MonteEntry;                   // 0x44
 
 #pragma pool_data off
@@ -786,13 +786,13 @@ static USER_FUNC(fall_rtn) {
 
 static USER_FUNC(re_fall_rtn) {
     if (monte_p != NULL) {
-        Yuuminigame2Data* data = ((YuuminigameWork*)((MonteEntry*)monte_p)->work)->data;
+        Yuuminigame2Data* data = monte_p->work->data;
         if (data->unk38 != NULL) {
             evtDeleteID(data->unk38->eventId);
             data->unk38 = NULL;
             _mapFree(monte_p);
             data->unk38 = evtEntryType(minigame_view_monte, 0, 0, 0);
-            data->unk38->lwData[0] = (s32)((MonteEntry*)monte_p)->work;
+            data->unk38->lwData[0] = (s32)monte_p->work;
         }
     }
     return EVT_RETURN_DONE;

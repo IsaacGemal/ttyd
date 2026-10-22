@@ -302,7 +302,7 @@ void effGarekiDisp(CameraId camId, void* param) {
 // anonymous local @NNN (known pool-naming limitation), which objdiff reports as an arg_mismatch.
 void gareki_dl(s32 type) {
     GXSetCullMode(GX_CULL_NONE);
-    effSetVtxDescN64((effVtxArray*)stg__s_v);
+    effSetVtxDescN64(stg__s_v);
     switch (type) {
     case 0:
         GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);

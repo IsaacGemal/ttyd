@@ -213,7 +213,7 @@ void effLevelupDisp(CameraId camId, void* param) {
 			f32 half;
 			f32 neghalf;
 
-			elem = (effLevelupData*)effect->userdata;
+			elem = effect->userdata;
 #ifdef MUST_MATCH
 			elem += elemIdx;
 #else

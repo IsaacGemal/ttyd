@@ -240,7 +240,7 @@ void effFallLeafDisp(CameraId cameraId, void* param) {
 		break;
 	}
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)size12x12_tex64x64_vtx);
+	effSetVtxDescN64(size12x12_tex64x64_vtx);
 
 	deg2rad = float_deg2rad_8041edc0;
 	for (i = 1; i < effect->count; i++, data++) {

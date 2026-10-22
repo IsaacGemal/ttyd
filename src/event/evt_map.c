@@ -41,16 +41,16 @@ __declspec(section ".sdata") GXColor unk_80422fb0;
 USER_FUNC(evt_mapobj_trans) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
-    s32 name = evtGetValue(event, args[1]);
+    const char* name = (const char*)evtGetValue(event, args[1]);
     f32 x = evtGetFloat(event, args[2]);
     f32 y = evtGetFloat(event, args[3]);
     f32 z = evtGetFloat(event, args[4]);
 
     if (type == 0) {
-        mapObjTranslate((const char*)name, x, y, z);
+        mapObjTranslate(name, x, y, z);
     }
     else {
-        mapObjTranslate((const char*)name, x, y, z);
+        mapObjTranslate(name, x, y, z);
     }
     return EVT_RETURN_DONE;
 }
@@ -58,16 +58,16 @@ USER_FUNC(evt_mapobj_trans) {
 USER_FUNC(evt_mapobj_rotate) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
-    s32 name = evtGetValue(event, args[1]);
+    const char* name = (const char*)evtGetValue(event, args[1]);
     f32 x = evtGetFloat(event, args[2]);
     f32 y = evtGetFloat(event, args[3]);
     f32 z = evtGetFloat(event, args[4]);
 
     if (type == 0) {
-        mapObjRotate((const char*)name, x, y, z);
+        mapObjRotate(name, x, y, z);
     }
     else {
-        mapObjRotate((const char*)name, x, y, z);
+        mapObjRotate(name, x, y, z);
     }
     return EVT_RETURN_DONE;
 }
@@ -75,16 +75,16 @@ USER_FUNC(evt_mapobj_rotate) {
 USER_FUNC(evt_mapobj_scale) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
-    s32 name = evtGetValue(event, args[1]);
+    const char* name = (const char*)evtGetValue(event, args[1]);
     f32 x = evtGetFloat(event, args[2]);
     f32 y = evtGetFloat(event, args[3]);
     f32 z = evtGetFloat(event, args[4]);
 
     if (type == 0) {
-        mapObjScale((const char*)name, x, y, z);
+        mapObjScale(name, x, y, z);
     }
     else {
-        mapObjScale((const char*)name, x, y, z);
+        mapObjScale(name, x, y, z);
     }
     return EVT_RETURN_DONE;
 }
@@ -108,7 +108,7 @@ USER_FUNC(evt_map_get_fog) {
     f32 far;
     GXColor color2;
 
-    mapGetFog(&color, &near, &far, (u32*)&color2);
+    mapGetFog(&color, &near, &far, &color2);
     evtSetValue(event, args[0], color);
     evtSetFloat(event, args[1], near);
     evtSetFloat(event, args[2], far);
@@ -180,10 +180,10 @@ USER_FUNC(evt_map_blend_off) {
 USER_FUNC(evt_map_blend_set_flag) {
     s32* args = event->args;
     s32 onoff = evtGetValue(event, args[0]);
-    s32 name = evtGetValue(event, args[1]);
+    const char* name = (const char*)evtGetValue(event, args[1]);
     s32 flag = evtGetValue(event, args[2]);
 
-    if (strcmp((const char*)name, "mario") == 0) {
+    if (strcmp(name, "mario") == 0) {
         MarioWork* mario = marioGetPtr();
         if (onoff == 1) {
             if (mario->paperAnimGroupId[0] != -1) {
@@ -208,7 +208,7 @@ USER_FUNC(evt_map_blend_set_flag) {
             }
         }
     }
-    else if (strcmp((const char*)name, "party") == 0) {
+    else if (strcmp(name, "party") == 0) {
         PartyEntry* party = partyGetPtr(marioGetPartyId());
         if (onoff == 1) {
             animPoseSetMaterialFlagOn(party->paperAnimGroup, flag);
@@ -217,7 +217,7 @@ USER_FUNC(evt_map_blend_set_flag) {
             animPoseSetMaterialFlagOff(party->paperAnimGroup, flag);
         }
     }
-    else if (strcmp((const char*)name, str_extparty) == 0) {
+    else if (strcmp(name, str_extparty) == 0) {
         PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
         if (onoff == 1) {
             animPoseSetMaterialFlagOn(party->paperAnimGroup, flag);
@@ -227,7 +227,7 @@ USER_FUNC(evt_map_blend_set_flag) {
         }
     }
     else {
-        NpcEntry* npc = evtNpcNameToPtr(event, (const char*)name);
+        NpcEntry* npc = evtNpcNameToPtr(event, name);
         if (onoff == 1) {
             animPoseSetMaterialFlagOn(npc->poseId, flag);
         }
@@ -267,7 +267,7 @@ static inline GXColor evtMapGrpColor(u8 r, u8 g, u8 b, u8 a) {
 USER_FUNC(evt_mapobj_color) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
-    s32 name = evtGetValue(event, args[1]);
+    const char* name = (const char*)evtGetValue(event, args[1]);
     u8 r = evtGetValue(event, args[2]);
     u8 g = evtGetValue(event, args[3]);
     u8 b = evtGetValue(event, args[4]);
@@ -283,10 +283,10 @@ USER_FUNC(evt_mapobj_color) {
         color.b = b;
         color.a = a;
         c = color;
-        mapObjSetColor((const char*)name, &c);
+        mapObjSetColor(name, &c);
     }
     else {
-        mapGrpSetColor((const char*)name, evtMapGrpColor(r, g, b, a));
+        mapGrpSetColor(name, evtMapGrpColor(r, g, b, a));
     }
     return EVT_RETURN_DONE;
 }
@@ -353,23 +353,23 @@ USER_FUNC(evt_mapobj_flag_onoff) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     s32 onoff = evtGetValue(event, args[1]);
-    s32 name = evtGetValue(event, args[2]);
+    const char* name = (const char*)evtGetValue(event, args[2]);
     s32 flag = args[3];
 
     if (type == 0) {
         if (onoff == 0) {
-            mapObjFlagOff((const char*)name, flag);
+            mapObjFlagOff(name, flag);
         }
         else {
-            mapObjFlagOn((const char*)name, flag);
+            mapObjFlagOn(name, flag);
         }
     }
     else {
         if (onoff == 0) {
-            mapGrpFlagOff((const char*)name, flag);
+            mapGrpFlagOff(name, flag);
         }
         else {
-            mapGrpFlagOn((const char*)name, flag);
+            mapGrpFlagOn(name, flag);
         }
     }
     return EVT_RETURN_DONE;
@@ -378,14 +378,14 @@ USER_FUNC(evt_mapobj_flag_onoff) {
 USER_FUNC(evt_mapobj_set_offscreen) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
-    s32 name = evtGetValue(event, args[1]);
-    s32 offName = evtGetValue(event, args[2]);
+    const char* name = (const char*)evtGetValue(event, args[1]);
+    const char* offName = (const char*)evtGetValue(event, args[2]);
 
     if (type == 0) {
-        mapObjSetOffScreen((const char*)name, (const char*)offName);
+        mapObjSetOffScreen(name, offName);
     }
     else {
-        mapGrpSetOffScreen((const char*)name, (const char*)offName);
+        mapGrpSetOffScreen(name, offName);
     }
     return EVT_RETURN_DONE;
 }
@@ -393,13 +393,13 @@ USER_FUNC(evt_mapobj_set_offscreen) {
 USER_FUNC(evt_mapobj_clear_offscreen) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
-    s32 name = evtGetValue(event, args[1]);
+    const char* name = (const char*)evtGetValue(event, args[1]);
 
     if (type == 0) {
-        mapObjClearOffScreen((const char*)name);
+        mapObjClearOffScreen(name);
     }
     else {
-        mapGrpClearOffScreen((const char*)name);
+        mapGrpClearOffScreen(name);
     }
     return EVT_RETURN_DONE;
 }
@@ -429,22 +429,22 @@ USER_FUNC(evt_map_set_flush_onoff) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     s32 onoff = evtGetValue(event, args[1]);
-    s32 name = evtGetValue(event, args[2]);
+    const char* name = (const char*)evtGetValue(event, args[2]);
 
     if (type == 0) {
         if (onoff) {
-            mapObjFlushOn((const char*)name);
+            mapObjFlushOn(name);
         }
         else {
-            mapObjFlushOff((const char*)name);
+            mapObjFlushOff(name);
         }
     }
     else {
         if (onoff) {
-            mapGrpFlushOn((const char*)name);
+            mapGrpFlushOn(name);
         }
         else {
-            mapGrpFlushOff((const char*)name);
+            mapGrpFlushOff(name);
         }
     }
     return EVT_RETURN_DONE;
@@ -453,17 +453,17 @@ USER_FUNC(evt_map_set_flush_onoff) {
 USER_FUNC(evt_map_set_flush_color) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
-    s32 name = evtGetValue(event, args[1]);
+    const char* name = (const char*)evtGetValue(event, args[1]);
     s32 r = evtGetValue(event, args[2]);
     s32 g = evtGetValue(event, args[3]);
     s32 b = evtGetValue(event, args[4]);
     s32 a = evtGetValue(event, args[5]);
 
     if (type == 0) {
-        mapObjSetFlushColor((const char*)name, r, g, b, a);
+        mapObjSetFlushColor(name, r, g, b, a);
     }
     else {
-        mapGrpSetFlushColor((const char*)name, r, g, b, a);
+        mapGrpSetFlushColor(name, r, g, b, a);
     }
     return EVT_RETURN_DONE;
 }
@@ -486,7 +486,7 @@ static USER_FUNC(check) {
 
     evtSetValue(event, args[0], 0);
     if (mario->hitobjStandOn != NULL
-        && strcmp((const char*)event->lwData[1], hitGetName((HitEntry*)mario->hitobjStandOn)) == 0) {
+        && strcmp((const char*)event->lwData[1], hitGetName(mario->hitobjStandOn)) == 0) {
         evtSetValue(event, args[0], 1);
     }
     return EVT_RETURN_DONE;
@@ -498,7 +498,7 @@ USER_FUNC(check2) {
 
     evtSetValue(event, args[0], 0);
     if (mario->hitobjStandOn != NULL
-        && strcmp((const char*)event->lwData[1], hitGetName((HitEntry*)mario->hitobjStandOn)) != 0) {
+        && strcmp((const char*)event->lwData[1], hitGetName(mario->hitobjStandOn)) != 0) {
         evtSetValue(event, args[0], 1);
     }
     return EVT_RETURN_DONE;
@@ -548,11 +548,11 @@ USER_FUNC(evt_map_entry_airport_harbor) {
 USER_FUNC(evt_map_replace_mapobj) {
     s32* args = event->args;
     Vec pos;
-    s32 name = evtGetValue(event, args[0]);
+    const char* name = (const char*)evtGetValue(event, args[0]);
     s32 type = evtGetValue(event, args[1]);
 
-    mapObjGetPos((const char*)name, &pos);
-    mapObjFlagOn((const char*)name, MAPOBJ_FLAG_NO_DISP);
+    mapObjGetPos(name, &pos);
+    mapObjFlagOn(name, MAPOBJ_FLAG_NO_DISP);
     switch (type) {
     case 0:
         effTorchEntry(0, pos.x, pos.y - 3.0f, pos.z, 0.6f);

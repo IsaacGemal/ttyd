@@ -150,7 +150,7 @@ MoamoaData moamoa_data[81] = {
 // inlines it and moamoa_init's stack frame no longer matches.
 #pragma dont_inline on
 static void moamoa_pose_init(void) {
-    MoamoaData* data = (MoamoaData*)moamoa_data;
+    MoamoaData* data = moamoa_data;
     char name1[32];
     char name2[32];
     s32 i = 0;

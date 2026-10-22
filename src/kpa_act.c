@@ -137,7 +137,7 @@ USER_FUNC(kpa_score_disp_init) {
     }
     entry->uwBase = event->uwBase;
     entry->ufBase = event->ufBase;
-    ksdp = (KpaScoreDispEntry*)_mapAlloc(0x4B0);
+    ksdp = _mapAlloc(0x4B0);
     for (i = 0; (s32)i < 50; i++) {
         ksdp[i].text[0] = 0;
         ksdp[i].timer = 0;

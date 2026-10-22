@@ -1997,7 +1997,7 @@ void fbatEncountCheck(void) {
     f32 diff;
     f32 h180;
     f32 hitX, hitY, hitZ, hitNX, hitNY, hitNZ;
-    f32 vec[3];
+    Vec vec;
     s32 side;
     s32 found;
     s32 blocked;
@@ -2019,7 +2019,7 @@ void fbatEncountCheck(void) {
     }
     fb = gp->fbatData;
     fbatOut = &fb->firstAttackKind;
-    hit = (NpcEntry*)fbatHitCheck(0x13F1, (s32)fbatOut);
+    hit = fbatHitCheck(0x13F1, (s32)fbatOut);
     if (hit != NULL && fb->mode == 1) {
         FieldBattleData* fb2 = gp->fbatData;
         s32 ok;
@@ -2142,10 +2142,10 @@ void fbatEncountCheck(void) {
                 found = 0;
                 if (!(npc->position.y > mario->position.y + mario->wPlayerCollisionBox.y) &&
                     !(mario->position.y > npc->position.y + npc->height)) {
-                    vec[0] = mario->position.x;
-                    vec[2] = mario->position.z;
-                    vec[1] = npc->position.y;
-                    dist = PSVECDistance((Vec*)vec, &npc->position);
+                    vec.x = mario->position.x;
+                    vec.z = mario->position.z;
+                    vec.y = npc->position.y;
+                    dist = PSVECDistance(&vec, &npc->position);
                     if (dist <= 0.5f * (mario->wPlayerCollisionBox.x + npc->width) + 10.0f && dist < nearest) {
                         best = npc;
                     }
@@ -2178,10 +2178,10 @@ void fbatEncountCheck(void) {
                         }
                     }
                     if (side != 0) {
-                        vec[0] = mario->position.x;
-                        vec[2] = mario->position.z;
-                        vec[1] = npc->position.y;
-                        dist = PSVECDistance((Vec*)vec, &npc->position);
+                        vec.x = mario->position.x;
+                        vec.z = mario->position.z;
+                        vec.y = npc->position.y;
+                        dist = PSVECDistance(&vec, &npc->position);
                         if (!(dist > 0.5f * (mario->wPlayerCollisionBox.x + npc->width) + 10.0f)) {
                             dx = npc->position.x - mario->position.x;
                             dz = npc->position.z - mario->position.z;
@@ -2239,7 +2239,7 @@ void fbatEncountCheck(void) {
     if (fb->mode == 1) {
         s32* fbatOut2 = &fb->firstAttackKind;
 
-        hit = (NpcEntry*)fbatHitCheck(0x2361, (s32)fbatOut2);
+        hit = fbatHitCheck(0x2361, (s32)fbatOut2);
         if (hit != NULL && fb->mode == 1) {
             s32 fval;
             FieldBattleData* fb2;
@@ -3383,7 +3383,7 @@ void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
         areaName[2] = gp->currentMapName[2];
         areaName[3] = 0;
         area = areaDataPtr(areaName);
-        setup = (BattleSetupData*)area->btlSetupTbl;
+        setup = area->btlSetupTbl;
         while (battleInfoId > 0) {
             setup++;
             battleInfoId--;
@@ -3622,7 +3622,9 @@ s32 _majinai_effect(EventEntry* evt, s32 a2) {
         evt->userdata[0] = (s32)effect;
         {
         EffectEntry* e = (EffectEntry*)evt->userdata[0];
-        ((MajinaiWork*)e->userdata)->field_0x10 = 0.8f;
+        MajinaiWork* work = e->userdata;
+
+        work->field_0x10 = 0.8f;
         }
         effSetName((EffectEntry*)evt->userdata[0], "mjef_coinup");
     }
@@ -3810,12 +3812,12 @@ s32 npcCalcScore(NpcEntry* entry) {
             score += 0x64;
         }
         if (entry->koopaEncounterType == 2) {
-            (*(s32*)&fbatData->field_570[4])++;
-            score *= *(s32*)&fbatData->field_570[4];
+            fbatData->field_574++;
+            score *= fbatData->field_574;
         }
         if (entry->koopaEncounterType == 1) {
-            (*(s32*)&fbatData->field_570[8])++;
-            *(s32*)&fbatData->field_570[0xC] += score;
+            fbatData->field_578++;
+            fbatData->field_57C += score;
         }
         if (score > 0x270F) {
             score = 0x2710;

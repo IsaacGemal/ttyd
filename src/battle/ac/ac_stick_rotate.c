@@ -31,7 +31,7 @@ static void actionCommandDisp(f32 x, f32 y);
 
 s32 _GetInputDir(void) {
     BattleWork* work = _battleWorkPointer;
-    u32 mask = *(u32*)&work->actionCommands.acParams[2];
+    u32 mask = work->actionCommands.acParams[2];
     s32 p;
 
     if (mask != 0) {
@@ -358,7 +358,8 @@ s32 battleAcResult_StickRotate(BattleWork* work) {
 // materialises the address through a scratch register (`addi r3, r3, sym@l; mr r31, r3`) instead of
 // directly into r31. Deriving disp from a BattleActions* keeps it in r30 instead of folding it into param.
 void battleAcDisp_StickRotate(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleWork* work = param;
+    BattleActions* ac = &work->actionCommands;
     void (*disp_fn)(f32, f32);
     BattleACDispParams* disp;
 

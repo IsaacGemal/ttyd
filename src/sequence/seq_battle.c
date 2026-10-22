@@ -129,7 +129,7 @@ void seq_battleMain(SequenceWork* work) {
                     break;
             }
             fbat = fbatGetPointer();
-            *(u32*)fbat->field_570 = 0;
+            fbat->field_570 = 0;
             work->state++;
             // fall through
 
@@ -158,8 +158,8 @@ void seq_battleMain(SequenceWork* work) {
                                 break;
                         }
                         if (loadMap == 0) {
-                            (*(s32*)fbat->field_570)++;
-                            if (*(s32*)fbat->field_570 < 0xC8) {
+                            fbat->field_570++;
+                            if (fbat->field_570 < 0xC8) {
                                 skip = TRUE;
                                 break;
                             }

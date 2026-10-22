@@ -56,7 +56,7 @@ typedef struct KpaFireNode {
     f32 radius;     // 0x40
     s32 noHit;      // 0x44 (nonzero: skipped by the fire hit checks)
     f32 yaw;        // 0x48
-    void* nextEfp;  // 0x4C (next node's effect entry)
+    struct EffectEntry* nextEfp; // 0x4C (next node's effect entry)
 } KpaFireNode;
 
 s32 kpaCamFollow(void);

@@ -43,7 +43,9 @@ inline Vec initializeVec(Vec* input) {
 }
 
 void effKemuri8N64SetCamId(EffectEntry* entry, s32 camId) {
-	((effKemuri8Data*)entry->userdata)->camId = camId;
+	effKemuri8Data* data = entry->userdata;
+
+	data->camId = camId;
 }
 
 // The sin/cos results go through separate function-scope temps (sinAngle, cosAngle): this is the source shape the

@@ -423,14 +423,14 @@ void effReleaseDisp(CameraId camId, void* param) {
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
                 PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);
+                effSetVtxDescN64(size16x16_tex64x64_vtx);
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
                 break;
             case 1:
                 effGetTexObjN64(0x45, &texObj);
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
-                effSetVtxDescN64((effVtxArray*)size16x16_tex256x32_vtx);
+                effSetVtxDescN64(size16x16_tex256x32_vtx);
                 PSMTXScale(scale, 0.00390625f, 0.00390625f, 0.0f);
                 PSMTXTrans(trans, 0.0f, 0.0f, 0.0f);
                 PSMTXConcat(scale, trans, scale);
@@ -465,7 +465,7 @@ void effReleaseDisp(CameraId camId, void* param) {
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
                 PSMTXScale(scale, 0.015625f, 0.015625f, 0.0f);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                effSetVtxDescN64((effVtxArray*)size16x16_tex128x128_vtx);
+                effSetVtxDescN64(size16x16_tex128x128_vtx);
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
                 /* no break: case 2 falls through into case 3 (matches the original) */
@@ -474,7 +474,7 @@ void effReleaseDisp(CameraId camId, void* param) {
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
                 PSMTXScale(scale, 0.015625f, 0.03125f, 0.0f);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_0_vtx);
+                effSetVtxDescN64(size16x16_tex64x64_0_vtx);
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
                 tri2(4, 5, 6, 4, 4, 6, 7, 4);
@@ -514,7 +514,7 @@ void effReleaseDisp(CameraId camId, void* param) {
             PSMTXIdentity(trans);
             GXLoadPosMtxImm(trans, GX_PNMTX0);
             GXSetCurrentMtx(GX_PNMTX0);
-            effSetVtxDescN64((effVtxArray*)rectangle_vtx);
+            effSetVtxDescN64(rectangle_vtx);
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);
             GXSetProjectionv(projv);

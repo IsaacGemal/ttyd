@@ -63,7 +63,8 @@ void effMarioBalloonMain(EffectEntry* effect) {
 }
 
 void effMarioBalloonDisp(CameraId camId, void* param) {
-	EffMarioBalloonData* data = ((EffectEntry*)param)->userdata;
+	EffectEntry* effect = param;
+	EffMarioBalloonData* data = effect->userdata;
 	Mtx mtx;
 	Mtx rot;
 	Mtx scale;

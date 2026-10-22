@@ -221,7 +221,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)opuku_jetwrain_vtx);
+	effSetVtxDescN64(opuku_jetwrain_vtx);
 	up = (Vec){ 0.0f, 1.0f, 0.0f };
 	target = (Vec){ 304.0f, 240.0f, 0.0f };
 	eye = (Vec){ 304.0f, 240.0f, 100.0f };

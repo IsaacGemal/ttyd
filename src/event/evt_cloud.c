@@ -87,10 +87,10 @@ static USER_FUNC(evt_cloud_main) {
 		return 0;
 	}
 
-	h0 = (HitEntry*)cloudGetHitBreathout(0);
-	h1 = (HitEntry*)cloudGetHitBreathout(1);
-	h2 = (HitEntry*)cloudGetHitBreathout(2);
-	h3 = (HitEntry*)cloudGetHitBreathout(3);
+	h0 = cloudGetHitBreathout(0);
+	h1 = cloudGetHitBreathout(1);
+	h2 = cloudGetHitBreathout(2);
+	h3 = cloudGetHitBreathout(3);
 
 	switch (cp->mode) {
 	case 0:

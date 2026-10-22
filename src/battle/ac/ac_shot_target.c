@@ -277,7 +277,8 @@ s32 battleAcResult_ShotTarget(BattleWork* work) {
 // materialise `addi r31, r4, 0x1f20` for disp; reading `&work->actionCommands.dispParams` folded the
 // offset into each access instead.
 void battleAcDisp_ShotTarget(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleWork* work = param;
+    BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
 
     switch (ac->mAcState) {

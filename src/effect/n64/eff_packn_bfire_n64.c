@@ -313,7 +313,7 @@ void effPacknBfireDisp(CameraId camId, void* param) {
 	effGetTexObjN64(0x72, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP1);
 	GXSetCullMode(GX_CULL_NONE);
-	effSetVtxDescN64((effVtxArray*)size64x64_tex32x32_vtx);
+	effSetVtxDescN64(size64x64_tex32x32_vtx);
 
 	twoPi = float_6p2832_8041f8f0;
 	fullTurn = float_360_8041f8f4;

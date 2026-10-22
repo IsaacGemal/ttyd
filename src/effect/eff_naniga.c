@@ -160,7 +160,7 @@ void effNanigaDisp(CameraId camId, void* param) {
 	savedScale = data->scale;
 	scaleBoost = 1.5f;
 	data->scale = savedScale * scaleBoost;
-	PSMTXTrans(mtx, data->field_0x10, data->field_0x14, data->field_0x18);
+	PSMTXTrans(mtx, data->field_0x10.x, data->field_0x10.y, data->field_0x10.z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx, rot, mtx);
@@ -171,8 +171,8 @@ void effNanigaDisp(CameraId camId, void* param) {
 	scissorSize = (u32)(iconSize * sizeScale);
 	extent = 20.f * sizeScale;
 	half = 0.5f;
-	centerY = (u32)((f32)gp->efbHeight * half - data->field_0x14);
-	centerX = (u32)((f32)gp->fbWidth * half + data->field_0x10);
+	centerY = (u32)((f32)gp->efbHeight * half - data->field_0x10.y);
+	centerX = (u32)((f32)gp->fbWidth * half + data->field_0x10.x);
 	GXSetScissor((u32)((f32)centerX - extent), (u32)((f32)centerY - extent), scissorSize, scissorSize);
 
 	effGetTexObj(0x57, &tex);
@@ -268,7 +268,7 @@ void effNanigaMain(EffectEntry* effect) {
 		if (data->timer == 30) {
 			for (i = 0; i < 4; i++) {
 				scale = 0.5f + (f32)irand(200) / 100.f;
-				effKemuTestDrawCam(effKemuTestEntry(2, data->field_0x10, data->field_0x14, data->field_0x18, scale), 8);
+				effKemuTestDrawCam(effKemuTestEntry(2, data->field_0x10.x, data->field_0x10.y, data->field_0x10.z, scale), 8);
 			}
 			psndSFXOn_3D("SFX_ITEM_WHAT1", &vec);
 		}
@@ -468,12 +468,12 @@ EffectEntry* effNanigaEntry(s32 type, s32* itemList, s32 itemId, f32 x, f32 y, f
 	data->poseId = -1;
 	data->color = 0xFF;
 	vec = initializeVec((Vec*)&data->posX);
-	*(Vec*)&data->field_0x10 = vec;
-	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, (Vec*)&data->field_0x10, (Vec*)&data->field_0x10);
-	PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, (Vec*)&data->field_0x10, (Vec*)&data->field_0x10);
+	data->field_0x10 = vec;
+	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &data->field_0x10, &data->field_0x10);
+	PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &data->field_0x10, &data->field_0x10);
 	half = 0.5f;
-	data->field_0x10 *= gp->fbWidth * half;
-	data->field_0x14 *= gp->efbHeight * half;
+	data->field_0x10.x *= gp->fbWidth * half;
+	data->field_0x10.y *= gp->efbHeight * half;
 	return entry;
 }
 

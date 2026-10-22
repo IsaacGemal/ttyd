@@ -146,7 +146,7 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	GXSetTevColor(2, (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 });
 
 	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+	effSetVtxDescN64(size16x16_tex32x32_vtx);
 
 	for (i = 0; i < data->lastRing + 1; i++) {
 		scaleVal = 0.1f * (f32)cos(float_6p2832_8041e908 *

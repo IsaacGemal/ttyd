@@ -665,7 +665,7 @@ static void sun_tev(MapTevCallback* param) {
     if (ind_lp == NULL) {
         ind_lp = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, 0), 1);
     }
-    buf = (u8*)ind_lp->address;
+    buf = ind_lp->address;
     for (i = 0; i < 0x40; i++) {
 #ifdef MUST_MATCH
         // MUST_MATCH: reusing `q` as the row base (rather than `row = (i / 4) * 32;`) puts MWCC's

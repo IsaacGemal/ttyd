@@ -1775,12 +1775,12 @@ void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
 
     for (chan = 0; chan < 3; chan++) {
         stream = &sound.streams[chan];
-        if (stream->flags && (DVDFileInfo*)&stream->entries[0].dvd->info == fileInfo) {
+        if (stream->flags && &stream->entries[0].dvd->info == fileInfo) {
             break;
         }
     }
 
-    hdr = (StreamHeader*)stream->entries[0].unk28;
+    hdr = stream->entries[0].unk28;
     type = hdr->field_0x0;
     stream->freq = hdr->freq;
     stream->count = hdr->count;

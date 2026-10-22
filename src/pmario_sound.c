@@ -5287,7 +5287,7 @@ void psndExit(void) {
 }
 
 BOOL psndPushGroup(void) {
-	static s8 tbl[4];
+	static u8 tbl[4];
 	static s32 group;
 	if (_psndPushGroup_trg) {
 		return TRUE;
@@ -5298,9 +5298,9 @@ BOOL psndPushGroup(void) {
 		return FALSE;
 	}
 	_psndPushGroup_trg = TRUE;
-	((u8*)tbl)[0] = group;
-	((u8*)tbl)[1] = 0xFF;
-	SoundLoadDVD2PushGroup((u8*)tbl);
+	tbl[0] = group;
+	tbl[1] = 0xFF;
+	SoundLoadDVD2PushGroup(tbl);
 	_psndPushGroup_trg = FALSE;
 	group++;
 	return TRUE;
@@ -5630,7 +5630,7 @@ static inline s32 psndBGMFindName(s32 name) {
 		return name;
 	}
 	for (index = 0; index < 0x106; index++, namePtr++) {
-		if (!strcmp((const char*)namePtr->name, (const char*)name)) {
+		if (!strcmp(namePtr->name, (const char*)name)) {
 			break;
 		}
 	}
@@ -5786,7 +5786,7 @@ s32 psndBGMOn_f_d(s32 a, s32 name, s32 c, s32 d, s32 e) {
 				}
 				goto done;
 			}
-			if (*(u32*)&bgm->unk0 == (u32)name) {
+			if ((u32)bgm->unk0 == (u32)name) {
 				if (work->unk0 == 2) {
 				}
 				else {

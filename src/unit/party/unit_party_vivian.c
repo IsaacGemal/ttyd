@@ -1232,7 +1232,7 @@ USER_FUNC(_vivian_make_extra_work_area) {
     cmd->mWeaponTable[*count].mIcon =                                                      \
         cmd->mWeaponTable[*count].mWeaponParams->icon;                                     \
     cmd->mWeaponTable[*count].mName =                                                      \
-        (char*)msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                   \
+        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                          \
     (*count)++;
 
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {

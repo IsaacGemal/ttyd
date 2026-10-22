@@ -267,7 +267,7 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
     Mtx mtx, scale, rot;
     s32 c0, c1, c2;
     s32 i;
-    effVtxArray* vtx;
+    u32* vtx;
     f32 alphaScale;
     f32 v;
 
@@ -293,28 +293,28 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
         GXSetTevColor(GX_TEVREG0, (GXColor){ c0, c1, c2, (u8)((f32)data->alpha * alphaScale) });
         switch (i & 7) {
             case 0:
-                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[3 * 14];
+                vtx = &size8x8_tex22x22_vtx[3 * 14];
                 break;
             case 1:
-                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[4 * 14];
+                vtx = &size8x8_tex22x22_vtx[4 * 14];
                 break;
             case 2:
-                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[5 * 14];
+                vtx = &size8x8_tex22x22_vtx[5 * 14];
                 break;
             case 3:
-                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[6 * 14];
+                vtx = &size8x8_tex22x22_vtx[6 * 14];
                 break;
             case 4:
-                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[7 * 14];
+                vtx = &size8x8_tex22x22_vtx[7 * 14];
                 break;
             case 5:
-                vtx = (effVtxArray*)size8x8_tex22x22_vtx;
+                vtx = size8x8_tex22x22_vtx;
                 break;
             case 6:
-                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[1 * 14];
+                vtx = &size8x8_tex22x22_vtx[1 * 14];
                 break;
             case 7:
-                vtx = (effVtxArray*)&size8x8_tex22x22_vtx[2 * 14];
+                vtx = &size8x8_tex22x22_vtx[2 * 14];
                 break;
         }
         effSetVtxDescN64(vtx);

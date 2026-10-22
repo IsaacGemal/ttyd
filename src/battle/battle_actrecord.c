@@ -1,15 +1,15 @@
 #include "battle/battle_actrecord.h"
 
-void BtlActRec_AddCount(void* p) {
-    if (*(u8*)p < 100) {
-        *(u8*)p += 1;
+void BtlActRec_AddCount(u8* p) {
+    if (*p < 100) {
+        *p += 1;
     }
 }
 
-void BtlActRec_AddPoint(void* p, u8 value) {
-    *(u8*)p += value;
-    if (*(u8*)p > 100) {
-        *(u8*)p = 100;
+void BtlActRec_AddPoint(u8* p, u8 value) {
+    *p += value;
+    if (*p > 100) {
+        *p = 100;
     }
 }
 

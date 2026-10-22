@@ -263,7 +263,8 @@ s32 battleAcResult_ButtonDown(BattleWork* work) {
 // Deriving both the state and disp parameters from one BattleActions* (rather than straight from
 // the BattleWork*) is what makes MWCC materialise the disp base: `addi r4, r4, 0x1f20`, then 0x20(r4).
 void battleAcDisp_ButtonDown(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleWork* work = param;
+    BattleActions* ac = &work->actionCommands;
     s32 state = ac->mAcState;
     BattleACDispParams* disp = &ac->dispParams;
     f32 x;

@@ -355,7 +355,7 @@ void calc_pos(effFukidashiData* data, s32 index) {
 			data->position.z = party->position.z + data->offset.z + mtx[2][1] * (16.0f + data->height);
 		}
 	} else if (data->target) {
-		mario = (MarioWork*)data->target;
+		mario = data->target;
 		data->position.x = mario->position.x + data->offset.x + mtx[0][1] * (16.0f + data->height);
 		data->position.y = mario->position.y + data->offset.y + mtx[1][1] * (16.0f + data->height);
 		data->position.z = mario->position.z + data->offset.z + mtx[2][1] * (16.0f + data->height);
@@ -437,7 +437,7 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 			g += party->position.z;
 		}
 	} else if (data->target != NULL) {
-		MarioWork* mario = (MarioWork*)data->target;
+		MarioWork* mario = data->target;
 		e = mario->position.x;
 		f = mario->position.y;
 		g = mario->position.z;
@@ -581,7 +581,7 @@ void effFukidashiMain(EffectEntry* effect) {
 static inline void fukiDrawDl(void) {
 	u32 m;
 	for (m = 0; m < 0x15; m++) {
-		GXCallDisplayList((void*)moja_model_dl_0_tbl[m], moja_model_dl_0_size_tbl[m] << 5);
+		GXCallDisplayList(moja_model_dl_0_tbl[m], moja_model_dl_0_size_tbl[m] << 5);
 	}
 }
 

@@ -556,6 +556,7 @@ static USER_FUNC(eff_guruguru) {
     s32 name;
     f32 x, y, z, scale;
     EffectEntry* effect;
+    EffGuruguruData* data;
 
     name = evtGetValue(event, args[0]);
     x = evtGetFloat(event, args[1]);
@@ -563,7 +564,8 @@ static USER_FUNC(eff_guruguru) {
     z = evtGetFloat(event, args[3]);
     scale = evtGetFloat(event, args[4]);
     effect = effGuruguruN64Entry(0, 3, x, y, z, scale);
-    ((EffGuruguruData*)effect->userdata)->drawScale = 0.8f;
+    data = effect->userdata;
+    data->drawScale = 0.8f;
     effSetName(effect, (const char*)name);
     return EVT_RETURN_DONE;
 }

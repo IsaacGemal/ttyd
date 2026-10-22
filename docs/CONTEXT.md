@@ -6186,3 +6186,82 @@ only loaded them.
 - **For a reviewer.** The yami_view-style camera functions in eight RELs now mix a literal target with named position
   and up Vecs; that mix is what the original's `.rodata` order says. The moved definitions listed above. The data
   check passed for every changed object (183).
+## Pointer-retype casts removed by fixing declarations (2026-10-22, Claude Opus 5.5 orchestrating eight Claude Opus 5.5 workers, n9-q-o-retype)
+
+Task (Isaac): work down the retype families #1119 added to the index (deref_cast, struct_ptr_cast, prim_ptr_cast,
+ptr_to_int), fixing the declaration behind a cast rather than the cast: struct members, unions, prototypes, locals;
+removing `(T*)` casts C does implicitly; typed locals for `void*` work pointers; leaving casts that steer codegen as they
+are (no new MUST_MATCH regions).
+
+- **Counts** (`tools/cleanup_index.py`, rebased onto cee4c1fa (#1122) -> this branch): index **24.571 -> 21.493** per
+  kLOC (17,016 -> 14,888 weighted). struct_ptr_cast **2,696 -> 1,464**, prim_ptr_cast **2,261 -> 1,901**, deref_cast
+  **795 -> 526**, ptr_to_int 2,694 -> 2,694, abs_address 16 -> 2, raw_offset 225 -> 215; field_0x 4,558 -> 4,608
+  (placeholder members added where a byte block became typed fields, and raw reads that now name an existing
+  placeholder). Melee-family sites 9,873 -> 7,988. must_match, opt_pragma, goto, fn_ptr_cast unchanged.
+- **Method.** Scratch in the untracked build/retype/. sites.py lists every counted site with its context (code, macro,
+  file-scope data initialiser); chk.py compiles one file with the build's own command into a temp dir and compares it with
+  a snapshot of the original objects through tools/obj_equiv.py (`--nm` also compiles without MUST_MATCH, `--users H`
+  every .c that includes header H transitively), so workers could verify in parallel without touching build/. The tree
+  was split into eight disjoint groups (src/event; src/effect; src/battle+unit; src/driver+manager;
+  src/window+mario+sequence+top level; src/motion+party+data; rels gor/tou/yuu/end/tou2/dou; the other rels), each
+  owning its .c files and the headers only its own files include; headers included across groups were proposed as
+  patches, tested with private header copies, and applied by the orchestrator afterwards. Every commit was checked out
+  and built on its own: build/G8MJ01/ok recreated and all 1,223 objects obj_equiv-equal to the original.
+- **What changed, by kind.**
+  - Implicit conversions: `*(TEXPalette**)entry->data` -> `*entry->data` (FileEntry.data is a `void**` handle), casts on
+    `_mapAlloc`/`__memAlloc`/`smartAlloc(...)->address`, `WinMgrEntry.param`, `mExtraWork`, `userdata` assigned to a
+    typed local, `void*` SDK parameters, string literals, same-type casts.
+  - Declarations: file-local structs and globals typed (party_move's `footmarkBuf` is `Footmark[2][0x50]`; YuunpcEntry's
+    float triples are Vecs and its partial views YuunpcMapWork/ErrPer go; filemgr's relocation switch takes one typed
+    local per file type; battle_menu_disp uses battle_seq_command.h's command tables instead of private copies; evt_door's
+    door functions take the header's DoorEntry*; uninitialised .bss/.sbss work pointers get their element types).
+  - Shared headers: ItemData.buy_price u16 (ItemDataView goes); InformantInfo/InformantWork, CaseEntry.field_0x94,
+    FieldBattleData.field_570, BattleACDispParams/BattleActions words, defence tables s8, mPowerBounceRecord u16;
+    PartyCloud.hitBreathout and cloudGetHitBreathout HitEntry*; MarioWork's thirteen hit fields HitEntry*;
+    const char* names for msgGetCommand, door_position_sub, door_dark_flag_sub, itemNameToPtr,
+    bero_get_position_pipe_sub, pouchSetYoshiName, pouchHiraganaToKatakana, animPoseDisp_MakeExtTexture and the battle
+    command tables' mName; BattleDamageDirect takes the BattleUnitPart* its callers passed as s32;
+    effStarStoneData.matColor GXColor, effNanigaData's position a Vec, LensflareEntry's head fields, effBalloonData's
+    BalloonSeg ring; effSetVtxDescN64 takes `void*` (all it does is hand the pointer to GXSetArray, and its 119 callers
+    cast u32 data, file-local vertex structs and buffers to the fake `effVtxArray`).
+  - Typed locals: qsort comparators (`const T* pa = a;`), one-store userdata setters, AC disp callbacks
+    (`BattleWork* work = param;`), event-word names typed once at their evtGetValue.
+- **Per-user unions.** MarioWork.motStruct (0x288) and PartyEntry.useStruct (0x170) are `void*` that each motion or
+  partner casts to its own struct at every access, and a typed local can't replace the casts: the original reloads the
+  pointer after every store and call (tried in mot_plane, party_bomhei, party_cloud: DIFF). Each became an anonymous
+  union of the `void*` and one pointer per user, as EventEntry already does. The members are named after the struct they
+  point to (`jabaraWork`, `motionPlaneData`, `motRoll`, `motionShipData`, `bomheiWork`, `partyCloud`, `partyYoshiUse`):
+  no meaning beyond the type is claimed, but they are new member names; Isaac may prefer another spelling.
+- **Refused or reverted by the orchestrator.** Data initialisers stay out of scope even when the bytes were verified:
+  the `STRING((void*)"...")` / `STRING((char*)"...")` cast removals in evt_sub, battle_seq_end, sac_suki and sac_zubastar
+  and rsh_00's npc_data were reverted (uninitialised .bss/.sbss retypes were kept: same size and section, verified).
+  tou/tou2's `effStarStoneData** ud = (effStarStoneData**)&handle->userdata` (a new `void**` -> `T**` pun replacing
+  eleven well-defined casts) was reverted. Three filemgr TPL relocations rerouted through the file's FILE_RELOC/
+  FILE_UNRELOC pun macros were reverted (a pun moved into a macro the index counts once). bom_01's new member name `rot`
+  became `field_0x18`.
+- **Lessons.**
+  - `const` on a pointee changes code in this compiler: mario_pouch's `*(const u16*)s` instead of `*(u16*)s` moved
+    instructions. Test every const change.
+  - `-char unsigned`: the `(s8*)` / `*(s8*)` views of char buffers (fontmgr, fontlenpitch, menu help text) are signed
+    reads and stay; `const char*` there changes the object.
+  - Effect `userdata` written more than once per function is the largest family left (~500 sites tree-wide): MWCC has no
+    type-based alias analysis, so the original reloads `effect->userdata` after every store and call, and a typed local
+    keeps it in a register (DIFF in every attempt). Only a per-effect union in EffectEntry would remove them.
+  - Typed cursor locals sometimes match only at one declaration position (eff_nozle, eff_funemizu).
+- **Left, by family** (4,047 code sites remain; approximate, families overlap): event-ABI int<->pointer conversions (`(T*)evtGetValue`, lwData/userdata
+  words, `(s32)&x` to evtSetValue) ~800; sound ids passed through a name parameter (`psndSFXOn((const char*)0x2002A)`)
+  ~450; colour/Vec/table puns on data objects declared as u32/f32 arrays (`*(GXColor*)&dat_*` ~330, `vec3_*`, fighterDt,
+  sintbl) ~500, out of scope with data definitions; effect userdata reloads ~500; float bit tests (the MSL fpclassify
+  shape copied per file) ~100; MUST_MATCH arms ~200; Mtx rows read as Vec ~50; variable-length file-format parsing
+  (fontmgr, mapdrv, hitdrv, filemgr TPL, cardmgr) ~40; ptr_to_int in data initialisers 2,568 (hex scripts and raw
+  tables).
+- **Leads.** tou.c's `rank_wp`/`dwp` as RankWork*/DispWork* (~110 casts; one load pair swaps in
+  evt_tou_print_ranking; tou2.c already declares them typed); end_unknown's `credits_work_ptr` as CreditsWork* (~30
+  casts, an initialised data definition: matched in a test); BattleActions.field_0x2BC as a union of the per-AC work
+  structs (51 casts; the structs must move into the ac headers first); EventEntry.field_84 used as u32, s32 and f32;
+  `(Vec*)&data->x` into initializeVec inlines (~22, needs Vec members in shared effect headers and new names).
+- Verified before each commit: `ninja` recreates build/G8MJ01/ok; tools/ci.py PASS with its tools/tests step stubbed (the
+  same 9 environment failures as the chapters above; the data step needs pyelftools once a header used by a data table
+  changes, so it was run under `uv run --with pyelftools`, after which configure.py must be rerun with the normal Python:
+  it writes the uv interpreter's path into build.ninja); fncast_lint and local_prototypes pass. Worker reports with
+  their `Model:` lines are in build/retype/G1-G8/REPORT.md (untracked).

@@ -246,7 +246,8 @@ s32 battleAcResult_LstRcKeep(BattleWork* work) {
 // r3, exactly as the original does; leaving a `param`-based use inside case 0x3E9 keeps `param` live and
 // folds both into `0x1f34..0x1f50(r31)` instead (same wall ac_timing_wide hit).
 void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleWork* work = param;
+    BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
     LstRcKeepWork* dec = (LstRcKeepWork*)&ac->field_0x2BC[0];
     s32 state = ac->mAcState;
@@ -255,19 +256,19 @@ void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
     case 0x63:
     case 0x64:
     case 0x3E8:
-        *(s32*)&disp->field_0x24[0] = -1;
+        disp->field_0x24 = -1;
         disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.0f,
                                     30.0f);
-        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
+        actionCommandDisp(disp->iconX, disp->iconY, disp->field_0x24);
         if (disp->counter > 0) {
             disp->counter--;
         }
         break;
     case 0x3E9:
-        *(s32*)&disp->field_0x24[0] = dec->stage - 1;
+        disp->field_0x24 = dec->stage - 1;
         disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.0f,
                                     30.0f);
-        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
+        actionCommandDisp(disp->iconX, disp->iconY, disp->field_0x24);
         if (disp->counter > 0) {
             disp->counter--;
         }
@@ -275,7 +276,7 @@ void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
     case 0x3EA:
     case 0x3EB:
     case 0x3EC:
-        actionCommandDisp(30.0f, 0.0f, *(s32*)&disp->field_0x24[0]);
+        actionCommandDisp(30.0f, 0.0f, disp->field_0x24);
         break;
     case 0x3ED:
     case 0x3EE:
@@ -286,7 +287,7 @@ void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
         else {
             disp->iconX = 30.0f;
         }
-        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
+        actionCommandDisp(disp->iconX, disp->iconY, disp->field_0x24);
         if (disp->counter < 0x3C) {
             disp->counter++;
         }

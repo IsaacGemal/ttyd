@@ -151,7 +151,7 @@ void effBomheiDisp(CameraId camId, void* param) {
 	PSMTXConcat(scale, trans, trans);
 	GXLoadTexMtxImm(trans, 0x21, 1);
 	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_vtx);
+	effSetVtxDescN64(size32x32_tex32x32_vtx);
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);

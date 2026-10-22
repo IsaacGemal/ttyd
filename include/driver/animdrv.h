@@ -42,7 +42,7 @@ typedef struct AnimPoseShapeDraw {
     s32 drawMode;             // 0x8
     u8 field_0xC[0x10 - 0xC]; // 0xC
     s32 texDataIds[8];        // 0x10
-    u8 texArrayIds[8];        // 0x30
+    s8 texArrayIds[8];        // 0x30
     s32 firstDrawCall;        // 0x38
     s32 drawCallCount;        // 0x3C
     s32 firstIdPos;           // 0x40
@@ -416,7 +416,7 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z);
 void pushGXModelMtx_TransformNode__(void* node);
 void animPaperPoseDisp(CameraId camId, void* param);
 void animPaperPoseDispSub(s32 unused, void* param);
-void animPoseDisp_MakeExtTexture(const char* name, void* animName, f32 f1, void* texObj, void* base,
+void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 f1, void* texObj, void* base,
                                         f32 f2, s32* out0, s32* out1, s32* out2, s32* out3);
 void animPoseAutoRelease(s32 type);
 void animPoseVivianMain(s32 poseId, Vec* pos);

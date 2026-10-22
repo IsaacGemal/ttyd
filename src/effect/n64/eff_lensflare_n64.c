@@ -65,11 +65,11 @@ EffectEntry* effLensflareN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2)
 }
 
 // The original walks the header fields and the entry array through ONE pointer: it loads userdata into
-// `data`, uses it as a LensflareData for the header, then steps it once (`for (i = 1, data++; ...)`) into
+// `data`, reads the head fields through it, then steps it once (`for (i = 1, data++; ...)`) into
 // the entries. Keeping a separate `entry` variable makes MWCC spill userdata to a caller-saved register
 // (r6) and materialise the loop pointer with `addi r31, r6, 0x34`, which flips the later register roles.
 void effLensflareMain(EffectEntry* effect) {
-    LensflareEntry* data = (LensflareEntry*)effect->userdata;
+    LensflareEntry* data = effect->userdata;
     /* The Vec is built in `disp` and copied to `position` before dispCalcZ; a single local folds the copy away. */
     Vec position;
     Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -81,36 +81,35 @@ void effLensflareMain(EffectEntry* effect) {
     s32 fade;
     s32 frame;
 
-    disp.x = ((LensflareData*)data)->x;
-    disp.y = ((LensflareData*)data)->y;
-    disp.z = ((LensflareData*)data)->z;
+    disp.x = data->x;
+    disp.y = data->y;
+    disp.z = data->z;
     position = disp;
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
-        ((LensflareData*)data)->field_18 = 30;
+        data->field_18 = 30;
     }
-    if (((LensflareData*)data)->field_18 < 100) {
-        ((LensflareData*)data)->field_18--;
+    if (data->field_18 < 100) {
+        data->field_18--;
     }
-    ((LensflareData*)data)->field_1C++;
-    fade = ((LensflareData*)data)->field_18;
+    data->field_1C++;
+    fade = data->field_18;
     if (fade < 0) {
         effDelete(effect);
         return;
     }
-    frame = ((LensflareData*)data)->field_1C;
+    frame = data->field_1C;
     if (frame <= 20) {
-        ((LensflareData*)data)->field_14 = frame * 12;
+        data->field_14 = frame * 12;
     } else if (fade < 20) {
-        ((LensflareData*)data)->field_14 = fade * 12;
+        data->field_14 = fade * 12;
     }
 
     for (i = 1, data++; i < effect->count; i++, data++) {
         angle = 6.2831855f * (90.f * (data->field_2C - 70.f) / 10.f) / 360.f;
-        // field_14 is inside LensflareEntry's padding; the overlapping LensflareData layout names it.
         c = (f32)cos(angle);
-        ((LensflareData*)data)->field_14 = (s32)(255.0f * c);
+        data->field_14 = (s32)(255.0f * c);
         data->field_2C += data->field_30;
         if (data->field_2C > 80.f) {
             data->field_2C = 60.f;
@@ -145,12 +144,12 @@ void effLensflareDisp(CameraId cameraId, void* param) {
 
     cam = camGetPtr(cameraId);
     data = effect->userdata;
-    frame = ((LensflareData*)data)->field_1C;
-    alpha = ((LensflareData*)data)->field_14;
+    frame = data->field_1C;
+    alpha = data->field_14;
     if (frame & 1) {
         alpha = (s32)(0.95f * (f32)alpha);
     }
-    PSMTXTrans(trans, ((LensflareData*)data)->x, ((LensflareData*)data)->y, ((LensflareData*)data)->z);
+    PSMTXTrans(trans, data->x, data->y, data->z);
     PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
     PSMTXConcat(trans, rot, base);
     PSMTXConcat(cam->view, base, base);
@@ -174,21 +173,21 @@ void effLensflareDisp(CameraId cameraId, void* param) {
     effGetTexObjN64(0x6f, &texObj);
     GXLoadTexObj(&texObj, 0);
     GXSetTevColor(1, (GXColor){ 0xFF, 0x40, 0x40, alpha });
-    effSetVtxDescN64((effVtxArray*)size48x48_tex32x32_vtx);
+    effSetVtxDescN64(size48x48_tex32x32_vtx);
     GXBegin(0x90, 0, 6);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     effGetTexObjN64(0x86, &texObj);
     GXLoadTexObj(&texObj, 0);
     PSMTXScale(scale, 0.03125f, 0.0078125f, 0.0f);
     GXLoadTexMtxImm(scale, 0x1e, 1);
-    effSetVtxDescN64((effVtxArray*)size10x10_tex32x32_vtx);
+    effSetVtxDescN64(size10x10_tex32x32_vtx);
 
     for (i = 1, data++; i < effect->count; i++, data++) {
         f30 = data->field_28;
         if (f30 == zero) {
             continue;
         }
-        GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, (((LensflareData*)data)->field_14 * alpha) >> 8 });
+        GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, (data->field_14 * alpha) >> 8 });
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 0xff);
         GXSetTevColorOp(0, 0, 0, 0, 1, 0);
@@ -217,7 +216,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         GXBegin(0x90, 0, 6);
         tri2(8, 9, 10, 0, 8, 10, 11, 0);
 
-        GXSetTevColor(1, (GXColor){ 0xFF, 0x00, 0xFF, (((LensflareData*)data)->field_14 * alpha) >> 9 });
+        GXSetTevColor(1, (GXColor){ 0xFF, 0x00, 0xFF, (data->field_14 * alpha) >> 9 });
         GXSetTevColor(2, (GXColor){ 0xFF, 0x80, 0xFF, 0x00 });
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 0xff);
@@ -241,7 +240,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         GXBegin(0x90, 0, 6);
         tri2(4, 5, 6, 0, 4, 6, 7, 0);
 
-        GXSetTevColor(1, (GXColor){ 0xFF, 0x40, 0x40, (((LensflareData*)data)->field_14 * alpha) >> 8 });
+        GXSetTevColor(1, (GXColor){ 0xFF, 0x40, 0x40, (data->field_14 * alpha) >> 8 });
         {
             f32 a = 34.0f + data->field_20;
             PSMTXRotRad(rot, 'z', 0.017453292f * (a + (f32)frame));

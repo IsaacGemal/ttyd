@@ -602,7 +602,7 @@ static void rankingControll(void) {
         }
     }
 
-    entry = (RankEntry*)__memAlloc(0, sizeof(RankEntry) * rank_wp->count);
+    entry = __memAlloc(0, sizeof(RankEntry) * rank_wp->count);
     for (i = 0; i < nAbove; i++) {
         entry[i] = rank_wp->entries[above[i]];
     }
@@ -1195,7 +1195,7 @@ USER_FUNC(tou_champion_belt_28_text_2A10) {
         champion_belt_onoff = 0;
     }
     pose = animPoseGetAnimPosePtr(npc->poseId);
-    loc = ((PoseUser*)pose->groupWorldPos)->locators;
+    loc = pose->groupWorldPos->address;
     group = animPoseGetGroupIdx(npc->poseId, "locator8");
     angle = reviseAngle(camGetRy() - pose->rotationY);
     handle = (EffectEntry*)event->userdata[0];

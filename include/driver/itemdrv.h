@@ -54,7 +54,7 @@ typedef struct ItemWork {
 void itemInit(void);
 void itemReInit(void);
 void itemMain(void);
-ItemEntry* itemNameToPtr(char*);
+ItemEntry* itemNameToPtr(const char* name);
 void itemSetPosition(ItemEntry* item, f32 x, f32 y, f32 z);
 void itemDelete(char* name);
 s32 N_itemPickUpFromFieldCheck(void);

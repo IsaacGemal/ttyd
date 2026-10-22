@@ -354,7 +354,7 @@ BOOL THPSimpleSetBuffer(u8* buffer) {
             }
         }
 
-        SimpleControl.thpWork = (void*)ptr;
+        SimpleControl.thpWork = ptr;
     }
 
     return TRUE;
@@ -786,10 +786,10 @@ void THPAudioMixCallback(void) {
             }
 
             OldAIDCallback();
-            LastAudioBuffer = (s16*)OSPhysicalToCached(AIGetDMAStartAddr());
+            LastAudioBuffer = OSPhysicalToCached(AIGetDMAStartAddr());
         } else {
             OldAIDCallback();
-            CurAudioBuffer = (s16*)OSPhysicalToCached(AIGetDMAStartAddr());
+            CurAudioBuffer = OSPhysicalToCached(AIGetDMAStartAddr());
         }
 
         SoundBufferIndex ^= 1;

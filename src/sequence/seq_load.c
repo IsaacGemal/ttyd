@@ -91,7 +91,7 @@ typedef struct WinDt {
     u8 navRight; //0x1B
 } WinDt;
 
-#define LOAD_TEX_PALETTE() ((TEXPalette*)*wp->file->data)
+#define LOAD_TEX_PALETTE() (*wp->file->data)
 
 static LoadWork work;
 static LoadWork* wp = &work;

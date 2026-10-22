@@ -1269,7 +1269,7 @@ void rsh_window_tev(MapTevCallback* param, s32 arg1) {
     C_MTXLightFrustum(frustumMtx, top, bottom, left, right, near,
         half, half, 0.4f, 0.6f);
     PSMTXConcat(frustumMtx, camGetCurPtr()->view, frustumMtx);
-    PSMTXConcat(frustumMtx, *(Mtx*)param->mtx, frustumMtx);
+    PSMTXConcat(frustumMtx, param->mtx, frustumMtx);
 
     GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texMtx[texMap], GX_FALSE, GX_PTIDENTITY);
     GXLoadTexMtxImm(frustumMtx, texMtx[texMap], GX_MTX3x4);

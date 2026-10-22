@@ -30,6 +30,6 @@ void effGetTexObjN64(u32 id, GXTexObj* obj);
 eff_set* effGetSetN64(const char* name);
 s32 effTblRandN64(u32 rand, s32 index);
 extern u32 _rand_table[];
-void effSetVtxDescN64(effVtxArray* array);
+void effSetVtxDescN64(void* array);
 void tri1(s32 x, s32 y, s32 z, s32 unused);
 void tri2(s32 x1, s32 y1, s32 z1, s32 unused1, s32 x2, s32 y2, s32 z2, s32 unused2);

@@ -675,7 +675,7 @@ USER_FUNC(toron_check) {
     if (marioStGetSystemLevel() != 0) {
         flag = 1;
     }
-    if ((void*)npc == hit && flag == 0) {
+    if (npc == hit && flag == 0) {
         evtSetValue(event, LW(10), 1);
     } else {
         evtSetValue(event, LW(10), 0);
