@@ -4419,11 +4419,7 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	GXColor color;
 	MapObject* obj;
 
-	color = (GXColor){0, 0, 0, 0};
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
+	color = (GXColor){r, g, b, a};
 	obj = mapGetMapObjSub(name);
 	if (obj) {
 		obj->color = color;
