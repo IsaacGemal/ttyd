@@ -16,9 +16,6 @@
 #include <string.h>
 
 // Data objects defined later in this file or in other units, declared before their first use.
-extern const u32 dat_8041fd78;
-extern const u32 dat_8041fd7c;
-extern const u32 dat_8041fd80;
 extern const f32 float_deg2rad_8041fd84;
 extern const f32 float_0p015625_8041fd88;
 extern const f32 float_0_8041fd8c;
@@ -95,29 +92,6 @@ static inline f32 sqrtf(f32 x) {
     }
     return x;
 }
-
-#ifdef MUST_MATCH
-// MUST_MATCH: retail builds each by-value GXSetTevColor argument in a scratch slot below its
-// outgoing copy. Keeping the build and the call together in an inline reproduces that layout
-// (AGENT_BRIEF GXColor quirk); the plain block under #else is the natural form.
-static inline void sstarTev1(s32 r, s32 g, s32 b) {
-    GXColor color = *(GXColor*)&dat_8041fd78;
-    color.r = r;
-    color.g = g;
-    color.b = b;
-    GXSetTevColor(1, color);
-}
-
-static inline void sstarTev2(void) {
-    GXColor color = *(GXColor*)&dat_8041fd7c;
-    GXSetTevColor(2, color);
-}
-
-static inline void sstarTev3(void) {
-    GXColor color = *(GXColor*)&dat_8041fd80;
-    GXSetTevColor(3, color);
-}
-#endif
 
 //.rodata
 
@@ -352,7 +326,6 @@ void effSstarDisp(CameraId camId, void* param) {
     GXTexObj tex;
     SstarWork* data;
     s32 base;
-    GXColor color;
     s32 colR;
     f32 scale;
     s32 colG;
@@ -378,19 +351,9 @@ void effSstarDisp(CameraId camId, void* param) {
     PSMTXConcat(mtx3, mtx2, mtx3);
 
     GXSetCullMode(GX_CULL_NONE);
-#ifdef MUST_MATCH
-    sstarTev1(colR, colG, colB);
-    sstarTev2();
-    sstarTev3();
-#else
-    color = (GXColor){ 0, 0, 0, 0xFF };
-    color.r = colR;
-    color.g = colG;
-    color.b = colB;
-    GXSetTevColor(1, color);
+    GXSetTevColor(1, (GXColor){ colR, colG, colB, 0xFF });
     GXSetTevColor(2, (GXColor){ 0x7F, 0x7F, 0x7F, 0x7F });
     GXSetTevColor(3, (GXColor){ 0x50, 0x50, 0x50, 0x50 });
-#endif
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
     GXSetNumTexGens(1);
@@ -481,13 +444,8 @@ void effSstarDisp(CameraId camId, void* param) {
     }
 }
 
-// .sdata2 as in the original object: the three effect colours, then the constants this unit's
-// functions read, the two zero-filled gaps, and the globals referenced by eff_stamp_n64.
-// explicit_zero_data/force_active keep the unreferenced zero entries alive.
-__declspec(section ".sdata2") const u32 dat_8041fd78 = 0x000000FF;
-__declspec(section ".sdata2") const u32 dat_8041fd7c = 0x7F7F7F7F;
-__declspec(section ".sdata2") const u32 dat_8041fd80 = 0x50505050;
-
+// .sdata2 as in the original object: the constants this unit's functions read, the two zero-filled gaps, and the
+// globals referenced by eff_stamp_n64. explicit_zero_data/force_active keep the unreferenced zero entries alive.
 #pragma force_active on
 #pragma explicit_zero_data on
 __declspec(section ".sdata2") const f32 float_deg2rad_8041fd84 = 0.017453292f;

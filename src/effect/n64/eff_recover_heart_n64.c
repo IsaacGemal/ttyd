@@ -16,7 +16,6 @@ __declspec(section ".data") u32 lbl_803A4A60[2] = { 0xBF800000, 0x3F800000 };
 #pragma force_active reset
 
 // .rodata
-const Vec vec3_802fb4c8 = { 0.0f, 0.0f, 0.0f };
 // The int-to-float magic double is MWCC's own pool entry; declaring it (rather than
 // defining it) keeps the pool at the original's .rodata offset (0x10) so objdiff
 // resolves the @NNN local to the original's symbol. effRecoverHeartN64Entry passes
@@ -27,13 +26,6 @@ extern const f64 double_to_int_802fb4d8;
 // .sdata
 f32 scale_w_dat[7] = { 0.25f, 0.5f, 0.75f, 1.0f, 0.9f, 1.1f, 1.0f };
 f32 scale_h_dat[7] = { 0.25f, 0.5f, 0.75f, 1.0f, 1.2f, 0.9f, 1.0f };
-
-// uninitialized GXColor (alpha is filled in per particle)
-// .sbss2: the default .sbss2 is only used for compiler-generated pool
-// templates, so pair it with a small-data section and place it by hand.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") u32 unk_80423238;
-
 
 // .data
 #pragma force_active on
@@ -160,7 +152,7 @@ EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_guruguru.c).
 inline Vec initializeVec(Vec* input) {
-	Vec temp = vec3_802fb4c8;
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
@@ -225,17 +217,6 @@ void effRecoverHeartMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effRecoverHeartDisp, effect);
 }
 
-#ifdef MUST_MATCH
-// The original builds the GXColor in the inline's own frame slot and passes the
-// pointer to GXSetTevColor; doing the build and the call in one inline puts the
-// local and the outgoing copy in the original's stack slots.
-static inline void recoverHeartSetColor(RecoverHeartData* d) {
-	GXColor color = *(GXColor*)&unk_80423238;
-	color.a = d->alpha;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-#endif
-
 // The int->float magic is the compiler's own pool entry.
 void effRecoverHeartDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -280,15 +261,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 			continue;
 		}
 
-#ifdef MUST_MATCH
-		recoverHeartSetColor(data);
-#else
-		{
-			GXColor color = *(GXColor*)&unk_80423238;
-			color.a = data->alpha;
-			GXSetTevColor(GX_TEVREG0, color);
-		}
-#endif
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, data->alpha });
 
 		if (data->alpha == 0xff) {
 			GXSetNumTevStages(1);
