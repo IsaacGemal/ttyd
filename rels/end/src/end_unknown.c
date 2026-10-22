@@ -67,6 +67,16 @@ typedef struct CreditsWork {
     /* 0x34 */ s32 eventId;
 } CreditsWork;
 
+// credits_ending_records entries
+typedef struct CreditsEndingRecord {
+    /* 0x00 */ s32 field_0x00;  // 0 in all 50 records and never read
+    /* 0x04 */ s32 layout;      // screen placement 0-4: the text x/y in credits_record_evt, the pose path in
+                                // credits_pose_evt, and GW(12)
+    /* 0x08 */ s32 texId;       // GW(11), the texture index credits_draw draws
+    /* 0x0C */ const char* msgA[3];
+    /* 0x18 */ const char* msgB[3];
+} CreditsEndingRecord;
+
 // R_credits_npc_info entries
 typedef struct CreditsNpcInfo {
     /* 0x00 */ const char* name;
@@ -100,251 +110,221 @@ s32 evt_credits_queen[89];
 s32 evt_credits_moamoa[108];
 // .bss emitted in reverse source order by the deferred-inline compiler, so declare them
 // back-to-front to land at 0x00..0x10 as in the original.
-u32 credits_work[14];
+CreditsWork credits_work;
 s32* credits_chain_groups[1];
 s32* credits_chain_counts[1];
 ExtMakeTextureEntry* credits_ext_setup[1];
 CreditsPoseState* credits_pose_states[1];
 
 // clang-format off
-// TODO: type
-u32 credits_work_ptr[1] = {
-    (u32)&credits_work,
+CreditsWork* credits_work_ptr = &credits_work;
+
+CreditsEndingRecord credits_ending_records[50] = {
+    { 0, 0, 0, { NULL, NULL, NULL }, { "a00", NULL, NULL } },
+    { 0, 0, 1, { NULL, "a01", NULL }, { "b00", NULL, NULL } },
+    { 0, 0, 2, { NULL, "a02", NULL }, { "b01", NULL, NULL } },
+    { 0, 0, 3, { NULL, NULL, NULL }, { "b02", "b03", NULL } },
+    { 0, 0, 4, { NULL, "a03", NULL }, { "b04", NULL, NULL } },
+    { 0, 0, 5, { NULL, "a04", NULL }, { "b05", NULL, NULL } },
+    { 0, 0, 6, { NULL, "a05", NULL }, { "b06", NULL, NULL } },
+    { 0, 0, 7, { NULL, "a06", NULL }, { "b07", NULL, NULL } },
+    { 0, 0, 8, { NULL, "a07", NULL }, { "b08", NULL, NULL } },
+    { 0, 0, 9, { NULL, "a08", NULL }, { "b09", NULL, NULL } },
+    { 0, 0, 10, { NULL, NULL, NULL }, { "b10", "b11", NULL } },
+    { 0, 1, 11, { NULL, "a09", NULL }, { "b12", NULL, NULL } },
+    { 0, 1, 12, { NULL, NULL, NULL }, { "b13", NULL, NULL } },
+    { 0, 1, 13, { NULL, NULL, NULL }, { "b14", NULL, NULL } },
+    { 0, 1, 14, { NULL, NULL, NULL }, { "b15", "b16", NULL } },
+    { 0, 1, 15, { NULL, "a10", NULL }, { "b17", NULL, NULL } },
+    { 0, 1, 16, { NULL, "a11", NULL }, { "b18", NULL, NULL } },
+    { 0, 1, 17, { NULL, "a12", NULL }, { "b19", NULL, NULL } },
+    { 0, 1, 18, { NULL, "a13", NULL }, { "b20", NULL, NULL } },
+    { 0, 1, 19, { NULL, NULL, NULL }, { "b21", NULL, NULL } },
+    { 0, 2, 20, { NULL, "a14", NULL }, { "b22", NULL, NULL } },
+    { 0, 2, 21, { NULL, NULL, NULL }, { "b23", NULL, NULL } },
+    { 0, 2, 22, { NULL, NULL, NULL }, { "b24", NULL, NULL } },
+    { 0, 2, 23, { NULL, NULL, NULL }, { "b25", NULL, NULL } },
+    { 0, 2, 24, { NULL, "a15", NULL }, { "b26", NULL, NULL } },
+    { 0, 2, 25, { NULL, NULL, NULL }, { "b27", NULL, NULL } },
+    { 0, 2, 26, { NULL, "a17", NULL }, { "b28", NULL, NULL } },
+    { 0, 2, 27, { NULL, NULL, NULL }, { "b29", NULL, NULL } },
+    { 0, 2, 28, { NULL, "a18", NULL }, { "b30", NULL, NULL } },
+    { 0, 2, 29, { NULL, NULL, NULL }, { "b31", "b32", NULL } },
+    { 0, 3, 30, { NULL, "a19", NULL }, { "b33", NULL, NULL } },
+    { 0, 3, 31, { NULL, "a20", NULL }, { "b34", "b35", "b36" } },
+    { 0, 3, 32, { NULL, "a21", NULL }, { "b37", "b38", NULL } },
+    { 0, 3, 33, { NULL, NULL, NULL }, { "b39", "b40", NULL } },
+    { 0, 3, 34, { NULL, NULL, NULL }, { "b41", "b42", NULL } },
+    { 0, 3, 35, { NULL, NULL, NULL }, { "b43", "b44", NULL } },
+    { 0, 3, 36, { NULL, NULL, NULL }, { "b45", NULL, NULL } },
+    { 0, 3, 37, { NULL, NULL, NULL }, { "b46", "b47", NULL } },
+    { 0, 3, 38, { NULL, "a22", NULL }, { "b48", "b49", NULL } },
+    { 0, 3, 39, { NULL, NULL, NULL }, { "b50", "b51", NULL } },
+    { 0, 0, 40, { NULL, "a23", NULL }, { "b52", "b53", NULL } },
+    { 0, 0, 41, { NULL, "a24", NULL }, { "b54", NULL, NULL } },
+    { 0, 0, 42, { NULL, "a25", NULL }, { "b55", NULL, NULL } },
+    { 0, 0, 43, { NULL, "a26", NULL }, { "b56", NULL, NULL } },
+    { 0, 0, 44, { NULL, "a27", NULL }, { "b57", NULL, NULL } },
+    { 0, 0, 45, { NULL, "a28", NULL }, { "b58", "b59", NULL } },
+    { 0, 0, 46, { NULL, NULL, NULL }, { "b60", "b61", NULL } },
+    { 0, 0, 47, { NULL, "a29", NULL }, { "b62", "b63", NULL } },
+    { 0, 0, 48, { NULL, "a30", NULL }, { "b64", NULL, NULL } },
+    { 0, 4, 49, { "c00", NULL, NULL }, { "c01", NULL, NULL } },
 };
 
-// TODO: type
-u32 credits_ending_records[450] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"a00", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000001,
-    0x00000000, (u32)"a01", 0x00000000, (u32)"b00",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000002, 0x00000000, (u32)"a02", 0x00000000,
-    (u32)"b01", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000003, 0x00000000, 0x00000000,
-    0x00000000, (u32)"b02", (u32)"b03", 0x00000000,
-    0x00000000, 0x00000000, 0x00000004, 0x00000000,
-    (u32)"a03", 0x00000000, (u32)"b04", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000005,
-    0x00000000, (u32)"a04", 0x00000000, (u32)"b05",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000006, 0x00000000, (u32)"a05", 0x00000000,
-    (u32)"b06", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000007, 0x00000000, (u32)"a06",
-    0x00000000, (u32)"b07", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000008, 0x00000000,
-    (u32)"a07", 0x00000000, (u32)"b08", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000009,
-    0x00000000, (u32)"a08", 0x00000000, (u32)"b09",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000000A, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"b10", (u32)"b11", 0x00000000, 0x00000000,
-    0x00000001, 0x0000000B, 0x00000000, (u32)"a09",
-    0x00000000, (u32)"b12", 0x00000000, 0x00000000,
-    0x00000000, 0x00000001, 0x0000000C, 0x00000000,
-    0x00000000, 0x00000000, (u32)"b13", 0x00000000,
-    0x00000000, 0x00000000, 0x00000001, 0x0000000D,
-    0x00000000, 0x00000000, 0x00000000, (u32)"b14",
-    0x00000000, 0x00000000, 0x00000000, 0x00000001,
-    0x0000000E, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"b15", (u32)"b16", 0x00000000, 0x00000000,
-    0x00000001, 0x0000000F, 0x00000000, (u32)"a10",
-    0x00000000, (u32)"b17", 0x00000000, 0x00000000,
-    0x00000000, 0x00000001, 0x00000010, 0x00000000,
-    (u32)"a11", 0x00000000, (u32)"b18", 0x00000000,
-    0x00000000, 0x00000000, 0x00000001, 0x00000011,
-    0x00000000, (u32)"a12", 0x00000000, (u32)"b19",
-    0x00000000, 0x00000000, 0x00000000, 0x00000001,
-    0x00000012, 0x00000000, (u32)"a13", 0x00000000,
-    (u32)"b20", 0x00000000, 0x00000000, 0x00000000,
-    0x00000001, 0x00000013, 0x00000000, 0x00000000,
-    0x00000000, (u32)"b21", 0x00000000, 0x00000000,
-    0x00000000, 0x00000002, 0x00000014, 0x00000000,
-    (u32)"a14", 0x00000000, (u32)"b22", 0x00000000,
-    0x00000000, 0x00000000, 0x00000002, 0x00000015,
-    0x00000000, 0x00000000, 0x00000000, (u32)"b23",
-    0x00000000, 0x00000000, 0x00000000, 0x00000002,
-    0x00000016, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"b24", 0x00000000, 0x00000000, 0x00000000,
-    0x00000002, 0x00000017, 0x00000000, 0x00000000,
-    0x00000000, (u32)"b25", 0x00000000, 0x00000000,
-    0x00000000, 0x00000002, 0x00000018, 0x00000000,
-    (u32)"a15", 0x00000000, (u32)"b26", 0x00000000,
-    0x00000000, 0x00000000, 0x00000002, 0x00000019,
-    0x00000000, 0x00000000, 0x00000000, (u32)"b27",
-    0x00000000, 0x00000000, 0x00000000, 0x00000002,
-    0x0000001A, 0x00000000, (u32)"a17", 0x00000000,
-    (u32)"b28", 0x00000000, 0x00000000, 0x00000000,
-    0x00000002, 0x0000001B, 0x00000000, 0x00000000,
-    0x00000000, (u32)"b29", 0x00000000, 0x00000000,
-    0x00000000, 0x00000002, 0x0000001C, 0x00000000,
-    (u32)"a18", 0x00000000, (u32)"b30", 0x00000000,
-    0x00000000, 0x00000000, 0x00000002, 0x0000001D,
-    0x00000000, 0x00000000, 0x00000000, (u32)"b31",
-    (u32)"b32", 0x00000000, 0x00000000, 0x00000003,
-    0x0000001E, 0x00000000, (u32)"a19", 0x00000000,
-    (u32)"b33", 0x00000000, 0x00000000, 0x00000000,
-    0x00000003, 0x0000001F, 0x00000000, (u32)"a20",
-    0x00000000, (u32)"b34", (u32)"b35", (u32)"b36",
-    0x00000000, 0x00000003, 0x00000020, 0x00000000,
-    (u32)"a21", 0x00000000, (u32)"b37", (u32)"b38",
-    0x00000000, 0x00000000, 0x00000003, 0x00000021,
-    0x00000000, 0x00000000, 0x00000000, (u32)"b39",
-    (u32)"b40", 0x00000000, 0x00000000, 0x00000003,
-    0x00000022, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"b41", (u32)"b42", 0x00000000, 0x00000000,
-    0x00000003, 0x00000023, 0x00000000, 0x00000000,
-    0x00000000, (u32)"b43", (u32)"b44", 0x00000000,
-    0x00000000, 0x00000003, 0x00000024, 0x00000000,
-    0x00000000, 0x00000000, (u32)"b45", 0x00000000,
-    0x00000000, 0x00000000, 0x00000003, 0x00000025,
-    0x00000000, 0x00000000, 0x00000000, (u32)"b46",
-    (u32)"b47", 0x00000000, 0x00000000, 0x00000003,
-    0x00000026, 0x00000000, (u32)"a22", 0x00000000,
-    (u32)"b48", (u32)"b49", 0x00000000, 0x00000000,
-    0x00000003, 0x00000027, 0x00000000, 0x00000000,
-    0x00000000, (u32)"b50", (u32)"b51", 0x00000000,
-    0x00000000, 0x00000000, 0x00000028, 0x00000000,
-    (u32)"a23", 0x00000000, (u32)"b52", (u32)"b53",
-    0x00000000, 0x00000000, 0x00000000, 0x00000029,
-    0x00000000, (u32)"a24", 0x00000000, (u32)"b54",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000002A, 0x00000000, (u32)"a25", 0x00000000,
-    (u32)"b55", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0000002B, 0x00000000, (u32)"a26",
-    0x00000000, (u32)"b56", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000002C, 0x00000000,
-    (u32)"a27", 0x00000000, (u32)"b57", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0000002D,
-    0x00000000, (u32)"a28", 0x00000000, (u32)"b58",
-    (u32)"b59", 0x00000000, 0x00000000, 0x00000000,
-    0x0000002E, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"b60", (u32)"b61", 0x00000000, 0x00000000,
-    0x00000000, 0x0000002F, 0x00000000, (u32)"a29",
-    0x00000000, (u32)"b62", (u32)"b63", 0x00000000,
-    0x00000000, 0x00000000, 0x00000030, 0x00000000,
-    (u32)"a30", 0x00000000, (u32)"b64", 0x00000000,
-    0x00000000, 0x00000000, 0x00000004, 0x00000031,
-    (u32)"c00", 0x00000000, 0x00000000, (u32)"c01",
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 R_credits_npc_info[456] = {
-    (u32)"c_luigi", (u32)"W_1", 0x00000000, (u32)"c_pkr",
-    (u32)"PKR_W_1", 0x00000000, (u32)"c_kuri_h", (u32)"W_1",
-    0x00000000, (u32)"c_kino_ji", (u32)"W_1", 0x00000000,
-    (u32)"c_cook", (u32)"W_1", 0x00000000, (u32)"c_deale",
-    (u32)"W_1", 0x00000000, (u32)"c_levela", (u32)"W_1",
-    0x00000000, (u32)"c_uranai", (u32)"W_1", 0x00000000,
-    (u32)"c_majinai", (u32)"W_1", 0x00000000, (u32)"c_botta",
-    (u32)"W_1", 0x00000000, (u32)"c_mania", (u32)"MNA_W_1",
-    0x00000000, (u32)"c_joho_a", (u32)"W_1", 0x00000000,
-    (u32)"c_gesso", (u32)"GSO_S2_1", (u32)&evt_credits_gesso, (u32)"c_joho_b",
-    (u32)"W_1", 0x00000000, (u32)"c_gshop_m", (u32)"W_2",
-    0x00000000, (u32)"c_gshop_m", (u32)"W_1", 0x00000000,
-    (u32)"c_pub_m", (u32)"W_1", 0x00000000, (u32)"c_roten",
-    (u32)"W_1", 0x00000000, (u32)"c_tyusan", (u32)"CHU_W_1",
-    0x00000000, (u32)"c_borodo_n", (u32)"W_1", 0x00000000,
-    (u32)"c_bom_deb", (u32)"W_1", 0x00000000, (u32)"c_kuribo_n",
-    (u32)"W_1", 0x00000000, (u32)"c_hannya", (u32)"W_1",
-    0x00000000, (u32)"c_hannya_n", (u32)"W_1", 0x00000000,
-    (u32)"c_pnk", (u32)"PNK_W_1", 0x00000000, (u32)"c_nokorin",
-    (u32)"W_1", 0x00000000, (u32)"c_nokopapa", (u32)"NKP_W_1",
-    0x00000000, (u32)"c_nokoson", (u32)"NKS_W_1", 0x00000000,
-    (u32)"c_nokonoko", (u32)"NOK_W_1", 0x00000000, (u32)"c_kinopio",
-    (u32)"KNP_W_1", 0x00000000, (u32)"c_kinopiko", (u32)"KNF_W_1",
-    0x00000000, (u32)"c_kokinopio", (u32)"CKP_W_1", 0x00000000,
-    (u32)"c_gonbaba", (u32)"GNB_S_3", (u32)&evt_credits_gonbaba, (u32)"c_flower",
-    (u32)"W_1", 0x00000000, (u32)"c_kiza", (u32)"W_1",
-    0x00000000, (u32)"c_kuribo", (u32)"KUR_W_1", 0x00000000,
-    (u32)"c_kuribo", (u32)"TGK_W_1", 0x00000000, (u32)"c_kuribo",
-    (u32)"PTK_W_1", 0x00000000, (u32)"c_nokoteki", (u32)"NKT_W_1",
-    0x00000000, (u32)"c_nokoteki", (u32)"PTP_W_1", 0x00000000,
-    (u32)"c_sinnosuke", (u32)"SIS_W_1", 0x00000000, (u32)"c_togedaruma",
-    (u32)"TGD_S_1", 0x00000000, (u32)"c_chorobon", (u32)"CBN_W_1",
-    0x00000000, (u32)"c_karon_h", (u32)"KRN_W_1", 0x00000000,
-    (u32)"c_windy", (u32)"PWD_W_1", 0x00000000, (u32)"c_pguide",
-    (u32)"W_1", 0x00000000, (u32)"c_psister", (u32)"W_1",
-    0x00000000, (u32)"c_psoncho", (u32)"W_1", 0x00000000,
-    (u32)"c_pshop", (u32)"W_1", 0x00000000, (u32)"c_puni",
-    (u32)"W_1", 0x00000000, (u32)"c_puni", (u32)"W_1",
-    0x00000000, (u32)"c_puni", (u32)"W_1", 0x00000000,
-    (u32)"c_puni", (u32)"W_1", 0x00000000, (u32)"c_puni",
-    (u32)"W_1", 0x00000000, (u32)"c_mb_robo_1a", (u32)"W_1",
-    (u32)&evt_credits_batten, (u32)"c_puni", (u32)"W_1", 0x00000000,
-    (u32)"c_prival", (u32)"W_1", 0x00000000, (u32)"c_toge",
-    (u32)"W_1", 0x00000000, (u32)"c_tchibi", (u32)"W_1",
-    0x00000000, (u32)"c_sinemon", (u32)"SIN_W_1", 0x00000000,
-    (u32)"c_paid", (u32)"PAI_W_1", 0x00000000, (u32)"c_m_boss",
-    (u32)"W_1", 0x00000000, (u32)"c_m_buka", (u32)"W_1",
-    0x00000000, (u32)"c_m_waka", (u32)"W_1", 0x00000000,
-    (u32)"c_m_ojo", (u32)"W_1", 0x00000000, (u32)"c_binbo",
-    (u32)"W_1", 0x00000000, (u32)"c_monban", (u32)"W_1",
-    0x00000000, (u32)"c_bteresa", (u32)"BTS_W_1", 0x00000000,
-    (u32)"c_babyyoshi", (u32)"PYS_W_1", 0x00000000, (u32)"c_ksikowa",
-    (u32)"W_1", 0x00000000, (u32)"c_k_chof", (u32)"W_1",
-    0x00000000, (u32)"c_gans", (u32)"W_1", 0x00000000,
-    (u32)"c_bred_h", (u32)"W_1", 0x00000000, (u32)"c_report",
-    (u32)"W_1", 0x00000000, (u32)"c_hotdog", (u32)"W_1",
-    0x00000000, (u32)"c_shasho_g", (u32)"W_1", 0x00000000,
-    (u32)"c_jugem_n", (u32)"W_1", 0x00000000, (u32)"c_togezo",
-    (u32)"TGZ_W_1", 0x00000000, (u32)"c_heavy", (u32)"W_1",
-    0x00000000, (u32)"c_kamek", (u32)"KMK_W_1", 0x00000000,
-    (u32)"c_togenoko_b", (u32)"W_1", 0x00000000, (u32)"c_burosu_h",
-    (u32)"BRO_W_1", 0x00000000, (u32)"c_koopa", (u32)"KPA_W_1",
-    0x00000000, (u32)"c_atmic_trs", (u32)"W_1", (u32)&evt_credits_atomic,
-    (u32)"c_kamek_be", (u32)"W_1", 0x00000000, (u32)"c_f_son",
-    (u32)"W_1", 0x00000000, (u32)"c_bubusan", (u32)"W_1",
-    0x00000000, (u32)"c_f_mura", (u32)"W_1", 0x00000000,
-    (u32)"c_f_mama", (u32)"W_1", 0x00000000, (u32)"c_f_child_a",
-    (u32)"W_1", 0x00000000, (u32)"c_f_oji", (u32)"W_1",
-    0x00000000, (u32)"c_f_oba", (u32)"W_1", 0x00000000,
-    (u32)"c_f_karas", (u32)"A_1", 0x00000000, (u32)"c_teresa",
-    (u32)"W_1", 0x00000000, (u32)"c_ranpel", (u32)"W_1",
-    0x00000000, (u32)"c_f_owm", (u32)"A_1", 0x00000000,
-    (u32)"c_met", (u32)"MET_W_1", 0x00000000, (u32)"c_met",
-    (u32)"TMT_W_1", 0x00000000, (u32)"c_pansy", (u32)"PAN_W_1",
-    0x00000000, (u32)"c_majyorin", (u32)"MJR_W_1", 0x00000000,
-    (u32)"c_maririn", (u32)"MRR_W_1", 0x00000000, (u32)"c_vivian",
-    (u32)"PTR_W_1", 0x00000000, (u32)"c_korutesu1", (u32)"KRT_S_1",
-    (u32)&evt_credits_korutesu, (u32)"c_dance_r", (u32)"W_1", 0x00000000,
-    (u32)"c_dance_p", (u32)"W_1", 0x00000000, (u32)"c_dance_k",
-    (u32)"W_1", 0x00000000, (u32)"c_bomt_n", (u32)"W_1",
-    0x00000000, (u32)"c_marco", (u32)"W_1", 0x00000000,
-    (u32)"c_gara", (u32)"W_1", 0x00000000, (u32)"c_megane",
-    (u32)"W_1", 0x00000000, (u32)"c_odo_k", (u32)"W_1",
-    0x00000000, (u32)"c_suifu_k", (u32)"W_1", 0x00000000,
-    (u32)"c_suifu_b", (u32)"W_1", 0x00000000, (u32)"c_elmos",
-    (u32)"W_1", 0x00000000, (u32)"c_kilr", (u32)"KIL_W_1",
-    0x00000000, (u32)"c_pakflwr", (u32)"PKF_S_1", 0x00000000,
-    (u32)"c_tyutyu", (u32)"PCH_W_1", 0x00000000, (u32)"c_powan",
-    (u32)"W_1", 0x00000000, (u32)"c_g_moamoa", (u32)"S_3",
-    (u32)&evt_credits_moamoa, (u32)"c_papab", (u32)"W_1", 0x00000000,
-    (u32)"c_mamab", (u32)"W_1", 0x00000000, (u32)"c_konari",
-    (u32)"W_1", 0x00000000, (u32)"c_unten", (u32)"W_1",
-    0x00000000, (u32)"c_shasho_r", (u32)"W_1", 0x00000000,
-    (u32)"c_smoko", (u32)"W_1", 0x00000000, (u32)"c_rose",
-    (u32)"W_1", 0x00000000, (u32)"c_kinodebu", (u32)"W_1",
-    0x00000000, (u32)"c_ghost_k", (u32)"W_1", 0x00000000,
-    (u32)"c_bom_sen", (u32)"S_2", (u32)&evt_credits_para, (u32)"c_waitress",
-    (u32)"W_1", 0x00000000, (u32)"c_puku_c", (u32)"W_1",
-    0x00000000, (u32)"c_kinopiko", (u32)"KNF_W_1", 0x00000000,
-    (u32)"c_n_moa_a", (u32)"W_1", 0x00000000, (u32)"c_met",
-    (u32)"PMT_W_1", 0x00000000, (u32)"c_sanbo", (u32)"SNB_W_1",
-    0x00000000, (u32)"c_bomson", (u32)"W_1", 0x00000000,
-    (u32)"c_mb_robo_2a", (u32)"J_2", (u32)&evt_credits_batten2, (u32)"c_bwhite",
-    (u32)"W_1", 0x00000000, (u32)"c_hito_b", (u32)"W_1",
-    0x00000000, (u32)"c_bom_n", (u32)"W_1", 0x00000000,
-    (u32)"c_kmoon", (u32)"W_1", 0x00000000, (u32)"c_baria",
-    (u32)"W_1", 0x00000000, (u32)"c_basabasa", (u32)"BSA_W_1",
-    0x00000000, (u32)"c_wanwan", (u32)"WAN_A_1", 0x00000000,
-    (u32)"c_maho", (u32)"MAH_W_1", 0x00000000, (u32)"c_zako_n",
-    (u32)"W_1", 0x00000000, (u32)"c_zako_m", (u32)"W_1",
-    0x00000000, (u32)"c_shuryo", (u32)"W_1", 0x00000000,
-    (u32)"c_q_kage_m", (u32)"KRT_Z_1", (u32)&evt_credits_queen, (u32)"c_gazigazi",
-    (u32)"GAZ_A_1", 0x00000000, (u32)"a_mario", (u32)"M_W_1",
-    0x00000000, (u32)"c_peach", (u32)"P_W_1", 0x00000000,
+CreditsNpcInfo R_credits_npc_info[152] = {
+    { "c_luigi", "W_1", NULL },
+    { "c_pkr", "PKR_W_1", NULL },
+    { "c_kuri_h", "W_1", NULL },
+    { "c_kino_ji", "W_1", NULL },
+    { "c_cook", "W_1", NULL },
+    { "c_deale", "W_1", NULL },
+    { "c_levela", "W_1", NULL },
+    { "c_uranai", "W_1", NULL },
+    { "c_majinai", "W_1", NULL },
+    { "c_botta", "W_1", NULL },
+    { "c_mania", "MNA_W_1", NULL },
+    { "c_joho_a", "W_1", NULL },
+    { "c_gesso", "GSO_S2_1", evt_credits_gesso },
+    { "c_joho_b", "W_1", NULL },
+    { "c_gshop_m", "W_2", NULL },
+    { "c_gshop_m", "W_1", NULL },
+    { "c_pub_m", "W_1", NULL },
+    { "c_roten", "W_1", NULL },
+    { "c_tyusan", "CHU_W_1", NULL },
+    { "c_borodo_n", "W_1", NULL },
+    { "c_bom_deb", "W_1", NULL },
+    { "c_kuribo_n", "W_1", NULL },
+    { "c_hannya", "W_1", NULL },
+    { "c_hannya_n", "W_1", NULL },
+    { "c_pnk", "PNK_W_1", NULL },
+    { "c_nokorin", "W_1", NULL },
+    { "c_nokopapa", "NKP_W_1", NULL },
+    { "c_nokoson", "NKS_W_1", NULL },
+    { "c_nokonoko", "NOK_W_1", NULL },
+    { "c_kinopio", "KNP_W_1", NULL },
+    { "c_kinopiko", "KNF_W_1", NULL },
+    { "c_kokinopio", "CKP_W_1", NULL },
+    { "c_gonbaba", "GNB_S_3", evt_credits_gonbaba },
+    { "c_flower", "W_1", NULL },
+    { "c_kiza", "W_1", NULL },
+    { "c_kuribo", "KUR_W_1", NULL },
+    { "c_kuribo", "TGK_W_1", NULL },
+    { "c_kuribo", "PTK_W_1", NULL },
+    { "c_nokoteki", "NKT_W_1", NULL },
+    { "c_nokoteki", "PTP_W_1", NULL },
+    { "c_sinnosuke", "SIS_W_1", NULL },
+    { "c_togedaruma", "TGD_S_1", NULL },
+    { "c_chorobon", "CBN_W_1", NULL },
+    { "c_karon_h", "KRN_W_1", NULL },
+    { "c_windy", "PWD_W_1", NULL },
+    { "c_pguide", "W_1", NULL },
+    { "c_psister", "W_1", NULL },
+    { "c_psoncho", "W_1", NULL },
+    { "c_pshop", "W_1", NULL },
+    { "c_puni", "W_1", NULL },
+    { "c_puni", "W_1", NULL },
+    { "c_puni", "W_1", NULL },
+    { "c_puni", "W_1", NULL },
+    { "c_puni", "W_1", NULL },
+    { "c_mb_robo_1a", "W_1", evt_credits_batten },
+    { "c_puni", "W_1", NULL },
+    { "c_prival", "W_1", NULL },
+    { "c_toge", "W_1", NULL },
+    { "c_tchibi", "W_1", NULL },
+    { "c_sinemon", "SIN_W_1", NULL },
+    { "c_paid", "PAI_W_1", NULL },
+    { "c_m_boss", "W_1", NULL },
+    { "c_m_buka", "W_1", NULL },
+    { "c_m_waka", "W_1", NULL },
+    { "c_m_ojo", "W_1", NULL },
+    { "c_binbo", "W_1", NULL },
+    { "c_monban", "W_1", NULL },
+    { "c_bteresa", "BTS_W_1", NULL },
+    { "c_babyyoshi", "PYS_W_1", NULL },
+    { "c_ksikowa", "W_1", NULL },
+    { "c_k_chof", "W_1", NULL },
+    { "c_gans", "W_1", NULL },
+    { "c_bred_h", "W_1", NULL },
+    { "c_report", "W_1", NULL },
+    { "c_hotdog", "W_1", NULL },
+    { "c_shasho_g", "W_1", NULL },
+    { "c_jugem_n", "W_1", NULL },
+    { "c_togezo", "TGZ_W_1", NULL },
+    { "c_heavy", "W_1", NULL },
+    { "c_kamek", "KMK_W_1", NULL },
+    { "c_togenoko_b", "W_1", NULL },
+    { "c_burosu_h", "BRO_W_1", NULL },
+    { "c_koopa", "KPA_W_1", NULL },
+    { "c_atmic_trs", "W_1", evt_credits_atomic },
+    { "c_kamek_be", "W_1", NULL },
+    { "c_f_son", "W_1", NULL },
+    { "c_bubusan", "W_1", NULL },
+    { "c_f_mura", "W_1", NULL },
+    { "c_f_mama", "W_1", NULL },
+    { "c_f_child_a", "W_1", NULL },
+    { "c_f_oji", "W_1", NULL },
+    { "c_f_oba", "W_1", NULL },
+    { "c_f_karas", "A_1", NULL },
+    { "c_teresa", "W_1", NULL },
+    { "c_ranpel", "W_1", NULL },
+    { "c_f_owm", "A_1", NULL },
+    { "c_met", "MET_W_1", NULL },
+    { "c_met", "TMT_W_1", NULL },
+    { "c_pansy", "PAN_W_1", NULL },
+    { "c_majyorin", "MJR_W_1", NULL },
+    { "c_maririn", "MRR_W_1", NULL },
+    { "c_vivian", "PTR_W_1", NULL },
+    { "c_korutesu1", "KRT_S_1", evt_credits_korutesu },
+    { "c_dance_r", "W_1", NULL },
+    { "c_dance_p", "W_1", NULL },
+    { "c_dance_k", "W_1", NULL },
+    { "c_bomt_n", "W_1", NULL },
+    { "c_marco", "W_1", NULL },
+    { "c_gara", "W_1", NULL },
+    { "c_megane", "W_1", NULL },
+    { "c_odo_k", "W_1", NULL },
+    { "c_suifu_k", "W_1", NULL },
+    { "c_suifu_b", "W_1", NULL },
+    { "c_elmos", "W_1", NULL },
+    { "c_kilr", "KIL_W_1", NULL },
+    { "c_pakflwr", "PKF_S_1", NULL },
+    { "c_tyutyu", "PCH_W_1", NULL },
+    { "c_powan", "W_1", NULL },
+    { "c_g_moamoa", "S_3", evt_credits_moamoa },
+    { "c_papab", "W_1", NULL },
+    { "c_mamab", "W_1", NULL },
+    { "c_konari", "W_1", NULL },
+    { "c_unten", "W_1", NULL },
+    { "c_shasho_r", "W_1", NULL },
+    { "c_smoko", "W_1", NULL },
+    { "c_rose", "W_1", NULL },
+    { "c_kinodebu", "W_1", NULL },
+    { "c_ghost_k", "W_1", NULL },
+    { "c_bom_sen", "S_2", evt_credits_para },
+    { "c_waitress", "W_1", NULL },
+    { "c_puku_c", "W_1", NULL },
+    { "c_kinopiko", "KNF_W_1", NULL },
+    { "c_n_moa_a", "W_1", NULL },
+    { "c_met", "PMT_W_1", NULL },
+    { "c_sanbo", "SNB_W_1", NULL },
+    { "c_bomson", "W_1", NULL },
+    { "c_mb_robo_2a", "J_2", evt_credits_batten2 },
+    { "c_bwhite", "W_1", NULL },
+    { "c_hito_b", "W_1", NULL },
+    { "c_bom_n", "W_1", NULL },
+    { "c_kmoon", "W_1", NULL },
+    { "c_baria", "W_1", NULL },
+    { "c_basabasa", "BSA_W_1", NULL },
+    { "c_wanwan", "WAN_A_1", NULL },
+    { "c_maho", "MAH_W_1", NULL },
+    { "c_zako_n", "W_1", NULL },
+    { "c_zako_m", "W_1", NULL },
+    { "c_shuryo", "W_1", NULL },
+    { "c_q_kage_m", "KRT_Z_1", evt_credits_queen },
+    { "c_gazigazi", "GAZ_A_1", NULL },
+    { "a_mario", "M_W_1", NULL },
+    { "c_peach", "P_W_1", NULL },
 };
 
 void _prolog(void) {
@@ -404,7 +384,7 @@ s32 credits_npc_kind(EventEntry* event, BOOL isFirstCall) {
         evtSetValue(event, args[1], 0);
         return EVT_RETURN_DONE;
     } else {
-        CreditsNpcInfo* npc = (CreditsNpcInfo*)R_credits_npc_info;
+        CreditsNpcInfo* npc = R_credits_npc_info;
 
         if (npc[idx].event != NULL) {
             evtSetValue(event, args[1], 0);
@@ -417,12 +397,10 @@ s32 credits_npc_kind(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// The early accesses write `off` (idx*0xC) so it stays in r29; the later name accesses use the local `npc` base
-// + off (compiled to `lwzx`) while the `anim` access uses the constant R_credits_npc_info + off, which is what
-// makes retail rematerialise the base instead of CSE-ing it with the name accesses.
+// The later name accesses go through the local `npc` base (compiled to `lwzx`) while the `anim` access indexes
+// R_credits_npc_info itself, which is what makes retail rematerialise the base instead of CSE-ing it.
 s32 credits_pose_evt(EventEntry* event, BOOL isFirstCall) {
     s32 idx = evtGetValue(event, event->args[0]);
-    s32 off = idx * 0xC;
     CreditsPoseEntry* entry;
     s32 inBattle = (gp->inBattle != 0);
     f32 f31;
@@ -432,10 +410,10 @@ s32 credits_pose_evt(EventEntry* event, BOOL isFirstCall) {
     Mtx mtx2;
     Mtx mtx3;
 
-    if (((CreditsNpcInfo*)R_credits_npc_info)[idx].event != NULL) {
-        evtEntry(((CreditsNpcInfo*)R_credits_npc_info)[idx].event, 0, 0);
+    if (R_credits_npc_info[idx].event != NULL) {
+        evtEntry(R_credits_npc_info[idx].event, 0, 0);
         if ((u32)(idx + 5) < 0x98) {
-            animGroupBaseAsync(((CreditsNpcInfo*)((u8*)R_credits_npc_info + off + 0x3C))->name, inBattle, NULL);
+            animGroupBaseAsync(R_credits_npc_info[idx + 5].name, inBattle, NULL);
         }
         return EVT_RETURN_DONE;
     }
@@ -443,7 +421,7 @@ s32 credits_pose_evt(EventEntry* event, BOOL isFirstCall) {
         entry = _mapAlloc(sizeof(CreditsPoseEntry));
         memset(entry, 0, sizeof(CreditsPoseEntry));
         entry->state = 0;
-        entry->layout = ((CreditsWork*)credits_work_ptr[0])->layout;
+        entry->layout = credits_work_ptr->layout;
         switch (entry->layout) {
             case 0:
                 entry->frame = -20.0f;
@@ -464,7 +442,7 @@ s32 credits_pose_evt(EventEntry* event, BOOL isFirstCall) {
                 break;
         }
         if ((u32)(idx + 5) < 0x98) {
-            animGroupBaseAsync(((CreditsNpcInfo*)((u8*)R_credits_npc_info + off + 0x3C))->name, inBattle, NULL);
+            animGroupBaseAsync(R_credits_npc_info[idx + 5].name, inBattle, NULL);
         }
         event->userdata[0] = (s32)entry;
     }
@@ -493,9 +471,9 @@ s32 credits_pose_evt(EventEntry* event, BOOL isFirstCall) {
             break;
     }
     {
-        CreditsNpcInfo* npc = (CreditsNpcInfo*)R_credits_npc_info;
+        CreditsNpcInfo* npc = R_credits_npc_info;
 
-        if (animGroupBaseAsync(((CreditsNpcInfo*)((u8*)npc + off))->name, inBattle, NULL) == 0) {
+        if (animGroupBaseAsync(npc[idx].name, inBattle, NULL) == 0) {
             return EVT_RETURN_BLOCK;
         }
         switch (entry->state) {
@@ -505,8 +483,8 @@ s32 credits_pose_evt(EventEntry* event, BOOL isFirstCall) {
 
                 EXIGetType(0, 2, &type);
                 if (type != 0x05070000) {
-                    entry->poseId = animPoseEntry(((CreditsNpcInfo*)((u8*)npc + off))->name, inBattle);
-                    animPoseSetAnim(entry->poseId, ((CreditsNpcInfo*)((u8*)R_credits_npc_info + off))->anim, 1);
+                    entry->poseId = animPoseEntry(npc[idx].name, inBattle);
+                    animPoseSetAnim(entry->poseId, R_credits_npc_info[idx].anim, 1);
                 } else {
                     entry->poseId = animPoseEntry("a_mario", inBattle);
                     animPoseSetAnim(entry->poseId, "M_W_1", 1);
@@ -574,8 +552,6 @@ EVT_BEGIN(evt_credits_pose_loop)
     RETURN
 EVT_END()
 
-#define WORK ((CreditsWork*)credits_work_ptr[0])
-
 
 // The original builds each GXColor in a stack temp and copies it to the by-value
 // argument slot; doing the build and the call in an inline reproduces that pair.
@@ -619,10 +595,10 @@ void credits_draw(CameraId cameraId, void* param) {
     s32 var1 = evtGetValue(NULL, GW(11));
     s32 var2 = evtGetValue(NULL, GW(12));
 
-    if (WORK->image == NULL) {
+    if (credits_work_ptr->image == NULL) {
         return;
     }
-    if ((u32)var1 >= ((TEXPalette*)*WORK->image->data)->numDescriptors) {
+    if ((u32)var1 >= ((TEXPalette*)*credits_work_ptr->image->data)->numDescriptors) {
         return;
     }
     if (var1 == 9 && swGet(0x5E7) != 0) {
@@ -638,32 +614,32 @@ void credits_draw(CameraId cameraId, void* param) {
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 
-    setChanMatColorGX(&credits_image_mat, WORK->matAlpha);
+    setChanMatColorGX(&credits_image_mat, credits_work_ptr->matAlpha);
 
-    switch (WORK->mode) {
+    switch (credits_work_ptr->mode) {
         case 0:
-            TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, var1);
+            TEXGetGXTexObjFromPalette(*credits_work_ptr->image->data, &texObj, var1);
             GXLoadTexObj(&texObj, 0);
             break;
         case 1:
-            setTevColorGX(&credits_mode1_tev, WORK->tevAlpha);
-            TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, 0x31);
+            setTevColorGX(&credits_mode1_tev, credits_work_ptr->tevAlpha);
+            TEXGetGXTexObjFromPalette(*credits_work_ptr->image->data, &texObj, 0x31);
             GXLoadTexObj(&texObj, 0);
-            TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, 0x32);
+            TEXGetGXTexObjFromPalette(*credits_work_ptr->image->data, &texObj, 0x32);
             GXLoadTexObj(&texObj, 1);
             break;
         case 2:
-            setTevColorGX(&credits_mode2_tev, WORK->tevAlpha);
-            TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, 0x32);
+            setTevColorGX(&credits_mode2_tev, credits_work_ptr->tevAlpha);
+            TEXGetGXTexObjFromPalette(*credits_work_ptr->image->data, &texObj, 0x32);
             GXLoadTexObj(&texObj, 0);
-            TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, 0x33);
+            TEXGetGXTexObjFromPalette(*credits_work_ptr->image->data, &texObj, 0x33);
             GXLoadTexObj(&texObj, 1);
             break;
         default:
             break;
     }
 
-    switch (WORK->mode) {
+    switch (credits_work_ptr->mode) {
         case 0:
             GXSetNumTevStages(1);
             GXSetTevOrder(0, 0, 0, 4);
@@ -719,10 +695,10 @@ void credits_draw(CameraId cameraId, void* param) {
 
     for (i = 0; i < 2; i++) {
         if (i == 0) {
-            setChanMatColorGX(&credits_pass0_mat, WORK->matAlpha);
+            setChanMatColorGX(&credits_pass0_mat, credits_work_ptr->matAlpha);
             GXSetZMode(1, 3, 0);
         } else {
-            setChanMatColorGX(&credits_pass1_mat, WORK->matAlpha);
+            setChanMatColorGX(&credits_pass1_mat, credits_work_ptr->matAlpha);
             GXSetZMode(1, 4, 0);
         }
         GXBegin(0x80, 0, 4);
@@ -738,7 +714,7 @@ void credits_draw(CameraId cameraId, void* param) {
         GXTexCoord2f32(0.0f, 1.0f);
     }
 
-    if (WORK->overlayAlpha > 0) {
+    if (credits_work_ptr->overlayAlpha > 0) {
         Vec camPosBuild;
 
         camPosBuild = credits_overlay_cam_pos;
@@ -752,9 +728,9 @@ void credits_draw(CameraId cameraId, void* param) {
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 4);
         GXSetTevOp(0, 0);
-        TEXGetGXTexObjFromPalette(*WORK->image->data, &texObj, 0x34);
+        TEXGetGXTexObjFromPalette(*credits_work_ptr->image->data, &texObj, 0x34);
         GXLoadTexObj(&texObj, 0);
-        setChanMatColorGX(&credits_overlay_mat, WORK->overlayAlpha);
+        setChanMatColorGX(&credits_overlay_mat, credits_work_ptr->overlayAlpha);
         GXSetZMode(1, 3, 0);
         C_MTXLookAt(mtx3, &camPos, &camUp, &target);
         PSMTXTrans(mtx1, 0.0f, -138.0f, 0.0f);
@@ -837,22 +813,22 @@ s32 credits_disp_start(EventEntry* event, BOOL isFirstCall) {
 }
 
 s32 credits_set_mat_alpha(EventEntry* event, BOOL isFirstCall) {
-    ((CreditsWork*)credits_work_ptr[0])->matAlpha = evtGetValue(event, event->args[0]);
+    credits_work_ptr->matAlpha = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
 s32 credits_set_overlay_alpha(EventEntry* event, BOOL isFirstCall) {
-    ((CreditsWork*)credits_work_ptr[0])->overlayAlpha = evtGetValue(event, event->args[0]);
+    credits_work_ptr->overlayAlpha = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
 s32 credits_set_mode(EventEntry* event, BOOL isFirstCall) {
-    ((CreditsWork*)credits_work_ptr[0])->mode = evtGetValue(event, event->args[0]);
+    credits_work_ptr->mode = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
 s32 credits_set_tev_alpha(EventEntry* event, BOOL isFirstCall) {
-    ((CreditsWork*)credits_work_ptr[0])->tevAlpha = evtGetValue(event, event->args[0]);
+    credits_work_ptr->tevAlpha = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -942,15 +918,6 @@ EVT_BEGIN(evt_credits_sequence)
     RETURN
 EVT_END()
 
-typedef struct CreditsEndingRecord {
-    /* 0x00 */ s32 field_0x00;  // 0 in all 50 records and never read
-    /* 0x04 */ s32 layout;      // screen placement 0-4: the text x/y in credits_record_evt, the pose path in
-                                // credits_pose_evt, and GW(12)
-    /* 0x08 */ s32 texId;       // GW(11), the texture index credits_draw draws
-    /* 0x0C */ const char* msgA[3];
-    /* 0x18 */ const char* msgB[3];
-} CreditsEndingRecord;
-
 s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
     s32 state = event->userdata[0];
     s32 index = event->userdata[1];
@@ -969,21 +936,20 @@ s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
         state = 0;
         index = 0;
         for (n = 0; n < 3; n++) {
-            ((CreditsWork*)credits_work_ptr[0])->windowIdA[n] = -1;
+            credits_work_ptr->windowIdA[n] = -1;
         }
         for (n = 0; n < 3; n++) {
-            ((CreditsWork*)credits_work_ptr[0])->windowIdB[n] = -1;
+            credits_work_ptr->windowIdB[n] = -1;
         }
         evtSetValue(ev, GW(10), 0);
-        ((CreditsWork*)credits_work_ptr[0])->eventId = (s32)evtEntry(evt_credits_sequence, 0, 0);
+        credits_work_ptr->eventId = (s32)evtEntry(evt_credits_sequence, 0, 0);
     }
     // Computing `offset` before `pEntry` keeps pEntry and rec apart, so `*++pEntry` is an `lwzu` and the
     // record base is rematerialised, as in retail.
     offset = index * 0x24;
     pEntry = (s32*)((u8*)credits_ending_records + offset);
-    ((CreditsWork*)credits_work_ptr[0])->layout = *++pEntry;
-    offset = index * 0x24;
-    switch (((CreditsWork*)credits_work_ptr[0])->layout) {
+    credits_work_ptr->layout = *++pEntry;
+    switch (credits_work_ptr->layout) {
         case 0:
             x = -274;
             y = -24;
@@ -1010,7 +976,7 @@ s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
     switch (state) {
         case 0:
             for (i = 0; i < 3; i++) {
-                const char* key = ((CreditsEndingRecord*)((u8*)credits_ending_records + offset))->msgA[i];
+                const char* key = credits_ending_records[index].msgA[i];
 
                 if (key != NULL) {
                     const char* msg = msgSearch(key);
@@ -1027,11 +993,11 @@ s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
                         xoff = (s32)((f32)x - 0.8f * (f32)FontGetMessageWidth(msg));
                     }
                     sprintf(bufA, "<clear><dkey><wpos %d %d 400 200><col f0f0f0ff><speed 0><scale 0.8>%s</scale></speed></col><wait 500></dkey><once_stop>", xoff - 0x3E, xpos, msg);
-                    ((CreditsWork*)credits_work_ptr[0])->windowIdA[i] = msgWindow_Entry(bufA, 0, 0);
+                    credits_work_ptr->windowIdA[i] = msgWindow_Entry(bufA, 0, 0);
                 }
             }
             for (k = 0; k < 3; k++) {
-                const char* key = ((CreditsEndingRecord*)((u8*)credits_ending_records + offset))->msgB[k];
+                const char* key = credits_ending_records[index].msgB[k];
 
                 if (key != NULL) {
                     s32 ypos;
@@ -1051,25 +1017,25 @@ s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
                         xoff = x - FontGetMessageWidth(msg);
                     }
                     sprintf(bufB, "<clear><dkey><wpos %d %d 400 200><col f0f0f0ff><speed 0>%s</speed></col><wait 5200></dkey><once_stop>", xoff - 0x3E, xpos, msg);
-                    ((CreditsWork*)credits_work_ptr[0])->windowIdB[k] = msgWindow_Entry(bufB, 0, 0);
+                    credits_work_ptr->windowIdB[k] = msgWindow_Entry(bufB, 0, 0);
                 } else {
-                    ((CreditsWork*)credits_work_ptr[0])->windowIdB[k] = -1;
+                    credits_work_ptr->windowIdB[k] = -1;
                 }
             }
             evtSetValue(ev, GW(10), 1);
-            evtSetValue(ev, GW(11), ((CreditsEndingRecord*)credits_ending_records)[index].texId);
+            evtSetValue(ev, GW(11), credits_ending_records[index].texId);
             evtSetValue(ev, GW(12), *pEntry);
             state++;
             break;
         case 1:
             for (n = 0; n < 3; n++) {
-                if (((CreditsWork*)credits_work_ptr[0])->windowIdA[n] != -1 && windowCheckID(((CreditsWork*)credits_work_ptr[0])->windowIdA[n]) != 0) {
+                if (credits_work_ptr->windowIdA[n] != -1 && windowCheckID(credits_work_ptr->windowIdA[n]) != 0) {
                     break;
                 }
             }
             if (n >= 3) {
                 for (n = 0; n < 3; n++) {
-                    if (((CreditsWork*)credits_work_ptr[0])->windowIdB[n] != -1 && windowCheckID(((CreditsWork*)credits_work_ptr[0])->windowIdB[n]) != 0) {
+                    if (credits_work_ptr->windowIdB[n] != -1 && windowCheckID(credits_work_ptr->windowIdB[n]) != 0) {
                         break;
                     }
                 }
@@ -1085,7 +1051,7 @@ s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
                 s32 nulls;
 
                 if ((u32)next < 0x32) {
-                    nextRec = &((CreditsEndingRecord*)credits_ending_records)[next];
+                    nextRec = &credits_ending_records[next];
 
                     nulls = 0;
                     for (n = 0; n < 3; n++) {
@@ -1099,14 +1065,14 @@ s32 credits_record_evt(EventEntry* event, BOOL isFirstCall) {
                 }
                 if (nulls < 3) {
                     for (n = 0; n < 3; n++) {
-                        if (((CreditsWork*)credits_work_ptr[0])->windowIdA[n] != -1) {
-                            msgWindow_Continue(((CreditsWork*)credits_work_ptr[0])->windowIdA[n]);
+                        if (credits_work_ptr->windowIdA[n] != -1) {
+                            msgWindow_Continue(credits_work_ptr->windowIdA[n]);
                         }
                     }
                 }
                 for (n = 0; n < 3; n++) {
-                    if (((CreditsWork*)credits_work_ptr[0])->windowIdB[n] != -1) {
-                        msgWindow_Continue(((CreditsWork*)credits_work_ptr[0])->windowIdB[n]);
+                    if (credits_work_ptr->windowIdB[n] != -1) {
+                        msgWindow_Continue(credits_work_ptr->windowIdB[n]);
                     }
                 }
                 evtSetValue(ev, GW(10), 2);
@@ -1137,10 +1103,10 @@ s32 credits_init(EventEntry* event, BOOL isFirstCall) {
     s32 i;
 
     if (isFirstCall) {
-        ((CreditsWork*)credits_work_ptr[0])->image = NULL;
-        ((CreditsWork*)credits_work_ptr[0])->matAlpha = 0;
-        ((CreditsWork*)credits_work_ptr[0])->mode = 0;
-        ((CreditsWork*)credits_work_ptr[0])->layout = 0;
+        credits_work_ptr->image = NULL;
+        credits_work_ptr->matAlpha = 0;
+        credits_work_ptr->mode = 0;
+        credits_work_ptr->layout = 0;
         psndSetFlag(4);
         gp->language = 1;
         JUTFont_Free();
@@ -1149,11 +1115,11 @@ s32 credits_init(EventEntry* event, BOOL isFirstCall) {
     if (fileAsyncf(FILE_TYPE_TPL, NULL, "%s/ending.tpl", getMarioStDvdRoot()) == 0) {
         return EVT_RETURN_BLOCK;
     }
-    if (((CreditsWork*)credits_work_ptr[0])->image == NULL) {
-        ((CreditsWork*)credits_work_ptr[0])->image = fileAllocf(FILE_TYPE_TPL, "%s/ending.tpl", getMarioStDvdRoot());
+    if (credits_work_ptr->image == NULL) {
+        credits_work_ptr->image = fileAllocf(FILE_TYPE_TPL, "%s/ending.tpl", getMarioStDvdRoot());
     }
     for (i = 0; i < 5; i++) {
-        if (animGroupBaseAsync(((CreditsNpcInfo*)R_credits_npc_info)[i].name, flag, NULL) == 0) {
+        if (animGroupBaseAsync(R_credits_npc_info[i].name, flag, NULL) == 0) {
             return EVT_RETURN_BLOCK;
         }
     }
@@ -1165,7 +1131,7 @@ s32 credits_init(EventEntry* event, BOOL isFirstCall) {
 // dont_inline keeps credits_free a real `bl` from _epilog as in retail.
 #pragma dont_inline on
 void credits_free(void) {
-    CreditsWork* work = (CreditsWork*)credits_work_ptr[0];
+    CreditsWork* work = credits_work_ptr;
 
     fileFree(work->image);
     psndClearFlag(4);

@@ -349,15 +349,8 @@ static u32 ruleDt_re[70] = {
     0x000000FF, 0x000000FF,
 };
 
-// TODO: type
-static u32 rank_wp[1] = {
-    (u32)&rank_work,
-};
-
-// TODO: type
-static u32 dwp[1] = {
-    (u32)&disp_work,
-};
+static RankWork* rank_wp = &rank_work;
+static DispWork* dwp = &disp_work;
 
 static char* suuji[10] = {
     "０", "１", "２", "３", "４", "５", "６", "７", "８", "９",
@@ -2992,10 +2985,10 @@ static USER_FUNC(evt_tou_print_ranking) {
     s32 c;
 
     if (isFirstCall) {
-        memset((void*)dwp[0], 0, sizeof(DispWork));
+        memset(dwp, 0, sizeof(DispWork));
         c = 0;
-        for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-            u16 f = ((RankWork*)rank_wp[0])->entries[i].flags;
+        for (i = 0; i < rank_wp->count; i++) {
+            u16 f = rank_wp->entries[i].flags;
 
             if (!(f & 2)) {
                 if (f & 4) {
@@ -3004,15 +2997,15 @@ static USER_FUNC(evt_tou_print_ranking) {
                 c++;
             }
         }
-        ((DispWork*)dwp[0])->page = c / 0xb;
+        dwp->page = c / 0xb;
         {
-            f32 v = (f32)(((DispWork*)dwp[0])->page * 0xdc);
+            f32 v = (f32)(dwp->page * 0xdc);
 
-            ((DispWork*)dwp[0])->targetScroll = v;
-            ((DispWork*)dwp[0])->scroll = v;
+            dwp->targetScroll = v;
+            dwp->scroll = v;
         }
         evtGetValue(NULL, GSW(0));
-        for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
+        for (i = 0; i < rank_wp->count; i++) {
         }
         return EVT_RETURN_BLOCK;
     }
@@ -3020,17 +3013,17 @@ static USER_FUNC(evt_tou_print_ranking) {
         psndSFXOn((const char*)0x13);
         return EVT_RETURN_YIELD;
     }
-    if (((DispWork*)dwp[0])->page > 0 && (keyGetButtonTrg(0) & 0x40)) {
+    if (dwp->page > 0 && (keyGetButtonTrg(0) & 0x40)) {
         psndSFXOn((const char*)5);
-        ((DispWork*)dwp[0])->page--;
+        dwp->page--;
     }
-    if (((DispWork*)dwp[0])->page < 1 && (keyGetButtonTrg(0) & 0x20)) {
-        ((DispWork*)dwp[0])->page++;
+    if (dwp->page < 1 && (keyGetButtonTrg(0) & 0x20)) {
+        dwp->page++;
         psndSFXOn((const char*)5);
     }
-    ((DispWork*)dwp[0])->targetScroll = (f32)(((DispWork*)dwp[0])->page * 0xdc);
+    dwp->targetScroll = (f32)(dwp->page * 0xdc);
     {
-        DispWork* w = (DispWork*)dwp[0];
+        DispWork* w = dwp;
         f32 t = w->targetScroll - w->scroll;
 
         w->scroll += t * TOU_F32(float_0p125_tou_0000a888);
@@ -3100,9 +3093,9 @@ static void disp_proc(CameraId cameraId, void* param) {
     rank = 0;
     y = 0;
     i = 0;
-    for (; i < ((RankWork*)rank_wp[0])->count; i++) {
-        f26 = ((DispWork*)dwp[0])->scroll + ((TOU_F32(float_135_tou_0000a8b0) - (f32)y) - TOU_F32(float_40_tou_0000a8c4));
-        if (!(((RankWork*)rank_wp[0])->entries[i].flags & 2)) {
+    for (; i < rank_wp->count; i++) {
+        f26 = dwp->scroll + ((TOU_F32(float_135_tou_0000a8b0) - (f32)y) - TOU_F32(float_40_tou_0000a8c4));
+        if (!(rank_wp->entries[i].flags & 2)) {
             PSMTXScale(scale, TOU_F32(float_0p8_tou_0000a8c8), TOU_F32(float_0p8_tou_0000a8c8), TOU_F32(float_0p8_tou_0000a8c8));
             if (rank != 0) {
                 const char* p1 = (rank / 10) ? suuji[rank / 10] : (const char*)&zero_tou_0000a8cc;
@@ -3119,7 +3112,7 @@ static void disp_proc(CameraId cameraId, void* param) {
                 FontDrawMessageMtx(mtx, buf);
             }
             FontDrawStart();
-            if (((RankWork*)rank_wp[0])->entries[i].flags & 4) {
+            if (rank_wp->entries[i].flags & 4) {
                 GXColor color = *(GXColor*)&dat_tou_0000990c;
 
                 FontDrawColor(&color);
@@ -3130,14 +3123,14 @@ static void disp_proc(CameraId cameraId, void* param) {
             }
             PSMTXTrans(mtx, TOU_F32(float_40_tou_0000a8c4) + f27, f26, 0.0f);
             PSMTXConcat(mtx, scale, mtx);
-            FontDrawMessageMtx(mtx, msgSearch(dt[((RankWork*)rank_wp[0])->entries[i].id].name));
+            FontDrawMessageMtx(mtx, msgSearch(dt[rank_wp->entries[i].id].name));
             rank++;
             y += 0x14;
         }
     }
     GXSetScissor(scX, (u16)(s32)TOU_F32(float_137_tou_0000a8d8), scW, (u16)(s32)TOU_F32(float_228_tou_0000a8dc));
     {
-        f32 yv = TOU_F32(float_95_tou_0000a8e0) + ((DispWork*)dwp[0])->scroll;
+        f32 yv = TOU_F32(float_95_tou_0000a8e0) + dwp->scroll;
         Vec pos = vec3_tou_00009914;
 
         pos.x = TOU_F32(float_15_tou_0000a8e4) + f31;
@@ -3145,7 +3138,7 @@ static void disp_proc(CameraId cameraId, void* param) {
         iconDispGx(TOU_F32(float_0p8_tou_0000a8c8), &pos, 0x10, 0x123);
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
-    if (((DispWork*)dwp[0])->page > 0) {
+    if (dwp->page > 0) {
         Vec pos = vec3_tou_00009920;
 
         pos.x = f31 + TOU_F32(float_250_tou_0000a890);
@@ -3157,7 +3150,7 @@ static void disp_proc(CameraId cameraId, void* param) {
             iconDispGx(0.6f, &pos, 0x10, 0x7e);
         }
     }
-    if (((DispWork*)dwp[0])->page < 1) {
+    if (dwp->page < 1) {
         Vec pos = vec3_tou_00009938;
 
         pos.x = f31 + TOU_F32(float_250_tou_0000a890);
@@ -3175,7 +3168,7 @@ static void printRanking(void) {
     s32 i;
 
     evtGetValue(NULL, GSW(0));
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
+    for (i = 0; i < rank_wp->count; i++) {
     }
 }
 
@@ -3201,17 +3194,17 @@ static USER_FUNC(evt_tou_set_ranking_win_lose) {
     s16 max;
 
     if (a == 0) {
-        for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-            if (((RankWork*)rank_wp[0])->entries[i].id == id) {
-                ((RankWork*)rank_wp[0])->entries[i].flags |= 1;
+        for (i = 0; i < rank_wp->count; i++) {
+            if (rank_wp->entries[i].id == id) {
+                rank_wp->entries[i].flags |= 1;
                 break;
             }
         }
         swSet(0x98a);
     } else {
-        for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-            if (((RankWork*)rank_wp[0])->entries[i].id == id) {
-                ((RankWork*)rank_wp[0])->entries[i].flags &= ~1;
+        for (i = 0; i < rank_wp->count; i++) {
+            if (rank_wp->entries[i].id == id) {
+                rank_wp->entries[i].flags &= ~1;
                 break;
             }
         }
@@ -3219,18 +3212,18 @@ static USER_FUNC(evt_tou_set_ranking_win_lose) {
     }
     min = 0x3e8;
     max = -0x3e8;
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-        if (!(((RankWork*)rank_wp[0])->entries[i].flags & 2)) {
+    for (i = 0; i < rank_wp->count; i++) {
+        if (!(rank_wp->entries[i].flags & 2)) {
             s32 d = 0;
 
             d += rand() % 4;
             d += rand() % 4;
-            ((RankWork*)rank_wp[0])->entries[i].score += d - 3;
-            if (((RankWork*)rank_wp[0])->entries[i].score < min) {
-                min = ((RankWork*)rank_wp[0])->entries[i].score;
+            rank_wp->entries[i].score += d - 3;
+            if (rank_wp->entries[i].score < min) {
+                min = rank_wp->entries[i].score;
             }
-            if (((RankWork*)rank_wp[0])->entries[i].score > max) {
-                max = ((RankWork*)rank_wp[0])->entries[i].score;
+            if (rank_wp->entries[i].score > max) {
+                max = rank_wp->entries[i].score;
             }
         }
     }
@@ -3248,7 +3241,7 @@ USER_FUNC(evt_tou_get_rule_msg2_27_text_182C) {
     s32 i;
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        RankWork* rw = (RankWork*)rank_wp[0];
+        RankWork* rw = rank_wp;
         s32 count = 0;
 
         for (i = 0; i < rw->count; i++) {
@@ -3292,7 +3285,7 @@ static USER_FUNC(evt_tou_get_rule_info) {
     s32 i;
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        RankWork* rw = (RankWork*)rank_wp[0];
+        RankWork* rw = rank_wp;
         s32 count = 0;
 
         for (i = 0; i < rw->count; i++) {
@@ -3358,7 +3351,7 @@ static USER_FUNC(evt_tou_get_fighter_battle_msg) {
 static USER_FUNC(evt_tou_get_fighter_rank) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    RankWork* rw = (RankWork*)rank_wp[0];
+    RankWork* rw = rank_wp;
     s32 rank = 0;
     s32 i;
 
@@ -3412,14 +3405,14 @@ static USER_FUNC(evt_tou_get_next_match) {
     s32 cnt = 0;
     s32 c;
 
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-        if (!(((RankWork*)rank_wp[0])->entries[i].flags & 2)) {
-            list[cnt++] = ((RankWork*)rank_wp[0])->entries[i].id;
+    for (i = 0; i < rank_wp->count; i++) {
+        if (!(rank_wp->entries[i].flags & 2)) {
+            list[cnt++] = rank_wp->entries[i].id;
         }
     }
     c = 0;
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-        u16 f = ((RankWork*)rank_wp[0])->entries[i].flags;
+    for (i = 0; i < rank_wp->count; i++) {
+        u16 f = rank_wp->entries[i].flags;
 
         if (!(f & 2)) {
             if (f & 4) {
@@ -3440,13 +3433,13 @@ static USER_FUNC(evt_tou_get_next_match) {
         evtSetValue(event, args[0], list[1]);
     }
     evtGetValue(NULL, GSW(0));
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
+    for (i = 0; i < rank_wp->count; i++) {
     }
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_tou_get_ranking_27_text_1ED4) {
-    RankWork* rw = (RankWork*)rank_wp[0];
+    RankWork* rw = rank_wp;
     s32* args = event->args;
     s32 count = 0;
     s32 i;
@@ -3487,7 +3480,7 @@ static void rankingControll(void) {
 
     nAbove = 0;
     nBelow = 0;
-    for (k = 0, e = ((RankWork*)rank_wp[0])->entries; k < ((RankWork*)rank_wp[0])->count; k++, e++) {
+    for (k = 0, e = rank_wp->entries; k < rank_wp->count; k++, e++) {
         if (!(e->flags & 4)) {
             if (e->flags & 1) {
                 below[nBelow] = k;
@@ -3502,7 +3495,7 @@ static void rankingControll(void) {
     if (nAbove > 0) {
         for (i = 0; i < nAbove - 1; i++) {
             for (j = i + 1; j < nAbove; j++) {
-                if (((RankWork*)rank_wp[0])->entries[above[i]].score < ((RankWork*)rank_wp[0])->entries[above[j]].score) {
+                if (rank_wp->entries[above[i]].score < rank_wp->entries[above[j]].score) {
                     tmp = above[i];
                     above[i] = above[j];
                     above[j] = tmp;
@@ -3512,8 +3505,8 @@ static void rankingControll(void) {
 
         for (m = 0; m < nAbove - 1; m++) {
             for (n = m + 1; n < nAbove; n++) {
-                FighterEntry* fj = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[n]].id];
-                FighterEntry* fi = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[m]].id];
+                FighterEntry* fj = &((FighterEntry*)fighterDt)[rank_wp->entries[above[n]].id];
+                FighterEntry* fi = &((FighterEntry*)fighterDt)[rank_wp->entries[above[m]].id];
                 if ((fj->flags & 5) && (fi->flags & 2)) {
                     tmp = above[m];
                     above[m] = above[n];
@@ -3524,7 +3517,7 @@ static void rankingControll(void) {
 
         if (nAbove > 0) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 4) {
+                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 4) {
                     break;
                 }
             }
@@ -3535,7 +3528,7 @@ static void rankingControll(void) {
 
         if (nAbove > 1) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x1000) {
+                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 0x1000) {
                     break;
                 }
             }
@@ -3546,7 +3539,7 @@ static void rankingControll(void) {
 
         if (nAbove > 10) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x800) {
+                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 0x800) {
                     break;
                 }
             }
@@ -3557,7 +3550,7 @@ static void rankingControll(void) {
 
         if (nAbove > 18) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x200) {
+                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 0x200) {
                     break;
                 }
             }
@@ -3568,7 +3561,7 @@ static void rankingControll(void) {
 
         if (nAbove > 19) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x400) {
+                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 0x400) {
                     break;
                 }
             }
@@ -3579,7 +3572,7 @@ static void rankingControll(void) {
 
         if (nAbove > 16) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x100) {
+                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 0x100) {
                     break;
                 }
             }
@@ -3603,7 +3596,7 @@ static void rankingControll(void) {
     if (nBelow > 0) {
         for (p = 0; p < nBelow - 1; p++) {
             for (q = p + 1; q < nBelow; q++) {
-                if (((RankWork*)rank_wp[0])->entries[below[p]].score < ((RankWork*)rank_wp[0])->entries[below[q]].score) {
+                if (rank_wp->entries[below[p]].score < rank_wp->entries[below[q]].score) {
                     tmp = below[p];
                     below[p] = below[q];
                     below[q] = tmp;
@@ -3613,8 +3606,8 @@ static void rankingControll(void) {
 
         for (p = 0; p < nBelow - 1; p++) {
             for (q = p + 1; q < nBelow; q++) {
-                FighterEntry* fj = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[q]].id];
-                FighterEntry* fi = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[p]].id];
+                FighterEntry* fj = &((FighterEntry*)fighterDt)[rank_wp->entries[below[q]].id];
+                FighterEntry* fi = &((FighterEntry*)fighterDt)[rank_wp->entries[below[p]].id];
                 if ((fj->flags & 5) && (fi->flags & 2)) {
                     tmp = below[p];
                     below[p] = below[q];
@@ -3625,7 +3618,7 @@ static void rankingControll(void) {
 
         if (nBelow > 0) {
             for (idx = 0; idx < nBelow; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[idx]].id].flags & 4) {
+                if (((FighterEntry*)fighterDt)[rank_wp->entries[below[idx]].id].flags & 4) {
                     break;
                 }
             }
@@ -3636,13 +3629,13 @@ static void rankingControll(void) {
 
         if (nBelow > 0) {
             for (bi = 0; bi < nBelow; bi++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[bi]].id].flags & 0x800) {
+                if (((FighterEntry*)fighterDt)[rank_wp->entries[below[bi]].id].flags & 0x800) {
                     break;
                 }
             }
             if (bi < nBelow) {
                 for (bi2 = 0; bi2 < nBelow; bi2++) {
-                    if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[bi2]].id].flags & 2) {
+                    if (((FighterEntry*)fighterDt)[rank_wp->entries[below[bi2]].id].flags & 2) {
                         break;
                     }
                 }
@@ -3664,24 +3657,24 @@ static void rankingControll(void) {
         }
     }
 
-    entry = __memAlloc(HEAP_DEFAULT, sizeof(RankEntry) * ((RankWork*)rank_wp[0])->count);
+    entry = __memAlloc(HEAP_DEFAULT, sizeof(RankEntry) * rank_wp->count);
     for (i = 0; i < nAbove; i++) {
-        entry[i] = ((RankWork*)rank_wp[0])->entries[above[i]];
+        entry[i] = rank_wp->entries[above[i]];
     }
     entry[nAbove].flags = 4;
     entry[nAbove].id = 0x14;
     entry[nAbove].score = 0;
     for (i = 0; i < nBelow; i++) {
         j = 1 + nAbove + i;
-        entry[j] = ((RankWork*)rank_wp[0])->entries[below[i]];
+        entry[j] = rank_wp->entries[below[i]];
     }
-    memcpy(((RankWork*)rank_wp[0])->entries, entry, sizeof(RankEntry) * ((RankWork*)rank_wp[0])->count);
+    memcpy(rank_wp->entries, entry, sizeof(RankEntry) * rank_wp->count);
     __memFree(HEAP_DEFAULT, entry);
 
     rank = 0;
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-        if (!(((RankWork*)rank_wp[0])->entries[i].flags & 2)) {
-            if (((RankWork*)rank_wp[0])->entries[i].flags & 4) {
+    for (i = 0; i < rank_wp->count; i++) {
+        if (!(rank_wp->entries[i].flags & 2)) {
+            if (rank_wp->entries[i].flags & 4) {
                 break;
             }
             rank++;
@@ -3713,11 +3706,11 @@ static void insert(s32* arr, s32 unused, s32 from, s32 to) {
 }
 
 USER_FUNC(unk_tou_00002e24) {
-    RankEntry* e = ((RankWork*)rank_wp[0])->entries;
+    RankEntry* e = rank_wp->entries;
     s32 j;
     s32 i;
 
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++, e++) {
+    for (i = 0; i < rank_wp->count; i++, e++) {
         if (e->flags & 1) {
             swSet(e->id + 0x9a1);
         } else {
@@ -3727,7 +3720,7 @@ USER_FUNC(unk_tou_00002e24) {
             swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
-    _mapFree(((RankWork*)rank_wp[0])->entries);
+    _mapFree(rank_wp->entries);
     pouchRemoveItem(ITEM_CHAMPS_BELT);
     {
         s32 k;
@@ -3747,11 +3740,11 @@ USER_FUNC(unk_tou_00002e24) {
 }
 
 static USER_FUNC(evt_rankingReInit) {
-    RankEntry* e = ((RankWork*)rank_wp[0])->entries;
+    RankEntry* e = rank_wp->entries;
     s32 j;
     s32 i;
 
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++, e++) {
+    for (i = 0; i < rank_wp->count; i++, e++) {
         if (e->flags & 1) {
             swSet(e->id + 0x9a1);
         } else {
@@ -3761,7 +3754,7 @@ static USER_FUNC(evt_rankingReInit) {
             swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
-    _mapFree(((RankWork*)rank_wp[0])->entries);
+    _mapFree(rank_wp->entries);
     rankingInit();
     return EVT_RETURN_DONE;
 }
@@ -3769,9 +3762,9 @@ static USER_FUNC(evt_rankingReInit) {
 static void rankingExit(void) {
     s32 i;
     s32 j;
-    RankEntry* e = ((RankWork*)rank_wp[0])->entries;
+    RankEntry* e = rank_wp->entries;
 
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++, e++) {
+    for (i = 0; i < rank_wp->count; i++, e++) {
         if (e->flags & 1) {
             swSet(e->id + 0x9a1);
         } else {
@@ -3781,7 +3774,7 @@ static void rankingExit(void) {
             swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
-    _mapFree(((RankWork*)rank_wp[0])->entries);
+    _mapFree(rank_wp->entries);
 }
 
 static void rankingInit(void) {
@@ -3789,12 +3782,12 @@ static void rankingInit(void) {
     s32 j;
     RankEntry* e;
 
-    memset((RankWork*)rank_wp[0], 0, sizeof(RankWork));
-    ((RankWork*)rank_wp[0])->count = evtGetValue(NULL, GSW(0)) < 0xac ? 0x17 : 0x15;
-    ((RankWork*)rank_wp[0])->entries = _mapAlloc(((RankWork*)rank_wp[0])->count * sizeof(RankEntry));
-    memset(((RankWork*)rank_wp[0])->entries, 0, ((RankWork*)rank_wp[0])->count * sizeof(RankEntry));
-    e = ((RankWork*)rank_wp[0])->entries;
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++, e++) {
+    memset(rank_wp, 0, sizeof(RankWork));
+    rank_wp->count = evtGetValue(NULL, GSW(0)) < 0xac ? 0x17 : 0x15;
+    rank_wp->entries = _mapAlloc(rank_wp->count * sizeof(RankEntry));
+    memset(rank_wp->entries, 0, rank_wp->count * sizeof(RankEntry));
+    e = rank_wp->entries;
+    for (i = 0; i < rank_wp->count; i++, e++) {
         e->flags = 0;
         e->id = i;
         if (swGet(e->id + 0x9a1)) {
@@ -3813,23 +3806,23 @@ static void rankingInit(void) {
     }
     swSet(0x9e1);
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        ((RankWork*)rank_wp[0])->entries[0x15].flags |= 2;
-        ((RankWork*)rank_wp[0])->entries[0x16].flags |= 2;
+        rank_wp->entries[0x15].flags |= 2;
+        rank_wp->entries[0x16].flags |= 2;
         if (evtGetValue(NULL, GSWF(0x96C))) {
-            ((RankWork*)rank_wp[0])->entries[0x12].flags |= 2;
+            rank_wp->entries[0x12].flags |= 2;
         }
         if (evtGetValue(NULL, GSWF(0x96D))) {
-            ((RankWork*)rank_wp[0])->entries[0x15].flags &= ~2;
+            rank_wp->entries[0x15].flags &= ~2;
             if (!evtGetValue(NULL, GSWF(0x9E2))) {
-                ((RankWork*)rank_wp[0])->entries[0x15].flags |= 1;
+                rank_wp->entries[0x15].flags |= 1;
             }
             evtSetValue(NULL, GSWF(0x9E2), 1);
         }
         if (evtGetValue(NULL, GSWF(0x975))) {
-            ((RankWork*)rank_wp[0])->entries[0x0b].flags |= 2;
-            ((RankWork*)rank_wp[0])->entries[0x16].flags &= ~2;
+            rank_wp->entries[0x0b].flags |= 2;
+            rank_wp->entries[0x16].flags &= ~2;
             if (!evtGetValue(NULL, GSWF(0x9E3))) {
-                ((RankWork*)rank_wp[0])->entries[0x16].flags |= 1;
+                rank_wp->entries[0x16].flags |= 1;
             }
             evtSetValue(NULL, GSWF(0x9E3), 1);
         }
@@ -3842,11 +3835,11 @@ void _unresolved(void) {
 }
 
 void _epilog(void) {
-    RankEntry* e = ((RankWork*)rank_wp[0])->entries;
+    RankEntry* e = rank_wp->entries;
     s32 j;
     s32 i;
 
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++, e++) {
+    for (i = 0; i < rank_wp->count; i++, e++) {
         if (e->flags & 1) {
             swSet(e->id + 0x9a1);
         } else {
@@ -3856,7 +3849,7 @@ void _epilog(void) {
             swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
-    _mapFree(((RankWork*)rank_wp[0])->entries);
+    _mapFree(rank_wp->entries);
     {
         voidfunctionptr* dtor2;
         for (dtor2 = _dtors; *dtor2 != NULL; dtor2++) {
