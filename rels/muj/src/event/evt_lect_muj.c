@@ -76,12 +76,6 @@ static s32 x_flag_data[2];
 static LectureButton lbtn[2];
 static EffectEntry* eff;
 
-// Pooled vectors referenced by lecture_button_* / effitemget_busaiku. The original REL defines these here.
-const Vec vec3_muj_00014180 = {200.0f, -25.0f, 0.0f};
-const Vec vec3_muj_0001418c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_muj_00014198 = {0.0f, 2016.0f, 0.0f};
-const Vec vec3_muj_000141a4 = {0.0f, -2016.0f, 0.0f};
-
 // Pooled scalar constants live in the REL's generated rodata objects, not in this unit.
 extern const f64 double_to_int_muj_00014350;
 
@@ -116,7 +110,7 @@ static USER_FUNC(lecture_button_rtn) {
     if (isFirstCall) {
         memset(lbtn, 0, sizeof(lbtn));
         for (i = 0; i < 2; i++) {
-            lbtn[i].position = vec3_muj_00014180;
+            lbtn[i].position = (Vec){200.0f, -25.0f, 0.0f};
         }
     }
     done = 0;
@@ -215,7 +209,7 @@ static USER_FUNC(lecture_button_set_pos) {
     f32 y = evtGetFloat(event, args[2]);
     f32 z = evtGetFloat(event, args[3]);
     LectureButton* btn = lbtn + index;
-    Vec pos = vec3_muj_0001418c;
+    Vec pos = {0.0f, 0.0f, 0.0f};
 
     pos.x = x;
     pos.y = y;
@@ -279,9 +273,9 @@ static USER_FUNC(effitemget_busaiku) {
     Vec pos;
 
     if (flag != 0) {
-        pos = vec3_muj_00014198;
+        pos = (Vec){0.0f, 2016.0f, 0.0f};
     } else {
-        pos = vec3_muj_000141a4;
+        pos = (Vec){0.0f, -2016.0f, 0.0f};
     }
     cam->presetPos = cam->cameraPos;
     cam->presetAt = cam->cameraAt;

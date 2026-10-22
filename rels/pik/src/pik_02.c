@@ -242,9 +242,6 @@ static NpcSetupInfo npc_data[7] = {
     {NULL},
 };
 
-
-const Vec vec3_pik_00002b80 = { 0.0f, 0.0f, 0.0f };
-
 static USER_FUNC(npc_set_pos) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -252,7 +249,7 @@ static USER_FUNC(npc_set_pos) {
     f32 y = evtGetFloat(event, args[2]);
     f32 z = evtGetFloat(event, args[3]);
     NpcEntry* npc = evtNpcNameToPtr(event, (const char*)name);
-    Vec pos = vec3_pik_00002b80;
+    Vec pos = { 0.0f, 0.0f, 0.0f };
 
     pos.x = x;
     pos.y = y;

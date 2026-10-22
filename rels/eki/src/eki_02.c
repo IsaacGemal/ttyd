@@ -51,8 +51,6 @@ static BeroEntry bero_data[] = {
     { NULL },
 };
 
-const Vec vec3_eki_00008fa8 = { 0.0f, 0.0f, -1.0f };
-
 extern const f32 zero_eki_00008ff0;
 extern const f32 float_6p2832_eki_00008ff4;
 extern const f32 float_360_eki_00008ff8;
@@ -75,7 +73,7 @@ USER_FUNC(hit_move) {
 
     mario = marioGetPtr();
     hit = mario->hitobjStandOn;
-    vec = vec3_eki_00008fa8;
+    vec = (Vec){ 0.0f, 0.0f, -1.0f };
 
     if (isFirstCall) {
         event->userdata[0] = 0;

@@ -38,12 +38,6 @@
 
 #pragma force_active on
 
-extern const Vec vec3_win_00006060;
-extern const Vec vec3_win_0000606c;
-
-const Vec vec3_win_00006060 = { 200.0f, -25.0f, 0.0f };
-const Vec vec3_win_0000606c = { 0.0f, 0.0f, 0.0f };
-
 static OSTime wwstart;
 static s32 x_flag_data[2];
 static LectureButton lbtn[2];
@@ -114,7 +108,7 @@ static USER_FUNC(lecture_button_rtn) {
         Vec pos;
 
         memset(lbtn, 0, sizeof(lbtn));
-        pos = vec3_win_00006060;
+        pos = (Vec){ 200.0f, -25.0f, 0.0f };
         for (i = 0; i < 2; i++) {
             lbtn[i].position = pos;
         }
@@ -223,7 +217,7 @@ static USER_FUNC(lecture_button_set_pos) {
     f32 z = evtGetFloat(event, args[3]);
 
     {
-        Vec pos = vec3_win_0000606c;
+        Vec pos = { 0.0f, 0.0f, 0.0f };
         LectureButton* btn = &lbtn[idx];
 
         pos.x = x;

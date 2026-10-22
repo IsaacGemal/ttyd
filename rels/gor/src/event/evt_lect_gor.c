@@ -43,13 +43,6 @@
 
 #pragma pool_data off
 
-
-
-
-const Vec vec3_gor_0001e2d0 = { 200.0f, -25.0f, 0.0f };
-const Vec vec3_gor_0001e2dc = { 0.0f, 0.0f, 0.0f };
-
-
 static OSTime wwstart;
 static s32 x_flag_data[2];
 static LectureButton lbtn[2];
@@ -129,7 +122,7 @@ static USER_FUNC(lecture_button_rtn) {
         Vec pos;
 
         memset(lbtn, 0, sizeof(lbtn));
-        pos = vec3_gor_0001e2d0;
+        pos = (Vec){ 200.0f, -25.0f, 0.0f };
         for (i = 0; i < 2; i++) {
             lbtn[i].position = pos;
         }
@@ -237,7 +230,7 @@ static USER_FUNC(lecture_button_set_pos) {
     f32 x = evtGetFloat(event, args[1]);
     f32 y = evtGetFloat(event, args[2]);
     f32 z = evtGetFloat(event, args[3]);
-    Vec pos = vec3_gor_0001e2dc;
+    Vec pos = { 0.0f, 0.0f, 0.0f };
 
     pos.x = x;
     pos.y = y;
