@@ -253,11 +253,9 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	return work->actionCommands.mDefenseResult;
 }
 
-#pragma dont_inline on // retail keeps the BattleACPadCheckRecordTrigger call instead of inlining it
 s32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask) {
 	return _battleWorkPointer->actionCommands.pad.mButtonsPressedHistory[chan] & mask;
 }
-#pragma dont_inline reset
 
 s32 BattleActionCommandGetDefenceResult(void) {
 	return _battleWorkPointer->actionCommands.mDefenseResult;
@@ -505,7 +503,6 @@ static inline void gaugeHighlight(CameraEntry* cam, s32 x, s32 y, s32 type, s32 
 	}
 }
 
-#pragma optimize_for_size on // keeps divw for /100 instead of a magic multiply
 void BattleAcDrawGauge(s32 x, s32 y, f32 ratio, s32 type, s32 count, s32 t0, s32 t1, s32 t2, s32 flags) {
 	BattleWork* work = getWorkPointer();
 	CameraEntry* cam;
@@ -605,7 +602,6 @@ void BattleAcDrawGauge(s32 x, s32 y, f32 ratio, s32 type, s32 count, s32 t0, s32
 		}
 	}
 }
-#pragma optimize_for_size reset
 
 
 void BattleAcGaugeSeInit(void) {

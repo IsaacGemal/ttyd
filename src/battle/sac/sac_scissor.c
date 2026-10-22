@@ -114,12 +114,9 @@ typedef struct StarTrail {
     f32 trailY[4];        // 0x50
 } StarTrail;
 
-// Keep GetScissorPtr out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
 ScissorWork* GetScissorPtr(void) {
     return (ScissorWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
-#pragma dont_inline reset
 
 #ifdef MUST_MATCH
 // MUST_MATCH: calling fabs through a helper makes MWCC evaluate the second argument
@@ -285,9 +282,6 @@ s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx,
     return 0;
 }
 
-// Keep scissor_intersection2 out of line: scissor_cross calls (bl) it in the
-// original rather than inlining its body.
-#pragma dont_inline on
 s32 scissor_intersection2(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
     if (ax == cx && ay == cy) {
         return 0;
@@ -332,8 +326,6 @@ s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
     return scissor_intersection(ax, ay, bx, by, cx, cy, dx, dy, ox, oy);
 }
 
-// Keep scissor_intersection3 out of line: the original issues a call (bl) to it
-// from scissor_intersection4 rather than inlining the body.
 s32 scissor_intersection4(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
     if (ax == cx && ay == cy) {
         *ox = ax;
@@ -357,7 +349,6 @@ s32 scissor_intersection4(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
     }
     return scissor_intersection3(ax, ay, bx, by, cx, cy, dx, dy, ox, oy);
 }
-#pragma dont_inline reset
 
 // Matches the original byte-for-byte.
 s32 scissor_cross(f32* a, f32* b, f32* c, s32 n) {
@@ -721,7 +712,6 @@ void star_disp2D(void) {
     }
 }
 
-#pragma dont_inline on
 void star_disp2D_sub(s32 index, s32 alpha) {
     ScissorWork* work = GetScissorPtr();
     StarTrail* star = (StarTrail*)&work->pointCount;
@@ -765,7 +755,6 @@ void star_disp2D_sub(s32 index, s32 alpha) {
     PSMTXConcat(mTrans, mTemp, mTemp);
     iconDispGxCol(mTemp, 0x10, 0x19C, color);
 }
-#pragma dont_inline reset
 
 s32 scissor_timer_get(EventEntry* event, BOOL isFirstCall) {
     ScissorWork* work = GetScissorPtr();
@@ -1078,8 +1067,6 @@ void scissor_damage_sub(BattleUnit* unit, s32* out) {
     }
 }
 
-// Keep scissor_damage_sub2 out of line: scissor_damage_sub calls (bl) it in the original.
-#pragma dont_inline on
 // Match note: taking `const Vec*` and reading point->x/point->y directly (no px/py
 // locals) is what lets MWCC hoist the two loads into f6/f3 and colour the float
 // temporaries as the original does; caching them in locals rotated py/ny/min.
@@ -1123,7 +1110,6 @@ s32 scissor_damage_sub2(const Vec* point) {
     }
     return 0;
 }
-#pragma dont_inline reset
 
 s32 scissor_ofscreen_ok(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;

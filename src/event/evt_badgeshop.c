@@ -223,7 +223,6 @@ void badgeShop_bteresaGeneration(void) {
 	}
 }
 
-#pragma inline_max_size(160) // keep badgeShop_get inlined but badgeShop_set a real `bl`
 void badgeShop_bargainGeneration(void) {
 	s16 slotValue;
 	s16 pickIndex;
@@ -353,7 +352,6 @@ void badgeShop_bargainGeneration(void) {
 		}
 	}
 }
-#pragma inline_max_size reset
 
 // The target never inlines `badgeShop_set` (both callers emit a real `bl`), but it always
 // inlines the smaller `badgeShop_get`.

@@ -305,7 +305,6 @@ HitEntry* marioHitCheck(f32* outX, f32* outY, f32* outZ, f32* distance,
     return hit;
 }
 
-#pragma dont_inline on // called out of line by marioSearchHead and marioSearchHead_jabara
 HitEntry* marioHitCheck2(Vec* a, Vec* b, Vec* c, Vec* d, f32* e) {
     MarioWork* wp = marioGetPtr();
     HitEntry* hit;
@@ -363,7 +362,6 @@ HitEntry* marioHitCheck2(Vec* a, Vec* b, Vec* c, Vec* d, f32* e) {
     *e = dist;
     return hit;
 }
-#pragma dont_inline reset
 
 void clear_hitobj_ride(void) {
     MarioWork* wp = marioGetPtr();
@@ -389,9 +387,8 @@ BOOL marioChkBero(HitEntry* hit) {
 
 #ifdef MUST_MATCH
 // Match-only helper (no name evidence; the natural build writes it out in marioChkGnd). Its locals become
-// compiler temporaries when inlined. The rolling probe's inline expansion only happens with the raised limits; at
-// the default inline_max_size the helper stays a real `bl` and the whole frame shifts.
-#pragma inline_max_size(1000) // per-callee inline budget for the probe's callees
+// compiler temporaries when inlined. The rolling probe's inline expansion only happens with the unit's raised
+// inline_max_size; at the default the helper stays a real `bl` and the whole frame shifts.
 static inline void marioChkGndRollProbe(MarioWork* wp) {
     HitEntry* hit;
     Vec p;
@@ -419,7 +416,6 @@ static inline void marioChkGndRollProbe(MarioWork* wp) {
     }
 }
 
-#pragma inline_max_size reset // (1000 already keeps the rest of the unit's scores)
 #endif
 
 HitEntry* marioSearchUnder(void) {

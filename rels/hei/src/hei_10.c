@@ -229,7 +229,6 @@ static inline f32 heiCos2(f32 angle) {
 }
 
 #pragma opt_propagation off // stop MWCC rematerialising the heiSin2/heiCos2 coefficients per branch
-#pragma opt_lifetimes off // needed: without it ext_main 98.31%
 static void ext_main(void) {
 #ifdef MUST_MATCH
     union { const char* p; u32 u; } sfx;
@@ -350,7 +349,6 @@ static void ext_main(void) {
         }
     }
 }
-#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 static void ext_dispent(void) {
     dispEntry(4, 0.0f, 1, ext_disp, NULL);
@@ -391,7 +389,6 @@ const Vec vec3_hei_00007a64 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_hei_00007a70 = {0.0f, 0.0f, 0.0f};
 
 // Hops an npc to (x, y, z) over a frame count: userdata holds the frames left, the vertical velocity and the speed.
-#pragma opt_lifetimes off // needed: without it npc_jump 96.92%
 #pragma opt_propagation off // stop MWCC rematerialising the heiSin2/heiCos2 coefficients per branch
 static USER_FUNC(npc_jump) {
     s32* args = event->args;
@@ -455,7 +452,6 @@ static USER_FUNC(npc_jump) {
     return EVT_RETURN_BLOCK;
 }
 #pragma opt_propagation reset
-#pragma opt_lifetimes reset
 USER_FUNC(wait_anim_frame) {
     f32 frame = evtGetFloat(event, event->args[0]);
     AnimationPose* pose = animPoseGetAnimPosePtr(npcNameToPtr("ゴールドチョロボン")->poseId);

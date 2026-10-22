@@ -424,8 +424,6 @@ extern const char str_msg_menu_mario_name_0[];
 extern s32 marioAttackEvent_MajinaiExpUp[];
 extern BattleDispPose pose_table_nokotarou_stay[];
 
-// The retail rank lookup is called out of line.
-#pragma dont_inline on
 RankUpData* _get_rank_data(s32 level) {
     RankUpData* rank;
 
@@ -436,7 +434,6 @@ RankUpData* _get_rank_data(s32 level) {
     }
     return rank;
 }
-#pragma dont_inline reset
 
 const char* BattleGetRankNameLabel(s32 level) {
     RankUpData* rank = _rank_up_data;
@@ -1124,10 +1121,6 @@ void btlseqEnd(BattleWork* wp) {
 }
 #pragma opt_lifetimes reset
 
-// This unit's original build inlines nothing: every callee is a real `bl` (cf. battle.c's `-inline off`).
-// Until configure.py gets that flag for this file, keep the helpers btlseqEnd calls out of line.
-// (Without this mwcc inlines _audience_Whistle_control, btlseqEnd_DispMain, ... into btlseqEnd.)
-#pragma dont_inline on
 void _ExecAllUnitBattleEndEvent(void) {
     BattleWork* wp;
     s32 i;
@@ -1771,7 +1764,6 @@ s32 _lvup_select_object_init(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// The original keeps _keta_get out of line: _lvup_select_object_disp calls it with bl, not inlined.
 s32 _keta_get(s32 value) {
     s32 digits = 0;
 
@@ -1998,7 +1990,6 @@ void _BattleMarioKouraDelete(void) {
 
     event->unitId = mario->unitId;
 }
-#pragma dont_inline reset
 
 static s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
     EventEntry* e = event;

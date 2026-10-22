@@ -328,8 +328,6 @@ void battleAcDelete_AirGauge(BattleWork* work) {
 	work->actionCommands.mAcState = 0x3EA;
 }
 
-// don't_inline: the original keeps actionCommandDisp as its own local function
-#pragma dont_inline on
 static void actionCommandDisp(f32 f1, f32 f2) {
 	BattleWork* work = _battleWorkPointer;
 	// Deriving disp before camGetPtr and dec after makes MWCC materialise them in their
@@ -380,7 +378,6 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 		iconDispGx(1.0f, &pos, 0x10, 0x64);
 	}
 }
-#pragma dont_inline reset
 
 // .data: float pairs and gauge tables. _GetGaugeDecValue addresses the gauge tables off this section's base
 // (lbl_803ABCE0 + 0x40...), so this block's layout (7 pairs, then 7 tables of 5 records) is load-bearing.

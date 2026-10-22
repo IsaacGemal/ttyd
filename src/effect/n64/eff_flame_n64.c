@@ -322,10 +322,8 @@ void effFlameMain(EffectEntry* effect) {
 // declarations: that gives MWCC retail's `type`/`alpha` colouring (r29/r30) while the loads stay `type`
 // (`0x0`) first, `alpha` (`0x28`) second. Together with the `effFlameSetVtx` memcpy shape above (no named
 // `src` local) the `.data` base lands in r27 and `effect`/`cam` share r28, exactly as retail.
-// `opt_propagation off`: without it MWCC colours the table base/`data`/`cam` differently.
 // The two `GXColor` values are built inside the `effFlameSetColor1/2` void inlines above; that is the shape that
 // gives MWCC the original's interleaved temp/arg slots (see those helpers).
-#pragma opt_propagation off
 void effFlameDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -518,4 +516,3 @@ void effFlameDisp(CameraId camId, void* param) {
 		break;
 	}
 }
-#pragma opt_propagation reset

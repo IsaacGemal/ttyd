@@ -794,8 +794,6 @@ void kpa_powdown(void) {
     }
 }
 
-// dont_inline keeps kpaSwimMove out of kpa_swim (retail emits a real `bl kpaSwimMove`).
-#pragma dont_inline on
 // opt_common_subs off keeps CSE from rotating the int->float magic with the zero (f1/f2); default scores 97.07%.
 #pragma opt_common_subs off
 void kpaSwimMove(void) {
@@ -837,7 +835,6 @@ void kpaSwimMove(void) {
     mario->field_0x18C = f31;
 }
 #pragma opt_common_subs reset
-#pragma dont_inline reset
 
 
 // The three periodic effMizutama blocks and the irand int->float conversion now match: with the

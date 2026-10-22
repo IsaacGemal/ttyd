@@ -118,8 +118,6 @@ void BattleStatusEffectDelete(BattleUnit* unit) {
 	BSE_KagegakureDelete(unit);
 }
 
-// dont_inline: without it BattleStatusEffectMain inlines BSE_Sleep; the original calls it.
-#pragma dont_inline on
 void BSE_Sleep(BattleUnit* unit) {
 	BattleEffectPosScale* work;
 	BattleUnitPart* part;
@@ -153,7 +151,6 @@ void BSE_Sleep(BattleUnit* unit) {
 	}
 }
 
-// Keep BSE_SleepDelete out of line: the original calls it rather than inlining.
 void BSE_SleepDelete(BattleUnit* unit) {
 	EffectEntry* effect = unit->mSleepEff;
 
@@ -479,7 +476,6 @@ BOOL BattleStatusChangeAnnouceMain(BattleWork* wp) {
 BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit) {
 	return FALSE;
 }
-#pragma dont_inline reset
 
 void BattleStatusChangeMsgWorkInit(void) {
 	BattleStatusChangeMsgWork* work = &_battleWorkPointer->statusChangeMsg;
@@ -491,8 +487,6 @@ void BattleStatusChangeMsgWorkInit(void) {
 	}
 }
 
-// Keep BattleStatusChangeMsgSetAnnouce out of line: the original calls it rather than inlining.
-#pragma dont_inline on
 void BattleStatusChangeMsgSetAnnouce(BattleUnit* unit, s32 type, s32 msg) {
 	// Retail adds the work offset to the raw pointer; &_battleWorkPointer->statusChangeMsg.entries[type]
 	// compiles 8 bytes longer.
@@ -514,7 +508,6 @@ void BattleStatusChangeMsgSetAnnouce(BattleUnit* unit, s32 type, s32 msg) {
 	}
 	entry->mFlags |= 4;
 }
-#pragma dont_inline reset
 
 void BattleStatusChangeMsgAdjust(BattleWork* wp) {
 	BattleStatusChangeMsgWork* work = &wp->statusChangeMsg;

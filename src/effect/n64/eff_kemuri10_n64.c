@@ -103,9 +103,6 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
-// Prevents MWCC from CSE-ing the separate float_0 / float_1 pool loads across
-// the branch-and-mag blocks, which shifts every volatile FPR by one.
-#pragma opt_common_subs off
 EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY, f32 dirZ, f32 scale) {
     EffectEntry* effect;
     effKemuri10Data* data;
@@ -202,7 +199,6 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
 
     return effect;
 }
-#pragma opt_common_subs reset
 
 inline Vec initializeVec(Vec* input) {
     Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };

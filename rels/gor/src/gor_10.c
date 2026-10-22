@@ -282,9 +282,6 @@ void tegami_delete(void) {
 // As in envdrv.c's envDisp_FF: without this MWCC rematerialises the polynomial coefficients
 // into every branch instead of hoisting them into the loop preheader (the target hoists them).
 #pragma opt_propagation off
-// The lifetime pass would hoist the two seed loads (0.00761/0.03705) out of the loop, keeping
-// two extra FPRs live; the target reloads them per iteration.
-#pragma opt_lifetimes off
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
@@ -420,7 +417,6 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXTexCoord2s16(0, 1);
     sysWaitDrawSync();
 }
-#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 
 USER_FUNC(depth) {

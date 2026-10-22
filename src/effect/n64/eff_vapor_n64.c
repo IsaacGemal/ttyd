@@ -57,9 +57,6 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-// opt_common_subs off required: with CSE on MWCC reuses the 0.02f result register for
-// data->velY in the y integration below (f0/f1 swapped vs the target's f2/f1).
-#pragma opt_common_subs off
 void effVaporMain(EffectEntry* effect) {
 	effVaporN64Data* data;
 	Vec position2;
@@ -101,7 +98,6 @@ void effVaporMain(EffectEntry* effect) {
 	data->timer += float_1_80420108;
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effVaporDisp, effect);
 }
-#pragma opt_common_subs reset
 
 static inline GXColor effVaporN64Color1(effVaporN64Data* data, s32 alpha) {
 	GXColor color = unk_804232b8;
@@ -199,8 +195,6 @@ static inline void effVaporSetColor2(effVaporN64Data* data, s32 alpha) {
 // The original reaches each table from lbl_803A85F8 and materialises the base before
 // an indexed load; naming the file's arrays (dx_data / scale_data / seq_data / rz_data)
 // and indexing them with type*0x1e + frame reproduces that addi base,off / lbzx shape.
-// opt_common_subs off: with CSE on, MWCC folds the table bases through one register.
-#pragma opt_common_subs off
 // The odd position of the `data` declaration in the list below is deliberate: MWCC's callee-saved
 // colouring follows the declaration order, and this order is the one that gives data=r29/frame=r30
 // as the original does (any earlier `data` declaration swaps them).
@@ -338,8 +332,6 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	}
 }
 
-
-#pragma opt_common_subs reset
 
 // The .sdata2 constants the code above loads by name, defined after it.
 const f32 float_deg2rad_804200d8 = 0.0174532924f;

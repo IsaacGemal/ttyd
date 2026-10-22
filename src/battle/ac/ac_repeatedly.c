@@ -391,9 +391,6 @@ void battleAcDisp_Repeatedly(CameraId camId, void* param) {
     }
 }
 
-// dont_inline: the original keeps this as a `bl battleAcDelete_Repeatedly` call instead of inlining it
-// into battleAcMain_Repeatedly.
-#pragma dont_inline on
 void battleAcDelete_Repeatedly(BattleWork* work) {
     switch (work->actionCommands.acParams[0]) {
     case 0xA:
@@ -403,7 +400,6 @@ void battleAcDelete_Repeatedly(BattleWork* work) {
     BattleAcGaugeSeDelete();
     work->actionCommands.mAcState = 0x3EA;
 }
-#pragma dont_inline reset
 
 // 100% matched.
 static void actionCommandDisp(f32 x, f32 y) {

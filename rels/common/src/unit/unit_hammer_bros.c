@@ -843,17 +843,6 @@ typedef struct HammerBrosSampling {
     HammerBrosSamplingEntry entries[1]; // 0x4
 } HammerBrosSampling;
 
-// tou2's original calls the two helpers below with `bl`; tik's inlines them. configure.py gives the two
-// module copies different UNIT_DATA_SYM values and nothing else, so gate the pragma on that symbol.
-#define HAMMER_BROS_CAT_(a, b) a##b
-#define HAMMER_BROS_CAT(a, b) HAMMER_BROS_CAT_(a, b)
-#define HAMMER_BROS_SYM_unit_hammer_bros_28_data_24A10 1
-#if HAMMER_BROS_CAT(HAMMER_BROS_SYM_, UNIT_DATA_SYM)
-#define HAMMER_BROS_TOU2 1
-#endif
-#ifdef HAMMER_BROS_TOU2
-#pragma dont_inline on
-#endif
 static USER_FUNC(hammer_bros_nagemakuri_set_target) {
     BattleWork* wp = _battleWorkPointer;
     EventEntry* evt = event;
@@ -906,9 +895,6 @@ static void hammer_bros_get_next_target(s32* unitId, s32* partId) {
         *partId = 0;
     }
 }
-#ifdef HAMMER_BROS_TOU2
-#pragma dont_inline reset
-#endif
 
 
 static EVT_BEGIN(nagemakuri_attack_event)

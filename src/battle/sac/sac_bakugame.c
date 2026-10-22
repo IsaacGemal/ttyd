@@ -155,8 +155,6 @@ static s32 main_star(EventEntry* event, BOOL isFirstCall);
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall);
 extern s32 psndSFX_pit(s32 id, s32 pit);
 
-// Keep GetBakuGamePtr out of line: every caller emits bl GetBakuGamePtr as in the original.
-#pragma dont_inline on
 // Prototypes for the forward references the original function order needs.
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall);
 static USER_FUNC(main_star);
@@ -164,7 +162,6 @@ static USER_FUNC(main_star);
 BakuGameWork* GetBakuGamePtr(void) {
     return (BakuGameWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
-#pragma dont_inline reset
 
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
@@ -1271,8 +1268,6 @@ s32 bakuGameHeihoReturn(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
-// Keep bakuGameDecideButton out of line: bakuGameMain calls it three times and the original issues bl each time.
-#pragma dont_inline on
 // The position and permutation tables are local initializers (their templates are the original's .rodata), and
 // entry = &baku->entries[i] gives the loop index/entry registers of the original.
 void bakuGameDecideButton(s32 arg) {
@@ -1305,7 +1300,6 @@ void bakuGameDecideButton(s32 arg) {
     }
 }
 
-// Keep bakuGamePartyExist out of line: callers emit bl instead of inlining the status checks.
 BOOL bakuGamePartyExist(BattleUnit* unit) {
     if (unit == NULL) {
         return 0;
@@ -1316,7 +1310,6 @@ BOOL bakuGamePartyExist(BattleUnit* unit) {
     return BtlUnit_CanActStatus(unit) != 0;
 }
 
-// Keep bakuGameAudienceCanThrowPos out of line: callers emit bl instead of inlining the loop.
 s32 bakuGameAudienceCanThrowPos(s32 id) {
     s32 i;
     s32 ofs = 0;
@@ -1330,7 +1323,6 @@ s32 bakuGameAudienceCanThrowPos(s32 id) {
     return 0;
 }
 
-// Keep bakuGameMarioSurpriseReset out of line: the original issues a call (bl) to it.
 void bakuGameMarioSurpriseReset(BattleUnit* unit, BattleUnit* party) {
     btlDispPoseAnime(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)));
     if (bakuGamePartyExist(party)) {
@@ -1338,7 +1330,6 @@ void bakuGameMarioSurpriseReset(BattleUnit* unit, BattleUnit* party) {
     }
 }
 
-// Keep bakuGameEnemySurpriseReset out of line: the original issues a call (bl) to it.
 void bakuGameEnemySurpriseReset(void) {
     s32 i;
     BattleWork* wp = _battleWorkPointer;
@@ -1353,7 +1344,6 @@ void bakuGameEnemySurpriseReset(void) {
     }
 }
 
-// Keep bakuGameAudienceSurpriseReset out of line: the original issues a call (bl) to it.
 void bakuGameAudienceSurpriseReset(void) {
     s32 i;
 
@@ -1369,7 +1359,6 @@ void bakuGameAudienceSurpriseReset(void) {
     }
 }
 
-// Keep bakuGameMarioSurprise out of line: the original issues a call (bl) to it.
 void bakuGameMarioSurprise(BattleUnit* unit, BattleUnit* party) {
     BtlUnit_SetBodyAnim(unit, "M_N_7");
     if (bakuGamePartyExist(party)) {
@@ -1399,7 +1388,6 @@ void bakuGameMarioSurprise(BattleUnit* unit, BattleUnit* party) {
     }
 }
 
-// Keep bakuGameEnemySurprise out of line: the original issues a call (bl) to it.
 void bakuGameEnemySurprise(void) {
     s32 i;
     BattleWork* wp = _battleWorkPointer;
@@ -1414,7 +1402,6 @@ void bakuGameEnemySurprise(void) {
     }
 }
 
-// Keep bakuGameAudienceSurprise out of line: the original issues a call (bl) to it.
 void bakuGameAudienceSurprise(void) {
     s32 i;
 
@@ -1437,7 +1424,6 @@ void bakuGameAudienceSurprise(void) {
         }
     }
 }
-#pragma dont_inline reset
 
 // Taking the entry through this accessor is what gets bakuGameDisp2D's loads in the original's order (permuter).
 static inline BakuGameWorkEntry* bakuGameEntry(BakuGameWork* work, s32 i) {

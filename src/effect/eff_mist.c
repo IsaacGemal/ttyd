@@ -130,9 +130,6 @@ static inline Vec mistMakeVec(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-// opt_common_subs off: with CSE on MWCC colours the default branch's int->float conversion
-// registers f1/f2/f0 instead of the target's f2/f1/f0 (the rest of the function matches either way).
-#pragma opt_common_subs off
 // Matches the original: the Vec copy is built through mistMakeVec so its word loads are not hoisted
 // into the prologue, `work` doubles as the loop pointer, and `type`/`i` land in r29/r30.
 void effMistMain(EffectEntry* effect) {
@@ -203,7 +200,6 @@ void effMistMain(EffectEntry* effect) {
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMistDisp, effect);
 }
-#pragma opt_common_subs reset
 
 // Build the GXColor in a helper: its return slot lands at 0x8 and the by-value argument copy at 0xc, as
 // retail.

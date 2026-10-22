@@ -17,8 +17,6 @@ extern const f32 float_0_8041e7a8;
 extern const f32 float_1_8041e7ac;
 
 
-// dont_inline keeps BtlIconGetPtr a real `bl` from the evt commands as in retail.
-#pragma dont_inline on
 BattleIcon* BtlIconGetPtr(s32 index) {
 	BattleIcon* icon;
 	int i;
@@ -31,7 +29,6 @@ BattleIcon* BtlIconGetPtr(s32 index) {
 	}
 	return NULL;
 }
-#pragma dont_inline reset
 
 void BattleIconInit(void) {
 	memset(_battleWorkPointer->icons, 0, sizeof(_battleWorkPointer->icons));
@@ -71,9 +68,6 @@ void BattleIconEnd(void) {
 	}
 }
 
-// dont_inline keeps BtlIcon_Entry a real `bl` from the evt commands as in retail.
-#pragma dont_inline on
-
 // name[8] is what the original reserves for "_biu_%02x" (8 bytes with the null);
 // a larger buffer grows the frame past the original's 0x50.
 BattleIcon* BtlIcon_Entry(u16 iconId, f32 x, f32 y, f32 z) {
@@ -106,15 +100,12 @@ BattleIcon* BtlIcon_Entry(u16 iconId, f32 x, f32 y, f32 z) {
 	return icon;
 }
 
-// dont_inline keeps BtlIcon_Delete a real `bl` from the evt commands as in retail.
-
 void BtlIcon_Delete(BattleIcon* icon) {
 	if (icon->flags & 1) {
 		iconDelete(icon->base->name);
 		icon->flags &= ~1;
 	}
 }
-#pragma dont_inline reset
 
 //s32 iconId, f32 x, f32 y, f32 z, s32 evtIndex
 USER_FUNC(btlevtcmd_BtlIconEntry) {

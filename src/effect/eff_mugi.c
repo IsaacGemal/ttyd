@@ -222,9 +222,7 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMugiKemuriDisp, effect);
 }
 
-// opt_common_subs off gives the float loop's FPR colouring; as in effMugiKemuriMain, the MUST_MATCH
-// volatile reads pin the prologue order.
-#pragma opt_common_subs off
+// As in effMugiKemuriMain, the MUST_MATCH volatile reads pin the prologue order.
 void effMugiKemuri2Main(EffectEntry* effect) {
 	MugiKemuriWork* work;
 	MugiKemuriWork* w;
@@ -329,7 +327,6 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMugiKemuri2Disp, effect);
 }
-#pragma opt_common_subs reset
 
 // Returning the colour from an inline makes mwcc put the local GXColor at r1+0x8 and the
 // outgoing-argument copy at r1+0xc, the way the original does; building it inline in the caller

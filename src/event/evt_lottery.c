@@ -15,7 +15,6 @@ lottery_info* lotteryGetPtr(void) {
 	return &gp->mLotteryInfo;
 }
 
-#pragma opt_propagation off // needed: with propagation on, the last two calendar calls at the end keep mBuyTime's low word in r25 instead of the target's r24
 USER_FUNC(evt_lottery) {
 	lottery_info* info;
 	s32* args = event->args;
@@ -192,7 +191,6 @@ USER_FUNC(evt_lottery) {
 	}
 	return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 USER_FUNC(evt_lottery_buy) {
 	s32* args = event->args;
 	OSTime time = OSGetTime();

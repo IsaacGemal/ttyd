@@ -5,13 +5,18 @@ One line per scoped optimisation pragma region left in src/ and rels/ after n9-q
 tried. Line numbers are each setter's line at the end of that pass. Condensed from the workers' reports (untracked,
 build/pr2/v1..v8/REPORT.txt in that worktree).
 
+Since then (n9-q-o-flags, 2026-10-22; chapter "Whole-file compiler settings moved to configure.py" in docs/CONTEXT.md),
+40 of these regions were replaced by a per-file flag on the unit's Object line (`-pragma "opt_X off"`, the unit
+compiling identical with the setting file-wide), and their entries are gone from this list, 16 of them sin/cos family
+regions. The remaining entries are unchanged, line numbers included.
+
 ## The sin/cos polynomial family (studied as one problem, n9-q-o-sincos, 2026-10-21)
 
-The 51 regions marked "sin/cos" below wrap an inlined sine/cosine approximation, `sin x = x(1 - 0.16605x^2 +
-0.00761x^4)` and `cos x = 1 - 0.4967x^2 + 0.03705x^4` (Abramowitz and Stegun 4.3.96/4.3.98) on [0, pi/2], reduced from
-[0, 2pi) by the compares against pi, pi/2 and 3pi/2, with the Horner steps repeated in every quadrant branch. It
-appears in 30 retail functions across 19 files. All 51 stay; nothing below removed any of them. Chapter "The sin/cos
-polynomial family" in docs/CONTEXT.md has the detail.
+The regions marked "sin/cos" below (51 after that pass, 35 now) wrap an inlined sine/cosine approximation,
+`sin x = x(1 - 0.16605x^2 + 0.00761x^4)` and `cos x = 1 - 0.4967x^2 + 0.03705x^4` (Abramowitz and Stegun
+4.3.96/4.3.98) on [0, pi/2], reduced from [0, 2pi) by the compares against pi, pi/2 and 3pi/2, with the Horner steps
+repeated in every quadrant branch. It appears in 30 retail functions across 19 files. The family study removed none of
+them. Chapter "The sin/cos polynomial family" in docs/CONTEXT.md has the detail.
 
 - **What the pair reproduces.** Retail loads the coefficients (0.00761/0.16605/1.0, then 0.03705/0.4967/1.0) into
   registers once, before the quadrant compares, and every branch uses those registers (opt_propagation off). Every
@@ -82,7 +87,6 @@ polynomial family" in docs/CONTEXT.md has the detail.
 ## rels/gor/src/gor_10.c
 
 - `depthDisp` (opt_propagation, line 284): sin/cos polynomial family, same function as bom_01's depthDisp (320-line diff); family study above.
-- `depthDisp` (opt_lifetimes, line 287): sin/cos polynomial family: two extra FPRs (f21/f22), in-loop seed loads hoisted (310 lines); family study above.
 
 ## rels/gor/src/unit/unit_lecture_frankli_sac.c
 
@@ -91,8 +95,6 @@ polynomial family" in docs/CONTEXT.md has the detail.
 ## rels/hei/src/hei_10.c
 
 - `ext_main` (opt_propagation, line 231): sin/cos polynomial family (260-line diff); family study above.
-- `ext_main` (opt_lifetimes, line 232): sin/cos polynomial family (751-line diff); family study above.
-- `npc_jump` (opt_lifetimes, line 394): sin/cos family: each Horner step gets its own FPR, not retail's one accumulator (132 lines); tried: per-pair removal; Horner as one expression per branch (496). Family study above.
 - `npc_jump` (opt_propagation, line 395): sin/cos polynomial family, as the lifetimes pair; tried: per-pair removal; one-expression Horner (worse). Family study above.
 
 ## rels/las/src/unit/unit_boss_black_peach.c
@@ -106,15 +108,9 @@ polynomial family" in docs/CONTEXT.md has the detail.
 - `evt_puni_set_lsw_index` (opt_lifetimes, line 7544): inlines puniswSetindex: same colouring, addr in r28 not r26; tried: the addr shapes; 40 caller decl orders; rasim (best 2 wrong); `*args++` (24 lines).
 - `evt_puni_all_save` (opt_lifetimes, line 7789): inlines puniswSetindex: same offset vs high-byte colouring; tried: the addr shapes; declaration permutations.
 
-## rels/pik/src/pik_02.c
-
-- `hoshi_jump` (opt_propagation, line 364): sin/cos family: inlined hoshi_sin/cos angle in f0 not f5, seeds move, plus the MUST_MATCH pun stores (264 lines); family study above.
-- `hoshi_jump` (opt_lifetimes, line 365): sin/cos polynomial family (164-line diff); family study above.
-
 ## rels/rsh/src/rsh_05.c
 
 - `moamoa_hit_check`, `ext_moamoa_main`, `npc_jump` (opt_lifetimes, line 1242): no closer, runs to EOF; sin/cos family (ext_moamoa_main 1650/3147, moamoa_hit_check 360/750 lines for the pair); family study above.
-- `moamoa_hit_check`, `ext_moamoa_main`, `npc_jump` (opt_propagation, line 1243): no closer, runs to EOF; sin/cos polynomial family, as the lifetimes pair; family study above.
 
 ## rels/rsh/src/rsh_06.c
 
@@ -126,20 +122,9 @@ polynomial family" in docs/CONTEXT.md has the detail.
 - `tiz_broken` (opt_propagation, line 2480): sin/cos family: frame 0x110 vs 0xd0, 12 vs 9 FPRs (~460 lines); tried: pi/halfpi/threehalves non-const; as literals; coefficients as literals; all literal. Family study above.
 - `tiz_broken` (opt_lifetimes, line 2481): sin/cos polynomial family (~460 lines); same literal/non-const shapes as the propagation pair, no change. Family study above.
 
-## rels/tou/src/tou_02.c
-
-- `ext_fan_main` (opt_propagation, line 1709): sin/cos polynomial family (983/270 lines for the pair); family study above.
-- `ext_fan_main` (opt_lifetimes, line 1710): sin/cos polynomial family, as the propagation pair; family study above.
-- `check_hammer` (opt_propagation, line 2088): sin/cos family (426/252 lines for the pair); tried: inline pi constants non-const; as literals; coefficients as literals; all literal (434). Family study above.
-- `check_hammer` (opt_lifetimes, line 2089): sin/cos polynomial family; same literal/non-const shapes as the propagation pair, no change. Family study above.
-
 ## rels/tou2/src/tou_03.c
 
 - `screen_tev` (opt_propagation, line 4051): sparkle loop folds buf+sgcol into a pointer; tried: `idx2 = idx + j % 8; idx2 += sgcol` (56 lines); sgrow before sgcol (52); 5 inner-index forms; i/4, i%4 inline.
-
-## rels/yuu/src/event/evt_yuutitle.c
-
-- `evt_yuutitle_disp_func` (opt_propagation, line 40): f0/f1 swap between fade and the field_10*(1-t) product; tried: fade inline in `scale *=`; fade before the lerps; scale operand orders; a 1-t local; four statement orders.
 
 ## rels/yuu/src/yuu_02.c
 
@@ -149,14 +134,6 @@ polynomial family" in docs/CONTEXT.md has the detail.
 
 - `yuuminigame4_entry_init` (opt_propagation, line 124): count*sizeof folds to a constant, as in yuu_02; tried: s16 entryCount; `= 0; ++`.
 - `evt_ryushi` (opt_lifetimes, line 720): FPR rotation: zSpeed/alphaFactor/entryScale/cameraX in f31.. not f20-f23; tried: randf ranges inline (224 lines); separate xMin/xMax locals (194); rasim (best 9 wrong).
-
-## src/battle/ac/ac_monosiri_target.c
-
-- `actionCommandDisp` (opt_common_subs, line 207): screen2 block: a CSE temp for the named float_4 read puts 4.0f in f2, screen2.x in f1; tried: `x = c + x`; y,x,z / z,x,y / x,z,y orders; `x = x + c`.
-
-## src/battle/ac/ac_shot_target.c
-
-- `actionCommandDisp` (opt_common_subs, line 351): same named float_4 CSE in the screen2 block as ac_monosiri_target; tried: y-first order; the monosiri shapes.
 
 ## src/battle/ac/ac_signal_timing.c
 
@@ -266,13 +243,11 @@ polynomial family" in docs/CONTEXT.md has the detail.
 
 ## src/effect/eff_funemizu.c
 
-- `effFunemizuMain` (opt_common_subs, line 128): the clamp's named float_1/float_0 reads, an int field read and effect->count are CSE'd (145 lines); only removal tried.
 - `effFunemizuDisp` (opt_lifetimes, line 244): 267-line diff, frame 0x160 -> 0x180 in a large map-lookup/goto function; only removal tried (other pointer shapes hang mwcceppc).
 
 ## src/effect/eff_gonbaba_breath.c
 
 - `init_breath` (opt_propagation, line 101): sin/cos family: coefficients rematerialised per branch (327 lines); family study above.
-- `init_breath` (opt_lifetimes, line 103): sin/cos family: frame, stack homes and FPR colouring move (270 lines); family study above.
 
 ## src/effect/eff_ibuki.c
 
@@ -282,66 +257,13 @@ polynomial family" in docs/CONTEXT.md has the detail.
 
 - `effKemuriDisp` (opt_common_subs, line 302): MUST_MATCH-guarded; the named float_0p5 is CSE'd, so 0.5 and the i2f magic swap f29/f31 (18 lines); only removal tried.
 
-## src/effect/eff_mist.c
-
-- `effMistMain` (opt_common_subs, line 135): the two named float_255 clamp reads are CSE'd, colour f2 not f0 (16 lines); tried: literal 255.0f (new pool entry); `alpha = counter`; `float_255 < alpha`; `counter +=` form.
-
 ## src/effect/eff_mobj_broken.c
 
 - `effMObjBrokenMain` (opt_lifetimes, line 190): sin/cos family: accumulators split, then a GPR cascade (data r31 vs r30, type, counters; 140 lines); family study above.
 
-## src/effect/eff_mugi.c
-
-- `effMugiKemuri2Main` (opt_common_subs, line 227): the named float_0 read twice in `if (w->time < float_0) w->speed = float_0;` is CSE'd (64 lines); only removal tried.
-
-## src/effect/eff_pointget.c
-
-- `effPointGetDisp` (opt_loop_invariants, line 108): f25/f27 swap: front-end LICM makes f22*0.5 an @ temp ranked below the magic (14 lines); tried: operand orders; product inline; f21 spellings; hoisting one; product local.
-
-## src/effect/eff_starpoint.c
-
-- `effStarPointEntry` (opt_lifetimes, line 95): sin/cos polynomial family (268-line diff); family study above.
-- `effStarPointEntry` (opt_propagation, line 96): sin/cos polynomial family (289-line diff); tried: per-pair removal; coefficients as literals with no v/b/one locals (289). Family study above.
-
-## src/effect/eff_starstone.c
-
-- `effStarStoneDisp_1` (opt_lifetimes, line 510): loop counter leaves r27 for r29/r28 in the last type==0/else block (24 lines); tried: tbl[i] index loop (136); `*dl++` pointers (80); i first in the for-init (48); unsigned i.
-
 ## src/effect/n64/eff_balloon_n64.c
 
 - `effBalloonDisp` (opt_dead_assignments, line 181): cam copy folds into the camGetPtr temp, which takes r31 (retail: life r31, cam r28); tried: cam initialised; cam declared last; camGetPtr later (131); no cam local (32).
-
-## src/effect/n64/eff_blow_n64.c
-
-- `effBlowN64Entry` (opt_common_subs, line 160): named float_0 (twice), float_8, float_2 and the sqrtf inline's float-bit reads are CSE'd (155 lines); only removal tried.
-
-## src/effect/n64/eff_breath_fire_n64.c
-
-- `effBreathFireMain`, `effBreathFireDisp` (opt_common_subs, line 110): to EOF; Disp CSEs the named float_0 read twice per PSMTXTrans; tried: Main's updates as `+=` (Main matches, not applied); literal 0.0f (new pool entry).
-
-## src/effect/n64/eff_broken_barrier_n64.c
-
-- `effBrokenBarrierMain` (opt_lifetimes, line 209): case 0/2: c2/angle2/randA colour f26/f25/f27, not f27/f26/f25 (26 lines); tried: angle1/angle2, no c2 (148); no p; randB reused (164/44); block-scoped a2/c/p (259).
-
-## src/effect/n64/eff_butterfly_n64.c
-
-- `effButterflyMain` (opt_common_subs, line 228): the named float_0 and data->life reads are CSE'd (85 lines); only removal tried.
-
-## src/effect/n64/eff_flame_n64.c
-
-- `effFlameDisp` (opt_propagation, line 328): propagation drops the effect = param copy and the OSs16tof32 inline's parameter copies; registers cascade (215 lines); nothing tried (no natural lever).
-
-## src/effect/n64/eff_kemuri10_n64.c
-
-- `effKemuri10N64Entry` (opt_common_subs, line 108): many named float_0 reads and the sqrtf inline's float-bit reads are CSE'd (284 lines); only removal tried.
-
-## src/effect/n64/eff_kemuri4_n64.c
-
-- `effKemuri4Main` (opt_common_subs, line 118): closer is `on`; the named float_0 in `if (swirl < float_0) floating = float_0;` is CSE'd (64 lines); tried: literal 0.0f in Main (matches, new pool entry).
-
-## src/effect/n64/eff_magic3_n64.c
-
-- `effMagic3N64Entry` (opt_common_subs, line 90): `dirZ *= norm` is CSE'd with `dirX *= norm`, float_0 moves f25 -> f4; tried: `dirZ = dirX = float_0`; `dirZ = dirX`; `dir = dir * norm`; literals with the full sum.
 
 ## src/effect/n64/eff_radiation_n64.c
 
@@ -355,36 +277,13 @@ polynomial family" in docs/CONTEXT.md has the detail.
 
 - `effRippleMain` (optimization_level 2, line 80): push/pop; effect/timer/type colour r30/r29/r28, not r28/r30/r29; tried: subData init; one Vec; `timer - 1 < 0`; `timer = data->timer--`; type first; level 3; rasim (1 wrong).
 
-## src/effect/n64/eff_rothammer_fail_n64.c
-
-- `effRotHammerFailDisp` (opt_common_subs, line 124): the second animFrame read is CSE'd, frameFrac propagates past the GX calls and animFrame sits in f31 (~110 lines); tried: an `f32 frame` local (113).
-
 ## src/effect/n64/eff_small_star_n64.c
 
-- `effSmallStarN64Entry` (opt_common_subs, line 105): named float_0 CSE'd across the perp branches: second `mag == float_0` reuses f2, norm/8.0 swap f0/f1; tried: statement orders and local shapes (none blocks it).
 - `effSmallStarMain` (opt_lifetimes, line 258): sin/cos family: cos wave leaves f5; tried: 24 decl orders of cosC0/cosC2/wave/sq; rasim; a file-local cos inline; block-scoped t/u/s; one-expression polynomial. Family study above.
 
 ## src/effect/n64/eff_sstar_n64.c
 
 - `effSstarN64Entry` (opt_common_subs, line 192): the CSE'd named float_0 swaps f0/f1 in the zero tests, dist products and scale; tried: 0.0f literals (141); `scale = dist` in an else; `scale = dist = ...`; decl positions.
-
-## src/effect/n64/eff_thunderflare_n64.c
-
-- `effThunderflareMain` (opt_common_subs, line 122): the two named float_100 fade reads become one CSE temp, 100 lands in f24 (18 instrs); tried: fade from radius (115); a maxRadius local (24); angle2 beside angle1 (38).
-
-## src/effect/n64/eff_vapor_n64.c
-
-- `effVaporMain` (opt_common_subs, line 62): named float_0p5/float_neg1p5 clamp compare+store are CSE'd, f0/f1/f2 rotate; tried: single-use clamp forms (else-if changes the flow, a min ternary still reads K twice).
-- `effVaporDisp` (opt_common_subs, line 203): the two named float_0 PSMTXTrans args are CSE'd into an early temp (scheduling only); tried: index forms; [frame2 + index]; dx inline; dx before scale/rz.
-
-## src/event/evt_item.c
-
-- `evt_item_move_3d_position`, `evt_item_get_important_item` (opt_propagation, line 337): sin/cos family: get_important_item loads v/b/one per branch (+0x48 bytes); move_3d_position no longer needs it; family study above.
-- `evt_item_get_important_item` (opt_lifetimes, line 372): sin/cos family: each `v = v * u - b` step gets its own FPR, angle f0 not f5; tried: reusing f2 for the angle (80 lines); one-expression f5, with and without parens. Family study above.
-
-## src/event/evt_lottery.c
-
-- `evt_lottery` (opt_propagation, line 18): mBuyTime low-word reload uses r25, not r24, in the last calendar calls; tried: the #else form; a 4-iteration loop; operand orders; a t per date; 86400LL; (OSTime)60 * 60 * 24.
 
 ## src/event/evt_mobj.c
 
@@ -401,19 +300,10 @@ polynomial family" in docs/CONTEXT.md has the detail.
 ## src/event/evt_sub.c
 
 - `evt_sub_get_coin` (opt_propagation, line 653): sin/cos family: coefficients rematerialised per branch (87.63%); tried: npcdrv's npcSinf/npcCosf static-inline form (301 lines). Family study above.
-- `evt_sub_get_coin` (opt_lifetimes, line 654): sin/cos family: seed/coefficient FPRs move (98.48%); tried: the npcSinf/npcCosf static-inline form. Family study above.
 
 ## src/event/evt_telop.c
 
 - `telop` (opt_common_subs, line 149): f1/f2 swap for width-100 vs the i2f magic, f5/f6 for 0.5 vs (f32)msgWidth (22 lines); tried: a limit local; limit plus f32 w; operand order; a/b inline; b before a.
-
-## src/event/evt_uranaisi.c
-
-- `uranaisi_data_make_starpiece`, `uranaisi_data_make_supercoin` (opt_lifetimes, line 487): every callee-saved GPR shifts in both (160 lines); tried: done/saved locals for the shared tmp (208); u8/char; propagation off alone.
-
-## src/koopa_hit.c
-
-- `kpaSearchGround` (opt_common_subs, line 199): whole-function FPR renumbering (dx/dz f31/f30 -> f20/f19, f14/f16 swap; 375 lines); no local shape found.
 
 ## src/koopa_motion.c
 
@@ -480,18 +370,19 @@ polynomial family" in docs/CONTEXT.md has the detail.
 
 ## Tally
 
-164 remaining regions (unchanged by n9-q-o-sincos, 2026-10-21: the sin/cos family study removed none).
+124 remaining regions: 164 after n9-q-o-pragma2 (unchanged by n9-q-o-sincos), less the 40 that became file flags in
+n9-q-o-flags. The cause split is the 164-region one except for sin/cos.
 
 By kind:
-- opt_propagation: 64
-- opt_lifetimes: 46
-- opt_common_subs: 36
+- opt_propagation: 55
+- opt_lifetimes: 33
+- opt_common_subs: 19
 - opt_dead_assignments: 13
-- opt_loop_invariants: 3
+- opt_loop_invariants: 2
 - optimization_level 2: 2
 
 By cause family:
-- sin/cos polynomial: 51
+- sin/cos polynomial: 35
 - named pool constants: 27
 - register colouring: 40
 - large-function reshuffle: 12

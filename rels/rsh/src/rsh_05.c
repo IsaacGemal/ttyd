@@ -1226,8 +1226,8 @@ static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f
 #pragma dont_inline reset
 
 // Matches retail. The sine/cosine coefficients hoist and colour like retail (the pik/evt_sub helper
-// shape and the two pragmas). Declaring the six Vec temporaries at function scope instead of
-// per-block is load-bearing: with them block-local the pragma pushes the frame to 0x130; at function
+// shape, opt_lifetimes off here and the unit's opt_propagation off). Declaring the six Vec temporaries at
+// function scope instead of per-block is load-bearing: with them block-local the frame grows to 0x130; at function
 // scope it is the target's 0xf0 and every stack slot lines up.
 // Reusing the parameter as the sine/cosine half-angle (`angle = halfpi - (angle - halfpi)`) colours
 // the reduced angle into the target's register. In the block whose cosine recomputes its argument,
@@ -1240,7 +1240,6 @@ static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f
 // and inlining `camGetPtr(4)` (check_hammer's shape), and the two `(20+box.x)*0.5` sites match by
 // writing `(box.x + 20) / 2` (folded to the same fmuls).
 #pragma opt_lifetimes off // keeps the sin/cos coefficients in the target's FPRs
-#pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
 static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
     MarioWork* mario = marioGetPtr();
     Vec v65, v55c, vnoko, vparty, mpos, pvec;
@@ -1410,7 +1409,6 @@ static inline void moaPlayHit(ExtPose* ep) {
     psndSFXOn_3D((const char*)0x6C3, &w);
 }
 #endif
-#pragma inline_max_total_size(60000)
 // Per-frame update of every moamoa (the ordinary variant, no follower).
 static void ext_moamoa_main(void) {
 #ifdef MUST_MATCH
@@ -1967,7 +1965,6 @@ static void ext_moamoa_main(void) {
         mario->riderDelta.z = 2.0f * b.z;
     }
 }
-#pragma inline_max_total_size reset
 static void ext_moamoa_dispent(void) {
     if (wp->flags & 1) {
         dispEntry(4, 0.0f, 1, (DispCallback)ext_disp, NULL);

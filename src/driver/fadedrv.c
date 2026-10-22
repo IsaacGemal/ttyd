@@ -1241,7 +1241,6 @@ void disp_texture(CameraId camId, void* param) {
 	GXSetProjectionv(projv);
 }
 
-#pragma dont_inline on // keeps z a real bl from disp_maku, as the original does
 static f32 z(void) {
 	FadeEntry* entry = &wp->entries[1];
 	CameraEntry* cam;
@@ -1267,7 +1266,6 @@ static f32 z(void) {
 	      * (one * (cam->projection[2][2] * pos.z + cam->projection[2][3]))
 	      + cam->viewport[5]) / denom;
 }
-#pragma dont_inline reset
 static void zFill(void) {
 	CameraEntry* camera;
 	f32 y0, y1, x0, x1;

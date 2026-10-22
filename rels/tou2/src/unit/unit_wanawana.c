@@ -159,11 +159,9 @@ static BattleUnitKindPart parts[1] = {
 // .text:0x680 | 0x8ACC | size: 0x24
 // The original has its own static tanf (the object defines a local tanf that
 // calls the double tan and narrows the result), so include math_ext.h, not math.h.
-#pragma dont_inline on
 static f32 tanf(f32 x) {
     return tan(x);
 }
-#pragma dont_inline reset
 
 // .text:0x324 | 0x8770 | size: 0x35C
 void replace_disp(CameraId cameraId, void* param) {

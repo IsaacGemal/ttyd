@@ -99,8 +99,6 @@ inline Vec initializeVec(Vec* input) {
 // split (divide, then multiply) so the divide coalesces into the speed register.
 // `#pragma opt_propagation off` required: stops MWCC rematerialising the sin/cos coefficients per branch.
 #pragma opt_propagation off
-// `#pragma opt_lifetimes off` required: with lifetimes on the frame, stack homes and FPR colouring shift.
-#pragma opt_lifetimes off // with lifetimes on the frame, stack homes and FPR colouring shift
 void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 	f32 f0;
 	f32 f1;
@@ -359,7 +357,6 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		break;
 	}
 }
-#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 
 EffectEntry* effGonbabaBreathEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {

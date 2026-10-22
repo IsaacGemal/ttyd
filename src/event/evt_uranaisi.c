@@ -481,10 +481,6 @@ s32 uranaisi_data_make_next(const char* prefix, s32 type) {
     return count;
 }
 
-// opt_lifetimes off: one variable per local for the whole function, so `tmp` (the end-of-tag
-// flag, then the byte saved under the terminator) and `mbbpos` (then the table index) keep the
-// original's registers.
-#pragma opt_lifetimes off
 s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     s32 mbbpos;
     char label[64];
@@ -621,7 +617,6 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     return count;
 }
 
-// opt_lifetimes off: see uranaisi_data_make_starpiece.
 s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     s32 mbbpos;
     char label[64];
@@ -757,8 +752,6 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     }
     return count;
 }
-
-#pragma opt_lifetimes reset
 
 s32 uranaisi_ryokin_rtn(s32 idx) {
     if (idx != 0) {

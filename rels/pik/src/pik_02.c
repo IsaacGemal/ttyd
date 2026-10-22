@@ -360,9 +360,7 @@ static inline f32 hoshi_cos_approx(f32 angle) {
 }
 
 // hoshi_jump: retail spills the first-call d/t/scale through 4-byte stack slots and copies them out
-// with lwz/stw, and reads the 50.0 and 0.5 from the pool; opt_lifetimes off supplies the FPR colouring.
-#pragma opt_propagation off // needed: without it hoshi_jump 61.42%
-#pragma opt_lifetimes off
+// with lwz/stw, and reads the 50.0 and 0.5 from the pool.
 USER_FUNC(hoshi_jump) {
     EffectEntry* entry = (EffectEntry*)event->lwData[10];
     effStarStoneData* data = entry->userdata;
@@ -430,8 +428,6 @@ USER_FUNC(hoshi_jump) {
 #endif
     return EVT_RETURN_BLOCK;
 }
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
 
 EVT_BEGIN(evt_garnet)
     CALL(evt_mario_key_onoff, 0)

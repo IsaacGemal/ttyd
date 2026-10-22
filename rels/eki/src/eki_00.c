@@ -1757,7 +1757,6 @@ static inline f32 ekiCosfM(f32 rad) {
 // Per-frame update of every moamoa: hit checks against Mario and his partner, the jump/scatter state machine
 // (MoamoaPose.state), clamping into the room, then the animation frame update and the rider-delta limit.
 // voiceSfx is a union under MUST_MATCH so it is not copy-propagated (as yuu_01 fall_rtn): that puts it in r24 and `handled` in r25.
-#pragma inline_max_total_size(60000)
 // Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
 #pragma opt_propagation off
 // Keeps the inlined sin/cos argument in a callee-saved FPR instead of rematerialising it per branch.
@@ -2275,7 +2274,6 @@ static void ext_moamoa_main(void) {
 
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
-#pragma inline_max_total_size reset
 
 static void ext_moamoa_dispent(void) {
     if (wp->flags & 0x1) {

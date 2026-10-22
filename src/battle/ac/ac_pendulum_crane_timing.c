@@ -51,8 +51,6 @@ typedef struct PendulumCraneTimingWork {
 #pragma defer_codegen off
 #endif
 
-// don't_inline: the original calls _get_angle_hp/_get_angle_rate (bl) instead of inlining them.
-#pragma dont_inline on
 s32 _get_angle_hp(s32 hp) {
 	HpAngle* entry = _hp_tbl;
 
@@ -81,7 +79,6 @@ s32 _get_angle_rate(f32 angle) {
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// don't_inline: the original keeps actionCommandDisp as its own local function (bl from battleAcDisp)
 // 100%: two Vec locals are needed -- the original keeps the first icon's temp at sp+0x14 and the second at
 // sp+0x8. The f32 declaration order below is what makes baseX land in f25 (shared with yBottom), matching the
 // original's saved-register set.
@@ -133,7 +130,6 @@ static void actionCommandDisp(f32 x, f32 y) {
 	v2.y = 45.0f + y;
 	iconDispGx(1.0f, &v2, 0x10, 0x96);
 }
-#pragma dont_inline reset
 
 void battleAcDelete_PendulumCraneTiming(BattleWork* work) {
 	if (!(work->actionCommands.field_0x30 & 1)) {

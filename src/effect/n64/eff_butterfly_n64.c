@@ -223,9 +223,6 @@ static inline Vec butterflyMakeVec(f32 x, f32 y, f32 z) {
     return temp;
 }
 
-// opt_common_subs off required: with CSE on MWCC reuses the float_0_8041eb80 result
-// register for the later sqrtf `x > 0.0f` test (f2 cached vs the target's fresh f0).
-#pragma opt_common_subs off
 // The position components are loaded into scalars before the delta math; with the direct
 // data->position member form MWCC assigns the x/z temporaries to the opposite FPRs (f5/f3).
 void effButterflyMain(EffectEntry* effect) {
@@ -305,7 +302,6 @@ void effButterflyMain(EffectEntry* effect) {
     data->position.z += data->velocity.z;
     dispEntry(CAMERA_3D, dispCalcZ(&prevPosition), 1, effButterflyDisp, effect);
 }
-#pragma opt_common_subs reset
 
 #ifdef MUST_MATCH
 static inline GXColor butterflyColor(u8 v) {

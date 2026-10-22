@@ -342,7 +342,6 @@ static void rankingInit(void) {
     rankingControll();
 }
 
-#pragma dont_inline on
 static void rankingExit(void) {
     s32 i;
     s32 j;
@@ -360,7 +359,6 @@ static void rankingExit(void) {
     }
     _mapFree(rank_wp->entries);
 }
-#pragma dont_inline reset
 
 static USER_FUNC(evt_rankingReInit) {
     rankingExit();
@@ -387,8 +385,6 @@ USER_FUNC(unk_tou2_00004b50) {
     return EVT_RETURN_DONE;
 }
 
-// dont_inline: insert is called from rankingControll and must stay a real call
-#pragma dont_inline on
 static void insert(s32* arr, s32 n, s32 from, s32 to) {
     s32 i;
 
@@ -406,7 +402,6 @@ static void insert(s32* arr, s32 n, s32 from, s32 to) {
         arr[to] = tmp;
     }
 }
-#pragma dont_inline reset
 
 static void rankingControll(void) {
     s32 above[32];
@@ -979,8 +974,6 @@ USER_FUNC(evt_tou_set_rule_result_28_text_355C) {
     return EVT_RETURN_DONE;
 }
 
-// dont_inline: printRanking is called from evt_tou_get_next_match and must stay a real call
-#pragma dont_inline on
 static void printRanking(void) {
     s32 i;
 
@@ -988,7 +981,6 @@ static void printRanking(void) {
     for (i = 0; i < rank_wp->count; i++) {
     }
 }
-#pragma dont_inline reset
 
 static void disp_proc(CameraId cameraId, void* param) {
     FighterData* dt;
@@ -1167,13 +1159,10 @@ static USER_FUNC(evt_tou_print_ranking) {
     return EVT_RETURN_BLOCK;
 }
 
-// dont_inline: atan2f wraps atan2 and must stay a real call
-#pragma dont_inline on
 f32 atan2f(f32 y, f32 x) {
     return atan2(y, x);
 }
 
-// dont_inline: camGetRy is called from tou_champion_belt and must stay a real call
 static f32 camGetRy(void) {
     CameraEntry* cam = camGetPtr(CAMERA_3D);
     f32 ry =
@@ -1184,7 +1173,6 @@ static f32 camGetRy(void) {
     }
     return ry;
 }
-#pragma dont_inline reset
 
 // 100%: reusing `&handle->userdata` fixes the event/npc callee-saved swap, and the first branch reads the camera
 // straight from camGetPtr (no `cam` local) so the sum lands in f1 as in the original (permuter, 2026-10-05).

@@ -89,11 +89,6 @@ static inline f32 effStarPointCosf(f32 rad) {
     return v;
 }
 
-// opt_lifetimes off keeps `rad` and the inlines' locals as single webs (on, the webs split and the
-// constants land in other FPRs); opt_propagation off keeps the inlines' `b`/`one` as hoisted locals
-// instead of folding them back into literal loads at each use.
-#pragma opt_lifetimes off
-#pragma opt_propagation off
 EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     s32 delay;
     EffectEntry* entry;
@@ -135,8 +130,6 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 
     return entry;
 }
-#pragma opt_propagation reset
-#pragma opt_lifetimes reset
 
 void effStarPointMain(EffectEntry* effect) {
     Vec position;

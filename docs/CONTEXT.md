@@ -91,6 +91,9 @@ current version. Update it here when a new chapter changes one. The working deta
   pragma stays only if the object needs it, with a one-line reason (`// needed: without it FN X%`); cleanup never adds
   one. Never `#pragma scheduling <cpu number>`: this mwcceppc loops forever on it. ([pragma policy][14],
   [hack review][15], [pragma removal][16], [incident][8])
+- Where every scoped pair of one kind in a file can go with one flag on its Object line (`-inline noauto`, `-O4,s`,
+  `-pragma "opt_X off"`, or an inline limit such as `-pragma "inline_max_size(N)"`, as TWW/TP/AC do) and the object
+  stays identical, the flag replaces them; a flag that holds for only part of a file isn't added. ([file flags][39])
 
 **MUST_MATCH and structural fakes**
 - Code that exists only to reproduce the original bytes goes under `#ifdef MUST_MATCH`, the natural form under `#else`.
@@ -216,6 +219,7 @@ current version. Update it here when a new chapter changes one. The working deta
 [36]: CONTEXT-matching.md#wave-12-the-metrowerks-runtime-libraries-2026-09-27-claude-opus-55-agents-deepseek-v41-flash-reviews-claude-opus-55-x3
 [37]: CONTEXT-matching.md#grind-63-ttyd-refs-the-shared-read-only-reference-decomps-2026-10-01-claude-sonnet-55-ttyd-claude-3
 [38]: #must_match-guarding-made-consistent-across-the-tree-2026-10-21-claude-opus-55-n9-q-o-consist
+[39]: #whole-file-compiler-settings-moved-to-configurepy-2026-10-22-isaac-done-by-claude-opus-55-n9-q-o-flags
 
 ## Parked ideas
 
@@ -6058,3 +6062,70 @@ Precedent: Wind Waker writes 84 such literals and Twilight Princess 113.
 - **Next:** about 210 candidate files remain (n64 effects, other effects, battle/party, drivers, RELs). An
   interrupted six-agent sweep left committed but unreviewed work in the tower's `~/ttyd-src/.claude/worktrees/agent-*`
   branches; review those before redoing them.
+## Whole-file compiler settings moved to configure.py (2026-10-22, Isaac; done by Claude Opus 5.5, n9-q-o-flags)
+
+Task (Isaac, after checking precedent): where one per-file compiler setting replaces a file's scoped pragma pairs, put the
+setting on the file's `Object(...)` line and remove the pairs. Wind Waker sets `-inline noauto` per object and
+`-pragma "opt_propagation off"` per library; Twilight Princess sets `-inline noauto` per library and
+`-pragma "nosyminline on"` per object; Animal Crossing sets `-O4,s` per object and even `-pragma "scheduling 7400"`
+per object. The rule: a flag goes on an Object line only if the whole object compiles identically with it, and every
+pragma line of the kind it replaces is removed (other kinds in the same file stay unless their own flag also holds).
+
+- **Method.** An untracked harness (build/fl/ in this worktree): survey.py takes every src/ and rels/ source with an
+  optimisation pragma (130 files; libs/ is protected and was left alone), and for every subset of the pragma kinds in
+  the file strips those lines and compiles a copy with each candidate flag (`-inline noauto`/`off`, `-O4,s`,
+  `-pragma "opt_X off"`, `-pragma "inline_max_size(N)"` over 19 values of N, `inline_max_total_size`, `inline_depth`,
+  `-O2`), using the object's own command line from build.ninja, then compares it with the baseline object
+  (tools/obj_equiv.py; every unmodified copy compared equal first). 2,055 compiles. A second pass over the 65 files that
+  still have pragmas (2,596 compiles, adding `-pragma "dont_inline on"`, `auto_inline off`, `opt_X on`, `-O4,p`, `-O3`,
+  `-O2,s`/`p` and noauto with the other -O level) found nothing more. Every commit: `build/G8MJ01/ok` recreated, every
+  changed object built under `configure.py --non-matching`, fncast_lint and local_prototypes clean, tools/ci.py PASS
+  with `--allow-configure --allow-pragma` (the tests step stubbed for the eight environment-only test_wave_launch
+  errors; with pyelftools supplied the rest of tools/tests passes).
+- **Applied (86 files, 86 Object lines; 274 optimisation pragma lines and one push/pop pair removed).**
+  - `-inline noauto`, replacing all 167 dont_inline lines in 46 files: ac_air_gauge, ac_pendulum_crane_timing,
+    ac_repeatedly, ac_repeatedly_lv, ac_shot_target, ac_signal_timing, ac_stick_rotate, ac_timing_a, battle_ac,
+    battle_actrecord, battle_audience_kinopio, battle_break_slot, battle_damage, battle_enemy_item, battle_event_cmd,
+    battle_icon, battle_information, battle_menu_disp, battle_pad, battle_seq_end, battle_status_effect,
+    battle_unit_event, sac_bakugame, sac_deka, sac_muki, sac_scissor, sac_suki, sac_zubastar, evt_npc, fadedrv,
+    eff_ripple_n64, koopa_motion, mario_kemuri, mariost, memory, mot_hip; RELs evt_lect_gon, gon_03, gon_11, rsh,
+    tou2, tou_03, unit_fire_bros, unit_wanawana, and the tou2 copies of the shared unit_hammer_bros and v2/unit_piders.
+    unit_hammer_bros's tik copy compiles identical with no flag (retail inlines the two target helpers there), so the
+    UNIT_DATA_SYM token-paste gate that scoped the pragma to tou2 went too. mario_hit's dont_inline pair went with its
+    inline_max_size flag (below).
+  - `-O4,s`, replacing all 16 optimize_for_size lines: ac_gauge_timing, ac_repeatedly_lv, ac_signal_timing,
+    ac_timing_wide, battle_ac, battle_ac_help (the rest of src/battle already builds `-O4,s`).
+  - `-pragma "opt_X off"`, 78 lines in 32 files. opt_common_subs: ac_monosiri_target, ac_shot_target, eff_funemizu,
+    eff_mist, eff_mugi, koopa_hit, eff_blow_n64, eff_breath_fire_n64, eff_butterfly_n64, eff_kemuri10_n64,
+    eff_kemuri4_n64, eff_magic3_n64, eff_rothammer_fail_n64, eff_small_star_n64, eff_thunderflare_n64, eff_vapor_n64.
+    opt_lifetimes: eff_gonbaba_breath, eff_starstone, eff_broken_barrier_n64, evt_sub, evt_uranaisi, gor_10, hei_10.
+    opt_propagation: eff_flame_n64, evt_lottery, evt_yuutitle, rsh_05. Both lifetimes and propagation: eff_starpoint,
+    evt_item, pik_02, tou_02. opt_loop_invariants: eff_pointget.
+  - Inline limits, 15 lines: mario_hit `-pragma "inline_max_size(600)"` (Isaac's lead: both its pairs go; N from 521 to
+    935 is identical, 1000, the old pragma's value, is not once the dont_inline pair goes; 600 is a pick inside the
+    range, not evidence); envdrv `inline_max_size(2000)` and evt_badgeshop `inline_max_size(160)`, the values their
+    pairs used (envdrv works from 1200 up, badgeshop from 140 to below 200); eki_00, rsh_05, rsh_06
+    `inline_max_total_size(60000)`; mri_puni `inline_depth(5)` (its push/pop went with it).
+  - Comments that only justified a removed pragma went (176 comment lines out, 13 rewritten in; mostly "dont_inline
+    keeps X a real `bl`"); mixed ones keep their other content; mario_hit's roll-probe and mri_puni's recursion
+    comments now name the unit's flag. docs/PRAGMAS_KEPT.md loses the 40 entries for the regions that went (16 of them
+    sin/cos family), with a note at its top.
+- **Counts** (tools/cleanup_index.py, 554ff9e6 -> this branch): index **28.914 -> 28.532** per kLOC (20148 -> 19874
+  weighted); opt_pragma 606 -> 332; every other category unchanged. Code lines 696,833 -> 696,546.
+- **Left, and why.** No per-file flag holds for: dont_inline in party, party_move, pmario_sound, mot_roll, battle_disp,
+  evtmgr, eki_00, rsh_00, rsh_05, rsh_06, end_unknown, unit_boss_black_peach and mri_puni (57 lines; retail auto-inlines
+  something else in each, e.g. battle_disp's btlDispAnimeSpeedReset); the remaining opt_propagation (103 lines),
+  opt_lifetimes (63), opt_common_subs (38), opt_dead_assignments (26) and opt_loop_invariants (4) pairs, where the
+  setting file-wide changes some other function; battle_sub's fp_contract pair (`-fp_contract off` moves code);
+  npcdrv's and eff_ripple_n64's optimization_level 2 (`-O2`, `-O3`, `-O2,s` and the pragma form all differ). Not in
+  scope: `#pragma pool_data` (346 lines, data layout) and `defer_codegen` (pool placement); libs/ (protected, SDK and
+  runtime sources).
+- **For a reviewer.** The flags are configure.py Object lines only; check the form against TWW's
+  (`'-pragma "opt_propagation off"'`). mario_hit's N is the one number here with no evidence behind it beyond the
+  range. The opt_* flags say the setting holds for every function in the file; for one-function effects that is the
+  same claim the pair made, for multi-function files (koopa_hit, evt_item, evt_sub, the RELs) it is a stronger one that
+  the build supports. Comment removals are the bulk of the diff; no code line changed apart from ac_timing_wide's
+  duplicate actionCommandDisp prototype (it sat inside the removed region) and the hammer_bros gate macros.
+- **Leads.** None of the remaining pragma kinds has a per-file flag; the next lever for them is per-function source
+  shapes (PRAGMAS_KEPT.md). A library-level `-pragma "pool_data off"`, if data layout comes into scope: 317 of the
+  pool_data lines are `off`.

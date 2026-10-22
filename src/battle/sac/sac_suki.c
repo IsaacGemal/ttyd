@@ -328,9 +328,6 @@ static inline GXColor make_tev_color(u8 flash) {
     return color;
 }
 
-// dont_inline: MWCC would otherwise inline main_button's switch into main_suki's loop
-// (the original keeps the bl).
-#pragma dont_inline on
 // .text:0xFE0 | 0x8024A900 | size: 0x114
 void main_button(s32 index) {
     SukiWork* work = get_ptr();
@@ -627,7 +624,6 @@ static void disp_3D_alpha(CameraId camera, void* param) {
 static SukiWork* get_ptr(void) {
     return (SukiWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
-#pragma dont_inline reset
 
 // .text:0x62C | 0x80249F4C | size: 0x2C
 static s32 start_game(EventEntry* event, BOOL isFirstCall) {

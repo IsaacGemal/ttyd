@@ -645,8 +645,6 @@ static inline u8 getAllOrNothing(BattleUnit* unit) {
     return unit->badgesEquipped.AllOrNothing;
 }
 
-// dont_inline: BattleCheckDamage calls this out of line in the original.
-#pragma dont_inline on
 s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part,
                             BattleWeapon* weapon, s32* damageCode, s32 flags) {
     s32 damage = 0;
@@ -682,7 +680,6 @@ s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnit
     }
     return damage;
 }
-#pragma dont_inline reset
 
 
 s32 _getSickStatusRate(BattleWeapon* weapon, s32 type) {
@@ -942,8 +939,6 @@ void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* o
     *out2 = param2;
 }
 
-// dont_inline: BattleSetStatusDamage calls this out of line
-#pragma dont_inline on
 u8 _getRegistStatus(BattleUnit* unit, s32 type) {
     BattleVulnerableStatus* vuln = unit->vulnStatus;
 
@@ -996,7 +991,6 @@ u8 _getRegistStatus(BattleUnit* unit, s32 type) {
         return 100;
     }
 }
-#pragma dont_inline reset
 
 
 // The stamp effect's two TEV colours: GX_TEVREG0 (r0, g0, b0) and GX_TEVREG1 (r1, g1, b1).
@@ -1466,8 +1460,6 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
 
 // The `s32 rate` plus `(s8)` casts reproduce the original `extsb r8,r3` / `cmpwi r8,0` (a plain s8
 // rate makes the GALE_FORCE test `extsb. r0,r8`). The jump-table reloc name differs; objdiff ignores it.
-// dont_inline: BattleCheckDamage calls this out of line in the original.
-#pragma dont_inline on
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags) {
     s32 work = 0;
@@ -1525,7 +1517,6 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
     }
     return work;
 }
-#pragma dont_inline reset
 
 // The original loads the 0.5f multiplier from its own .sdata2 symbol; MATCH_F32 keeps the compiler
 // from folding it into an anonymous pooled literal (see matching.h).
@@ -1615,8 +1606,6 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
     return 1;
 }
 
-// dont_inline: BattleCheckDamage calls this out of line in the original.
-#pragma dont_inline on
 s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
     if (unit->currentKind == UNIT_MARIO) {
         if (pouchCheckItem(ITEM_LIFE_SHROOM) > 0) {
@@ -1638,7 +1627,6 @@ s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
     }
     return 0;
 }
-#pragma dont_inline reset
 
 // The shapes here that reproduce the original's scheduling and block layout:
 //  - `damage = 0;` is a plain assignment placed after the `part` block (not an initializer); the original
@@ -1652,10 +1640,6 @@ s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
 //  - the second emergency-revival block does NOT clear `unit2->damagePattern`; only the first one does.
 //  - `((u32)flags & 0x100)` and the `(u32)work.damageCode/hitEventCode` casts give the original's `cmplwi`s.
 //  - the status-damage flag test is `flags & 0x40000000` (IBM bit 1), not `flags & 2`.
-//
-// The four helpers it calls (`BattleInitCounterPreCheckWork`, `_checkDamageCode_EmergencyRevival`,
-// `BattleCalculateFpDamage`, `BattleSetStatusDamageFromWeapon`) are defined earlier in this file and each
-// needs its `dont_inline` pragma so the original's real `bl`s survive.
 #ifdef MUST_MATCH
 // BattleCheckDamage's three literals. Declaring them here pools them at parse time, ahead of the i2f double
 // BattlePreCheckDamage pools, which is the original's .rodata order (zero_802eda80, then these, then the
@@ -2068,13 +2052,10 @@ void BattleAttackDeclareAll(BattleWork* wp) {
     sampling->selectIdx = 0;
 }
 
-// dont_inline: the original calls this out of line from BattleCheckDamage.
-#pragma dont_inline on
 void BattleInitCounterPreCheckWork(void* work) {
     memset(work, 0, 0x30);
     *(s32*)work = 1;
 }
-#pragma dont_inline reset
 
 
 

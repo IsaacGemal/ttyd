@@ -32,8 +32,6 @@ s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u
 __declspec(section ".sdata") GXColor unk_80422fc0;
 #pragma section ".sdata" ".sbss"
 
-// TODO: need to figure out better flags, since I've had to use dont_inline in a couple places, this
-// might just be -inline deferred? No auto
 #pragma pool_data on
 
 #ifdef __MWERKS__
@@ -1152,8 +1150,6 @@ USER_FUNC(evt_npc_homing_target) {
 // incoming f1, not the f31 copy the original compares. Case 11 must
 // be written as `(...) / 2.0f` (not `* 0.5f`): the divide-by-two becomes the original's
 // `fmuls f1, f1, f0`, while `* 0.5f` makes MWCC emit the operands the other way round.
-// dont_inline keeps this out of the other functions in the file; the original calls it with a
-// real `bl` (glide_position relies on that).
 // The original writes every case as an assignment to one function-scope `f32 result` with a
 // single `return result` after the switch (not a direct return per case): that is what makes
 // case 12 emit `frsp f0, f1; fmr f1, f0` (the cast temp lands in f0 and the long-lived result
@@ -1514,7 +1510,6 @@ USER_FUNC(evt_npc_set_camid) {
     npc->cameraId = camid;
     return EVT_RETURN_DONE;
 }
-#pragma dont_inline on
 
 f32 _get_target_dir(EventEntry* event, NpcEntry* npc, const char* target) {
     Vec targetPos;
@@ -1535,7 +1530,6 @@ f32 _get_target_dir(EventEntry* event, NpcEntry* npc, const char* target) {
     PSVECSubtract(&targetPos, &npcPos, &delta);
     return angleABf(0.0f, 0.0f, delta.x, delta.z);
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_get_target_dir) {
     s32* args = event->args;
@@ -1682,7 +1676,6 @@ USER_FUNC(evt_npc_facedirection_add) {
     evtSetValue(event, event->args[1], (s32)(b * sign + a));
     return EVT_RETURN_DONE;
 }
-#pragma dont_inline on
 
 NpcEntry* evtNpcNameToPtr(EventEntry* event, const char* name) {
     if (!strcmp(name, "me")) {
@@ -1751,7 +1744,6 @@ NpcEntry* evtNpcNameToPtr_NoAssert(EventEntry* event, const char* name) {
     }
     return npcNameToPtr_NoAssert(name);
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_npc_stop_for_event) {
     npcStopForEvent();
@@ -2035,7 +2027,6 @@ USER_FUNC(evt_npc_get_drop_flower) {
     }
     return EVT_RETURN_DONE;
 }
-#pragma dont_inline on
 
 void _npc_check_coin(NpcEntry* npc, s32* value) {
     *value += npc->btlCoinDropCount;
@@ -2056,7 +2047,6 @@ void _npc_check_coin_group(NpcEntry* npc, s32* value) {
     }
     _npc_check_coin(npc, value);
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_npc_get_drop_coin) {
     s32* args = event->args;
@@ -2353,7 +2343,6 @@ USER_FUNC(evt_npc_calc_score) {
     npcCalcScore(npc);
     return EVT_RETURN_DONE;
 }
-#pragma dont_inline on
 
 void _kamek_houki_kemuri(NpcEntry* npc, s32 arg1) {
     static u8 cnt;
@@ -2388,7 +2377,6 @@ void _kamek_houki_kemuri(NpcEntry* npc, s32 arg1) {
         }
     }
 }
-#pragma dont_inline reset
 
 USER_FUNC(evt_npc_kamek_move_position) {
     s32* args = event->args;

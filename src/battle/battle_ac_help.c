@@ -43,9 +43,6 @@ void BattleAcHelpMain(void) {
     }
 }
 
-// This function wants -O4,s (its stmw r30 prologue and signed div-by-2 only come out right with it);
-// the ledger replaces such pragmas with a file-level -O4,s.
-#pragma optimize_for_size on
 #ifdef MUST_MATCH
 // Build the waku colour in an inline so the caller's local and outgoing copy land in the original slots.
 static inline GXColor makeWakuColor(u8 alpha) {
@@ -99,4 +96,3 @@ void _ac_help_disp(CameraId camera, void* param) {
     FontDrawStart_alpha(alpha);
     FontDrawMessage((s32)x, (s32)float_neg148_80420d74 + (lines - 1) * 0x1D, msg);
 }
-#pragma optimize_for_size off

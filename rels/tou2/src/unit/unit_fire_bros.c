@@ -1086,7 +1086,6 @@ EVT_END()
 
 // deferred inlining emits these in reverse source order, so get_target is defined before get_next
 // to land get_next_target first in .text, matching the original.
-#pragma dont_inline on  // the original keeps these as real calls in fire_bros_nagemakuri_set_target, not inlined
 void fire_bros_get_target(s32* outUnit, s32* outPart) {
     BattleWork* wp = _battleWorkPointer;
     BattleSampling* sampling = &wp->sampling;
@@ -1112,6 +1111,5 @@ void fire_bros_get_next_target(s32* outUnit, s32* outPart) {
         *outPart = 0;
     }
 }
-#pragma dont_inline reset
 // clang-format on
 #pragma force_active off

@@ -115,7 +115,6 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-#pragma opt_common_subs off // without it MWCC reuses the compare's float_0 load across the marioGetPtr call, changing FPR allocation
 void effKemuri4Main(EffectEntry* effect) {
 	effKemuri4Data* data;
 	Vec position;
@@ -176,7 +175,6 @@ void effKemuri4Main(EffectEntry* effect) {
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 1, effKemuri4Disp, effect);
 	}
 }
-#pragma opt_common_subs on
 
 void effKemuri4Disp(CameraId camId, void* param) {
 	EffectEntry* effect;

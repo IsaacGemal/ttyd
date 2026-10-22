@@ -322,8 +322,6 @@ void BtlActRec_JudgeRuleKeep(void) {
 
 #undef WP
 
-// dont_inline keeps these helpers out of the Judge functions: retail emits a real `bl` at each call.
-#pragma dont_inline on
 s32 _check_use(s32 arg) {
     BattleWork* wp = _battleWorkPointer;
     FieldBattleInfo* info = wp->fbatInfo;
@@ -387,4 +385,3 @@ u8 _check_turn_count_0_end(s32 flag) {
     }
     return info->ruleKeepResult;
 }
-#pragma dont_inline reset

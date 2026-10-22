@@ -102,7 +102,6 @@ static inline f32 sqrtf(f32 x) {
 
 // Each case builds its axis from a zero Vec literal and then writes the fields, so MWCC
 // emits one .rodata zero Vec per case (the original's rodata has four, one shared with Main).
-#pragma opt_common_subs off // original reloads float_0 in each sqrt block rather than CSEing it
 void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f32 dirY, f32 dirZ) {
     static f32 kaiten;
     EffectEntry* effect;
@@ -250,7 +249,6 @@ void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f
 
     return effect;
 }
-#pragma opt_common_subs reset
 
 // MWCC's default lifetime analysis coalesces the cosine accumulator into the square's
 // register (f2) instead of f5; opt_lifetimes off restores the original colouring. Each
