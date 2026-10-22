@@ -168,8 +168,8 @@ current version. Update it here when a new chapter changes one. The working deta
   [cleanup guide][25])
 - Code from the CC0/MIT reference decomps (`~/ttyd-refs`) may be reused when the report or PR names the project and
   file; never from an unlicensed project. ([Wave 12][36], [ttyd-refs][37])
-- `tools/cleanup_index.py` (placeholder and address names, raw offsets, function-pointer casts and match hacks, weighted
-  per kLOC) is the cleanup scoreboard; quote it before and after each change. `docs/CLEANUP_GUIDE.md` holds the cleanup
+- `tools/cleanup_index.py` (placeholder and address names, raw offsets, Melee's pointer-retype families, function-pointer
+  casts and match hacks, weighted per kLOC) is the cleanup scoreboard; quote it before and after each change. `docs/CLEANUP_GUIDE.md` holds the cleanup
   rules: raw offsets first, then placeholder names, retypes, and match hacks last; cleanup never adds a hack site.
   ([cleanup index][12], [cleanup guide][25], [review backlog][13])
 
@@ -6021,3 +6021,21 @@ their own .c files (headers through a private include overlay, applied by the or
   functions could take f32*. EventEntry 0x84 is a fourth userdata word (gor_03 writes it through a pun, muj reads
   userdataf[3] past a [3] array). A separate local holding a call result can be what keeps a named field from
   matching: fold it before keeping a raw offset.
+
+## Cleanup index counts Melee's pointer-retype families (2026-10-22, Isaac; written up by Claude Opus 5.5, n9-q-idxmelee)
+
+Isaac asked for the index to cover the categories Melee's cleanup index treats as important. Ours already had raw
+offsets (Melee's cast+offset, cast+index and raw-offset), goto, MUST_MATCH, pragmas and inline asm, but not the
+pointer retypes, which are Melee's largest families. `tools/cleanup_index.py` now counts them, written here from
+Melee's category list (none of its code): struct_ptr_cast (1), prim_ptr_cast (1, `void*` and `char*` included as
+Melee counts them), deref_cast (2), ptr_to_int (1), abs_address (2), pad_stack (1) and longjmp (2). The report also
+prints the Melee-family site total, unweighted and without names, for comparing with Melee's own index.
+
+- Calibration against Melee's script run unmodified over the same tree (2433c1fc): struct casts 2,708 vs 2,561,
+  primitive casts 2,269 vs 1,875, deref casts 1,180 vs 1,257, ptr-to-int 2,694 vs 2,242. `(s32)"name"` arguments in
+  event scripts are not counted: the script format stores every argument as s32, so they are data shape, not debt
+  (counting them gave 9,184 ptr-to-int sites). Pragmas stay counted as optimisation pragmas only (606); Melee's
+  script counts every pragma line, `#pragma once` included (2,873 here).
+- The headline index on main went 14.471 -> 28.914 per kLOC under the new definition; compare numbers only within one
+  definition. Melee-family sites on main: 10,696. Melee's own index on Melee (f0cdbb0a): 5,718 sites.
+
