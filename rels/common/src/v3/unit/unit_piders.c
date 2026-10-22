@@ -450,15 +450,6 @@ static EVT_BEGIN(dmg_first_attack_pos)
     RETURN
 EVT_END()
 
-// Colour word (opaque white; the alpha byte is filled in per frame by piders_draw_yarn_sub).
-const GXColor dat_mri_00026be0 = {0xFF, 0xFF, 0xFF, 0x00};
-
-static inline GXColor piders_getMatColor(PidersYarnWork* yarn) {
-    GXColor color = dat_mri_00026be0;
-    color.a = yarn->field_0x18;
-    return color;
-}
-
 static void piders_draw_yarn_sub(CameraId cameraId, void* param) {
     PidersYarnWork* yarn = param;
     CameraEntry* camera;
@@ -470,7 +461,7 @@ static void piders_draw_yarn_sub(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetNumChans(1);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
-    GXSetChanMatColor(GX_COLOR0A0, piders_getMatColor(yarn));
+    GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, yarn->field_0x18 });
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
     GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);

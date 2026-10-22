@@ -41,8 +41,6 @@ extend_data(13,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-const GXColor dat_usu_00006438 = {0x00, 0x00, 0x00, 0xFF};
-const GXColor dat_usu_0000643c = {0x4D, 0x09, 0x52, 0xFF};
 static void callback(MapTevCallback* param) {
     s32 stage = param->tevStage;
     s32 texMap = param->texMap;
@@ -50,10 +48,10 @@ static void callback(MapTevCallback* param) {
     s32 numIndStage = param->numIndStage;
 
     if (marioGetPtr()->flags & MARIO_FLAG_BG_MODE) {
-        GXSetTevColor(GX_TEVREG0, dat_usu_00006438);
+        GXSetTevColor(GX_TEVREG0, (GXColor){0x00, 0x00, 0x00, 0xFF});
     }
     else {
-        GXSetTevColor(GX_TEVREG0, dat_usu_0000643c);
+        GXSetTevColor(GX_TEVREG0, (GXColor){0x4D, 0x09, 0x52, 0xFF});
     }
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
     GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
