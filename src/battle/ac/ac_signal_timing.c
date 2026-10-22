@@ -51,13 +51,10 @@ s32 _get_ok_frame_range(s32 idx) {
     }
 }
 
-// Required: without this pragma the callee-saved allocation rotates (the SFX pointers drop from
-// r31-r28 to r25-r28) and the function falls to ~95%. The rest of the shape is load-bearing too: the
-// `cont`/`pressed` resets at the top of the do/while, the selection `while (!found)` loop with
+// The shape is load-bearing: the `cont`/`pressed` resets at the top of the do/while, the selection `while (!found)` loop with
 // `unique = 1` after the `irand` call, the `switch`es for the range and in-window tests, the
 // `acParams[0] + acParams[6]` association, and reading `bd->curSignal` directly at each
 // `bd->states[...]` index (a cached `idx` makes MWCC keep it in a register and miss).
-#pragma optimize_for_size on // needed: without it battleAcMain_SignalTiming 95.49%
 #ifdef MUST_MATCH
 // The target's string pool is PI,PONE,OK,NG while its four address loads in the entry block run
 // NG,PI,PONE,OK. Reassigning after the initializers gives that emission order; the initializers
@@ -346,7 +343,6 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
 #ifdef MUST_MATCH
 #pragma opt_dead_assignments reset
 #endif
-#pragma optimize_for_size reset
 s32 battleAcResult_SignalTiming(BattleWork* work) {
     return work->actionCommands.result;
 }
@@ -402,10 +398,6 @@ void battleAcDelete_SignalTiming(BattleWork* work) {
 // reloads them each pass). A volatile copy keeps the load in the loop; the non-volatile reads
 // of the other vectors are direct source-object reads.
 
-// optimize_for_size: the original actionCommandDisp is size-optimized (its frame and register
-// colouring only match at this level); every other function in the file matches at the default
-// -O4,p, so the pragma is scoped to just this function.
-#pragma optimize_for_size on
 // The assignment order below (work, ac, camGetPtr, num, bd, count) is what makes MWCC colour
 // work=r31, bd=r28, num=r27, count=r26 as the original; every zero vector is read directly by
 // symbol and the offset expressions are inlined in the icon loops so the multiply lands where
@@ -619,5 +611,4 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     }
 }
-#pragma optimize_for_size reset
 

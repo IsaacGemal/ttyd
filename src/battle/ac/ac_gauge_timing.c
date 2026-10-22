@@ -73,8 +73,6 @@ typedef struct GaugeTimingWork {
 // Local to this file in the original (`.fn actionCommandDisp, local`).
 static void actionCommandDisp(f32 x, f32 y);
 
-// optimize_for_size: the original saves r28-r31 with `stmw` and keeps `work` in r29.
-#pragma optimize_for_size on
 // The default-case acParams[4]/100*field_0x08+50 conversion matches r4 (not r0) once the /100
 // constant is read plainly instead of through MATCH_F32's volatile (float_50 stays volatile).
 s32 battleAcMain_GaugeTiming(BattleWork* work) {
@@ -359,7 +357,6 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
     }
     return 1;
 }
-#pragma optimize_for_size reset
 s32 battleAcResult_GaugeTiming(BattleWork* work) {
     return work->actionCommands.result;
 }

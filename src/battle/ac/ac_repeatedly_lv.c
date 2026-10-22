@@ -385,10 +385,6 @@ void battleAcDelete_RepeatedlyLv(BattleWork* work) {
     BattleAcGaugeSeDelete();
 }
 
-// optimize_for_size: the original actionCommandDisp is size-optimized (the /7 is a real `divw`, not the
-// magic-multiply -O4,p emits, and the frame/allocator match only at this level). Other functions in the
-// file match at the default -O4,p, so the pragma is scoped to just this function.
-#pragma optimize_for_size on
 // The two-icon branches name the first `-225 + x` sum and compute the paired `70 + y` only after
 // `vec.x` is set. That order keeps `-225` in f0 across the sum (so the later `70.0f` load reloads f0)
 // and colours the sum f3; folding the sum into `vec.x` colours it f0 and `70` f3 instead.
@@ -578,7 +574,6 @@ static void actionCommandDisp(f32 x, f32 y) {
         iconNumberDispGx(mtx, num, 0, *(GXColor*)&dat_8041e7f4);
     }
 }
-#pragma optimize_for_size reset
 
 // Defined after the code that uses them, so the references stay bound to these names.
 __declspec(section ".sdata2") s32 dat_8041e7f0 = -1;
