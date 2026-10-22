@@ -370,11 +370,13 @@ void seq_mapChangeMain(SequenceWork* work) {
     }
 }
 
-// .sdata evt command table; the original keeps this before dir_str in the section.
-s32 key_off[10] = {
-    0x0002005B, (s32)evt_seq_wait,     0x00000002, 0x0001005B, (s32)evt_fade_end_wait,
-    0x0002005B, (s32)evt_mario_key_onoff, 0x00000001, 0x00000002, 0x00000001,
-};
+// .sdata script; the original keeps this before dir_str in the section.
+EVT_BEGIN(key_off)
+    CALL(evt_seq_wait, 2)
+    CALL(evt_fade_end_wait)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
 
 static const char* dir_str[8] = { "e", "ne", "n", "nw", "w", "sw", "s", "se" };
 

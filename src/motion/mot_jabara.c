@@ -59,9 +59,11 @@ typedef struct JabaraWork {
 #define JABARA_F32(sym) (sym)
 #endif
 
-// Local quake script table (`.sdata`), referenced by mot_jabara.
-static s32 quake_evt[8] = { 0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A80,
-                            (s32)0xF24A7A8F, 0xF0, 2, 1 };
+// Local quake script (`.sdata`), referenced by mot_jabara.
+static EVT_BEGIN(quake_evt)
+    CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.015f), 240)
+    RETURN
+EVT_END()
 
 #ifdef MUST_MATCH
 // Emit the real functions in retail order so their literals pool in that order.

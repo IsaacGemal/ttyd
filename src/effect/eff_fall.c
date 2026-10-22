@@ -101,10 +101,10 @@ __declspec(section ".sdata") u32 shibuki_dl_1_3[8] = {
 	0x98000625, 0x00042020, 0x00042126, 0x0004191D, 0x00051A27, 0x00061C1A,
 	0x00061B00, 0x00000000,
 };
-__declspec(section ".sdata") static u32 evt_shake[8] = {
-	0x0005005B, (u32)evt_cam_shake, 0x00000004, 0xF24A7A8A,
-	0xF24A7A8A, 0x0000012C, 0x00000002, 0x00000001,
-};
+__declspec(section ".sdata") static EVT_BEGIN(evt_shake)
+    CALL(evt_cam_shake, 4, FLOAT(0.01f), FLOAT(0.01f), 300)
+    RETURN
+EVT_END()
 
 
 // Full element-0 init, particle loop, and the type 0-8 switch bodies are reconstructed. The ternary is the

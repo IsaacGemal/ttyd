@@ -1186,245 +1186,290 @@ s32 winLectureCheck(void) {
     return 0;
 }
 
-// TODO: type
-s32 kime_pose[61] = {
-    0x0003005B, (s32)evt_party_nokotaro_get_status, 0x00000000, 0xFE363C80,
-    0x00020019, 0xFE363C80, 0x00000000, 0x00000002,
-    0x00000021, 0x0002005B, (s32)evt_mario_get_party, 0xFE363C80,
-    0x00010022, 0xFE363C80, 0x00010024, 0x00000000,
-    0x00010024, 0x00000001, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"PKR_I_1", 0x00010024, 0x00000002,
-    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PNK_I_1",
-    0x00010024, 0x00000003, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"I_1", 0x00010024, 0x00000004,
-    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PYS_I_1",
-    0x00010024, 0x00000005, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"PWD_I_1", 0x00010024, 0x00000006,
-    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PTR_I_1",
-    0x00010024, 0x00000007, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"PCH_I_1", 0x00000031, 0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(kime_pose)
+    CALL(evt_party_nokotaro_get_status, 0, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        RETURN
+    END_IF
+    CALL(evt_mario_get_party, LW(0))
+    SWITCH(LW(0))
+        CASE_EQUAL(0)
+        CASE_EQUAL(1)
+        CALL(evt_party_set_pose, 0, STRING("PKR_I_1"))
+        CASE_EQUAL(2)
+        CALL(evt_party_set_pose, 0, STRING("PNK_I_1"))
+        CASE_EQUAL(3)
+        CALL(evt_party_set_pose, 0, STRING("I_1"))
+        CASE_EQUAL(4)
+        CALL(evt_party_set_pose, 0, STRING("PYS_I_1"))
+        CASE_EQUAL(5)
+        CALL(evt_party_set_pose, 0, STRING("PWD_I_1"))
+        CASE_EQUAL(6)
+        CALL(evt_party_set_pose, 0, STRING("PTR_I_1"))
+        CASE_EQUAL(7)
+        CALL(evt_party_set_pose, 0, STRING("PCH_I_1"))
+    END_SWITCH
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 kime_pose2[61] = {
-    0x0003005B, (s32)evt_party_nokotaro_get_status, 0x00000000, 0xFE363C80,
-    0x00020019, 0xFE363C80, 0x00000000, 0x00000002,
-    0x00000021, 0x0002005B, (s32)evt_mario_get_party, 0xFE363C80,
-    0x00010022, 0xFE363C80, 0x00010024, 0x00000000,
-    0x00010024, 0x00000001, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"PKR_Y_1", 0x00010024, 0x00000002,
-    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PNK_Y_1",
-    0x00010024, 0x00000003, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"Y_1", 0x00010024, 0x00000004,
-    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PYS_Y_1",
-    0x00010024, 0x00000005, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"PWD_Y_1", 0x00010024, 0x00000006,
-    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PTR_Y_1",
-    0x00010024, 0x00000007, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"PCH_Y_1", 0x00000031, 0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(kime_pose2)
+    CALL(evt_party_nokotaro_get_status, 0, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        RETURN
+    END_IF
+    CALL(evt_mario_get_party, LW(0))
+    SWITCH(LW(0))
+        CASE_EQUAL(0)
+        CASE_EQUAL(1)
+        CALL(evt_party_set_pose, 0, STRING("PKR_Y_1"))
+        CASE_EQUAL(2)
+        CALL(evt_party_set_pose, 0, STRING("PNK_Y_1"))
+        CASE_EQUAL(3)
+        CALL(evt_party_set_pose, 0, STRING("Y_1"))
+        CASE_EQUAL(4)
+        CALL(evt_party_set_pose, 0, STRING("PYS_Y_1"))
+        CASE_EQUAL(5)
+        CALL(evt_party_set_pose, 0, STRING("PWD_Y_1"))
+        CASE_EQUAL(6)
+        CALL(evt_party_set_pose, 0, STRING("PTR_Y_1"))
+        CASE_EQUAL(7)
+        CALL(evt_party_set_pose, 0, STRING("PCH_Y_1"))
+    END_SWITCH
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 kime_pose_breed[15] = {
-    0x0003005B, (s32)evt_party_nokotaro_get_status, 0x00000000, 0xFE363C80,
-    0x00020019, 0xFE363C80, 0x00000000, 0x00000002,
-    0x00000021, 0x0003005B, (s32)evt_party_set_breed_pose, 0x00000000,
-    0x00000001, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(kime_pose_breed)
+    CALL(evt_party_nokotaro_get_status, 0, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        RETURN
+    END_IF
+    CALL(evt_party_set_breed_pose, 0, 1)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 kime_pose_famicom[105] = {
-    0x0003005B, (s32)evt_party_nokotaro_get_status, 0x00000000, 0xFE363C80,
-    0x00020019, 0xFE363C80, 0x00000000, 0x00000002,
-    0x00000021, 0x0002005B, (s32)evt_mario_get_party, 0xFE363C80,
-    0x00010022, 0xFE363C80, 0x00010024, 0x00000000,
-    0x00010024, 0x00000001, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"R_2", 0x00010024, 0x00000002,
-    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"R_3",
-    0x00010024, 0x00000003, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"R_13", 0x00010024, 0x00000004,
-    0x0002005B, (s32)party_color, 0xFE363C80, 0x00010022,
-    0xFE363C80, 0x00010024, 0x00000000, 0x0003005B,
-    (s32)evt_party_set_pose, 0x00000000, (s32)"R_5", 0x00010024,
-    0x00000001, 0x0003005B, (s32)evt_party_set_pose, 0x00000000,
-    (s32)"R_6", 0x00010024, 0x00000002, 0x0003005B,
-    (s32)evt_party_set_pose, 0x00000000, (s32)"R_7", 0x00010024,
-    0x00000003, 0x0003005B, (s32)evt_party_set_pose, 0x00000000,
-    (s32)"R_8", 0x00010024, 0x00000004, 0x0003005B,
-    (s32)evt_party_set_pose, 0x00000000, (s32)"R_9", 0x00010024,
-    0x00000005, 0x0003005B, (s32)evt_party_set_pose, 0x00000000,
-    (s32)"R_10", 0x00010024, 0x00000006, 0x0003005B,
-    (s32)evt_party_set_pose, 0x00000000, (s32)"R_11", 0x00000031,
-    0x00010024, 0x00000005, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"R_4", 0x00010024, 0x00000006,
-    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"R_12",
-    0x00010024, 0x00000007, 0x0003005B, (s32)evt_party_set_pose,
-    0x00000000, (s32)"R_15", 0x00000031, 0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(kime_pose_famicom)
+    CALL(evt_party_nokotaro_get_status, 0, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        RETURN
+    END_IF
+    CALL(evt_mario_get_party, LW(0))
+    SWITCH(LW(0))
+        CASE_EQUAL(0)
+        CASE_EQUAL(1)
+        CALL(evt_party_set_pose, 0, STRING("R_2"))
+        CASE_EQUAL(2)
+        CALL(evt_party_set_pose, 0, STRING("R_3"))
+        CASE_EQUAL(3)
+        CALL(evt_party_set_pose, 0, STRING("R_13"))
+        CASE_EQUAL(4)
+        CALL(party_color, LW(0))
+        SWITCH(LW(0))
+            CASE_EQUAL(0)
+            CALL(evt_party_set_pose, 0, STRING("R_5"))
+            CASE_EQUAL(1)
+            CALL(evt_party_set_pose, 0, STRING("R_6"))
+            CASE_EQUAL(2)
+            CALL(evt_party_set_pose, 0, STRING("R_7"))
+            CASE_EQUAL(3)
+            CALL(evt_party_set_pose, 0, STRING("R_8"))
+            CASE_EQUAL(4)
+            CALL(evt_party_set_pose, 0, STRING("R_9"))
+            CASE_EQUAL(5)
+            CALL(evt_party_set_pose, 0, STRING("R_10"))
+            CASE_EQUAL(6)
+            CALL(evt_party_set_pose, 0, STRING("R_11"))
+        END_SWITCH
+        CASE_EQUAL(5)
+        CALL(evt_party_set_pose, 0, STRING("R_4"))
+        CASE_EQUAL(6)
+        CALL(evt_party_set_pose, 0, STRING("R_12"))
+        CASE_EQUAL(7)
+        CALL(evt_party_set_pose, 0, STRING("R_15"))
+    END_SWITCH
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 evt_item_use[240] = {
-    0x00010063, 0x00000000, 0x0001005B, (s32)evt_mario_normalize,
-    0x0001005B, (s32)party_force_slit_off, 0x00010009, 0x00000001,
-    0x0001005B, (s32)evt_mario_adjust_dir, 0x0002005B, (s32)evt_mario_set_pose,
-    (s32)"M_S_1", 0x0001005E, (s32)&kime_pose_breed, 0x00020018,
-    0xFE363C8B, 0x00000000, 0x0005005B, (s32)evt_mario_get_pos,
-    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00020035, 0xFE363C81, 0x00000032, 0x0009005B,
-    (s32)evt_item_entry, (s32)"menu_dummy", 0xFE363C8A, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000011, 0xFFFFFFFF,
-    0x00000000, 0x00020035, 0xFE363C81, 0x0000000A,
-    0x000F005B, (s32)evt_eff, 0x00000000, (s32)"itemget",
-    0x0000000A, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_ITEM_MARIO_USE1", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x0002005B,
-    (s32)evt_mario_set_pose, (s32)"M_I_1", 0x0001000A, 0x000003E8,
-    0x0002005B, (s32)evt_item_delete, (s32)"menu_dummy", 0x0005005B,
-    (s32)evt_mario_get_pos, 0x00000000, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_ITEM_RECOVERY_SHINE1",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x000F005B, (s32)evt_eff64, 0x00000000, (s32)"stardust2_n64",
-    0x00000004, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000028, 0x00000028, 0x0000001E, 0x00000078,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0001000A, 0x00000578, 0x0002005B, (s32)evt_mario_set_pose,
-    (s32)"M_V_2", 0x0001005B, (s32)itemUseFunc, 0x0001000A,
-    0x000005DC, 0x0001005B, (s32)itemUseFunc2, 0x0001005B,
-    (s32)evt_mario_set_normal_pose, 0x00000002, 0x00000021, 0x0002005B,
-    (s32)evt_mario_get_party, 0xFE363C80, 0x00020018, 0xFE363C80,
-    0xFE363C8B, 0x0005005B, (s32)evt_party_get_pos, 0x00000000,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
-    0xFE363C81, 0x00000032, 0x0009005B, (s32)evt_item_entry,
-    (s32)"menu_dummy", 0xFE363C8A, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000011, 0xFFFFFFFF, 0x00000000,
-    0x00020035, 0xFE363C81, 0x0000000A, 0x000F005B,
-    (s32)evt_eff, 0x00000000, (s32)"itemget", 0x0000000A,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)"SFX_ITEM_MARIO_USE1", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x0002005B, (s32)famicom_check,
-    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000000,
-    0x0001005E, (s32)&kime_pose, 0x00000020, 0x0001005E,
-    (s32)&kime_pose_famicom, 0x00000021, 0x0001000A, 0x000003E8,
-    0x0002005B, (s32)evt_item_delete, (s32)"menu_dummy", 0x0005005B,
-    (s32)evt_party_get_pos, 0x00000000, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_ITEM_RECOVERY_SHINE1",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x000F005B, (s32)evt_eff64, 0x00000000, (s32)"stardust2_n64",
-    0x00000004, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000028, 0x00000028, 0x0000001E, 0x00000078,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0001000A, 0x00000578, 0x0002005B, (s32)famicom_check,
-    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000000,
-    0x0001005E, (s32)&kime_pose2, 0x00000020, 0x0001005E,
-    (s32)&kime_pose_famicom, 0x00000021, 0x0001005B, (s32)itemUseFunc,
-    0x0001000A, 0x000005DC, 0x0001005B, (s32)itemUseFunc2,
-    0x0001005E, (s32)&kime_pose_breed, 0x0001005B, (s32)evt_mario_set_normal_pose,
-    0x00000002, 0x00000021, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(evt_item_use)
+    SET_TYPE(0)
+    CALL(evt_mario_normalize)
+    CALL(party_force_slit_off)
+    WAIT_FRAMES(1)
+    CALL(evt_mario_adjust_dir)
+    CALL(evt_mario_set_pose, STRING("M_S_1"))
+    CALL_CHILD(kime_pose_breed)
+    IF_INT_EQUAL(LW(11), 0)
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        ADD(LW(1), 50)
+        CALL(evt_item_entry, STRING("menu_dummy"), LW(10), LW(0), LW(1), LW(2), 17, -1, 0)
+        ADD(LW(1), 10)
+        CALL(evt_eff, 0, STRING("itemget"), 10, LW(0), LW(1), LW(2), 0, 0, 0, 0, 0, 0, 0, 0)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_ITEM_MARIO_USE1"), LW(0), LW(1), LW(2), 0)
+        CALL(evt_mario_set_pose, STRING("M_I_1"))
+        WAIT_MS(1000)
+        CALL(evt_item_delete, STRING("menu_dummy"))
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_ITEM_RECOVERY_SHINE1"), LW(0), LW(1), LW(2), 0)
+        CALL(evt_eff64, 0, STRING("stardust2_n64"), 4, LW(0), LW(1), LW(2), 40, 40, 30, 120, 0, 0, 0, 0)
+        WAIT_MS(1400)
+        CALL(evt_mario_set_pose, STRING("M_V_2"))
+        CALL(itemUseFunc)
+        WAIT_MS(1500)
+        CALL(itemUseFunc2)
+        CALL(evt_mario_set_normal_pose)
+        RETURN
+    END_IF
+    CALL(evt_mario_get_party, LW(0))
+    IF_INT_EQUAL(LW(0), LW(11))
+        CALL(evt_party_get_pos, 0, LW(0), LW(1), LW(2))
+        ADD(LW(1), 50)
+        CALL(evt_item_entry, STRING("menu_dummy"), LW(10), LW(0), LW(1), LW(2), 17, -1, 0)
+        ADD(LW(1), 10)
+        CALL(evt_eff, 0, STRING("itemget"), 10, LW(0), LW(1), LW(2), 0, 0, 0, 0, 0, 0, 0, 0)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_ITEM_MARIO_USE1"), LW(0), LW(1), LW(2), 0)
+        CALL(famicom_check, LW(0))
+        IF_INT_EQUAL(LW(0), 0)
+            CALL_CHILD(kime_pose)
+        ELSE
+            CALL_CHILD(kime_pose_famicom)
+        END_IF
+        WAIT_MS(1000)
+        CALL(evt_item_delete, STRING("menu_dummy"))
+        CALL(evt_party_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_ITEM_RECOVERY_SHINE1"), LW(0), LW(1), LW(2), 0)
+        CALL(evt_eff64, 0, STRING("stardust2_n64"), 4, LW(0), LW(1), LW(2), 40, 40, 30, 120, 0, 0, 0, 0)
+        WAIT_MS(1400)
+        CALL(famicom_check, LW(0))
+        IF_INT_EQUAL(LW(0), 0)
+            CALL_CHILD(kime_pose2)
+        ELSE
+            CALL_CHILD(kime_pose_famicom)
+        END_IF
+        CALL(itemUseFunc)
+        WAIT_MS(1500)
+        CALL(itemUseFunc2)
+        CALL_CHILD(kime_pose_breed)
+        CALL(evt_mario_set_normal_pose)
+        RETURN
+    END_IF
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 evt_diary_read[259] = {
-    0x00010063, 0x00000000, 0x0003005B, (s32)evt_party_cont_onoff,
-    0x00000000, 0x00000001, 0x00010009, 0x00000001,
-    0x0001005B, (s32)evt_mario_normalize, 0x0005005B, (s32)evt_msg_print,
-    0x00000000, (s32)"stg6_rsh_diary_01", 0x00000000, 0x00000000,
-    0x0003005B, (s32)evt_msg_select, 0x00000000, (s32)"stg6_rsh_diary_01_yn",
-    0x00020019, 0xFE363C80, 0x00000000, 0x0001005B,
-    (s32)evt_msg_continue, 0x0003005B, (s32)evt_party_cont_onoff, 0x00000000,
-    0x00000000, 0x00000002, 0x00000021, 0x0003005B,
-    (s32)evt_msg_print_add, 0x00000000, (s32)"stg6_rsh_diary_02", 0x0003005B,
-    (s32)evt_msg_select, 0x00000000, (s32)"stg6_rsh_diary_01_yn", 0x00020019,
-    0xFE363C80, 0x00000000, 0x0001005B, (s32)evt_msg_continue,
-    0x0003005B, (s32)evt_party_cont_onoff, 0x00000000, 0x00000000,
-    0x00000002, 0x00000021, 0x0003005B, (s32)evt_msg_print_add,
-    0x00000000, (s32)"stg6_rsh_diary_03", 0x0003005B, (s32)evt_msg_select,
-    0x00000000, (s32)"stg6_rsh_diary_01_yn", 0x00020019, 0xFE363C80,
-    0x00000000, 0x0001005B, (s32)evt_msg_continue, 0x0003005B,
-    (s32)evt_party_cont_onoff, 0x00000000, 0x00000000, 0x00000002,
-    0x00000021, 0x0001005B, (s32)evt_msg_continue, 0x0003005B,
-    (s32)evt_snd_bgmoff_f, 0x00000200, 0x000007D0, 0x0003005B,
-    (s32)evt_mario_dispflag_onoff, 0x00000001, 0x00000002, 0x0001005B,
-    (s32)evt_mario_adjust_dir, 0x0002005B, (s32)evt_mario_set_pose, (s32)"M_L_2",
-    0x0005005B, (s32)evt_msg_print, 0x00000000, (s32)"stg6_rsh_diary_04",
-    0x00000000, 0x00000000, 0x0002005B, (s32)evt_mario_set_pose,
-    (s32)"M_S_1", 0x0003005B, (s32)evt_npc_check, (s32)"\202\344\202\244\202\352\202\242",
-    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000000,
-    0x0003005B, (s32)evt_npc_entry, (s32)"\202\344\202\244\202\352\202\242", (s32)"c_ghost_k",
-    0x0005005B, (s32)evt_npc_set_position, (s32)"\202\344\202\244\202\352\202\242", 0x00000000,
-    0xFFFFFC18, 0x00000000, 0x0003005B, (s32)evt_npc_set_tribe,
-    (s32)"\202\344\202\244\202\352\202\242", (s32)"\202\344\202\244\202\352\202\242", 0x0003005B, (s32)evt_npc_set_anim,
-    (s32)"\202\344\202\244\202\352\202\242", (s32)"O_1", 0x0004005B, (s32)evt_npc_set_autotalkpose,
-    (s32)"\202\344\202\244\202\352\202\242", (s32)"O_2", (s32)"T_2", 0x00000021,
-    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"\202\344\202\244\202\352\202\242",
-    0x00040020, 0x0000006B, 0x00010005, 0x00000000,
-    0x0005005B, (s32)evt_sub_intpl_msec_init, 0x0000000B, 0x000000B4,
-    0x00000040, 0x000003E8, 0x00010003, 0x00000001,
-    0x0001005B, (s32)evt_sub_intpl_msec_get_value, 0x0006005B, (s32)evt_npc_set_color,
-    (s32)"\202\344\202\244\202\352\202\242", 0x000000FF, 0x000000FF, 0x000000FF,
-    0xFE363C80, 0x00010009, 0x00000001, 0x00020018,
-    0xFE363C81, 0x00000001, 0x00010004, 0x00000001,
-    0x00000021, 0x0005005B, (s32)evt_sub_intpl_msec_init, 0x0000000B,
-    0x00000040, 0x000000B4, 0x000003E8, 0x00010003,
-    0x00000002, 0x0001005B, (s32)evt_sub_intpl_msec_get_value, 0x0006005B,
-    (s32)evt_npc_set_color, (s32)"\202\344\202\244\202\352\202\242", 0x000000FF, 0x000000FF,
-    0x000000FF, 0xFE363C80, 0x00010009, 0x00000001,
-    0x00020018, 0xFE363C81, 0x00000001, 0x00010004,
-    0x00000002, 0x00000021, 0x00000006, 0x0000006D,
-    0x0003005B, (s32)evt_snd_bgmon, 0x00000200, (s32)"BGM_EVT_STG5_GHOST1",
-    0x0005005B, (s32)evt_mario_get_pos, 0x00000000, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
-    0x00000014, 0x00020035, 0xFE363C82, 0x00000014,
-    0x0005005B, (s32)evt_npc_set_position, (s32)"\202\344\202\244\202\352\202\242", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d,
-    0x000206A5, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x0001000A, 0x000000C8, 0x0002005B,
-    (s32)evt_mario_set_pose, (s32)"M_I_O", 0x0005005B, (s32)evt_msg_print,
-    0x00000000, (s32)"stg6_rsh_diary_05", 0x00000000, (s32)"\202\344\202\244\202\352\202\242",
-    0x0001000A, 0x0000012C, 0x0002005B, (s32)evt_snd_bgmoff,
-    0x00000200, 0x0000006B, 0x0003005B, (s32)evt_env_blur_on,
-    0x00000000, 0x00000000, 0x0000006D, 0x0003005B,
-    (s32)evt_snd_sfxon, 0x000206A2, 0xFE363C83, 0x0000006B,
-    0x0001005B, (s32)cam_r, 0x0000006D, 0x0001000A,
-    0x00000FA0, 0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000001,
-    0xFFFFFFFF, 0x00000258, 0xFFFFFFFF, 0xFFFFFFFF,
-    0x0004005B, (s32)evt_seq_set_seq, 0x00000005, 0x00000000,
-    0x00000000, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(evt_diary_read)
+    SET_TYPE(0)
+    CALL(evt_party_cont_onoff, 0, 1)
+    WAIT_FRAMES(1)
+    CALL(evt_mario_normalize)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_diary_01"), 0, 0)
+    CALL(evt_msg_select, 0, STRING("stg6_rsh_diary_01_yn"))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(evt_msg_continue)
+        CALL(evt_party_cont_onoff, 0, 0)
+        RETURN
+    END_IF
+    CALL(evt_msg_print_add, 0, STRING("stg6_rsh_diary_02"))
+    CALL(evt_msg_select, 0, STRING("stg6_rsh_diary_01_yn"))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(evt_msg_continue)
+        CALL(evt_party_cont_onoff, 0, 0)
+        RETURN
+    END_IF
+    CALL(evt_msg_print_add, 0, STRING("stg6_rsh_diary_03"))
+    CALL(evt_msg_select, 0, STRING("stg6_rsh_diary_01_yn"))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(evt_msg_continue)
+        CALL(evt_party_cont_onoff, 0, 0)
+        RETURN
+    END_IF
+    CALL(evt_msg_continue)
+    CALL(evt_snd_bgmoff_f, 512, 2000)
+    CALL(evt_mario_dispflag_onoff, 1, 2)
+    CALL(evt_mario_adjust_dir)
+    CALL(evt_mario_set_pose, STRING("M_L_2"))
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_diary_04"), 0, 0)
+    CALL(evt_mario_set_pose, STRING("M_S_1"))
+    CALL(evt_npc_check, STRING("\202\344\202\244\202\352\202\242"), LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        CALL(evt_npc_entry, STRING("\202\344\202\244\202\352\202\242"), STRING("c_ghost_k"))
+        CALL(evt_npc_set_position, STRING("\202\344\202\244\202\352\202\242"), 0, -1000, 0)
+        CALL(evt_npc_set_tribe, STRING("\202\344\202\244\202\352\202\242"), STRING("\202\344\202\244\202\352\202\242"))
+        CALL(evt_npc_set_anim, STRING("\202\344\202\244\202\352\202\242"), STRING("O_1"))
+        CALL(evt_npc_set_autotalkpose, STRING("\202\344\202\244\202\352\202\242"), STRING("O_2"), STRING("T_2"))
+    END_IF
+    CALL(evt_npc_flag_onoff, 1, STRING("\202\344\202\244\202\352\202\242"), 262176)
+    BEGIN_INLINE_EVENT
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_init, 11, 180, 64, 1000)
+            LABEL(1)
+            CALL(evt_sub_intpl_msec_get_value)
+            CALL(evt_npc_set_color, STRING("\202\344\202\244\202\352\202\242"), 255, 255, 255, LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 1)
+                GOTO(1)
+            END_IF
+            CALL(evt_sub_intpl_msec_init, 11, 64, 180, 1000)
+            LABEL(2)
+            CALL(evt_sub_intpl_msec_get_value)
+            CALL(evt_npc_set_color, STRING("\202\344\202\244\202\352\202\242"), 255, 255, 255, LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 1)
+                GOTO(2)
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG5_GHOST1"))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    ADD(LW(1), 20)
+    ADD(LW(2), 20)
+    CALL(evt_npc_set_position, STRING("\202\344\202\244\202\352\202\242"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, 132773, LW(0), LW(1), LW(2), 0)
+    WAIT_MS(200)
+    CALL(evt_mario_set_pose, STRING("M_I_O"))
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_diary_05"), 0, STRING("\202\344\202\244\202\352\202\242"))
+    WAIT_MS(300)
+    CALL(evt_snd_bgmoff, 512)
+    BEGIN_INLINE_EVENT
+        CALL(evt_env_blur_on, 0, 0)
+    END_INLINE_EVENT
+    CALL(evt_snd_sfxon, 132770, LW(3))
+    BEGIN_INLINE_EVENT
+        CALL(cam_r)
+    END_INLINE_EVENT
+    WAIT_MS(4000)
+    CALL(evt_fade_set_mapchange_type, 1, -1, 600, -1, -1)
+    CALL(evt_seq_set_seq, 5, 0, 0)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 evt_lecture_msg[96] = {
-    0x0001000A, 0x000003E8, 0x0005005B, (s32)evt_msg_print,
-    0x00000000, (s32)"lecture_badge_00", 0x00000000, 0x00000000,
-    0x0002005B, (s32)win_lecture_wait, 0x00000001, 0x0001005B,
-    (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print, 0x00000000,
-    (s32)"lecture_badge_01", 0x00000000, 0x00000000, 0x0002005B,
-    (s32)win_lecture_wait, 0x00000002, 0x0001005B, (s32)evt_msg_continue,
-    0x0005005B, (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_02",
-    0x00000000, 0x00000000, 0x0002005B, (s32)win_lecture_wait,
-    0x00000005, 0x0001005B, (s32)evt_msg_continue, 0x0005005B,
-    (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_03", 0x00000000,
-    0x00000000, 0x0002005B, (s32)win_lecture_wait, 0x00000006,
-    0x0001005B, (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print,
-    0x00000000, (s32)"lecture_badge_04", 0x00000000, 0x00000000,
-    0x0002005B, (s32)win_lecture_wait, 0x00000007, 0x0001005B,
-    (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print, 0x00000000,
-    (s32)"lecture_badge_05", 0x00000000, 0x00000000, 0x0002005B,
-    (s32)win_lecture_wait, 0x00000008, 0x0001005B, (s32)evt_msg_continue,
-    0x0005005B, (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_06",
-    0x00000000, 0x00000000, 0x0002005B, (s32)win_lecture_wait,
-    0x00000009, 0x0001005B, (s32)evt_msg_continue, 0x0005005B,
-    (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_07", 0x00000000,
-    0x00000000, 0x0002005B, (s32)win_lecture_wait, 0x0000000A,
-    0x0001005B, (s32)evt_msg_continue, 0x0001000A, 0x000001F4,
-    0x0001005B, (s32)winLectureEnd, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(evt_lecture_msg)
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("lecture_badge_00"), 0, 0)
+    CALL(win_lecture_wait, 1)
+    CALL(evt_msg_continue)
+    CALL(evt_msg_print, 0, STRING("lecture_badge_01"), 0, 0)
+    CALL(win_lecture_wait, 2)
+    CALL(evt_msg_continue)
+    CALL(evt_msg_print, 0, STRING("lecture_badge_02"), 0, 0)
+    CALL(win_lecture_wait, 5)
+    CALL(evt_msg_continue)
+    CALL(evt_msg_print, 0, STRING("lecture_badge_03"), 0, 0)
+    CALL(win_lecture_wait, 6)
+    CALL(evt_msg_continue)
+    CALL(evt_msg_print, 0, STRING("lecture_badge_04"), 0, 0)
+    CALL(win_lecture_wait, 7)
+    CALL(evt_msg_continue)
+    CALL(evt_msg_print, 0, STRING("lecture_badge_05"), 0, 0)
+    CALL(win_lecture_wait, 8)
+    CALL(evt_msg_continue)
+    CALL(evt_msg_print, 0, STRING("lecture_badge_06"), 0, 0)
+    CALL(win_lecture_wait, 9)
+    CALL(evt_msg_continue)
+    CALL(evt_msg_print, 0, STRING("lecture_badge_07"), 0, 0)
+    CALL(win_lecture_wait, 10)
+    CALL(evt_msg_continue)
+    WAIT_MS(500)
+    CALL(winLectureEnd)
+    RETURN
+EVT_END()
 
 __declspec(section ".sdata2") const GXColor dat_8041dc90 = { 0xFF, 0xFF, 0xFF, 0xFF };
 __declspec(section ".sdata2") const GXColor dat_8041dc94 = { 0x55, 0x55, 0x55, 0xFF };
