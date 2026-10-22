@@ -1226,8 +1226,8 @@ static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f
 #pragma dont_inline reset
 
 // Matches retail. The sine/cosine coefficients hoist and colour like retail (the pik/evt_sub helper
-// shape and the two pragmas). Declaring the six Vec temporaries at function scope instead of
-// per-block is load-bearing: with them block-local the pragma pushes the frame to 0x130; at function
+// shape, opt_lifetimes off here and the unit's opt_propagation off). Declaring the six Vec temporaries at
+// function scope instead of per-block is load-bearing: with them block-local the frame grows to 0x130; at function
 // scope it is the target's 0xf0 and every stack slot lines up.
 // Reusing the parameter as the sine/cosine half-angle (`angle = halfpi - (angle - halfpi)`) colours
 // the reduced angle into the target's register. In the block whose cosine recomputes its argument,
