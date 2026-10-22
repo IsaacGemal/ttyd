@@ -750,10 +750,7 @@ static inline s32 partyGetFrontAttr(PartyEntry* party, f32 r) {
     return (hit != NULL) ? hitGetAttr(hit) : 0;
 }
 
-// opt_common_subs off: with it on MWCC's CSE costs an extra callee-saved register (stmw r24,
-// 8 regs); the target saves 7 (stmw r25). Same reason as homing_fly's pragma.
 #pragma opt_propagation off // keep the 1000.0f load after the ternary branch, as retail does
-#pragma opt_common_subs off
 // The floor probe's result in its own `fy` (declared last) gets retail's f24, and the ypos/y94 pair
 // declared in that order and assigned after the declarations gives the f1/f3 colouring.
 // Local probe radii keep the forward component first in the fused products.
@@ -765,14 +762,9 @@ void party_motion_homing_walk(PartyEntry* party) {
     f32 dist;
     f32 f;
     HitEntry* groundHit = NULL; // retail inits groundHit (r28), which partyHitIsBoxMobj reads even when the flags guard skips its assignment
-#ifdef MUST_MATCH
-    // MUST_MATCH: a signed copy of the footmark id for the two partyGetTargetDist3D calls; it changes
-    // the register allocation.
-    s32 sid;
-#endif
+    s32 id;
     MarioWork* mario;
     MarioWork* mm;
-    u32 id;
     HitEntry* hit;
     f32 speed;
     Vec v94;
@@ -817,9 +809,6 @@ void party_motion_homing_walk(PartyEntry* party) {
     f32 fy;
 
     id = partyGetFootmarkId(&party->flags);
-#ifdef MUST_MATCH
-    sid = id;
-#endif
     mario = party->playerPtr;
     if (party->field_8 & 0x2) {
         party->field_8 &= ~0x2;
@@ -954,11 +943,7 @@ void party_motion_homing_walk(PartyEntry* party) {
             v94 = marioGetPtr()->position;
         }
         v70 = party->position;
-#ifdef MUST_MATCH
-        f25 = partyGetTargetDist3D(sid, &v70);
-#else
         f25 = partyGetTargetDist3D(id, &v70);
-#endif
         if (f25 >= f31) {
             partySetTargetSpeed(party, f29);
         }
@@ -979,11 +964,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                 v58.y = py;
                 v58.z = pz;
                 v64 = v58;
-#ifdef MUST_MATCH
-                f25 = partyGetTargetDist3D(sid, &v64);
-#else
                 f25 = partyGetTargetDist3D(id, &v64);
-#endif
                 if (f25 >= f31) {
                     if (party->field_8 & 0x20000) {
                         f = 0.1f * (f25 - f30);
@@ -1100,10 +1081,18 @@ void party_motion_homing_walk(PartyEntry* party) {
                 tw = touch_wall_ct;
                 sincosf(&s2, &c2, ang);
                 {
+#ifdef MUST_MATCH
                     f32 radius;
+#endif
                     q2.targetPos = v4c;
+#ifdef MUST_MATCH
+                    // The assignment inside the product keeps 40.0f in one register for both uses.
                     q2.targetPos.x += s2 * (radius = 40.0f);
                     q2.targetPos.z += c2 * radius;
+#else
+                    q2.targetPos.x += s2 * 40.0f;
+                    q2.targetPos.z += c2 * 40.0f;
+#endif
                     q2.targetPos.y += tw;
                     q2.targetDistance = 1000.0f;
                     q2.targetDir = FV(vec3_802f3ec4, ((Vec){0.0f, -1.0f, 0.0f}));
@@ -1118,13 +1107,14 @@ void party_motion_homing_walk(PartyEntry* party) {
                     fy = -2000.0f;
                 }
                 if (fy > party->position.y) {
+#ifdef MUST_MATCH
                     f32 radius;
+#endif
                     angle = partyToMovedir(party, party->field_110);
                     sincosf(&s3, &c3, angle);
 #ifdef MUST_MATCH
-                    // Dead store: never read, but it changes the object.
                     party->targetPos.x = s3 * (radius = 40.0f);
-                    party->targetPos.z = c3 * (radius = 40.0f);
+                    party->targetPos.z = c3 * radius;
 #else
                     party->targetPos.x = s3 * 40.0f;
                     party->targetPos.z = c3 * 40.0f;
@@ -1194,15 +1184,7 @@ void party_motion_homing_walk(PartyEntry* party) {
             if (!(attr & 0x200)) {
                 vA0.x = party->position.x;
                 vA0.z = party->position.z;
-#ifdef MUST_MATCH
-                {
-                    // The z address in a temp before the call: retail computes it ahead of the x address.
-                    f32* pz = &vA0.z;
-                    movePos(&vA0.x, pz, party->speed, party->dir);
-                }
-#else
                 movePos(&vA0.x, &vA0.z, party->speed, party->dir);
-#endif
             }
         }
     } else {
@@ -1220,13 +1202,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                 } else if (party->speed) {
                     vA0.x = party->position.x;
                     vA0.z = party->position.z;
-#ifdef MUST_MATCH
-                    // The 64-bit round trip keeps the z-address ahead of x during scheduling.
-                    // The final u32 cast restores the same pointer value on this 32-bit target.
-                    movePos(&vA0.x, (f32*)(u32)(s64)(s32)&vA0.z, party->speed, party->dir);
-#else
                     movePos(&vA0.x, &vA0.z, party->speed, party->dir);
-#endif
                 }
             } else {
                 party->field_4D++;
@@ -1321,12 +1297,6 @@ void party_motion_homing_walk(PartyEntry* party) {
 }
 #pragma opt_propagation reset
 
-// opt_common_subs off: with it on, MWCC's CSE duplicates the footmark id into a
-// second callee-saved register (7 saved regs / 0x140 frame); the target keeps only
-// 6 (0x130), so the original build had this subexpression sharing disabled.
-// opt_loop_invariants: without it MWCC colours the footmark id r30 and mario r29 (target is the reverse),
-// which then drives the whole function's register allocation.
-#pragma opt_loop_invariants off
 // opt_dead_assignments: keeps MWCC from dropping the `mario`/`id` copies that keep the target's GPR colouring.
 #pragma opt_dead_assignments off
 void party_motion_homing_fly(PartyEntry* party) {
@@ -1613,7 +1583,7 @@ void party_motion_homing_fly(PartyEntry* party) {
             if (party->flags2 & 0x8000) {
                 v = 1.0f;
             }
-            party->position.y = 0.05f * ((mario2->position.y + v) - party->position.y) + party->position.y;
+            party->position.y += 0.05f * ((mario2->position.y + v) - party->position.y);
         }
     }
     party->dir = angle;
@@ -1639,22 +1609,14 @@ void party_motion_homing_fly(PartyEntry* party) {
                 v = 1.0f;
             }
             y = fy + v;
-            party->position.y = 0.05f * (y - party->position.y) + party->position.y;
+            party->position.y += 0.05f * (y - party->position.y);
         }
         }
         party->noFloorCount = 0;
         if (party->speed) {
             p.x = party->position.x;
             p.z = party->position.z;
-#ifdef MUST_MATCH
-            {
-                // The z address in a temp before the call: retail computes it ahead of the x address.
-                f32* pz = &p.z;
-                movePos(&p.x, pz, party->speed, party->dir);
-            }
-#else
             movePos(&p.x, &p.z, party->speed, party->dir);
-#endif
         }
     } else {
         party->field_12C = hit;
@@ -1672,15 +1634,7 @@ void party_motion_homing_fly(PartyEntry* party) {
                     if (party->speed) {
                         p.x = party->position.x;
                         p.z = party->position.z;
-#ifdef MUST_MATCH
-                        {
-                            // The z address in a temp before the call: retail computes it ahead of the x address.
-                            f32* pz = &p.z;
-                            movePos(&p.x, pz, party->speed, party->dir);
-                        }
-#else
                         movePos(&p.x, &p.z, party->speed, party->dir);
-#endif
                     }
                 }
             } else {
@@ -1700,7 +1654,7 @@ void party_motion_homing_fly(PartyEntry* party) {
                     hitGetAttr(hit);
                 }
                 if (f25 > -2000.0f) {
-                    party->position.y = 0.05f * ((f25 + party->height) - party->position.y) + party->position.y;
+                    party->position.y += 0.05f * ((f25 + party->height) - party->position.y);
                 } else {
                     party->noFloorCount = party->noFloorCount + 1;
                     if (partyGetTargetDistYFrom(id, party->position.y) >= 1.0f) {
@@ -1735,8 +1689,6 @@ void party_motion_homing_fly(PartyEntry* party) {
     party_force_reset_outofscreen(party);
 }
 #pragma opt_dead_assignments reset
-#pragma opt_loop_invariants reset
-#pragma opt_common_subs reset
 
 void party_set_behind_dir(PartyEntry* party, f32 dir) {
     CameraEntry* camera = camGetPtr(CAMERA_3D);
@@ -2369,7 +2321,7 @@ void party_motion_jump(PartyEntry* party) {
     f32 angle;
     f32 f31, f30, f29;
     f32 f0, f1, f3, f4, f6, h;
-    u32 id;
+    s32 id;
     s32 writeId;
     s32 readId; // holds the call result so MWCC emits the target's `cmpw r3, r27` (see comment above)
 
@@ -2584,6 +2536,7 @@ void party_motion_jump2(PartyEntry* party) {
     f32 diff;
     f32 ff;
     HitEntry* hit;
+    s32 mot;
 
     if (party->field_8 & 0x2) {
         party->field_8 = (party->field_8 & ~0x2);
@@ -2653,12 +2606,12 @@ void party_motion_jump2(PartyEntry* party) {
                 party->flags = (party->flags & ~0x70);
                 party->flags = (party->flags | PARTY_FLAG_IS_GROUNDED);
                 party->jumpPara1 = 0.0f;
-#ifdef MUST_MATCH
-                // The ternary on a 0/1 test changes the object; the plain test is under #else.
-                partyChgMot(party, (distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z) < 5.0f) ? 0 : 1);
-#else
-                partyChgMot(party, !(distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z) < 5.0f));
-#endif
+                if (distABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z) < 5.0f) {
+                    mot = 0;
+                } else {
+                    mot = 1;
+                }
+                partyChgMot(party, mot);
             }
         }
         break;

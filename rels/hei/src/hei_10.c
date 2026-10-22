@@ -239,7 +239,6 @@ static void ext_main(void) {
     s32 i;
     ExtPose* pose;
     HeiExtEntry* entry;
-    Vec sfxOut;
     Vec sfxPos;
 
     mario = marioGetPtr();
@@ -284,14 +283,24 @@ static void ext_main(void) {
             b = frand();
             chbJumpRand2(pose, entry, px, py, pz, 2.0f, a, 1.0f, 1.2f, b, 0.8f, 0.8f, entry->state);
             if (rand() % 150 == 0) {
-                sfxPos = vec3_hei_00007a40;
+#ifdef MUST_MATCH
+                // The copy through t places the template on the stack where the original has it.
+                {
+                    Vec t = vec3_hei_00007a40;
 
+                    t.x = (*pose->matrix)[0][3];
+                    t.y = (*pose->matrix)[1][3];
+                    t.z = (*pose->matrix)[2][3];
+                    sfxPos = t;
+                }
+#else
+                sfxPos = vec3_hei_00007a40;
                 sfxPos.x = (*pose->matrix)[0][3];
                 sfxPos.y = (*pose->matrix)[1][3];
                 sfxPos.z = (*pose->matrix)[2][3];
+#endif
 #ifdef MUST_MATCH
-                sfxOut = sfxPos;
-                psndSFXOn_3D((const char*)(u32)sfx.p, &sfxOut);
+                psndSFXOn_3D((const char*)(u32)sfx.p, &sfxPos);
 #else
                 psndSFXOn_3D(sfx, &sfxPos);
 #endif

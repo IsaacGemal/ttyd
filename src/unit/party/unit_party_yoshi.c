@@ -1851,11 +1851,9 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_calc_param) {
 }
 
 
-// Matched. Two source shapes are load-bearing: the post-increment branch must be an `else { effect = ...;
-// if (...) }` nest so the scheduler hoists the event->userdata[2] load between the `cmpwi 0x10` and
-// `bge`, and the y computation needs the `t` temp plus `t = t` self-assignment (the evt_npc_set_ry_lr
-// trick) so the contracted fmadds keeps the original's f1,f2 operand order. `height` must stay an f32
-// local for the first block to match.
+// Matched. The post-increment branch must be an `else { effect = ...; if (...) }` nest so the scheduler
+// hoists the event->userdata[2] load between the `cmpwi 0x10` and `bge`. `height` must stay an f32 local
+// for the first block to match.
 USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
     s32 id;
     BattleWork* work;
@@ -1864,6 +1862,7 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
     EffectEntry* effect;
     f32 newSpeedY;
     f32 height;
+    f32 halfHeight;
     s32 val;
 
     work = _battleWorkPointer;
@@ -1936,21 +1935,9 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
         effect = (EffectEntry*)event->userdata[2];
         if (event->userdata[1] < 16) {
             ((effSweatData*)effect->userdata)->position.x = unit->mMoveCurrentPos.x;
-            height = BtlUnit_GetHeight(unit);
-#ifdef MUST_MATCH
-            // The `t` temp keeps the inner `0.5f * height` product in f2, and the self-assignment
-            // pins its load ahead of `mSizeMultiplier`'s so the contracted fmadds is f1,f2 as in the
-            // original (same trick as evt_npc_set_ry_lr). The natural form is under #else.
-            {
-                f32 t = 0.5f * height;
-                t = t;
-                ((effSweatData*)effect->userdata)->position.y =
-                    unit->mSizeMultiplier * t + unit->mMoveCurrentPos.y;
-            }
-#else
+            halfHeight = 0.5f * BtlUnit_GetHeight(unit);
             ((effSweatData*)effect->userdata)->position.y =
-                unit->mSizeMultiplier * (0.5f * height) + unit->mMoveCurrentPos.y;
-#endif
+                unit->mSizeMultiplier * halfHeight + unit->mMoveCurrentPos.y;
             ((effSweatData*)effect->userdata)->position.z = unit->mMoveCurrentPos.z;
         }
     }

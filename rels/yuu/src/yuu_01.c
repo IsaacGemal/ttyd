@@ -647,13 +647,9 @@ static void monte_disp(CameraId cameraId, void* param) {
     }
 }
 
-static inline f32 monte_rand(f32 min, f32 max) {
-    return min + (f32)irand((s32)(100.0f * (max - min))) / 100.0f;
-}
-
 // base->position.y = 0.0f is set before the do-while and base->field_0x10 = 1.0f after it, matching the target's store layout.
 // Reading the bounds straight from the montetable fields (no lo/hi copies) puts the z min/max pointers in the
-// target's r26/r27, and writing the z range back into `max` (then 100.0f * max, MUST_MATCH) keeps the subtraction in f1.
+// target's r26/r27.
 //
 // The sfx string needs a match-only shape (see the MUST_MATCH blocks below): a plain `const char*` assignment
 // makes MWCC materialise the pooled address through r0 and copy it (`addi r0, r4, str@l; mr r21, r0`) where the
@@ -715,7 +711,8 @@ static USER_FUNC(fall_rtn) {
                     min = montetable[tableIdx].xmax;
                     max = montetable[tableIdx].xmin;
                 }
-                base->position.x = monte_rand(min, max);
+                max -= min;
+                base->position.x = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
                 if (montetable[tableIdx].zmin < montetable[tableIdx].zmax) {
                     min = montetable[tableIdx].zmin;
                     max = montetable[tableIdx].zmax;
@@ -723,13 +720,8 @@ static USER_FUNC(fall_rtn) {
                     min = montetable[tableIdx].zmax;
                     max = montetable[tableIdx].zmin;
                 }
-#ifdef MUST_MATCH
-                // match-only: the in-place range makes MWCC keep it in max's register (f1)
-                max = max - min;
+                max -= min;
                 base->position.z = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
-#else
-                base->position.z = monte_rand(min, max);
-#endif
                 for (j = 0; j < pointIdx; j++) {
                     Vec tmp;
                     // steps back by the 0x38-byte field_0x8, not by the 0x44-byte entry

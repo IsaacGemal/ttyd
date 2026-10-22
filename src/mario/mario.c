@@ -475,16 +475,14 @@ yuu_false:
 		return FALSE;
 	}
 #ifdef MUST_MATCH
-	// The target materialises !marioChkKey() (cntlzw/srwi.) and branches
-	// `beq <FALSE>` with the TRUE block inlined after it; a plain
-	// `if (marioChkKey()) return FALSE; return TRUE;` folds to `srwi r3`.
-	// The comma assignment and the empty then keep the materialised compare.
-	{
-		BOOL notKey;
-		if (notKey = !marioChkKey(), !notKey) {
-		} else {
-			return TRUE;
-		}
+	// The target materialises !marioChkKey() (cntlzw/srwi.) and branches `beq <FALSE>` with the
+	// TRUE block inlined after it; a plain if/return folds to `srwi r3`. A two-way switch on the
+	// test keeps the materialised compare.
+	switch (!marioChkKey()) {
+	case 0:
+		break;
+	default:
+		return TRUE;
 	}
 	return FALSE;
 #else
