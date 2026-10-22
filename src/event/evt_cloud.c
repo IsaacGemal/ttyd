@@ -53,7 +53,10 @@ static CloudEntry cloud[16];
 static s8 cloud_once_flag;
 CloudEntry* cloud_p;
 
-static u32 evt_cloud_main_evt[] = { 0x0001005B, (u32)evt_cloud_main, 0x2, 0x1 };
+static EVT_BEGIN(evt_cloud_main_evt)
+    CALL(evt_cloud_main)
+    RETURN
+EVT_END()
 
 // The screen-space math needs the literal 0.5f and separate product temp to keep MWCC's FPR allocation
 // matching the original (t in f6, the screen size in f4, the 0.5f in f3); the named 0.5f

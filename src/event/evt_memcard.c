@@ -143,1112 +143,435 @@ s32 memcard_write(EventEntry* event, BOOL isFirstCall) {
 }
 
 // .data
-s32 evt_memcard_nosave[] = {
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_nosave_start",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno2",
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x00020032,
-    0xFAA2B580,
-    0x00000001,
-    0x00000021,
-    0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(evt_memcard_nosave)
+    CALL(evt_msg_print_add, 0, STRING("msg_nosave_start"))
+    CALL(evt_msg_select, 0, STRING("msg_mcard_yesno2"))
+    CALL(evt_msg_continue)
+    IF_INT_EQUAL(LW(0), 0)
+        SET_VALUE(GF(0), 1)
+    END_IF
+    RETURN
+EVT_END()
 
-s32 evt_memcard_check[] = {
-    0x00020032,
-    0xFAA2B580,
-    0x00000000,
-    0x00020032,
-    0xFBD3E28A,
-    0x00000000,
-    0x00010005,
-    0x00000000,
-    0x00020018,
-    0xFE363C8A,
-    0x00000000,
-    0x0005005B,
-    (s32)evt_msg_print,
-    0x00000000,
-    (s32)(void*)"msg_mcard_fileload_warnning",
-    0x00000000,
-    0x00000000,
-    0x0001005B,
-    (s32)memcard_load,
-    0x00000021,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020018,
-    0xFE363C8A,
-    0x00000001,
-    0x0001005B,
-    (s32)memcard_buf_reset,
-    0x00000021,
-    0x00010022,
-    0xFE363C80,
-    0x00010024,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_lord_finish",
-    0x00020032,
-    0xFAA2B580,
-    0x00000001,
-    0x00010024,
-    0xFFFFFFFD,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_nocard",
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x00010024,
-    0xFFFFFFFE,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_different_card",
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x0001002B,
-    0xFFFFFFF3,
-    0x0001002B,
-    0xFFFFFFFA,
-    0x0001005B,
-    (s32)memcard_slot_watch_begin,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000001,
-    (s32)(void*)"<scrl_auto><once_stop>",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_format",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno2",
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_format_alldelete",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno2",
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0002005B,
-    (s32)memcard_slot_changed,
-    0xFE363C80,
-    0x00020018,
-    0xFE363C80,
-    0x00000001,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_out_mcard_warnning",
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x00000030,
-    0x00000021,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_format_warning",
-    0x0001005B,
-    (s32)memcard_format,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_format_miss",
-    0x00020032,
-    0xFBD3E28A,
-    0x00000001,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_format_finish",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno",
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0002005B,
-    (s32)memcard_slot_changed,
-    0xFE363C80,
-    0x00020018,
-    0xFE363C80,
-    0x00000001,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_out_mcard_warnning",
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x00000030,
-    0x00000021,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_warning",
-    0x0001005B,
-    (s32)memcard_create,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_miss",
-    0x00020032,
-    0xFBD3E28A,
-    0x00000001,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_finish",
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x00020032,
-    0xFAA2B580,
-    0x00000001,
-    0x00000021,
-    0x00000020,
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x00000021,
-    0x00000021,
-    0x00000020,
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x00000021,
-    0x00000020,
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x00000021,
-    0x0000002E,
-    0x00010024,
-    0xFFFFFFFC,
-    0x0001005B,
-    (s32)memcard_slot_watch_begin,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno",
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0002005B,
-    (s32)memcard_slot_changed,
-    0xFE363C80,
-    0x00020018,
-    0xFE363C80,
-    0x00000001,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_out_mcard_warnning",
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x00000030,
-    0x00000021,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_warning",
-    0x0001005B,
-    (s32)memcard_create,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_miss",
-    0x00020032,
-    0xFBD3E28A,
-    0x00000001,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_finish",
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x00020032,
-    0xFAA2B580,
-    0x00000001,
-    0x00000021,
-    0x00000020,
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x00000021,
-    0x0001002B,
-    0xFFFFFFF8,
-    0x0001002B,
-    0xFFFFFFF7,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000001,
-    (s32)(void*)"<scrl_auto><once_stop>",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_nospace",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_gc_mcard_open",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno2",
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0001005B,
-    (s32)memcard_ipl,
-    0x00000020,
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x00000021,
-    0x0000002E,
-    0x00010024,
-    0xFFFFFFF6,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_different_savedata_2",
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x0000002A,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_damage",
-    0x0001005E,
-    (s32)evt_memcard_nosave,
-    0x00000031,
-    0x0002005B,
-    (s32)memcard_slot_watch_end,
-    0xFE363C80,
-    0x00020018,
-    0xFBD3E28A,
-    0x00000001,
-    0x00020032,
-    0xFBD3E28A,
-    0x00000000,
-    0x00020032,
-    0xFE363C8A,
-    0x00000001,
-    0x00000020,
-    0x00000007,
-    0x00000021,
-    0x00000006,
-    0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(evt_memcard_check)
+    SET_VALUE(GF(0), 0)
+    SET_VALUE(LF(10), 0)
+    LOOP(0)
+        IF_INT_EQUAL(LW(10), 0)
+            CALL(evt_msg_print, 0, STRING("msg_mcard_fileload_warnning"), 0, 0)
+            CALL(memcard_load)
+        END_IF
+        CALL(memcard_code, LW(0))
+        IF_INT_EQUAL(LW(10), 1)
+            CALL(memcard_buf_reset)
+        END_IF
+        SWITCH(LW(0))
+            CASE_EQUAL(0)
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_lord_finish"))
+            SET_VALUE(GF(0), 1)
+            CASE_EQUAL(-3)
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_nocard"))
+            CALL_CHILD(evt_memcard_nosave)
+            CASE_EQUAL(-2)
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_different_card"))
+            CALL_CHILD(evt_memcard_nosave)
+            CASE_OR_EQUAL(-13)
+            CASE_OR_EQUAL(-6)
+            CALL(memcard_slot_watch_begin)
+            CALL(evt_msg_print_add, 1, STRING("<scrl_auto><once_stop>"))
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_format"))
+            CALL(evt_msg_select, 0, STRING("msg_mcard_yesno2"))
+            IF_INT_EQUAL(LW(0), 0)
+                CALL(evt_msg_print_add, 0, STRING("msg_mcard_format_alldelete"))
+                CALL(evt_msg_select, 0, STRING("msg_mcard_yesno2"))
+                IF_INT_EQUAL(LW(0), 0)
+                    CALL(memcard_slot_changed, LW(0))
+                    IF_INT_EQUAL(LW(0), 1)
+                        CALL(evt_msg_print_add, 0, STRING("msg_out_mcard_warnning"))
+                        CALL_CHILD(evt_memcard_nosave)
+                        BREAK_SWITCH
+                    END_IF
+                    CALL(evt_msg_print_add, 0, STRING("msg_mcard_format_warning"))
+                    CALL(memcard_format)
+                    CALL(memcard_code, LW(0))
+                    IF_INT_NOT_EQUAL(LW(0), 0)
+                        CALL(evt_msg_print_add, 0, STRING("msg_mcard_format_miss"))
+                        SET_VALUE(LF(10), 1)
+                    ELSE
+                        CALL(evt_msg_print_add, 0, STRING("msg_mcard_format_finish"))
+                        CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data"))
+                        CALL(evt_msg_select, 0, STRING("msg_mcard_yesno"))
+                        IF_INT_EQUAL(LW(0), 0)
+                            CALL(memcard_slot_changed, LW(0))
+                            IF_INT_EQUAL(LW(0), 1)
+                                CALL(evt_msg_print_add, 0, STRING("msg_out_mcard_warnning"))
+                                CALL_CHILD(evt_memcard_nosave)
+                                BREAK_SWITCH
+                            END_IF
+                            CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_warning"))
+                            CALL(memcard_create)
+                            CALL(memcard_code, LW(0))
+                            IF_INT_NOT_EQUAL(LW(0), 0)
+                                CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_miss"))
+                                SET_VALUE(LF(10), 1)
+                            ELSE
+                                CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_finish"))
+                                CALL(evt_msg_continue)
+                                SET_VALUE(GF(0), 1)
+                            END_IF
+                        ELSE
+                            CALL_CHILD(evt_memcard_nosave)
+                        END_IF
+                    END_IF
+                ELSE
+                    CALL_CHILD(evt_memcard_nosave)
+                END_IF
+            ELSE
+                CALL_CHILD(evt_memcard_nosave)
+            END_IF
+            CASE_END
+            CASE_EQUAL(-4)
+            CALL(memcard_slot_watch_begin)
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data"))
+            CALL(evt_msg_select, 0, STRING("msg_mcard_yesno"))
+            IF_INT_EQUAL(LW(0), 0)
+                CALL(memcard_slot_changed, LW(0))
+                IF_INT_EQUAL(LW(0), 1)
+                    CALL(evt_msg_print_add, 0, STRING("msg_out_mcard_warnning"))
+                    CALL_CHILD(evt_memcard_nosave)
+                    BREAK_SWITCH
+                END_IF
+                CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_warning"))
+                CALL(memcard_create)
+                CALL(memcard_code, LW(0))
+                IF_INT_NOT_EQUAL(LW(0), 0)
+                    CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_miss"))
+                    SET_VALUE(LF(10), 1)
+                ELSE
+                    CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_finish"))
+                    CALL(evt_msg_continue)
+                    SET_VALUE(GF(0), 1)
+                END_IF
+            ELSE
+                CALL_CHILD(evt_memcard_nosave)
+            END_IF
+            CASE_OR_EQUAL(-8)
+            CASE_OR_EQUAL(-9)
+            CALL(evt_msg_print_add, 1, STRING("<scrl_auto><once_stop>"))
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_nospace"))
+            CALL(evt_msg_print_add, 0, STRING("msg_gc_mcard_open"))
+            CALL(evt_msg_select, 0, STRING("msg_mcard_yesno2"))
+            IF_INT_EQUAL(LW(0), 0)
+                CALL(memcard_ipl)
+            ELSE
+                CALL_CHILD(evt_memcard_nosave)
+            END_IF
+            CASE_END
+            CASE_EQUAL(-10)
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_different_savedata_2"))
+            CALL_CHILD(evt_memcard_nosave)
+            CASE_DEFAULT
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_damage"))
+            CALL_CHILD(evt_memcard_nosave)
+        END_SWITCH
+        CALL(memcard_slot_watch_end, LW(0))
+        IF_INT_EQUAL(LF(10), 1)
+            SET_VALUE(LF(10), 0)
+            SET_VALUE(LW(10), 1)
+        ELSE
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    RETURN
+EVT_END()
 
-s32 evt_memcard_start[] = {
-    0x00020032,
-    0xFE363C8A,
-    0xFE363C80,
-    0x00020035,
-    0xFE363C8A,
-    0x00000001,
-    0x0006005B,
-    (s32)evt_msg_print_insert,
-    0x00000000,
-    (s32)(void*)"msg_savefile_start",
-    0x00000000,
-    0x00000000,
-    0xFE363C8A,
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno",
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x00020032,
-    0xFD050F80,
-    0x00000001,
-    0x00000020,
-    0x00020032,
-    0xFD050F80,
-    0x00000000,
-    0x00000021,
-    0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(evt_memcard_start)
+    SET_VALUE(LW(10), LW(0))
+    ADD(LW(10), 1)
+    CALL(evt_msg_print_insert, 0, STRING("msg_savefile_start"), 0, 0, LW(10))
+    CALL(evt_msg_select, 0, STRING("msg_mcard_yesno"))
+    CALL(evt_msg_continue)
+    IF_INT_EQUAL(LW(0), 0)
+        SET_VALUE(GW(0), 1)
+    ELSE
+        SET_VALUE(GW(0), 0)
+    END_IF
+    RETURN
+EVT_END()
 
-s32 evt_memcard_delete[] = {
-    0x00020032,
-    0xFAA2B580,
-    0x00000000,
-    0x00020032,
-    0xFE363C8A,
-    0xFE363C80,
-    0x00020035,
-    0xFE363C8A,
-    0x00000001,
-    0x0006005B,
-    (s32)evt_msg_print_insert,
-    0x00000000,
-    (s32)(void*)"msg_savefile_delete",
-    0x00000000,
-    0x00000000,
-    0xFE363C8A,
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno2",
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_savefile_delete_warnning",
-    0x0002005B,
-    (s32)memcard_delete,
-    0xFE363C8A,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_savefile_delete_copy_miss",
-    0x00000020,
-    0x0004005B,
-    (s32)evt_msg_print_add_insert,
-    0x00000000,
-    (s32)(void*)"msg_savefile_delete_finish",
-    0xFE363C8A,
-    0x00000002,
-    0x00000021,
-    0x00000020,
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x00000002,
-    0x00000021,
-    0x0006005B,
-    (s32)evt_fade_entry,
-    0x00000018,
-    0x00000000,
-    0x00000000,
-    0x00000000,
-    0x00000000,
-    0x0001005B,
-    (s32)evt_fade_end_wait,
-    0x0006005B,
-    (s32)evt_fade_entry,
-    0x0000001A,
-    0x00000000,
-    0x00000000,
-    0x00000000,
-    0x00000000,
-    0x0001005B,
-    (s32)evt_fade_end_wait,
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x0001005B,
-    (s32)seqLoadPrepCardRecheck,
-    0x00020032,
-    0xFAA2B580,
-    0x00000001,
-    0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(evt_memcard_delete)
+    SET_VALUE(GF(0), 0)
+    SET_VALUE(LW(10), LW(0))
+    ADD(LW(10), 1)
+    CALL(evt_msg_print_insert, 0, STRING("msg_savefile_delete"), 0, 0, LW(10))
+    CALL(evt_msg_select, 0, STRING("msg_mcard_yesno2"))
+    IF_INT_EQUAL(LW(0), 0)
+        CALL(evt_msg_print_add, 0, STRING("msg_savefile_delete_warnning"))
+        CALL(memcard_delete, LW(10))
+        CALL(memcard_code, LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            CALL(evt_msg_print_add, 0, STRING("msg_savefile_delete_copy_miss"))
+        ELSE
+            CALL(evt_msg_print_add_insert, 0, STRING("msg_savefile_delete_finish"), LW(10))
+            RETURN
+        END_IF
+    ELSE
+        CALL(evt_msg_continue)
+        RETURN
+    END_IF
+    CALL(evt_fade_entry, 24, 0, 0, 0, 0)
+    CALL(evt_fade_end_wait)
+    CALL(evt_fade_entry, 26, 0, 0, 0, 0)
+    CALL(evt_fade_end_wait)
+    CALL(evt_msg_continue)
+    CALL(seqLoadPrepCardRecheck)
+    SET_VALUE(GF(0), 1)
+    RETURN
+EVT_END()
 
-s32 evt_memcard_copy[] = {
-    0x00020032,
-    0xFAA2B580,
-    0x00000000,
-    0x00020032,
-    0xFE363C8A,
-    0xFE363C80,
-    0x00020032,
-    0xFE363C8B,
-    0xFE363C81,
-    0x00020035,
-    0xFE363C8A,
-    0x00000001,
-    0x00020035,
-    0xFE363C8B,
-    0x00000001,
-    0x0003005B,
-    (s32)memcard_file_existance,
-    0xFE363C8B,
-    0xFE363C80,
-    0x00020018,
-    0xFE363C80,
-    0x00000001,
-    0x0006005B,
-    (s32)evt_msg_print_insert,
-    0x00000000,
-    (s32)(void*)"msg_savefile_delete_copy_point",
-    0x00000000,
-    0x00000000,
-    0xFE363C8B,
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno2",
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_savefile_copy_warnning",
-    0x0003005B,
-    (s32)memcard_copy,
-    0xFE363C8A,
-    0xFE363C8B,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_savefile_delete_copy_miss",
-    0x00000020,
-    0x0005005B,
-    (s32)evt_msg_print_add_insert,
-    0x00000000,
-    (s32)(void*)"msg_savefile_copy_finish",
-    0xFE363C8A,
-    0xFE363C8B,
-    0x00000002,
-    0x00000021,
-    0x00000020,
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x00000002,
-    0x00000021,
-    0x00000020,
-    0x0005005B,
-    (s32)evt_msg_print,
-    0x00000000,
-    (s32)(void*)"msg_savefile_copy_warnning",
-    0x00000000,
-    0x00000000,
-    0x0003005B,
-    (s32)memcard_copy,
-    0xFE363C8A,
-    0xFE363C8B,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_savefile_delete_copy_miss",
-    0x00000020,
-    0x0005005B,
-    (s32)evt_msg_print_add_insert,
-    0x00000000,
-    (s32)(void*)"msg_savefile_copy_finish",
-    0xFE363C8A,
-    0xFE363C8B,
-    0x00000002,
-    0x00000021,
-    0x00000021,
-    0x0006005B,
-    (s32)evt_fade_entry,
-    0x00000018,
-    0x00000000,
-    0x00000000,
-    0x00000000,
-    0x00000000,
-    0x0001005B,
-    (s32)evt_fade_end_wait,
-    0x0006005B,
-    (s32)evt_fade_entry,
-    0x0000001A,
-    0x00000000,
-    0x00000000,
-    0x00000000,
-    0x00000000,
-    0x0001005B,
-    (s32)evt_fade_end_wait,
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x0001005B,
-    (s32)seqLoadPrepCardRecheck,
-    0x00020032,
-    0xFAA2B580,
-    0x00000001,
-    0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(evt_memcard_copy)
+    SET_VALUE(GF(0), 0)
+    SET_VALUE(LW(10), LW(0))
+    SET_VALUE(LW(11), LW(1))
+    ADD(LW(10), 1)
+    ADD(LW(11), 1)
+    CALL(memcard_file_existance, LW(11), LW(0))
+    IF_INT_EQUAL(LW(0), 1)
+        CALL(evt_msg_print_insert, 0, STRING("msg_savefile_delete_copy_point"), 0, 0, LW(11))
+        CALL(evt_msg_select, 0, STRING("msg_mcard_yesno2"))
+        IF_INT_EQUAL(LW(0), 0)
+            CALL(evt_msg_print_add, 0, STRING("msg_savefile_copy_warnning"))
+            CALL(memcard_copy, LW(10), LW(11))
+            CALL(memcard_code, LW(0))
+            IF_INT_NOT_EQUAL(LW(0), 0)
+                CALL(evt_msg_print_add, 0, STRING("msg_savefile_delete_copy_miss"))
+            ELSE
+                CALL(evt_msg_print_add_insert, 0, STRING("msg_savefile_copy_finish"), LW(10), LW(11))
+                RETURN
+            END_IF
+        ELSE
+            CALL(evt_msg_continue)
+            RETURN
+        END_IF
+    ELSE
+        CALL(evt_msg_print, 0, STRING("msg_savefile_copy_warnning"), 0, 0)
+        CALL(memcard_copy, LW(10), LW(11))
+        CALL(memcard_code, LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            CALL(evt_msg_print_add, 0, STRING("msg_savefile_delete_copy_miss"))
+        ELSE
+            CALL(evt_msg_print_add_insert, 0, STRING("msg_savefile_copy_finish"), LW(10), LW(11))
+            RETURN
+        END_IF
+    END_IF
+    CALL(evt_fade_entry, 24, 0, 0, 0, 0)
+    CALL(evt_fade_end_wait)
+    CALL(evt_fade_entry, 26, 0, 0, 0, 0)
+    CALL(evt_fade_end_wait)
+    CALL(evt_msg_continue)
+    CALL(seqLoadPrepCardRecheck)
+    SET_VALUE(GF(0), 1)
+    RETURN
+EVT_END()
 
-s32 evt_memcard_save[] = {
-    0x00020032,
-    0xFE363C8A,
-    0xFE363C80,
-    0x00020018,
-    0xFE363C8A,
-    0x00000017,
-    0x00010004,
-    0x00000001,
-    0x00000021,
-    0x00010003,
-    0x00000000,
-    0x00020018,
-    0xFBD3E28A,
-    0x00000001,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000001,
-    (s32)(void*)"<scrl_auto><once_stop>",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_select",
-    0x00020032,
-    0xFBD3E28A,
-    0x00000000,
-    0x00000020,
-    0x0005005B,
-    (s32)evt_msg_print,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_select",
-    0x00000000,
-    0x00000000,
-    0x00000021,
-    0x00020018,
-    0xFE363C8A,
-    0x00000015,
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno_ending",
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno",
-    0x00000021,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x00000002,
-    0x00000021,
-    0x00010003,
-    0x00000001,
-    0x00020032,
-    0xF5DE0184,
-    0xFE363C8A,
-    0x00020018,
-    0xFE363C8A,
-    0x00000017,
-    0x0005005B,
-    (s32)evt_msg_print,
-    0x00000000,
-    (s32)(void*)"msg_savefile_first_warnning",
-    0x00000000,
-    0x00000000,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_warnning",
-    0x00000021,
-    0x00010004,
-    0x00000003,
-    0x00010003,
-    0x00000002,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000001,
-    (s32)(void*)"<scrl_auto><once_stop>",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_savefile_first_warnning",
-    0x00010003,
-    0x00000003,
-    0x0001005B,
-    (s32)memcard_header_write,
-    0x0001005B,
-    (s32)memcard_write,
-    0x00010003,
-    0x00000004,
-    0x00020032,
-    0xFBD3E28B,
-    0x00000000,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00010022,
-    0xFE363C80,
-    0x00010024,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_finish",
-    0x00000002,
-    0x00010024,
-    0xFFFFFFFD,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000001,
-    (s32)(void*)"<scrl_auto><once_stop>",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_nocard",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x00010024,
-    0xFFFFFFFE,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000001,
-    (s32)(void*)"<scrl_auto><once_stop>",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_different_card",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x0001002B,
-    0xFFFFFFF3,
-    0x0001002B,
-    0xFFFFFFFA,
-    0x0001005B,
-    (s32)memcard_slot_watch_begin,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000001,
-    (s32)(void*)"<scrl_auto><once_stop>",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_format",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno2",
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_format_alldelete",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno2",
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0002005B,
-    (s32)memcard_slot_changed,
-    0xFE363C80,
-    0x00020018,
-    0xFE363C80,
-    0x00000001,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_out_mcard_warnning",
-    0x00000030,
-    0x00000021,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_format_warning",
-    0x0001005B,
-    (s32)memcard_format,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_format_miss",
-    0x00020032,
-    0xFBD3E28B,
-    0x00000001,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_format_finish",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno",
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_warning",
-    0x0002005B,
-    (s32)memcard_slot_changed,
-    0xFE363C80,
-    0x00020018,
-    0xFE363C80,
-    0x00000001,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_out_mcard_warnning",
-    0x00000030,
-    0x00000021,
-    0x0001005B,
-    (s32)memcard_create,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_miss",
-    0x00020032,
-    0xFBD3E28B,
-    0x00000001,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_finish",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_warnning",
-    0x0001005B,
-    (s32)memcard_write,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_finish",
-    0x00000002,
-    0x00000020,
-    0x00020032,
-    0xFBD3E28B,
-    0x00000001,
-    0x00000021,
-    0x00000021,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x00000021,
-    0x00000021,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x00000021,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x00000021,
-    0x0000002E,
-    0x00010024,
-    0xFFFFFFFC,
-    0x0001005B,
-    (s32)memcard_slot_watch_begin,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno",
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_warning",
-    0x0002005B,
-    (s32)memcard_slot_changed,
-    0xFE363C80,
-    0x00020018,
-    0xFE363C80,
-    0x00000001,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_out_mcard_warnning",
-    0x00000030,
-    0x00000021,
-    0x0001005B,
-    (s32)memcard_create,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_miss",
-    0x00020032,
-    0xFBD3E28B,
-    0x00000001,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_make_data_finish",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_warnning",
-    0x0001005B,
-    (s32)memcard_write,
-    0x0002005B,
-    (s32)memcard_code,
-    0xFE363C80,
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_finish",
-    0x00000002,
-    0x00000020,
-    0x00020032,
-    0xFBD3E28B,
-    0x00000001,
-    0x00000021,
-    0x00000021,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x00000021,
-    0x00010024,
-    0xFFFFFFF6,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_different_savedata",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x0001002B,
-    0xFFFFFFF8,
-    0x0001002B,
-    0xFFFFFFF7,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000001,
-    (s32)(void*)"<scrl_auto><once_stop>",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_nospace",
-    0x00020018,
-    0xFE363C8A,
-    0x00000017,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_gc_mcard_open",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno2",
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_gc_mcard_nosave",
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno2",
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x00000020,
-    0x0001005B,
-    (s32)memcard_ipl,
-    0x00000021,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x00000021,
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x00000021,
-    0x0000002E,
-    0x0000002A,
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_damage",
-    0x0003005B,
-    (s32)evt_msg_print_add,
-    0x00000000,
-    (s32)(void*)"msg_mcard_save_miss",
-    0x00000031,
-    0x0001005B,
-    (s32)memcard_slot_watch_end,
-    0x00020018,
-    0xFBD3E28B,
-    0x00000001,
-    0x00010004,
-    0x00000004,
-    0x00000021,
-    0x00020018,
-    0xFE363C8A,
-    0x00000000,
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x00000002,
-    0x00000021,
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x0005005B,
-    (s32)evt_msg_print,
-    0x00000000,
-    (s32)(void*)"msg_savefile_nosave_warnning",
-    0x00000000,
-    0x00000000,
-    0x00020018,
-    0xFE363C8A,
-    0x00000015,
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno_ending",
-    0x00000020,
-    0x0003005B,
-    (s32)evt_msg_select,
-    0x00000000,
-    (s32)(void*)"msg_mcard_yesno3\000\000\000",
-    0x00000021,
-    0x00020018,
-    0xFE363C80,
-    0x00000000,
-    0x00020018,
-    0xFE363C8A,
-    0x00000017,
-    0x00010004,
-    0x00000002,
-    0x00000020,
-    0x00010004,
-    0x00000001,
-    0x00000021,
-    0x00000021,
-    0x0001005B,
-    (s32)evt_msg_continue,
-    0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(evt_memcard_save)
+    SET_VALUE(LW(10), LW(0))
+    IF_INT_EQUAL(LW(10), 23)
+        GOTO(1)
+    END_IF
+    LABEL(0)
+    IF_INT_EQUAL(LF(10), 1)
+        CALL(evt_msg_print_add, 1, STRING("<scrl_auto><once_stop>"))
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_select"))
+        SET_VALUE(LF(10), 0)
+    ELSE
+        CALL(evt_msg_print, 0, STRING("msg_mcard_save_select"), 0, 0)
+    END_IF
+    IF_INT_EQUAL(LW(10), 21)
+        CALL(evt_msg_select, 0, STRING("msg_mcard_yesno_ending"))
+    ELSE
+        CALL(evt_msg_select, 0, STRING("msg_mcard_yesno"))
+    END_IF
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(evt_msg_continue)
+        RETURN
+    END_IF
+    LABEL(1)
+    SET_VALUE(GSW(4), LW(10))
+    IF_INT_EQUAL(LW(10), 23)
+        CALL(evt_msg_print, 0, STRING("msg_savefile_first_warnning"), 0, 0)
+    ELSE
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_warnning"))
+    END_IF
+    GOTO(3)
+    LABEL(2)
+    CALL(evt_msg_print_add, 1, STRING("<scrl_auto><once_stop>"))
+    CALL(evt_msg_print_add, 0, STRING("msg_savefile_first_warnning"))
+    LABEL(3)
+    CALL(memcard_header_write)
+    CALL(memcard_write)
+    LABEL(4)
+    SET_VALUE(LF(11), 0)
+    CALL(memcard_code, LW(0))
+    SWITCH(LW(0))
+        CASE_EQUAL(0)
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_finish"))
+        RETURN
+        CASE_EQUAL(-3)
+        CALL(evt_msg_print_add, 1, STRING("<scrl_auto><once_stop>"))
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_nocard"))
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+        CASE_EQUAL(-2)
+        CALL(evt_msg_print_add, 1, STRING("<scrl_auto><once_stop>"))
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_different_card"))
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+        CASE_OR_EQUAL(-13)
+        CASE_OR_EQUAL(-6)
+        CALL(memcard_slot_watch_begin)
+        CALL(evt_msg_print_add, 1, STRING("<scrl_auto><once_stop>"))
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_format"))
+        CALL(evt_msg_select, 0, STRING("msg_mcard_yesno2"))
+        IF_INT_EQUAL(LW(0), 0)
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_format_alldelete"))
+            CALL(evt_msg_select, 0, STRING("msg_mcard_yesno2"))
+            IF_INT_EQUAL(LW(0), 0)
+                CALL(memcard_slot_changed, LW(0))
+                IF_INT_EQUAL(LW(0), 1)
+                    CALL(evt_msg_print_add, 0, STRING("msg_out_mcard_warnning"))
+                    BREAK_SWITCH
+                END_IF
+                CALL(evt_msg_print_add, 0, STRING("msg_mcard_format_warning"))
+                CALL(memcard_format)
+                CALL(memcard_code, LW(0))
+                IF_INT_NOT_EQUAL(LW(0), 0)
+                    CALL(evt_msg_print_add, 0, STRING("msg_mcard_format_miss"))
+                    SET_VALUE(LF(11), 1)
+                ELSE
+                    CALL(evt_msg_print_add, 0, STRING("msg_mcard_format_finish"))
+                    CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data"))
+                    CALL(evt_msg_select, 0, STRING("msg_mcard_yesno"))
+                    IF_INT_EQUAL(LW(0), 0)
+                        CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_warning"))
+                        CALL(memcard_slot_changed, LW(0))
+                        IF_INT_EQUAL(LW(0), 1)
+                            CALL(evt_msg_print_add, 0, STRING("msg_out_mcard_warnning"))
+                            BREAK_SWITCH
+                        END_IF
+                        CALL(memcard_create)
+                        CALL(memcard_code, LW(0))
+                        IF_INT_NOT_EQUAL(LW(0), 0)
+                            CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_miss"))
+                            SET_VALUE(LF(11), 1)
+                        ELSE
+                            CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_finish"))
+                            CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_warnning"))
+                            CALL(memcard_write)
+                            CALL(memcard_code, LW(0))
+                            IF_INT_EQUAL(LW(0), 0)
+                                CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_finish"))
+                                RETURN
+                            ELSE
+                                SET_VALUE(LF(11), 1)
+                            END_IF
+                        END_IF
+                    ELSE
+                        CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+                    END_IF
+                END_IF
+            ELSE
+                CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+            END_IF
+        ELSE
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+        END_IF
+        CASE_END
+        CASE_EQUAL(-4)
+        CALL(memcard_slot_watch_begin)
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data"))
+        CALL(evt_msg_select, 0, STRING("msg_mcard_yesno"))
+        IF_INT_EQUAL(LW(0), 0)
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_warning"))
+            CALL(memcard_slot_changed, LW(0))
+            IF_INT_EQUAL(LW(0), 1)
+                CALL(evt_msg_print_add, 0, STRING("msg_out_mcard_warnning"))
+                BREAK_SWITCH
+            END_IF
+            CALL(memcard_create)
+            CALL(memcard_code, LW(0))
+            IF_INT_NOT_EQUAL(LW(0), 0)
+                CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_miss"))
+                SET_VALUE(LF(11), 1)
+            ELSE
+                CALL(evt_msg_print_add, 0, STRING("msg_mcard_make_data_finish"))
+                CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_warnning"))
+                CALL(memcard_write)
+                CALL(memcard_code, LW(0))
+                IF_INT_EQUAL(LW(0), 0)
+                    CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_finish"))
+                    RETURN
+                ELSE
+                    SET_VALUE(LF(11), 1)
+                END_IF
+            END_IF
+        ELSE
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+        END_IF
+        CASE_EQUAL(-10)
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_different_savedata"))
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+        CASE_OR_EQUAL(-8)
+        CASE_OR_EQUAL(-9)
+        CALL(evt_msg_print_add, 1, STRING("<scrl_auto><once_stop>"))
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_nospace"))
+        IF_INT_EQUAL(LW(10), 23)
+            CALL(evt_msg_print_add, 0, STRING("msg_gc_mcard_open"))
+            CALL(evt_msg_select, 0, STRING("msg_mcard_yesno2"))
+            IF_INT_NOT_EQUAL(LW(0), 0)
+                CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+            ELSE
+                CALL(evt_msg_print_add, 0, STRING("msg_gc_mcard_nosave"))
+                CALL(evt_msg_select, 0, STRING("msg_mcard_yesno2"))
+                IF_INT_NOT_EQUAL(LW(0), 0)
+                    CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+                ELSE
+                    CALL(memcard_ipl)
+                END_IF
+            ELSE
+                CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+            END_IF
+        ELSE
+            CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+        END_IF
+        CASE_END
+        CASE_DEFAULT
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_damage"))
+        CALL(evt_msg_print_add, 0, STRING("msg_mcard_save_miss"))
+    END_SWITCH
+    CALL(memcard_slot_watch_end)
+    IF_INT_EQUAL(LF(11), 1)
+        GOTO(4)
+    END_IF
+    IF_INT_EQUAL(LW(10), 0)
+        CALL(evt_msg_continue)
+        RETURN
+    END_IF
+    CALL(evt_msg_continue)
+    CALL(evt_msg_print, 0, STRING("msg_savefile_nosave_warnning"), 0, 0)
+    IF_INT_EQUAL(LW(10), 21)
+        CALL(evt_msg_select, 0, STRING("msg_mcard_yesno_ending"))
+    ELSE
+        CALL(evt_msg_select, 0, STRING("msg_mcard_yesno3\000\000\000"))
+    END_IF
+    IF_INT_EQUAL(LW(0), 0)
+        IF_INT_EQUAL(LW(10), 23)
+            GOTO(2)
+        ELSE
+            GOTO(1)
+        END_IF
+    END_IF
+    CALL(evt_msg_continue)
+    RETURN
+EVT_END()
 
 // 12-byte zero gap (0x803B70B4) after the save script: an all-zero object that needs explicit_zero_data to stay in .data.
 #pragma explicit_zero_data on

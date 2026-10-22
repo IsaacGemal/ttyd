@@ -93,8 +93,16 @@ static const char* mario_status_labelname_table[3] = { "_hp", "_fp", "_bp" };
 static const char* mario_status_name_table[3] = { "\x82\x67\x82\x6F", "\x82\x65\x82\x6F", "\x82\x61\x82\x6F" };
 static s32 mario_status_henka_table[3] = { 5, 5, 3 };
 extern const char str_fmt_04d[];
-static u32 main_evt[] = { 0x0001005B, (u32)evt_unitwin_main_func, 0x2, 0x1 };
-u32 select_evt[] = { 0x0001005B, (u32)evt_unitwin_select_func, 0x2, 0x1 };
+static EVT_BEGIN(main_evt)
+    CALL(evt_unitwin_main_func)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(select_evt)
+    CALL(evt_unitwin_select_func)
+    RETURN
+EVT_END()
+
 WinMgrDesc unitwin_window_desc[3] = {
 	{ 0, 0, 8, -150, 120, 300, 50, { 0x2B, 0xA4, 0xFF, 0xFF }, NULL, unitwin_selltable_disp },
 	{ 0, 0, 8, -240, -130, 500, 80, { 0xF0, 0xF0, 0xF0, 0xFF }, unitwin_help_main, unitwin_help_disp },
