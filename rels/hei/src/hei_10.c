@@ -386,7 +386,6 @@ USER_FUNC(evt_chorobon_wait) {
 
 const Vec vec3_hei_00007a58 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_hei_00007a64 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_hei_00007a70 = {0.0f, 0.0f, 0.0f};
 
 // Hops an npc to (x, y, z) over a frame count: userdata holds the frames left, the vertical velocity and the speed.
 #pragma opt_propagation off // stop MWCC rematerialising the heiSin2/heiCos2 coefficients per branch
@@ -438,9 +437,8 @@ static USER_FUNC(npc_jump) {
     vy -= grav;
     frames -= 1.0f;
     if (frames < 0.0f) {
-        Vec land;
+        Vec land = {0.0f, 0.0f, 0.0f};
 
-        land = vec3_hei_00007a70;
         land.x = x;
         land.y = y;
         land.z = z;

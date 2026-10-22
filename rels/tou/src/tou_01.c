@@ -461,7 +461,6 @@ static USER_FUNC(proj_on) {
 
 const Vec vec3_tou_0000b0ac = {0.0f, 0.0f, 0.0f};
 const Vec vec3_tou_0000b0b8 = {0.0f, 0.0f, -1.0f};
-const Vec vec3_tou_0000b0c4 = {0.0f, 0.0f, 0.0f};
 
 void make_shadow_disp(CameraId camId, void* param) {
     ShadowWork* work = param;
@@ -487,7 +486,7 @@ void make_shadow_disp(CameraId camId, void* param) {
     GXSetScissor(1, 1, 0xFE, 0xFE);
     C_MTXPerspective(perspMtx, 25.0f, 1.2666667f, 1.0f, 1000.0f);
     GXSetProjection(perspMtx, GX_PERSPECTIVE);
-    target = vec3_tou_0000b0c4;
+    target = (Vec){0.0f, 0.0f, 0.0f};
     up = vec3_tou_0000b0b8;
     camPos = vec3_tou_0000b0ac;
     tanVal = (f32)tan(0.21816615760326385);
@@ -2388,7 +2387,6 @@ static USER_FUNC(mario_chk) {
 }
 const Vec vec3_tou_0000c0a0 = {0.0f, 100.0f, 0.0f};
 const Vec vec3_tou_0000c0ac = {0.0f, 1.0f, 0.0f};
-const Vec vec3_tou_0000c0b8 = {0.0f, 0.0f, 0.0f};
 
 static USER_FUNC(yami_view) {
     s32* args = event->args;
@@ -2413,7 +2411,7 @@ static USER_FUNC(yami_view) {
     cosA = cos(angle);
     s = value * (f32)sin(angle);
     c = value * -(f32)cos(angle);
-    target = vec3_tou_0000c0b8;
+    target = (Vec){0.0f, 0.0f, 0.0f};
     x = -100.0f * sinA;
     z = -100.0f * -cosA;
     target.x = s;

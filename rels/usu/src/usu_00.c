@@ -1933,11 +1933,9 @@ u32 kpaSen_ext_entry_data[117] = {
     0x00000000,
 };
 
-const Vec vec3_usu_000049ac = {85.0f, 0.0f, 75.0f};
-
 void kpaSen_ext_init(void) {
     ExtPose* pose = extGetPosePtr();
-    Vec pos = vec3_usu_000049ac;
+    Vec pos = {85.0f, 0.0f, 75.0f};
     f32 f30;
     f32 c;
     s32 i;
@@ -2764,7 +2762,6 @@ EVT_END()
 
 const Vec vec3_usu_00004d84 = {0.0f, 100.0f, 0.0f};
 const Vec vec3_usu_00004d90 = {0.0f, 1.0f, 0.0f};
-const Vec vec3_usu_00004d9c = {0.0f, 0.0f, 0.0f};
 static USER_FUNC(yami_view) {
     Vec camPos;
     Vec up;
@@ -2772,7 +2769,7 @@ static USER_FUNC(yami_view) {
     Mtx mtx;
     f32 value = evtGetFloat(event, event->args[0]);
 
-    target = vec3_usu_00004d9c;
+    target = (Vec){0.0f, 0.0f, 0.0f};
     target.z = value;
     up = vec3_usu_00004d90;
     camPos = vec3_usu_00004d84;

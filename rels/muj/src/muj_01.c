@@ -1388,7 +1388,6 @@ EVT_END()
 
 const Vec vec3_muj_0000f360 = {0.0f, 100.0f, 0.0f};
 const Vec vec3_muj_0000f36c = {0.0f, 1.0f, 0.0f};
-const Vec vec3_muj_0000f378 = {0.0f, 0.0f, 0.0f};
 
 static USER_FUNC(yami_view) {
     Vec camPos;
@@ -1397,7 +1396,7 @@ static USER_FUNC(yami_view) {
     Mtx mtx;
     f32 value = evtGetFloat(event, event->args[0]);
 
-    target = vec3_muj_0000f378;
+    target = (Vec){0.0f, 0.0f, 0.0f};
     target.z = value;
     up = vec3_muj_0000f36c;
     camPos = vec3_muj_0000f360;

@@ -1164,7 +1164,6 @@ static char* shopper_data[] = {
 
 const Vec vec3_bom_00007cc0 = {0.0f, 100.0f, 0.0f};
 const Vec vec3_bom_00007ccc = {0.0f, 1.0f, 0.0f};
-const Vec vec3_bom_00007cd8 = {0.0f, 0.0f, 0.0f};
 extern const f32 float_100_bom_00007e7c;
 
 static USER_FUNC(yami_view) {
@@ -1174,7 +1173,7 @@ static USER_FUNC(yami_view) {
     Mtx mtx;
     f32 value = evtGetFloat(event, event->args[0]);
 
-    target = vec3_bom_00007cd8;
+    target = (Vec){0.0f, 0.0f, 0.0f};
     target.z = value;
     up = vec3_bom_00007ccc;
     camPos = vec3_bom_00007cc0;
