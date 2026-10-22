@@ -81,7 +81,6 @@ const char str_M_A_2B[0x08] = "M_A_2B";
 const char str_M_A_2C[0x08] = "M_A_2C";
 const char str_M_J_5A[0x08] = "M_J_5A";
 const char str_M_J_5B[0x08] = "M_J_5B";
-const Vec vec3_802e58e8 = {0.0f, 0.0f, 0.0f};
 #pragma force_active reset
 
 // .sdata2 float literals: MWCC folds these references into its own literal pool, so they are
@@ -2200,18 +2199,16 @@ USER_FUNC(evt_mario_set_prev_party_dokan) {
             party = partyGetPtr(ret);
             partyChgRunMode(party, 0);
 #ifdef MUST_MATCH
-            // Volatile on both sides of the Vec copy (and on the flags updates that
-            // surround it) reproduces the original's unscheduled load/store pair without hoisting.
+            // Volatile on the flags updates reproduces the original's unscheduled load/store pair
+            // without hoisting.
             *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x04000000;
             *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x02000000;
-            pos = &party->scale;
-            *(volatile Vec*)pos = *(volatile Vec*)&vec3_802e58e8;
 #else
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
-            pos = &party->scale;
-            *pos = vec3_802e58e8;
 #endif
+            pos = &party->scale;
+            *pos = (Vec){0.0f, 0.0f, 0.0f};
         }
     }
     return EVT_RETURN_DONE;

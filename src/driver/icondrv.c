@@ -14,19 +14,7 @@
 #include <stdio.h>
 #include "driver/shadowdrv.h"
 
-// Data objects defined later in this file or in other units, declared before their first use.
-extern u32 dat_8041977c;
-
-
 extern GlobalWork* gp;
-
-// .sdata2 constants this unit references by name in retail
-extern u32 dat_80419780;
-extern u32 dat_80419778;
-extern u32 dat_80419784;
-extern GXColor dat_80419788;
-extern GXColor dat_8041978c;
-extern GXColor dat_80419790;
 
 //.sbss (declared in reverse: MWCC lays these out last-declared first)
 static IconWork work[2];
@@ -229,7 +217,7 @@ void iconEntry(const char* name, u16 iconId) {
     memset(entry, 0, sizeof(IconEntry));
     entry->position = (Vec){ 0.0f, 0.0f, 0.0f };
     entry->scale = 1.0f;
-    entry->color = *(GXColor*)&dat_80419778;
+    entry->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     strcpy(entry->name, name);
     entry->iconId = iconId;
     {
@@ -284,7 +272,7 @@ void iconEntry2D(const char* name, s16 iconId) {
     memset(entry, 0, sizeof(IconEntry));
     entry->position = (Vec){ 0.0f, 0.0f, 0.0f };
     entry->scale = 1.0f;
-    entry->color = *(GXColor*)&dat_8041977c;
+    entry->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     strcpy(entry->name, name);
     entry->iconId = iconId;
     {
@@ -389,8 +377,7 @@ void iconDispGxAlpha(Vec* position, s16 flags, s32 iconId, u8 alpha, f32 scale) 
     MTXConcat(transmtx, rotmtx, mtx);
     MTXConcat(mtx, scalemtx, mtx);
     MTXConcat(camera->view, mtx, mtx);
-    color = *(GXColor*)&dat_80419780;
-    color.a = alpha;
+    color = (GXColor){ 0xFF, 0xFF, 0xFF, alpha };
     entryp->flags = flags;
     entryp->color = color;
     bin = icon_bin;
@@ -446,7 +433,7 @@ void iconDispGx2(Mtx mtx, s16 flags, u16 iconId) {
     if (!icon_tpl_ok || !icon_bin_ok)
         return;
     entryp->flags = flags;
-    entryp->color = *(GXColor*)&dat_80419784;
+    entryp->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     bin = icon_bin;
     id = iconId;
     entryp->iconId = id;
@@ -640,7 +627,7 @@ void iconGX(Mtx mtx, IconEntry* entry) {
         mapSetMaterialLight(4, position);
     } else {
         GXSetNumChans(1);
-        GXSetChanMatColor(4, dat_80419788);
+        GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
         GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     }
     if (entry->flags & 0x20) {
@@ -651,7 +638,7 @@ void iconGX(Mtx mtx, IconEntry* entry) {
         GXSetTevSwapMode(0, 0, 1);
         GXSetTevSwapMode(1, 0, 2);
         GXSetTevSwapMode(2, 0, 3);
-        GXSetTevColor(1, dat_8041978c);
+        GXSetTevColor(1, (GXColor){ 0x55, 0x55, 0x55, 0xFF });
         GXSetTevColor(2, entry->color);
         GXSetTevOrder(0, 0, 0, 0xFF);
         GXSetTevColorOp(0, 0, 0, 0, 1, 0);
@@ -700,7 +687,7 @@ void iconGX(Mtx mtx, IconEntry* entry) {
     if (!(entry->flags & 0x10)) {
         mapSetMaterialFog();
     } else {
-        GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_80419790);
+        GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
     }
     if (entry->color.a < 0xFF) {
         GXSetBlendMode(1, 4, 5, 0);
@@ -931,17 +918,3 @@ s32 iconNumberDispGx3D(Mtx mtx, s32 number, BOOL small, GXColor color) {
     }
     return width;
 }
-
-// ---- .sdata2 ----
-// Named 0xFFFFFFFF/0xFFFFFF00/colour words the unit reads by name; the float constants are
-// pooled literals emitted in first-use order after these, matching the original's .sdata2.
-// explicit_zero_data keeps the all-zero float_0 word out of .sbss.
-#pragma explicit_zero_data on
-__declspec(section ".sdata2") u32 dat_80419778 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041977c = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_80419780 = 0xFFFFFF00;
-__declspec(section ".sdata2") u32 dat_80419784 = 0xFFFFFFFF;
-__declspec(section ".sdata2") GXColor dat_80419788 = { 0xFF, 0xFF, 0xFF, 0xFF };
-__declspec(section ".sdata2") GXColor dat_8041978c = { 0x55, 0x55, 0x55, 0xFF };
-__declspec(section ".sdata2") GXColor dat_80419790 = { 0xFF, 0xFF, 0xFF, 0xFF };
-#pragma explicit_zero_data reset

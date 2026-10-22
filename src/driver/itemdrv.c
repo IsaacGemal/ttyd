@@ -7,7 +7,7 @@
 #include "manager/evtmgr_cmd.h"
 #include "manager/winmgr.h"
 #include "manager/fontmgr.h"
-void FontDrawColor(GXColor* color);
+void FontDrawColor(GXColor color);
 #include "driver/msgdrv.h"
 #include "driver/seqdrv.h"
 #include "party/party_vivian.h"
@@ -91,28 +91,7 @@ static inline f32 sqrtf(f32 x) {
 
 
 extern ItemData itemDataTable[];
-extern u32 dat_8041af90;
-extern u32 dat_8041af94;
-extern u32 dat_8041af98;
 const Vec vec3_802cabe0 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802cabec = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802cabf8 = {0.0f, 0.0f, 0.0f};
-#ifdef MUST_MATCH
-__declspec(section ".rodata") Vec vec3_802cac04 = {0.0f, 0.0f, 0.0f};
-#else
-const Vec vec3_802cac04 = {0.0f, 0.0f, 0.0f};
-#endif
-const Vec vec3_802cac10 = {0.0f, 0.0f, 0.0f};
-#ifdef MUST_MATCH
-// Deliberately non-const and pinned to .rodata: itemseq_GetItem copies this zero Vec, and the compiler
-// otherwise treats the const load as hoistable and schedules it above the two stores to `item` that
-// precede the copy inside the inlined itemseq_sfxGet. Non-const blocks that reorder but keeps the three
-// dead loads in the target order; the explicit section keeps the object at the target's .rodata offset
-// (a plain non-const definition lands in .sdata and shifts every string offset).
-__declspec(section ".rodata") Vec vec3_802cac1c = {0.0f, 0.0f, 0.0f};
-#else
-const Vec vec3_802cac1c = {0.0f, 0.0f, 0.0f};
-#endif
 
 //.bss
 static ItemWork work[2];
@@ -909,26 +888,6 @@ ItemEntry* itemHitCheck(f32 x, f32 y, f32 z, f32 maxDist) {
     return result;
 }
 
-static inline Vec itemNearDistCheckVec2(f32 x, f32 y, f32 z) {
-    Vec temp = vec3_802cabf8;
-    temp.x = x;
-    temp.y = y;
-    temp.z = z;
-    return temp;
-}
-
-// Builds the position vectors. Returning a Vec by value makes the compiler emit the
-// hidden return-slot copy the target has (temp then store to the named local), the same
-// shape evt_img.c's makeVec uses. The two helpers keep the two distinct zero-vector
-// rodata symbols (vec3_802cabec and vec3_802cabf8) that the target loads.
-static inline Vec itemNearDistCheckVec(f32 x, f32 y, f32 z) {
-    Vec temp = vec3_802cabec;
-    temp.x = x;
-    temp.y = y;
-    temp.z = z;
-    return temp;
-}
-
 ItemEntry* itemNearDistCheck(f32 x, f32 y, f32 z, f32 maxDist) {
     ItemEntry* entry;
     ItemEntry* result;
@@ -943,13 +902,13 @@ ItemEntry* itemNearDistCheck(f32 x, f32 y, f32 z, f32 maxDist) {
     marioGetPtr();
     wp = itemGetWork();
 
-    pos = itemNearDistCheckVec(x, y, z);
+    pos = (Vec){x, y, z};
     result = NULL;
 
     for (entry = wp->entries, i = 0; i < wp->count; i++, entry++) {
         if ((entry->flags & 1) && !itemStatus(entry, 0x1000) && !itemStatus(entry, 0x100000)
             && entry->mode != 2 && !itemStatus(entry, 0x2000000)) {
-            itemPos = itemNearDistCheckVec2(entry->position.x, entry->position.y, entry->position.z);
+            itemPos = (Vec){entry->position.x, entry->position.y, entry->position.z};
 
             PSVECSubtract(&itemPos, &pos, &delta);
             mag = PSVECMag(&delta);
@@ -983,11 +942,8 @@ void winNameDisp(WinMgrEntry* entry) {
     }
 
     if (!winMgrAction(item->winMainId)) {
-        GXColor color;
-
         FontDrawStart();
-        *(u32*)&color = dat_8041af90;
-        FontDrawColor(&color);
+        FontDrawColor((GXColor){0x00, 0x00, 0x00, 0xFF});
         FontDrawMessage(-width / 2, entry->y - 8, buf);
     }
 }
@@ -1010,11 +966,8 @@ void winNameDisp2(WinMgrEntry* entry) {
     }
 
     if (!winMgrAction(item->winMainId)) {
-        GXColor color;
-
         FontDrawStart();
-        *(u32*)&color = dat_8041af94;
-        FontDrawColor(&color);
+        FontDrawColor((GXColor){0x00, 0x00, 0x00, 0xFF});
         FontDrawMessage(-width / 2, entry->y - 8, buf);
     }
 }
@@ -1046,12 +999,9 @@ void winFullDisp(WinMgrEntry* entry) {
     }
 
     if (!winMgrAction(item->winFullId)) {
-        GXColor color;
-
         FontDrawStart();
         FontDrawEdge();
-        *(u32*)&color = dat_8041af98;
-        FontDrawColor(&color);
+        FontDrawColor((GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         FontDrawMessage(-width / 2, entry->y - 0xa, msg);
         FontDrawEdgeOff();
     }
@@ -1108,8 +1058,7 @@ static inline s32 itemseq_tryGet(ItemEntry* item) {
     return 1;
 }
 
-// All logic, switch dispatch, constants, call order and the whole .rodata layout match. The
-// itemseq_sfxGet zero-Vec init is kept in order by the non-const declaration of vec3_802cac1c.
+// All logic, switch dispatch, constants, call order and the whole .rodata layout match.
 void itemseq_GetItem(ItemEntry* item) {
     ItemWork* wp = itemGetWork();
     MarioWork* mario = marioGetPtr();
@@ -1547,8 +1496,7 @@ static s32 _move_dir;
 // The ceiling/floor rays, the bounce SFX and the badge-delete loop (itemDelete) are out-of-line functions,
 // auto-inlined here; the rays return from each branch, which keeps the hit pointer out of the floor ray's saved
 // register until the hit is known. Their literals pool at their own .text slots, which is where retail's
-// .rodata/.sdata2 has them. vec3_802cac04 is non-const under MUST_MATCH and pinned to .rodata so its load is not
-// hoisted above the preceding status store.
+// .rodata/.sdata2 has them.
 void itemseq_Bound(ItemEntry* item) {
     MarioWork* mario = marioGetPtr();
     CameraEntry* camera = camGetPtr(CAMERA_3D);
@@ -1718,7 +1666,7 @@ void itemseq_Bound(ItemEntry* item) {
                     Vec pos;
 
                     item->status |= 0x100000;
-                    pos = vec3_802cac04;
+                    pos = (Vec){0.0f, 0.0f, 0.0f};
                     pos.x = item->position.x;
                     pos.y = item->position.y;
                     pos.z = item->position.z;
@@ -1817,10 +1765,7 @@ void itemseq_sfxBound(ItemEntry* item, Vec* p) {
     Vec p0;
     s32 id;
 
-    p0 = vec3_802cac10;
-    p0.x = item->position.x;
-    p0.y = item->position.y;
-    p0.z = item->position.z;
+    p0 = (Vec){item->position.x, item->position.y, item->position.z};
     *p = p0;
     id = item->itemId;
     switch (id) {
@@ -1861,15 +1806,12 @@ void itemseq_sfxBound(ItemEntry* item, Vec* p) {
 // Plays the "item obtained" stardust/SFX for the item id, at the item's position.
 void itemseq_sfxGet(ItemEntry* item) {
     Vec pos2;
-    // vec3_802cac1c is the 6th of the contiguous zero Vecs. Its declaration (top of file) is non-const
-    // under MUST_MATCH so the compiler keeps the three dead loads *after* the caller's stores instead
-    // of hoisting them; see the comment there. `(Vec){0.0f,0.0f,0.0f}` schedules right but adds a
-    // `.rodata` object at +0x50 that shifts sqrtf's doubles and regresses itemHitCheck.
-    Vec pos = vec3_802cac1c;
+    Vec pos = {0.0f, 0.0f, 0.0f};
 
     pos.x = item->position.x;
     pos.y = item->position.y;
     pos.z = item->position.z;
+
     pos2 = pos;
     switch (item->itemId) {
     case ITEM_COIN:
@@ -2105,9 +2047,4 @@ WinMgrDesc itemdrv_window_desc[] = {
     { 0, 0, 8, 0xFFFFFF51, 0xC8, 0x15E, 0x4B, {0x2B, 0xA4, 0xFF, 0xFF}, NULL, winFullDisp },
     { 0, 0, 8, 0xFFFFFF51, 0x78, 0x15E, 0x2A, {0xE1, 0xD7, 0x9B, 0xFF}, NULL, winNameDisp2 },
 };
-
-// .sdata2 colour words for the message windows (0x8041af90..0x8041af98; low byte only).
-__declspec(section ".sdata2") u32 dat_8041af90 = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041af94 = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041af98 = 0xFFFFFFFF;
 
