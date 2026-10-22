@@ -23,7 +23,7 @@ HitEntry* marioChkLandon2(f32* out, f32 a, f32 b);
 HitEntry* dou10_yoko_yari(f32* p);
 s32 marioSlitChkWallAround(void);
 HitEntry* dou10_yoko_yari2(f32* out);
-HitEntry* searchUnder2(Vec* out, f32 x, f32 y, f32 z);
+HitEntry* searchUnder2(f32* out, f32 x, f32 y, f32 z);
 s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d);
 HitEntry* searchFrontWall(Vec* a, f32* b, f32 c, f32 d, f32 e);
 HitEntry* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a);
