@@ -675,7 +675,7 @@ config.libs = [
             Object(Matching, "event/evt_map.c"),
             Object(Matching, "event/evt_npc.c", extra_cflags=["-O4,s", "-inline noauto"]),
             Object(Matching, "event/evt_sub.c", extra_cflags=['-pragma "opt_lifetimes off"']),
-            Object(Matching, "event/evt_mobj.c"),
+            Object(Matching, "event/evt_mobj.c", extra_cflags=["-char signed"]),
             Object(Matching, "event/evt_eff.c"),
             Object(Matching, "event/evt_paper.c"),
             Object(Matching, "event/evt_case.c"),
