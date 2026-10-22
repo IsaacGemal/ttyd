@@ -1584,23 +1584,23 @@ EVT_BEGIN(usu01_crowJ_talk_event)
     RETURN
 EVT_END()
 
-char* minka_npc[6] = {
+const char* minka_npc[6] = {
     "おばさん", "ブタおばさん", "子供Ａ", "子供Ｂ", "子供Ｃ", NULL,
 };
 
-char* minka_item[2] = {
+const char* minka_item[2] = {
     "iri_20", NULL,
 };
 
-char* shop_npc[6] = {
+const char* shop_npc[6] = {
     "お店の奥さん", "キザ野郎", "ブタキザ野郎", "店の主人", "ペラ魔人", NULL,
 };
 
-char* shop_mobj[4] = {
+const char* shop_mobj[4] = {
     "usu_00_lock", "pera_box", "mobj_box00", NULL,
 };
 
-char* shop_item[5] = {
+const char* shop_item[5] = {
     "item_02", "item_03", "item_04", "item_05", NULL,
 };
 
@@ -1642,7 +1642,7 @@ EVT_END()
 
 static DoorEntry door_1[1] = {{
     0, 3, 2, "S_usu01_ie1_door", "A_door46", "A_door45", "S_usu01_ie1", NULL,
-    "S_usu01_ie1_naka", NULL, evt_door_1_1, (s32)evt_door_1_2, evt_wall_1, (const char**)minka_npc, NULL, (const char**)minka_item,
+    "S_usu01_ie1_naka", NULL, evt_door_1_1, evt_door_1_2, evt_wall_1, minka_npc, NULL, minka_item,
     door_1_open, door_1_close,
 }};
 
@@ -1770,7 +1770,7 @@ EVT_END()
 
 DoorEntry door_2_1[1] = {{
     0, 3, 2, "S_usu01_ie2_door1", "A_usu01_ie2_door2_u", "A_usu01_ie2_door2", "S_usu01_ie2", NULL,
-    "S_usu01_ie2_naka", NULL, evt_door_2_1_1, 0, evt_wall_2_1, (const char**)shop_npc, (const char**)shop_mobj, (const char**)shop_item,
+    "S_usu01_ie2_naka", NULL, evt_door_2_1_1, 0, evt_wall_2_1, shop_npc, shop_mobj, shop_item,
     door_2_1_open, mawari_house_delay,
 }};
 
@@ -1984,7 +1984,7 @@ static EVT_BEGIN(evt_wall_3)
     RETURN
 EVT_END()
 
-char* door_3_item[2] = {
+const char* door_3_item[2] = {
     "item01", NULL,
 };
 
@@ -2004,7 +2004,7 @@ EVT_END()
 
 static DoorEntry door_3[1] = {{
     0, 3, 2, "S_usu01_ie3_door", "A_usu01_ie3_doaa_u", "A_usu01_ie3_doaa", "S_usu01_ie3", NULL,
-    "S_usu01_ie3_naka", NULL, evt_door_3_1, (s32)evt_door_3_2, evt_wall_3, NULL, NULL, (const char**)door_3_item,
+    "S_usu01_ie3_naka", NULL, evt_door_3_1, evt_door_3_2, evt_wall_3, NULL, NULL, door_3_item,
     door_3_open, door_3_close,
 }};
 

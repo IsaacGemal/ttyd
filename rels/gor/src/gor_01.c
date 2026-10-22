@@ -89,9 +89,9 @@ static USER_FUNC(evt_StatusClose);
 static USER_FUNC(evt_StatusOpen);
 s32 nancy_talk[175];
 s32 chusan1_naguru[79];
-u32 kickEnt[46];
-u32 torqueEnt[46];
-u32 kick2Ent[46];
+NpcSetupInfo kickEnt[2];
+NpcSetupInfo torqueEnt[2];
+NpcSetupInfo kick2Ent[2];
 static s32 borodo2_talk[280];
 static char* door_data_01_npc[2];
 s32 marco_hitorigoto[67];
@@ -1749,20 +1749,9 @@ EVT_BEGIN(kick_talk)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 kickEnt[46] = {
-    (u32)"キック", 0x00080600, 0x00000000, (u32)&kick_init,
-    0x00000000, (u32)&kick_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo kickEnt[2] = {
+    {"キック", 0x00080600, 0, kick_init, NULL, kick_talk},
+    {NULL},
 };
 
 EVT_BEGIN(torque_init)
@@ -1776,20 +1765,9 @@ EVT_BEGIN(torque_talk)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 torqueEnt[46] = {
-    (u32)"トルク", 0x00080600, 0x00000000, (u32)&torque_init,
-    0x00000000, (u32)&torque_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo torqueEnt[2] = {
+    {"トルク", 0x00080600, 0, torque_init, NULL, torque_talk},
+    {NULL},
 };
 
 EVT_BEGIN(kick2_init)
@@ -1808,20 +1786,9 @@ EVT_BEGIN(kick2_talk)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 kick2Ent[46] = {
-    (u32)"キック２", 0x00080600, 0x00000000, (u32)&kick2_init,
-    0x00000000, (u32)&kick2_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo kick2Ent[2] = {
+    {"キック２", 0x00080600, 0, kick2_init, NULL, kick2_talk},
+    {NULL},
 };
 
 static EVT_BEGIN(borodo2_init)
@@ -1985,135 +1952,29 @@ EVT_BEGIN(thief_talk)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[506] = {
-    (u32)"バッジ店長", 0x00080600, 0x00000000, (u32)&badgemaster_init,
-    0x00000000, (u32)&badgemaster_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"バッジ店員",
-    0x00080600, 0x00000000, (u32)npc_init_evt, 0x00000000,
-    (u32)&badgeshopper_talk_evt, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"キノじい", 0x00080600,
-    0x00000000, (u32)&kinoji_init, 0x00000000, (u32)&kinoji_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"ナンシー", 0x00080600, 0x00000000,
-    (u32)&nancy_init, (u32)&nancy_regl, (u32)&nancy_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"マルコ", 0x00080600, 0x00000000, (u32)&marco_init,
-    0x00000000, (u32)&marco_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"マスター",
-    0x00080600, 0x00000000, (u32)&master_init, 0x00000000,
-    (u32)&master_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"店長", 0x00080600,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"店員", 0x00080600, 0x00000000,
-    (u32)&shoptender_init, 0x00000000, (u32)&shoptender_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"宿店員", 0x00080600, 0x00000000, (u32)&yadotender_init,
-    0x00000000, (u32)&yadotender_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ロテン１",
-    0x00080600, 0x00000000, (u32)&roten1_init, (u32)&roten1_regl,
-    (u32)&roten1_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"ロテン２", 0x00080600,
-    0x00000000, (u32)&roten2_init, 0x00000000, (u32)&roten2_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"クリボー１", 0x00080600, 0x00000000,
-    (u32)&kuribo1_init, (u32)&kuribo1_regl, (u32)&kuribo1_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"クリボー２", 0x00000600, 0x00000000, (u32)&kuribo2_init,
-    0x00000000, (u32)&kuribo2_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"クリボー３",
-    0x00080600, 0x00000000, (u32)&kuribo3_init, (u32)&kuribo3_regl,
-    (u32)&kuribo3_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"チューさん１", 0x00080600,
-    0x00000000, (u32)&chusan1_init, (u32)&chusan1_regl, (u32)&chusan1_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"チューさん２", 0x00080600, 0x00000000,
-    (u32)&chusan2_init, 0x00000000, (u32)&chusan2_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"水夫ボム兵", 0x00080600, 0x00000000, (u32)&bomhei_init,
-    0x00000000, (u32)&bomhei_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ボッタクール",
-    0x00080600, 0x00000000, (u32)&bottakuru_init, 0x00000000,
-    (u32)&bottakuru_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"ルイージ", 0x00080600,
-    0x00000000, (u32)&luigi_init, 0x00000000, (u32)&luigi_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"盗賊", 0x00080600, 0x00000000,
-    (u32)&thief_init, 0x00000000, (u32)&thief_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"キノピコ", 0x00080600, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[22] = {
+    {"バッジ店長", 0x00080600, 0, badgemaster_init, NULL, badgemaster_talk},
+    {"バッジ店員", 0x00080600, 0, npc_init_evt, NULL, badgeshopper_talk_evt},
+    {"キノじい", 0x00080600, 0, kinoji_init, NULL, kinoji_talk},
+    {"ナンシー", 0x00080600, 0, nancy_init, nancy_regl, nancy_talk},
+    {"マルコ", 0x00080600, 0, marco_init, NULL, marco_talk},
+    {"マスター", 0x00080600, 0, master_init, NULL, master_talk},
+    {"店長", 0x00080600},
+    {"店員", 0x00080600, 0, shoptender_init, NULL, shoptender_talk},
+    {"宿店員", 0x00080600, 0, yadotender_init, NULL, yadotender_talk},
+    {"ロテン１", 0x00080600, 0, roten1_init, roten1_regl, roten1_talk},
+    {"ロテン２", 0x00080600, 0, roten2_init, NULL, roten2_talk},
+    {"クリボー１", 0x00080600, 0, kuribo1_init, kuribo1_regl, kuribo1_talk},
+    {"クリボー２", 0x00000600, 0, kuribo2_init, NULL, kuribo2_talk},
+    {"クリボー３", 0x00080600, 0, kuribo3_init, kuribo3_regl, kuribo3_talk},
+    {"チューさん１", 0x00080600, 0, chusan1_init, chusan1_regl, chusan1_talk},
+    {"チューさん２", 0x00080600, 0, chusan2_init, NULL, chusan2_talk},
+    {"水夫ボム兵", 0x00080600, 0, bomhei_init, NULL, bomhei_talk},
+    {"ボッタクール", 0x00080600, 0, bottakuru_init, NULL, bottakuru_talk},
+    {"ルイージ", 0x00080600, 0, luigi_init, NULL, luigi_talk},
+    {"盗賊", 0x00080600, 0, thief_init, NULL, thief_talk},
+    {"キノピコ", 0x00080600},
+    {NULL},
 };
 
 EVT_BEGIN(christine_nakama_before)
@@ -2160,7 +2021,7 @@ static char* door_data_01_npc[2] = {
     "ナンシー", NULL,
 };
 
-char* door_data_01_item[2] = {
+const char* door_data_01_item[2] = {
     "iri_18", NULL,
 };
 
@@ -2178,22 +2039,46 @@ static EVT_BEGIN(evt_door_01_close)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 door_data_01[18] = {
-    0x00000000, 0x00000003, 0x00000001, (u32)"S_ie_01_doa",
-    (u32)"A_ie_01_doa02", (u32)"A_ie_01_doa01", (u32)"S_ie_01_soto", (u32)"A_ie_01_A",
-    (u32)"S_ie_01_naka", (u32)"A_ie_01_C", (u32)&evt_door_01_00, (u32)&evt_door_01_01,
-    (u32)&evt_wall_01, 0x00000000, 0x00000000, (u32)&door_data_01_item,
-    (u32)&evt_door_01_open, (u32)&evt_door_01_close,
+static DoorEntry door_data_01 = {
+    0,                 // flags
+    3,                 // type
+    1,                 // field_0x8
+    "S_ie_01_doa",     // doorMapObj
+    "A_ie_01_doa02",   // closeHit
+    "A_ie_01_doa01",   // openHit
+    "S_ie_01_soto",    // outsideMapObj
+    "A_ie_01_A",       // outsideHit
+    "S_ie_01_naka",    // insideMapObj
+    "A_ie_01_C",       // insideHit
+    evt_door_01_00,    // doorEvt
+    evt_door_01_01,    // field_0x2C
+    evt_wall_01,       // houseEvt
+    NULL,              // npcNames
+    NULL,              // mobjNames
+    door_data_01_item, // itemNames
+    evt_door_01_open,  // openEvt
+    evt_door_01_close, // closeEvt
 };
 
-// TODO: type
-u32 door_data_01_01[18] = {
-    0x00000000, 0x00000003, 0x00000001, (u32)"S_ie_01_doa",
-    (u32)"A_ie_01_doa02", (u32)"A_ie_01_doa01", (u32)"S_ie_01_soto", (u32)"A_ie_01_A",
-    (u32)"S_ie_01_naka", (u32)"A_ie_01_C", (u32)&evt_door_01_00, (u32)&evt_door_01_01,
-    (u32)&evt_wall_01, (u32)&door_data_01_npc, 0x00000000, (u32)&door_data_01_item,
-    (u32)&evt_door_01_open, (u32)&evt_door_01_close,
+DoorEntry door_data_01_01 = {
+    0,                              // flags
+    3,                              // type
+    1,                              // field_0x8
+    "S_ie_01_doa",                  // doorMapObj
+    "A_ie_01_doa02",                // closeHit
+    "A_ie_01_doa01",                // openHit
+    "S_ie_01_soto",                 // outsideMapObj
+    "A_ie_01_A",                    // outsideHit
+    "S_ie_01_naka",                 // insideMapObj
+    "A_ie_01_C",                    // insideHit
+    evt_door_01_00,                 // doorEvt
+    evt_door_01_01,                 // field_0x2C
+    evt_wall_01,                    // houseEvt
+    (const char**)door_data_01_npc, // npcNames
+    NULL,                           // mobjNames
+    door_data_01_item,              // itemNames
+    evt_door_01_open,               // openEvt
+    evt_door_01_close,              // closeEvt
 };
 
 EVT_BEGIN(evt_door_02_00_f1)
@@ -2215,11 +2100,11 @@ EVT_BEGIN(evt_wall_02_f1)
     RETURN
 EVT_END()
 
-static char* door_data_02_npc[3] = {
+static const char* door_data_02_npc[3] = {
     "店長", "店員", NULL,
 };
 
-char* door_data_02_npc_01[2] = {
+const char* door_data_02_npc_01[2] = {
     "店長", NULL,
 };
 
@@ -2237,22 +2122,46 @@ EVT_BEGIN(evt_door_02f1_close)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 door_data_02_f1[18] = {
-    0x00000000, 0x00000003, 0x00000001, (u32)"S_ie_02_f1_doa",
-    (u32)"A_ie_02_f1_doa02", (u32)"A_ie_02_f1_doa01", (u32)"S_ie_02_f1_soto", 0x00000000,
-    (u32)"S_ie_02_f1_naka", (u32)"A_ie_02_f1_C", (u32)&evt_door_02_00_f1, 0x00000000,
-    (u32)&evt_wall_02_f1, (u32)&door_data_02_npc, 0x00000000, 0x00000000,
-    (u32)&evt_door_02f1_open, (u32)&evt_door_02f1_close,
+DoorEntry door_data_02_f1 = {
+    0,                   // flags
+    3,                   // type
+    1,                   // field_0x8
+    "S_ie_02_f1_doa",    // doorMapObj
+    "A_ie_02_f1_doa02",  // closeHit
+    "A_ie_02_f1_doa01",  // openHit
+    "S_ie_02_f1_soto",   // outsideMapObj
+    NULL,                // outsideHit
+    "S_ie_02_f1_naka",   // insideMapObj
+    "A_ie_02_f1_C",      // insideHit
+    evt_door_02_00_f1,   // doorEvt
+    NULL,                // field_0x2C
+    evt_wall_02_f1,      // houseEvt
+    door_data_02_npc,    // npcNames
+    NULL,                // mobjNames
+    NULL,                // itemNames
+    evt_door_02f1_open,  // openEvt
+    evt_door_02f1_close, // closeEvt
 };
 
-// TODO: type
-u32 door_data_02_f1_01[18] = {
-    0x00000000, 0x00000003, 0x00000001, (u32)"S_ie_02_f1_doa",
-    (u32)"A_ie_02_f1_doa02", (u32)"A_ie_02_f1_doa01", (u32)"S_ie_02_f1_soto", 0x00000000,
-    (u32)"S_ie_02_f1_naka", (u32)"A_ie_02_f1_C", (u32)&evt_door_02_00_f1, 0x00000000,
-    (u32)&evt_wall_02_f1, (u32)&door_data_02_npc_01, 0x00000000, 0x00000000,
-    (u32)&evt_door_02f1_open, (u32)&evt_door_02f1_close,
+DoorEntry door_data_02_f1_01 = {
+    0,                   // flags
+    3,                   // type
+    1,                   // field_0x8
+    "S_ie_02_f1_doa",    // doorMapObj
+    "A_ie_02_f1_doa02",  // closeHit
+    "A_ie_02_f1_doa01",  // openHit
+    "S_ie_02_f1_soto",   // outsideMapObj
+    NULL,                // outsideHit
+    "S_ie_02_f1_naka",   // insideMapObj
+    "A_ie_02_f1_C",      // insideHit
+    evt_door_02_00_f1,   // doorEvt
+    NULL,                // field_0x2C
+    evt_wall_02_f1,      // houseEvt
+    door_data_02_npc_01, // npcNames
+    NULL,                // mobjNames
+    NULL,                // itemNames
+    evt_door_02f1_open,  // openEvt
+    evt_door_02f1_close, // closeEvt
 };
 
 EVT_BEGIN(evt_door_02_f2_junbityu)
@@ -2281,7 +2190,7 @@ EVT_BEGIN(evt_wall_02_f2)
     RETURN
 EVT_END()
 
-char* badgemise_npc[3] = {
+const char* badgemise_npc[3] = {
     "バッジ店長", "バッジ店員", NULL,
 };
 
@@ -2399,13 +2308,25 @@ EVT_BEGIN(evt_close_02_01_f2)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 door_data_02_f2[18] = {
-    0x00000000, 0x00000003, 0x00000001, (u32)"S_ie_02_f2_doaD",
-    (u32)"A_ie_02_f2_doa02", (u32)"A_ie_02_f2_doa01", (u32)"S_ie_02_f2_soto", 0x00000000,
-    (u32)"S_ie_02_f2_naka", (u32)"A_ie_02_f2_C", (u32)&evt_door_02_00_f2, 0x00000000,
-    (u32)&evt_wall_02_f2, (u32)&badgemise_npc, 0x00000000, 0x00000000,
-    (u32)&evt_open_02_01_f2, (u32)&evt_close_02_01_f2,
+DoorEntry door_data_02_f2 = {
+    0,                  // flags
+    3,                  // type
+    1,                  // field_0x8
+    "S_ie_02_f2_doaD",  // doorMapObj
+    "A_ie_02_f2_doa02", // closeHit
+    "A_ie_02_f2_doa01", // openHit
+    "S_ie_02_f2_soto",  // outsideMapObj
+    NULL,               // outsideHit
+    "S_ie_02_f2_naka",  // insideMapObj
+    "A_ie_02_f2_C",     // insideHit
+    evt_door_02_00_f2,  // doorEvt
+    NULL,               // field_0x2C
+    evt_wall_02_f2,     // houseEvt
+    badgemise_npc,      // npcNames
+    NULL,               // mobjNames
+    NULL,               // itemNames
+    evt_open_02_01_f2,  // openEvt
+    evt_close_02_01_f2, // closeEvt
 };
 
 EVT_BEGIN(house03_f1f2_fade)
@@ -2649,21 +2570,33 @@ EVT_BEGIN(evt_wall_03_f1)
     RETURN
 EVT_END()
 
-static char* door_data_03_npc[10] = {
+static const char* door_data_03_npc[10] = {
     "マスター", "キノじい", "宿店員", "チューさん２", "水夫ボム兵", "マルコ", "ルイージ", "トルク", "キック２", NULL,
 };
 
-char* door_data_03_item[2] = {
+const char* door_data_03_item[2] = {
     "ドクロジュエル", NULL,
 };
 
-// TODO: type
-u32 door_data_03_f1[18] = {
-    0x00000000, 0x00000003, 0x00000001, (u32)"S_ie_03_f1_doa",
-    (u32)"A_ie_03_f1_doa02", (u32)"A_ie_03_f1_doa01", (u32)"S_ie_03_soto", 0x00000000,
-    (u32)"S_ie_03_naka", 0x00000000, (u32)&evt_door_03_00_f1, (u32)&evt_door_03_01_f1,
-    (u32)&evt_wall_03_f1, (u32)&door_data_03_npc, 0x00000000, (u32)&door_data_03_item,
-    (u32)&house_03_f1_open, (u32)&house_03_f1_close,
+DoorEntry door_data_03_f1 = {
+    0,                  // flags
+    3,                  // type
+    1,                  // field_0x8
+    "S_ie_03_f1_doa",   // doorMapObj
+    "A_ie_03_f1_doa02", // closeHit
+    "A_ie_03_f1_doa01", // openHit
+    "S_ie_03_soto",     // outsideMapObj
+    NULL,               // outsideHit
+    "S_ie_03_naka",     // insideMapObj
+    NULL,               // insideHit
+    evt_door_03_00_f1,  // doorEvt
+    evt_door_03_01_f1,  // field_0x2C
+    evt_wall_03_f1,     // houseEvt
+    door_data_03_npc,   // npcNames
+    NULL,               // mobjNames
+    door_data_03_item,  // itemNames
+    house_03_f1_open,   // openEvt
+    house_03_f1_close,  // closeEvt
 };
 
 EVT_BEGIN(evt_door_03_00_f2)
@@ -2725,13 +2658,25 @@ EVT_BEGIN(evt_wall_03_f2)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 door_data_03_f2[18] = {
-    0x00000000, 0x00000003, 0x00000001, (u32)"S_ie_03_f21_doa",
-    (u32)"S_ie_03_f2_doa02", (u32)"S_ie_03_f2_doa01", (u32)"S_ie_03_soto", 0x00000000,
-    (u32)"S_ie_03_naka", 0x00000000, (u32)&evt_door_03_00_f2, 0x00000000,
-    (u32)&evt_wall_03_f2, (u32)&door_data_03_npc, 0x00000000, (u32)&door_data_03_item,
-    (u32)&house_03_f2_open, (u32)&house_03_f2_close,
+DoorEntry door_data_03_f2 = {
+    0,                  // flags
+    3,                  // type
+    1,                  // field_0x8
+    "S_ie_03_f21_doa",  // doorMapObj
+    "S_ie_03_f2_doa02", // closeHit
+    "S_ie_03_f2_doa01", // openHit
+    "S_ie_03_soto",     // outsideMapObj
+    NULL,               // outsideHit
+    "S_ie_03_naka",     // insideMapObj
+    NULL,               // insideHit
+    evt_door_03_00_f2,  // doorEvt
+    NULL,               // field_0x2C
+    evt_wall_03_f2,     // houseEvt
+    door_data_03_npc,   // npcNames
+    NULL,               // mobjNames
+    door_data_03_item,  // itemNames
+    house_03_f2_open,   // openEvt
+    house_03_f2_close,  // closeEvt
 };
 
 static EVT_BEGIN(evt_door_04_00)
@@ -2774,21 +2719,33 @@ static EVT_BEGIN(evt_door_04_close)
     RETURN
 EVT_END()
 
-static char* door_data_04_npc[2] = {
+static const char* door_data_04_npc[2] = {
     "盗賊", NULL,
 };
 
-static char* door_data_04_item[2] = {
+static const char* door_data_04_item[2] = {
     "item_01", NULL,
 };
 
-// TODO: type
-static u32 door_data_04[18] = {
-    0x00000000, 0x00000003, 0x00000001, (u32)"S_ie_04_doa",
-    (u32)"A_ie_04_doa02", (u32)"A_ie_04_doa01", (u32)"S_ie_04_soto", 0x00000000,
-    (u32)"S_ie_04_naka", (u32)"A_ie_04_C", (u32)&evt_door_04_00, (u32)&evt_door_04_01,
-    (u32)&evt_wall_04, (u32)&door_data_04_npc, 0x00000000, (u32)&door_data_04_item,
-    (u32)&evt_door_04_open, (u32)&evt_door_04_close,
+static DoorEntry door_data_04 = {
+    0,                 // flags
+    3,                 // type
+    1,                 // field_0x8
+    "S_ie_04_doa",     // doorMapObj
+    "A_ie_04_doa02",   // closeHit
+    "A_ie_04_doa01",   // openHit
+    "S_ie_04_soto",    // outsideMapObj
+    NULL,              // outsideHit
+    "S_ie_04_naka",    // insideMapObj
+    "A_ie_04_C",       // insideHit
+    evt_door_04_00,    // doorEvt
+    evt_door_04_01,    // field_0x2C
+    evt_wall_04,       // houseEvt
+    door_data_04_npc,  // npcNames
+    NULL,              // mobjNames
+    door_data_04_item, // itemNames
+    evt_door_04_open,  // openEvt
+    evt_door_04_close, // closeEvt
 };
 
 static EVT_BEGIN(koushukei_dai)
@@ -4513,7 +4470,7 @@ static EVT_BEGIN(epilogue_npc_entry)
 EVT_END()
 
 static EVT_BEGIN(epilogue_evt_sub)
-    SET_VALUE(LW(0), PTR(door_data_03_f2))
+    SET_VALUE(LW(0), PTR(&door_data_03_f2))
     SPAWN_EVENT(door_open_se)
     CALL(evt_sub_intpl_msec_init, 5, 0, 180, 500)
     LOOP(0)
@@ -4530,7 +4487,7 @@ static EVT_BEGIN(epilogue_evt_sub)
         SET_VALUE(GF(0), 0)
     END_INLINE_EVENT
     WAIT_MS(1100)
-    SET_VALUE(LW(0), PTR(door_data_03_f2))
+    SET_VALUE(LW(0), PTR(&door_data_03_f2))
     SPAWN_EVENT(door_close_se)
     CALL(evt_sub_intpl_msec_init, 5, 180, 0, 500)
     LOOP(0)
@@ -4542,7 +4499,7 @@ static EVT_BEGIN(epilogue_evt_sub)
         END_IF
     END_LOOP
     WAIT_WHILE(GF(0))
-    SET_VALUE(LW(0), PTR(door_data_02_f2))
+    SET_VALUE(LW(0), PTR(&door_data_02_f2))
     SPAWN_EVENT(door_open_se)
     CALL(evt_sub_intpl_msec_init, 5, 0, 180, 500)
     LOOP(0)
@@ -4555,7 +4512,7 @@ static EVT_BEGIN(epilogue_evt_sub)
     END_LOOP
     CALL(evt_npc_move_position, STRING("バッジ店長"), -114, -100, 0, 60, 0)
     CALL(evt_set_dir_to_target, STRING("バッジ店長"), STRING("クリスチーヌ"))
-    SET_VALUE(LW(0), PTR(door_data_02_f2))
+    SET_VALUE(LW(0), PTR(&door_data_02_f2))
     SPAWN_EVENT(door_close_se)
     CALL(evt_sub_intpl_msec_init, 5, 180, 0, 500)
     LOOP(0)
@@ -4761,31 +4718,31 @@ EVT_BEGIN(gor_01_init_evt)
         CALL(evt_run_case_evt, 9, 1, STRING("A_jewel"), 0, PTR(marco_jewel), GW(8))
     END_IF
     IF_INT_EQUAL(GSWF(1188), 0)
-        SET_VALUE(LW(0), PTR(door_data_01))
+        SET_VALUE(LW(0), PTR(&door_data_01))
     ELSE
-        SET_VALUE(LW(0), PTR(door_data_01_01))
+        SET_VALUE(LW(0), PTR(&door_data_01_01))
     END_IF
     CALL(evt_door_data_copy, LW(0), GW(6))
     SET_VALUE(LW(0), GW(6))
     CALL_CHILD(evt_door_entry)
-    SET_VALUE(LW(0), PTR(door_data_02_f1))
+    SET_VALUE(LW(0), PTR(&door_data_02_f1))
     IF_INT_LESS(GSW(0), 223)
         IF_INT_EQUAL(GSWF(1191), 1)
-            SET_VALUE(LW(0), PTR(door_data_02_f1_01))
+            SET_VALUE(LW(0), PTR(&door_data_02_f1_01))
         END_IF
     END_IF
     CALL_CHILD(evt_door_entry)
     IF_INT_LESS(GSW(0), 19)
         CALL(evt_run_case_evt, 9, 1, STRING("A_ie_02_f2_doa01"), 0, PTR(evt_door_02_f2_junbityu), 0)
     ELSE
-        SET_VALUE(LW(0), PTR(door_data_02_f2))
+        SET_VALUE(LW(0), PTR(&door_data_02_f2))
         CALL_CHILD(evt_door_entry)
     END_IF
-    SET_VALUE(LW(0), PTR(door_data_03_f1))
+    SET_VALUE(LW(0), PTR(&door_data_03_f1))
     CALL_CHILD(evt_door_entry)
-    SET_VALUE(LW(0), PTR(door_data_03_f2))
+    SET_VALUE(LW(0), PTR(&door_data_03_f2))
     CALL_CHILD(evt_door_entry)
-    SET_VALUE(LW(0), PTR(door_data_04))
+    SET_VALUE(LW(0), PTR(&door_data_04))
     CALL_CHILD(evt_door_entry)
     CALL_CHILD(gor_01_shop_setup)
     CALL(evt_kinopio_setup, PTR(kino_dt))

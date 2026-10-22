@@ -171,7 +171,7 @@ const char* ie3_item[] = {
 
 DoorEntry ie3_door[] = {
     { 0, 3, 1, "S_ie3_door", "A_ie3_door3_u", "A_ie3_door3", "S_ie3_soto", NULL,
-      "S_ie3_naka", NULL, evt_ie3_door_1, (s32)evt_ie3_door_2, evt_ie3_wall, ie3_npc, NULL, ie3_item,
+      "S_ie3_naka", NULL, evt_ie3_door_1, evt_ie3_door_2, evt_ie3_wall, ie3_npc, NULL, ie3_item,
       evt_ie3_door_open, evt_ie3_door_close },
 };
 

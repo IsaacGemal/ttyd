@@ -140,29 +140,24 @@ static EVT_BEGIN(evt_kusa_7)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 tree_tbl[30] = {
-    0x00000005, (u32)"A_treeA_01", (u32)"treeA_01_m", (u32)"treeA_01_ha",
-    0x00000000, 0x00000000, 0x00000005, (u32)"A_treeA_02",
-    (u32)"treeA_02_m", (u32)"treeA_02_ha", 0x00000000, 0x00000000,
-    0x00000005, (u32)"A_treeA_03", (u32)"treeA_03_m", (u32)"treeA_03_ha",
-    0x00000000, 0x00000000, 0x00000005, (u32)"A_treeA_04",
-    (u32)"treeA_04_m", (u32)"treeA_04_ha", 0x00000000, 0x00000000,
-    0x00000007, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static TreeAccessEntry tree_tbl[5] = {
+    { 5, "A_treeA_01", "treeA_01_m", "treeA_01_ha", NULL, NULL },
+    { 5, "A_treeA_02", "treeA_02_m", "treeA_02_ha", NULL, NULL },
+    { 5, "A_treeA_03", "treeA_03_m", "treeA_03_ha", NULL, NULL },
+    { 5, "A_treeA_04", "treeA_04_m", "treeA_04_ha", NULL, NULL },
+    { 7, NULL, NULL, NULL, NULL, NULL },
 };
 
-// TODO: type
-static u32 kusa_tbl[36] = {
-    0x00000001, (u32)"A_kuwa_move_01", (u32)"S_kuwa_move_01", 0x00000000,
-    0x00000001, (u32)"A_kuwa_move_02", (u32)"S_kuwa_move_02", 0x00000000,
-    0x00000001, (u32)"A_kuwa_move_03", (u32)"S_kuwa_move_03", 0x00000000,
-    0x00000001, (u32)"A_kuwa_move_04", (u32)"S_kuwa_move_04", 0x00000000,
-    0x00000001, (u32)"A_kuwa_move_05", (u32)"S_kuwa_move_05", (u32)&evt_kusa_5,
-    0x00000001, (u32)"A_kuwa_move_06", (u32)"S_kuwa_move_06", 0x00000000,
-    0x00000001, (u32)"A_kuwa_move_07", (u32)"S_kuwa_move_07", (u32)&evt_kusa_7,
-    0x00000001, (u32)"A_kuwa_move_08", (u32)"S_kuwa_move_08", 0x00000000,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry kusa_tbl[9] = {
+    { 1, "A_kuwa_move_01", "S_kuwa_move_01", NULL },
+    { 1, "A_kuwa_move_02", "S_kuwa_move_02", NULL },
+    { 1, "A_kuwa_move_03", "S_kuwa_move_03", NULL },
+    { 1, "A_kuwa_move_04", "S_kuwa_move_04", NULL },
+    { 1, "A_kuwa_move_05", "S_kuwa_move_05", evt_kusa_5 },
+    { 1, "A_kuwa_move_06", "S_kuwa_move_06", NULL },
+    { 1, "A_kuwa_move_07", "S_kuwa_move_07", evt_kusa_7 },
+    { 1, "A_kuwa_move_08", "S_kuwa_move_08", NULL },
+    { 4, NULL, NULL, NULL },
 };
 
 EVT_BEGIN(muj_03_init_evt)

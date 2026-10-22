@@ -426,7 +426,7 @@ static EVT_BEGIN(evt_wall)
     RETURN
 EVT_END()
 
-char* door_npc[4] = {
+const char* door_npc[4] = {
     "ホワイト", "ペントリット", "スラリー", NULL,
 };
 
@@ -442,13 +442,25 @@ static EVT_BEGIN(door_close)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 door[18] = {
-    0x00000000, 0x00000003, 0x00000001, (u32)"s_ie_door",
-    (u32)"A_ie_door_u", (u32)"A_ie_door", (u32)"s_ie_kai", 0x00000000,
-    (u32)"S_ie_naka", 0x00000000, (u32)&evt_door_1, (u32)&evt_door_2,
-    (u32)&evt_wall, (u32)&door_npc, 0x00000000, 0x00000000,
-    (u32)&door_open, (u32)&door_close,
+DoorEntry door = {
+    0,             // flags
+    3,             // type
+    1,             // field_0x8
+    "s_ie_door",   // doorMapObj
+    "A_ie_door_u", // closeHit
+    "A_ie_door",   // openHit
+    "s_ie_kai",    // outsideMapObj
+    NULL,          // outsideHit
+    "S_ie_naka",   // insideMapObj
+    NULL,          // insideHit
+    evt_door_1,    // doorEvt
+    evt_door_2,    // field_0x2C
+    evt_wall,      // houseEvt
+    door_npc,      // npcNames
+    NULL,          // mobjNames
+    NULL,          // itemNames
+    door_open,     // openEvt
+    door_close,    // closeEvt
 };
 
 static BeroEntry bero_entry_data[3] = {
@@ -1402,7 +1414,7 @@ static EVT_BEGIN(evt_taihou)
         CALL(evt_npc_move_position, STRING("スラリー"), -70, -180, 0, FLOAT(80.0f), 1)
     END_INLINE_EVENT
     SET_VALUE(GF(0), 0)
-    SET_VALUE(LW(0), PTR(door))
+    SET_VALUE(LW(0), PTR(&door))
     SPAWN_EVENT(evt_door_open_bom_01)
     LOOP(0)
         IF_INT_EQUAL(GF(0), 1)
@@ -2442,49 +2454,14 @@ __declspec(section ".rodata") const Vec vec3_bom_00006ebc = {0.0f, 100.0f, 0.0f}
 __declspec(section ".rodata") const Vec vec3_bom_00006ec8 = {0.0f, 1.0f, 0.0f};
 __declspec(section ".rodata") const Vec vec3_bom_00006ed4 = {0.0f, 0.0f, 0.0f};
 
-// TODO: type
-static u32 npcEnt[161] = {
-    (u32)"村長", 0x40000600, 0x00000000, (u32)&init_soncho,
-    0x00000000, (u32)&talk_soncho, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ニトロ",
-    0x40000600, 0x00000000, (u32)&init_nitoro, 0x00000000,
-    (u32)&talk_nitoro, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"ペントリット", 0x40000600,
-    0x00000000, (u32)&init_pentrit, 0x00000000, (u32)&talk_pentrit,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"スラリー", 0x40000600, 0x00000000,
-    (u32)&init_surary, 0x00000000, (u32)&talk_surary, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"ボムヘイD", 0x40000600, 0x00000000, (u32)&init_murabito_d,
-    0x00000000, (u32)&talk_murabito_d, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ホワイト",
-    0x40000600, 0x00000000, (u32)&init_white, 0x00000000,
-    (u32)&talk_white, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static NpcSetupInfo npcEnt[7] = {
+    {"村長", 0x40000600, 0, init_soncho, NULL, talk_soncho},
+    {"ニトロ", 0x40000600, 0, init_nitoro, NULL, talk_nitoro},
+    {"ペントリット", 0x40000600, 0, init_pentrit, NULL, talk_pentrit},
+    {"スラリー", 0x40000600, 0, init_surary, NULL, talk_surary},
+    {"ボムヘイD", 0x40000600, 0, init_murabito_d, NULL, talk_murabito_d},
+    {"ホワイト", 0x40000600, 0, init_white, NULL, talk_white},
+    {NULL},
 };
 
 

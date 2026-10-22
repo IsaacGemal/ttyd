@@ -797,7 +797,7 @@ USER_FUNC(evt_door_param) {
 		break;
 	case 6:
 		evtSetValue(event, args[2], (s32)param->doorEvt);
-		evtSetValue(event, args[3], param->field_0x2C);
+		evtSetValue(event, args[3], (s32)param->field_0x2C);
 		evtSetValue(event, args[4], (s32)param->houseEvt);
 		break;
 	case 7:

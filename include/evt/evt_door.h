@@ -22,7 +22,7 @@ typedef struct DoorEntry {
     const char* insideMapObj;     // 0x20
     const char* insideHit;        // 0x24
     s32* doorEvt;                 // 0x28
-    s32 field_0x2C;               // 0x2C
+    s32* field_0x2C;              // 0x2C run with door_down_se
     s32* houseEvt;                // 0x30 run with house_open_se/house_close_se
     const char** npcNames;        // 0x34
     const char** mobjNames;       // 0x38
