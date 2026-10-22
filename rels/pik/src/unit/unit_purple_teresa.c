@@ -11,6 +11,7 @@
 #include "battle/battle_camera.h"
 #include "evt/evt_sub.h"
 #include "battle/battle_weapon_power.h"
+#include "battle/battle_disp.h"
 
 // These floats are not referenced by any decompiled code, but the original object carries them
 // (MSL's sqrtf inlined them here).  Mark them force_active so the REL linker keeps the
@@ -42,7 +43,6 @@ extern s32 subsetevt_confuse_flustered[];
 #include "rel/common/teresa_check/teresa_check_trans.h"
 #include "rel/common/teresa_check/teresa_check_move.h"
 #include "rel/common/teresa_check/teresa_check_teresa.h"
-#include "battle/battle_disp.h"
 
 
 /* ==== generated strings (.rodata) ==== */

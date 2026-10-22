@@ -1003,21 +1003,24 @@ s32 target_parts_id = -1;
 
 f32 atmic_teresa_scale = 1.0f;
 
-// TODO: type
-u32 teresa_ext_entry_data[51] = {
-    (u32)"c_teresa", (u32)"S_1", 0x00000000, (u32)"c_teresa",
-    (u32)"S_1", 0x40000000, (u32)"c_teresa", (u32)"S_1",
-    0x40800000, (u32)"c_teresa", (u32)"S_1", 0x40C00000,
-    (u32)"c_teresa", (u32)"S_1", 0x41000000, (u32)"c_teresa",
-    (u32)"S_1", 0x41200000, (u32)"c_teresa", (u32)"S_1",
-    0x40C00000, (u32)"c_teresa", (u32)"S_1", 0x40E00000,
-    (u32)"c_teresa", (u32)"A_1", 0x00000000, (u32)"c_teresa",
-    (u32)"A_2", 0x40C00000, (u32)"c_teresa", (u32)"A_2",
-    0x40E00000, (u32)"c_teresa", (u32)"A_2", 0x41000000,
-    (u32)"c_teresa", (u32)"A_2", 0x41100000, (u32)"c_teresa",
-    (u32)"A_2", 0x41200000, (u32)"c_teresa", (u32)"A_2",
-    0x41300000, (u32)"c_teresa", (u32)"A_2", 0x41400000,
-    0x00000000, 0x00000000, 0x00000000,
+ExtMakeTextureEntry teresa_ext_entry_data[17] = {
+    { "c_teresa", "S_1", 0.0f },
+    { "c_teresa", "S_1", 2.0f },
+    { "c_teresa", "S_1", 4.0f },
+    { "c_teresa", "S_1", 6.0f },
+    { "c_teresa", "S_1", 8.0f },
+    { "c_teresa", "S_1", 10.0f },
+    { "c_teresa", "S_1", 6.0f },
+    { "c_teresa", "S_1", 7.0f },
+    { "c_teresa", "A_1", 0.0f },
+    { "c_teresa", "A_2", 6.0f },
+    { "c_teresa", "A_2", 7.0f },
+    { "c_teresa", "A_2", 8.0f },
+    { "c_teresa", "A_2", 9.0f },
+    { "c_teresa", "A_2", 10.0f },
+    { "c_teresa", "A_2", 11.0f },
+    { "c_teresa", "A_2", 12.0f },
+    { NULL, NULL, 0.0f },
 };
 
 // This is where the original has it, just before the first script that uses it.

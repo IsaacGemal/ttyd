@@ -28,6 +28,7 @@
 #include "system.h"
 
 #include <string.h>
+#include "driver/extdrv.h"
 
 #pragma pool_data off
 
@@ -61,32 +62,38 @@ extend_data(49,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 ext_entry_data[93] = {
-    (u32)"c_boro_k", (u32)"S_1", 0x00000000, (u32)"c_boro_k",
-    (u32)"S_1", 0x40000000, (u32)"c_boro_k", (u32)"S_1",
-    0x40800000, (u32)"c_boro_k", (u32)"S_1", 0x40C00000,
-    (u32)"c_boro_k", (u32)"S_1", 0x41000000, (u32)"c_boro_k",
-    (u32)"S_1", 0x41200000, (u32)"c_boro_k", (u32)"S_1",
-    0x41400000, (u32)"c_boro_k", (u32)"S_1", 0x41600000,
-    (u32)"c_boro_k", (u32)"S_1", 0x41800000, (u32)"c_boro_k",
-    (u32)"S_1", 0x41900000, (u32)"c_boro_k", (u32)"S_1",
-    0x41A00000, (u32)"c_boro_k", (u32)"S_1", 0x41B00000,
-    (u32)"c_boro_k", (u32)"S_1", 0x41C00000, (u32)"c_boro_k",
-    (u32)"S_1", 0x41D00000, (u32)"c_boro_k", (u32)"S_1",
-    0x41E00000, (u32)"c_boro_k", (u32)"S_1", 0x41F00000,
-    (u32)"c_boro_k", (u32)"S_1", 0x42000000, (u32)"c_boro_k",
-    (u32)"S_1", 0x42080000, (u32)"c_boro_k", (u32)"S_1",
-    0x42100000, (u32)"c_boro_k", (u32)"S_1", 0x42180000,
-    (u32)"c_boro_k", (u32)"R_1", 0x00000000, (u32)"c_boro_k",
-    (u32)"R_1", 0x40000000, (u32)"c_boro_k", (u32)"R_1",
-    0x40800000, (u32)"c_boro_k", (u32)"R_1", 0x40C00000,
-    (u32)"c_boro_k", (u32)"R_1", 0x41000000, (u32)"c_boro_k",
-    (u32)"R_1", 0x41200000, (u32)"c_boro_k", (u32)"R_1",
-    0x41400000, (u32)"c_boro_k", (u32)"R_1", 0x41600000,
-    (u32)"c_boro_k", (u32)"R_1", 0x41800000, (u32)"c_boro_k",
-    (u32)"R_1", 0x41900000, 0x00000000, 0x00000000,
-    0x00000000,
+static ExtMakeTextureEntry ext_entry_data[31] = {
+    { "c_boro_k", "S_1", 0.0f },
+    { "c_boro_k", "S_1", 2.0f },
+    { "c_boro_k", "S_1", 4.0f },
+    { "c_boro_k", "S_1", 6.0f },
+    { "c_boro_k", "S_1", 8.0f },
+    { "c_boro_k", "S_1", 10.0f },
+    { "c_boro_k", "S_1", 12.0f },
+    { "c_boro_k", "S_1", 14.0f },
+    { "c_boro_k", "S_1", 16.0f },
+    { "c_boro_k", "S_1", 18.0f },
+    { "c_boro_k", "S_1", 20.0f },
+    { "c_boro_k", "S_1", 22.0f },
+    { "c_boro_k", "S_1", 24.0f },
+    { "c_boro_k", "S_1", 26.0f },
+    { "c_boro_k", "S_1", 28.0f },
+    { "c_boro_k", "S_1", 30.0f },
+    { "c_boro_k", "S_1", 32.0f },
+    { "c_boro_k", "S_1", 34.0f },
+    { "c_boro_k", "S_1", 36.0f },
+    { "c_boro_k", "S_1", 38.0f },
+    { "c_boro_k", "R_1", 0.0f },
+    { "c_boro_k", "R_1", 2.0f },
+    { "c_boro_k", "R_1", 4.0f },
+    { "c_boro_k", "R_1", 6.0f },
+    { "c_boro_k", "R_1", 8.0f },
+    { "c_boro_k", "R_1", 10.0f },
+    { "c_boro_k", "R_1", 12.0f },
+    { "c_boro_k", "R_1", 14.0f },
+    { "c_boro_k", "R_1", 16.0f },
+    { "c_boro_k", "R_1", 18.0f },
+    { NULL, NULL, 0.0f },
 };
 
 // TODO: type

@@ -23,6 +23,7 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/hitdrv.h"
 
 #pragma pool_data off
 
@@ -781,5 +782,4 @@ EVT_BEGIN(hei_01_init_evt)
 EVT_END()
 
 #include "rel/common/set_dir.h"
-#include "driver/hitdrv.h"
 
