@@ -587,7 +587,7 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     pos.y = 160.0f;
     {
         u16 iconId;
-        if ((u32)gp->language != 0) {
+        if (gp->language != 0) {
             iconId = 0x210;
         } else {
             iconId = 0x206;
