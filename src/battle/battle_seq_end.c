@@ -398,12 +398,13 @@ EVT_END()
 
 // clang-format on
 
-s32 _koura_delete_event[] = {
-    0x0003005B, (s32)_check_guard_koura, 0xFFFFFFFD, 0xFE363C8A,
-    0x00020019, 0xFE363C8A, 0xFFFFFFFF, 0x0003005B,
-    (s32)btlevtcmd_RunDataEventChild, 0xFE363C8A, 0x0000003E,
-    0x00000021, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(_koura_delete_event)
+    CALL(_check_guard_koura, -3, LW(10))
+    IF_INT_NOT_EQUAL(LW(10), -1)
+        CALL(btlevtcmd_RunDataEventChild, LW(10), 62)
+    END_IF
+    RETURN
+EVT_END()
 
 // clang-format off
 __declspec(section ".sdata") EVT_BEGIN(_event_MajinaiEnd)

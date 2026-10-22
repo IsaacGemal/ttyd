@@ -175,7 +175,10 @@ static BattleWeapon weapon = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-u32 nice_event_pow[8] = {0x0005005B, (u32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0xFFFFFF9C, 0x000000AF, 0, 2, 1};
+EVT_BEGIN(nice_event_pow)
+    CALL(btlevtcmd_ACSuccessEffect, LW(0), -100, 175, 0)
+    RETURN
+EVT_END()
 
 static MukiWork* get_ptr(void);
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall);

@@ -100,10 +100,10 @@ const char str_msg_sukkari_sukkiri[0x14] = "msg_sukkari_sukkiri";
 const char str_msg_sac_7[0xC] = "msg_sac_7";
 __declspec(section ".sdata2") const u8 N_ohko_rate_tbl[8] = { 0x32, 0x3C, 0x46, 0x50, 0x5A, 0x64, 0x00, 0x00 };
 extern u32 weapon_words[48];
-static u32 nice_event[8] = {
-    0x0005005B, (u32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0xFFFFFF88,
-    0x00000078, 0,                     2,          1,
-};
+static EVT_BEGIN(nice_event)
+    CALL(btlevtcmd_ACSuccessEffect, LW(0), -120, 120, 0)
+    RETURN
+EVT_END()
 
 static SukiWork* get_ptr(void);
 static void main_base(void);

@@ -128,22 +128,25 @@ extern void psndSFX_vol(s32 id, s32 vol);
 
 // Small event scripts that announce an audience reaction; the retail objects sit in .sdata (too large for
 // automatic small-data placement, so the section is requested explicitly).
-__declspec(section ".sdata") s32 msg_puni_all_escape[9] = {
-	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
-	(s32)(void*)"btl_msg_audience_puni_escape", 0x00000078, 0x00000002, 0x00000001,
-};
-__declspec(section ".sdata") s32 msg_puni_all_enter[9] = {
-	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
-	(s32)(void*)"btl_msg_audience_puni_meeting", 0x00000078, 0x00000002, 0x00000001,
-};
-__declspec(section ".sdata") s32 msg_pansy_sing[9] = {
-	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
-	(s32)(void*)"btl_msg_audience_pansy_sleep", 0x00000078, 0x00000002, 0x00000001,
-};
-__declspec(section ".sdata") s32 msg_heavy_bomb_fire[9] = {
-	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
-	(s32)(void*)"btl_msg_audience_heavybomb_dynamite", 0x00000078, 0x00000002, 0x00000001,
-};
+__declspec(section ".sdata") EVT_BEGIN(msg_puni_all_escape)
+    CALL(btlevtcmd_AnnounceMessage, 0, 0, -225, STRING("btl_msg_audience_puni_escape"), 120)
+    RETURN
+EVT_END()
+
+__declspec(section ".sdata") EVT_BEGIN(msg_puni_all_enter)
+    CALL(btlevtcmd_AnnounceMessage, 0, 0, -225, STRING("btl_msg_audience_puni_meeting"), 120)
+    RETURN
+EVT_END()
+
+__declspec(section ".sdata") EVT_BEGIN(msg_pansy_sing)
+    CALL(btlevtcmd_AnnounceMessage, 0, 0, -225, STRING("btl_msg_audience_pansy_sleep"), 120)
+    RETURN
+EVT_END()
+
+__declspec(section ".sdata") EVT_BEGIN(msg_heavy_bomb_fire)
+    CALL(btlevtcmd_AnnounceMessage, 0, 0, -225, STRING("btl_msg_audience_heavybomb_dynamite"), 120)
+    RETURN
+EVT_END()
 
 const f32 R_audience_delta_multiplier[] = {
 	8.0f, 11.0f, 14.0f, 17.0f, 20.0f, 23.0f, 26.0f, 29.0f, 32.0f, 35.0f, 38.0f, 41.0f, 44.0f,

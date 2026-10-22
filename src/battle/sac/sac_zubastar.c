@@ -44,11 +44,11 @@ extern const char str_SFX_BTL_SAC_ZUBA_STAR3[];
 // signedness; this file passes a full 32-bit signed pitch.
 s32 psndSFX_pit(s32 id, s32 pit);
 
-// The original emits this as a local .sdata table (nice_event, local).
-static u32 nice_event[8] = {
-    0x0005005B, (u32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0xFFFFFF88,
-    0x0000008C, 0,                              2,          1,
-};
+// The original emits this as a local .sdata script (nice_event, local).
+static EVT_BEGIN(nice_event)
+    CALL(btlevtcmd_ACSuccessEffect, LW(0), -120, 140, 0)
+    RETURN
+EVT_END()
 
 typedef struct ZubaStarBomb {
     s32 state;       // 0x00

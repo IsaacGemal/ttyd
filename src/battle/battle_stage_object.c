@@ -1135,132 +1135,179 @@ __declspec(section ".data") s32 _object_nozzle_data[18] = {
     (s32)"nozzle_r", 0x00030004, 0x42F00000, 0x00000000,
     0x42B40000, 0x00000000,
 };
-__declspec(section ".data") s32 _object_turn_event_core[175] = {
-    0x0002005B, (s32)&_set_mobj_shake_init, 0xFE363C89, 0x0002005B,
-    (s32)&_set_mobj_shake, 0xFE363C89, 0x0002005B, (s32)&_set_mobj_rotate_x,
-    0xFE363C89, 0x00020019, 0xFE363C89, 0x00000001,
-    0x0006005B, (s32)&evt_btl_camera_shake_h, 0x00000000, 0x00000004,
-    0x00000000, 0x0000001E, 0x0000000D, 0x00000021,
-    0x0002005B, (s32)&_bgset_kemuri_effect, 0xFE363C89, 0x00020019,
-    0xFE363C89, 0x00000001, 0x0001005B, (s32)&_bgset_audience_bgset_access,
-    0x00000021, 0x0003005B, (s32)&btlevtcmd_check_battleflag, 0xFE363C80,
-    0x00000100, 0x00020019, 0xFE363C80, 0x00000000,
-    0x00010004, 0x00000014, 0x00000021, 0x0003005B,
-    (s32)&_get_bgset_attack_data, 0xFE363C89, 0xFE363C8C, 0x00020018,
-    0xFE363C8C, 0x00000000, 0x00010004, 0x00000014,
-    0x00000021, 0x0003005B, (s32)&btlevtcmd_GetEnemyBelong, 0xFFFFFFFB,
-    0xFE363C80, 0x0004005B, (s32)&btlevtcmd_SamplingEnemy, 0xFFFFFFFB,
-    0xFE363C80, 0xFE363C8C, 0x0003005B, (s32)&btlevtcmd_GetSelectEnemy,
-    0xFE363C8A, 0xFE363C8B, 0x00020032, 0xFE363C8F,
-    0x00000000, 0x00010003, 0x0000000A, 0x00020018,
-    0xFE363C8A, 0xFFFFFFFF, 0x00010004, 0x00000014,
-    0x00000021, 0x00020018, 0xFE363C8F, 0x00000000,
-    0x0003005B, (s32)&btlevtcmd_GetACPossibility, 0xFE363C8A, 0xFE363C80,
-    0x00020019, 0xFE363C80, 0x00000000, 0x00020035,
-    0xFE363C8F, 0x00000001, 0x0003005B, (s32)&btlevtcmd_ResultACDefence,
-    0xFE363C8A, 0xFE363C8C, 0x00000021, 0x00000021,
-    0x0007005B, (s32)&btlevtcmd_PreCheckDamage, 0xFFFFFFFB, 0xFE363C8A,
-    0xFE363C8B, 0xFE363C8C, 0x00000100, 0xFE363C85,
-    0x00010022, 0xFE363C85, 0x00010024, 0x00000004,
-    0x00010024, 0x00000002, 0x0003005B, (s32)&btlevtcmd_StartAvoid,
-    0xFE363C8A, 0x00000028, 0x00010024, 0x00000003,
-    0x0003005B, (s32)&btlevtcmd_StartAvoid, 0xFE363C8A, 0x00000026,
-    0x00010024, 0x00000006, 0x0003005B, (s32)&btlevtcmd_StartAvoid,
-    0xFE363C8A, 0x00000027, 0x00010024, 0x00000001,
-    0x0007005B, (s32)&btlevtcmd_CheckDamage, 0xFFFFFFFB, 0xFE363C8A,
-    0xFE363C8B, 0xFE363C8C, 0x00000100, 0xFE363C85,
-    0x0000002A, 0x00000031, 0x0003005B, (s32)&btlevtcmd_GetSelectNextEnemy,
-    0xFE363C8A, 0xFE363C8B, 0x00010004, 0x0000000A,
-    0x00010003, 0x00000014, 0x00010009, 0x00000032,
-    0x00020032, 0xFE363C80, 0x000000FF, 0x00020032,
-    0xFE363C81, 0x00000033, 0x00010003, 0x00000032,
-    0x00020036, 0xFE363C80, 0x00000005, 0x0003005B,
-    (s32)&_mobj_set_alpha, 0xFE363C89, 0xFE363C80, 0x00020036,
-    0xFE363C81, 0x00000001, 0x0002001B, 0xFE363C81,
-    0x00000000, 0x00010009, 0x00000001, 0x00010004,
-    0x00000032, 0x00000021, 0x0002005B, (s32)&_mobj_destroy,
-    0xFE363C89, 0x00000002, 0x00000001,
-};
-__declspec(section ".data") s32 _fall_frame_event[77] = {
-    0x0001005B, (s32)&_fall_frame_wait, 0x0001005B, (s32)&_fall_frame_wait_unit_ready,
-    0x0002005B, (s32)&_fall_frame, 0xFE363C8C, 0x0003005B,
-    (s32)&btlevtcmd_GetEnemyBelong, 0xFFFFFFFB, 0xFE363C80, 0x0004005B,
-    (s32)&btlevtcmd_SamplingEnemy, 0xFFFFFFFB, 0xFE363C80, 0xFE363C8C,
-    0x0003005B, (s32)&btlevtcmd_GetSelectEnemy, 0xFE363C8A, 0xFE363C8B,
-    0x00020032, 0xFE363C8F, 0x00000000, 0x00010003,
-    0x0000000A, 0x00020018, 0xFE363C8A, 0xFFFFFFFF,
-    0x00010004, 0x00000014, 0x00000021, 0x00020018,
-    0xFE363C8F, 0x00000000, 0x0003005B, (s32)&btlevtcmd_GetACPossibility,
-    0xFE363C8A, 0xFE363C80, 0x00020019, 0xFE363C80,
-    0x00000000, 0x00020035, 0xFE363C8F, 0x00000001,
-    0x0003005B, (s32)&btlevtcmd_ResultACDefence, 0xFE363C8A, 0xFE363C8C,
-    0x00000021, 0x00000021, 0x0007005B, (s32)&btlevtcmd_CheckDamage,
-    0xFFFFFFFB, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
-    0x00000100, 0xFE363C85, 0x0003005B, (s32)&btlevtcmd_GetSelectNextEnemy,
-    0xFE363C8A, 0xFE363C8B, 0x00010004, 0x0000000A,
-    0x00010003, 0x00000014, 0x0006005B, (s32)&evt_btl_camera_shake_h,
-    0x00000000, 0x0000000A, 0x00000000, 0x00000014,
-    0x0000000D, 0x0001005B, (s32)&_fall_frame_delete, 0x00000002,
-    0x00000001,
-};
-__declspec(section ".data") s32 _nozzle_work_event_core[199] = {
-    0x0001005B, (s32)&_nozzle_work_wait, 0x0003005B, (s32)&_nozzle_work_effect,
-    0xFE363C8A, 0xFE363C80, 0x00020018, 0xFE363C80,
-    0x00000000, 0x00000002, 0x00000021, 0x0001005B,
-    (s32)&_nozzle_work_attack_set, 0x0003005B, (s32)&_nozzle_work_get_weapon_address, 0x00000000,
-    0xFE363C8C, 0x00020018, 0xFE363C8C, 0x00000000,
-    0x00010004, 0x00000013, 0x00000021, 0x0003005B,
-    (s32)&btlevtcmd_GetEnemyBelong, 0xFFFFFFFB, 0xFE363C80, 0x0004005B,
-    (s32)&btlevtcmd_SamplingEnemy, 0xFFFFFFFB, 0xFE363C80, 0xFE363C8C,
-    0x0003005B, (s32)&btlevtcmd_GetSelectEnemy, 0xFE363C8A, 0xFE363C8B,
-    0x00020032, 0xFE363C8F, 0x00000000, 0x00010003,
-    0x0000000A, 0x00020018, 0xFE363C8A, 0xFFFFFFFF,
-    0x00010004, 0x00000013, 0x00000021, 0x00020018,
-    0xFE363C8F, 0x00000000, 0x0003005B, (s32)&btlevtcmd_GetACPossibility,
-    0xFE363C8A, 0xFE363C80, 0x00020019, 0xFE363C80,
-    0x00000000, 0x00020035, 0xFE363C8F, 0x00000001,
-    0x0003005B, (s32)&btlevtcmd_ResultACDefence, 0xFE363C8A, 0xFE363C8C,
-    0x00000021, 0x00000021, 0x0007005B, (s32)&btlevtcmd_PreCheckDamage,
-    0xFFFFFFFB, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
-    0x00000100, 0xFE363C85, 0x00010022, 0xFE363C85,
-    0x00010024, 0x00000004, 0x00010024, 0x00000002,
-    0x0003005B, (s32)&btlevtcmd_StartAvoid, 0xFE363C8A, 0x00000028,
-    0x00010024, 0x00000003, 0x0003005B, (s32)&btlevtcmd_StartAvoid,
-    0xFE363C8A, 0x00000026, 0x00010024, 0x00000006,
-    0x0003005B, (s32)&btlevtcmd_StartAvoid, 0xFE363C8A, 0x00000027,
-    0x00010024, 0x00000001, 0x0007005B, (s32)&btlevtcmd_CheckDamage,
-    0xFFFFFFFB, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
-    0x00000100, 0xFE363C85, 0x0000002A, 0x00000031,
-    0x0003005B, (s32)&btlevtcmd_GetSelectNextEnemy, 0xFE363C8A, 0xFE363C8B,
-    0x00010004, 0x0000000A, 0x00010003, 0x00000013,
-    0x0003005B, (s32)&_nozzle_work_get_weapon_address, 0x00000001, 0xFE363C8C,
-    0x00020018, 0xFE363C8C, 0x00000000, 0x00010004,
-    0x0000001D, 0x00000021, 0x0003005B, (s32)&btlevtcmd_GetEnemyBelong,
-    0xFFFFFFFB, 0xFE363C80, 0x0004005B, (s32)&btlevtcmd_SamplingEnemy,
-    0xFFFFFFFB, 0xFE363C80, 0xFE363C8C, 0x0003005B,
-    (s32)&btlevtcmd_GetSelectEnemy, 0xFE363C8A, 0xFE363C8B, 0x00010003,
-    0x00000014, 0x00020018, 0xFE363C8A, 0xFFFFFFFF,
-    0x00010004, 0x0000001D, 0x00000021, 0x0007005B,
-    (s32)&btlevtcmd_PreCheckDamage, 0xFFFFFFFB, 0xFE363C8A, 0xFE363C8B,
-    0xFE363C8C, 0x00000100, 0xFE363C85, 0x00010022,
-    0xFE363C85, 0x00010024, 0x00000004, 0x00010024,
-    0x00000002, 0x0003005B, (s32)&btlevtcmd_StartAvoid, 0xFE363C8A,
-    0x00000028, 0x00010024, 0x00000003, 0x0003005B,
-    (s32)&btlevtcmd_StartAvoid, 0xFE363C8A, 0x00000026, 0x00010024,
-    0x00000006, 0x0003005B, (s32)&btlevtcmd_StartAvoid, 0xFE363C8A,
-    0x00000027, 0x00010024, 0x00000001, 0x0007005B,
-    (s32)&btlevtcmd_CheckDamage, 0xFFFFFFFB, 0xFE363C8A, 0xFE363C8B,
-    0xFE363C8C, 0x00000100, 0xFE363C85, 0x0000002A,
-    0x00000031, 0x0003005B, (s32)&btlevtcmd_GetSelectNextEnemy, 0xFE363C8A,
-    0xFE363C8B, 0x00010004, 0x00000014, 0x00010003,
-    0x0000001D, 0x00000002, 0x00000001,
-};
-__declspec(section ".data") s32 _object_fall_event[13] = {
-    0x0001005B, (s32)&_object_fall_wait, 0x0002005B, (s32)&_object_fall_attack,
-    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000001,
-    0x0001000A, 0x000003E8, 0x00000021, 0x00000002,
-    0x00000001,
-};
+__declspec(section ".data") EVT_BEGIN(_object_turn_event_core)
+    CALL(_set_mobj_shake_init, LW(9))
+    CALL(_set_mobj_shake, LW(9))
+    CALL(_set_mobj_rotate_x, LW(9))
+    IF_INT_NOT_EQUAL(LW(9), 1)
+        CALL(evt_btl_camera_shake_h, 0, 4, 0, 30, 13)
+    END_IF
+    CALL(_bgset_kemuri_effect, LW(9))
+    IF_INT_NOT_EQUAL(LW(9), 1)
+        CALL(_bgset_audience_bgset_access)
+    END_IF
+    CALL(btlevtcmd_check_battleflag, LW(0), 256)
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        GOTO(20)
+    END_IF
+    CALL(_get_bgset_attack_data, LW(9), LW(12))
+    IF_INT_EQUAL(LW(12), 0)
+        GOTO(20)
+    END_IF
+    CALL(btlevtcmd_GetEnemyBelong, -5, LW(0))
+    CALL(btlevtcmd_SamplingEnemy, -5, LW(0), LW(12))
+    CALL(btlevtcmd_GetSelectEnemy, LW(10), LW(11))
+    SET_VALUE(LW(15), 0)
+    LABEL(10)
+    IF_INT_EQUAL(LW(10), -1)
+        GOTO(20)
+    END_IF
+    IF_INT_EQUAL(LW(15), 0)
+        CALL(btlevtcmd_GetACPossibility, LW(10), LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            ADD(LW(15), 1)
+            CALL(btlevtcmd_ResultACDefence, LW(10), LW(12))
+        END_IF
+    END_IF
+    CALL(btlevtcmd_PreCheckDamage, -5, LW(10), LW(11), LW(12), 256, LW(5))
+    SWITCH(LW(5))
+        CASE_EQUAL(4)
+        CASE_EQUAL(2)
+        CALL(btlevtcmd_StartAvoid, LW(10), 40)
+        CASE_EQUAL(3)
+        CALL(btlevtcmd_StartAvoid, LW(10), 38)
+        CASE_EQUAL(6)
+        CALL(btlevtcmd_StartAvoid, LW(10), 39)
+        CASE_EQUAL(1)
+        CALL(btlevtcmd_CheckDamage, -5, LW(10), LW(11), LW(12), 256, LW(5))
+        CASE_DEFAULT
+    END_SWITCH
+    CALL(btlevtcmd_GetSelectNextEnemy, LW(10), LW(11))
+    GOTO(10)
+    LABEL(20)
+    WAIT_FRAMES(50)
+    SET_VALUE(LW(0), 255)
+    SET_VALUE(LW(1), 51)
+    LABEL(50)
+    SUBTRACT(LW(0), 5)
+    CALL(_mobj_set_alpha, LW(9), LW(0))
+    SUBTRACT(LW(1), 1)
+    IF_INT_GREATER(LW(1), 0)
+        WAIT_FRAMES(1)
+        GOTO(50)
+    END_IF
+    CALL(_mobj_destroy, LW(9))
+    RETURN
+EVT_END()
+
+__declspec(section ".data") EVT_BEGIN(_fall_frame_event)
+    CALL(_fall_frame_wait)
+    CALL(_fall_frame_wait_unit_ready)
+    CALL(_fall_frame, LW(12))
+    CALL(btlevtcmd_GetEnemyBelong, -5, LW(0))
+    CALL(btlevtcmd_SamplingEnemy, -5, LW(0), LW(12))
+    CALL(btlevtcmd_GetSelectEnemy, LW(10), LW(11))
+    SET_VALUE(LW(15), 0)
+    LABEL(10)
+    IF_INT_EQUAL(LW(10), -1)
+        GOTO(20)
+    END_IF
+    IF_INT_EQUAL(LW(15), 0)
+        CALL(btlevtcmd_GetACPossibility, LW(10), LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            ADD(LW(15), 1)
+            CALL(btlevtcmd_ResultACDefence, LW(10), LW(12))
+        END_IF
+    END_IF
+    CALL(btlevtcmd_CheckDamage, -5, LW(10), LW(11), LW(12), 256, LW(5))
+    CALL(btlevtcmd_GetSelectNextEnemy, LW(10), LW(11))
+    GOTO(10)
+    LABEL(20)
+    CALL(evt_btl_camera_shake_h, 0, 10, 0, 20, 13)
+    CALL(_fall_frame_delete)
+    RETURN
+EVT_END()
+
+__declspec(section ".data") EVT_BEGIN(_nozzle_work_event_core)
+    CALL(_nozzle_work_wait)
+    CALL(_nozzle_work_effect, LW(10), LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        RETURN
+    END_IF
+    CALL(_nozzle_work_attack_set)
+    CALL(_nozzle_work_get_weapon_address, 0, LW(12))
+    IF_INT_EQUAL(LW(12), 0)
+        GOTO(19)
+    END_IF
+    CALL(btlevtcmd_GetEnemyBelong, -5, LW(0))
+    CALL(btlevtcmd_SamplingEnemy, -5, LW(0), LW(12))
+    CALL(btlevtcmd_GetSelectEnemy, LW(10), LW(11))
+    SET_VALUE(LW(15), 0)
+    LABEL(10)
+    IF_INT_EQUAL(LW(10), -1)
+        GOTO(19)
+    END_IF
+    IF_INT_EQUAL(LW(15), 0)
+        CALL(btlevtcmd_GetACPossibility, LW(10), LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            ADD(LW(15), 1)
+            CALL(btlevtcmd_ResultACDefence, LW(10), LW(12))
+        END_IF
+    END_IF
+    CALL(btlevtcmd_PreCheckDamage, -5, LW(10), LW(11), LW(12), 256, LW(5))
+    SWITCH(LW(5))
+        CASE_EQUAL(4)
+        CASE_EQUAL(2)
+        CALL(btlevtcmd_StartAvoid, LW(10), 40)
+        CASE_EQUAL(3)
+        CALL(btlevtcmd_StartAvoid, LW(10), 38)
+        CASE_EQUAL(6)
+        CALL(btlevtcmd_StartAvoid, LW(10), 39)
+        CASE_EQUAL(1)
+        CALL(btlevtcmd_CheckDamage, -5, LW(10), LW(11), LW(12), 256, LW(5))
+        CASE_DEFAULT
+    END_SWITCH
+    CALL(btlevtcmd_GetSelectNextEnemy, LW(10), LW(11))
+    GOTO(10)
+    LABEL(19)
+    CALL(_nozzle_work_get_weapon_address, 1, LW(12))
+    IF_INT_EQUAL(LW(12), 0)
+        GOTO(29)
+    END_IF
+    CALL(btlevtcmd_GetEnemyBelong, -5, LW(0))
+    CALL(btlevtcmd_SamplingEnemy, -5, LW(0), LW(12))
+    CALL(btlevtcmd_GetSelectEnemy, LW(10), LW(11))
+    LABEL(20)
+    IF_INT_EQUAL(LW(10), -1)
+        GOTO(29)
+    END_IF
+    CALL(btlevtcmd_PreCheckDamage, -5, LW(10), LW(11), LW(12), 256, LW(5))
+    SWITCH(LW(5))
+        CASE_EQUAL(4)
+        CASE_EQUAL(2)
+        CALL(btlevtcmd_StartAvoid, LW(10), 40)
+        CASE_EQUAL(3)
+        CALL(btlevtcmd_StartAvoid, LW(10), 38)
+        CASE_EQUAL(6)
+        CALL(btlevtcmd_StartAvoid, LW(10), 39)
+        CASE_EQUAL(1)
+        CALL(btlevtcmd_CheckDamage, -5, LW(10), LW(11), LW(12), 256, LW(5))
+        CASE_DEFAULT
+    END_SWITCH
+    CALL(btlevtcmd_GetSelectNextEnemy, LW(10), LW(11))
+    GOTO(20)
+    LABEL(29)
+    RETURN
+EVT_END()
+
+__declspec(section ".data") EVT_BEGIN(_object_fall_event)
+    CALL(_object_fall_wait)
+    CALL(_object_fall_attack, LW(0))
+    IF_INT_EQUAL(LW(0), 1)
+        WAIT_MS(1000)
+    END_IF
+    RETURN
+EVT_END()
 #pragma force_active off
 
 // .sdata: small-data tables and event scripts, in the original order.
@@ -1284,33 +1331,47 @@ __declspec(section ".sdata") s32 _entry_switch_data[12] = {
     0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
-__declspec(section ".sdata") s32 _object_turn_event_A1[7] = {
-    0x00020032, 0xFE363C89, 0x00000000, 0x0001005E,
-    (s32)&_object_turn_event_core, 0x00000002, 0x00000001,
-};
-__declspec(section ".sdata") s32 _object_turn_event_A2[7] = {
-    0x00020032, 0xFE363C89, 0x00000001, 0x0001005E,
-    (s32)&_object_turn_event_core, 0x00000002, 0x00000001,
-};
-__declspec(section ".sdata") s32 _object_turn_event_B[7] = {
-    0x00020032, 0xFE363C89, 0x00000002, 0x0001005E,
-    (s32)&_object_turn_event_core, 0x00000002, 0x00000001,
-};
-__declspec(section ".sdata") s32 _nozzle_turn_event[4] = {
-    0x0001005B, (s32)&_nozzle_turn, 0x00000002, 0x00000001,
-};
-__declspec(section ".sdata") s32 _close_wall_event[6] = {
-    0x0001005B, (s32)&btlevtcmd_WaitAttackEnd, 0x0001005B, (s32)&_announce_wall_message,
-    0x00000002, 0x00000001,
-};
-__declspec(section ".sdata") s32 _nozzle_work_event_0[7] = {
-    0x00020032, 0xFE363C8A, 0x00000000, 0x0001005E,
-    (s32)&_nozzle_work_event_core, 0x00000002, 0x00000001,
-};
-__declspec(section ".sdata") s32 _nozzle_work_event_1[7] = {
-    0x00020032, 0xFE363C8A, 0x00000001, 0x0001005E,
-    (s32)&_nozzle_work_event_core, 0x00000002, 0x00000001,
-};
+__declspec(section ".sdata") EVT_BEGIN(_object_turn_event_A1)
+    SET_VALUE(LW(9), 0)
+    CALL_CHILD(_object_turn_event_core)
+    RETURN
+EVT_END()
+
+__declspec(section ".sdata") EVT_BEGIN(_object_turn_event_A2)
+    SET_VALUE(LW(9), 1)
+    CALL_CHILD(_object_turn_event_core)
+    RETURN
+EVT_END()
+
+__declspec(section ".sdata") EVT_BEGIN(_object_turn_event_B)
+    SET_VALUE(LW(9), 2)
+    CALL_CHILD(_object_turn_event_core)
+    RETURN
+EVT_END()
+
+__declspec(section ".sdata") EVT_BEGIN(_nozzle_turn_event)
+    CALL(_nozzle_turn)
+    RETURN
+EVT_END()
+
+__declspec(section ".sdata") EVT_BEGIN(_close_wall_event)
+    CALL(btlevtcmd_WaitAttackEnd)
+    CALL(_announce_wall_message)
+    RETURN
+EVT_END()
+
+__declspec(section ".sdata") EVT_BEGIN(_nozzle_work_event_0)
+    SET_VALUE(LW(10), 0)
+    CALL_CHILD(_nozzle_work_event_core)
+    RETURN
+EVT_END()
+
+__declspec(section ".sdata") EVT_BEGIN(_nozzle_work_event_1)
+    SET_VALUE(LW(10), 1)
+    CALL_CHILD(_nozzle_work_event_core)
+    RETURN
+EVT_END()
+
 __declspec(section ".sdata") static u32 gap_07_80411F3C_sdata[1] = { 0x00000000 };
 #pragma force_active off
 

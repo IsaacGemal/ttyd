@@ -273,110 +273,98 @@ USER_FUNC(battle_evt_majo_disp_on) {
     return 0;
 }
 
-// TODO: type
-static s32 battle_entry_event[59] = {
-    0x0005005B, (s32)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)btlevtcmd_FaceDirectionSub,
-    0xFFFFFFFE, 0xFE363C80, 0x000000FA, 0x0005005B,
-    (s32)btlevtcmd_SetPos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00010009, 0x00000028, 0x0004005B,
-    (s32)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE, 0x00000001, 0x0000002A,
-    0x0005005B, (s32)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0003005B, (s32)btlevtcmd_SetMoveSpeed,
-    0xFFFFFFFE, 0xF24A8A80, 0x0009005B, (s32)btlevtcmd_SetMoveSoundDataWork,
-    0xFFFFFFFE, (s32)"SFX_PARTY_BATTLE_SUBHANG1", (s32)"SFX_PARTY_BATTLE_SUBHANG1", 0x00000000,
-    0x00000006, 0x00000006, 0x00000000, 0x00000000,
-    0x0008005B, (s32)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0xFFFFFFFE,
-    0x00000000, 0x0003005B, (s32)btlevtcmd_AnimeChangePoseFromTable, 0xFFFFFFFE,
-    0x00000001, 0x00000002, 0x00000001,
-};
+static EVT_BEGIN(battle_entry_event)
+    CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_FaceDirectionSub, -2, LW(0), 250)
+    CALL(btlevtcmd_SetPos, -2, LW(0), LW(1), LW(2))
+    WAIT_FRAMES(40)
+    CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 42)
+    CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(4.0f))
+    CALL(btlevtcmd_SetMoveSoundDataWork, -2, STRING("SFX_PARTY_BATTLE_SUBHANG1"), STRING("SFX_PARTY_BATTLE_SUBHANG1"), 0, 6, 6, 0, 0)
+    CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -2, 0)
+    CALL(btlevtcmd_AnimeChangePoseFromTable, -2, 1)
+    RETURN
+EVT_END()
 
-// TODO: type
-static s32 init_event[68] = {
-    0x0001005B, (s32)_vivian_make_extra_work_area, 0x0003005B, (s32)btlevtcmd_SetEventWait,
-    0xFFFFFFFE, (s32)&wait_event, 0x0003005B, (s32)btlevtcmd_SetEventAttack,
-    0xFFFFFFFE, (s32)&attack_event, 0x0003005B, (s32)btlevtcmd_SetEventDamage,
-    0xFFFFFFFE, (s32)&damage_event, 0x0003005B, (s32)btlevtcmd_SetEventConfusion,
-    0xFFFFFFFE, (s32)btldefaultevt_Confuse, 0x0004005B, (s32)btlevtcmd_SetUnitWork,
-    0xFFFFFFFE, 0x00000004, 0x00000000, 0x0004005B,
-    (s32)btlevtcmd_SetUnitWork, 0xFFFFFFFE, 0x00000003, 0x00000000,
-    0x0001005C, (s32)&vivian_shadow_tail_event, 0x0007005B, (s32)btlevtcmd_SetWalkSound,
-    0xFFFFFFFE, (s32)"SFX_PARTY_BATTLE_MOVE1L", (s32)"SFX_PARTY_BATTLE_MOVE1R", 0x00000000,
-    0x00000014, 0x00000014, 0x0007005B, (s32)btlevtcmd_SetRunSound,
-    0xFFFFFFFE, (s32)"SFX_PARTY_BATTLE_MOVE1L", (s32)"SFX_PARTY_BATTLE_MOVE1R", 0x00000000,
-    0x0000000B, 0x0000000B, 0x0007005B, (s32)btlevtcmd_SetDiveSound,
-    0xFFFFFFFE, (s32)"SFX_PARTY_BATTLE_HANG1", (s32)"SFX_PARTY_BATTLE_HANG1", 0x00000000,
-    0x0000000B, 0x0000000B, 0x0004005B, (s32)btlevtcmd_SetJumpSound,
-    0xFFFFFFFE, (s32)"SFX_PARTY_BATTLE_JUMP1", (s32)"SFX_PARTY_BATTLE_LANDING1", 0x0003005B,
-    (s32)btlevtcmd_SetEventEntry, 0xFFFFFFFE, (s32)&battle_entry_event, 0x0002005B,
-    (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002, 0x00000001,
-};
+static EVT_BEGIN(init_event)
+    CALL(_vivian_make_extra_work_area)
+    CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
+    CALL(btlevtcmd_SetEventAttack, -2, PTR(attack_event))
+    CALL(btlevtcmd_SetEventDamage, -2, PTR(damage_event))
+    CALL(btlevtcmd_SetEventConfusion, -2, PTR(btldefaultevt_Confuse))
+    CALL(btlevtcmd_SetUnitWork, -2, 4, 0)
+    CALL(btlevtcmd_SetUnitWork, -2, 3, 0)
+    SPAWN_EVENT(vivian_shadow_tail_event)
+    CALL(btlevtcmd_SetWalkSound, -2, STRING("SFX_PARTY_BATTLE_MOVE1L"), STRING("SFX_PARTY_BATTLE_MOVE1R"), 0, 20, 20)
+    CALL(btlevtcmd_SetRunSound, -2, STRING("SFX_PARTY_BATTLE_MOVE1L"), STRING("SFX_PARTY_BATTLE_MOVE1R"), 0, 11, 11)
+    CALL(btlevtcmd_SetDiveSound, -2, STRING("SFX_PARTY_BATTLE_HANG1"), STRING("SFX_PARTY_BATTLE_HANG1"), 0, 11, 11)
+    CALL(btlevtcmd_SetJumpSound, -2, STRING("SFX_PARTY_BATTLE_JUMP1"), STRING("SFX_PARTY_BATTLE_LANDING1"))
+    CALL(btlevtcmd_SetEventEntry, -2, PTR(battle_entry_event))
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
-// TODO: type
-static s32 damage_event[16] = {
-    0x0005005B, (s32)btlevtcmd_SetRotate, 0xFFFFFFFE, 0x00000000,
-    0x00000000, 0x00000000, 0x00020032, 0xFE363C8A,
-    0xFFFFFFFE, 0x00020032, 0xFE363C8B, 0x00000001,
-    0x0001005E, (s32)btldefaultevt_Damage, 0x00000002, 0x00000001,
-};
+static EVT_BEGIN(damage_event)
+    CALL(btlevtcmd_SetRotate, -2, 0, 0, 0)
+    SET_VALUE(LW(10), -2)
+    SET_VALUE(LW(11), 1)
+    CALL_CHILD(btldefaultevt_Damage)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 vivian_hide_event[209] = {
-    0x0004005B, (s32)btlevtcmd_GetUnitWork, 0xFFFFFFFE, 0x00000004,
-    0xFE363C80, 0x0002001D, 0xFE363C80, 0x00000001,
-    0x00020036, 0xFE363C80, 0x00000001, 0x00000021,
-    0x0004005B, (s32)btlevtcmd_SetUnitWork, 0xFFFFFFFE, 0x00000004,
-    0xFE363C80, 0x0002001C, 0xFE363C80, 0x00000000,
-    0x00020032, 0xFE363C83, 0xFFFFFFFD, 0x0002005B,
-    (s32)btlevtcmd_PhaseEventStartDeclare, 0xFE363C83, 0x0005005B, (s32)btlevtcmd_GetPos,
-    0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0004005B, (s32)btlevtcmd_FaceDirectionSub, 0xFE363C83, 0xFE363C80,
-    0x0000000F, 0x0005005B, (s32)btlevtcmd_SetPos, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0000006B,
-    0x0003005B, (s32)btlevtcmd_OffAttribute, 0xFE363C83, 0x00000010,
-    0x0004005B, (s32)btlevtcmd_OffPartsAttribute, 0xFE363C83, 0x00000001,
-    0x03000000, 0x0007005B, (s32)battle_evt_majo_disp_on, 0xFE363C83,
-    0x00000001, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000001, 0x0005005B, (s32)btlevtcmd_SetPos, 0xFE363C83,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)btlevtcmd_GetHomePos, 0xFE363C83, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0003005B, (s32)btlevtcmd_SetMoveSpeed, 0xFE363C83,
-    0xF24A8280, 0x0008005B, (s32)btlevtcmd_MovePosition, 0xFE363C83,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0x0000006D, 0x0004005B,
-    (s32)btlevtcmd_OffPartsAttribute, 0xFFFFFFFE, 0x00000001, 0x00010000,
-    0x0004005B, (s32)btlevtcmd_OffPartsAttribute, 0xFFFFFFFE, 0x00000001,
-    0x01000000, 0x0007005B, (s32)battle_evt_majo_disp_on, 0xFFFFFFFE,
-    0x00000001, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000001, 0x0005005B, (s32)btlevtcmd_SetPos, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0007005B, (s32)btlevtcmd_GetMoveFrame, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0xF24A8280,
-    0xFE363C8F, 0x0001006F, 0xFE363C8E, 0x0008005B,
-    (s32)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0xFE363C8F, 0xFFFFFFFF, 0x00000000,
-    0x00000070, 0x0006005B, (s32)btlevtcmd_ACRStart, 0xFFFFFFFE,
-    0x00000000, 0xFE363C8F, 0xFE363C8F, 0x0000000F,
-    0x0003005B, (s32)btlevtcmd_ACRGetResult, 0xFE363C86, 0xFE363C87,
-    0x00010022, 0xFE363C86, 0x00010029, 0x00000002,
-    0x0001005F, 0xFE363C8E, 0x0006005B, (s32)btlevtcmd_AudienceDeclareAcrobatResult,
-    (s32)&partyWeapon_VivianShadowGuard, 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE,
-    0x00000001, (s32)"PTR_Y_1", 0x0005005B, (s32)btlevtcmd_GetHomePos,
-    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0003005B, (s32)btlevtcmd_SetMoveSpeed, 0xFFFFFFFE, 0xF24A8280,
-    0x0008005B, (s32)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0x0003005B, (s32)btlevtcmd_AnimeWaitPlayComplete, 0xFFFFFFFE,
-    0x00000001, 0x0000002A, 0x0001005B, (s32)evt_audience_acrobat_notry,
-    0x0002005B, (s32)btlevtcmd_WaitEventEnd, 0xFE363C8E, 0x00000031,
-    0x0001005B, (s32)evt_audience_ap_recovery, 0x0001005B, (s32)btlevtcmd_InviteApInfoReport,
-    0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFE363C83, 0x0002005B,
-    (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000021, 0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(vivian_hide_event)
+    CALL(btlevtcmd_GetUnitWork, -2, 4, LW(0))
+    IF_INT_GREATER_OR_EQUAL(LW(0), 1)
+        SUBTRACT(LW(0), 1)
+    END_IF
+    CALL(btlevtcmd_SetUnitWork, -2, 4, LW(0))
+    IF_INT_LESS_OR_EQUAL(LW(0), 0)
+        SET_VALUE(LW(3), -3)
+        CALL(btlevtcmd_PhaseEventStartDeclare, LW(3))
+        CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_FaceDirectionSub, LW(3), LW(0), 15)
+        CALL(btlevtcmd_SetPos, -2, LW(0), LW(1), LW(2))
+        BEGIN_INLINE_EVENT
+            CALL(btlevtcmd_OffAttribute, LW(3), 16)
+            CALL(btlevtcmd_OffPartsAttribute, LW(3), 1, 50331648)
+            CALL(battle_evt_majo_disp_on, LW(3), 1, LW(0), LW(1), LW(2), 1)
+            CALL(btlevtcmd_SetPos, LW(3), LW(0), LW(1), LW(2))
+            CALL(btlevtcmd_GetHomePos, LW(3), LW(0), LW(1), LW(2))
+            CALL(btlevtcmd_SetMoveSpeed, LW(3), FLOAT(2.0f))
+            CALL(btlevtcmd_MovePosition, LW(3), LW(0), LW(1), LW(2), 0, -1, 0)
+        END_INLINE_EVENT
+        CALL(btlevtcmd_OffPartsAttribute, -2, 1, 65536)
+        CALL(btlevtcmd_OffPartsAttribute, -2, 1, 16777216)
+        CALL(battle_evt_majo_disp_on, -2, 1, LW(0), LW(1), LW(2), 1)
+        CALL(btlevtcmd_SetPos, -2, LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_GetMoveFrame, -2, LW(0), LW(1), LW(2), FLOAT(2.0f), LW(15))
+        BEGIN_SIBLING_EVENT_GET_ID(LW(14))
+            CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), LW(15), -1, 0)
+        END_SIBLING_EVENT
+        CALL(btlevtcmd_ACRStart, -2, 0, LW(15), LW(15), 15)
+        CALL(btlevtcmd_ACRGetResult, LW(6), LW(7))
+        SWITCH(LW(6))
+            CASE_GREATER_OR_EQUAL(2)
+            DELETE_EVENT(LW(14))
+            CALL(btlevtcmd_AudienceDeclareAcrobatResult, PTR(partyWeapon_VivianShadowGuard), 1, 0, 0, 0)
+            CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_Y_1"))
+            CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+            CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(2.0f))
+            CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
+            CALL(btlevtcmd_AnimeWaitPlayComplete, -2, 1)
+            CASE_DEFAULT
+            CALL(evt_audience_acrobat_notry)
+            CALL(btlevtcmd_WaitEventEnd, LW(14))
+        END_SWITCH
+        CALL(evt_audience_ap_recovery)
+        CALL(btlevtcmd_InviteApInfoReport)
+        CALL(btlevtcmd_StartWaitEvent, LW(3))
+        CALL(btlevtcmd_StartWaitEvent, -2)
+    END_IF
+    RETURN
+EVT_END()
 
 // TODO: type
 u32 partyWeapon_VivianNormalAttack[48] = {
@@ -442,660 +430,690 @@ u32 partyWeapon_VivianCharmKissAttack[48] = {
     (u32)&partyVivianAttack_CharmKissAttack, 0x00000064, 0x00050500, 0x00000000,
 };
 
-// TODO: type
-s32 partyVivianAttack_NormalAttack[581] = {
-    0x0005005B, (s32)btlevtcmd_JumpSetting, 0xFFFFFFFE, 0x00000014,
-    0xF24A7A80, 0xF24A7D4C, 0x0003005B, (s32)btlevtcmd_GetSelectEnemy,
-    0xFE363C83, 0xFE363C84, 0x00020018, 0xFE363C83,
-    0xFFFFFFFF, 0x00010004, 0x00000063, 0x00000021,
-    0x0003005B, (s32)btlevtcmd_CommandGetWeaponAddress, 0xFFFFFFFE, 0xFE363C8C,
-    0x0002005B, (s32)btlevtcmd_WeaponAftereffect, 0xFE363C8C, 0x0003005B,
-    (s32)btlevtcmd_GetPartyTechLv, 0xFFFFFFFE, 0xFE363C80, 0x00010022,
-    0xFE363C80, 0x00010024, 0x00000002, 0x0003005B,
-    (s32)_make_kagenuke_weapon, 0xFE363C8C, 0x00000002, 0x00010024,
-    0x00000001, 0x0003005B, (s32)_make_kagenuke_weapon, 0xFE363C8C,
-    0x00000002, 0x0000002A, 0x0003005B, (s32)_make_kagenuke_weapon,
-    0xFE363C8C, 0x00000002, 0x00000031, 0x0004005B,
-    (s32)btlevtcmd_AttackDeclare, 0xFFFFFFFE, 0xFE363C83, 0xFE363C84,
-    0x0001005B, (s32)btlevtcmd_WaitGuardMove, 0x0002005B, (s32)btlevtcmd_CommandPayWeaponCost,
-    0xFFFFFFFE, 0x0003005B, (s32)btlevtcmd_RunDataEventChild, 0xFFFFFFFE,
-    0x00000007, 0x0003005B, (s32)evt_btl_camera_set_mode, 0x00000000,
-    0x0000000B, 0x0006005B, (s32)evt_btl_camera_set_homing_unitparts, 0x00000000,
-    0xFFFFFFFE, 0x00000001, 0xFE363C83, 0xFE363C84,
-    0x0003005B, (s32)evt_btl_camera_set_moveSpeedLv, 0x00000000, 0x00000002,
-    0x0003005B, (s32)evt_btl_camera_set_zoom, 0x00000000, 0x000000C8,
-    0x0002005B, (s32)btlevtcmd_CommandGetWeaponActionLv, 0xFE363C80, 0x0003005B,
-    (s32)btlevtcmd_AcSetDifficulty, 0xFFFFFFFE, 0xFE363C80, 0x0009005B,
-    (s32)btlevtcmd_AcSetParamAll, 0x00000001, 0x00000001, 0x00000028,
-    0x00000001, 0x00000002, 0x00000000, 0x00000003,
-    0x00000000, 0x0002005B, (s32)btlevtcmd_AcSetFlag, 0x00000017,
-    0x0005005B, (s32)btlevtcmd_SetupAC, 0xFFFFFFFE, 0x00000012,
-    0x00000001, 0x00000000, 0x0003005B, (s32)evt_snd_sfxon,
-    (s32)"SFX_BTL_VIVIAN_ATTACK1", 0x00000000, 0x0005005B, (s32)battle_evt_majo_disp_off,
-    0xFFFFFFFE, 0x00000001, 0x00000000, 0x00000000,
-    0x0002005B, (s32)btlevtcmd_StartAC, 0x00000001, 0x0006005B,
-    (s32)btlevtcmd_GetHitPos, 0xFE363C83, 0xFE363C84, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)unk_8017d03c,
-    0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE, 0xF1194D80,
-    0xFE363C81, 0xF1194D80, 0x000A005B, (s32)btlevtcmd_DivePosition,
-    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000032, 0x00000000, 0x00000005, 0x00000000,
-    0xFFFFFFFF, 0x0004005B, (s32)btlevtcmd_SetUnitWork, 0xFFFFFFFE,
-    0x00000003, 0x00000001, 0x0004005B, (s32)btlevtcmd_TransStageFloorPosition,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0006005B,
-    (s32)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)"SFX_BTL_VIVIAN_ATTACK2", 0xF1194D80,
-    0x00000000, 0xF1194D80, 0x0007005B, (s32)battle_evt_majo_disp_on,
-    0xFFFFFFFE, 0x00000001, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x0005005B, (s32)btlevtcmd_SetPos,
-    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0006005B, (s32)btlevtcmd_GetHitPos, 0xFE363C83, 0xFE363C84,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0006005B,
-    (s32)btlevtcmd_GetHitPos, 0xFE363C83, 0xFE363C84, 0xFE363C86,
-    0xFE363C87, 0xFE363C88, 0x0005005B, (s32)unk_8017d03c,
-    0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (s32)unk_8017d03c, 0xFE363C83, 0xFE363C86,
-    0xFE363C87, 0xFE363C88, 0x0004005B, (s32)btlevtcmd_TransStageFloorPosition,
-    0xFE363C86, 0xFE363C87, 0xFE363C88, 0x0003005B,
-    (s32)btlevtcmd_GetFaceDirection, 0xFE363C83, 0xFE363C8F, 0x00020037,
-    0xFE363C8F, 0xFFFFFFFF, 0x0003005B, (s32)btlevtcmd_ChangeFaceDirection,
-    0xFFFFFFFE, 0xFE363C8F, 0x0005005B, (s32)btlevtcmd_GetPos,
-    0xFFFFFFFE, 0xFE363C86, 0xFE363C87, 0xFE363C88,
-    0x0009005B, (s32)_get_move_frame, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0xFE363C86, 0xFE363C87, 0xFE363C88,
-    0xF24A8A80, 0xFE363C86, 0x0002001D, 0xFE363C86,
-    0x00000001, 0x0006005B, (s32)btlevtcmd_snd_se, 0xFFFFFFFE,
-    (s32)"SFX_BTL_VIVIAN_ATTACK3", 0xF1194D80, 0x00000000, 0xF1194D80,
-    0x000A005B, (s32)btlevtcmd_DivePosition, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0000000C, 0x00000000,
-    0x00000005, 0x00000000, 0xFFFFFFFF, 0x00000021,
-    0x00010003, 0x00000009, 0x0006005B, (s32)btlevtcmd_CommandPreCheckDamage,
-    0xFFFFFFFE, 0xFE363C83, 0xFE363C84, 0x00000100,
-    0xFE363C85, 0x00020018, 0xFE363C85, 0x00000005,
-    0x0007005B, (s32)btlevtcmd_CheckDamage, 0xFFFFFFFE, 0xFE363C83,
-    0xFE363C84, 0xFE363C8C, 0x00000100, 0xFE363C85,
-    0x00000021, 0x0001005B, (s32)btlevtcmd_ResultAC, 0x00020032,
-    0xFE363C8A, 0x00000000, 0x00010003, 0x0000000A,
-    0x0002001D, 0xFE363C8A, 0x00000001, 0x0007005B,
-    (s32)btlevtcmd_PreCheckDamage, 0xFFFFFFFE, 0xFE363C83, 0xFE363C84,
-    0xFE363C8C, 0x00100100, 0xFE363C85, 0x00000020,
-    0x0007005B, (s32)btlevtcmd_PreCheckDamage, 0xFFFFFFFE, 0xFE363C83,
-    0xFE363C84, 0xFE363C8C, 0x00000100, 0xFE363C85,
-    0x00000021, 0x00010022, 0xFE363C85, 0x0001002B,
-    0x00000002, 0x0001002B, 0x00000003, 0x0001002B,
-    0x00000006, 0x0001002B, 0x00000004, 0x0000002E,
-    0x00010024, 0x00000001, 0x0000002A, 0x00000031,
-    0x00020019, 0xFE363C85, 0x00000001, 0x0004005B,
-    (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001, (s32)"PTR_A1_2",
-    0x0001000A, 0x000000A6, 0x00020018, 0xFE363C85,
-    0x00000003, 0x0003005B, (s32)btlevtcmd_StartAvoid, 0xFE363C83,
-    0x00000026, 0x00000021, 0x00020018, 0xFE363C85,
-    0x00000006, 0x0003005B, (s32)btlevtcmd_StartAvoid, 0xFE363C83,
-    0x00000027, 0x00000021, 0x00020018, 0xFE363C85,
-    0x00000002, 0x0003005B, (s32)btlevtcmd_StartAvoid, 0xFE363C83,
-    0x00000028, 0x00000021, 0x0001000A, 0x000001F4,
-    0x00010004, 0x0000005A, 0x00000021, 0x0004005B,
-    (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001, (s32)"PTR_A1_2",
-    0x0003005B, (s32)btlevtcmd_ftomsec, 0x00000004, 0xFE363C80,
-    0x0001000A, 0xFE363C80, 0x0003005B, (s32)evt_snd_sfxon,
-    (s32)"SFX_BTL_VIVIAN_ATTACK4", 0x00000000, 0x0002005B, (s32)btlevtcmd_GetResultAC,
-    0xFE363C80, 0x0002001E, 0xFE363C80, 0x00000002,
-    0x0007005B, (s32)btlevtcmd_CheckDamage, 0xFFFFFFFE, 0xFE363C83,
-    0xFE363C84, 0xFE363C8C, 0x00020100, 0xFE363C85,
-    0x00000020, 0x0007005B, (s32)btlevtcmd_CheckDamage, 0xFFFFFFFE,
-    0xFE363C83, 0xFE363C84, 0xFE363C8C, 0x20000100,
-    0xFE363C85, 0x00000021, 0x0002001E, 0xFE363C80,
-    0x00000002, 0x0004005B, (s32)btlevtcmd_GetResultPrizeLv, 0xFE363C83,
-    0x00000000, 0xFE363C86, 0x0006005B, (s32)btlevtcmd_GetHitPos,
-    0xFE363C83, 0xFE363C84, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363C86,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0003005B,
-    (s32)btlevtcmd_AudienceDeclareACResult, 0xFE363C8C, 0xFE363C86, 0x00000020,
-    0x0003005B, (s32)btlevtcmd_AudienceDeclareACResult, 0xFE363C8C, 0xFFFFFFFF,
-    0x00000021, 0x0001000A, 0x000001F4, 0x00010003,
-    0x0000005A, 0x0001005B, (s32)btlevtcmd_StopAC, 0x00010003,
-    0x0000005F, 0x0003005B, (s32)evt_btl_camera_set_mode, 0x00000000,
-    0x00000000, 0x0003005B, (s32)evt_btl_camera_set_moveSpeedLv, 0x00000000,
-    0x00000001, 0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE,
-    0x00000001, (s32)"PTR_A1_1", 0x0005005B, (s32)btlevtcmd_GetPos,
-    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0004005B, (s32)btlevtcmd_TransStageFloorPosition, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000A005B, (s32)btlevtcmd_DivePosition, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0000000C,
-    0x00000000, 0x00000005, 0x00000000, 0xFFFFFFFF,
-    0x0004005B, (s32)btlevtcmd_SetUnitWork, 0xFFFFFFFE, 0x00000003,
-    0x00000000, 0x0005005B, (s32)battle_evt_majo_disp_off, 0xFFFFFFFE,
-    0x00000001, 0x00000000, 0x00000000, 0x0005005B,
-    (s32)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE,
-    0xF1194D80, 0xFE363C81, 0xF1194D80, 0x000A005B,
-    (s32)btlevtcmd_DivePosition, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000028, 0x00000000, 0x00000005,
-    0x00000000, 0xFFFFFFFF, 0x0000006E, 0x0006005B,
-    (s32)btlevtcmd_ACRStart, 0xFFFFFFFE, 0x00000014, 0x0000001D,
-    0x0000001D, 0x00000000, 0x00000070, 0x0005005B,
-    (s32)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0007005B, (s32)battle_evt_majo_disp_on, 0xFFFFFFFE,
-    0x00000001, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x0005005B, (s32)btlevtcmd_SetPos, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0003005B,
-    (s32)btlevtcmd_ACRGetResult, 0xFE363C86, 0xFE363C87, 0x00020018,
-    0xFE363C86, 0x00000002, 0x0003005B, (s32)btlevtcmd_CommandGetWeaponAddress,
-    0xFFFFFFFE, 0xFE363C80, 0x0006005B, (s32)btlevtcmd_AudienceDeclareAcrobatResult,
-    0xFE363C80, 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE,
-    0x00000001, (s32)"PTR_Y_1", 0x00010009, 0x00000034,
-    0x00000021, 0x00010003, 0x00000063, 0x0001005B,
-    (s32)evt_audience_ap_recovery, 0x0001005B, (s32)btlevtcmd_InviteApInfoReport, 0x0002005B,
-    (s32)btlevtcmd_ResetFaceDirection, 0xFFFFFFFE, 0x0001005E, (s32)btldefaultevt_SuitoruBadgeEffect,
-    0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(partyVivianAttack_NormalAttack)
+    CALL(btlevtcmd_JumpSetting, -2, 20, FLOAT(0.0f), FLOAT(0.7f))
+    CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
+    IF_INT_EQUAL(LW(3), -1)
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(12))
+    CALL(btlevtcmd_WeaponAftereffect, LW(12))
+    CALL(btlevtcmd_GetPartyTechLv, -2, LW(0))
+    SWITCH(LW(0))
+        CASE_EQUAL(2)
+        CALL(_make_kagenuke_weapon, LW(12), 2)
+        CASE_EQUAL(1)
+        CALL(_make_kagenuke_weapon, LW(12), 2)
+        CASE_DEFAULT
+        CALL(_make_kagenuke_weapon, LW(12), 2)
+    END_SWITCH
+    CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_CommandPayWeaponCost, -2)
+    CALL(btlevtcmd_RunDataEventChild, -2, 7)
+    CALL(evt_btl_camera_set_mode, 0, 11)
+    CALL(evt_btl_camera_set_homing_unitparts, 0, -2, 1, LW(3), LW(4))
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
+    CALL(evt_btl_camera_set_zoom, 0, 200)
+    CALL(btlevtcmd_CommandGetWeaponActionLv, LW(0))
+    CALL(btlevtcmd_AcSetDifficulty, -2, LW(0))
+    CALL(btlevtcmd_AcSetParamAll, 1, 1, 40, 1, 2, 0, 3, 0)
+    CALL(btlevtcmd_AcSetFlag, 23)
+    CALL(btlevtcmd_SetupAC, -2, 18, 1, 0)
+    CALL(evt_snd_sfxon, STRING("SFX_BTL_VIVIAN_ATTACK1"), 0)
+    CALL(battle_evt_majo_disp_off, -2, 1, 0, 0)
+    CALL(btlevtcmd_StartAC, 1)
+    CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
+    CALL(unk_8017d03c, LW(3), LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_GetPos, -2, EVTDAT_POINTER_MAX, LW(1), EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_DivePosition, -2, LW(0), LW(1), LW(2), 50, 0, 5, 0, -1)
+    CALL(btlevtcmd_SetUnitWork, -2, 3, 1)
+    CALL(btlevtcmd_TransStageFloorPosition, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_VIVIAN_ATTACK2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(battle_evt_majo_disp_on, -2, 1, LW(0), LW(1), LW(2), 0)
+    CALL(btlevtcmd_SetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(6), LW(7), LW(8))
+    CALL(unk_8017d03c, LW(3), LW(0), LW(1), LW(2))
+    CALL(unk_8017d03c, LW(3), LW(6), LW(7), LW(8))
+    CALL(btlevtcmd_TransStageFloorPosition, LW(6), LW(7), LW(8))
+    CALL(btlevtcmd_GetFaceDirection, LW(3), LW(15))
+    MULTIPLY(LW(15), -1)
+    CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
+    CALL(btlevtcmd_GetPos, -2, LW(6), LW(7), LW(8))
+    CALL(_get_move_frame, LW(0), LW(1), LW(2), LW(6), LW(7), LW(8), FLOAT(4.0f), LW(6))
+    IF_INT_GREATER_OR_EQUAL(LW(6), 1)
+        CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_VIVIAN_ATTACK3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+        CALL(btlevtcmd_DivePosition, -2, LW(0), LW(1), LW(2), 12, 0, 5, 0, -1)
+    END_IF
+    LABEL(9)
+    CALL(btlevtcmd_CommandPreCheckDamage, -2, LW(3), LW(4), 256, LW(5))
+    IF_INT_EQUAL(LW(5), 5)
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(12), 256, LW(5))
+    END_IF
+    CALL(btlevtcmd_ResultAC)
+    SET_VALUE(LW(10), 0)
+    LABEL(10)
+    IF_INT_GREATER_OR_EQUAL(LW(10), 1)
+        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), LW(12), 1048832, LW(5))
+    ELSE
+        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), LW(12), 256, LW(5))
+    END_IF
+    SWITCH(LW(5))
+        CASE_OR_EQUAL(2)
+        CASE_OR_EQUAL(3)
+        CASE_OR_EQUAL(6)
+        CASE_OR_EQUAL(4)
+        CASE_END
+        CASE_EQUAL(1)
+        CASE_DEFAULT
+    END_SWITCH
+    IF_INT_NOT_EQUAL(LW(5), 1)
+        CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A1_2"))
+        WAIT_MS(166)
+        IF_INT_EQUAL(LW(5), 3)
+            CALL(btlevtcmd_StartAvoid, LW(3), 38)
+        END_IF
+        IF_INT_EQUAL(LW(5), 6)
+            CALL(btlevtcmd_StartAvoid, LW(3), 39)
+        END_IF
+        IF_INT_EQUAL(LW(5), 2)
+            CALL(btlevtcmd_StartAvoid, LW(3), 40)
+        END_IF
+        WAIT_MS(500)
+        GOTO(90)
+    END_IF
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A1_2"))
+    CALL(btlevtcmd_ftomsec, 4, LW(0))
+    WAIT_MS(LW(0))
+    CALL(evt_snd_sfxon, STRING("SFX_BTL_VIVIAN_ATTACK4"), 0)
+    CALL(btlevtcmd_GetResultAC, LW(0))
+    IF_BITS_SET(LW(0), 2)
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(12), 131328, LW(5))
+    ELSE
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(12), 536871168, LW(5))
+    END_IF
+    IF_BITS_SET(LW(0), 2)
+        CALL(btlevtcmd_GetResultPrizeLv, LW(3), 0, LW(6))
+        CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_ACSuccessEffect, LW(6), LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_AudienceDeclareACResult, LW(12), LW(6))
+    ELSE
+        CALL(btlevtcmd_AudienceDeclareACResult, LW(12), -1)
+    END_IF
+    WAIT_MS(500)
+    LABEL(90)
+    CALL(btlevtcmd_StopAC)
+    LABEL(95)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A1_1"))
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_TransStageFloorPosition, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_DivePosition, -2, LW(0), LW(1), LW(2), 12, 0, 5, 0, -1)
+    CALL(btlevtcmd_SetUnitWork, -2, 3, 0)
+    CALL(battle_evt_majo_disp_off, -2, 1, 0, 0)
+    CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_GetPos, -2, EVTDAT_POINTER_MAX, LW(1), EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_DivePosition, -2, LW(0), LW(1), LW(2), 40, 0, 5, 0, -1)
+    BEGIN_SIBLING_EVENT
+        CALL(btlevtcmd_ACRStart, -2, 20, 29, 29, 0)
+    END_SIBLING_EVENT
+    CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+    CALL(battle_evt_majo_disp_on, -2, 1, LW(0), LW(1), LW(2), 0)
+    CALL(btlevtcmd_SetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_ACRGetResult, LW(6), LW(7))
+    IF_INT_EQUAL(LW(6), 2)
+        CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(0))
+        CALL(btlevtcmd_AudienceDeclareAcrobatResult, LW(0), 1, 0, 0, 0)
+        CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_Y_1"))
+        WAIT_FRAMES(52)
+    END_IF
+    LABEL(99)
+    CALL(evt_audience_ap_recovery)
+    CALL(btlevtcmd_InviteApInfoReport)
+    CALL(btlevtcmd_ResetFaceDirection, -2)
+    CALL_CHILD(btldefaultevt_SuitoruBadgeEffect)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 partyVivianAttack_ShadowGuard[430] = {
-    0x00020032, 0xFE363C83, 0xFFFFFFFD, 0x0003005B,
-    (s32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84, 0x0002005B,
-    (s32)btlevtcmd_CommandPayWeaponCost, 0xFFFFFFFE, 0x0003005B, (s32)btlevtcmd_CommandGetWeaponAddress,
-    0xFFFFFFFE, 0xFE363C8C, 0x0003005B, (s32)btlevtcmd_RunDataEventChild,
-    0xFFFFFFFE, 0x00000007, 0x0003005B, (s32)evt_btl_camera_set_mode,
-    0x00000000, 0x00000007, 0x0004005B, (s32)evt_btl_camera_set_homing_unit,
-    0x00000000, 0xFFFFFFFE, 0x00000001, 0x0003005B,
-    (s32)evt_btl_camera_set_moveSpeedLv, 0x00000000, 0x00000002, 0x0003005B,
-    (s32)evt_btl_camera_set_zoom, 0x00000000, 0x000000FA, 0x0005005B,
-    (s32)evt_btl_camera_set_posoffset, 0x00000000, 0x00000014, 0x00000000,
-    0x00000000, 0x0007005B, (s32)btlevtcmd_CalculateFaceDirection, 0xFFFFFFFE,
-    0xFFFFFFFF, 0xFE363C83, 0xFFFFFFFF, 0x00000010,
-    0xFE363C80, 0x0003005B, (s32)btlevtcmd_ChangeFaceDirection, 0xFFFFFFFE,
-    0xFE363C80, 0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE,
-    0x00000001, (s32)"PTR_A2_1", 0x0005005B, (s32)btlevtcmd_GetPos,
-    0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0004005B, (s32)btlevtcmd_FaceDirectionSub, 0xFE363C83, 0xFE363C80,
-    0x0000000F, 0x00020035, 0xFE363C82, 0x00000005,
-    0x0003005B, (s32)btlevtcmd_SetMoveSpeed, 0xFFFFFFFE, 0xF24A8280,
-    0x0008005B, (s32)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0x0007005B, (s32)btlevtcmd_CalculateFaceDirection, 0xFFFFFFFE,
-    0xFFFFFFFF, 0xFE363C83, 0xFFFFFFFF, 0x00000010,
-    0xFE363C80, 0x0003005B, (s32)btlevtcmd_ChangeFaceDirection, 0xFFFFFFFE,
-    0xFE363C80, 0x0002005B, (s32)btlevtcmd_CommandGetWeaponActionLv, 0xFE363C80,
-    0x0003005B, (s32)btlevtcmd_AcSetDifficulty, 0xFFFFFFFE, 0xFE363C80,
-    0x0002005B, (s32)btlevtcmd_CommandGetWeaponActionLv, 0xFE363C80, 0x0003005B,
-    (s32)btlevtcmd_AcSetDifficulty, 0xFFFFFFFE, 0xFE363C80, 0x0002005B,
-    (s32)btlevtcmd_AcGetDifficulty, 0xFE363C80, 0x00020036, 0xFE363C80,
-    0x00000003, 0x00010022, 0xFE363C80, 0x00010028,
-    0xFFFFFFFD, 0x00020032, 0xFE363C80, 0x000001A4,
-    0x00010024, 0xFFFFFFFE, 0x00020032, 0xFE363C80,
-    0x0000014A, 0x00010024, 0xFFFFFFFF, 0x00020032,
-    0xFE363C80, 0x0000010E, 0x00010024, 0x00000000,
-    0x00020032, 0xFE363C80, 0x000000F0, 0x00010024,
-    0x00000001, 0x00020032, 0xFE363C80, 0x000000C8,
-    0x00010024, 0x00000002, 0x00020032, 0xFE363C80,
-    0x000000A0, 0x0000002A, 0x00020032, 0xFE363C80,
-    0x00000078, 0x00000031, 0x0009005B, (s32)btlevtcmd_AcSetParamAll,
-    0xFE363C80, 0x00000001, 0x00000005, 0xFFFFFFFE,
-    0x00000005, 0xF1194D80, 0xF1194D80, 0xF1194D80,
-    0x0002005B, (s32)btlevtcmd_AcSetFlag, 0x00000000, 0x0005005B,
-    (s32)btlevtcmd_SetupAC, 0xFFFFFFFE, 0x0000000A, 0x00000001,
-    0x00000000, 0x00010009, 0x00000016, 0x0002005B,
-    (s32)btlevtcmd_StartAC, 0x00000001, 0x0001005B, (s32)btlevtcmd_ResultAC,
-    0x0002005B, (s32)btlevtcmd_GetResultAC, 0xFE363C80, 0x0002001F,
-    0xFE363C80, 0x00000002, 0x0003005B, (s32)btlevtcmd_AudienceDeclareACResult,
-    0xFE363C8C, 0xFFFFFFFF, 0x0001005B, (s32)btlevtcmd_StopAC,
-    0x0005005B, (s32)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0003005B, (s32)btlevtcmd_SetMoveSpeed,
-    0xFFFFFFFE, 0xF24A8280, 0x0008005B, (s32)btlevtcmd_MovePosition,
-    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0x00010004,
-    0x0000005A, 0x00000021, 0x0004005B, (s32)btlevtcmd_GetResultPrizeLv,
-    0xFFFFFFFF, 0x00000000, 0xFE363C86, 0x0006005B,
-    (s32)btlevtcmd_GetHitPos, 0xFE363C83, 0xFE363C84, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)btlevtcmd_ACSuccessEffect,
-    0xFE363C86, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0003005B, (s32)btlevtcmd_AudienceDeclareACResult, 0xFE363C8C, 0xFE363C86,
-    0x0001005B, (s32)btlevtcmd_StopAC, 0x0003005B, (s32)evt_btl_camera_set_moveSpeedLv,
-    0x00000000, 0x00000002, 0x0003005B, (s32)evt_btl_camera_set_zoom,
-    0x00000000, 0x0000015E, 0x0005005B, (s32)evt_btl_camera_set_posoffset,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001,
-    (s32)"PTR_A2_2", 0x0003005B, (s32)btlevtcmd_AnimeWaitPlayComplete, 0xFFFFFFFE,
-    0x00000001, 0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE,
-    0x00000001, (s32)"PTR_A2_3", 0x0003005B, (s32)btlevtcmd_AnimeWaitPlayComplete,
-    0xFFFFFFFE, 0x00000001, 0x0000006E, 0x0004005B,
-    (s32)btlevtcmd_AnimeChangePose, 0xFE363C83, 0x00000001, (s32)"M_B_3",
-    0x0005005B, (s32)battle_evt_majo_disp_off, 0xFE363C83, 0x00000001,
-    0x00000001, 0x00000000, 0x0003005B, (s32)btlevtcmd_OnAttribute,
-    0xFE363C83, 0x00000010, 0x0004005B, (s32)btlevtcmd_OnPartsAttribute,
-    0xFE363C83, 0x00000001, 0x03000000, 0x00010009,
-    0x00000001, 0x0005005B, (s32)btlevtcmd_GetHomePos, 0xFE363C83,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)btlevtcmd_SetPos, 0xFE363C83, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000070, 0x0005005B, (s32)battle_evt_majo_disp_off,
-    0xFFFFFFFE, 0x00000001, 0x00000001, 0x00000001,
-    0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)btlevtcmd_GetPos,
-    0xFE363C83, 0xFE363C85, 0xFE363C81, 0xFE363C82,
-    0x00020035, 0xFE363C80, 0xFE363C85, 0x00020038,
-    0xFE363C80, 0x00000002, 0x0004005B, (s32)btlevtcmd_TransStageFloorPosition,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
-    0xFE363C81, 0x00000001, 0x000F005B, (s32)evt_eff,
-    0x00000000, (s32)"ripple", 0x00000001, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0001000A, 0x0000014D,
-    0x0004005B, (s32)btlevtcmd_OnPartsAttribute, 0xFFFFFFFE, 0x00000001,
-    0x01010000, 0x00010009, 0x00000001, 0x0004005B,
-    (s32)btlevtcmd_SetUnitWork, 0xFFFFFFFE, 0x00000004, 0x00000001,
-    0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)btlevtcmd_TransStageFloorPosition,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0005005B,
-    (s32)btlevtcmd_SetPos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00010009, 0x00000001, 0x0007005B,
-    (s32)btlevtcmd_CalculateFaceDirection, 0xFFFFFFFE, 0xFFFFFFFF, 0xFFFFFFFF,
-    0xFFFFFFFF, 0x00000004, 0xFE363C80, 0x0003005B,
-    (s32)btlevtcmd_ChangeFaceDirection, 0xFFFFFFFE, 0xFE363C80, 0x0001000A,
-    0x000001F4, 0x00010003, 0x0000005A, 0x0001005B,
-    (s32)evt_audience_ap_recovery, 0x0001005B, (s32)btlevtcmd_InviteApInfoReport, 0x00010003,
-    0x0000005F, 0x0003005B, (s32)evt_btl_camera_set_mode, 0x00000000,
-    0x00000000, 0x0003005B, (s32)evt_btl_camera_set_moveSpeedLv, 0x00000000,
-    0x00000001, 0x0005005B, (s32)evt_btl_camera_set_posoffset, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00010003,
-    0x00000063, 0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE,
-    0x00000002, 0x00000001,
-};
+EVT_BEGIN(partyVivianAttack_ShadowGuard)
+    SET_VALUE(LW(3), -3)
+    CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+    CALL(btlevtcmd_CommandPayWeaponCost, -2)
+    CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(12))
+    CALL(btlevtcmd_RunDataEventChild, -2, 7)
+    CALL(evt_btl_camera_set_mode, 0, 7)
+    CALL(evt_btl_camera_set_homing_unit, 0, -2, 1)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
+    CALL(evt_btl_camera_set_zoom, 0, 250)
+    CALL(evt_btl_camera_set_posoffset, 0, 20, 0, 0)
+    CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), -1, 16, LW(0))
+    CALL(btlevtcmd_ChangeFaceDirection, -2, LW(0))
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A2_1"))
+    CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_FaceDirectionSub, LW(3), LW(0), 15)
+    ADD(LW(2), 5)
+    CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(2.0f))
+    CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
+    CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), -1, 16, LW(0))
+    CALL(btlevtcmd_ChangeFaceDirection, -2, LW(0))
+    CALL(btlevtcmd_CommandGetWeaponActionLv, LW(0))
+    CALL(btlevtcmd_AcSetDifficulty, -2, LW(0))
+    CALL(btlevtcmd_CommandGetWeaponActionLv, LW(0))
+    CALL(btlevtcmd_AcSetDifficulty, -2, LW(0))
+    CALL(btlevtcmd_AcGetDifficulty, LW(0))
+    SUBTRACT(LW(0), 3)
+    SWITCH(LW(0))
+        CASE_LESS_OR_EQUAL(-3)
+        SET_VALUE(LW(0), 420)
+        CASE_EQUAL(-2)
+        SET_VALUE(LW(0), 330)
+        CASE_EQUAL(-1)
+        SET_VALUE(LW(0), 270)
+        CASE_EQUAL(0)
+        SET_VALUE(LW(0), 240)
+        CASE_EQUAL(1)
+        SET_VALUE(LW(0), 200)
+        CASE_EQUAL(2)
+        SET_VALUE(LW(0), 160)
+        CASE_DEFAULT
+        SET_VALUE(LW(0), 120)
+    END_SWITCH
+    CALL(btlevtcmd_AcSetParamAll, LW(0), 1, 5, -2, 5, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_AcSetFlag, 0)
+    CALL(btlevtcmd_SetupAC, -2, 10, 1, 0)
+    WAIT_FRAMES(22)
+    CALL(btlevtcmd_StartAC, 1)
+    CALL(btlevtcmd_ResultAC)
+    CALL(btlevtcmd_GetResultAC, LW(0))
+    IF_BITS_CLEAR(LW(0), 2)
+        CALL(btlevtcmd_AudienceDeclareACResult, LW(12), -1)
+        CALL(btlevtcmd_StopAC)
+        CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(2.0f))
+        CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
+        GOTO(90)
+    END_IF
+    CALL(btlevtcmd_GetResultPrizeLv, -1, 0, LW(6))
+    CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_ACSuccessEffect, LW(6), LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_AudienceDeclareACResult, LW(12), LW(6))
+    CALL(btlevtcmd_StopAC)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
+    CALL(evt_btl_camera_set_zoom, 0, 350)
+    CALL(evt_btl_camera_set_posoffset, 0, 0, 0, 0)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A2_2"))
+    CALL(btlevtcmd_AnimeWaitPlayComplete, -2, 1)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A2_3"))
+    CALL(btlevtcmd_AnimeWaitPlayComplete, -2, 1)
+    BEGIN_SIBLING_EVENT
+        CALL(btlevtcmd_AnimeChangePose, LW(3), 1, STRING("M_B_3"))
+        CALL(battle_evt_majo_disp_off, LW(3), 1, 1, 0)
+        CALL(btlevtcmd_OnAttribute, LW(3), 16)
+        CALL(btlevtcmd_OnPartsAttribute, LW(3), 1, 50331648)
+        WAIT_FRAMES(1)
+        CALL(btlevtcmd_GetHomePos, LW(3), LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_SetPos, LW(3), LW(0), LW(1), LW(2))
+    END_SIBLING_EVENT
+    CALL(battle_evt_majo_disp_off, -2, 1, 1, 1)
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_GetPos, LW(3), LW(5), LW(1), LW(2))
+    ADD(LW(0), LW(5))
+    DIVIDE(LW(0), 2)
+    CALL(btlevtcmd_TransStageFloorPosition, LW(0), LW(1), LW(2))
+    ADD(LW(1), 1)
+    CALL(evt_eff, 0, STRING("ripple"), 1, LW(0), LW(1), LW(2), 0, 0, 0, 0, 0, 0, 0, 0)
+    WAIT_MS(333)
+    CALL(btlevtcmd_OnPartsAttribute, -2, 1, 16842752)
+    WAIT_FRAMES(1)
+    CALL(btlevtcmd_SetUnitWork, -2, 4, 1)
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_TransStageFloorPosition, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_SetPos, -2, LW(0), LW(1), LW(2))
+    WAIT_FRAMES(1)
+    CALL(btlevtcmd_CalculateFaceDirection, -2, -1, -1, -1, 4, LW(0))
+    CALL(btlevtcmd_ChangeFaceDirection, -2, LW(0))
+    WAIT_MS(500)
+    LABEL(90)
+    CALL(evt_audience_ap_recovery)
+    CALL(btlevtcmd_InviteApInfoReport)
+    LABEL(95)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
+    CALL(evt_btl_camera_set_posoffset, 0, 0, 0, 0)
+    LABEL(99)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 partyVivianAttack_MagicalPowder[442] = {
-    0x0003005B, (s32)btlevtcmd_GetSelectEnemy, 0xFE363C83, 0xFE363C84,
-    0x00020018, 0xFE363C83, 0xFFFFFFFF, 0x00010004,
-    0x00000063, 0x00000021, 0x0003005B, (s32)btlevtcmd_CommandGetWeaponAddress,
-    0xFFFFFFFE, 0xFE363C8C, 0x0002005B, (s32)btlevtcmd_WeaponAftereffect,
-    0xFE363C8C, 0x0002005B, (s32)btlevtcmd_AttackDeclareAll, 0xFFFFFFFE,
-    0x0001005B, (s32)btlevtcmd_WaitGuardMove, 0x0002005B, (s32)btlevtcmd_CommandPayWeaponCost,
-    0xFFFFFFFE, 0x0003005B, (s32)btlevtcmd_RunDataEventChild, 0xFFFFFFFE,
-    0x00000007, 0x00010009, 0x00000014, 0x0002005B,
-    (s32)btlevtcmd_CommandGetWeaponActionLv, 0xFE363C80, 0x0003005B, (s32)btlevtcmd_AcSetDifficulty,
-    0xFFFFFFFE, 0xFE363C80, 0x0002005B, (s32)btlevtcmd_AcGetDifficulty,
-    0xFE363C80, 0x00020036, 0xFE363C80, 0x00000003,
-    0x00010022, 0xFE363C80, 0x00010028, 0xFFFFFFFD,
-    0x00020032, 0xFE363C80, 0x00000168, 0x00010024,
-    0xFFFFFFFE, 0x00020032, 0xFE363C80, 0x0000010E,
-    0x00010024, 0xFFFFFFFF, 0x00020032, 0xFE363C80,
-    0x000000D2, 0x00010024, 0x00000000, 0x00020032,
-    0xFE363C80, 0x000000B4, 0x00010024, 0x00000001,
-    0x00020032, 0xFE363C80, 0x000000A0, 0x00010024,
-    0x00000002, 0x00020032, 0xFE363C80, 0x0000008C,
-    0x0000002A, 0x00020032, 0xFE363C80, 0x00000078,
-    0x00000031, 0x0009005B, (s32)btlevtcmd_AcSetParamAll, 0xFE363C80,
-    0x00000001, 0x00000005, 0xFFFFFFFD, 0x00000001,
-    0xF1194D80, 0xF1194D80, 0xF1194D80, 0x0002005B,
-    (s32)btlevtcmd_AcSetFlag, 0x00000007, 0x0005005B, (s32)btlevtcmd_SetupAC,
-    0xFFFFFFFE, 0x0000000A, 0x00000001, 0x00000000,
-    0x00010009, 0x00000016, 0x0003005B, (s32)evt_btl_camera_set_mode,
-    0x00000000, 0x00000007, 0x0004005B, (s32)evt_btl_camera_set_homing_unit,
-    0x00000000, 0xFFFFFFFE, 0x00000001, 0x0003005B,
-    (s32)evt_btl_camera_set_moveSpeedLv, 0x00000000, 0x00000004, 0x0003005B,
-    (s32)evt_btl_camera_set_zoom, 0x00000000, 0x00000190, 0x0005005B,
-    (s32)evt_btl_camera_set_posoffset, 0x00000000, 0x00000014, 0x00000000,
-    0x00000000, 0x0002005B, (s32)btlevtcmd_StartAC, 0x00000001,
-    0x0001005B, (s32)btlevtcmd_ResultAC, 0x0001005B, (s32)btlevtcmd_StopAC,
-    0x0000006E, 0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0003005B,
-    (s32)btlevtcmd_GetWidth, 0xFFFFFFFE, 0xFE363C85, 0x0003005B,
-    (s32)btlevtcmd_GetHeight, 0xFFFFFFFE, 0xFE363C86, 0x000F005B,
-    (s32)evt_eff, 0x00000000, (s32)"stardust", 0x00000004,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0xFE363C85,
-    0xFE363C86, 0x0000001E, 0x0000003C, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000070,
-    0x0006005B, (s32)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)"SFX_BTL_VIVIAN_MAGIC1",
-    0xF1194D80, 0x00000000, 0xF1194D80, 0x0004005B,
-    (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001, (s32)"PTR_A3_1",
-    0x0003005B, (s32)btlevtcmd_ftof, 0x00000014, 0xFE363C80,
-    0x00010009, 0x00000014, 0x0003005B, (s32)btlevtcmd_ftof,
-    0x0000001A, 0xFE363C80, 0x0003005B, (s32)btlevtcmd_ftof,
-    0x0000002E, 0xFE363C81, 0x0006005B, (s32)btlevtcmd_ACRStart,
-    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C81,
-    0x00000000, 0x0003005B, (s32)btlevtcmd_ACRGetResult, 0xFE363C86,
-    0xFE363C87, 0x00010022, 0xFE363C86, 0x00010029,
-    0x00000002, 0x0006005B, (s32)btlevtcmd_AudienceDeclareAcrobatResult, 0xFE363C8C,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001,
-    (s32)"PTR_Y_1", 0x0000002A, 0x0001005B, (s32)evt_audience_acrobat_notry,
-    0x00000031, 0x0003005B, (s32)evt_btl_camera_set_mode, 0x00000000,
-    0x00000000, 0x0003005B, (s32)evt_btl_camera_set_moveSpeedLv, 0x00000000,
-    0x00000001, 0x00010009, 0x00000028, 0x00020032,
-    0xFE363C8A, 0x00000000, 0x00010003, 0x0000000A,
-    0x0006005B, (s32)btlevtcmd_GetHitPos, 0xFE363C83, 0xFE363C84,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000F005B,
-    (s32)evt_eff, 0x00000000, (s32)"kemuri_test", 0x00000006,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0xF24A7E80,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0006005B,
-    (s32)btlevtcmd_CommandPreCheckDamage, 0xFFFFFFFE, 0xFE363C83, 0xFE363C84,
-    0x00000100, 0xFE363C86, 0x00020019, 0xFE363C86,
-    0x00000001, 0x00020018, 0xFE363C86, 0x00000003,
-    0x0003005B, (s32)btlevtcmd_StartAvoid, 0xFE363C83, 0x00000026,
-    0x00000021, 0x00020018, 0xFE363C86, 0x00000006,
-    0x0003005B, (s32)btlevtcmd_StartAvoid, 0xFE363C83, 0x00000027,
-    0x00000021, 0x00020018, 0xFE363C86, 0x00000002,
-    0x0003005B, (s32)btlevtcmd_StartAvoid, 0xFE363C83, 0x00000028,
-    0x00000021, 0x00010004, 0x00000032, 0x00000021,
-    0x0003005B, (s32)btlevtcmd_AcGetOutputParam, 0x00000000, 0xFE363C80,
-    0x0002001C, 0xFE363C80, 0x00000003, 0x0006005B,
-    (s32)btlevtcmd_CommandCheckDamage, 0xFFFFFFFE, 0xFE363C83, 0xFE363C84,
-    0x00020100, 0xFE363C85, 0x00000020, 0x0006005B,
-    (s32)btlevtcmd_CommandCheckDamage, 0xFFFFFFFE, 0xFE363C83, 0xFE363C84,
-    0x00000100, 0xFE363C85, 0x00000021, 0x00020018,
-    0xFE363C85, 0x00000012, 0x0003005B, (s32)btlevtcmd_AcGetOutputParam,
-    0x00000000, 0xFE363C80, 0x00010022, 0xFE363C80,
-    0x00010028, 0x00000000, 0x00020032, 0xFE363C80,
-    0xFFFFFFFF, 0x0001002B, 0x00000001, 0x0001002B,
-    0x00000002, 0x00020032, 0xFE363C80, 0x00000000,
-    0x0000002E, 0x0001002B, 0x00000003, 0x0001002B,
-    0x00000004, 0x00020032, 0xFE363C80, 0x00000001,
-    0x0000002E, 0x0000002A, 0x00020032, 0xFE363C80,
-    0x00000002, 0x00000031, 0x0002001D, 0xFE363C80,
-    0x00000000, 0x0004005B, (s32)btlevtcmd_GetResultPrizeLv, 0xFE363C83,
-    0xFE363C80, 0xFE363C86, 0x0006005B, (s32)btlevtcmd_GetHitPos,
-    0xFE363C83, 0xFE363C84, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363C86,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0003005B,
-    (s32)btlevtcmd_AudienceDeclareACResult, 0xFE363C8C, 0xFE363C86, 0x00000020,
-    0x0003005B, (s32)btlevtcmd_AudienceDeclareACResult, 0xFE363C8C, 0xFFFFFFFF,
-    0x00000021, 0x00000021, 0x00010003, 0x00000032,
-    0x0003005B, (s32)btlevtcmd_GetSelectNextEnemy, 0xFE363C83, 0xFE363C84,
-    0x00020019, 0xFE363C83, 0xFFFFFFFF, 0x00020035,
-    0xFE363C8A, 0x00000001, 0x00010004, 0x0000000A,
-    0x00000021, 0x00010003, 0x00000050, 0x0001005B,
-    (s32)evt_audience_ap_recovery, 0x0001005B, (s32)btlevtcmd_InviteApInfoReport, 0x00010003,
-    0x0000005A, 0x0003005B, (s32)evt_btl_camera_set_mode, 0x00000000,
-    0x00000000, 0x0003005B, (s32)evt_btl_camera_set_moveSpeedLv, 0x00000000,
-    0x00000001, 0x0005005B, (s32)evt_btl_camera_set_posoffset, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x0004005B,
-    (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001, (s32)"PTR_A1_1",
-    0x0001000A, 0x00000320, 0x00010003, 0x00000063,
-    0x0002005B, (s32)btlevtcmd_ResetFaceDirection, 0xFFFFFFFE, 0x0001005E,
-    (s32)btldefaultevt_SuitoruBadgeEffect, 0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE,
-    0x00000002, 0x00000001,
-};
+EVT_BEGIN(partyVivianAttack_MagicalPowder)
+    CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
+    IF_INT_EQUAL(LW(3), -1)
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(12))
+    CALL(btlevtcmd_WeaponAftereffect, LW(12))
+    CALL(btlevtcmd_AttackDeclareAll, -2)
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_CommandPayWeaponCost, -2)
+    CALL(btlevtcmd_RunDataEventChild, -2, 7)
+    WAIT_FRAMES(20)
+    CALL(btlevtcmd_CommandGetWeaponActionLv, LW(0))
+    CALL(btlevtcmd_AcSetDifficulty, -2, LW(0))
+    CALL(btlevtcmd_AcGetDifficulty, LW(0))
+    SUBTRACT(LW(0), 3)
+    SWITCH(LW(0))
+        CASE_LESS_OR_EQUAL(-3)
+        SET_VALUE(LW(0), 360)
+        CASE_EQUAL(-2)
+        SET_VALUE(LW(0), 270)
+        CASE_EQUAL(-1)
+        SET_VALUE(LW(0), 210)
+        CASE_EQUAL(0)
+        SET_VALUE(LW(0), 180)
+        CASE_EQUAL(1)
+        SET_VALUE(LW(0), 160)
+        CASE_EQUAL(2)
+        SET_VALUE(LW(0), 140)
+        CASE_DEFAULT
+        SET_VALUE(LW(0), 120)
+    END_SWITCH
+    CALL(btlevtcmd_AcSetParamAll, LW(0), 1, 5, -3, 1, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_AcSetFlag, 7)
+    CALL(btlevtcmd_SetupAC, -2, 10, 1, 0)
+    WAIT_FRAMES(22)
+    CALL(evt_btl_camera_set_mode, 0, 7)
+    CALL(evt_btl_camera_set_homing_unit, 0, -2, 1)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 4)
+    CALL(evt_btl_camera_set_zoom, 0, 400)
+    CALL(evt_btl_camera_set_posoffset, 0, 20, 0, 0)
+    CALL(btlevtcmd_StartAC, 1)
+    CALL(btlevtcmd_ResultAC)
+    CALL(btlevtcmd_StopAC)
+    BEGIN_SIBLING_EVENT
+        CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_GetWidth, -2, LW(5))
+        CALL(btlevtcmd_GetHeight, -2, LW(6))
+        CALL(evt_eff, 0, STRING("stardust"), 4, LW(0), LW(1), LW(2), LW(5), LW(6), 30, 60, 0, 0, 0, 0)
+    END_SIBLING_EVENT
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_VIVIAN_MAGIC1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A3_1"))
+    CALL(btlevtcmd_ftof, 20, LW(0))
+    WAIT_FRAMES(20)
+    CALL(btlevtcmd_ftof, 26, LW(0))
+    CALL(btlevtcmd_ftof, 46, LW(1))
+    CALL(btlevtcmd_ACRStart, -2, LW(0), LW(1), LW(1), 0)
+    CALL(btlevtcmd_ACRGetResult, LW(6), LW(7))
+    SWITCH(LW(6))
+        CASE_GREATER_OR_EQUAL(2)
+        CALL(btlevtcmd_AudienceDeclareAcrobatResult, LW(12), 1, 0, 0, 0)
+        CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_Y_1"))
+        CASE_DEFAULT
+        CALL(evt_audience_acrobat_notry)
+    END_SWITCH
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
+    WAIT_FRAMES(40)
+    SET_VALUE(LW(10), 0)
+    LABEL(10)
+    CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
+    CALL(evt_eff, 0, STRING("kemuri_test"), 6, LW(0), LW(1), LW(2), FLOAT(1.0f), 0, 0, 0, 0, 0, 0, 0)
+    CALL(btlevtcmd_CommandPreCheckDamage, -2, LW(3), LW(4), 256, LW(6))
+    IF_INT_NOT_EQUAL(LW(6), 1)
+        IF_INT_EQUAL(LW(6), 3)
+            CALL(btlevtcmd_StartAvoid, LW(3), 38)
+        END_IF
+        IF_INT_EQUAL(LW(6), 6)
+            CALL(btlevtcmd_StartAvoid, LW(3), 39)
+        END_IF
+        IF_INT_EQUAL(LW(6), 2)
+            CALL(btlevtcmd_StartAvoid, LW(3), 40)
+        END_IF
+        GOTO(50)
+    END_IF
+    CALL(btlevtcmd_AcGetOutputParam, 0, LW(0))
+    IF_INT_LESS_OR_EQUAL(LW(0), 3)
+        CALL(btlevtcmd_CommandCheckDamage, -2, LW(3), LW(4), 131328, LW(5))
+    ELSE
+        CALL(btlevtcmd_CommandCheckDamage, -2, LW(3), LW(4), 256, LW(5))
+    END_IF
+    IF_INT_EQUAL(LW(5), 18)
+        CALL(btlevtcmd_AcGetOutputParam, 0, LW(0))
+        SWITCH(LW(0))
+            CASE_LESS_OR_EQUAL(0)
+            SET_VALUE(LW(0), -1)
+            CASE_OR_EQUAL(1)
+            CASE_OR_EQUAL(2)
+            SET_VALUE(LW(0), 0)
+            CASE_END
+            CASE_OR_EQUAL(3)
+            CASE_OR_EQUAL(4)
+            SET_VALUE(LW(0), 1)
+            CASE_END
+            CASE_DEFAULT
+            SET_VALUE(LW(0), 2)
+        END_SWITCH
+        IF_INT_GREATER_OR_EQUAL(LW(0), 0)
+            CALL(btlevtcmd_GetResultPrizeLv, LW(3), LW(0), LW(6))
+            CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
+            CALL(btlevtcmd_ACSuccessEffect, LW(6), LW(0), LW(1), LW(2))
+            CALL(btlevtcmd_AudienceDeclareACResult, LW(12), LW(6))
+        ELSE
+            CALL(btlevtcmd_AudienceDeclareACResult, LW(12), -1)
+        END_IF
+    END_IF
+    LABEL(50)
+    CALL(btlevtcmd_GetSelectNextEnemy, LW(3), LW(4))
+    IF_INT_NOT_EQUAL(LW(3), -1)
+        ADD(LW(10), 1)
+        GOTO(10)
+    END_IF
+    LABEL(80)
+    CALL(evt_audience_ap_recovery)
+    CALL(btlevtcmd_InviteApInfoReport)
+    LABEL(90)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
+    CALL(evt_btl_camera_set_posoffset, 0, 0, 0, 0)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A1_1"))
+    WAIT_MS(800)
+    LABEL(99)
+    CALL(btlevtcmd_ResetFaceDirection, -2)
+    CALL_CHILD(btldefaultevt_SuitoruBadgeEffect)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 partyVivianAttack_CharmKissAttack[464] = {
-    0x0003005B, (s32)btlevtcmd_GetSelectEnemy, 0xFE363C83, 0xFE363C84,
-    0x00020018, 0xFE363C83, 0xFFFFFFFF, 0x00010004,
-    0x00000063, 0x00000021, 0x0003005B, (s32)btlevtcmd_CommandGetWeaponAddress,
-    0xFFFFFFFE, 0xFE363C8C, 0x0002005B, (s32)btlevtcmd_WeaponAftereffect,
-    0xFE363C8C, 0x0002005B, (s32)btlevtcmd_AttackDeclareAll, 0xFFFFFFFE,
-    0x0001005B, (s32)btlevtcmd_WaitGuardMove, 0x0002005B, (s32)btlevtcmd_CommandPayWeaponCost,
-    0xFFFFFFFE, 0x0003005B, (s32)btlevtcmd_RunDataEventChild, 0xFFFFFFFE,
-    0x00000007, 0x00010009, 0x00000014, 0x00020032,
-    0xFE363C8A, 0x00000000, 0x00010003, 0x0000000A,
-    0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001,
-    (s32)"PTR_A4_1", 0x0003005B, (s32)evt_snd_sfxon, (s32)"SFX_PARTY_MOJIMOJI1",
-    0x00000000, 0x0002005B, (s32)btlevtcmd_CommandGetWeaponActionLv, 0xFE363C80,
-    0x0003005B, (s32)btlevtcmd_AcSetDifficulty, 0xFFFFFFFE, 0xFE363C80,
-    0x0002005B, (s32)btlevtcmd_AcGetDifficulty, 0xFE363C80, 0x00020036,
-    0xFE363C80, 0x00000003, 0x00010022, 0xFE363C80,
-    0x00010028, 0xFFFFFFFD, 0x00020032, 0xFE363C85,
-    0x0000003C, 0x00010024, 0xFFFFFFFE, 0x00020032,
-    0xFE363C85, 0x0000002D, 0x00010024, 0xFFFFFFFF,
-    0x00020032, 0xFE363C85, 0x0000001E, 0x00010024,
-    0x00000000, 0x00020032, 0xFE363C85, 0x00000019,
-    0x00010024, 0x00000001, 0x00020032, 0xFE363C85,
-    0x00000014, 0x00010024, 0x00000002, 0x00020032,
-    0xFE363C85, 0x0000000C, 0x0000002A, 0x00020032,
-    0xFE363C85, 0x00000006, 0x00000031, 0x0003005B,
-    (s32)evt_sub_random, 0xFE363C81, 0x00000059, 0x00020035,
-    0xFE363C81, 0x0000001E, 0x00020032, 0xFE363C82,
-    0xFE363C81, 0x00020036, 0xFE363C82, 0xFE363C85,
-    0x0009005B, (s32)btlevtcmd_AcSetParamAll, 0x00000005, 0xFE363C81,
-    0xFE363C82, 0xFE363C81, 0xF1194D80, 0xF1194D80,
-    0xF1194D80, 0xF1194D80, 0x0002001B, 0xFE363C8A,
-    0x00000000, 0x0002005B, (s32)btlevtcmd_AcSetFlag, 0x00000009,
-    0x00000020, 0x0002005B, (s32)btlevtcmd_AcSetFlag, 0x00000008,
-    0x00000021, 0x0005005B, (s32)btlevtcmd_SetupAC, 0xFFFFFFFE,
-    0x0000000B, 0x00000001, 0x00000000, 0x00010009,
-    0x00000016, 0x0002001B, 0xFE363C8A, 0x00000000,
-    0x0002005B, (s32)btlevtcmd_StartAC, 0x00000000, 0x00000020,
-    0x0002005B, (s32)btlevtcmd_StartAC, 0x00000001, 0x00000021,
-    0x0001006F, 0xFE363C8F, 0x00020032, 0xFE363C80,
-    0x00000005, 0x00010005, 0xFE363C80, 0x0003005B,
-    (s32)btlevtcmd_AcGetOutputParam, 0x00000002, 0xFE363C81, 0x00020019,
-    0xFE363C81, 0x00000000, 0x0006005B, (s32)_disp_heart_entry,
-    0x0000000A, 0x00000014, 0x00000019, 0xFE363C83,
-    0xFE363C84, 0x00010009, 0x00000001, 0x00000007,
-    0x00000021, 0x0002005B, (s32)_disp_heart_entry_stop_check, 0xFE363C81,
-    0x00020019, 0xFE363C81, 0x00000000, 0x00000007,
-    0x00000021, 0x00020032, 0xFE363C80, 0x00000005,
-    0x00010009, 0x00000001, 0x00000006, 0x00000070,
-    0x0001005B, (s32)btlevtcmd_ResultAC, 0x0002005B, (s32)btlevtcmd_GetResultAC,
-    0xFE363C87, 0x0002006A, 0xFE363C8F, 0xFE363C80,
-    0x00020019, 0xFE363C80, 0x00000000, 0x0002005B,
-    (s32)_disp_heart_entry_stop, 0xFE363C8F, 0x00000021, 0x0004005B,
-    (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001, (s32)"PTR_A4_2",
-    0x0001000A, 0x000000C8, 0x0006005B, (s32)btlevtcmd_snd_se,
-    0xFFFFFFFE, (s32)"SFX_BTL_VIVIAN_MEROMERO1", 0xF1194D80, 0x00000000,
-    0xF1194D80, 0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)btlevtcmd_FaceDirectionAdd, 0xFFFFFFFE, 0xFE363C80, 0x0000000F,
-    0x00020035, 0xFE363C81, 0x0000001E, 0x0003005B,
-    (s32)btlevtcmd_GetFaceDirection, 0xFFFFFFFE, 0xFE363C86, 0x00020037,
-    0xFE363C86, 0x0000002D, 0x000F005B, (s32)evt_eff,
-    0x00000000, (s32)"kiss", 0x00000004, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0xFE363C86, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0006005B, (s32)btlevtcmd_CommandPreCheckDamage,
-    0xFFFFFFFE, 0xFE363C83, 0xFE363C84, 0x00000100,
-    0xFE363C86, 0x00020019, 0xFE363C86, 0x00000001,
-    0x00020018, 0xFE363C86, 0x00000003, 0x0003005B,
-    (s32)btlevtcmd_StartAvoid, 0xFE363C83, 0x00000026, 0x00000021,
-    0x00020018, 0xFE363C86, 0x00000006, 0x0003005B,
-    (s32)btlevtcmd_StartAvoid, 0xFE363C83, 0x00000027, 0x00000021,
-    0x00020018, 0xFE363C86, 0x00000002, 0x0003005B,
-    (s32)btlevtcmd_StartAvoid, 0xFE363C83, 0x00000028, 0x00000021,
-    0x00010004, 0x00000032, 0x00000021, 0x0002001E,
-    0xFE363C87, 0x00000002, 0x0006005B, (s32)btlevtcmd_CommandCheckDamage,
-    0xFFFFFFFE, 0xFE363C83, 0xFE363C84, 0x00020100,
-    0xFE363C85, 0x00000020, 0x0006005B, (s32)btlevtcmd_CommandCheckDamage,
-    0xFFFFFFFE, 0xFE363C83, 0xFE363C84, 0x20000100,
-    0xFE363C85, 0x00000021, 0x00020018, 0xFE363C85,
-    0x00000012, 0x0002001E, 0xFE363C87, 0x00000002,
-    0x0006005B, (s32)btlevtcmd_GetHitPos, 0xFE363C83, 0xFE363C84,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
-    0xFE363C82, 0x0000000A, 0x000F005B, (s32)evt_eff,
-    0x00000000, (s32)"kiss", 0x00000005, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0004005B, (s32)btlevtcmd_GetResultPrizeLv,
-    0xFE363C83, 0x00000000, 0xFE363C86, 0x0006005B,
-    (s32)btlevtcmd_GetHitPos, 0xFE363C83, 0xFE363C84, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)btlevtcmd_ACSuccessEffect,
-    0xFE363C86, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0003005B, (s32)btlevtcmd_AudienceDeclareACResult, 0xFE363C8C, 0xFE363C86,
-    0x00000020, 0x0003005B, (s32)btlevtcmd_AudienceDeclareACResult, 0xFE363C8C,
-    0xFFFFFFFF, 0x00000021, 0x00000021, 0x0000006E,
-    0x0006005B, (s32)btlevtcmd_ACRStart, 0xFFFFFFFE, 0x00000000,
-    0x0000001E, 0x0000001E, 0x00000000, 0x00000070,
-    0x0003005B, (s32)btlevtcmd_AnimeWaitPlayComplete, 0xFFFFFFFE, 0x00000001,
-    0x0003005B, (s32)btlevtcmd_ACRGetResult, 0xFE363C86, 0xFE363C87,
-    0x00020018, 0xFE363C86, 0x00000002, 0x0003005B,
-    (s32)btlevtcmd_CommandGetWeaponAddress, 0xFFFFFFFE, 0xFE363C80, 0x0006005B,
-    (s32)btlevtcmd_AudienceDeclareAcrobatResult, 0xFE363C80, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x0004005B, (s32)btlevtcmd_AnimeChangePose,
-    0xFFFFFFFE, 0x00000001, (s32)"PTR_Y_1", 0x00010009,
-    0x00000020, 0x00000021, 0x00010009, 0x00000005,
-    0x00010003, 0x00000032, 0x0003005B, (s32)btlevtcmd_GetSelectNextEnemy,
-    0xFE363C83, 0xFE363C84, 0x00020019, 0xFE363C83,
-    0xFFFFFFFF, 0x00020035, 0xFE363C8A, 0x00000001,
-    0x00010004, 0x0000000A, 0x00000021, 0x00010003,
-    0x00000050, 0x0001005B, (s32)btlevtcmd_StopAC, 0x0001005B,
-    (s32)evt_audience_ap_recovery, 0x0001005B, (s32)btlevtcmd_InviteApInfoReport, 0x00010003,
-    0x0000005A, 0x0003005B, (s32)evt_btl_camera_set_mode, 0x00000000,
-    0x00000000, 0x0003005B, (s32)evt_btl_camera_set_moveSpeedLv, 0x00000000,
-    0x00000001, 0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE,
-    0x00000001, (s32)"PTR_A1_1", 0x00010009, 0x00000030,
-    0x00010003, 0x00000063, 0x0002005B, (s32)btlevtcmd_ResetFaceDirection,
-    0xFFFFFFFE, 0x0001005E, (s32)btldefaultevt_SuitoruBadgeEffect, 0x0002005B,
-    (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(partyVivianAttack_CharmKissAttack)
+    CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
+    IF_INT_EQUAL(LW(3), -1)
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(12))
+    CALL(btlevtcmd_WeaponAftereffect, LW(12))
+    CALL(btlevtcmd_AttackDeclareAll, -2)
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_CommandPayWeaponCost, -2)
+    CALL(btlevtcmd_RunDataEventChild, -2, 7)
+    WAIT_FRAMES(20)
+    SET_VALUE(LW(10), 0)
+    LABEL(10)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A4_1"))
+    CALL(evt_snd_sfxon, STRING("SFX_PARTY_MOJIMOJI1"), 0)
+    CALL(btlevtcmd_CommandGetWeaponActionLv, LW(0))
+    CALL(btlevtcmd_AcSetDifficulty, -2, LW(0))
+    CALL(btlevtcmd_AcGetDifficulty, LW(0))
+    SUBTRACT(LW(0), 3)
+    SWITCH(LW(0))
+        CASE_LESS_OR_EQUAL(-3)
+        SET_VALUE(LW(5), 60)
+        CASE_EQUAL(-2)
+        SET_VALUE(LW(5), 45)
+        CASE_EQUAL(-1)
+        SET_VALUE(LW(5), 30)
+        CASE_EQUAL(0)
+        SET_VALUE(LW(5), 25)
+        CASE_EQUAL(1)
+        SET_VALUE(LW(5), 20)
+        CASE_EQUAL(2)
+        SET_VALUE(LW(5), 12)
+        CASE_DEFAULT
+        SET_VALUE(LW(5), 6)
+    END_SWITCH
+    CALL(evt_sub_random, LW(1), 89)
+    ADD(LW(1), 30)
+    SET_VALUE(LW(2), LW(1))
+    SUBTRACT(LW(2), LW(5))
+    CALL(btlevtcmd_AcSetParamAll, 5, LW(1), LW(2), LW(1), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+    IF_INT_GREATER(LW(10), 0)
+        CALL(btlevtcmd_AcSetFlag, 9)
+    ELSE
+        CALL(btlevtcmd_AcSetFlag, 8)
+    END_IF
+    CALL(btlevtcmd_SetupAC, -2, 11, 1, 0)
+    WAIT_FRAMES(22)
+    IF_INT_GREATER(LW(10), 0)
+        CALL(btlevtcmd_StartAC, 0)
+    ELSE
+        CALL(btlevtcmd_StartAC, 1)
+    END_IF
+    BEGIN_SIBLING_EVENT_GET_ID(LW(15))
+        SET_VALUE(LW(0), 5)
+        LOOP(LW(0))
+            CALL(btlevtcmd_AcGetOutputParam, 2, LW(1))
+            IF_INT_NOT_EQUAL(LW(1), 0)
+                CALL(_disp_heart_entry, 10, 20, 25, LW(3), LW(4))
+                WAIT_FRAMES(1)
+                BREAK_LOOP
+            END_IF
+            CALL(_disp_heart_entry_stop_check, LW(1))
+            IF_INT_NOT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+            SET_VALUE(LW(0), 5)
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(btlevtcmd_ResultAC)
+    CALL(btlevtcmd_GetResultAC, LW(7))
+    IS_EVENT_RUNNING(LW(15), LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(_disp_heart_entry_stop, LW(15))
+    END_IF
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A4_2"))
+    WAIT_MS(200)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_VIVIAN_MEROMERO1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_FaceDirectionAdd, -2, LW(0), 15)
+    ADD(LW(1), 30)
+    CALL(btlevtcmd_GetFaceDirection, -2, LW(6))
+    MULTIPLY(LW(6), 45)
+    CALL(evt_eff, 0, STRING("kiss"), 4, LW(0), LW(1), LW(2), LW(6), 0, 0, 0, 0, 0, 0, 0)
+    CALL(btlevtcmd_CommandPreCheckDamage, -2, LW(3), LW(4), 256, LW(6))
+    IF_INT_NOT_EQUAL(LW(6), 1)
+        IF_INT_EQUAL(LW(6), 3)
+            CALL(btlevtcmd_StartAvoid, LW(3), 38)
+        END_IF
+        IF_INT_EQUAL(LW(6), 6)
+            CALL(btlevtcmd_StartAvoid, LW(3), 39)
+        END_IF
+        IF_INT_EQUAL(LW(6), 2)
+            CALL(btlevtcmd_StartAvoid, LW(3), 40)
+        END_IF
+        GOTO(50)
+    END_IF
+    IF_BITS_SET(LW(7), 2)
+        CALL(btlevtcmd_CommandCheckDamage, -2, LW(3), LW(4), 131328, LW(5))
+    ELSE
+        CALL(btlevtcmd_CommandCheckDamage, -2, LW(3), LW(4), 536871168, LW(5))
+    END_IF
+    IF_INT_EQUAL(LW(5), 18)
+        IF_BITS_SET(LW(7), 2)
+            CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
+            ADD(LW(2), 10)
+            CALL(evt_eff, 0, STRING("kiss"), 5, LW(0), LW(1), LW(2), 0, 0, 0, 0, 0, 0, 0, 0)
+            CALL(btlevtcmd_GetResultPrizeLv, LW(3), 0, LW(6))
+            CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
+            CALL(btlevtcmd_ACSuccessEffect, LW(6), LW(0), LW(1), LW(2))
+            CALL(btlevtcmd_AudienceDeclareACResult, LW(12), LW(6))
+        ELSE
+            CALL(btlevtcmd_AudienceDeclareACResult, LW(12), -1)
+        END_IF
+    END_IF
+    BEGIN_SIBLING_EVENT
+        CALL(btlevtcmd_ACRStart, -2, 0, 30, 30, 0)
+    END_SIBLING_EVENT
+    CALL(btlevtcmd_AnimeWaitPlayComplete, -2, 1)
+    CALL(btlevtcmd_ACRGetResult, LW(6), LW(7))
+    IF_INT_EQUAL(LW(6), 2)
+        CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(0))
+        CALL(btlevtcmd_AudienceDeclareAcrobatResult, LW(0), 1, 0, 0, 0)
+        CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_Y_1"))
+        WAIT_FRAMES(32)
+    END_IF
+    WAIT_FRAMES(5)
+    LABEL(50)
+    CALL(btlevtcmd_GetSelectNextEnemy, LW(3), LW(4))
+    IF_INT_NOT_EQUAL(LW(3), -1)
+        ADD(LW(10), 1)
+        GOTO(10)
+    END_IF
+    LABEL(80)
+    CALL(btlevtcmd_StopAC)
+    CALL(evt_audience_ap_recovery)
+    CALL(btlevtcmd_InviteApInfoReport)
+    LABEL(90)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A1_1"))
+    WAIT_FRAMES(48)
+    LABEL(99)
+    CALL(btlevtcmd_ResetFaceDirection, -2)
+    CALL_CHILD(btldefaultevt_SuitoruBadgeEffect)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 vivian_shadow_tail_event[78] = {
-    0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)btlevtcmd_TransStageFloorPosition,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)btlevtcmd_SetUnitWork, 0xFFFFFFFE, 0x00000000, 0xFE363C80,
-    0x0004005B, (s32)btlevtcmd_SetUnitWork, 0xFFFFFFFE, 0x00000001,
-    0xFE363C81, 0x0004005B, (s32)btlevtcmd_SetUnitWork, 0xFFFFFFFE,
-    0x00000002, 0xFE363C82, 0x00010003, 0x00000000,
-    0x0003005B, (s32)btlevtcmd_GetUnitId, 0xFFFFFFFE, 0xFE363C85,
-    0x00020018, 0xFE363C85, 0xFFFFFFFF, 0x00000002,
-    0x00000021, 0x0004005B, (s32)btlevtcmd_GetUnitWork, 0xFFFFFFFE,
-    0x00000003, 0xFE363C85, 0x00020018, 0xFE363C85,
-    0x00000000, 0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0004005B,
-    (s32)btlevtcmd_TransStageFloorPosition, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0004005B, (s32)btlevtcmd_SetUnitWork, 0xFFFFFFFE, 0x00000000,
-    0xFE363C80, 0x0004005B, (s32)btlevtcmd_SetUnitWork, 0xFFFFFFFE,
-    0x00000001, 0xFE363C81, 0x0004005B, (s32)btlevtcmd_SetUnitWork,
-    0xFFFFFFFE, 0x00000002, 0xFE363C82, 0x00000021,
-    0x00010009, 0x00000001, 0x00010004, 0x00000000,
-    0x00000002, 0x00000001,
-};
+EVT_BEGIN(vivian_shadow_tail_event)
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_TransStageFloorPosition, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_SetUnitWork, -2, 0, LW(0))
+    CALL(btlevtcmd_SetUnitWork, -2, 1, LW(1))
+    CALL(btlevtcmd_SetUnitWork, -2, 2, LW(2))
+    LABEL(0)
+    CALL(btlevtcmd_GetUnitId, -2, LW(5))
+    IF_INT_EQUAL(LW(5), -1)
+        RETURN
+    END_IF
+    CALL(btlevtcmd_GetUnitWork, -2, 3, LW(5))
+    IF_INT_EQUAL(LW(5), 0)
+        CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_TransStageFloorPosition, LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_SetUnitWork, -2, 0, LW(0))
+        CALL(btlevtcmd_SetUnitWork, -2, 1, LW(1))
+        CALL(btlevtcmd_SetUnitWork, -2, 2, LW(2))
+    END_IF
+    WAIT_FRAMES(1)
+    GOTO(0)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 vivian_counter_damage_event[177] = {
-    0x0005005B, (s32)btlevtcmd_SetScale, 0xFFFFFFFE, 0xF24A7E80,
-    0xF24A7E80, 0xF24A7E80, 0x0003005B, (s32)btlevtcmd_OnUnitFlag,
-    0xFFFFFFFE, 0x00000001, 0x00020018, 0xFE363C80,
-    0x0000002B, 0x00020032, 0xFE363C8E, 0x00000024,
-    0x00000020, 0x00020032, 0xFE363C8E, 0x00000027,
-    0x00000021, 0x0004005B, (s32)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE,
-    0xFE363C8B, 0xFE363C8E, 0x0003005B, (s32)btlevtcmd_SetFallAccel,
-    0xFFFFFFFE, 0xF24A7E80, 0x0005005B, (s32)btlevtcmd_GetPos,
-    0xFFFFFFFE, 0xFE363C82, 0xFE363C83, 0xFE363C84,
-    0x0004005B, (s32)btlevtcmd_FaceDirectionSub, 0xFFFFFFFE, 0xFE363C82,
-    0x00000019, 0x00020035, 0xFE363C83, 0x00000019,
-    0x000A005B, (s32)btlevtcmd_DivePosition, 0xFFFFFFFE, 0xFE363C82,
-    0xFE363C83, 0xFE363C84, 0x00000005, 0x00000000,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00010009,
-    0x0000001E, 0x0004005B, (s32)btlevtcmd_GetUnitWork, 0xFFFFFFFE,
-    0x00000003, 0xFE363C85, 0x00020019, 0xFE363C85,
-    0x00000000, 0x0004005B, (s32)btlevtcmd_GetUnitWork, 0xFFFFFFFE,
-    0x00000000, 0xFE363C80, 0x0004005B, (s32)btlevtcmd_GetUnitWork,
-    0xFFFFFFFE, 0x00000001, 0xFE363C81, 0x0004005B,
-    (s32)btlevtcmd_GetUnitWork, 0xFFFFFFFE, 0x00000002, 0xFE363C82,
-    0x0004005B, (s32)btlevtcmd_TransStageFloorPosition, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x000A005B, (s32)btlevtcmd_DivePosition, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0000000C,
-    0x00000000, 0x00000005, 0x00000000, 0xFFFFFFFF,
-    0x0004005B, (s32)btlevtcmd_SetUnitWork, 0xFFFFFFFE, 0x00000003,
-    0x00000000, 0x0005005B, (s32)battle_evt_majo_disp_off, 0xFFFFFFFE,
-    0x00000001, 0x00000000, 0x00000000, 0x0005005B,
-    (s32)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE,
-    0xF1194D80, 0xFE363C81, 0xF1194D80, 0x000A005B,
-    (s32)btlevtcmd_DivePosition, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000050, 0x00000000, 0x00000005,
-    0x00000000, 0xFFFFFFFF, 0x0005005B, (s32)btlevtcmd_GetHomePos,
-    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0007005B, (s32)battle_evt_majo_disp_on, 0xFFFFFFFE, 0x00000001,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x0005005B, (s32)btlevtcmd_SetPos, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000020, 0x0005005B,
-    (s32)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C82, 0xFE363C83,
-    0xFE363C84, 0x000A005B, (s32)btlevtcmd_DivePosition, 0xFFFFFFFE,
-    0xFE363C82, 0xFE363C83, 0xFE363C84, 0x00000005,
-    0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000021, 0x0002005B, (s32)btlevtcmd_ResetFaceDirection, 0xFFFFFFFE,
-    0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002,
-    0x00000001,
-};
+EVT_BEGIN(vivian_counter_damage_event)
+    CALL(btlevtcmd_SetScale, -2, FLOAT(1.0f), FLOAT(1.0f), FLOAT(1.0f))
+    CALL(btlevtcmd_OnUnitFlag, -2, 1)
+    IF_INT_EQUAL(LW(0), 43)
+        SET_VALUE(LW(14), 36)
+    ELSE
+        SET_VALUE(LW(14), 39)
+    END_IF
+    CALL(btlevtcmd_AnimeChangePoseType, -2, LW(11), LW(14))
+    CALL(btlevtcmd_SetFallAccel, -2, FLOAT(1.0f))
+    CALL(btlevtcmd_GetPos, -2, LW(2), LW(3), LW(4))
+    CALL(btlevtcmd_FaceDirectionSub, -2, LW(2), 25)
+    ADD(LW(3), 25)
+    CALL(btlevtcmd_DivePosition, -2, LW(2), LW(3), LW(4), 5, 0, 0, 0, -1)
+    WAIT_FRAMES(30)
+    CALL(btlevtcmd_GetUnitWork, -2, 3, LW(5))
+    IF_INT_NOT_EQUAL(LW(5), 0)
+        CALL(btlevtcmd_GetUnitWork, -2, 0, LW(0))
+        CALL(btlevtcmd_GetUnitWork, -2, 1, LW(1))
+        CALL(btlevtcmd_GetUnitWork, -2, 2, LW(2))
+        CALL(btlevtcmd_TransStageFloorPosition, LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_DivePosition, -2, LW(0), LW(1), LW(2), 12, 0, 5, 0, -1)
+        CALL(btlevtcmd_SetUnitWork, -2, 3, 0)
+        CALL(battle_evt_majo_disp_off, -2, 1, 0, 0)
+        CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_GetPos, -2, EVTDAT_POINTER_MAX, LW(1), EVTDAT_POINTER_MAX)
+        CALL(btlevtcmd_DivePosition, -2, LW(0), LW(1), LW(2), 80, 0, 5, 0, -1)
+        CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+        CALL(battle_evt_majo_disp_on, -2, 1, LW(0), LW(1), LW(2), 0)
+        CALL(btlevtcmd_SetPos, -2, LW(0), LW(1), LW(2))
+    ELSE
+        CALL(btlevtcmd_GetHomePos, -2, LW(2), LW(3), LW(4))
+        CALL(btlevtcmd_DivePosition, -2, LW(2), LW(3), LW(4), 5, 0, 0, 0, -1)
+    END_IF
+    CALL(btlevtcmd_ResetFaceDirection, -2)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
-// TODO: type
-s32 vivian_appeal_event[80] = {
-    0x0003005B, (s32)btlevtcmd_RunDataEventChild, 0xFFFFFFFE, 0x00000007,
-    0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001,
-    (s32)"PTR_O_1", 0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0006005B,
-    (s32)evt_snd_sfxon_3d, (s32)"SFX_MARIO_APPEAL1", 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0x00010009, 0x0000000A,
-    0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001,
-    (s32)"PTR_O_2", 0x0001000A, 0x0000014D, 0x0005005B,
-    (s32)btlevtcmd_GetPos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0004005B, (s32)btlevtcmd_FaceDirectionAdd, 0xFFFFFFFE,
-    0xFE363C80, 0x0000000F, 0x00020035, 0xFE363C81,
-    0x0000001E, 0x0003005B, (s32)btlevtcmd_GetFaceDirection, 0xFFFFFFFE,
-    0xFE363C8E, 0x00020037, 0xFE363C8E, 0x0000002D,
-    0x000F005B, (s32)evt_eff, (s32)"", (s32)"kiss",
-    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0xFE363C8E, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0001000A, 0x0000014D, 0x0002005B, (s32)btlevtcmd_AudienceAppeal,
-    0xFFFFFFFE, 0x0001000A, 0x000001F4, 0x0002005B,
-    (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(vivian_appeal_event)
+    CALL(btlevtcmd_RunDataEventChild, -2, 7)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_O_1"))
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_MARIO_APPEAL1"), LW(0), LW(1), LW(2), 0)
+    WAIT_FRAMES(10)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_O_2"))
+    WAIT_MS(333)
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_FaceDirectionAdd, -2, LW(0), 15)
+    ADD(LW(1), 30)
+    CALL(btlevtcmd_GetFaceDirection, -2, LW(14))
+    MULTIPLY(LW(14), 45)
+    CALL(evt_eff, STRING(""), STRING("kiss"), 0, LW(0), LW(1), LW(2), LW(14), 0, 0, 0, 0, 0, 0, 0)
+    WAIT_MS(333)
+    CALL(btlevtcmd_AudienceAppeal, -2)
+    WAIT_MS(500)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
-// TODO: type
-static s32 party_win_reaction[18] = {
-    0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001,
-    (s32)"PTR_Y_1", 0x0003005B, (s32)btlevtcmd_AnimeWaitPlayComplete, 0xFFFFFFFE,
-    0x00000001, 0x0001000A, 0x000001F4, 0x0004005B,
-    (s32)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE, 0x00000001, 0x0000002B,
-    0x00000002, 0x00000001,
-};
+static EVT_BEGIN(party_win_reaction)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_Y_1"))
+    CALL(btlevtcmd_AnimeWaitPlayComplete, -2, 1)
+    WAIT_MS(500)
+    CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 43)
+    RETURN
+EVT_END()
 
-// TODO: type
-static s32 attack_audience_event[189] = {
-    0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)btlevtcmd_GetStageSize,
-    0xFE363C83, 0xF1194D80, 0xF1194D80, 0x0003005B,
-    (s32)btlevtcmd_GetFaceDirection, 0xFFFFFFFE, 0xFE363C84, 0x00020032,
-    0xFE363C88, 0xFE363C83, 0x00020037, 0xFE363C88,
-    0xFE363C84, 0x00020037, 0xFE363C88, 0xFFFFFFFF,
-    0x0003005B, (s32)btlevtcmd_SetMoveSpeed, 0xFFFFFFFE, 0xF24A9280,
-    0x0004005B, (s32)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE, 0x00000001,
-    0x0000002A, 0x0008005B, (s32)btlevtcmd_MovePosition, 0xFFFFFFFE,
-    0xFE363C88, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0x00010009, 0x00000014,
-    0x0005005B, (s32)_get_attack_aud_no, 0xFE363C83, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0004005B, (s32)btlevtcmd_GetStageAudienceAreaSize,
-    0xFE363C84, 0xF1194D80, 0xF1194D80, 0x0003005B,
-    (s32)btlevtcmd_GetFaceDirection, 0xFFFFFFFE, 0xFE363C85, 0x00020032,
-    0xFE363C86, 0xFE363C84, 0x00020037, 0xFE363C86,
-    0xFE363C85, 0x00020037, 0xFE363C86, 0xFFFFFFFF,
-    0x0005005B, (s32)btlevtcmd_SetPos, 0xFFFFFFFE, 0xFE363C86,
-    0xFE363C81, 0xFE363C82, 0x0003005B, (s32)evt_btl_camera_set_mode,
-    0x00000000, 0x0000000D, 0x0005005B, (s32)evt_btl_camera_set_homing_unit_audience,
-    0x00000000, 0xFFFFFFFE, 0x00000001, 0xFE363C83,
-    0x0003005B, (s32)evt_btl_camera_set_moveSpeedLv, 0x00000000, 0x00000002,
-    0x0003005B, (s32)evt_btl_camera_set_zoom, 0x00000000, 0x00000064,
-    0x0004005B, (s32)btlevtcmd_FaceDirectionSub, 0xFFFFFFFE, 0xFE363C80,
-    0x00000014, 0x0008005B, (s32)btlevtcmd_MovePosition, 0xFFFFFFFE,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0x0003005B, (s32)evt_btl_camera_set_zoom,
-    0x00000000, 0x000000C8, 0x0004005B, (s32)btlevtcmd_AnimeChangePose,
-    0xFFFFFFFE, 0x00000001, (s32)"PTR_A1_2", 0x0003005B,
-    (s32)btlevtcmd_ftomsec, 0x00000004, 0xFE363C80, 0x0001000A,
-    0xFE363C80, 0x0003005B, (s32)evt_snd_sfxon, (s32)"SFX_BTL_VIVIAN_ATTACK4",
-    0x00000000, 0x0003005B, (s32)_attack_aud, 0xFE363C83,
-    0x00000000, 0x0001006F, 0xFE363C8F, 0x0001000A,
-    0x000005DC, 0x0003005B, (s32)evt_btl_camera_set_mode, 0x00000000,
-    0x00000000, 0x0001000A, 0x000003E8, 0x00000070,
-    0x0001000A, 0x000001F4, 0x0004005B, (s32)btlevtcmd_AnimeChangePoseType,
-    0xFFFFFFFE, 0x00000001, 0x0000002A, 0x0003005B,
-    (s32)btlevtcmd_SetMoveSpeed, 0xFFFFFFFE, 0xF24A8A80, 0x0008005B,
-    (s32)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C86, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x0005005B, (s32)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x0005005B, (s32)btlevtcmd_SetPos,
-    0xFFFFFFFE, 0xFE363C88, 0xFE363C81, 0xFE363C82,
-    0x0002005B, (s32)btlevtcmd_WaitEventEnd, 0xFE363C8F, 0x0008005B,
-    (s32)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002,
-    0x00000001,
-};
+static EVT_BEGIN(attack_audience_event)
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_GetStageSize, LW(3), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_GetFaceDirection, -2, LW(4))
+    SET_VALUE(LW(8), LW(3))
+    MULTIPLY(LW(8), LW(4))
+    MULTIPLY(LW(8), -1)
+    CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(6.0f))
+    CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 42)
+    CALL(btlevtcmd_MovePosition, -2, LW(8), LW(1), LW(2), 0, -1, 0)
+    WAIT_FRAMES(20)
+    CALL(_get_attack_aud_no, LW(3), LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_GetStageAudienceAreaSize, LW(4), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_GetFaceDirection, -2, LW(5))
+    SET_VALUE(LW(6), LW(4))
+    MULTIPLY(LW(6), LW(5))
+    MULTIPLY(LW(6), -1)
+    CALL(btlevtcmd_SetPos, -2, LW(6), LW(1), LW(2))
+    CALL(evt_btl_camera_set_mode, 0, 13)
+    CALL(evt_btl_camera_set_homing_unit_audience, 0, -2, 1, LW(3))
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
+    CALL(evt_btl_camera_set_zoom, 0, 100)
+    CALL(btlevtcmd_FaceDirectionSub, -2, LW(0), 20)
+    CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
+    CALL(evt_btl_camera_set_zoom, 0, 200)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_A1_2"))
+    CALL(btlevtcmd_ftomsec, 4, LW(0))
+    WAIT_MS(LW(0))
+    CALL(evt_snd_sfxon, STRING("SFX_BTL_VIVIAN_ATTACK4"), 0)
+    CALL(_attack_aud, LW(3), 0)
+    BEGIN_SIBLING_EVENT_GET_ID(LW(15))
+        WAIT_MS(1500)
+        CALL(evt_btl_camera_set_mode, 0, 0)
+        WAIT_MS(1000)
+    END_SIBLING_EVENT
+    WAIT_MS(500)
+    CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 42)
+    CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(4.0f))
+    CALL(btlevtcmd_MovePosition, -2, LW(6), LW(1), LW(2), 0, -1, 0)
+    CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_SetPos, -2, LW(8), LW(1), LW(2))
+    CALL(btlevtcmd_WaitEventEnd, LW(15))
+    CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
 // TODO: type
 static u32 defence[2] = {
@@ -1113,16 +1131,14 @@ static u32 regist[6] = {
     0x64646464, 0x64640000,
 };
 
-// TODO: type
-static s32 attack_event[2] = {
-    0x00000002, 0x00000001,
-};
+static EVT_BEGIN(attack_event)
+    RETURN
+EVT_END()
 
-// TODO: type
-static s32 wait_event[6] = {
-    0x0003005B, (s32)btlevtcmd_AnimeChangePoseFromTable, 0xFFFFFFFE, 0x00000001,
-    0x00000002, 0x00000001,
-};
+static EVT_BEGIN(wait_event)
+    CALL(btlevtcmd_AnimeChangePoseFromTable, -2, 1)
+    RETURN
+EVT_END()
 
 #pragma explicit_zero_data on
 #pragma force_active on

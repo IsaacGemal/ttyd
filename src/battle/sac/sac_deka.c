@@ -37,7 +37,7 @@ extern s32 sac_cheer[];
 extern s32 sac_cheer_end[];
 extern s32 sac_ac_help_on[];
 extern s32 sac_ac_help_off[];
-extern u32 dmg_evt[];
+extern s32 dmg_evt[];
 #pragma pool_data on
 static struct DekaWork* get_ptr(void);
 static void disp_2D(CameraId cameraId, void* param);  // local to this file in the original
@@ -144,7 +144,10 @@ typedef struct DekaYukaMesh {
 } DekaYukaMesh;
 
 // EVT script, local to this file in the original (.sdata).
-static s32 nice_event[8] = { 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0, 0x64, 0, 2, 1 };
+static EVT_BEGIN(nice_event)
+    CALL(btlevtcmd_ACSuccessEffect, LW(0), 0, 100, 0)
+    RETURN
+EVT_END()
 
 // .text:0x2CD0 | 0x80245CC8 | size: 0x130
 s32 main_deka(EventEntry* event, s32 arg) {
@@ -1318,136 +1321,178 @@ s32 get_result(EventEntry* event) {
 // ---- EVT scripts (.data, parsed before the code's jump tables) ----
 
 // .data | .obj marioAttackEvent_Deka
-u32 marioAttackEvent_Deka[396] = {
-    0x0003005B, (u32)(void*)btlevtcmd_GetUnitId, 0xFFFFFFFC, 0xFE363C8E,
-    0x0003005B, (u32)(void*)btlevtcmd_GetBodyId, 0xFE363C8E, 0xFE363C8F,
-    0x0003005B, (u32)(void*)btlevtcmd_CheckActStatus, 0xFE363C8E, 0xFE363C80,
-    0x00020018, 0xFE363C80, 0x00000000, 0x00020032,
-    0xFE363C8E, 0xFFFFFFFF, 0x00000021, 0x0003005B,
-    (u32)(void*)btlevtcmd_GetSelectEnemy, 0xFE363C83, 0xFE363C84, 0x00020018,
-    0xFE363C83, 0xFFFFFFFF, 0x00010004, 0x00000063,
-    0x00000021, 0x0004005B, (u32)(void*)btlevtcmd_AttackDeclare, 0xFFFFFFFE,
-    0xFE363C83, 0xFE363C84, 0x0001005B, (u32)(void*)btlevtcmd_WaitGuardMove,
-    0x0002005B, (u32)(void*)btlevtcmd_CommandPayWeaponCost, 0xFFFFFFFE, 0x0003005B,
-    (u32)(void*)btlevtcmd_CommandGetWeaponAddress, 0xFFFFFFFE, 0xFE363C80, 0x0002005B,
-    (u32)(void*)btlevtcmd_WeaponAftereffect, 0xFE363C80, 0x0001005B, (u32)(void*)btlevtcmd_reset_move_color_lv_all,
-    0x0000006E, 0x0002005B, (u32)(void*)main_deka, 0xFE363C8E,
-    0x00000070, 0x0001005E, (u32)(void*)sac_start_camera_evt, 0x0001000A,
-    0x000001F4, 0x0006005B, (u32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE,
-    (u32)(void*)"SFX_BTL_SAC_START1", 0xF1194D80, 0x00000000, 0xF1194D80,
-    0x0001005E, (u32)(void*)sac_mario_item_on_evt, 0x0001000A, 0x000001F4,
-    0x0006005B, (u32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)"SFX_BTL_SAC_START2",
-    0xF1194D80, 0x00000000, 0xFE363C8B, 0x0001005B,
-    (u32)(void*)star_stone_appear, 0x0000006E, 0x0001005E, (u32)(void*)sac_start_stardust,
-    0x00000070, 0x00010009, 0x00000064, 0x0006005B,
-    (u32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)"SFX_BTL_SAC_START3", 0xF1194D80,
-    0x00000000, 0xF1194D80, 0x0002005B, (u32)(void*)evt_snd_sfxoff,
-    0xFE363C8B, 0x0003005B, (u32)(void*)evt_btl_camera_set_mode, 0x00000000,
-    0x00000000, 0x00010009, 0x00000028, 0x0001005E,
-    (u32)(void*)sac_mario_item_on_end_evt, 0x0002005B, (u32)(void*)btlevtcmd_SacBgsetMove, 0x00000000,
-    0x0001005E, (u32)(void*)sac_mario_back_home, 0x0001005B, (u32)(void*)wait_star_stone_take_on,
-    0x0000006E, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE,
-    0x00000001, 0x0000002C, 0x0005005B, (u32)(void*)get_ride_pos,
-    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (u32)(void*)btlevtcmd_JumpSetting, 0xFFFFFFFE, 0x0000001E,
-    0x00000000, 0xF24A7C19, 0x0007005B, (u32)(void*)btlevtcmd_JumpPosition,
-    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0000001E, 0xFFFFFFFF, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePose,
-    0xFFFFFFFE, 0x00000001, (u32)(void*)"M_I_Y", 0x00000070,
-    0x0000006E, 0x00020019, 0xFE363C8E, 0xFFFFFFFF,
-    0x0003005B, (u32)(void*)btlevtcmd_GetUnitKind, 0xFFFFFFFC, 0xFE363C80,
-    0x00020018, 0xFE363C80, 0x000000E4, 0x00010005,
-    0x00000000, 0x0004005B, (u32)(void*)btlevtcmd_SetUnitWork, 0xFE363C8E,
-    0x00000003, 0x00000001, 0x0005005B, (u32)(void*)btlevtcmd_GetPos,
-    0xFE363C8E, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0004005B, (u32)(void*)btlevtcmd_SetUnitWork, 0xFE363C8E, 0x00000000,
-    0xFE363C80, 0x0004005B, (u32)(void*)btlevtcmd_SetUnitWork, 0xFE363C8E,
-    0x00000001, 0xFE363C81, 0x0004005B, (u32)(void*)btlevtcmd_SetUnitWork,
-    0xFE363C8E, 0x00000002, 0xFE363C82, 0x00010009,
-    0x00000001, 0x00000006, 0x00000021, 0x00000021,
-    0x00000070, 0x0000006E, 0x00020019, 0xFE363C8E,
-    0xFFFFFFFF, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePoseType, 0xFE363C8E,
-    0xFE363C8F, 0x0000002C, 0x0005005B, (u32)(void*)get_ride_pos,
-    0x00000001, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (u32)(void*)btlevtcmd_JumpSetting, 0xFE363C8E, 0x0000001E,
-    0x00000000, 0xF24A7C19, 0x0007005B, (u32)(void*)btlevtcmd_JumpPosition,
-    0xFE363C8E, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0000001E, 0xFFFFFFFF, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePoseType,
-    0xFE363C8E, 0xFE363C8F, 0x0000002B, 0x00000021,
-    0x00000070, 0x00010009, 0x0000001E, 0x0001006F,
-    0xFE363C8D, 0x00010005, 0x00000000, 0x00010009,
-    0x00000001, 0x0005005B, (u32)(void*)get_ride_pos, 0x00000000,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
-    0xFE363C82, 0xF24A8E80, 0x0005005B, (u32)(void*)btlevtcmd_SetPos,
-    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00020019, 0xFE363C8E, 0xFFFFFFFF, 0x0005005B,
-    (u32)(void*)get_ride_pos, 0x00000001, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (u32)(void*)btlevtcmd_SetPos, 0xFE363C8E,
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000021,
-    0x00000006, 0x00000070, 0x0000006E, 0x0002005B,
-    (u32)(void*)sac_cheer, 0x00000000, 0x00000070, 0x0001005B,
-    (u32)(void*)sac_ac_help_on, 0x0001005B, (u32)(void*)start_game, 0x0001005B,
-    (u32)(void*)wait_game_end, 0x0001005B, (u32)(void*)sac_ac_help_off, 0x0001005B,
-    (u32)(void*)sac_cheer_end, 0x0001000A, 0x000003E8, 0x0001005B,
-    (u32)(void*)star_stone_attack, 0x00010003, 0x0000005A, 0x0001005F,
-    0xFE363C8D, 0x0000006B, 0x0001000A, 0x000003E8,
-    0x0001005E, (u32)(void*)dmg_evt, 0x0000006D, 0x0001000A,
-    0x000001F4, 0x0000006E, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePoseType,
-    0xFFFFFFFE, 0x00000001, 0x0000002C, 0x0005005B,
-    (u32)(void*)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0005005B, (u32)(void*)btlevtcmd_JumpSetting, 0xFFFFFFFE,
-    0x0000001E, 0x00000000, 0xF24A7C19, 0x0007005B,
-    (u32)(void*)btlevtcmd_JumpPosition, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x0000001E, 0xFFFFFFFF, 0x0004005B,
-    (u32)(void*)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE, 0x00000001, 0x0000002B,
-    0x00000070, 0x0000006E, 0x00020019, 0xFE363C8E,
-    0xFFFFFFFF, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePoseType, 0xFE363C8E,
-    0xFE363C8F, 0x0000002C, 0x0005005B, (u32)(void*)btlevtcmd_GetHomePos,
-    0xFE363C8E, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0005005B, (u32)(void*)btlevtcmd_JumpSetting, 0xFE363C8E, 0x0000001E,
-    0x00000000, 0xF24A7C19, 0x0007005B, (u32)(void*)btlevtcmd_JumpPosition,
-    0xFE363C8E, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0000001E, 0xFFFFFFFF, 0x0002005B, (u32)(void*)btlevtcmd_StartWaitEvent,
-    0xFE363C8E, 0x00000021, 0x00000070, 0x00010009,
-    0x0000001E, 0x0003005B, (u32)(void*)evt_btl_camera_set_mode, 0x00000000,
-    0x00000000, 0x0002005B, (u32)(void*)btlevtcmd_SacBgsetMove, 0x00000001,
-    0x00020019, 0xFE363C8E, 0xFFFFFFFF, 0x0003005B,
-    (u32)(void*)btlevtcmd_GetUnitKind, 0xFFFFFFFC, 0xFE363C80, 0x00020018,
-    0xFE363C80, 0x000000E4, 0x0004005B, (u32)(void*)btlevtcmd_SetUnitWork,
-    0xFE363C8E, 0x00000003, 0x00000000, 0x00000021,
-    0x00000021, 0x0001005B, (u32)(void*)yuka_end, 0x0001005B,
-    (u32)(void*)end_deka, 0x00010003, 0x00000063, 0x0002005B,
-    (u32)(void*)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(marioAttackEvent_Deka)
+    CALL(btlevtcmd_GetUnitId, -4, LW(14))
+    CALL(btlevtcmd_GetBodyId, LW(14), LW(15))
+    CALL(btlevtcmd_CheckActStatus, LW(14), LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        SET_VALUE(LW(14), -1)
+    END_IF
+    CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
+    IF_INT_EQUAL(LW(3), -1)
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_CommandPayWeaponCost, -2)
+    CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(0))
+    CALL(btlevtcmd_WeaponAftereffect, LW(0))
+    CALL(btlevtcmd_reset_move_color_lv_all)
+    BEGIN_SIBLING_EVENT
+        CALL(main_deka, LW(14))
+    END_SIBLING_EVENT
+    CALL_CHILD(sac_start_camera_evt)
+    WAIT_MS(500)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL_CHILD(sac_mario_item_on_evt)
+    WAIT_MS(500)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START2"), EVTDAT_POINTER_MAX, 0, LW(11))
+    CALL(star_stone_appear)
+    BEGIN_SIBLING_EVENT
+        CALL_CHILD(sac_start_stardust)
+    END_SIBLING_EVENT
+    WAIT_FRAMES(100)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(evt_snd_sfxoff, LW(11))
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    WAIT_FRAMES(40)
+    CALL_CHILD(sac_mario_item_on_end_evt)
+    CALL(btlevtcmd_SacBgsetMove, 0)
+    CALL_CHILD(sac_mario_back_home)
+    CALL(wait_star_stone_take_on)
+    BEGIN_SIBLING_EVENT
+        CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 44)
+        CALL(get_ride_pos, 0, LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_JumpSetting, -2, 30, 0, FLOAT(0.4f))
+        CALL(btlevtcmd_JumpPosition, -2, LW(0), LW(1), LW(2), 30, -1)
+        CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("M_I_Y"))
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        IF_INT_NOT_EQUAL(LW(14), -1)
+            CALL(btlevtcmd_GetUnitKind, -4, LW(0))
+            IF_INT_EQUAL(LW(0), 228)
+                LOOP(0)
+                    CALL(btlevtcmd_SetUnitWork, LW(14), 3, 1)
+                    CALL(btlevtcmd_GetPos, LW(14), LW(0), LW(1), LW(2))
+                    CALL(btlevtcmd_SetUnitWork, LW(14), 0, LW(0))
+                    CALL(btlevtcmd_SetUnitWork, LW(14), 1, LW(1))
+                    CALL(btlevtcmd_SetUnitWork, LW(14), 2, LW(2))
+                    WAIT_FRAMES(1)
+                END_LOOP
+            END_IF
+        END_IF
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        IF_INT_NOT_EQUAL(LW(14), -1)
+            CALL(btlevtcmd_AnimeChangePoseType, LW(14), LW(15), 44)
+            CALL(get_ride_pos, 1, LW(0), LW(1), LW(2))
+            CALL(btlevtcmd_JumpSetting, LW(14), 30, 0, FLOAT(0.4f))
+            CALL(btlevtcmd_JumpPosition, LW(14), LW(0), LW(1), LW(2), 30, -1)
+            CALL(btlevtcmd_AnimeChangePoseType, LW(14), LW(15), 43)
+        END_IF
+    END_SIBLING_EVENT
+    WAIT_FRAMES(30)
+    BEGIN_SIBLING_EVENT_GET_ID(LW(13))
+        LOOP(0)
+            WAIT_FRAMES(1)
+            CALL(get_ride_pos, 0, LW(0), LW(1), LW(2))
+            ADD(LW(2), FLOAT(5.0f))
+            CALL(btlevtcmd_SetPos, -2, LW(0), LW(1), LW(2))
+            IF_INT_NOT_EQUAL(LW(14), -1)
+                CALL(get_ride_pos, 1, LW(0), LW(1), LW(2))
+                CALL(btlevtcmd_SetPos, LW(14), LW(0), LW(1), LW(2))
+            END_IF
+        END_LOOP
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        CALL(sac_cheer, 0)
+    END_SIBLING_EVENT
+    CALL(sac_ac_help_on)
+    CALL(start_game)
+    CALL(wait_game_end)
+    CALL(sac_ac_help_off)
+    CALL(sac_cheer_end)
+    WAIT_MS(1000)
+    CALL(star_stone_attack)
+    LABEL(90)
+    DELETE_EVENT(LW(13))
+    BEGIN_INLINE_EVENT
+        WAIT_MS(1000)
+        CALL_CHILD(dmg_evt)
+    END_INLINE_EVENT
+    WAIT_MS(500)
+    BEGIN_SIBLING_EVENT
+        CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 44)
+        CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_JumpSetting, -2, 30, 0, FLOAT(0.4f))
+        CALL(btlevtcmd_JumpPosition, -2, LW(0), LW(1), LW(2), 30, -1)
+        CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 43)
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        IF_INT_NOT_EQUAL(LW(14), -1)
+            CALL(btlevtcmd_AnimeChangePoseType, LW(14), LW(15), 44)
+            CALL(btlevtcmd_GetHomePos, LW(14), LW(0), LW(1), LW(2))
+            CALL(btlevtcmd_JumpSetting, LW(14), 30, 0, FLOAT(0.4f))
+            CALL(btlevtcmd_JumpPosition, LW(14), LW(0), LW(1), LW(2), 30, -1)
+            CALL(btlevtcmd_StartWaitEvent, LW(14))
+        END_IF
+    END_SIBLING_EVENT
+    WAIT_FRAMES(30)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    CALL(btlevtcmd_SacBgsetMove, 1)
+    IF_INT_NOT_EQUAL(LW(14), -1)
+        CALL(btlevtcmd_GetUnitKind, -4, LW(0))
+        IF_INT_EQUAL(LW(0), 228)
+            CALL(btlevtcmd_SetUnitWork, LW(14), 3, 0)
+        END_IF
+    END_IF
+    CALL(yuka_end)
+    CALL(end_deka)
+    LABEL(99)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
 // .data | .obj dmg_evt
-u32 dmg_evt[100] = {
-    0x0002005B, (u32)(void*)get_result, 0xFE363C8A, 0x0003005B,
-    (u32)(void*)btlevtcmd_GetSelectEnemy, 0xFE363C83, 0xFE363C84, 0x00010003,
-    0x0000000A, 0x00020018, 0xFE363C83, 0xFFFFFFFF,
-    0x00000002, 0x00000021, 0x0002001C, 0xFE363C8A,
-    0x00000001, 0x0004005B, (u32)(void*)btlevtcmd_CheckAttribute, 0xFE363C83,
-    0x00000002, 0xFE363C80, 0x00020019, 0xFE363C80,
-    0x00000000, 0x00010004, 0x0000001E, 0x00000021,
-    0x0004005B, (u32)(void*)btlevtcmd_CheckAttribute, 0xFE363C83, 0x00000004,
-    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
-    0x0005005B, (u32)(void*)btlevtcmd_CheckPartsAttribute, 0xFE363C83, 0xFE363C84,
-    0x00200000, 0xFE363C80, 0x00020019, 0xFE363C80,
-    0x00000000, 0x00010004, 0x0000001E, 0x00000021,
-    0x00000021, 0x00010004, 0x00000014, 0x00000021,
-    0x0002001C, 0xFE363C8A, 0x00000003, 0x0004005B,
-    (u32)(void*)btlevtcmd_CheckAttribute, 0xFE363C83, 0x00000002, 0xFE363C80,
-    0x00020019, 0xFE363C80, 0x00000000, 0x00010004,
-    0x0000001E, 0x00000021, 0x00010004, 0x00000014,
-    0x00000021, 0x00010004, 0x00000014, 0x00010003,
-    0x00000014, 0x0005005B, (u32)(void*)btlevtcmd_CheckPartsAttribute, 0xFE363C83,
-    0xFE363C84, 0x00004000, 0xFE363C80, 0x00020018,
-    0xFE363C80, 0x00000000, 0x0006005B, (u32)(void*)btlevtcmd_CommandCheckDamage,
-    0xFFFFFFFD, 0xFE363C83, 0xFE363C84, 0x00000100,
-    0xFE363C85, 0x00000021, 0x00010003, 0x0000001E,
-    0x0003005B, (u32)(void*)btlevtcmd_GetSelectNextEnemy, 0xFE363C83, 0xFE363C84,
-    0x00010004, 0x0000000A, 0x00000002, 0x00000001,
-};
+EVT_BEGIN(dmg_evt)
+    CALL(get_result, LW(10))
+    CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
+    LABEL(10)
+    IF_INT_EQUAL(LW(3), -1)
+        RETURN
+    END_IF
+    IF_INT_LESS_OR_EQUAL(LW(10), 1)
+        CALL(btlevtcmd_CheckAttribute, LW(3), 2, LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            GOTO(30)
+        END_IF
+        CALL(btlevtcmd_CheckAttribute, LW(3), 4, LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            CALL(btlevtcmd_CheckPartsAttribute, LW(3), LW(4), 2097152, LW(0))
+            IF_INT_NOT_EQUAL(LW(0), 0)
+                GOTO(30)
+            END_IF
+        END_IF
+        GOTO(20)
+    END_IF
+    IF_INT_LESS_OR_EQUAL(LW(10), 3)
+        CALL(btlevtcmd_CheckAttribute, LW(3), 2, LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            GOTO(30)
+        END_IF
+        GOTO(20)
+    END_IF
+    GOTO(20)
+    LABEL(20)
+    CALL(btlevtcmd_CheckPartsAttribute, LW(3), LW(4), 16384, LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_CommandCheckDamage, -3, LW(3), LW(4), 256, LW(5))
+    END_IF
+    LABEL(30)
+    CALL(btlevtcmd_GetSelectNextEnemy, LW(3), LW(4))
+    GOTO(10)
+    RETURN
+EVT_END()
 
 
 
