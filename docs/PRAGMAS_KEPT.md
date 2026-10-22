@@ -12,11 +12,11 @@ regions. The remaining entries are unchanged, line numbers included.
 
 ## The sin/cos polynomial family (studied as one problem, n9-q-o-sincos, 2026-10-21)
 
-The 51 regions marked "sin/cos" below wrap an inlined sine/cosine approximation, `sin x = x(1 - 0.16605x^2 +
-0.00761x^4)` and `cos x = 1 - 0.4967x^2 + 0.03705x^4` (Abramowitz and Stegun 4.3.96/4.3.98) on [0, pi/2], reduced from
-[0, 2pi) by the compares against pi, pi/2 and 3pi/2, with the Horner steps repeated in every quadrant branch. It
-appears in 30 retail functions across 19 files. All 51 stay; nothing below removed any of them. Chapter "The sin/cos
-polynomial family" in docs/CONTEXT.md has the detail.
+The regions marked "sin/cos" below (51 after that pass, 35 now) wrap an inlined sine/cosine approximation,
+`sin x = x(1 - 0.16605x^2 + 0.00761x^4)` and `cos x = 1 - 0.4967x^2 + 0.03705x^4` (Abramowitz and Stegun
+4.3.96/4.3.98) on [0, pi/2], reduced from [0, 2pi) by the compares against pi, pi/2 and 3pi/2, with the Horner steps
+repeated in every quadrant branch. It appears in 30 retail functions across 19 files. The family study removed none of
+them. Chapter "The sin/cos polynomial family" in docs/CONTEXT.md has the detail.
 
 - **What the pair reproduces.** Retail loads the coefficients (0.00761/0.16605/1.0, then 0.03705/0.4967/1.0) into
   registers once, before the quadrant compares, and every branch uses those registers (opt_propagation off). Every
@@ -370,18 +370,19 @@ polynomial family" in docs/CONTEXT.md has the detail.
 
 ## Tally
 
-164 remaining regions (unchanged by n9-q-o-sincos, 2026-10-21: the sin/cos family study removed none).
+124 remaining regions: 164 after n9-q-o-pragma2 (unchanged by n9-q-o-sincos), less the 40 that became file flags in
+n9-q-o-flags. The cause split is the 164-region one except for sin/cos.
 
 By kind:
-- opt_propagation: 64
-- opt_lifetimes: 46
-- opt_common_subs: 36
+- opt_propagation: 55
+- opt_lifetimes: 33
+- opt_common_subs: 19
 - opt_dead_assignments: 13
-- opt_loop_invariants: 3
+- opt_loop_invariants: 2
 - optimization_level 2: 2
 
 By cause family:
-- sin/cos polynomial: 51
+- sin/cos polynomial: 35
 - named pool constants: 27
 - register colouring: 40
 - large-function reshuffle: 12

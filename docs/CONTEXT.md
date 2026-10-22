@@ -92,8 +92,8 @@ current version. Update it here when a new chapter changes one. The working deta
   one. Never `#pragma scheduling <cpu number>`: this mwcceppc loops forever on it. ([pragma policy][14],
   [hack review][15], [pragma removal][16], [incident][8])
 - Where every scoped pair of one kind in a file can go with one flag on its Object line (`-inline noauto`, `-O4,s`,
-  `-pragma "opt_X off"`, `-pragma "inline_max_size(N)"`: the TWW/TP/AC forms) and the object stays identical, the flag
-  replaces them; a flag that holds for only part of a file isn't added. ([file flags][39])
+  `-pragma "opt_X off"`, or an inline limit such as `-pragma "inline_max_size(N)"`, as TWW/TP/AC do) and the object
+  stays identical, the flag replaces them; a flag that holds for only part of a file isn't added. ([file flags][39])
 
 **MUST_MATCH and structural fakes**
 - Code that exists only to reproduce the original bytes goes under `#ifdef MUST_MATCH`, the natural form under `#else`.
