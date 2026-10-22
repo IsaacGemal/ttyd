@@ -7,14 +7,13 @@
 #include "driver/swdrv.h"
 #include "driver/msgdrv.h"
 #include "manager/fontmgr.h"
-void FontDrawColor(GXColor* color);
+void FontDrawColor(GXColor color);
 #include "mario/mariost.h"
 #include "system.h"
 #include <string.h>
 #include <stdlib.h>
 
 // .sdata2 constants this translation unit owns (named by their original address).
-extern const GXColor dat_8041e7c0;
 #ifdef MUST_MATCH
 // volatile: the quad loop reloads the FP constants; non-volatile scored 92% vs 99.6%.
 extern const volatile f32 float_0_8041e7c4;
@@ -49,29 +48,6 @@ static const char* msg_tbl[] = {
     "menu_monosiri_pik", "menu_monosiri_bom", "menu_monosiri_moo", NULL,
     "menu_monosiri_aji", "menu_monosiri_las",
 };
-
-// .rodata objects this translation unit owns, after the message strings.
-const GXColorS10 zero_802fa0c4 = { 0, 0, 0, 0 };
-
-// By-value struct temporaries: a local below, a copy above.
-static inline GXColor telopMakeColor(u8 a) {
-    GXColor c = dat_8041e7c0;
-    c.a = a;
-    return c;
-}
-
-static inline GXColorS10 telopMakeColorS10(s16 a) {
-    GXColorS10 c = zero_802fa0c4;
-    c.a = a;
-    return c;
-}
-
-static inline void telopSetFontColor(u8 alpha) {
-    // Building the colour inside one inline (rather than a function-scope `color`) puts the
-    // colour copy in the 0xc slot.
-    GXColor c = telopMakeColor(alpha);
-    FontDrawColor(&c);
-}
 
 USER_FUNC(evt_telop_entry) {
     s32* args = event->args;
@@ -139,9 +115,6 @@ USER_FUNC(evt_telop_entry) {
 }
 
 // Scheduling shapes in this function:
-// - the font colour is built and passed to FontDrawColor inside an inline helper; that keeps the
-//   loop's by-value GXSetTevColor arg temps at 0x10/0x14 and the font colour's copy at 0xc, where
-//   building it with a plain function-scope `color` local put the loop temps at 0x10/0xc instead;
 // - the font PSMTXTrans x/y are built into locals `a`/`b` so `0.5` and `(f32)msgWidth` get f5/f6
 //   the right way round;
 // - the ratio test's empty then-block (kept under MUST_MATCH) makes MWCC lay the assignment out of
@@ -209,7 +182,7 @@ void telop(CameraId cameraId, void* param) {
     GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C1, GX_CC_ZERO);
     GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_A1, GX_CA_ZERO);
 
-    GXSetTevColorS10(GX_TEVREG0, telopMakeColorS10(wp->alpha));
+    GXSetTevColorS10(GX_TEVREG0, (GXColorS10){ 0, 0, 0, wp->alpha });
 
     effGetTexObj(0x81, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -295,7 +268,7 @@ void telop(CameraId cameraId, void* param) {
             alpha = alpha > 0xFF ? 0xFF : alpha;
         }
         FontDrawStart();
-        telopSetFontColor(alpha);
+        FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, alpha });
 
         msgWidth = FontGetMessageWidth(msg);
         {
@@ -322,7 +295,6 @@ void telop(CameraId cameraId, void* param) {
 #pragma opt_common_subs reset
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041e7c0 = { 0xFF, 0xFF, 0xFF, 0x00 };
 #ifdef MUST_MATCH
 const volatile f32 float_0_8041e7c4 = 0.0f;
 #else

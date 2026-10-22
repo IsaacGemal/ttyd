@@ -236,7 +236,6 @@ static inline void winLogAddTab0(LogWin* w, s32 tabType, const char** msg_help, 
 #define LOG_ADD_4(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
 #endif
 #define LOG_TEXPAL() (*(TEXPalette**)work->winTpl->data)
-extern const GXColor unk_80423050;
 #define HALF_FOV_TAN 0.21816615760326385
 typedef struct TattleCamEntry {
     s32 kind;
@@ -1991,10 +1990,6 @@ void capture(CameraId camId, void* param) {
     GXSetScissor(sl, st, sw, sh);
 }
 
-static inline GXColor monoAlphaColor(GXColor c, u8 a) {
-    c.a = a;
-    return c;
-}
 void monosiri_disp(CameraId camId, void* param) {
     f32 s;
     MonosiriWork* w = param;
@@ -2051,7 +2046,7 @@ void monosiri_disp(CameraId camId, void* param) {
             GXSetTexCoordGen2(i, 1, 4, 0x1E + i * 3, 0, 0x7D);
         }
         GXSetTevColor(1, (GXColor){0xCF, 0xBC, 0x9E, 0xFF});
-        GXSetTevColor(2, monoAlphaColor(unk_80423050, w->alpha));
+        GXSetTevColor(2, (GXColor){0x00, 0x00, 0x00, w->alpha});
         GXSetNumTevStages(0xC);
         for (i = 0; i < 8; i++) {
             GXSetTevOrder(i, i, 1, 0xFF);
@@ -2122,15 +2117,6 @@ void monosiri_disp(CameraId camId, void* param) {
         }
     }
 }
-
-
-// The SBSS2 region holds the tattle-viewer alpha scratch used by monosiri_disp.
-// A named zero-initialised object keeps it in .sbss2; the object after it is
-// the section's trailing gap.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") const GXColor unk_80423050;
-__declspec(section ".sdata") u8 gap_10_80423054_sbss2[4];
-#pragma section ".sdata" ".sbss"
 
 // .sdata2 colour words and short region strings, in the original's address
 // order. The GXColor words are the shadow/page/tab tints the draw functions

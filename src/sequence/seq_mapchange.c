@@ -60,12 +60,6 @@ char _next_area[0x20];
 char _next_map[0x20];
 char _next_bero[0x20];
 
-// .sbss2 scratch colour and its trailing gap, also reverse-declared.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") u8 gap_10_80422F64_sbss2[4];
-__declspec(section ".sdata") GXColor unk_80422f60;
-#pragma section ".sdata" ".sbss"
-
 // .bss
 #define REL_BSS_SIZE 0xF10
 u8 rel_bss[REL_BSS_SIZE];
@@ -358,7 +352,7 @@ void seq_mapChangeMain(SequenceWork* work) {
                 evtEntryType(key_off, 0, 0, 0);
                 break;
             default:
-                fadeEntry(0x1C, 0, unk_80422f60);
+                fadeEntry(0x1C, 0, (GXColor){ 0, 0, 0, 0 });
                 break;
             }
             statusWinForceUpdate();

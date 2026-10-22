@@ -9,7 +9,7 @@
 #include "manager/evtmgr_cmd.h"
 #include "driver/dispdrv.h"
 #include "manager/fontmgr.h"
-void FontDrawColor(GXColor* color);
+void FontDrawColor(GXColor color);
 #include "memory.h"
 #include "mario/mario.h"
 #include "mario/mario_pouch.h"
@@ -24,7 +24,6 @@ typedef struct KpaScoreDispEntry {
 } KpaScoreDispEntry; // 0x18
 
 // Compiler-pool constants owned by this translation unit (see config/G8MJ01/symbols.txt).
-const GXColor dat_80420d80 = { 0xFF, 0xFF, 0xFF, 0xFF };
 const f32 float_0p5_80420d84 = 0.5f;
 const f32 float_10_80420d88 = 10.0f;
 const f32 float_20_80420d8c = 20.0f;
@@ -33,7 +32,6 @@ const f32 float_1_80420d94 = 1.0f;
 const f32 float_300_80420d98 = 300.0f;
 
 // .rodata constants.
-__declspec(section ".rodata") Vec vec3_802fe200 = {0.0f, 0.0f, 0.0f};
 const f64 double_to_int_mask_802fe210 = 4503599627370496.0;
 
 // Pool of 50 popups, allocated lazily in kpa_score_disp_init.
@@ -51,13 +49,11 @@ EVT_END()
 void kpaScoreDisp(CameraId cameraId, void* param) {
     Mtx trans;
     Mtx scale;
-    GXColor color;
     s32 i;
 
     PSMTXScale(scale, float_0p5_80420d84, float_0p5_80420d84, float_0p5_80420d84);
     FontDrawStart();
-    color = dat_80420d80;
-    FontDrawColor(&color);
+    FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
     for (i = 0; i < 50; i++) {
         if (ksdp[i].timer != 0) {
             PSMTXTrans(trans, ksdp[i].pos.x, ksdp[i].pos.y, float_300_80420d98);
@@ -145,7 +141,7 @@ USER_FUNC(kpa_score_disp_init) {
     for (i = 0; (s32)i < 50; i++) {
         ksdp[i].text[0] = 0;
         ksdp[i].timer = 0;
-        ksdp[i].pos = vec3_802fe200;
+        ksdp[i].pos = (Vec){0.0f, 0.0f, 0.0f};
     }
     return EVT_RETURN_DONE;
 }

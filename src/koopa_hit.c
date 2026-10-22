@@ -34,9 +34,6 @@ extern const f32 float_270_80420ebc;
 extern const f32 float_7_80420ec0;
 
 const Vec vec3_802fe320 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fe32c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fe338 = { 0.0f, 0.0f, 0.0f };
-const char str_802FE344[] = "MOBJ_HiddenHatenaBlock";
 
 // Reusing the work pointer as the node cursor (`root++` here and in the for-increment) makes mwcc schedule the
 // preheader `li r29,1` before `addi r30,r30,0x50`; a separate `node` pointer emits them in the opposite order.
@@ -87,7 +84,7 @@ s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
         PSMTXScale(m2, scale, scale, scale);
         PSMTXConcat(m0, m2, m0);
         PSMTXConcat(m3, m0, m0);
-        v = vec3_802fe32c;
+        v = (Vec){ 0.0f, 0.0f, 0.0f };
         PSMTXMultVec(m0, &v, &out);
         PSVECSubtract(&pos, &out, &diff);
         mag = PSVECMag(&diff);
@@ -97,6 +94,9 @@ s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     }
     return 0;
 }
+
+const Vec vec3_802fe338 = { 0.0f, 0.0f, 0.0f };
+const char str_802FE344[] = "MOBJ_HiddenHatenaBlock";
 
 s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     MarioWork* mp = marioGetPtr();
