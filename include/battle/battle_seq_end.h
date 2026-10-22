@@ -9,9 +9,6 @@ typedef struct IconEntry IconEntry;
 
 #include <dolphin/types.h>
 
-// .sdata2 white used by _lvup_spot_on's entry->field_28.
-extern const u32 dat_80420c28;
-
 typedef struct RankUpData {
     s16 startLevel; //0x0, the level you need to reach to be a certain rank
     s16 rankId; //0x2, the index of this rank for lookups

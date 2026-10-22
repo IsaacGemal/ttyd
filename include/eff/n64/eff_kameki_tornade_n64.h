@@ -48,8 +48,7 @@ typedef struct KamekiTornadeVtx {
 	u8 clr[4];  // 0xA, RGBA8
 } KamekiTornadeVtx; // 0xE
 
-// .sbss2 zero-initialised GXColor template and the .sdata2/.rodata constants this unit loads.
-extern GXColor unk_80423160;
+// .sdata2 constants this unit loads.
 extern const f32 float_6p2832_8041f1dc;
 extern const f32 float_360_8041f1e0;
 extern const f32 float_100_8041f1e4;
@@ -57,6 +56,3 @@ extern const f32 float_deg2rad_8041f1e8;
 extern const f32 float_0p02_8041f1f0;
 extern const f32 float_0p015625_8041f1fc;
 extern const f32 float_0p03125_8041f200;
-extern const u32 dat_8041f1d8;
-extern Vec __declspec(section ".rodata") vec3_802fa84c;
-extern Vec __declspec(section ".rodata") vec3_802fa858;
