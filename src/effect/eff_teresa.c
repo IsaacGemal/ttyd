@@ -7,10 +7,9 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-const GXColor dat_80421548 = { 0xFF, 0xFF, 0xFF, 0 };
-const f32 float_deg2rad_8042154c = 0.01745329252f;
-const f32 float_32_80421550 = 32.0f;
-const f32 float_0p5_80421554 = 0.5f;
+extern const f32 float_deg2rad_8042154c;
+extern const f32 float_32_80421550;
+extern const f32 float_0p5_80421554;
 
 EffectEntry* effTeresaEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
@@ -103,20 +102,6 @@ void effTeresaMain(EffectEntry* effect) {
 #define READ_RODATA(x) (x)
 #endif
 
-// The original builds the alpha-patched colour inside a helper, which places its
-// local below the by-value copy (effThunderDisp/effIrekaeru do the same).
-static inline void teresaColor0(u8 alpha) {
-	GXColor color = dat_80421548;
-
-	color.a = alpha;
-	GXSetChanMatColor(4, color);
-}
-
-static inline void teresaColor1(u8 alpha) {
-	GXColor color = (GXColor){ 0, 0, 0, alpha };
-	GXSetChanMatColor(4, color);
-}
-
 void effTeresaDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffTeresaData* data = effect->userdata;
@@ -136,9 +121,9 @@ void effTeresaDisp(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 	if (type == 0) {
-		teresaColor0(data->alpha);
+		GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 	} else {
-		teresaColor1(data->alpha);
+		GXSetChanMatColor(4, (GXColor){ 0, 0, 0, data->alpha });
 	}
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
@@ -178,3 +163,8 @@ void effTeresaDisp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+
+// .sdata2: the named constants follow effTeresaDisp's colour template.
+const f32 float_deg2rad_8042154c = 0.01745329252f;
+const f32 float_32_80421550 = 32.0f;
+const f32 float_0p5_80421554 = 0.5f;

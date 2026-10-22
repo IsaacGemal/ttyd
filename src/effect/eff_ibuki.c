@@ -91,10 +91,6 @@ u32 ibuki_color0_tbl[4] = { 0xFFFFFF00, 0xFFFFFF66, 0xFFFFFF4C, 0xFFFFFF7F };
 void* ibuki_dl_0_tbl[4] = { ibuki_dl_0_0, ibuki_dl_0_1, ibuki_dl_0_2, ibuki_dl_0_3 };
 u8 ibuki_dl_0_size_tbl[4] = { 2, 2, 2, 2 };
 
-// .sdata2
-const GXColor dat_80421f00 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_80421f04 = { 0xFF, 0xFF, 0xFF, 0x00 };
-
 // The int->float magic pools as an anonymous @N rather than double_to_int_803006d0 (does not affect the
 // match score). The angle normalization needs the match shape guarded by MUST_MATCH below, which keeps
 // the callee-saved FPRs on f27-f31 in the target's order.
@@ -275,30 +271,11 @@ void effIbukiMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&dispPos), 2, effIbukiDisp, effect);
 }
 
-// The first colour is built in a helper that takes the base colour as a parameter and is called
-// directly in GXSetTevColor (the second reads its base global inside the helper and is stored in `color2`).
-// This is what makes mwcc place the inline local and the outgoing argument copy in retail's stack slots
-// (0x10/0x14 for the first colour vs 0x8/0xc for the second); reading the global inside the first helper
-// instead leaves its local at 0xc and pushes the second colour's argument to 0x10.
-static inline GXColor effIbukiColor0(GXColor c, u8 a) {
-	c.a = a;
-	return c;
-}
-
-static inline GXColor effIbukiColor1(u8 a) {
-	GXColor c = dat_80421f04;
-	c.a = a;
-	return c;
-}
-
-// Matches. Beyond the straightforward port, three source shapes were needed: (1) the final loop reuses
+// Matches. Beyond the straightforward port, two source shapes were needed: (1) the final loop reuses
 // `data` as the element pointer (data = &data[1]; ...; i++, data++) like effIbukiMain, which keeps `effect`
 // in r29 and `cameraId` in r28 like retail (a separate `elem` pointer gives the swap); (2) the display-list
 // loop is an explicit pointer walk (`j`, `dlSize`, `dlTbl` advanced in the for-latch) with setup ordered
-// j = 0 then size then table, reproducing retail's `li` order; (3) the first GXColor helper takes the base
-// colour as a parameter and is called directly in GXSetTevColor, while the second reads its base global
-// inside the helper and is stored in `color2` -- this is what lands the two colours' inline locals and
-// by-value argument copies in retail's 0x10/0x14 and 0x8/0xc stack slots. `opt_lifetimes off` is required
+// j = 0 then size then table, reproducing retail's `li` order. `opt_lifetimes off` is required
 // (without it the effect/cameraId live ranges cascade into 15 extra diffs). The GX vertex block reloads
 // float_0/float_2 per vertex (the literal 0.0f/2.0f keep MWCC from CSEing them).
 #pragma opt_lifetimes off // required: without it the effect/cameraId live-range cascade costs 15 extra diffs
@@ -306,7 +283,6 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effIbukiData* data = effect->userdata;
 	s32 j;
-	GXColor color2;
 	GXTexObj tex;
 	Mtx mtx;
 	u8* dlSize;
@@ -352,7 +328,7 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE3, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C0, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
 
-	GXSetTevColor(GX_TEVREG0, effIbukiColor0(dat_80421f00, (alpha * alpha2) / 255));
+	GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0xFF, (alpha * alpha2) / 255 });
 
 	PSMTXTrans(mtx, data->texU0, data->texV0, 0.0f);
 	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
@@ -434,8 +410,7 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 			PSMTXConcat(out, mtx, mtx);
 			GXLoadPosMtxImm(mtx, 0);
 			GXSetCurrentMtx(0);
-			color2 = effIbukiColor1(alpha2);
-			GXSetChanMatColor(GX_COLOR0A0, color2);
+			GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, alpha2 });
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			// Local constant: retail keeps 8.0f in f1 across the strip.
 			eight = 8.0f;

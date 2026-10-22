@@ -10,16 +10,6 @@
 
 #define TWO_PI 6.283185307179586f
 
-// dat_80422598 is a GXColor template (not a float) and stays a named object so the code
-// references it by name. It lands first in .sdata2.
-const u32 dat_80422598 = 0x00DA0000;
-
-// MUST_MATCH: retail's compiler addressed the three zero Vecs below off one base register
-// (offset 0, 0xC, 0x18); MWCC here emits a separate base per `{ 0 }` literal, which changes
-// every GPR in the function. Declaring them as one array reproduces the shared base.
-#ifdef MUST_MATCH
-static const Vec vec3_80301948[3] = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
-#endif
 
 EffectEntry *effMahorn2Entry(BOOL unused, f32 posX, f32 posY, f32 posZ, f32 dstX, f32 dstY, f32 dstZ, f32 scale, f32 radius) {
     EffectEntry *effect;
@@ -100,36 +90,7 @@ EffectEntry *effMahorn2Entry(BOOL unused, f32 posX, f32 posY, f32 posZ, f32 dstX
     return effect;
 }
 
-#ifdef MUST_MATCH
-static inline Vec mahorn2MakeDisp(effMahorn2Data* data) {
-    Vec v = vec3_80301948[0];
-    v.x = data->position.x;
-    v.y = data->position.y;
-    v.z = data->position.z;
-    return v;
-}
 
-static inline Vec mahorn2MakeTarget(effMahorn2Data* data) {
-    Vec v = vec3_80301948[1];
-    v.x = data->target.x;
-    v.y = data->target.y;
-    v.z = data->target.z;
-    return v;
-}
-
-static inline BOOL mahorn2BeyondHitDistance(effMahorn2Data* data, Vec* position, Vec* target, f32 hitDistance) {
-    Vec v = vec3_80301948[2];
-    v.x = position->x + data->position.x;
-    v.y = position->y + data->position.y;
-    v.z = position->z + data->position.z;
-    return PSVECDistance(target, &v) > hitDistance;
-}
-#endif
-
-// MUST_MATCH: the original has three Vec stack temps in the order disp 0x20, targetDisp 0x14,
-// case-3 sum 0x8. Building them inline (the #else path) lets MWCC coalesce the copy temps and
-// allocate the case-3 sum first (0x20); returning each from an inline makes them inlined temps
-// allocated in source order, which reproduces both the stack slots and the scratch registers.
 // The (C - v) * k + v blends need `k` (and `t` for the 4.0f - v form) as named locals: MWCC then
 // loads the multiplier constant into f0 and the negation/4.0f-v temp into f1 in retail's order and
 // pools 0.0625f, 4.0f, 0.125f at their original .sdata2 offsets (0x1c/0x2c/0x30). With bare literals
@@ -138,34 +99,18 @@ void effMahorn2Main(EffectEntry* effect) {
     effMahorn2Data* data;
     Vec position;
     Vec target;
-#ifdef MUST_MATCH
     Vec disp;
     Vec targetDisp;
-#else
-    Vec disp = { 0 };
-    Vec targetDisp = { 0 };
-#endif
     f32 hitDistance;
     f32 scale;
     f32 angle;
     s32 i;
 
     data = effect->userdata;
-#ifdef MUST_MATCH
-    disp = mahorn2MakeDisp(data);
+    disp = (Vec){ data->position.x, data->position.y, data->position.z };
     position = disp;
-    targetDisp = mahorn2MakeTarget(data);
+    targetDisp = (Vec){ data->target.x, data->target.y, data->target.z };
     target = targetDisp;
-#else
-    disp.x = data->position.x;
-    disp.y = data->position.y;
-    disp.z = data->position.z;
-    position = disp;
-    targetDisp.x = data->target.x;
-    targetDisp.y = data->target.y;
-    targetDisp.z = data->target.z;
-    target = targetDisp;
-#endif
     hitDistance = data->hitDistance;
     scale = data->scale;
 
@@ -196,15 +141,8 @@ void effMahorn2Main(EffectEntry* effect) {
             }
             break;
         case 3: {
-#ifdef MUST_MATCH
-            if (mahorn2BeyondHitDistance(data, &position, &target, hitDistance)) {
-#else
-            Vec v = { 0 };
-            v.x = position.x + data->position.x;
-            v.y = position.y + data->position.y;
-            v.z = position.z + data->position.z;
-            if (PSVECDistance(&target, &v) > hitDistance) {
-#endif
+            if (PSVECDistance(&target, &(Vec){ position.x + data->position.x, position.y + data->position.y,
+                                                position.z + data->position.z }) > hitDistance) {
                 angle = 6.2831855f * angleABf(position.x + data->position.x, position.y + data->position.y, target.x, target.y) / 360.f;
                 data->position.x += hitDistance * (f32)sin(angle);
                 data->position.y += hitDistance * (f32)cos(angle);
@@ -253,13 +191,6 @@ void effMahorn2Main(EffectEntry* effect) {
 // The only objdiff differences left are anonymous .rodata labels for the block-local widths/texs
 // aggregate initialisers (ours @252/@253 vs retail's dat_8030196c/dat_80301984); the bytes and
 // addresses are identical, so they resolve at link time.
-// Retail builds the GXColor in a 0x8-based temp and copies it to the 0xc outgoing arg;
-// assigning the field inline makes MWCC use 0xc for the temp and 0x8 for the outgoing copy.
-static inline GXColor mahorn2ChanColor(u8 a) {
-    GXColor c = *(const GXColor*)&dat_80422598;
-    c.a = a;
-    return c;
-}
 
 void effMahorn2Disp(CameraId camId, void* param) {
     EffectEntry* effect = param;
@@ -270,7 +201,6 @@ void effMahorn2Disp(CameraId camId, void* param) {
     Mtx mtxRot;
     Mtx mtxScale;
     Mtx mtxRoot;
-    GXColor color;
     f32 top;
     f32 bottom;
     s32 headerAlpha;
@@ -324,8 +254,7 @@ void effMahorn2Disp(CameraId camId, void* param) {
             GXLoadTexObj(&texObj, 0);
             break;
         }
-        color = mahorn2ChanColor((data->alpha * headerAlpha) / 255);
-        GXSetChanMatColor(4, color);
+        GXSetChanMatColor(4, (GXColor){ 0x00, 0xDA, 0x00, (data->alpha * headerAlpha) / 255 });
 
         PSMTXTrans(mtxFinal, data->position.x, data->position.y, data->position.z);
         PSMTXScale(mtxScale, data->scale * rootScale, data->scale * rootScale, data->scale * rootScale);
