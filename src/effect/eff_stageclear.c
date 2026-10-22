@@ -178,12 +178,7 @@ void effStageClearMain(EffectEntry* effect) {
 }
 
 static inline Vec getStageClearCamPos(void) {
-#ifdef MUST_MATCH
-	// Read the named double so the load comes off the base register instead of a pooled copy of it.
-	Vec temp = (Vec){ 0.0f, 0.0f, 1.0f / (f32)tan(*(volatile const f64*)&double_0p21817_802fe3f0) };
-#else
 	Vec temp = (Vec){ 0.0f, 0.0f, 1.0f / (f32)tan(double_0p21817_802fe3f0) };
-#endif
 	return temp;
 }
 

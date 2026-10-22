@@ -94,14 +94,6 @@ void effTeresaMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effTeresaDisp, effect);
 }
 
-// The original loads these .sdata2 constants at runtime; a plain read lets MWCC
-// fold them into immediates. The volatile read is a MUST_MATCH device only.
-#ifdef MUST_MATCH
-#define READ_RODATA(x) (*(volatile const f32*)&x)
-#else
-#define READ_RODATA(x) (x)
-#endif
-
 void effTeresaDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffTeresaData* data = effect->userdata;
@@ -134,11 +126,11 @@ void effTeresaDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
 	GXSetTevAlphaIn(0, 7, 5, 4, 7);
 	PSMTXTrans(mtx98, data->x, data->y, data->z);
-	PSMTXRotRad(mtx68, 'y', READ_RODATA(float_deg2rad_8042154c) * -camGetPtr(camId)->viewYaw);
+	PSMTXRotRad(mtx68, 'y', float_deg2rad_8042154c * -camGetPtr(camId)->viewYaw);
 	PSMTXConcat(mtx98, mtx68, mtx98);
 	PSMTXScale(mtx38, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx98, mtx38, mtx98);
-	PSMTXRotRad(mtx68, 'z', READ_RODATA(float_deg2rad_8042154c) * data->angle);
+	PSMTXRotRad(mtx68, 'z', float_deg2rad_8042154c * data->angle);
 	PSMTXConcat(mtx98, mtx68, mtx98);
 	PSMTXConcat(cam->view, mtx98, mtx98);
 	GXLoadPosMtxImm(mtx98, 0);
@@ -150,7 +142,7 @@ void effTeresaDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 	GXBegin(0x80, 0, 4);
-	negSize = -READ_RODATA(float_32_80421550) * READ_RODATA(float_0p5_80421554);
+	negSize = -float_32_80421550 * float_0p5_80421554;
 	posSize = 16.0f;
 	GXPosition3f32(negSize, posSize, 0.0f);
 	GXTexCoord2f32(0.0f, 0.0f);
