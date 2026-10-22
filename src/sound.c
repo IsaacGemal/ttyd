@@ -36,7 +36,7 @@ void sndFree(void* ptr) {
     __memFree(HEAP_DEFAULT, ptr);
 }
 
-void SoundInit(void) { // 1:1, assuming sndMalloc inlines
+void SoundInit(void) {
     SND_HOOKS hooks = (SND_HOOKS){ sndMalloc, sndFree };
     void* data;
     SoundStream* streams;
@@ -45,8 +45,6 @@ void SoundInit(void) { // 1:1, assuming sndMalloc inlines
     SoundEffect* effects;
     int i;
     SoundStream* stream;
-    SoundSong* song;
-    SoundDVD* dvd;
     void* ptr;
     u32 size;
     SoundTemp* slot;
@@ -112,14 +110,13 @@ void SoundInit(void) { // 1:1, assuming sndMalloc inlines
 
     sound.groups = 0;
 
-    // force register
-    song = (sound.songs = sndMalloc(sizeof(SoundSong) * 4));
-    songs = song;
-    if (songs == 0) {
+    sound.songs = sndMalloc(sizeof(SoundSong) * 4);
+    if (sound.songs == 0) {
         while (1)
             ;
     } // infinite loop
 
+    songs = sound.songs;
     for (i = 0; i < 4; i++, songs++) {
         songs->seqId = -1;
         songs->group = NULL;
@@ -140,14 +137,13 @@ void SoundInit(void) { // 1:1, assuming sndMalloc inlines
         effects->pan = 0x40;
     }
 
-    // force register
-    dvd = (sound.dvds = sndMalloc((sizeof(SoundDVD)) * 2));
-    dvds = dvd;
-    if (dvds == 0) {
+    sound.dvds = sndMalloc(sizeof(SoundDVD) * 2);
+    if (sound.dvds == 0) {
         while (1)
             ;
     } // infinite loop
 
+    dvds = sound.dvds;
     for (i = 0; i < 2; i++, dvds++) {
         dvds->flags = 0;
     }
@@ -241,12 +237,12 @@ void SoundMainInt(void) {
     SoundSSMainInt();
 }
 
-void SoundSetFadeTime(u16 in, u16 out) { // 1:1
+void SoundSetFadeTime(u16 in, u16 out) {
     sound.fadeIn = in;
     sound.fadeOut = out;
 }
 
-void* loadDVD_callback(u32 offset, u32 bytes) { // 1:1
+void* loadDVD_callback(u32 offset, u32 bytes) {
     DVDFileInfo info;
 
     if (!DVDOpen(sound.filepath, &info)) {
@@ -259,7 +255,7 @@ void* loadDVD_callback(u32 offset, u32 bytes) { // 1:1
     return sound.filedata;
 }
 
-BOOL SoundLoadDVD2(const char* path) { // 1:1
+BOOL SoundLoadDVD2(const char* path) {
     DVDEntry* entry;
     u32 length;
     void* pointer;
@@ -270,7 +266,9 @@ BOOL SoundLoadDVD2(const char* path) { // 1:1
 
     sprintf(str, "%s/%s%s", getMarioStDvdRoot(), path, ".pool");
     entry = DVDMgrOpen(str, 2, 0);
-    length = entry == NULL; // fixes regalloc
+#ifdef MUST_MATCH
+    length = entry == NULL; // a dead store that fixes regalloc
+#endif
     if (entry == NULL) {
         pointer = NULL;
     } else {
@@ -281,7 +279,9 @@ BOOL SoundLoadDVD2(const char* path) { // 1:1
             length = OSRoundUp32B(length);
             pointer = __memAlloc(HEAP_DEFAULT, length);
             if (pointer == NULL) {
+#ifdef MUST_MATCH
                 pointer = NULL;
+#endif
             } else if (DVDMgrRead(entry, pointer, length, 0) <= 0) {
                 __memFree(HEAP_DEFAULT, pointer);
                 pointer = NULL;
@@ -307,7 +307,9 @@ BOOL SoundLoadDVD2(const char* path) { // 1:1
             length = OSRoundUp32B(length);
             pointer = __memAlloc(HEAP_DEFAULT, length);
             if (pointer == NULL) {
+#ifdef MUST_MATCH
                 pointer = NULL;
+#endif
             } else if (DVDMgrRead(entry, pointer, length, 0) <= 0) {
                 __memFree(HEAP_DEFAULT, pointer);
                 pointer = NULL;
@@ -333,7 +335,9 @@ BOOL SoundLoadDVD2(const char* path) { // 1:1
             length = OSRoundUp32B(length);
             pointer = __memAlloc(HEAP_DEFAULT, length);
             if (pointer == NULL) {
+#ifdef MUST_MATCH
                 pointer = NULL;
+#endif
             } else if (DVDMgrRead(entry, pointer, length, 0) <= 0) {
                 __memFree(HEAP_DEFAULT, pointer);
                 pointer = NULL;
@@ -353,7 +357,7 @@ BOOL SoundLoadDVD2(const char* path) { // 1:1
     return TRUE;
 }
 
-BOOL SoundLoadDVD2PushGroup(u8* groupIds) { // 1:1
+BOOL SoundLoadDVD2PushGroup(u8* groupIds) {
     SND_GROUPID id;
     s32 groupIndex;
 
@@ -391,7 +395,7 @@ void SoundLoadDVD2Free(void) {
     }
 }
 
-BOOL SoundSLibLoadDVD(const char* path) { // 1:1
+BOOL SoundSLibLoadDVD(const char* path) {
     // Regalloc: give each file read its own pointer/length local and declare the pointers before
     // entry; with a shared pointer/length, or with entry declared first, MWCC swaps r27/r28 here.
     void* slibData;
@@ -423,7 +427,9 @@ BOOL SoundSLibLoadDVD(const char* path) { // 1:1
             slibLength = OSRoundUp32B(slibLength);
             slibData = __memAlloc(HEAP_DEFAULT, slibLength);
             if (slibData == NULL) {
+#ifdef MUST_MATCH
                 slibData = NULL;
+#endif
             } else if (DVDMgrRead(entry, slibData, slibLength, 0) <= 0) {
                 __memFree(HEAP_DEFAULT, slibData);
                 slibData = NULL;
@@ -469,7 +475,7 @@ BOOL SoundSLibLoadDVD(const char* path) { // 1:1
         group->arrfile = arrfile;
         group->next = 0;
         // Advances after the stores: MWCC then keeps the address in r0 and the field constants in r4.
-        chunkPtr = (u32*)((u32)chunkPtr + chunkSize);
+        chunkPtr = (u32*)((u8*)chunkPtr + chunkSize);
     }
 
     sprintf(str, "%s/%s%s", getMarioStDvdRoot(), path, ".stbl");
@@ -484,7 +490,9 @@ BOOL SoundSLibLoadDVD(const char* path) { // 1:1
             stblLength = OSRoundUp32B(stblLength);
             stblData = __memAlloc(HEAP_DEFAULT, stblLength);
             if (stblData == NULL) {
+#ifdef MUST_MATCH
                 stblData = NULL;
+#endif
             } else if (DVDMgrRead(entry, stblData, stblLength, 0) <= 0) {
                 __memFree(HEAP_DEFAULT, stblData);
                 stblData = NULL;
@@ -510,7 +518,9 @@ BOOL SoundSLibLoadDVD(const char* path) { // 1:1
             etblLength = OSRoundUp32B(etblLength);
             etblData = __memAlloc(HEAP_DEFAULT, etblLength);
             if (etblData == NULL) {
+#ifdef MUST_MATCH
                 etblData = NULL;
+#endif
             } else if (DVDMgrRead(entry, etblData, etblLength, 0) <= 0) {
                 __memFree(HEAP_DEFAULT, etblData);
                 etblData = NULL;
@@ -588,11 +598,13 @@ static inline void _ssDropSeq(void) {
     }
 }
 
+#ifdef MUST_MATCH
 // The original homes the second half's effects and dvd pointers in r26/r27. Taking the element address
 // through a pointer-returning inline reproduces that; the plain `&sound.effects[i]` swaps the pointer and
 // the strength-reduced offset registers.
 static inline SoundEffect* sdd_eff(u32 i) { return &sound.effects[i]; }
 static inline SoundDVD* sdd_dvd(u32 i) { return &sound.dvds[i]; }
+#endif
 
 BOOL SoundDropData(void) {
     SoundSong* song;
@@ -614,7 +626,11 @@ BOOL SoundDropData(void) {
         }
     }
     for (i = 0; i < 40; i++) {
+#ifdef MUST_MATCH
         effect = sdd_eff(i);
+#else
+        effect = &sound.effects[i];
+#endif
         if (effect->flags) {
             sndFXKeyOff(effect->voiceId);
             if (effect->flags & 0x10) {
@@ -624,7 +640,11 @@ BOOL SoundDropData(void) {
         }
     }
     for (i = 0; i < 2; i++) {
+#ifdef MUST_MATCH
         dvd = sdd_dvd(i);
+#else
+        dvd = &sound.dvds[i];
+#endif
         if (dvd->flags & 3) {
             AISetStreamPlayState(0);
             dvd->flags = 0;
@@ -1674,7 +1694,7 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
 }
 #pragma opt_propagation reset
 
-void SoundSSPlayCh(s32 chan, u32 name) {
+void SoundSSPlayCh(s32 chan, const char* name) {
     SoundSSPlayChEx(chan, name, 0);
 }
 
@@ -1687,7 +1707,7 @@ static inline char* SoundSSPlayChEx_getPath(void) {
     return path;
 }
 #endif
-void SoundSSPlayChEx(s32 chan, u32 name, u32 useAram) {
+void SoundSSPlayChEx(s32 chan, const char* name, BOOL useAram) {
     SoundStream* stream = &sound.streams[chan];
     char* path;
     int i;
@@ -1696,7 +1716,7 @@ void SoundSSPlayChEx(s32 chan, u32 name, u32 useAram) {
         SoundSSStopCh(chan);
     }
 
-    if ((s32)useAram != 0) {
+    if (useAram != 0) {
         for (i = 0; i < sound.unk224; i++) {
             if (sound.unk226[i] == 0) {
                 sound.unk226[i] = 1;
@@ -1733,7 +1753,7 @@ void SoundSSPlayChEx(s32 chan, u32 name, u32 useAram) {
     stream->unk10 = 0.0f;
     stream->vol = 127.0f;
     stream->flags = 1;
-    if ((s32)useAram != 0) {
+    if (useAram != 0) {
         stream->flags |= 0x400;
     }
 
@@ -2013,14 +2033,20 @@ void SoundSSSetPanCh(s32 chan, u8 pan) {
     SOUND_SS_SET_PAN_CH(stream, chan, pan);
 }
 
+#ifdef MUST_MATCH
 // The index helper is an inline so the stream pointer's live range matches the original's
 // register allocation (without it MWCC colors the index/pointer as r6/r7 instead of r7/r6).
 static inline SoundStream* SoundSSGetStream(s32 chan) {
     return &sound.streams[chan];
 }
+#endif
 
 void SoundSSSetVolCh(s32 chan, u8 vol) {
+#ifdef MUST_MATCH
     SoundStream* stream = SoundSSGetStream(chan);
+#else
+    SoundStream* stream = &sound.streams[chan];
+#endif
     f32 value;
 
     if (!stream->flags) {

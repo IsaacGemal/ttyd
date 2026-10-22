@@ -59,8 +59,8 @@ typedef struct PaperSoundEnvWork {
 } PaperSoundEnvWork;
 
 typedef struct PaperSoundBGM {
-    s32 unk0;                // 0x0
-    s32 streamId;            // 0x4, TODO verify re: seq_title
+    u32 unk0;                // 0x0
+    u32 streamId;            // 0x4, TODO verify re: seq_title
     u32 flags;               // 0x8
     u8 unkC;                 // 0xC
     u8 reverb;               // 0xD
@@ -74,7 +74,7 @@ typedef struct PaperSoundBGM {
 } PaperSoundBGM;
 
 typedef struct PaperSoundEffect {
-    s32 unk0;              // 0x0
+    u32 unk0;              // 0x0
     u16 unk4;              // 0x4
     u16 unk6;              // 0x6
     u8 vol;                // 0x8, the caller's volume
@@ -87,7 +87,7 @@ typedef struct PaperSoundEffect {
     u16 dist;              // 0x12, psndSFX_dist
     s16 pitch;             // 0x14, psndSFX_pit; SoundEfxSetPitch's pitch
     u16 unk16;             // 0x16
-    s32 unk18;             // 0x18
+    u32 unk18;             // 0x18
     Vec position;          // 0x1C
 } PaperSoundEffect;
 
@@ -105,7 +105,7 @@ typedef struct PaperSoundEnv {
     u16 field_0xE;       // 0xE, frames until the next play (interval * 60 + irand(intervalRand) * 60)
     u16 field_0x10;      // 0x10, SoundEnvList.span, passed to __psndSFXOn as its flags
     u8 pad_0x12[2];      // 0x12
-    s32 field_0x14;      // 0x14, the playing __psndSFXOn id, -1 when none
+    u32 field_0x14;      // 0x14, the playing __psndSFXOn id, -1 when none
     Vec field_0x18;      // 0x18, SoundEnvList.posX/Y/Z; the play position
 } PaperSoundEnv;
 
@@ -139,9 +139,9 @@ void psndExit(void);
 
 BOOL psndPushGroup(void);
 
-BOOL psndBGMOn(u32 r3, char* bgm_name);
+BOOL psndBGMOn(u32 flags, char* bgm_name);
 void psndStopAllFadeOut(void);
-BOOL psndENVOff(u32 r3);
+BOOL psndENVOff(u32 id);
 void psndSFXAllOff(void);
 
 s32 psndSFXOn(const char* name);
@@ -149,7 +149,7 @@ s32 psndSFXOn_(const char* name);
 s32 psndSFXOn_3D(const char* name, Vec* position);
 void psndSFXOnVol(s32 a, u8 b);
 
-BOOL psndBGMOff_f_d(s32 flags, s32 fadetime, BOOL someswitch);
+BOOL psndBGMOff_f_d(s32 flags, u32 fadetime, u32 someswitch);
 u32 psndBGMStartCheck(s32 id);
 
 void psndSetFlag(s32 flag);
@@ -158,7 +158,7 @@ void psndClearFlag(s32 flag);
 void psndSetPosDirListener(Vec* position, f32 direction);
 
 u16 psndGetFlag(void);
-void psndSFXOff(s32 id);
+void psndSFXOff(u32 id);
 BOOL psndBGMOff(s32 flags);
 void psndSetReverb(s32 mode);
 s32 psndSFXChk(u32 id);
@@ -169,17 +169,17 @@ void psndBGMMain(void);
 void psndENVMain(void);
 void psndSFXMain(void);
 void L_psndBGM_stop(void);
-s32 psndENVOff_f_d(s32 id, s32 value, s32 flag);
-s32 psndENVOn_f_d(s32 id, s32 a, s32 b, s32 c);
-s32 psndBGMOn_f_d(s32 a, s32 name, s32 c, s32 d, s32 e);
-void psndSFX_pos(s32 id, Vec* position);
-s32 __psndSFXOn(s32, u8, u8, s32, Vec*, s32, s32, s32);
+s32 psndENVOff_f_d(s32 id, u32 value, s32 flag);
+s32 psndENVOn_f_d(s32 id, s32 name, u32 value, s32 flag);
+s32 psndBGMOn_f_d(u32 a, s32 name, u32 c, s32 d, s32 e);
+void psndSFX_pos(u32 id, Vec* position);
+s32 __psndSFXOn(s32, u8, u8, s32, Vec*, u32, s32, s32);
 u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span);
 
 
 
 s32 psndENV_LPF(s32 id, u16 freq);
-void psndSFX_dist(s32 id, u16 dist);
+void psndSFX_dist(u32 id, u16 dist);
 BOOL psndBGMOn_f(s32 a, char* b, s32 c, s32 d);
 extern PaperSoundBGM psbgm[2];
 extern SoundEnvList psenvlist[];
@@ -192,5 +192,13 @@ typedef struct BGMListEntry {
     const char* name;       // 0x0
     u32 flags;              // 0x4
     const char* streamName; // 0x8
-    u32 params;             // 0xC, packed volume/pan/reverb bytes
+    union {
+        u32 params; // 0xC, packed volume/pan/reverb/scope bytes, as the table spells them
+        struct {
+            u8 field_0xC; // 0xC, volume (PaperSoundBGM.volume)
+            u8 field_0xD; // 0xD, pan (PaperSoundBGM.pan)
+            u8 field_0xE; // 0xE, reverb (PaperSoundBGM.reverb)
+            u8 field_0xF; // 0xF, 1: the BGM starts in scope (PaperSoundBGM.scopeTimer 0xFF)
+        };
+    };
 } BGMListEntry;
