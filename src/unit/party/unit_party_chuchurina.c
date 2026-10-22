@@ -480,8 +480,6 @@ static s32 main_evt[4];
 
 // clang-format off
 // TODO: type
-
-// TODO: type
 static __declspec(section ".data") u32 negone_one_374[2] = {
     0xBF800000, 0x3F800000,
 };
