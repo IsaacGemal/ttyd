@@ -7,14 +7,7 @@
 #include "math_ext.h"
 #include <dolphin/mtx.h>
 
-// .rodata / .sdata2 data used by effSweatN64Entry (originally local to this unit).
-#ifdef MUST_MATCH
-// volatile stops MWCC from hoisting vec3_802fb810's components out of the loop;
-// retail reloads them through a base register every iteration.
-const volatile Vec vec3_802fb810 = { 0.0f, 0.0f, 0.0f };
-#else
-const Vec vec3_802fb810 = { 0.0f, 0.0f, 0.0f };
-#endif
+// .sdata2 data used by effSweatN64Entry (originally local to this unit).
 extern const f32 float_deg2rad_8041ffac;
 extern const f32 float_0_8041ffbc;
 extern const f32 float_neg1_8041ffb8;
@@ -23,7 +16,6 @@ extern const f32 float_6p4_8041ffb4;
 extern const f32 float_0p5_8041ffc0;
 extern const f32 float_4p8_8041ffc4;
 extern const f32 float_1_8041ffc8;
-extern const u32 dat_8041ffa8;
 
 EffectEntry* effSweatN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale, f32 angle, s32 life) {
 	EffectEntry* effect;
@@ -59,7 +51,7 @@ EffectEntry* effSweatN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale, f32 angl
 	data->position.z = z;
 	p = data + 1;
 	for (i = 1; i < effect->count; i++, p++) {
-		Vec temp = vec3_802fb810;
+		Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 		temp.x = (f32)sin(float_0_8041ffbc);
 		temp.z = -(f32)cos(float_0_8041ffbc);
 		axis = temp;
@@ -151,12 +143,6 @@ void effSweatMain(EffectEntry* effect) {
 	}
 }
 
-static inline void effSweatSetColor(u8 alpha) {
-	GXColor color = *(GXColor*)&dat_8041ffa8;
-	color.a = alpha;
-	GXSetChanMatColor(4, color);
-}
-
 // MATCH_F32 forces float_0/float_1 to reload before every FIFO store (a file-scope volatile would
 // break effSweatN64Entry, which shares float_0).
 void effSweatDisp(CameraId camId, void* param) {
@@ -203,7 +189,7 @@ void effSweatDisp(CameraId camId, void* param) {
 		if (data->timer != 0) {
 			continue;
 		}
-		effSweatSetColor(data->alpha);
+		GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 
 		PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
 		PSMTXRotRad(rot, 'z', float_deg2rad_8041ffac * data->angle);
@@ -254,7 +240,6 @@ void effSweatDisp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_8041ffa8 = 0xFFFFFF00;
 const f32 float_deg2rad_8041ffac = 0.017453292f;
 const f32 float_9p6_8041ffb0 = 9.6f;
 const f32 float_6p4_8041ffb4 = 6.4f;

@@ -6,12 +6,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804232ac;
-__declspec(section ".sdata") GXColor unk_804232a8;
-
-
 // .sdata2 data symbols owned by this unit.
 extern const f32 float_deg2rad_80420080;
 extern const f32 float_0p03125_80420084;
@@ -92,33 +86,6 @@ EffectEntry* effThunderflareN64Entry(s32 type, s32 timer, f32 x, f32 y, f32 z, f
 	return entry;
 }
 
-static inline void flareSetTevReg1(s32 r, s32 g, s32 b) {
-	GXColor color = unk_804232a8;
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	GXSetTevColor(GX_TEVREG1, color);
-}
-
-static inline void flareSetTevReg0(s32 r, s32 g, s32 b, s32 a) {
-	GXColor color = unk_804232ac;
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
-// Builds the effect position from a zero vector; kept as an inline so the
-// temporary schedules the way the original's does.
-static inline Vec thunderflareMakeVec(f32 x, f32 y, f32 z) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = x;
-	temp.y = y;
-	temp.z = z;
-	return temp;
-}
-
 void effThunderflareMain(EffectEntry* effect) {
 	EffThunderflareData* data;
 	Vec pos;
@@ -135,7 +102,7 @@ void effThunderflareMain(EffectEntry* effect) {
 	f32 angle1;
 
 	data = effect->userdata;
-	pos = thunderflareMakeVec(data->x, data->y, data->z);
+	pos = (Vec){ data->x, data->y, data->z };
 
 	if (data->timer < 100) {
 		data->timer--;
@@ -228,7 +195,7 @@ void effThunderflareDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_C0, GX_CC_C1, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
 
-	flareSetTevReg1(data->tevReg1R, data->tevReg1G, data->tevReg1B);
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->tevReg1R, data->tevReg1G, data->tevReg1B, 0 });
 
 	data++;
 	effGetTexObjN64(0x55, &texObj);
@@ -243,7 +210,7 @@ void effThunderflareDisp(CameraId camId, void* param) {
 	for (i = 1; i < effect->count; i++, data++) {
 		scale = data->scale;
 		if (scale != float_0_80420088) {
-			flareSetTevReg0(r, g, b, data->alpha);
+			GXSetTevColor(GX_TEVREG0, (GXColor){ r, g, b, data->alpha });
 
 			PSMTXTrans(trans, data->x, data->y, data->z);
 			PSMTXScale(work, scale, scale, scale);

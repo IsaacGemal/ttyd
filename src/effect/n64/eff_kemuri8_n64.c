@@ -2,16 +2,8 @@
 #include "driver/dispdrv.h"
 #include "memory.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423174;
-__declspec(section ".sdata") GXColor unk_80423170;
-
-
 #include <dolphin/mtx.h>
 #include "math_ext.h"
-
-// .sbss2 zero GXColor scratch objects the original builds its material colors from.
 
 // .rodata constants of this unit.
 
@@ -177,21 +169,6 @@ void effKemuri8Main(EffectEntry* effect) {
 	dispEntry(camId, dispCalcZ(&position), 2, effKemuri8Disp, effect);
 }
 
-static inline void kemuri8SetChanMatColorA(u8 a) {
-	GXColor c = unk_80423170;
-	c.a = a;
-	GXSetChanMatColor(4, c);
-}
-
-static inline void kemuri8SetChanMatColorB(u8 r, u8 g, u8 b, u8 a) {
-	GXColor c = unk_80423174;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	GXSetChanMatColor(4, c);
-}
-
 void effKemuri8Disp(CameraId cameraId, void* param) {
 	f32 half = 0.5f;
 	EffectEntry* effect = param;
@@ -275,7 +252,7 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
-				kemuri8SetChanMatColorA((data->color.a * 0x60) / 255);
+				GXSetChanMatColor(4, (GXColor){ 0, 0, 0, (data->color.a * 0x60) / 255 });
 				PSMTXTrans(transMtx, 2.0f + data->position.x, data->position.y - 2.0f, data->position.z);
 				PSMTXConcat(outMtx, transMtx, transMtx);
 				GXLoadPosMtxImm(transMtx, 0);
@@ -306,19 +283,7 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 					data->color.b = blue;
 					data->fadeTimer++;
 				}
-#ifdef MUST_MATCH
-				kemuri8SetChanMatColorB(data->color.r, data->color.g,
-					data->color.b, data->color.a);
-#else
-				{
-					GXColor color = unk_80423174;
-					color.r = data->color.r;
-					color.g = data->color.g;
-					color.b = data->color.b;
-					color.a = data->color.a;
-					GXSetChanMatColor(4, color);
-				}
-#endif
+				GXSetChanMatColor(4, (GXColor){ data->color.r, data->color.g, data->color.b, data->color.a });
 				PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 				PSMTXConcat(outMtx, transMtx, transMtx);
 				GXLoadPosMtxImm(transMtx, 0);

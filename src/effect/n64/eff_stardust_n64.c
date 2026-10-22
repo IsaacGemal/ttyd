@@ -30,8 +30,7 @@ typedef struct EffStardustN64Data {
     s32 drawCam;    // 0x3C
 } EffStardustN64Data;
 
-// .rodata zero vector and the int->float conversion doubles (named so the pool matches).
-const Vec vec3_802fb770 = { 0.0f, 0.0f, 0.0f };
+// .rodata int->float conversion doubles (named so the pool matches).
 // MWCC pools these two conversion doubles itself; keeping them non-const makes it re-use the
 // named globals instead of extra anonymous @NNN literals (same idiom as effAkariPoseN64Main).
 f64 double_to_int_mask_802fb780 = 4503599627370496.0;
@@ -70,9 +69,6 @@ static u32 size8x8_tex22x22_vtx[0x70] = {
     0xFFF80000, 0x16000000, 0x000000FF, 0x00080008, 0x00001600, 0x02C00000,
     0x00FFFFF8, 0x00080000, 0x134002C0, 0x000000FF,
 };
-
-// .sdata2 data referenced by effStardustDisp and effStardustN64Entry.
-extern const GXColor dat_8041fef0;
 
 // .sdata2 float constants.
 
@@ -224,7 +220,7 @@ void effStardustMain(EffectEntry* effect) {
     /* Retail builds the Vec in a scratch slot and copies it into a second local before
        dispCalcZ; a single local folds the copy away (same idiom as effDogabonAttackMain). */
     Vec position;
-    Vec disp = vec3_802fb770;
+    Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
     s32 i;
     s32 type;
     s32 dead = 0;
@@ -316,17 +312,6 @@ void effStardustMain(EffectEntry* effect) {
     dispEntry(camera, dispCalcZ(&position), 2, effStardustDisp, effect);
 }
 
-/* The original builds the TEV colour through a helper, so GXSetTevColor's argument
-   temp is allocated next to the helper's local (0x8) instead of above it (the plain #else form
-   swaps the two scratch slots). Same idiom as effFireSparkDisp. */
-static inline void stardustN64SetTevColor(s32 r, s32 g, s32 b) {
-    GXColor color = dat_8041fef0;
-    color.r = r;
-    color.g = g;
-    color.b = b;
-    GXSetTevColor(GX_TEVREG0, color);
-}
-
 void effStardustDisp(CameraId camId, void* param) {
     EffectEntry* entry = param;
     CameraEntry* cam;
@@ -403,7 +388,7 @@ void effStardustDisp(CameraId camId, void* param) {
         if (colorBByte > 0xFF) {
             colorBByte = 0xFF;
         }
-        stardustN64SetTevColor(colorRByte, colorGByte, colorBByte);
+        GXSetTevColor(GX_TEVREG0, (GXColor){ colorRByte, colorGByte, colorBByte, 0xFF });
 
         // Eight 0x38-byte (14-word) vertex strips; strip N starts at word N * 14.
         switch (renderType & 7) {
@@ -452,6 +437,3 @@ void effStardustN64SetDrawCam(EffectEntry* entry, s32 cam) {
 void effStardustN64SetScale(EffectEntry* entry, f32 scale) {
     ((EffStardustN64Data*)entry->userdata)->scale = scale;
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041fef0 = { 0x00, 0x00, 0x00, 0xFF };
