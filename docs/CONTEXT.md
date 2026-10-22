@@ -95,6 +95,8 @@ current version. Update it here when a new chapter changes one. The working deta
 - Where every scoped pair of one kind in a file can go with one flag on its Object line (`-inline noauto`, `-O4,s`,
   `-pragma "opt_X off"`, or an inline limit such as `-pragma "inline_max_size(N)"`, as TWW/TP/AC do) and the object
   stays identical, the flag replaces them; a flag that holds for only part of a file isn't added. ([file flags][39])
+- A per-file `-char signed` (or `unsigned`) on an Object line is allowed where it removes casts and puns and the object
+  stays identical, as TP does for 20 files. ([cleanup decisions][40])
 
 **MUST_MATCH and structural fakes**
 - Code that exists only to reproduce the original bytes goes under `#ifdef MUST_MATCH`, the natural form under `#else`.
@@ -146,6 +148,12 @@ current version. Update it here when a new chapter changes one. The working deta
   becomes a literal only where its unit's object stays obj_equiv-equivalent; ones a MUST_MATCH conditional names,
   address-taken, sizeof'd or volatile stay named. Pool order comes from the original's own functions, not helper
   functions. ([address literals][29], [literal sweep][30], [Night 2][31])
+- Decided 2026-10-22 (Isaac, from Melee/TWW/TP/AC/SPM precedent; [cleanup decisions][40]): a named pool constant whose
+  only job is a MUST_MATCH pool-order trick may go together with that trick, so its uses become literals, when the
+  object stays identical (TWW, TP and AC have no named pool floats). A guarded named template may become a compiler
+  template (`@NNN`) the same way, as #1120/#1122 did. Initialised data tables held as raw `u32`/`s32` words may be
+  typed (structs, pointer members, typed work pointers) when `tools/data_check.py` shows identical bytes. Effect and
+  work `userdata` stays `void*` with a typed local (SPM's `userWork`, Melee's `user_data`); no union of pointer types.
 - Trailing `gap_*` objects in `.data`, `.sdata`, `.sbss` and `.bss` are defined where the next unit's addresses depend
   on them (`.sdata2`/`.rodata` gaps can't be); `.sbss` statics follow their first mention in the source; string padding
   and alignment NULs the object needs stay. ([Grind 58][28], [literal sweep][30])
@@ -221,6 +229,7 @@ current version. Update it here when a new chapter changes one. The working deta
 [37]: CONTEXT-matching.md#grind-63-ttyd-refs-the-shared-read-only-reference-decomps-2026-10-01-claude-sonnet-55-ttyd-claude-3
 [38]: #must_match-guarding-made-consistent-across-the-tree-2026-10-21-claude-opus-55-n9-q-o-consist
 [39]: #whole-file-compiler-settings-moved-to-configurepy-2026-10-22-isaac-done-by-claude-opus-55-n9-q-o-flags
+[40]: #cleanup-decisions-from-melee-tww-tp-ac-and-spm-precedent-2026-10-22-isaac-written-up-by-claude-opus-55
 
 ## Parked ideas
 
@@ -6798,3 +6807,21 @@ handle, named like mot_hip's if the evidence carries over; (5) the "unguarded st
 - **Left.** Unguarded steering seen in passing that was on neither list: eff_levelup's `halfConst`/`yConst` constant
   locals. The bare `marioGetPtr();` at the top of tik_00 mario_key_onoff_wait and of several mot_ship functions stays
   unguarded (most likely unused-local initialisers in the original, not mid-function steering).
+
+## Cleanup decisions from Melee, TWW, TP, AC and SPM precedent (2026-10-22, Isaac, written up by Claude Opus 5.5)
+
+Six open questions left by #1123-#1128, checked against the local reference checkouts (~/melee, ~/ttyd-refs/tww, tp,
+ac-decomp, spm-decomp). Isaac approved the recommendations.
+- **Named pool constants -> literals: yes.** File-scope named `const f32` pool objects: TWW 0, TP 0, AC 0, Melee 6
+  (all library), SPM 1; TTYD 857. The others write literals and let the compiler build `@NNN` pools.
+- **sac_zubastar's guarded template -> compiler template: yes** (the #1127 lead), the same move as #1120/#1122.
+- **Typing initialised data tables: yes.** `(u32)&sym` inside initialisers: 0 in all five (their 13-35 casts are in
+  code); TTYD about 1,300. They use typed structs with pointer members (TWW profiles, SPM `DokanDesc`); SPM's only
+  word arrays are evt scripts, whose cast sits inside the macro.
+- **Effect `userdata` union: no.** SPM keeps `void* userWork` in EffEntry, Melee `void* user_data` behind cast macros;
+  TWW/TP use C++ inheritance. Nobody uses a union of pointer types.
+- **Per-file `-char signed`: yes** where it removes casts and the object stays identical (TP: 20 per-file overrides).
+- **Sound ids passed as names (`psndSFXOn((const char*)0x2002A)`, 401 calls; 221 pass strings): left as is.** The
+  others take ids as integers or enums, and nobody casts a number to `char*`; but SPM's prototype is `const char*` and
+  only passes strings, and the only cast-free form here is a new id-taking accessor, a name without outside evidence.
+
