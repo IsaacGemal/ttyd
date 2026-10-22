@@ -58,15 +58,10 @@ static u8 offset_tbl[] = {
 
 void effCoinFukidashiMain(EffectEntry* effect) {
     CoinFukidashiData* data;
-    /* The Vec is built in `disp` and copied to `position` before dispCalcZ; a single local folds the copy away. */
     Vec position;
-    Vec disp = { 0.0f, 0.0f, 0.0f };
 
     data = effect->userdata;
-    disp.x = data->position.x;
-    disp.y = data->position.y;
-    disp.z = data->position.z;
-    position = disp;
+    position = (Vec){ data->position.x, data->position.y, data->position.z };
 
     if (effect->flags & 4) {
         effect->flags &= ~4;

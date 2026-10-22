@@ -11,9 +11,6 @@
 // .rodata string; the .sdata2 constants this unit owns, in the original's data order. float_100 and
 // float_1 must be defined (not extern): MWCC colours the second pose's stretch FPRs differently when
 // it knows their values, which is what makes effNokotarouDisp byte-exact.
-// externs for the remaining constants the disp/main read from the original unit's data.
-extern const u32 dat_80422480;
-extern const u32 dat_80422484;
 
 EffectEntry* effNokotarouEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry = effEntry();
@@ -100,18 +97,6 @@ void effNokotarouMain(EffectEntry* effect) {
 	}
 }
 
-static inline void nokotarouSetColorMain(NokotarouWork* work) {
-	GXColor color = *(GXColor*)&dat_80422480;
-	color.a = work->alpha;
-	animPoseSetMaterialEvtColor(work->animPose, color);
-}
-
-static inline void nokotarouSetColorSub(NokotarouWork* work) {
-	GXColor color = *(GXColor*)&dat_80422484;
-	color.a = work->alpha;
-	animPoseSetMaterialEvtColor(work->animPose2, color);
-}
-
 void effNokotarouDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	NokotarouWork* work = effect->userdata;
@@ -132,7 +117,7 @@ void effNokotarouDisp(CameraId cameraId, void* param) {
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	animPoseSetMaterialFlagOn(work->animPose, 0x40);
-	nokotarouSetColorMain(work);
+	animPoseSetMaterialEvtColor(work->animPose, (GXColor){ 0xFF, 0xFF, 0xFF, work->alpha });
 	animPoseMain(work->animPose);
 	animPoseDrawMtx(work->animPose, mtx, 1, 0.0f, 2.0f);
 	animPoseDrawMtx(work->animPose, mtx, 2, 0.0f, 2.0f);
@@ -151,14 +136,10 @@ void effNokotarouDisp(CameraId cameraId, void* param) {
 		PSMTXConcat(mtx, rotMtx, mtx);
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		animPoseSetMaterialFlagOn(work->animPose2, 0x40);
-		nokotarouSetColorSub(work);
+		animPoseSetMaterialEvtColor(work->animPose2, (GXColor){ 0xFF, 0xFF, 0xFF, work->alpha });
 		animPoseMain(work->animPose2);
 		animPoseDrawMtx(work->animPose2, mtx, 1, 0.0f, 2.0f);
 		animPoseDrawMtx(work->animPose2, mtx, 2, 0.0f, 2.0f);
 		animPoseDrawMtx(work->animPose2, mtx, 3, 0.0f, 2.0f);
 	}
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_80422480 = 0xFFFFFF00;
-const u32 dat_80422484 = 0xFFFFFF00;

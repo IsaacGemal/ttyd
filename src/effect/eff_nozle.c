@@ -155,17 +155,6 @@ u32 nozle_4_dl_0_tbl[8];
 
 // clang-format off
 
-// The Vec temp is built in a returning inline that starts from an anonymous zero literal: MWCC pools
-// that literal as this unit's vec3_802fe6b8 (the file no longer defines it as a named object), and
-// building it directly in `out` schedules the first component load before the userdata load.
-static inline Vec nozleMakeVec(f32 x, f32 y, f32 z) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = x;
-	temp.y = y;
-	temp.z = z;
-	return temp;
-}
-
 // The original has each display-list loop in its own inline helper; with the loops inlined at
 // their call sites MWCC colours the function's pointers differently and rotates every loop
 // pointer.  The helpers leave the whole function matching
@@ -284,7 +273,7 @@ void effNozleMain(EffectEntry* effect) {
 	Vec pos;
 	Vec out;
 
-	out = nozleMakeVec(data->position.x, data->position.y, data->position.z);
+	out = (Vec){ data->position.x, data->position.y, data->position.z };
 	pos = out;
 
 	type = data->type;
