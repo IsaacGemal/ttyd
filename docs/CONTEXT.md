@@ -6129,3 +6129,60 @@ pragma line of the kind it replaces is removed (other kinds in the same file sta
 - **Leads.** None of the remaining pragma kinds has a per-file flag; the next lever for them is per-function source
   shapes (PRAGMAS_KEPT.md). A library-level `-pragma "pool_data off"`, if data layout comes into scope: 317 of the
   pool_data lines are `off`.
+
+## Colour and vector templates as compound literals, round 2 (2026-10-22, Claude Opus 5.5 with five Claude Opus 5.5 helpers, n9-q-o-literals2)
+
+Continues the n9-q-o-literals chapter (Isaac's approval and the TWW/TP precedent are there): named `GXColor`/`Vec`
+objects that were MWCC's compound-literal templates are written as `(GXColor){...}`/`(Vec){...}`, initialised locals or
+local arrays at their uses, and the definitions go with the helpers, puns, volatile copies and MUST_MATCH regions that
+only loaded them.
+
+- **Salvage.** The six interrupted round-1 sweep worktrees (`~/ttyd-src/.claude/worktrees/agent-{a35ec,a65ef,ab325,
+  ad811,adf08,aed5e}`) held 96 file conversions (committed and uncommitted) plus two symbols.txt edits. All applied to
+  current main (seven after resolving #1121's pragma removals) and the full build stayed byte-identical; reviewed and
+  landed in five commits (RELs 10, n64 effects 47, effects 21, action commands 9, drivers/events 9).
+- **The rest.** The ~186 remaining candidate files (every file with a hand-placed `.sbss2` section, a
+  `*(GXColor*)&dat_/unk_` pun, a `vec3_*`/`dat_*` GXColor or Vec object) went to five helpers in nested worktrees, one
+  batch each (other effects 30, n64 effects 35, battle/party/mario 36, drivers/events/windows/sequences 34, RELs 51).
+  Every file got an outcome; per-file reports were in the helpers' scratch dir. About 104 more files converted fully or
+  in part.
+- **Method and checks.** Each kept change: `build/G8MJ01/ok` recreated (dol and all REL checksums, code and data),
+  tools/ci.py PASS (tests step stubbed, `~/ci_notests.py`; pyelftools from a venv) with `--allow-protected` for
+  symbols.txt, which includes the natural compile of every changed file without MUST_MATCH and the data ratchet;
+  fncast_lint and local_prototypes clean.
+- **gap_ objects stay.** Round 1's salvage and two helpers had deleted the `.sbss2` `gap_*` pad after a template
+  wherever the build stayed identical. The task's rules keep gap/force_active dummies, so all of them were restored (15
+  files: ac_shot, eff_damage_star, eff_energy, eff_mist, eff_nozle, eff_magic1/magic_horao/opuku_jetw/opuku_wcurtain/
+  opuku_wgun/pokopi_thunder/rappa/rothammer_fail/snowfall/whirlwind_n64, plus fukidashi, kemutest, seq_mapchange,
+  win_log by the helpers) at the original's offset (checked against the target split). With a gap back, objdiff no
+  longer pairs the template by position, so its symbols.txt line is renamed to the compiler's `@NNN`
+  (`scope:local`), as round 1 did for eff_sstar. snowfall's gap uses its map name `gap_10_8042326C_sbss2`. The restored
+  `#pragma section` lines are the original's: ci lint passes against the branch base, not against the previous commit.
+- **symbols.txt.** 47 address-named templates renamed to their `@NNN` locals, each only because the data ratchet
+  dropped without it.
+- **Other changes riding on the conversions** (all byte-identical): bgdrv's `bgReEntry` calls `bgEntry` instead of a
+  hand-expanded copy of it (retail inlines it); evt_batstage's and sac_suki's tables became initialised local arrays
+  and their blob/copy structs went; eff_syuryou's and mario_motion's strings became literals (their base was the
+  template; mario_motion's force_active MUST_MATCH block went); itemdrv, evt_telop, kpa_act and evt_yuutitle declare
+  FontDrawColor by value, as fontmgr defines it; sac_zubastar's `#else` read undefined `vec3_802ff7xx` (natural
+  build broken) and now uses literals; existing definitions moved within their files in eff_funemizu, eff_mugi,
+  eff_stageclear, eff_teresa, eff_fukidashi, evt_win, seq_load, seq_title, win_item, msgdrv, koopa_hit, sac_genki,
+  mot_hammer, mario_hit, ac_shot, ac_shot_target, ac_repeatedly_lv, battle_break_slot and gor_01, so the templates keep
+  the original's order (layout unchanged). eff_damage_star's existing colour helper now takes the element, not its
+  alpha (the alpha load has to sit inside it; no other form matched).
+- **Index** (tools/cleanup_index.py, f867c03c -> this branch): **28.041 -> 24.592** per kLOC (19519 -> 17031
+  weighted); must_match 800 -> 692; deref_cast 1126 -> 795; address_name 2475 -> 1087; unk_name 619 -> 309;
+  struct_ptr_cast 2707 -> 2696; prim_ptr_cast 2266 -> 2261; field_0x 4562 -> 4558; Melee-family sites 10328 -> 9873.
+  Code lines 696,079 -> 692,543; about 600 named definitions deleted.
+- **Left, and why.** Most leftovers are templates whose literal lands in the wrong slot: a literal's template is
+  emitted with its function, so where the original's named objects sit before or among strings, a defer_codegen
+  placeholder's pool double or another function's literals, no literal reproduces the order (most REL files, winmgr,
+  eff_fire, eff_particle, eff_kiss's `str_804213F0/F4`, which are colour templates under string names, the yami_view
+  position/up Vecs, the ac_monosiri_target/ac_shot_target Vecs). Objects read from several functions are real shared
+  constants (party_yoshi, party_bomhei, party_chuchu, mot_slit, windowdrv, jin_07); a few need non-const objects or
+  differ only in stack slots or registers (evt_map, koopa_hit, sac_genki's disp_3D Vecs, battle_stage's `.sbss2`
+  colours). animdrv's six `.sdata2` colours convert only if its `moamoa_chain_count` force_active pair moves up the
+  file, which lint counts as a new pragma; not applied. Per-file outcomes were in the helpers' reports.
+- **For a reviewer.** The yami_view-style camera functions in eight RELs now mix a literal target with named position
+  and up Vecs; that mix is what the original's `.rodata` order says. The moved definitions listed above. The data
+  check passed for every changed object (183).
