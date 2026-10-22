@@ -3,13 +3,6 @@
 #include "eff/eff_n64.h"
 #include "memory.h"
 
-// .sbss2 zero GXColor scratch objects, placed by hand (the default .sbss2 only holds compiler pool templates);
-// declared in reverse: placed in reverse of declaration order.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804232bc;
-__declspec(section ".sdata") GXColor unk_804232b8;
-#pragma section ".sdata" ".sbss"
-
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_803A85F8[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 
@@ -99,24 +92,6 @@ void effVaporMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effVaporDisp, effect);
 }
 
-static inline GXColor effVaporN64Color1(effVaporN64Data* data, s32 alpha) {
-	GXColor color = unk_804232b8;
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = alpha;
-	return color;
-}
-
-static inline GXColor effVaporN64Color2(effVaporN64Data* data, s32 alpha) {
-	GXColor color = unk_804232bc;
-	color.r = data->color2R;
-	color.g = data->color2G;
-	color.b = data->color2B;
-	color.a = alpha;
-	return color;
-}
-
 // .data float pairs and tables, in the original's order.
 // __declspec(section ".data"): the original keeps these 8-byte pairs in .data (not the
 // default .sdata for small objects), which is what places dx_data/scale_data/... at the
@@ -173,25 +148,6 @@ static u32 size64x64_tex32x32_vtx[0x118 / 4] = {
 	0x00200040, 0x00020400, 0x10007878, 0x00FFFFE0, 0x00400002, 0x00001000, 0x787800FF,
 };
 
-// Same per-colour helpers as eff_breath_fire_n64's breathSetColor0/1.
-static inline void effVaporSetColor1(effVaporN64Data* data, s32 alpha) {
-	GXColor color = unk_804232b8;
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = alpha;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void effVaporSetColor2(effVaporN64Data* data, s32 alpha) {
-	GXColor color = unk_804232bc;
-	color.r = data->color2R;
-	color.g = data->color2G;
-	color.b = data->color2B;
-	color.a = alpha;
-	GXSetTevColor(GX_TEVREG1, color);
-}
-
 // The original reaches each table from lbl_803A85F8 and materialises the base before
 // an indexed load; naming the file's arrays (dx_data / scale_data / seq_data / rz_data)
 // and indexing them with type*0x1e + frame reproduces that addi base,off / lbzx shape.
@@ -234,7 +190,8 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	PSMTXConcat(mtxA, mtxB, mtxA);
 	PSMTXConcat(cam->view, mtxA, mtxD);
 
-	effVaporSetColor1(data, float_0p5_804200dc * (f32)alpha1);
+	GXSetTevColor(GX_TEVREG0,
+	              (GXColor){ data->color1R, data->color1G, data->color1B, float_0p5_804200dc * (f32)alpha1 });
 
 	switch (type) {
 	case 0:
@@ -326,7 +283,7 @@ void effVaporDisp(CameraId cameraId, void* param) {
 			PSMTXScale(mtxB, float_0p032258_804200f4, float_0p007874_804200f8, float_0_804200e4);
 			GXLoadTexMtxImm(mtxB, GX_TEXMTX1, GX_MTX2x4);
 		}
-		effVaporSetColor2(data, frac);
+		GXSetTevColor(GX_TEVREG1, (GXColor){ data->color2R, data->color2G, data->color2B, frac });
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 		tri2(band * 4, band * 4 + 1, band * 4 + 2, 0, band * 4, band * 4 + 2, band * 4 + 3, 0);
 	}

@@ -45,5 +45,3 @@ extern const f32 float_0p007874_804200f8;
 extern const f32 float_32_804200fc;
 extern const f64 double_to_int_802fb8f8;
 extern const f64 double_to_int_mask_802fb900;
-extern GXColor unk_804232b8;
-extern GXColor unk_804232bc;

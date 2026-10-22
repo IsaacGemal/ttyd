@@ -7,12 +7,6 @@
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_8042319c;
-__declspec(section ".sdata") GXColor unk_80423198;
-
-
 // This unit's .sdata2 literals. 0.0f stays an extern (like eff_kumokumo_n64.c)
 // and is only ever read through the named symbol. 1.0f is *defined* here:
 // with no definition MWCC pools the `1.0f` as an anonymous .sdata2 entry instead of
@@ -33,10 +27,6 @@ static u32 size32x32_tex32x32_vtx[0x38 / 4] = {
 __declspec(section ".data") u32 gap_05_803A2270_data[4] = { 0, 0, 0, 0 };
 #pragma force_active reset
 #pragma explicit_zero_data reset
-
-// .sbss2 colour scratch, global to this unit's asm
-
-const Vec vec3_802faa50 = { 0.0f, 0.0f, 0.0f };
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
@@ -94,13 +84,6 @@ static inline f32 chip_sqrtf(f32 x) {
 // `if (dist)` reproduces the original's `fcmpu cr0, f7, f3` + `beq`; writing
 // `if (dist != 0.0f)` makes MWCC emit `fcmpu cr0, f3, f7`. The truth test is equivalent
 // for every float (NaN included).
-//
-// The unit's pooled sqrtf doubles must sit at vec3+0x20. effKumokumoChipMain used to build
-// its zero Vec from a compound literal, which made MWCC emit a dead 12-byte anonymous Vec
-// in .rodata at vec3+0x1c and pushed the doubles to +0x28 (four wrong `lfd` offsets). Main
-// now reads its userdata and the zero Vec through volatile lvalues under MUST_MATCH (the
-// lwz/stw bytes are unchanged); that keeps the scheduler from hoisting the vec3 copy and
-// leaves no literal object, so the doubles land at +0x20 and the whole file matches.
 EffectEntry* effKumokumoChipN64Entry(s32 type, f32 x, f32 y, f32 z, f32 x2, f32 y2, f32 z2, f32 spacing, f32 scale) {
 	EffectEntry* effect;
 	effKumokumoChipData* data;
@@ -184,16 +167,8 @@ void effKumokumoChipMain(EffectEntry* effect) {
 	Vec pos2;
 	Vec pos;
 
-#ifdef MUST_MATCH
-	// Volatile lvalues (same lwz bytes as the plain forms) stop the scheduler hoisting the
-	// vec3 copy and stop MWCC emitting a dead anonymous zero Vec, so the unit's pool doubles
-	// stay at vec3+0x20. See the comment above effKumokumoChipN64Entry.
-	data = ((volatile EffectEntry*)effect)->userdata;
-	pos = *(volatile Vec*)&vec3_802faa50;
-#else
 	data = effect->userdata;
-	pos = vec3_802faa50;
-#endif
+	pos = (Vec){ 0.0f, 0.0f, 0.0f };
 	pos.x = data->x;
 	pos.y = data->y;
 	pos.z = data->z;
@@ -243,18 +218,6 @@ void effKumokumoChipMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos2), 2, effKumokumoChipDisp, effect);
 }
 
-// The patch-and-set of a TEV colour lives in this inline helper on purpose: it makes MWCC
-// place the helper's GXColor local below its by-value argument temporary, which is the
-// slot layout the original has.
-static inline void chipSetColor(s32 id, s32 r, s32 g, s32 b, s32 a, GXColor* base) {
-	GXColor color = *base;
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	GXSetTevColor(id, color);
-}
-
 void effKumokumoChipDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam;
@@ -275,8 +238,8 @@ void effKumokumoChipDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(mtx, 0);
 	GXSetCurrentMtx(0);
 
-	chipSetColor(1, data->r, data->g, data->b, alpha, &unk_80423198);
-	chipSetColor(2, data->r2, data->g2, data->b2, data->a2, &unk_8042319c);
+	GXSetTevColor(1, (GXColor){ data->r, data->g, data->b, alpha });
+	GXSetTevColor(2, (GXColor){ data->r2, data->g2, data->b2, data->a2 });
 	effGetTexObjN64(0x6b, &texObj);
 	GXLoadTexObj(&texObj, 0);
 	GXSetNumChans(0);
