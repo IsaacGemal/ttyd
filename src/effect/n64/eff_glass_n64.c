@@ -122,7 +122,6 @@ void effGlassMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effGlassDisp, effect);
 }
 
-/* effGlassDisp matches with the colour writes and the frame conversion in inlines. */
 /* Calling the cast through an inline makes mwcc allocate the frame conversion's scratch slot
    first (0x100) instead of last, matching the original. */
 static inline s32 effGlassFrame(f32 x) {

@@ -146,10 +146,6 @@ typedef struct DekaYukaMesh {
 // EVT script, local to this file in the original (.sdata).
 static s32 nice_event[8] = { 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0, 0x64, 0, 2, 1 };
 
-
-
-
-
 // .text:0x2CD0 | 0x80245CC8 | size: 0x130
 s32 main_deka(EventEntry* event, s32 arg) {
     DekaWork* p = get_ptr();
