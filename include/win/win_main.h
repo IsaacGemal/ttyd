@@ -52,17 +52,10 @@ typedef struct WindowWork {
     struct smartEntry* fbCopy;  // 0x34, win_root: framebuffer copy drawn behind the menu
     s32 fbCopyReady;            // 0x38, win_root: set once fbCopy holds a frame
     EventEntry* currentEvent;   // 0x3C, winMain: the evt_item_use / evt_diary_read event it waits on
-    // sort_7_2_func/sort_7_3_func address the tattle list at 0x1050 as &field_40[0x1010], and only that
-    // u8-array base matches, so the array has to keep starting at 0x40.
-    union {
-        u8 field_40[0x124 - 0x40]; // 0x40
-        struct {
-            s32 tabSel;         // 0x40, win_root: index of the tab under the cursor
-            s32 tabCount;       // 0x44, win_root: tabs in use
-            WinRootTab tabs[5]; // 0x48
-            WinRootRec recs[5]; // 0xC0, one per submenu window; b/c are its position (each submenu's Disp reads its own)
-        };
-    };
+    s32 tabSel;                 // 0x40, win_root: index of the tab under the cursor
+    s32 tabCount;               // 0x44, win_root: tabs in use
+    WinRootTab tabs[5];         // 0x48
+    WinRootRec recs[5];         // 0xC0, one per submenu window; b/c are its position (each submenu's Disp reads its own)
     s32 savedState;             // 0x124, win_badge/win_item/win_log: menu state to return to after help text
     f32 field_0x128;            // 0x128, win_root: winMsgDisp position (winMsgMain slides it)
     f32 field_0x12C;            // 0x12C
@@ -110,10 +103,8 @@ typedef struct WindowWork {
     s32 itemTab;                // 0x210, win_item: 0 = held items (STR_MOCHI_ITEM), 1 = key items (STR_MOCHI_DAIJI)
     s32 itemSel[2];             // 0x214, win_item: cursor per tab (win_root's sort_1_* and sort_2_* read [0] and [1])
     s32 itemScrollRow[2];       // 0x21C, win_item: first visible row per tab
-    f32 field_0x224;            // 0x224, win_item's float positions (book and list slide), to 0x250
-    f32 field_0x228;            // 0x228
-    f32 field_0x22C;            // 0x22C
-    f32 field_0x230;            // 0x230
+    f32 field_0x224[2];         // 0x224, per tab (item_disp reads [itemTab]); 0x224-0x250: win_item's float positions (book and list slide)
+    f32 field_0x22C[2];         // 0x22C, per tab: the value field_0x224 eases towards (winItemMain2)
     f32 field_0x234;            // 0x234
     f32 field_0x238;            // 0x238
     f32 field_0x23C;            // 0x23C
@@ -150,7 +141,9 @@ typedef struct WindowWork {
     s32 equipListCount;         // 0xD64
     u8 field_D68[0xE1C - 0xD68]; // 0xD68
     s32 mapMarioPose;           // 0xE1C, win_log map's Mario pose (LogWin.pose; mario_change rebuilds it)
-    u8 field_E20[0x1208 - 0xE20]; // 0xE20
+    u8 field_E20[0x1050 - 0xE20]; // 0xE20
+    u8 field_0x1050[0x1200 - 0x1050]; // 0x1050, win_log's tattle list (LogWin.chars); win_root's sort_7_2/7_3 sort it
+    u8 field_1200[0x1208 - 0x1200]; // 0x1200
     s32 useTargetWin[2];        // 0x1208, win_item: winMgr windows opened to pick who an item is used on
 } WindowWork;
 
