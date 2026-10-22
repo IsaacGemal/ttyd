@@ -6170,10 +6170,10 @@ only loaded them.
   mot_hammer, mario_hit, ac_shot, ac_shot_target, ac_repeatedly_lv, battle_break_slot and gor_01, so the templates keep
   the original's order (layout unchanged). eff_damage_star's existing colour helper now takes the element, not its
   alpha (the alpha load has to sit inside it; no other form matched).
-- **Index** (tools/cleanup_index.py, f867c03c -> this branch): **28.041 -> 24.592** per kLOC (19519 -> 17031
-  weighted); must_match 800 -> 692; deref_cast 1126 -> 795; address_name 2475 -> 1087; unk_name 619 -> 309;
+- **Index** (tools/cleanup_index.py, f867c03c -> this branch): **28.041 -> 24.571** per kLOC (19519 -> 17016
+  weighted); must_match 800 -> 692; deref_cast 1126 -> 795; address_name 2475 -> 1076; unk_name 619 -> 305;
   struct_ptr_cast 2707 -> 2696; prim_ptr_cast 2266 -> 2261; field_0x 4562 -> 4558; Melee-family sites 10328 -> 9873.
-  Code lines 696,079 -> 692,543; about 600 named definitions deleted.
+  Code lines 696,079 -> 692,530; about 600 named definitions deleted.
 - **Left, and why.** Most leftovers are templates whose literal lands in the wrong slot: a literal's template is
   emitted with its function, so where the original's named objects sit before or among strings, a defer_codegen
   placeholder's pool double or another function's literals, no literal reproduces the order (most REL files, winmgr,
