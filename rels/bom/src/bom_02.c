@@ -700,65 +700,51 @@ static EVT_BEGIN(init_white)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 mario_jump[197] = {
-    0x0001005B, (u32)evt_mario_cam_keep_on, 0x0005005B, (u32)evt_mario_get_pos,
-    0x00000000, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
-    0x0004005B, (u32)evt_npc_flag_onoff, 0x00000001, (u32)"ホワイト",
-    0x00000020, 0x0005005B, (u32)evt_npc_get_position, (u32)"ホワイト",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
-    0xFE363C81, 0x00000014, 0x0006005B, (u32)evt_snd_sfxon_3d,
-    (u32)"SFX_VOICE_MARIO_FLD_JUMP1", 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
-    0x00000000, 0x0007005B, (u32)evt_mario_jump_pos, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000002,
-    0xFFFFFC18, 0x0000006B, 0x00020036, 0xFE363C80,
-    0x00000014, 0x00020036, 0xFE363C82, 0x00000014,
-    0x000F005B, (u32)evt_eff, 0x00000000, (u32)"nice",
-    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000006D, 0x000F005B, (u32)evt_eff, 0x00000000,
-    (u32)"small_star", 0x00000003, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0006005B, (u32)evt_snd_sfxon_3d, (u32)"SFX_STG7_WHITE_DAMAGED1",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x0006005B, (u32)evt_snd_sfxon_3d, (u32)"SFX_STG7_WHITE_NICE1", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x0000006B,
-    0x0005005B, (u32)evt_cam_shake, 0x00000004, 0xF24A7A80,
-    0xF24A7A8A, 0x00000064, 0x0000006D, 0x00020035,
-    0xFE363C82, 0xFFFFFFF6, 0x0006005B, (u32)evt_snd_sfxon_3d,
-    (u32)"SFX_VOICE_MARIO_FLD_JUMP4", 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
-    0x00000000, 0x0007005B, (u32)evt_mario_jump_pos, 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x000001F4, 0x00000002,
-    0xFFFFFC18, 0x0000006B, 0x00020036, 0xFE363C80,
-    0x00000014, 0x00020036, 0xFE363C82, 0x00000014,
-    0x000F005B, (u32)evt_eff, 0x00000000, (u32)"nice",
-    0x00000001, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000006D, 0x000F005B, (u32)evt_eff, 0x00000000,
-    (u32)"small_star", 0x00000003, 0xFE363C80, 0xFE363C81,
-    0xFE363C82, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x0006005B, (u32)evt_snd_sfxon_3d, (u32)"SFX_STG7_WHITE_DAMAGED1",
-    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
-    0x0006005B, (u32)evt_snd_sfxon_3d, (u32)"SFX_STG7_WHITE_GOOD1", 0xFE363C80,
-    0xFE363C81, 0xFE363C82, 0x00000000, 0x0000006B,
-    0x0005005B, (u32)evt_cam_shake, 0x00000004, 0xF24A7A80,
-    0xF24A7A8A, 0x00000064, 0x0000006D, 0x0006005B,
-    (u32)evt_snd_sfxon_3d, (u32)"SFX_VOICE_MARIO_FLD_JUMP2", 0xFE363C8A, 0xFE363C8B,
-    0xFE363C8C, 0x00000000, 0x0007005B, (u32)evt_mario_jump_pos,
-    0x0000014F, 0x0000001E, 0xFFFFFF7E, 0x000001F4,
-    0x00000002, 0xFFFFFC18, 0x0004005B, (u32)evt_npc_flag_onoff,
-    0x00000000,
+// The symbol map starts lbl_3_data_76CC inside mario_jump's last command, CALL(evt_npc_flag_onoff, 0, "ホワイト",
+// 32), so the script is written across the two arrays.
+EVT_BEGIN(mario_jump)
+    CALL(evt_mario_cam_keep_on)
+    CALL(evt_mario_get_pos, 0, LW(10), LW(11), LW(12))
+    CALL(evt_npc_flag_onoff, 1, STRING("ホワイト"), 32)
+    CALL(evt_npc_get_position, STRING("ホワイト"), LW(0), LW(1), LW(2))
+    ADD(LW(1), 20)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_FLD_JUMP1"), LW(10), LW(11), LW(12), 0)
+    CALL(evt_mario_jump_pos, LW(0), LW(1), LW(2), 500, 2, -1000)
+    BEGIN_INLINE_EVENT
+        SUBTRACT(LW(0), 20)
+        SUBTRACT(LW(2), 20)
+        CALL(evt_eff, 0, STRING("nice"), 0, LW(0), LW(1), LW(2), 0, 0, 0, 0, 0, 0, 0, 0)
+    END_INLINE_EVENT
+    CALL(evt_eff, 0, STRING("small_star"), 3, LW(0), LW(1), LW(2), 0, -1, 0, 3, 0, 0, 0, 0)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG7_WHITE_DAMAGED1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG7_WHITE_NICE1"), LW(0), LW(1), LW(2), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.01f), 100)
+    END_INLINE_EVENT
+    ADD(LW(2), -10)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_FLD_JUMP4"), LW(10), LW(11), LW(12), 0)
+    CALL(evt_mario_jump_pos, LW(0), LW(1), LW(2), 500, 2, -1000)
+    BEGIN_INLINE_EVENT
+        SUBTRACT(LW(0), 20)
+        SUBTRACT(LW(2), 20)
+        CALL(evt_eff, 0, STRING("nice"), 1, LW(0), LW(1), LW(2), 0, 0, 0, 0, 0, 0, 0, 0)
+    END_INLINE_EVENT
+    CALL(evt_eff, 0, STRING("small_star"), 3, LW(0), LW(1), LW(2), 0, -1, 0, 3, 0, 0, 0, 0)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG7_WHITE_DAMAGED1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG7_WHITE_GOOD1"), LW(0), LW(1), LW(2), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.01f), 100)
+    END_INLINE_EVENT
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_FLD_JUMP2"), LW(10), LW(11), LW(12), 0)
+    CALL(evt_mario_jump_pos, 335, 30, -130, 500, 2, -1000)
+    EVT_CMD(4, OPCODE_USER_FUNC), (s32)evt_npc_flag_onoff, 0,
 };
 
-// TODO: type
-u32 lbl_3_data_76CC[6] = {
-    (u32)"ホワイト", 0x00000020, 0x0001005B, (u32)evt_mario_cam_keep_off,
-    0x00000002, 0x00000001,
-};
+s32 lbl_3_data_76CC[] = {
+    STRING("ホワイト"), 32,
+    CALL(evt_mario_cam_keep_off)
+    RETURN
+EVT_END()
 
 s32 iri_25_item_tbl[] = {
     0x6D, -1,
