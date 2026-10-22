@@ -16,8 +16,7 @@ extern const f32 float_0p02_8041e810;
 extern const f32 float_neg288_8041e818;
 extern const f32 float_45_8041e81c;
 extern const f32 float_108_8041e820;
-extern s32 dat_8041e7f0;
-extern u32 dat_8041e7f4;
+__declspec(section ".sdata2") s32 dat_8041e7f0 = -1;
 
 static void actionCommandDisp(f32 x, f32 y);
 
@@ -571,13 +570,11 @@ static void actionCommandDisp(f32 x, f32 y) {
                    0.0f);
         PSMTXScale(scale, float_1_8041e800, float_1_8041e800, float_1_8041e800);
         PSMTXConcat(trans, scale, mtx);
-        iconNumberDispGx(mtx, num, 0, *(GXColor*)&dat_8041e7f4);
+        iconNumberDispGx(mtx, num, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
     }
 }
 
 // Defined after the code that uses them, so the references stay bound to these names.
-__declspec(section ".sdata2") s32 dat_8041e7f0 = -1;
-__declspec(section ".sdata2") u32 dat_8041e7f4 = 0xFFFFFFFF;
 const f32 float_neg200_8041e7f8 = -200.0f;
 const f32 float_70_8041e7fc = 70.0f;
 const f32 float_1_8041e800 = 1.0f;

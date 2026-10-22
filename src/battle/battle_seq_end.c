@@ -1490,9 +1490,6 @@ s32 _lvup_disp_flag_onoff(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// Keep named objects between the compiler colour templates, in retail order.
-__declspec(section ".sdata2") const u32 dat_80420c28 = 0xFFFFFFFF;
-
 s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
     BattleSpotWork* spot = BatSpotGetPtr();
     BattleSpotEntry* entry;
@@ -1520,17 +1517,9 @@ s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
         entry->pos = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, 25.0f, -50.0f};
         break;
     }
-#ifdef MUST_MATCH
-    // MUST_MATCH: the volatile Vec stores stop MWCC hoisting the dat_80420c28 load across them, and the
-    // volatile read pins it to the end in r0; the non-volatile form schedules it one slot early (98.39).
-    *(volatile Vec*)&entry->rot = (Vec){0.0f, 0.0f, 0.0f};
-    *(volatile Vec*)&entry->scale = (Vec){15.0f, 15.0f, 150.0f};
-    entry->color = *(volatile const GXColor*)&dat_80420c28;
-#else
     entry->rot = (Vec){0.0f, 0.0f, 0.0f};
     entry->scale = (Vec){15.0f, 15.0f, 150.0f};
-    entry->color = *(const GXColor*)&dat_80420c28;
-#endif
+    entry->color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
     entry->flags |= 2;
     return 2;
 }

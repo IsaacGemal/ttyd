@@ -234,17 +234,6 @@ __declspec(section ".data") u32 doku_kinoko_effect[65] = {
     0x00000001,
 };
 
-#ifdef MUST_MATCH
-// Returning the colour from an inline (rather than writing the channels in place) makes MWCC lay the
-// local/outgoing GXColor pair out the way the original does; passing the alpha first is what makes the
-// second call's scratch slots come out adjacent to its local (with the colour first the compiler groups
-// the two by-value colours' locals together and the second call's copy lands 4 bytes high).
-static inline GXColor slotColor(u8 a, GXColor c) {
-    c.a = a;
-    return c;
-}
-#endif
-
 BattleBreakSlot* BattleBreakSlotGetPtr(void) {
     return &_battleWorkPointer->breakSlot;
 }
@@ -779,6 +768,8 @@ void BattleBreakSlot_Main(void) {
 void BattleBreakSlot_Disp(void) {
     dispEntry(CAMERA_2D, float_490_8042054c, 0, BattleBreakSlotDispReel, NULL);
 }
+__declspec(section ".sdata2") const f32 zero_80420520 = 0.0f;
+
 void BattleBreakSlotDispReel(CameraId camId, void* param) {
     s32 i;
     BattleBreakSlotReel* reel;
@@ -802,7 +793,7 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
             if ((reel1->flags & 1) && reel1->state >= 1 && reel1->state <= 4) {
                 PSMTXTrans(mtxTrans, float_42_80420534 * (f32)i + float_226_80420530, float_122_80420538, float_0_8042053c);
                 {
-                    GXColor color = *(GXColor*)&dat_80420524;
+                    GXColor color = {0xFF, 0xFF, 0xFF, 0xD0};
 
                     iconDispGxCol(mtxTrans, 0x10, 0x1D4, color);
                 }
@@ -843,15 +834,7 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
             PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
             {
                 u16 tex0 = texList[reel->value];
-#ifdef MUST_MATCH
-                btlDispTexPlane2(mtxFinal, tex0, slotColor(reel->alpha, *(GXColor*)&dat_80420528), 0);
-#else
-                GXColor c0;
-
-                *(u32*)&c0 = dat_80420528;
-                c0.a = reel->alpha;
-                btlDispTexPlane2(mtxFinal, tex0, c0, 0);
-#endif
+                btlDispTexPlane2(mtxFinal, tex0, (GXColor){0xFF, 0xFF, 0xFF, reel->alpha}, 0);
             }
             if (reel->state <= 0xA && reel->state != 3 && reel->state != 4) {
                 s32 idx = reel->index + 1;
@@ -867,15 +850,7 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
                 }
                 PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
                 {
-#ifdef MUST_MATCH
-                    btlDispTexPlane2(mtxFinal, tex, slotColor(reel->alpha, *(GXColor*)&dat_8042052c), 0);
-#else
-                    GXColor c1;
-
-                    *(u32*)&c1 = dat_8042052c;
-                    c1.a = reel->alpha;
-                    btlDispTexPlane2(mtxFinal, tex, c1, 0);
-#endif
+                    btlDispTexPlane2(mtxFinal, tex, (GXColor){0xFF, 0xFF, 0xFF, reel->alpha}, 0);
                 }
             }
         }
@@ -1019,13 +994,10 @@ void item_appear_force(BattleBreakSlotReel* reel, s32 id) {
     }
 }
 
-// .sdata2 constants, in the original's address order. Defined after the code so the compiler emits them as
-// real objects ahead of its own pooled literals instead of folding them.
+// .sdata2 constants, in the original's address order after zero_80420520 and BattleBreakSlotDispReel's
+// colour literals. Defined after the code so the compiler emits them as real objects ahead of its own
+// pooled literals instead of folding them.
 #pragma explicit_zero_data on
-__declspec(section ".sdata2") const f32 zero_80420520 = 0.0f;
-__declspec(section ".sdata2") const u32 dat_80420524 = 0xFFFFFFD0;
-__declspec(section ".sdata2") const u32 dat_80420528 = 0xFFFFFF00;
-__declspec(section ".sdata2") const u32 dat_8042052c = 0xFFFFFF00;
 __declspec(section ".sdata2") const f32 float_226_80420530 = 226.0f;
 __declspec(section ".sdata2") const f32 float_42_80420534 = 42.0f;
 __declspec(section ".sdata2") const f32 float_122_80420538 = 122.0f;

@@ -44,8 +44,6 @@ extern s32 sac_cheer_end[];
 extern s32 sac_ac_help_on[];
 extern s32 sac_ac_help_off[];
 
-extern u32 dat_80421718;
-extern u32 dat_8042171c;
 extern char str_ofs[4];
 extern u32 weapon_scissor[];
 
@@ -733,8 +731,7 @@ void star_disp2D_sub(s32 index, s32 alpha) {
         }
         alpha = (s32)intplGetValue(0, work->stateFrame, 0x1E, (f32)(u32)(u8)alpha, 0.0f);
     }
-    *(u32*)&color = dat_80421718;
-    color.a = alpha;
+    color = (GXColor){ 0xFF, 0xFF, 0xFF, alpha };
     if (index == 0) {
         x = star->velX;
         y = star->velY;
@@ -1173,8 +1170,7 @@ void scissor_disp_control(CameraId cameraId, void* param) {
     GXSetCurrentMtx(GX_PNMTX0);
     GXSetLineWidth(0x10, GX_TO_ZERO);
     for (i = 0; i < work->pointCount - 1; i++) {
-        hsv = *(GXColor*)&dat_8042171c;
-        hsv.r = (u8)(((gp->retraceCount + i * 2) % 0x7F) << 1);
+        hsv = (GXColor){ (u8)(((gp->retraceCount + i * 2) % 0x7F) << 1), 0xFF, 0xFF, 0xFF };
 #ifdef MUST_MATCH
         scissorSetHSVColor(&hsv);
 #else
@@ -1295,9 +1291,7 @@ s32 wait_star_standby(void) {
 // its own literal pool.
 // ---------------------------------------------------------------------------
 
-// .sdata2:0x0..0x1C (colour words and short strings)
-__declspec(section ".sdata2") u32 dat_80421718 = 0xFFFFFF00;
-__declspec(section ".sdata2") u32 dat_8042171c = 0x00FFFFFF;
+// .sdata2:0x8..0x1C (short strings, after the colour literals' templates)
 __declspec(section ".sdata2") char str_80421720[8] = "M_I_Y";
 __declspec(section ".sdata2") char str_ofs[4] = "ofs";
 __declspec(section ".sdata2") char str_img[4] = "img";

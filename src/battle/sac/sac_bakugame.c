@@ -131,9 +131,6 @@ struct BakuGameWork {
     u8 field_0x2B4[0x2B8 - 0x2B4];    // 0x2B4
 };
 
-// bakuGameDisp3D's material colour, the first .sdata2 word; the floats and short strings are literals.
-const u32 dat_80421600 = 0x000000FF;
-
 // The weapon bakuGameDecideWeapon copies into the work (0xC0 bytes, a BattleWeapon): name, message, stats and
 // the attack event script. Written as words because BattleWeapon's header leaves most of its fields unnamed.
 extern s32 marioAttackEvent_BakuGame[];
@@ -1508,7 +1505,7 @@ void bakuGameDisp3D(CameraId camId, void* param) {
         GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
         GXSetNumChans(1);
         GXSetChanCtrl(4, 0, 1, 0, 0, 2, 2);
-        GXSetChanMatColor(4, *(GXColor*)&dat_80421600);
+        GXSetChanMatColor(4, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
         GXSetNumTexGens(1);
         GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
         GXSetNumTevStages(1);
