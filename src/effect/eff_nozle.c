@@ -1447,3 +1447,9 @@ static u8 scale_dt[44] = {
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 
 #pragma force_active reset
+
+// .sbss2 4-byte gap after the unit's colour template.
+#pragma section ".sdata" ".sbss2"
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_10_80423304_sbss2;
+#pragma force_active reset
