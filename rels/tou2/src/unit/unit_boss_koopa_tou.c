@@ -28,7 +28,7 @@ static void _disp_icon(CameraId camera, void* param);
 static USER_FUNC(_icon_jump_icon);
 static USER_FUNC(party_cannot_use_command);
 static USER_FUNC(mario_cannot_use_command);
-static u32 cmd_disable_string[5];
+static const char* cmd_disable_string[5];
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[2];
 static BattleUnitKindPart parts[1];
@@ -1065,10 +1065,9 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 cmd_disable_string[5] = {
-    (u32)"btl_jump_cmd_disable", (u32)"btl_hammer_cmd_disable", (u32)"btl_item_cmd_disable", (u32)"btl_party_tech_cmd_disable",
-    (u32)"btl_party_item_cmd_disable",
+static const char* cmd_disable_string[5] = {
+    "btl_jump_cmd_disable", "btl_hammer_cmd_disable", "btl_item_cmd_disable", "btl_party_tech_cmd_disable",
+    "btl_party_item_cmd_disable",
 };
 
 #include "rel/common/unit_boss_koopa/_disp_icon.h"

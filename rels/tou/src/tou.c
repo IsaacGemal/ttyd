@@ -202,151 +202,101 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: type
-static u32 fighterDt[161] = {
-    0x00040000, (u32)"stg3_tou_sensyu_00", (u32)"stg3_tou_sensyu2_00", 0x00000016,
-    (u32)"stg3_tou_400_02", (u32)"stg3_tou_400_03", 0x00FA0000, 0x10010000,
-    (u32)"stg3_tou_sensyu_01", (u32)"stg3_tou_sensyu2_01", 0x00000013, (u32)"stg3_tou_118_00",
-    (u32)"stg3_tou_118_01", 0x00C80000, 0x00010000, (u32)"stg3_tou_sensyu_02",
-    (u32)"stg3_tou_sensyu2_02", 0x00000012, (u32)"stg3_tou_118_02", (u32)"stg3_tou_118_03",
-    0x00B40000, 0x00010000, (u32)"stg3_tou_sensyu_03", (u32)"stg3_tou_sensyu2_03",
-    0x00000011, (u32)"stg3_tou_118_04", (u32)"stg3_tou_118_05", 0x00AA0000,
-    0x00010000, (u32)"stg3_tou_sensyu_04", (u32)"stg3_tou_sensyu2_04", 0x00000010,
-    (u32)"stg3_tou_118_06", (u32)"stg3_tou_118_07", 0x00A00000, 0x00010000,
-    (u32)"stg3_tou_sensyu_05", (u32)"stg3_tou_sensyu2_05", 0x0000000F, (u32)"stg3_tou_118_08",
-    (u32)"stg3_tou_118_09", 0x00960000, 0x00010000, (u32)"stg3_tou_sensyu_06",
-    (u32)"stg3_tou_sensyu2_06", 0x0000000E, (u32)"stg3_tou_118_10", (u32)"stg3_tou_118_11",
-    0x008C0000, 0x00010000, (u32)"stg3_tou_sensyu_07", (u32)"stg3_tou_sensyu2_07",
-    0x0000000D, (u32)"stg3_tou_118_12", (u32)"stg3_tou_118_13", 0x00820000,
-    0x00010000, (u32)"stg3_tou_sensyu_08", (u32)"stg3_tou_sensyu2_08", 0x0000000C,
-    (u32)"stg3_tou_118_14", (u32)"stg3_tou_118_15", 0x00780000, 0x00010000,
-    (u32)"stg3_tou_sensyu_09", (u32)"stg3_tou_sensyu2_09", 0x0000000B, (u32)"stg3_tou_118_16",
-    (u32)"stg3_tou_118_17", 0x006E0000, 0x08010000, (u32)"stg3_tou_sensyu_10",
-    (u32)"stg3_tou_sensyu2_10", 0x0000000A, (u32)"stg3_tou_118_18", (u32)"stg3_tou_118_19",
-    0x00640000, 0x01020000, (u32)"stg3_tou_sensyu_11", (u32)"stg3_tou_sensyu2_11",
-    0x00000009, (u32)"stg3_tou_118_20", (u32)"stg3_tou_118_21", 0x005A0000,
-    0x00020000, (u32)"stg3_tou_sensyu_12", (u32)"stg3_tou_sensyu2_12", 0x00000008,
-    (u32)"stg3_tou_118_22", (u32)"stg3_tou_118_23", 0x00500000, 0x00020000,
-    (u32)"stg3_tou_sensyu_13", (u32)"stg3_tou_sensyu2_13", 0x00000007, (u32)"stg3_tou_118_24",
-    (u32)"stg3_tou_118_25", 0x00460000, 0x00020000, (u32)"stg3_tou_sensyu_14",
-    (u32)"stg3_tou_sensyu2_14", 0x00000006, (u32)"stg3_tou_118_26", (u32)"stg3_tou_118_27",
-    0x003C0000, 0x00020000, (u32)"stg3_tou_sensyu_15", (u32)"stg3_tou_sensyu2_15",
-    0x00000005, (u32)"stg3_tou_118_28", (u32)"stg3_tou_118_29", 0x00320000,
-    0x00020000, (u32)"stg3_tou_sensyu_16", (u32)"stg3_tou_sensyu2_16", 0x00000004,
-    (u32)"stg3_tou_118_30", (u32)"stg3_tou_118_31", 0x00280000, 0x00020000,
-    (u32)"stg3_tou_sensyu_17", (u32)"stg3_tou_sensyu2_17", 0x00000003, (u32)"stg3_tou_118_32",
-    (u32)"stg3_tou_118_33", 0x001E0000, 0x02020000, (u32)"stg3_tou_sensyu_18",
-    (u32)"stg3_tou_sensyu2_18", 0x00000002, (u32)"stg3_tou_118_34", (u32)"stg3_tou_118_35",
-    0x00140000, 0x04020000, (u32)"stg3_tou_sensyu_19", (u32)"stg3_tou_sensyu2_19",
-    0x00000001, (u32)"stg3_tou_118_36", (u32)"stg3_tou_118_36_01", 0x000A0000,
-    0x00080000, (u32)"stg3_tou_sensyu_20", (u32)"stg3_tou_sensyu2_20", 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00020000,
-    (u32)"stg3_tou_sensyu_21", (u32)"stg3_tou_sensyu2_21", 0x00000014, (u32)"stg3_tou_118_36_02",
-    (u32)"stg3_tou_118_36_03", 0x00050000, 0x00020000, (u32)"stg3_tou_sensyu_22",
-    (u32)"stg3_tou_sensyu2_22", 0x00000015, (u32)"stg3_tou_118_36_04", (u32)"stg3_tou_118_36_05",
-    0x00000000,
+static FighterEntry fighterDt[23] = {
+    { 0x4, 0, "stg3_tou_sensyu_00", "stg3_tou_sensyu2_00", 22, "stg3_tou_400_02", "stg3_tou_400_03", 250, 0 },
+    { 0x1001, 0, "stg3_tou_sensyu_01", "stg3_tou_sensyu2_01", 19, "stg3_tou_118_00", "stg3_tou_118_01", 200, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_02", "stg3_tou_sensyu2_02", 18, "stg3_tou_118_02", "stg3_tou_118_03", 180, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_03", "stg3_tou_sensyu2_03", 17, "stg3_tou_118_04", "stg3_tou_118_05", 170, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_04", "stg3_tou_sensyu2_04", 16, "stg3_tou_118_06", "stg3_tou_118_07", 160, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_05", "stg3_tou_sensyu2_05", 15, "stg3_tou_118_08", "stg3_tou_118_09", 150, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_06", "stg3_tou_sensyu2_06", 14, "stg3_tou_118_10", "stg3_tou_118_11", 140, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_07", "stg3_tou_sensyu2_07", 13, "stg3_tou_118_12", "stg3_tou_118_13", 130, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_08", "stg3_tou_sensyu2_08", 12, "stg3_tou_118_14", "stg3_tou_118_15", 120, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_09", "stg3_tou_sensyu2_09", 11, "stg3_tou_118_16", "stg3_tou_118_17", 110, 0 },
+    { 0x801, 0, "stg3_tou_sensyu_10", "stg3_tou_sensyu2_10", 10, "stg3_tou_118_18", "stg3_tou_118_19", 100, 0 },
+    { 0x102, 0, "stg3_tou_sensyu_11", "stg3_tou_sensyu2_11", 9, "stg3_tou_118_20", "stg3_tou_118_21", 90, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_12", "stg3_tou_sensyu2_12", 8, "stg3_tou_118_22", "stg3_tou_118_23", 80, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_13", "stg3_tou_sensyu2_13", 7, "stg3_tou_118_24", "stg3_tou_118_25", 70, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_14", "stg3_tou_sensyu2_14", 6, "stg3_tou_118_26", "stg3_tou_118_27", 60, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_15", "stg3_tou_sensyu2_15", 5, "stg3_tou_118_28", "stg3_tou_118_29", 50, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_16", "stg3_tou_sensyu2_16", 4, "stg3_tou_118_30", "stg3_tou_118_31", 40, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_17", "stg3_tou_sensyu2_17", 3, "stg3_tou_118_32", "stg3_tou_118_33", 30, 0 },
+    { 0x202, 0, "stg3_tou_sensyu_18", "stg3_tou_sensyu2_18", 2, "stg3_tou_118_34", "stg3_tou_118_35", 20, 0 },
+    { 0x402, 0, "stg3_tou_sensyu_19", "stg3_tou_sensyu2_19", 1, "stg3_tou_118_36", "stg3_tou_118_36_01", 10, 0 },
+    { 0x8, 0, "stg3_tou_sensyu_20", "stg3_tou_sensyu2_20", 1, NULL, NULL, 0, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_21", "stg3_tou_sensyu2_21", 20, "stg3_tou_118_36_02", "stg3_tou_118_36_03", 5, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_22", "stg3_tou_sensyu2_22", 21, "stg3_tou_118_36_04", "stg3_tou_118_36_05", 0, 0 },
 };
 
-// TODO: type
-static u32 fighterDt_re[147] = {
-    0x00040000, (u32)"stg3_tou_re_315", (u32)"stg3_tou_re_338", 0x00000016,
-    (u32)"stg3_tou_re_289", (u32)"stg3_tou_re_290", 0x00FA0000, 0x10010000,
-    (u32)"stg3_tou_re_316", (u32)"stg3_tou_re_339", 0x00000013, (u32)"stg3_tou_re_179",
-    (u32)"stg3_tou_re_180", 0x00C80000, 0x00010000, (u32)"stg3_tou_re_317",
-    (u32)"stg3_tou_re_340", 0x00000012, (u32)"stg3_tou_re_181", (u32)"stg3_tou_re_182",
-    0x00B40000, 0x00010000, (u32)"stg3_tou_re_318", (u32)"stg3_tou_re_341",
-    0x00000011, (u32)"stg3_tou_re_183", (u32)"stg3_tou_re_184", 0x00AA0000,
-    0x00010000, (u32)"stg3_tou_re_319", (u32)"stg3_tou_re_342", 0x00000010,
-    (u32)"stg3_tou_re_185", (u32)"stg3_tou_re_186", 0x00A00000, 0x00010000,
-    (u32)"stg3_tou_re_320", (u32)"stg3_tou_re_343", 0x0000000F, (u32)"stg3_tou_re_187",
-    (u32)"stg3_tou_re_188", 0x00960000, 0x00010000, (u32)"stg3_tou_re_321",
-    (u32)"stg3_tou_re_344", 0x0000000E, (u32)"stg3_tou_re_189", (u32)"stg3_tou_re_190",
-    0x008C0000, 0x00010000, (u32)"stg3_tou_re_322", (u32)"stg3_tou_re_345",
-    0x0000000D, (u32)"stg3_tou_re_191", (u32)"stg3_tou_re_192", 0x00820000,
-    0x00010000, (u32)"stg3_tou_re_323", (u32)"stg3_tou_re_346", 0x0000000C,
-    (u32)"stg3_tou_re_193", (u32)"stg3_tou_re_194", 0x00780000, 0x00010000,
-    (u32)"stg3_tou_re_324", (u32)"stg3_tou_re_347", 0x0000000B, (u32)"stg3_tou_re_195",
-    (u32)"stg3_tou_re_196", 0x006E0000, 0x08010000, (u32)"stg3_tou_re_325",
-    (u32)"stg3_tou_re_348", 0x0000000A, (u32)"stg3_tou_re_197", (u32)"stg3_tou_re_198",
-    0x00640000, 0x01020000, (u32)"stg3_tou_re_326", (u32)"stg3_tou_re_349",
-    0x00000009, (u32)"stg3_tou_re_199", (u32)"stg3_tou_re_200", 0x005A0000,
-    0x00020000, (u32)"stg3_tou_re_327", (u32)"stg3_tou_re_350", 0x00000008,
-    (u32)"stg3_tou_re_201", (u32)"stg3_tou_re_202", 0x00500000, 0x00020000,
-    (u32)"stg3_tou_re_328", (u32)"stg3_tou_re_351", 0x00000007, (u32)"stg3_tou_re_203",
-    (u32)"stg3_tou_re_204", 0x00460000, 0x00020000, (u32)"stg3_tou_re_329",
-    (u32)"stg3_tou_re_352", 0x00000006, (u32)"stg3_tou_re_205", (u32)"stg3_tou_re_206",
-    0x003C0000, 0x00020000, (u32)"stg3_tou_re_330", (u32)"stg3_tou_re_353",
-    0x00000005, (u32)"stg3_tou_re_207", (u32)"stg3_tou_re_208", 0x00320000,
-    0x00020000, (u32)"stg3_tou_re_331", (u32)"stg3_tou_re_354", 0x00000004,
-    (u32)"stg3_tou_re_209", (u32)"stg3_tou_re_210", 0x00280000, 0x00020000,
-    (u32)"stg3_tou_re_332", (u32)"stg3_tou_re_355", 0x00000003, (u32)"stg3_tou_re_211",
-    (u32)"stg3_tou_re_212", 0x001E0000, 0x02020000, (u32)"stg3_tou_re_333",
-    (u32)"stg3_tou_re_356", 0x00000002, (u32)"stg3_tou_re_213", (u32)"stg3_tou_re_214",
-    0x00140000, 0x04020000, (u32)"stg3_tou_re_334", (u32)"stg3_tou_re_357",
-    0x00000001, (u32)"stg3_tou_re_215", (u32)"stg3_tou_re_216", 0x000A0000,
-    0x00080000, (u32)"stg3_tou_re_335", (u32)"stg3_tou_re_358", 0x00000001,
-    0x00000000, 0x00000000, 0x00000000,
+static FighterEntry fighterDt_re[21] = {
+    { 0x4, 0, "stg3_tou_re_315", "stg3_tou_re_338", 22, "stg3_tou_re_289", "stg3_tou_re_290", 250, 0 },
+    { 0x1001, 0, "stg3_tou_re_316", "stg3_tou_re_339", 19, "stg3_tou_re_179", "stg3_tou_re_180", 200, 0 },
+    { 0x1, 0, "stg3_tou_re_317", "stg3_tou_re_340", 18, "stg3_tou_re_181", "stg3_tou_re_182", 180, 0 },
+    { 0x1, 0, "stg3_tou_re_318", "stg3_tou_re_341", 17, "stg3_tou_re_183", "stg3_tou_re_184", 170, 0 },
+    { 0x1, 0, "stg3_tou_re_319", "stg3_tou_re_342", 16, "stg3_tou_re_185", "stg3_tou_re_186", 160, 0 },
+    { 0x1, 0, "stg3_tou_re_320", "stg3_tou_re_343", 15, "stg3_tou_re_187", "stg3_tou_re_188", 150, 0 },
+    { 0x1, 0, "stg3_tou_re_321", "stg3_tou_re_344", 14, "stg3_tou_re_189", "stg3_tou_re_190", 140, 0 },
+    { 0x1, 0, "stg3_tou_re_322", "stg3_tou_re_345", 13, "stg3_tou_re_191", "stg3_tou_re_192", 130, 0 },
+    { 0x1, 0, "stg3_tou_re_323", "stg3_tou_re_346", 12, "stg3_tou_re_193", "stg3_tou_re_194", 120, 0 },
+    { 0x1, 0, "stg3_tou_re_324", "stg3_tou_re_347", 11, "stg3_tou_re_195", "stg3_tou_re_196", 110, 0 },
+    { 0x801, 0, "stg3_tou_re_325", "stg3_tou_re_348", 10, "stg3_tou_re_197", "stg3_tou_re_198", 100, 0 },
+    { 0x102, 0, "stg3_tou_re_326", "stg3_tou_re_349", 9, "stg3_tou_re_199", "stg3_tou_re_200", 90, 0 },
+    { 0x2, 0, "stg3_tou_re_327", "stg3_tou_re_350", 8, "stg3_tou_re_201", "stg3_tou_re_202", 80, 0 },
+    { 0x2, 0, "stg3_tou_re_328", "stg3_tou_re_351", 7, "stg3_tou_re_203", "stg3_tou_re_204", 70, 0 },
+    { 0x2, 0, "stg3_tou_re_329", "stg3_tou_re_352", 6, "stg3_tou_re_205", "stg3_tou_re_206", 60, 0 },
+    { 0x2, 0, "stg3_tou_re_330", "stg3_tou_re_353", 5, "stg3_tou_re_207", "stg3_tou_re_208", 50, 0 },
+    { 0x2, 0, "stg3_tou_re_331", "stg3_tou_re_354", 4, "stg3_tou_re_209", "stg3_tou_re_210", 40, 0 },
+    { 0x2, 0, "stg3_tou_re_332", "stg3_tou_re_355", 3, "stg3_tou_re_211", "stg3_tou_re_212", 30, 0 },
+    { 0x202, 0, "stg3_tou_re_333", "stg3_tou_re_356", 2, "stg3_tou_re_213", "stg3_tou_re_214", 20, 0 },
+    { 0x402, 0, "stg3_tou_re_334", "stg3_tou_re_357", 1, "stg3_tou_re_215", "stg3_tou_re_216", 10, 0 },
+    { 0x8, 0, "stg3_tou_re_335", "stg3_tou_re_358", 1, NULL, NULL, 0, 0 },
 };
 
-// TODO: type
-static u32 ruleDt_2bu[50] = {
-    (u32)"stg3_tou_107_01", (u32)"stg3_tou_cp_000", 0x00000012, 0x00000003,
-    0x00000003, (u32)"stg3_tou_107_02", (u32)"stg3_tou_cp_001", 0x00000001,
-    0x00000001, 0x00000001, (u32)"stg3_tou_107_03", (u32)"stg3_tou_cp_002",
-    0x00000003, 0x00000001, 0x00000001, (u32)"stg3_tou_107_04",
-    (u32)"stg3_tou_cp_003", 0x00000030, 0x00000001, 0x00000001,
-    (u32)"stg3_tou_107_05", (u32)"stg3_tou_cp_004", 0x00000005, 0x00000001,
-    0x00000001, (u32)"stg3_tou_107_06", (u32)"stg3_tou_cp_005", 0x0000001A,
-    0x00000001, 0x00000001, (u32)"stg3_tou_107_07", (u32)"stg3_tou_cp_006",
-    0x00000020, 0x00000001, 0x00000001, (u32)"stg3_tou_107_08",
-    (u32)"stg3_tou_cp_007", 0x0000003B, 0x00000005, 0x00000005,
-    (u32)"stg3_tou_107_12", (u32)"stg3_tou_cp_008", 0x00000006, 0x00000001,
-    0x00000001, (u32)"stg3_tou_107_16", (u32)"stg3_tou_cp_009", 0x0000002B,
-    0x00000001, 0x00000001,
+static RuleEntry ruleDt_2bu[10] = {
+    { "stg3_tou_107_01", "stg3_tou_cp_000", 18, 3, 3 },
+    { "stg3_tou_107_02", "stg3_tou_cp_001", 1, 1, 1 },
+    { "stg3_tou_107_03", "stg3_tou_cp_002", 3, 1, 1 },
+    { "stg3_tou_107_04", "stg3_tou_cp_003", 48, 1, 1 },
+    { "stg3_tou_107_05", "stg3_tou_cp_004", 5, 1, 1 },
+    { "stg3_tou_107_06", "stg3_tou_cp_005", 26, 1, 1 },
+    { "stg3_tou_107_07", "stg3_tou_cp_006", 32, 1, 1 },
+    { "stg3_tou_107_08", "stg3_tou_cp_007", 59, 5, 5 },
+    { "stg3_tou_107_12", "stg3_tou_cp_008", 6, 1, 1 },
+    { "stg3_tou_107_16", "stg3_tou_cp_009", 43, 1, 1 },
 };
 
-// TODO: type
-static u32 ruleDt_1bu[70] = {
-    (u32)"stg3_tou_107_01", (u32)"stg3_tou_cp_010", 0x00000012, 0x00000005,
-    0x00000005, (u32)"stg3_tou_107_02", (u32)"stg3_tou_cp_011", 0x00000001,
-    0x00000001, 0x00000001, (u32)"stg3_tou_107_03", (u32)"stg3_tou_cp_012",
-    0x00000003, 0x00000001, 0x00000001, (u32)"stg3_tou_107_04",
-    (u32)"stg3_tou_cp_013", 0x00000030, 0x00000001, 0x00000001,
-    (u32)"stg3_tou_107_05", (u32)"stg3_tou_cp_014", 0x00000005, 0x00000001,
-    0x00000001, (u32)"stg3_tou_107_06", (u32)"stg3_tou_cp_015", 0x0000001A,
-    0x00000001, 0x00000001, (u32)"stg3_tou_107_07", (u32)"stg3_tou_cp_016",
-    0x00000020, 0x00000001, 0x00000001, (u32)"stg3_tou_107_08",
-    (u32)"stg3_tou_cp_017", 0x0000003B, 0x00000005, 0x00000005,
-    (u32)"stg3_tou_107_12", (u32)"stg3_tou_cp_019", 0x00000006, 0x00000001,
-    0x00000001, (u32)"stg3_tou_107_13", (u32)"stg3_tou_cp_020", 0x0000000B,
-    0x00000014, 0x00000014, (u32)"stg3_tou_107_16", (u32)"stg3_tou_cp_021",
-    0x0000002B, 0x00000003, 0x00000003, (u32)"stg3_tou_107_17",
-    (u32)"stg3_tou_cp_022", 0x00000041, 0x00000003, 0x00000003,
-    (u32)"stg3_tou_107_19", (u32)"stg3_tou_cp_023", 0x00000040, 0x000000FF,
-    0x000000FF, (u32)"stg3_tou_107_20", (u32)"stg3_tou_cp_024", 0x0000003F,
-    0x000000FF, 0x000000FF,
+static RuleEntry ruleDt_1bu[14] = {
+    { "stg3_tou_107_01", "stg3_tou_cp_010", 18, 5, 5 },
+    { "stg3_tou_107_02", "stg3_tou_cp_011", 1, 1, 1 },
+    { "stg3_tou_107_03", "stg3_tou_cp_012", 3, 1, 1 },
+    { "stg3_tou_107_04", "stg3_tou_cp_013", 48, 1, 1 },
+    { "stg3_tou_107_05", "stg3_tou_cp_014", 5, 1, 1 },
+    { "stg3_tou_107_06", "stg3_tou_cp_015", 26, 1, 1 },
+    { "stg3_tou_107_07", "stg3_tou_cp_016", 32, 1, 1 },
+    { "stg3_tou_107_08", "stg3_tou_cp_017", 59, 5, 5 },
+    { "stg3_tou_107_12", "stg3_tou_cp_019", 6, 1, 1 },
+    { "stg3_tou_107_13", "stg3_tou_cp_020", 11, 20, 20 },
+    { "stg3_tou_107_16", "stg3_tou_cp_021", 43, 3, 3 },
+    { "stg3_tou_107_17", "stg3_tou_cp_022", 65, 3, 3 },
+    { "stg3_tou_107_19", "stg3_tou_cp_023", 64, 255, 255 },
+    { "stg3_tou_107_20", "stg3_tou_cp_024", 63, 255, 255 },
 };
 
-// TODO: type
-static u32 ruleDt_re[70] = {
-    (u32)"stg3_tou_re_362", (u32)"stg3_tou_cp_040", 0x00000012, 0x00000005,
-    0x00000005, (u32)"stg3_tou_re_363", (u32)"stg3_tou_cp_041", 0x00000001,
-    0x00000001, 0x00000001, (u32)"stg3_tou_re_364", (u32)"stg3_tou_cp_042",
-    0x00000003, 0x00000001, 0x00000001, (u32)"stg3_tou_re_365",
-    (u32)"stg3_tou_cp_043", 0x00000030, 0x00000001, 0x00000001,
-    (u32)"stg3_tou_re_366", (u32)"stg3_tou_cp_044", 0x00000005, 0x00000001,
-    0x00000001, (u32)"stg3_tou_re_367", (u32)"stg3_tou_cp_045", 0x0000001A,
-    0x00000001, 0x00000001, (u32)"stg3_tou_re_368", (u32)"stg3_tou_cp_046",
-    0x00000020, 0x00000001, 0x00000001, (u32)"stg3_tou_re_369",
-    (u32)"stg3_tou_cp_047", 0x0000003B, 0x00000005, 0x00000005,
-    (u32)"stg3_tou_re_371", (u32)"stg3_tou_cp_049", 0x00000006, 0x00000001,
-    0x00000001, (u32)"stg3_tou_re_372", (u32)"stg3_tou_cp_050", 0x0000000B,
-    0x00000014, 0x00000014, (u32)"stg3_tou_re_373", (u32)"stg3_tou_cp_051",
-    0x0000002B, 0x00000003, 0x00000003, (u32)"stg3_tou_re_374",
-    (u32)"stg3_tou_cp_052", 0x00000041, 0x00000003, 0x00000003,
-    (u32)"stg3_tou_re_375", (u32)"stg3_tou_cp_053", 0x00000040, 0x000000FF,
-    0x000000FF, (u32)"stg3_tou_re_376", (u32)"stg3_tou_cp_054", 0x0000003F,
-    0x000000FF, 0x000000FF,
+static RuleEntry ruleDt_re[14] = {
+    { "stg3_tou_re_362", "stg3_tou_cp_040", 18, 5, 5 },
+    { "stg3_tou_re_363", "stg3_tou_cp_041", 1, 1, 1 },
+    { "stg3_tou_re_364", "stg3_tou_cp_042", 3, 1, 1 },
+    { "stg3_tou_re_365", "stg3_tou_cp_043", 48, 1, 1 },
+    { "stg3_tou_re_366", "stg3_tou_cp_044", 5, 1, 1 },
+    { "stg3_tou_re_367", "stg3_tou_cp_045", 26, 1, 1 },
+    { "stg3_tou_re_368", "stg3_tou_cp_046", 32, 1, 1 },
+    { "stg3_tou_re_369", "stg3_tou_cp_047", 59, 5, 5 },
+    { "stg3_tou_re_371", "stg3_tou_cp_049", 6, 1, 1 },
+    { "stg3_tou_re_372", "stg3_tou_cp_050", 11, 20, 20 },
+    { "stg3_tou_re_373", "stg3_tou_cp_051", 43, 3, 3 },
+    { "stg3_tou_re_374", "stg3_tou_cp_052", 65, 3, 3 },
+    { "stg3_tou_re_375", "stg3_tou_cp_053", 64, 255, 255 },
+    { "stg3_tou_re_376", "stg3_tou_cp_054", 63, 255, 255 },
 };
 
 static RankWork* rank_wp = &rank_work;
@@ -3070,9 +3020,9 @@ static void disp_proc(CameraId cameraId, void* param) {
     char buf[0x100];
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        dt = (FighterEntry*)fighterDt;
+        dt = fighterDt;
     } else {
-        dt = (FighterEntry*)fighterDt_re;
+        dt = fighterDt_re;
     }
     f31 = -TOU_F32(float_250_tou_0000a890) * TOU_F32(float_0p5_tou_0000a868);
     windowDispGX_System(0, 0xff, f31 - TOU_F32(float_30_tou_0000a894), TOU_F32(float_165_tou_0000a898),
@@ -3254,14 +3204,14 @@ USER_FUNC(evt_tou_get_rule_msg2_27_text_182C) {
             }
         }
         if (count > 10) {
-            dt = (RuleEntry*)ruleDt_2bu;
+            dt = ruleDt_2bu;
             n = 10;
         } else {
-            dt = (RuleEntry*)ruleDt_1bu;
+            dt = ruleDt_1bu;
             n = 14;
         }
     } else {
-        dt = (RuleEntry*)ruleDt_re;
+        dt = ruleDt_re;
         n = 14;
     }
 
@@ -3298,14 +3248,14 @@ static USER_FUNC(evt_tou_get_rule_info) {
             }
         }
         if (count > 10) {
-            dt = (RuleEntry*)ruleDt_2bu;
+            dt = ruleDt_2bu;
             n = 10;
         } else {
-            dt = (RuleEntry*)ruleDt_1bu;
+            dt = ruleDt_1bu;
             n = 14;
         }
     } else {
-        dt = (RuleEntry*)ruleDt_re;
+        dt = ruleDt_re;
         n = 14;
     }
 
@@ -3339,9 +3289,9 @@ static USER_FUNC(evt_tou_get_fighter_battle_msg) {
     FighterEntry* dt;
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        dt = (FighterEntry*)fighterDt;
+        dt = fighterDt;
     } else {
-        dt = (FighterEntry*)fighterDt_re;
+        dt = fighterDt_re;
     }
     evtSetValue(event, args[1], (s32)dt[idx].taunt);
     evtSetValue(event, args[2], (s32)dt[idx].victory);
@@ -3374,9 +3324,9 @@ static USER_FUNC(evt_tou_get_fighter_name2) {
     FighterEntry* dt;
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        dt = (FighterEntry*)fighterDt;
+        dt = fighterDt;
     } else {
-        dt = (FighterEntry*)fighterDt_re;
+        dt = fighterDt_re;
     }
     evtSetValue(event, args[1], (s32)msgSearch(dt[idx].title));
     return EVT_RETURN_DONE;
@@ -3388,12 +3338,12 @@ USER_FUNC(evt_tou_get_fighter_info_27_text_1CB8) {
     FighterEntry* dt;
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        dt = (FighterEntry*)fighterDt;
+        dt = fighterDt;
     } else {
-        dt = (FighterEntry*)fighterDt_re;
+        dt = fighterDt_re;
     }
     evtSetValue(event, args[1], (s32)msgSearch(dt[idx].name));
-    evtSetValue(event, args[2], ((FighterEntry*)fighterDt)[idx].setupId);
+    evtSetValue(event, args[2], fighterDt[idx].setupId);
     return EVT_RETURN_DONE;
 }
 
@@ -3505,8 +3455,8 @@ static void rankingControll(void) {
 
         for (m = 0; m < nAbove - 1; m++) {
             for (n = m + 1; n < nAbove; n++) {
-                FighterEntry* fj = &((FighterEntry*)fighterDt)[rank_wp->entries[above[n]].id];
-                FighterEntry* fi = &((FighterEntry*)fighterDt)[rank_wp->entries[above[m]].id];
+                FighterEntry* fj = &fighterDt[rank_wp->entries[above[n]].id];
+                FighterEntry* fi = &fighterDt[rank_wp->entries[above[m]].id];
                 if ((fj->flags & 5) && (fi->flags & 2)) {
                     tmp = above[m];
                     above[m] = above[n];
@@ -3517,7 +3467,7 @@ static void rankingControll(void) {
 
         if (nAbove > 0) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 4) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 4) {
                     break;
                 }
             }
@@ -3528,7 +3478,7 @@ static void rankingControll(void) {
 
         if (nAbove > 1) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 0x1000) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 0x1000) {
                     break;
                 }
             }
@@ -3539,7 +3489,7 @@ static void rankingControll(void) {
 
         if (nAbove > 10) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 0x800) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 0x800) {
                     break;
                 }
             }
@@ -3550,7 +3500,7 @@ static void rankingControll(void) {
 
         if (nAbove > 18) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 0x200) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 0x200) {
                     break;
                 }
             }
@@ -3561,7 +3511,7 @@ static void rankingControll(void) {
 
         if (nAbove > 19) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 0x400) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 0x400) {
                     break;
                 }
             }
@@ -3572,7 +3522,7 @@ static void rankingControll(void) {
 
         if (nAbove > 16) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[rank_wp->entries[above[idx]].id].flags & 0x100) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 0x100) {
                     break;
                 }
             }
@@ -3606,8 +3556,8 @@ static void rankingControll(void) {
 
         for (p = 0; p < nBelow - 1; p++) {
             for (q = p + 1; q < nBelow; q++) {
-                FighterEntry* fj = &((FighterEntry*)fighterDt)[rank_wp->entries[below[q]].id];
-                FighterEntry* fi = &((FighterEntry*)fighterDt)[rank_wp->entries[below[p]].id];
+                FighterEntry* fj = &fighterDt[rank_wp->entries[below[q]].id];
+                FighterEntry* fi = &fighterDt[rank_wp->entries[below[p]].id];
                 if ((fj->flags & 5) && (fi->flags & 2)) {
                     tmp = below[p];
                     below[p] = below[q];
@@ -3618,7 +3568,7 @@ static void rankingControll(void) {
 
         if (nBelow > 0) {
             for (idx = 0; idx < nBelow; idx++) {
-                if (((FighterEntry*)fighterDt)[rank_wp->entries[below[idx]].id].flags & 4) {
+                if (fighterDt[rank_wp->entries[below[idx]].id].flags & 4) {
                     break;
                 }
             }
@@ -3629,13 +3579,13 @@ static void rankingControll(void) {
 
         if (nBelow > 0) {
             for (bi = 0; bi < nBelow; bi++) {
-                if (((FighterEntry*)fighterDt)[rank_wp->entries[below[bi]].id].flags & 0x800) {
+                if (fighterDt[rank_wp->entries[below[bi]].id].flags & 0x800) {
                     break;
                 }
             }
             if (bi < nBelow) {
                 for (bi2 = 0; bi2 < nBelow; bi2++) {
-                    if (((FighterEntry*)fighterDt)[rank_wp->entries[below[bi2]].id].flags & 2) {
+                    if (fighterDt[rank_wp->entries[below[bi2]].id].flags & 2) {
                         break;
                     }
                 }
@@ -3798,7 +3748,7 @@ static void rankingInit(void) {
                 e->field_0x8[j] = swByteGet(e->id * 2 + 0x207 + j);
             }
         } else {
-            e->score = ((FighterEntry*)fighterDt)[e->id].defaultScore;
+            e->score = fighterDt[e->id].defaultScore;
         }
         if (e->id == 0x14) {
             e->flags |= 4;

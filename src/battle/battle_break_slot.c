@@ -20,6 +20,7 @@
 #include "math_ext.h"
 #include <stdlib.h>
 #include <string.h>
+#include "battle/battle_database_common.h"
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_803AB118[2] = { 0xBF800000, 0x3F800000 };
@@ -183,20 +184,82 @@ __declspec(section ".data") u32 weapon_doku_kinoko[48] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000064, 0x00000000, 0x00000000,
 };
-// TODO: type (0xc0 bytes)
-__declspec(section ".data") u32 weapon_doku_kinoko_fp[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)weaponGetFPPowerFPHalf, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02100160, 0x20000000, 0x00000302,
-    0x00000000, 0x00020048, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+__declspec(section ".data") BattleWeapon weapon_doku_kinoko_fp = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    0.0f,                                     // field_0x14
+    0,                                        // mStylishCommandMultiplier
+    0,                                        // field_0x19
+    0,                                        // mBingoSlotChance
+    0,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    weaponGetFPPowerFPHalf,                   // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02100160,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020048,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 __declspec(section ".data") EVT_BEGIN(doku_kinoko_effect)
     CALL(btlevtcmd_GetUnitId, -3, LW(3))
@@ -213,7 +276,7 @@ __declspec(section ".data") EVT_BEGIN(doku_kinoko_effect)
     WAIT_FRAMES(60)
     CALL(btlevtcmd_GetUnitId, -3, LW(3))
     CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
-    CALL(btlevtcmd_CheckDamage, -3, LW(3), LW(4), PTR(weapon_doku_kinoko_fp), 256, LW(5))
+    CALL(btlevtcmd_CheckDamage, -3, LW(3), LW(4), PTR(&weapon_doku_kinoko_fp), 256, LW(5))
     RETURN
 EVT_END()
 

@@ -158,9 +158,9 @@ static BattleDataEntry data_table[3] = {
     { 0x00, NULL },
 };
 
-// TODO: type
-u32 data_table2[4] = {
-    0x00000030, (u32)btldefaultevt_Dummy, 0x00000000, 0x00000000,
+BattleDataEntry data_table2[2] = {
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
 static BattleUnitKindPart parts[1] = {
