@@ -141,7 +141,7 @@ void effThunderflareMain(EffectEntry* effect) {
 		if (data->alpha > 0xff) {
 			data->alpha = 0xff;
 		}
-		data->scale = float_0p2_804200a4 + data->radius / float_80_804200a8;
+		data->scale = 0.2f + data->radius / 80.0f;
 		data->radius -= (f32)(2 + (i & 3) * 2);
 		if (data->radius < float_0_80420088) {
 			data->radius = float_0_80420088;
@@ -238,5 +238,3 @@ const f32 float_360_80420094 = 360.0f;
 const f32 float_2_80420098 = 2.0f;
 const f32 float_255_8042009c = 255.0f;
 const f32 float_100_804200a0 = 100.0f;
-const f32 float_0p2_804200a4 = 0.2f;
-const f32 float_80_804200a8 = 80.0f;

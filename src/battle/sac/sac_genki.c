@@ -68,13 +68,6 @@ extern const f32 vec3_803003e8[3];
 // definitions vanish, leaving the pooled words in the original's order).
 extern const char str_80421D3C[6];
 extern const f32 float_0_80421d44;
-static const f32 float_0_80421d84 = 0.0f;
-static const f32 float_neg1000_80421d88 = -1000.0f;
-static const f32 float_7_80421dc8 = 7.0f;
-static const f32 float_40_80421dcc = 40.0f;
-static const f32 float_0p75_80421dd0 = 0.75f;
-static const f32 float_0p01_80421dd4 = 0.01f;
-static const f32 float_0p05_80421dd8 = 0.05f;
 
 typedef struct GenkiStar {
     s32 field_0;                // 0x0
@@ -165,17 +158,13 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
         memset(genki, 0, 0x7CC);
         genki->field_50 = evtGetValue(event, args[0]);
         genki->field_C = evtGetValue(event, args[1]);
-        {
-            f32 zero = float_0_80421d84;
-
-            genki->field_40 = 0x384;
-            genki->score[2] = 0;
-            genki->score[1] = 0;
-            genki->score[0] = 0;
-            genki->field_24 = zero;
-            genki->field_20 = zero;
-            genki->field_1C = zero;
-        }
+        genki->field_40 = 0x384;
+        genki->score[2] = 0;
+        genki->score[1] = 0;
+        genki->score[0] = 0;
+        genki->field_24 = 0.0f;
+        genki->field_20 = 0.0f;
+        genki->field_1C = 0.0f;
         if (genki->field_C == 0) {
             genki->field_58 = 3;
         } else {
@@ -190,12 +179,9 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
         genki->field_38 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
         genki->field_3C = effRecoveryEntry(3, 0, 0.0f, -1000.0f, 0.0f);
         for (i = 0; i < 7; i++) {
-            genki->weapon[i].field_44 = effStarStoneEntry(i, float_0_80421d84, float_neg1000_80421d88,
-                                                          float_0_80421d84, 1.0f);
+            genki->weapon[i].field_44 = effStarStoneEntry(i, 0.0f, -1000.0f, 0.0f, 1.0f);
             for (j = 0; j < 3; j++) {
-                genki->weapon[i].field_48[j] = effStarStoneEntry(i + 7, float_0_80421d84,
-                                                                 float_neg1000_80421d88,
-                                                                 float_0_80421d84, 1.0f);
+                genki->weapon[i].field_48[j] = effStarStoneEntry(i + 7, 0.0f, -1000.0f, 0.0f, 1.0f);
             }
         }
     }
@@ -210,8 +196,8 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
     }
     main_star();
     dispEntry(8, 901.0f, 1, disp_2D, NULL);
-    dispEntry(4, float_0_80421d84, 1, disp_3D, NULL);
-    dispEntry(4, float_0_80421d84, 2, disp_3D_alpha, NULL);
+    dispEntry(4, 0.0f, 1, disp_3D, NULL);
+    dispEntry(4, 0.0f, 2, disp_3D_alpha, NULL);
     return 0;
 }
 
@@ -458,8 +444,8 @@ void main_target(void) {
             genki->field_68 = (s32)((f32)genki->field_68 - 360.0f);
         }
         genki->field_6C += genki->field_70;
-        if (genki->field_6C <= float_0_80421d84) {
-            genki->field_6C = float_0_80421d84;
+        if (genki->field_6C <= 0.0f) {
+            genki->field_6C = 0.0f;
             genki->field_70 = 1.25f;
             genki->field_64 = 2;
         }
@@ -944,7 +930,7 @@ void main_star1(void) {
     case 1:
         star->field_0 = 2;
         star->field_4 = 0;
-        star->field_60 = effStarStoneEntry(4, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84, 1.0f);
+        star->field_60 = effStarStoneEntry(4, 0.0f, -1000.0f, 0.0f, 1.0f);
         BtlUnit_GetPos(mario, &star->field_C.x, &star->field_C.y, &star->field_C.z);
         star->field_C.y = star->field_C.y +
             (mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f);
@@ -961,7 +947,7 @@ void main_star1(void) {
             star->field_C.x = intplGetValue(0, star->field_4, 0x64, star->field_18.x, star->field_24.x);
             star->field_C.y = intplGetValue(0, star->field_4, 0x64, star->field_18.y, star->field_24.y);
             star->field_C.z = intplGetValue(0, star->field_4, 0x64, star->field_18.z, star->field_24.z);
-            f = intplGetValue(0, star->field_4, 0x64, float_0_80421d84, 2.0f);
+            f = intplGetValue(0, star->field_4, 0x64, 0.0f, 2.0f);
             star->field_3C.z = f;
             star->field_3C.y = f;
             star->field_3C.x = f;
@@ -973,7 +959,7 @@ void main_star1(void) {
             star->field_3C.y = 2.0f;
             star->field_3C.x = 2.0f;
         }
-        star->field_48.y = intplGetValue(4, star->field_4, 0x78, float_0_80421d84,
+        star->field_48.y = intplGetValue(4, star->field_4, 0x78, 0.0f,
                                        2160.0f);
         if (star->field_4 >= 0x78) {
             star->field_0 = 3;
@@ -990,7 +976,7 @@ void main_star1(void) {
         star->field_C.x = intplGetValue(4, star->field_4, 0x3C, star->field_18.x, star->field_24.x);
         star->field_C.y += star->field_30.y;
         star->field_30.y += 0.2f;
-        star->field_48.y = float_0_80421d84;
+        star->field_48.y = 0.0f;
         star->field_3C.z = 2.0f;
         star->field_3C.y = 2.0f;
         star->field_3C.x = 2.0f;
@@ -1001,12 +987,12 @@ void main_star1(void) {
                 star->field_30.x = -2.0f;
             }
             star->field_30.x = 2.0f;
-            star->field_30.y = float_0_80421d84;
+            star->field_30.y = 0.0f;
         }
         break;
     case 4:
         star->field_C.x += star->field_30.x;
-        if (star->field_C.x < float_0_80421d84) {
+        if (star->field_C.x < 0.0f) {
             star->field_30.x = 3.0f;
         }
         if (star->field_C.x > 200.0f) {

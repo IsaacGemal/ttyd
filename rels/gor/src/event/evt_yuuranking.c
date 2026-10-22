@@ -16,8 +16,6 @@ void FontDrawColor(GXColor color);
 #include <dolphin/mtx.h>
 #include <string.h>
 
-extern const f32 float_1000_gor_0001cd80;
-
 typedef struct YuRankWork {
     EventEntry* eventEntry; // 0x00
     u16 freeFlags;    // 0x04
@@ -477,7 +475,7 @@ USER_FUNC(evt_yuuranking_main_func) {
         wp->freeFlags |= 2;
         return 2;
     }
-    dispEntry(8, float_1000_gor_0001cd80, 0, evt_yuuranking_disp_func, wp);
+    dispEntry(8, 1000.0f, 0, evt_yuuranking_disp_func, wp);
     if (wp->displayMode == 0) {
         switch (wp->state) {
         case 0:
@@ -877,5 +875,4 @@ static USER_FUNC(yuuranking_get_monte) {
     return 2;
 }
 
-const f32 float_1000_gor_0001cd80 = 1000.0f;
 // clang-format on

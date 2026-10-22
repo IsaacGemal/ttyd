@@ -2,7 +2,6 @@
 
 #include "evt/evt_cmd.h"
 
-extern const f32 float_0p7_las_00012688;
 
 USER_FUNC(mugen_kairou_get_list);
 USER_FUNC(hi_onoff);

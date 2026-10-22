@@ -44,7 +44,6 @@ typedef struct YuuRankingWork {
 static s32 yuu_kesan(s32 mode, s32 value, s32 bonus, s32 mult, s32 maxValue);
 static USER_FUNC(evt_yuuranking_main_func);
 static void evt_yuuranking_disp_func(CameraId cameraId, void* param);
-extern const f32 float_1000_yuu_00014ad0;
 static s32 fontlenpitch(const s8* msg, s32 pitch);
 
 // clang-format off
@@ -460,7 +459,7 @@ USER_FUNC(evt_yuuranking_main_func) {
         work->freeFlags |= 2;
         return EVT_RETURN_DONE;
     }
-    dispEntry(CAMERA_2D, float_1000_yuu_00014ad0, 0, evt_yuuranking_disp_func, work);
+    dispEntry(CAMERA_2D, 1000.0f, 0, evt_yuuranking_disp_func, work);
     if (work->displayMode == 0) {
         switch (work->state) {
     case 0:
@@ -833,5 +832,4 @@ USER_FUNC(yuuranking_get_monte_31_text_51C0) {
 }
 
 
-const f32 float_1000_yuu_00014ad0 = 1000.0f;
 // clang-format on

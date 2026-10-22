@@ -405,8 +405,8 @@ void BattleBreakSlot_Main(void) {
             for (i = 0, reel = BattleBreakSlotReelGetPtr(0); i < 3; i++) {
                 if (reel->state == 8) {
                     reel->state = 9;
-                    reel->scrollDelta = float_neg1_80420550 * (float_0p2_80420554 + (float_0p15_80420558 * rand()) / float_32767_8042055c);
-                    reel->scrollDelta = float_neg1_80420550;
+                    reel->scrollDelta = -1.0f * (0.2f + (0.15f * rand()) / 32767.0f);
+                    reel->scrollDelta = -1.0f;
                     break;
                 }
                 reel++;
@@ -459,7 +459,7 @@ void BattleBreakSlot_Main(void) {
     case 6:
         if (slot->timer == 0) {
             if (BattleBreakSlotReelGetPtr(0)->value != 4) {
-                effBreakEntry(0, 240, float_0_8042053c, 80.0f, float_0_8042053c);
+                effBreakEntry(0, 240, 0.0f, 80.0f, 0.0f);
             } else {
                 slot->timer = 101;
                 BattleAudienceSoundBooing();
@@ -468,7 +468,7 @@ void BattleBreakSlot_Main(void) {
         if (slot->timer == 20 || slot->timer == 40 || slot->timer == 60 || slot->timer == 80 ||
             slot->timer == 100 || slot->timer == 120) {
             psndSFXOn("SFX_BTL_SYS_BREAK1");
-            btl_camera_shake_h(0, 10, 0, 5.0f, float_0_8042053c);
+            btl_camera_shake_h(0, 10, 0, 5.0f, 0.0f);
         }
         if (slot->timer == 120) {
             BattleAudienceSoundCheer(240, 240);
@@ -520,7 +520,7 @@ void BattleBreakSlot_Main(void) {
             }
         }
         if (slot->timer == 180) {
-            updown = float_0_8042053c;
+            updown = 0.0f;
             switch (BattleBreakSlotReelGetPtr(0)->value) {
             case 0:
             case 1:
@@ -535,10 +535,10 @@ void BattleBreakSlot_Main(void) {
                 break;
             }
             if (_battleWorkPointer->flags & 0x100) {
-                updown = float_0_8042053c;
+                updown = 0.0f;
             }
         }
-        if (slot->timer == 209 && float_0_8042053c != updown) {
+        if (slot->timer == 209 && 0.0f != updown) {
             BattleAudienceSoundRun(0);
         }
         if (slot->timer == 210) {
@@ -568,7 +568,7 @@ void BattleBreakSlot_Main(void) {
             btl_camera_noshake(0);
         }
         if (slot->timer == 270) {
-            BattleAudienceAddTargetNum(float_0_8042053c, updown);
+            BattleAudienceAddTargetNum(0.0f, updown);
             slot->state = 8;
             slot->flags &= ~4;
             if (gp->language == 0) {
@@ -623,14 +623,14 @@ void BattleBreakSlot_Main(void) {
             reel->stateTimer++;
             if (reel->stateTimer <= 5) {
                 v = intplGetValue(0, reel->stateTimer, 5, 110.0f, 142.0f);
-                reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
+                reel->pos = (Vec){ 42.0f * i + 226.0f, v, 0.0f };
                 reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
                 reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
                 reel->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
                 reel->alpha = 0xFF;
             } else {
                 v = intplGetValue(4, reel->stateTimer - 5, 20, 142.0f, 174.0f);
-                reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
+                reel->pos = (Vec){ 42.0f * i + 226.0f, v, 0.0f };
                 reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
                 reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
                 reel->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -643,11 +643,11 @@ void BattleBreakSlot_Main(void) {
                     reel->index -= reel->count;
                 }
                 reel->value = reel->cards[reel->index];
-                reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, 142.0f, 0.0f };
+                reel->pos = (Vec){ 42.0f * i + 226.0f, 142.0f, 0.0f };
             }
             break;
         case 2:
-            reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, 142.0f, 0.0f };
+            reel->pos = (Vec){ 42.0f * i + 226.0f, 142.0f, 0.0f };
             reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             if (reel->flags & 2) {
@@ -658,7 +658,7 @@ void BattleBreakSlot_Main(void) {
             break;
         case 3:
             v = intplGetValue(0, reel->stateTimer, 20, 142.0f, 174.0f);
-            reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
+            reel->pos = (Vec){ 42.0f * i + 226.0f, v, 0.0f };
             reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             reel->stateTimer++;
@@ -670,7 +670,7 @@ void BattleBreakSlot_Main(void) {
             break;
         case 4:
             v = intplGetValue(0, reel->stateTimer, 20, 142.0f, 174.0f);
-            reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
+            reel->pos = (Vec){ 42.0f * i + 226.0f, v, 0.0f };
             reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             reel->stateTimer++;
@@ -682,7 +682,7 @@ void BattleBreakSlot_Main(void) {
             break;
         case 5:
             reel->flags |= 1;
-            v = intplGetValue(0, reel->stateTimer, 40, float_neg128_80420548, float_0_8042053c);
+            v = intplGetValue(0, reel->stateTimer, 40, -128.0f, 0.0f);
             reel->pos = (Vec){ (f32)(i * 128 - 128), v, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -700,8 +700,8 @@ void BattleBreakSlot_Main(void) {
         case 6:
             break;
         case 7:
-            reel->scrollStep = intplGetValue(0, reel->stateTimer, 20, float_0_8042053c, 22.5f);
-            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->scrollStep, 0.0f };
+            reel->scrollStep = intplGetValue(0, reel->stateTimer, 20, 0.0f, 22.5f);
+            reel->pos = (Vec){ 128.0f * i + (-128.0f), reel->pos.y + reel->scrollStep, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             reel->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -721,7 +721,7 @@ void BattleBreakSlot_Main(void) {
             break;
         case 8:
             reel->scrollStep = 22.5f;
-            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->scrollStep, 0.0f };
+            reel->pos = (Vec){ 128.0f * i + (-128.0f), reel->pos.y + reel->scrollStep, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             if (reel->pos.y >= 128.0f) {
@@ -738,10 +738,10 @@ void BattleBreakSlot_Main(void) {
             if (reel->scrollStep < 20.0f) {
                 reel->scrollStep = 20.0f;
             }
-            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->scrollStep, 0.0f };
+            reel->pos = (Vec){ 128.0f * i + (-128.0f), reel->pos.y + reel->scrollStep, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
-            if (reel->scrollStep >= float_0_8042053c && reel->pos.y >= 128.0f) {
+            if (reel->scrollStep >= 0.0f && reel->pos.y >= 128.0f) {
                 reel->pos.y -= 128.0f;
                 reel->index++;
                 if (reel->index == reel->count) {
@@ -765,7 +765,7 @@ void BattleBreakSlot_Main(void) {
                 if ((force->forceFlags & 0x80000) && reel->value != force->forceSlotValue) {
                     break;
                 }
-                reel->pos.y = float_0_8042053c;
+                reel->pos.y = 0.0f;
                 reel->state = 10;
                 reel->stateTimer = 0;
                 reel->scrollDelta = reel->scrollStep;
@@ -774,16 +774,16 @@ void BattleBreakSlot_Main(void) {
         case 10:
             if (i == 2) {
                 reel->stateTimer++;
-                reel->scrollStep = intplGetValue(0, reel->stateTimer, 20, reel->scrollStep, float_0_8042053c);
+                reel->scrollStep = intplGetValue(0, reel->stateTimer, 20, reel->scrollStep, 0.0f);
                 reel->pos.y = reel->scrollStep * (f32)sin(3.141592f * (2.0f * reel->stateTimer) / 8.0f);
             }
             break;
         case 11:
-            reel->scrollStep = float_0_8042053c;
-            reel->pos.y = float_0_8042053c;
+            reel->scrollStep = 0.0f;
+            reel->pos.y = 0.0f;
             v = intplGetValue(0, reel->stateTimer, 60, 1.0f, 2.0f);
             reel->scale = (Vec){ v, v, 1.0f };
-            reel->alpha = intplGetValue(0, reel->stateTimer, 60, 255.0f, float_0_8042053c);
+            reel->alpha = intplGetValue(0, reel->stateTimer, 60, 255.0f, 0.0f);
             reel->stateTimer++;
             if (reel->stateTimer > 60) {
                 reel->state = 13;
@@ -791,10 +791,10 @@ void BattleBreakSlot_Main(void) {
             }
             break;
         case 12:
-            reel->scrollStep = float_0_8042053c;
-            reel->pos.y = float_0_8042053c;
-            v = intplGetValue(0, reel->stateTimer, 40, float_0_8042053c, 128.0f);
-            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, v, 0.0f };
+            reel->scrollStep = 0.0f;
+            reel->pos.y = 0.0f;
+            v = intplGetValue(0, reel->stateTimer, 40, 0.0f, 128.0f);
+            reel->pos = (Vec){ 128.0f * i + (-128.0f), v, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             reel->stateTimer++;
@@ -812,7 +812,7 @@ void BattleBreakSlot_Main(void) {
 // i->f32 pools an anonymous 2^52 double instead of the original's named double_to_int_802fd930; the value
 // and instructions are identical, only the pool label differs (not scored).
 void BattleBreakSlot_Disp(void) {
-    dispEntry(CAMERA_2D, float_490_8042054c, 0, BattleBreakSlotDispReel, NULL);
+    dispEntry(CAMERA_2D, 490.0f, 0, BattleBreakSlotDispReel, NULL);
 }
 __declspec(section ".sdata2") const f32 zero_80420520 = 0.0f;
 
@@ -837,7 +837,7 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
 
         for (; i < 3; i++) {
             if ((reel1->flags & 1) && reel1->state >= 1 && reel1->state <= 4) {
-                PSMTXTrans(mtxTrans, float_42_80420534 * (f32)i + float_226_80420530, float_122_80420538, float_0_8042053c);
+                PSMTXTrans(mtxTrans, 42.0f * (f32)i + 226.0f, 122.0f, 0.0f);
                 {
                     GXColor color = {0xFF, 0xFF, 0xFF, 0xD0};
 
@@ -867,9 +867,9 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
             GXSetZMode(1, 3, 0);
             PSMTXTrans(mtxTrans, reel->pos.x, reel->pos.y, reel->pos.z);
             PSMTXScale(mtxScale, reel->scale.x, reel->scale.y, reel->scale.z);
-            PSMTXRotRad(mtxRotX, 'x', float_deg2rad_80420540 * reel->rot.x);
-            PSMTXRotRad(mtxRotY, 'y', float_deg2rad_80420540 * reel->rot.y);
-            PSMTXRotRad(mtxRotZ, 'z', float_deg2rad_80420540 * reel->rot.z);
+            PSMTXRotRad(mtxRotX, 'x', 0.017453292f * reel->rot.x);
+            PSMTXRotRad(mtxRotY, 'y', 0.017453292f * reel->rot.y);
+            PSMTXRotRad(mtxRotZ, 'z', 0.017453292f * reel->rot.z);
             PSMTXConcat(mtxRotX, mtxRotZ, mtxRot);
             PSMTXConcat(mtxRotY, mtxRot, mtxRot);
             PSMTXTrans(mtxPos, reel->pivot.x, reel->pivot.y, reel->pivot.z);
@@ -890,9 +890,9 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
                 }
                 tex = texList[reel->cards[idx]];
                 if (reel->state >= 1 && reel->state <= 4) {
-                    PSMTXTrans(mtxTrans, float_0_8042053c, float_neg32_80420544, float_0_8042053c);
+                    PSMTXTrans(mtxTrans, 0.0f, -32.0f, 0.0f);
                 } else {
-                    PSMTXTrans(mtxTrans, float_0_8042053c, float_neg128_80420548, float_0_8042053c);
+                    PSMTXTrans(mtxTrans, 0.0f, -128.0f, 0.0f);
                 }
                 PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
                 {
@@ -1039,21 +1039,3 @@ void item_appear_force(BattleBreakSlotReel* reel, s32 id) {
         }
     }
 }
-
-// .sdata2 constants, in the original's address order after zero_80420520 and BattleBreakSlotDispReel's
-// colour literals. Defined after the code so the compiler emits them as real objects ahead of its own
-// pooled literals instead of folding them.
-#pragma explicit_zero_data on
-__declspec(section ".sdata2") const f32 float_226_80420530 = 226.0f;
-__declspec(section ".sdata2") const f32 float_42_80420534 = 42.0f;
-__declspec(section ".sdata2") const f32 float_122_80420538 = 122.0f;
-__declspec(section ".sdata2") const f32 float_0_8042053c = 0.0f;
-__declspec(section ".sdata2") const f32 float_deg2rad_80420540 = 0.017453292f;
-__declspec(section ".sdata2") const f32 float_neg32_80420544 = -32.0f;
-__declspec(section ".sdata2") const f32 float_neg128_80420548 = -128.0f;
-__declspec(section ".sdata2") const f32 float_490_8042054c = 490.0f;
-__declspec(section ".sdata2") const f32 float_neg1_80420550 = -1.0f;
-__declspec(section ".sdata2") const f32 float_0p2_80420554 = 0.2f;
-__declspec(section ".sdata2") const f32 float_0p15_80420558 = 0.15f;
-__declspec(section ".sdata2") const f32 float_32767_8042055c = 32767.0f;
-#pragma explicit_zero_data reset

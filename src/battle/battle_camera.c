@@ -8,10 +8,6 @@
 #include <string.h>
 #include "math_ext.h"
 
-// Data objects defined later in this file or in other units, declared before their first use.
-extern const f32 float_2_8041c450;
-
-
 extern BattleWork *_battleWorkPointer;
 // prototypes for the event wrappers
 
@@ -258,9 +254,9 @@ void battleCameraMain(void) {
     }
     // The product lives in its own temporary, which fixes the registers of the following float math.
 #ifdef MUST_MATCH
-    { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
+    { f32 _t = 2.0f * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
 #else
-    base = float_2_8041c450 * wp->cameraWork.zoom - 1.5f * (wa + wb);
+    base = 2.0f * wp->cameraWork.zoom - 1.5f * (wa + wb);
 #endif
     f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
     xv = (1.0f - t) * wp->cameraWork.unkC8.x;
@@ -303,7 +299,7 @@ void battleCameraMain(void) {
     if (w < 0.0f) {
       w = 0.0f;
     }
-    base = float_2_8041c450 * wp->cameraWork.zoom;
+    base = 2.0f * wp->cameraWork.zoom;
     base -= 1.5f * w;
     // Retail only writes yc (f31) in the two clamp arms, and nothing on this path set f31 before, so an
     // in-range midpoint reads whatever the caller left in f31. The natural build starts from the midpoint.
@@ -416,9 +412,9 @@ void battleCameraMain(void) {
     }
     // The product lives in its own temporary, which fixes the registers of the following float math.
 #ifdef MUST_MATCH
-    { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
+    { f32 _t = 2.0f * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
 #else
-    base = float_2_8041c450 * wp->cameraWork.zoom - 1.5f * (wa + wb);
+    base = 2.0f * wp->cameraWork.zoom - 1.5f * (wa + wb);
 #endif
     f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
     xv = (1.0f - t) * wp->cameraWork.unkC8.x;
@@ -484,7 +480,7 @@ void battleCameraMain(void) {
     cy = vv.y - wp->cameraWork.unkBC.y;
     u = 1.0f - t;
     cy -= 100.0f;
-    zz = float_2_8041c450 * wp->cameraWork.zoom;
+    zz = 2.0f * wp->cameraWork.zoom;
     v = u * wp->cameraWork.unkC8.x;
     if (cy > 0.0f) {
       cy = 0.0f;
@@ -1338,10 +1334,9 @@ USER_FUNC(evt_btl_camera_off_posoffset_manual) {
 }
 
 USER_FUNC(evt_btl_camera_wait_move_end) {
-  if (battleCameraGetPosMoveSpeed() >= float_2_8041c450) {
+  if (battleCameraGetPosMoveSpeed() >= 2.0f) {
     return EVT_RETURN_BLOCK;
   }
   return EVT_RETURN_DONE;
 }
 
-const f32 float_2_8041c450 = 2.0f;

@@ -11,20 +11,11 @@
 // .sdata2 float constants (named after their original addresses).
 extern const f32 float_neg0p1_8041f054;
 extern const f32 float_0p8_8041f058;
-extern const f32 float_neg0p2_8041f05c;
-extern const f32 float_0p9_8041f060;
-extern const f32 float_10_8041f064;
-extern const f32 float_20_8041f068;
-extern const f32 float_neg2_8041f06c;
 extern const f32 float_0_8041f048;
 extern const f32 float_1p5_8041f04c;
 extern const f32 float_deg2rad_8041f050;
 extern const f32 float_0p03125_8041f040;
 extern const f32 float_0p010417_8041f044;
-extern const f32 float_0p25_8041f070;
-extern const f32 float_2_8041f074;
-extern const f32 float_1_8041f078;
-extern const f32 float_0p1_8041f07c;
 
 // .rodata / .data constants (named after their original addresses).
 
@@ -155,13 +146,13 @@ EffectEntry* effGarekiN64Entry(s32 type, f32 x, f32 y, f32 z, f32 groundY) {
     data->position.y = y;
     data->groundY = groundY;
     data->position.z = z;
-    data->vy = float_neg2_8041f06c;
+    data->vy = -2.0f;
     data->angleX = float_0_8041f048;
     data->angleZ = float_0_8041f048;
     data->field_34 = (f32)(rand() % 60 - 30);
     data->alpha = 0xff;
     data->angleVelX = (f32)(rand() % 60 - 30);
-    data->angleVelZ = float_0p25_8041f070 * data->angleVelX;
+    data->angleVelZ = 0.25f * data->angleVelX;
     data->timer = 20;
 
     trans = trans_data + 1;
@@ -173,8 +164,8 @@ EffectEntry* effGarekiN64Entry(s32 type, f32 x, f32 y, f32 z, f32 groundY) {
         p->x = float_0_8041f048;
         p->y = float_0_8041f048;
         p->z = float_0_8041f048;
-        p->vx = float_2_8041f074 * vx[-1];
-        p->vy = float_2_8041f074 * ((f32)(rand() % 10) * float_0p1_8041f07c) + float_1_8041f078;
+        p->vx = 2.0f * vx[-1];
+        p->vy = 2.0f * ((f32)(rand() % 10) * 0.1f) + 1.0f;
         p->angleX = float_0_8041f048;
         p->angleZ = float_0_8041f048;
     }
@@ -209,12 +200,12 @@ void effGarekiMain(EffectEntry* effect) {
         }
         data++;
         for (i = 1; i < effect->count; i++, data++) {
-            ((GarekiChild*)data)->vy += float_neg0p2_8041f05c;
-            ((GarekiChild*)data)->vx *= float_0p9_8041f060;
+            ((GarekiChild*)data)->vy += -0.2f;
+            ((GarekiChild*)data)->vx *= 0.9f;
             ((GarekiChild*)data)->x += ((GarekiChild*)data)->vx;
             ((GarekiChild*)data)->y += ((GarekiChild*)data)->vy;
-            ((GarekiChild*)data)->angleX += float_10_8041f064;
-            ((GarekiChild*)data)->angleZ += float_20_8041f068;
+            ((GarekiChild*)data)->angleX += 10.0f;
+            ((GarekiChild*)data)->angleZ += 20.0f;
         }
     }
 
@@ -356,13 +347,4 @@ const f32 float_1p5_8041f04c = 1.5f;
 const f32 float_deg2rad_8041f050 = 0.017453292f;
 const f32 float_neg0p1_8041f054 = -0.1f;
 const f32 float_0p8_8041f058 = 0.8f;
-const f32 float_neg0p2_8041f05c = -0.2f;
-const f32 float_0p9_8041f060 = 0.9f;
-const f32 float_10_8041f064 = 10.0f;
-const f32 float_20_8041f068 = 20.0f;
-const f32 float_neg2_8041f06c = -2.0f;
-const f32 float_0p25_8041f070 = 0.25f;
-const f32 float_2_8041f074 = 2.0f;
-const f32 float_1_8041f078 = 1.0f;
-const f32 float_0p1_8041f07c = 0.1f;
 

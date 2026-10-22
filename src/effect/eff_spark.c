@@ -19,11 +19,6 @@ extern const f32 float_0_8041e27c;
 #endif
 extern const f32 float_0p5_8041e280;
 extern const f32 float_8_8041e284;
-#ifdef MUST_MATCH
-extern const volatile f32 float_1_8041e288;
-#else
-extern const f32 float_1_8041e288;
-#endif
 
 // .data
 static f32 scale_data[24] = {
@@ -164,7 +159,7 @@ void effSparkMain(EffectEntry* effect) {
 			data->vy = data->position.y * f31;
 			data->targetVy = data->targetVx = float_0_8041e27c;
 			data->angle = -f28;
-			data->scale = float_1_8041e288;
+			data->scale = 1.0f;
 		}
 		parity = counter & 1;
 		switch (type) {
@@ -195,7 +190,7 @@ void effSparkMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), mode, effSparkDisp, effect);
 }
 
-// float_0/float_1 are declared volatile so MWCC reloads them per vertex like the original.
+// float_0 is declared volatile so MWCC reloads it per vertex like the original.
 // Advancing `data` before the header (`data++; for (i = 1; ...; i++, data++)`) makes MWCC emit the
 // `li i, 1` before the pointer `addi` in the loop preheader, matching the original (eff_starpoint shape).
 void effSparkDisp(CameraId camId, void* param) {
@@ -255,26 +250,24 @@ void effSparkDisp(CameraId camId, void* param) {
 
 		GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, (alpha * data->alpha) >> 8 });
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		// Match-only: the volatile declarations force MWCC to reload float_0/float_1 per vertex like the
-		// original, instead of CSE-ing them for the whole quad.
+		// Match-only: the volatile declaration forces MWCC to reload float_0 per vertex like the
+		// original, instead of CSE-ing it for the whole quad.
 #define VF0 (float_0_8041e27c)
-#define VF1 (float_1_8041e288)
 		GXPosition3f32(-size * float_0p5_8041e280, float_8_8041e284, VF0);
 		GXTexCoord2f32(VF0, VF0);
 		GXPosition3f32(float_8_8041e284, float_8_8041e284, VF0);
-		GXTexCoord2f32(VF1, VF0);
+		GXTexCoord2f32(1.0f, VF0);
 		GXPosition3f32(float_8_8041e284, -size * float_0p5_8041e280, VF0);
-		GXTexCoord2f32(VF1, VF1);
+		GXTexCoord2f32(1.0f, 1.0f);
 		GXPosition3f32(-size * float_0p5_8041e280, -size * float_0p5_8041e280, VF0);
-		GXTexCoord2f32(VF0, VF1);
+		GXTexCoord2f32(VF0, 1.0f);
 #undef VF0
-#undef VF1
 	}
 }
 
 #ifdef MUST_MATCH
 // MUST_MATCH: .sdata2 constants defined after the functions so MWCC cannot fold their values;
-// float_0/float_1 are volatile so the FIFO writes reload them per vertex like the original
+// float_0 is volatile so the FIFO writes reload it per vertex like the original
 // (as in eff_mahorn.c).
 const f32 float_deg2rad_8041e274 = 0.017453292f;
 const f32 float_16_8041e278 = 16.0f;
@@ -286,11 +279,6 @@ const f32 float_0_8041e27c = 0.0f;
 #endif
 const f32 float_0p5_8041e280 = 0.5f;
 const f32 float_8_8041e284 = 8.0f;
-#ifdef MUST_MATCH
-const volatile f32 float_1_8041e288 = 1.0f;
-#else
-const f32 float_1_8041e288 = 1.0f;
-#endif
 
 // the 4 zero bytes after the unit's last .sdata object (gap_07_*_sdata)
 #pragma explicit_zero_data on

@@ -52,11 +52,11 @@ EffectEntry* effSunlightN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
 	data->g1 = 0xff;
 	data->b1 = 0xff;
 	data->a1 = 0xff;
-	data->offset[0] = float_0_8041ff80;
-	data->offset[1] = float_0_8041ff80;
-	data->offset[2] = float_0_8041ff80;
-	data->offset[3] = float_0_8041ff80;
-	data->offset[4] = float_0_8041ff80;
+	data->offset[0] = 0.0f;
+	data->offset[1] = 0.0f;
+	data->offset[2] = 0.0f;
+	data->offset[3] = 0.0f;
+	data->offset[4] = 0.0f;
 	data->alphaTarget = 0xff;
 	data->alpha = 0;
 
@@ -126,22 +126,22 @@ void effSunlightMain(EffectEntry* effect) {
 		}
 	}
 
-	base = float_0p25_8041ff8c * (f32)counter;
+	base = 0.25f * (f32)counter;
 
 	for (i = 0; i < 5; i++) {
 		f32 s1;
 		f32 s2;
 
-		s1 = (f32)sin((base + (f32)(i * i * 20)) * float_6p2832_8041ff90 / float_360_8041ff94);
-		s2 = (f32)sin(float_6p2832_8041ff90 * (f32)(counter * 2 + i * 20) / float_360_8041ff94);
+		s1 = (f32)sin((base + (f32)(i * i * 20)) * 6.2831855f / 360.0f);
+		s2 = (f32)sin(6.2831855f * (f32)(counter * 2 + i * 20) / 360.0f);
 		/* The factor has to be materialized first and multiplied as `inc * s1`,
 		   otherwise MWCC emits `fnmsubs f0, f22, f1, f0` (s1 first) instead of the retail
 		   `fnmsubs f0, f1, f22, f0`. */
 		{
-			f32 inc = float_4_8041ff98 * (float_0p01_8041ffa0 * s2 + float_0p05_8041ff9c);
+			f32 inc = 4.0f * (0.01f * s2 + 0.05f);
 			data->offset[i] -= inc * s1;
 		}
-		if (data->offset[i] < float_0_8041ff80) {
+		if (data->offset[i] < 0.0f) {
 			data->offset[i] += 256.0f;
 		}
 		if (data->offset[i] > 256.0f) {
@@ -186,10 +186,10 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 
 	GXGetProjectionv(proj);
 	if (type != 0) {
-		C_MTXOrtho(ortho, float_1200_8041ff60, float_neg1200_8041ff64, float_neg1600_8041ff68, float_1600_8041ff6c, float_1_8041ff70, float_32768_8041ff74);
+		C_MTXOrtho(ortho, 1200.0f, -1200.0f, -1600.0f, 1600.0f, 1.0f, 32768.0f);
 	}
 	else {
-		C_MTXOrtho(ortho, float_1200_8041ff60, float_neg1200_8041ff64, float_1600_8041ff6c, float_neg1600_8041ff68, float_1_8041ff70, float_32768_8041ff74);
+		C_MTXOrtho(ortho, 1200.0f, -1200.0f, 1600.0f, -1600.0f, 1.0f, 32768.0f);
 	}
 	GXSetProjection(ortho, GX_ORTHOGRAPHIC);
 	C_MTXLookAt(lookAt, &eye, &up, &target);
@@ -220,7 +220,7 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	GXSetNumTexGens(2);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
-	PSMTXScale(mtx, float_0p0625_8041ff78, float_0p015625_8041ff7c, float_0_8041ff80);
+	PSMTXScale(mtx, 0.0625f, 0.015625f, 0.0f);
 	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
 	effGetTexObjN64(0x42, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -230,18 +230,8 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	effSetVtxDescN64(testsrc__s_v);
 
 	for (i = 0; i < 5; i++) {
-		PSMTXScale(mtx, float_0p0039062_8041ff84, float_0p125_8041ff88, float_0_8041ff80);
-#ifdef MUST_MATCH
-		/* MUST_MATCH: naming float_0_8041ff80 directly here makes mwcc hoist it into a
-		   callee-saved fpr (f30), growing the frame by 0x10 and shifting every save; the
-		   volatile read keeps the natural one-load-plus-fmr code. */
-		{
-			f32 zero = *(volatile f32*)&float_0_8041ff80;
-			PSMTXTrans(mtx2, data->offset[i] + (f32)(i * 11), zero, zero);
-		}
-#else
-		PSMTXTrans(mtx2, data->offset[i] + (f32)(i * 11), float_0_8041ff80, float_0_8041ff80);
-#endif
+		PSMTXScale(mtx, 0.00390625f, 0.125f, 0.0f);
+		PSMTXTrans(mtx2, data->offset[i] + (f32)(i * 11), 0.0f, 0.0f);
 		PSMTXConcat(mtx, mtx2, mtx);
 		GXLoadTexMtxImm(mtx, GX_TEXMTX1, GX_MTX2x4);
 		switch (i) {
@@ -272,21 +262,3 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	GXSetProjectionv(proj);
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_1200_8041ff60 = 1200.0f;
-const f32 float_neg1200_8041ff64 = -1200.0f;
-const f32 float_neg1600_8041ff68 = -1600.0f;
-const f32 float_1600_8041ff6c = 1600.0f;
-const f32 float_1_8041ff70 = 1.0f;
-const f32 float_32768_8041ff74 = 32768.0f;
-const f32 float_0p0625_8041ff78 = 0.0625f;
-const f32 float_0p015625_8041ff7c = 0.015625f;
-const f32 float_0_8041ff80 = 0.0f;
-const f32 float_0p0039062_8041ff84 = 0.00390625f;
-const f32 float_0p125_8041ff88 = 0.125f;
-const f32 float_0p25_8041ff8c = 0.25f;
-const f32 float_6p2832_8041ff90 = 6.2831855f;
-const f32 float_360_8041ff94 = 360.0f;
-const f32 float_4_8041ff98 = 4.0f;
-const f32 float_0p05_8041ff9c = 0.05f;
-const f32 float_0p01_8041ffa0 = 0.01f;

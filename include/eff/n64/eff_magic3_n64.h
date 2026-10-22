@@ -24,8 +24,6 @@ extern const f32 float_0p4_8041f720;
 extern const f32 float_360_8041f724;
 extern const f32 float_3_8041f728;
 extern const f32 float_0p6_8041f72c;
-extern const f32 float_0p7_8041f730;
-extern const f32 float_30_8041f734;
 typedef struct EffectEntry EffectEntry;
 void effMagic3Main(EffectEntry* effect);
 EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z);

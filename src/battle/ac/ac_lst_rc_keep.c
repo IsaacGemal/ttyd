@@ -22,11 +22,6 @@ typedef struct LstRcKeepWork {
     s32 endTimer;   // 0x0C, post-command timer
 } LstRcKeepWork;
 
-// sdata2 float constants.
-extern const f32 float_neg168_8041e5d8;
-extern const f32 float_70_8041e5dc;
-extern const f32 float_1_8041e5e0;
-
 // sdata tables.
 s32 ac_lstrckeep_ok_frame[7] = {0x50, 0x46, 0x3C, 0x28, 0x14, 0x0A, 0x05};
 char* ac_lstrckeep_iconname[4] = {(char*)"_AcSkl1", (char*)"_AcSkl2", (char*)"_AcSkl3",
@@ -310,28 +305,28 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
 
     if (type < 3) {
         Vec v = (Vec){0.0f, 0.0f, 0.0f};
-        v.x = float_neg168_8041e5d8 + x;
-        v.y = float_70_8041e5dc + y;
-        iconDispGx(float_1_8041e5e0, &v, 0x10, 0x71);
+        v.x = -168.0f + x;
+        v.y = 70.0f + y;
+        iconDispGx(1.0f, &v, 0x10, 0x71);
     }
     else {
         Vec v = (Vec){0.0f, 0.0f, 0.0f};
-        v.x = float_neg168_8041e5d8 + x;
-        v.y = float_70_8041e5dc + y;
-        iconDispGx(float_1_8041e5e0, &v, 0x10, 0x70);
+        v.x = -168.0f + x;
+        v.y = 70.0f + y;
+        iconDispGx(1.0f, &v, 0x10, 0x70);
     }
 
     if (type < 3) {
         Vec v = (Vec){0.0f, 0.0f, 0.0f};
         v.x = -232.0f + x;
-        v.y = float_70_8041e5dc + y;
-        iconDispGx(float_1_8041e5e0, &v, 0x10, 0x78);
+        v.y = 70.0f + y;
+        iconDispGx(1.0f, &v, 0x10, 0x78);
     }
     else {
         Vec v = (Vec){0.0f, 0.0f, 0.0f};
         v.x = -232.0f + x;
-        v.y = float_70_8041e5dc + y;
-        iconDispGx(float_1_8041e5e0, &v, 0x10, 0x79);
+        v.y = 70.0f + y;
+        iconDispGx(1.0f, &v, 0x10, 0x79);
     }
 
     {
@@ -339,7 +334,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
         v.x = -200.0f + x;
         y = 25.0f + y;
         v.y = y;
-        iconDispGx(float_1_8041e5e0, &v, 0x10, 0x8E);
+        iconDispGx(1.0f, &v, 0x10, 0x8E);
     }
 
     for (i = 0, off = 0; i < 3; i++, off += 0x21) {
@@ -347,7 +342,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
             Vec v = (Vec){0.0f, 0.0f, 0.0f};
             v.x = x + (f32)(off - 0x102);
             v.y = y;
-            iconDispGx(float_1_8041e5e0, &v, 0x10, i + 0x92);
+            iconDispGx(1.0f, &v, 0x10, i + 0x92);
         }
         else {
             Vec v = (Vec){0.0f, 0.0f, 0.0f};
@@ -361,17 +356,13 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
         Vec v = (Vec){0.0f, 0.0f, 0.0f};
         v.x = -151.0f + x;
         v.y = y;
-        iconDispGx(float_1_8041e5e0, &v, 0x10, 0x91);
+        iconDispGx(1.0f, &v, 0x10, 0x91);
     }
     else {
         Vec v = (Vec){0.0f, 0.0f, 0.0f};
         v.x = -151.0f + x;
         v.y = y;
-        iconDispGx(float_1_8041e5e0, &v, 0x10, 0x95);
+        iconDispGx(1.0f, &v, 0x10, 0x95);
     }
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_neg168_8041e5d8 = -168.0f;
-const f32 float_70_8041e5dc = 70.0f;
-const f32 float_1_8041e5e0 = 1.0f;

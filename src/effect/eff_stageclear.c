@@ -18,7 +18,6 @@ extern const f32 float_0p9_80420f18;
 extern const f32 float_1p7_80420f1c;
 extern const f32 float_0p6_80420f20;
 extern const f32 float_48_80420f24;
-extern const f64 double_0p21817_802fe3f0;
 
 // .data
 static u32 tex_us[13] = {
@@ -178,7 +177,7 @@ void effStageClearMain(EffectEntry* effect) {
 }
 
 static inline Vec getStageClearCamPos(void) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 1.0f / (f32)tan(double_0p21817_802fe3f0) };
+	Vec temp = (Vec){ 0.0f, 0.0f, 1.0f / (f32)tan(0.21816615760326385) };
 	return temp;
 }
 
@@ -346,9 +345,6 @@ BOOL effStageClearEndChk(EffectEntry* effect) {
 	effStageClearWork* data = effect->userdata;
 	return data->done != 0;
 }
-
-// .rodata: the double follows the Vec templates.
-const f64 double_0p21817_802fe3f0 = 0.21816615760326385;
 
 // .sdata2: the float constants, defined after the code so MWCC keeps them as real objects rather than
 // folding them into the function's literal pool.
