@@ -434,13 +434,8 @@ void marioReInit_slit(void) {
         mapSetPaperAmbColor(&color);
         marioPaperOn("p_slit");
     }
-    // A named local makes MWCC load the field into f1 and the pool constant
-    // into f0, matching the original's compare order.
-    {
-        f32 zero = 0.0f;
-        if (mario2->controlStickSensitivity == zero) {
-            marioChgPose("M_S_1");
-        }
+    if (!mario2->controlStickSensitivity) {
+        marioChgPose("M_S_1");
     }
     marioChgPaper("PM_S_1A");
     mario->trigFlags &= ~1u;
@@ -510,7 +505,6 @@ static inline void slitResetBounce(void) {
 void mot_slit(void) {
     MarioWork* mario = marioGetPtr();
     s32 state;
-    f32 zero = 0.0f;
     s32 count;
     s32 frames;
     s32 manhattan;
@@ -519,7 +513,7 @@ void mot_slit(void) {
     f32 slitSinv;
     f32 slitCosv;
 
-    if (mario->controlStickSensitivity == zero) {
+    if (!mario->controlStickSensitivity) {
         mario->trigFlags &= 0xFFFF7FFF;
     }
     if (mario->trigFlags & 1) {
@@ -551,7 +545,7 @@ void mot_slit(void) {
             mapSetPaperAmbColor(&color);
             marioPaperOn("p_slit");
         }
-        if (mario2->controlStickSensitivity == zero) {
+        if (!mario2->controlStickSensitivity) {
             marioChgPose("M_S_1");
         }
         marioChgPaper("PM_S_1A");
@@ -584,7 +578,7 @@ void mot_slit(void) {
         psndSFXOn_3D((const char*)0x177, &mario->position);
         break;
     case 2:
-        if (mario->controlStickSensitivity == zero) {
+        if (!mario->controlStickSensitivity) {
             mario->baseSpeed = 0.0f;
             marioChgPose("M_S_1");
         }
@@ -601,7 +595,7 @@ void mot_slit(void) {
         break;
     case 4:
         if (marioChkKey() != 0) {
-            if (mario->controlStickSensitivity == zero) {
+            if (!mario->controlStickSensitivity) {
                 mario->baseSpeed = 0.0f;
                 marioChgPose("M_S_1");
             }
@@ -610,7 +604,7 @@ void mot_slit(void) {
         slitCapSpeed(mario);
         mario->dispDir = 270.0f;
         mario->dispReqDir = mario->dispDir;
-        if (mario->controlStickSensitivity == zero) {
+        if (!mario->controlStickSensitivity) {
             marioChgPose("M_S_1");
         }
         marioChgPaper("PM_S_1B");
@@ -647,7 +641,7 @@ void mot_slit(void) {
         if (marioChkJump() != 0) {
             return;
         }
-        if (mario->controlStickSensitivity == zero) {
+        if (!mario->controlStickSensitivity) {
             mario->baseSpeed = 0.0f;
             if (mario->slitPushCount == 0) {
                 marioChgPose("M_S_1");
@@ -710,7 +704,7 @@ void mot_slit(void) {
             marioChkJump();
         }
         if (marioChkKey() != 0) {
-            if (mario->controlStickSensitivity == zero) {
+            if (!mario->controlStickSensitivity) {
                 mario->baseSpeed = 0.0f;
                 count = mario->slitStillCount + 1;
                 mario->slitStillCount = (s16)count;
@@ -882,7 +876,7 @@ keyOffPath:
         camGetPtr(8)->flags |= 0x200;
         slitResetBounce();
         mario->flags |= 0x10000000;
-        if (zero == mario->wCamVal1) {
+        if (mario->wCamVal1 == 0.0f) {
             marioChgPaper("PM_S_1F");
         } else {
             marioChgPaper("PM_S_1G");
@@ -961,7 +955,7 @@ keyOffPath:
         mario->slitPhaseTimer = 0;
         mario->flags &= 0xFFEFFFFF;
         mario->wPlayerCollisionBox.x = 20.0f;
-        if (zero == mario->baseSpeed) {
+        if (mario->baseSpeed == 0.0f) {
             marioChgPose("M_S_1");
         }
         marioChgPaper("PM_S_1C");
@@ -970,20 +964,20 @@ keyOffPath:
         if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
             mario->dispDir = 0.0f;
             mario->dispReqDir = mario->dispDir;
-            if (mario->controlStickSensitivity == zero) {
+            if (!mario->controlStickSensitivity) {
                 mario->directionView = toMovedirSimple(mario->dispDir);
             }
         } else {
             mario->dispDir = 180.0f;
             mario->dispReqDir = mario->dispDir;
-            if (mario->controlStickSensitivity == zero) {
+            if (!mario->controlStickSensitivity) {
                 mario->directionView = toMovedirSimple(mario->dispDir);
             }
         }
         psndSFXOn_3D((const char*)0x178, &mario->position);
         /* fallthrough */
     case 0x65:
-        if (mario->controlStickSensitivity == zero) {
+        if (!mario->controlStickSensitivity) {
             mario->baseSpeed = 0.0f;
             marioChgPose("M_S_1");
         }
@@ -995,7 +989,7 @@ keyOffPath:
         }
         return;
     case 0x66:
-        if (mario->controlStickSensitivity == zero) {
+        if (!mario->controlStickSensitivity) {
             mario->baseSpeed = 0.0f;
             marioChgPose("M_S_1");
         }
@@ -1018,7 +1012,7 @@ keyOffPath:
         mario->slitPhaseTimer = 0;
         mario->flags &= 0xFFEFFFFF;
         mario->wPlayerCollisionBox.x = 20.0f;
-        if (mario->controlStickSensitivity == zero) {
+        if (!mario->controlStickSensitivity) {
             marioChgPose("M_S_1");
         }
         marioChgPaper("PM_S_1C");
@@ -1061,7 +1055,7 @@ keyOffPath:
         mario->slitPhaseTimer = 0;
         mario->flags &= 0xFFEFFFFF;
         mario->wPlayerCollisionBox.x = 20.0f;
-        if (mario->controlStickSensitivity == zero) {
+        if (!mario->controlStickSensitivity) {
             marioChgPose("M_S_1");
         }
         marioChgPaper("PM_S_1C");

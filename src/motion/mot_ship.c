@@ -218,8 +218,13 @@ static inline void shipWakeUpdate(f32 speed) {
     MarioWork* m = marioGetPtr();
 
     if (!speed) {
+#ifdef MUST_MATCH
+        // The original calls marioGetPtr() and discards the result, then picks the speed through a 0/1 flag.
         marioGetPtr();
         { s32 b; if (marioGetPtr()->motionShipData->unk08 > 180.0f) b = 0; else b = 1; speed = b ? 0.3f : 0.6f; }
+#else
+        speed = (marioGetPtr()->motionShipData->unk08 > 180.0f) ? 0.6f : 0.3f;
+#endif
         marioGetPtr()->motionShipData->unk10 += 0.1f * (speed - marioGetPtr()->motionShipData->unk10);
         speed = marioGetPtr()->motionShipData->unk10;
     }
@@ -851,8 +856,12 @@ void shipMove(void) {
     f32 f27;
     f32 f26;
 
+#ifdef MUST_MATCH
+    sp0C = 0.0f; // stored twice, as in the original
     sp0C = 0.0f;
+#else
     sp0C = 0.0f;
+#endif
     if (marioGetPtr()->motionShipData->swirlTimer != 0) {
         marioGetPtr()->motionShipData->swirlTimer--;
         movePos(&sp0C, &sp08, marioGetPtr()->motionShipData->unk2C, marioGetPtr()->motionShipData->unk28);
