@@ -1409,7 +1409,6 @@ static inline void moaPlayHit(ExtPose* ep) {
     psndSFXOn_3D((const char*)0x6C3, &w);
 }
 #endif
-#pragma inline_max_total_size(60000)
 // Per-frame update of every moamoa (the ordinary variant, no follower).
 static void ext_moamoa_main(void) {
 #ifdef MUST_MATCH
@@ -1966,7 +1965,6 @@ static void ext_moamoa_main(void) {
         mario->riderDelta.z = 2.0f * b.z;
     }
 }
-#pragma inline_max_total_size reset
 static void ext_moamoa_dispent(void) {
     if (wp->flags & 1) {
         dispEntry(4, 0.0f, 1, (DispCallback)ext_disp, NULL);

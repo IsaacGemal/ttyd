@@ -1823,9 +1823,8 @@ static inline void puniHagureChild(PuniData* parent, PuniData* child) {
     PuniDokuritsu(child);
 }
 
-// Each level of the recursion costs two inline levels (helper + PuniChildHagure); depth 5 inlines it as far as retail.
-#pragma push
-#pragma inline_depth(5)
+// Each level of the recursion costs two inline levels (helper + PuniChildHagure); the unit's
+// inline_depth(5) inlines it as far as retail.
 void PuniChildHagure(PuniData* puni) {
     if (puni->leftPuni != NULL) {
         puniHagureChild(puni, puni->leftPuni);
@@ -1834,7 +1833,6 @@ void PuniChildHagure(PuniData* puni) {
         puniHagureChild(puni, puni->rightPuni);
     }
 }
-#pragma pop
 
 s32 searchParent(PuniData* puni) {
     s32 best = 10000;

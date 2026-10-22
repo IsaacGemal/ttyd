@@ -495,7 +495,6 @@ static inline void envDofFar(EnvironmentUnk88* u, GXColor* color) {
 // `opt_lifetimes off` keeps the 0.00761/0.03705 seed loads inside the loop.
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-#pragma inline_max_size(2000)
 void envDisp_DepthOfField(void) {
     EnvironmentWork* wp = envGetWork();
     EnvironmentUnk88* u = &wp->unk88;
@@ -567,7 +566,6 @@ void envDisp_DepthOfField(void) {
         envDofFar(u, &color);
     }
 }
-#pragma inline_max_size reset
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
 #ifdef MUST_MATCH
