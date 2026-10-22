@@ -13,33 +13,6 @@ extern const f32 float_2_8041c450;
 
 
 extern BattleWork *_battleWorkPointer;
-// These four zero vectors are read-only data, but the original's code loads them without hoisting the
-// loads past the preceding stores (a `const` declaration lets MWCC hoist them, shifting every FP/GP
-// register). Declaring them non-const while pinning the section to ".rodata" reproduces the original
-// schedule and keeps the data in place. The remaining five stay `const`.
-#ifdef MUST_MATCH
-// MWCC keeps these vector loads at the original points when the objects are mutable.
-__declspec(section ".rodata") Vec vec3_802efc40 = { 0.0f, 0.0f, 0.0f };
-__declspec(section ".rodata") Vec vec3_802efc4c = { 0.0f, 0.0f, 0.0f };
-__declspec(section ".rodata") Vec vec3_802efc58 = { 0.0f, 0.0f, 0.0f };
-#else
-const Vec vec3_802efc40 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802efc4c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802efc58 = { 0.0f, 0.0f, 0.0f };
-#endif
-const Vec vec3_802efc64 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802efc70 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802efc7c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802efc88 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802efc94 = { 0.0f, 0.0f, 0.0f };
-#ifdef MUST_MATCH
-// Keep this copy at the original load site as well.
-__declspec(section ".rodata") Vec vec3_802efca0 = { 0.0f, 0.0f, 0.0f };
-#else
-const Vec vec3_802efca0 = { 0.0f, 0.0f, 0.0f };
-#endif
-
-
 // prototypes for the event wrappers
 
 // this file uses -O4,s
@@ -72,7 +45,7 @@ void battleCameraInit(void) {
   camera->zoom = 0.0f;
   camera->moveSpeedLv = 1;
   camera->zoomSpeedLv = 1;
-  camera->position = vec3_802efc40;
+  camera->position = (Vec){ 0.0f, 0.0f, 0.0f };
   camera->unk4 = 0;
 }
 
@@ -647,20 +620,8 @@ void battleCameraMain(void) {
   wp->cameraWork.field_0x44.x = cam->cameraAt.x;
   wp->cameraWork.field_0x44.y = cam->cameraAt.y;
   wp->cameraWork.field_0x44.z = cam->cameraAt.z;
-  {
-    Vec tmp = vec3_802efc4c;
-    tmp.x = o1;
-    tmp.y = o2;
-    tmp.z = o3;
-    wp->cameraWork.unk68 = tmp;
-  }
-  {
-    Vec tmp2 = vec3_802efc58;
-    tmp2.x = o4;
-    tmp2.y = o5;
-    tmp2.z = o6;
-    wp->cameraWork.field_0x74 = tmp2;
-  }
+  wp->cameraWork.unk68 = (Vec){ o1, o2, o3 };
+  wp->cameraWork.field_0x74 = (Vec){ o4, o5, o6 };
   if (!(wp->cameraWork.flags & 1) && !(wp->cameraWork.flags & 2)) {
     padRumbleOff(0);
   }
@@ -954,8 +915,6 @@ USER_FUNC(evt_btl_camera_set_homing_unit) {
   s32 type2 = evtGetValue(event, args[2]);
   Vec pos;
   Vec pos2;
-  Vec home;
-  Vec hit;
 
   wp = _battleWorkPointer;
   camera = &wp->cameraWork;
@@ -965,22 +924,14 @@ USER_FUNC(evt_btl_camera_set_homing_unit) {
   camera->unk18 = BtlUnit_GetBodyPartsId(unit);
   part = BattleGetUnitPartsPtr(camera->unk10, camera->unk18);
   BtlUnit_GetHomePos(unit, &pos.x, &pos.y, &pos.z);
-  home = vec3_802efc64;
-  home.x = pos.x;
-  home.y = pos.y;
-  home.z = pos.z;
-  camera->unkBC = home;
+  camera->unkBC = (Vec){ pos.x, pos.y, pos.z };
   if (type2 != -1) {
     camera->unk14 = BattleTransID(event, type2);
     unit2 = BattleGetUnitPtr(wp, camera->unk14);
     camera->unk1C = BtlUnit_GetBodyPartsId(unit2);
     part = BattleGetUnitPartsPtr(camera->unk14, camera->unk1C);
     BtlUnit_GetHitPos(unit2, part, &pos2.x, &pos2.y, &pos2.z);
-    hit = vec3_802efc70;
-    hit.x = pos2.x;
-    hit.y = pos2.y;
-    hit.z = pos2.z;
-    camera->unkC8 = hit;
+    camera->unkC8 = (Vec){ pos2.x, pos2.y, pos2.z };
   }
   return EVT_RETURN_DONE;
 }
@@ -1006,8 +957,6 @@ USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   s32 partId2 = evtGetValue(event, args[4]);
   Vec pos;
   Vec pos2;
-  Vec home;
-  Vec hit;
 
   wp = _battleWorkPointer;
   camera = &wp->cameraWork;
@@ -1023,11 +972,7 @@ USER_FUNC(evt_btl_camera_set_homing_unitparts) {
 #endif
   part = BattleGetUnitPartsPtr(camera->unk10, camera->unk18);
   BtlUnit_GetHomePos(unit, &pos.x, &pos.y, &pos.z);
-  home = vec3_802efc7c;
-  home.x = pos.x;
-  home.y = pos.y;
-  home.z = pos.z;
-  camera->unkBC = home;
+  camera->unkBC = (Vec){ pos.x, pos.y, pos.z };
   if (type2 != -1) {
     camera->unk14 = BattleTransID(event, type2);
     camera->unk1C = partId2;
@@ -1038,11 +983,7 @@ USER_FUNC(evt_btl_camera_set_homing_unitparts) {
 #endif
     part = BattleGetUnitPartsPtr(camera->unk14, camera->unk1C);
     BtlUnit_GetHitPos(unit, part, &pos2.x, &pos2.y, &pos2.z);
-    hit = vec3_802efc88;
-    hit.x = pos2.x;
-    hit.y = pos2.y;
-    hit.z = pos2.z;
-    camera->unkC8 = hit;
+    camera->unkC8 = (Vec){ pos2.x, pos2.y, pos2.z };
   }
   return EVT_RETURN_DONE;
 }
@@ -1058,8 +999,6 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   BattleUnitPart *part;
   Vec pos;
   Vec pos2;
-  Vec home;
-  Vec hit;
 
   priority = evtGetValue(event, args[0]);
   type = evtGetValue(event, args[1]);
@@ -1077,18 +1016,10 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   part = BattleGetUnitPartsPtr(camera->unk10, camera->unk18);
   BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
   BtlUnit_GetHitPos(unit, part, &pos2.x, &pos2.y, &pos2.z);
-  home = vec3_802efc94;
-  home.x = pos.x;
-  home.y = pos.y;
-  home.z = pos.z;
-  camera->unkBC = home;
+  camera->unkBC = (Vec){ pos.x, pos.y, pos.z };
   camera->unk20 = memberId;
   member = &audience->members[memberId];
-  hit = vec3_802efca0;
-  hit.x = member->position.x;
-  hit.y = member->position.y;
-  hit.z = member->position.z;
-  camera->unkC8 = hit;
+  camera->unkC8 = (Vec){ member->position.x, member->position.y, member->position.z };
   return EVT_RETURN_DONE;
 }
 

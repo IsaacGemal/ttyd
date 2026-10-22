@@ -156,48 +156,11 @@ const f32 R_audience_delta_multiplier[] = {
 
 const s32 R_num_audience_type_weights[] = { 20, 40, 20, 5, 3, 2, 1, 1, 1, 1, 1 };
 
-// Match-only: the original's vec3_802f972c is a zero Vec the case-0 block copies as an
-// rvalue aggregate.  Expressing it as a compound literal makes MWCC pool the template object
-// at this source position, which is exactly the deleted vec3_802f972c slot in .rodata, and
-// reproduces the original case-0 load/store schedule (a named load schedules the arithmetic
-// z,x,y instead of the original y,z,x).  The helper must stay here, not above the function:
-// the template's .rodata offset follows the helper's source position, not the call site.
-static inline Vec battleAudienceItemZeroVec(void) { return (Vec){ 0.0f, 0.0f, 0.0f }; }
-#ifndef MUST_MATCH
-const Vec vec3_802f972c = { 0.0f, 0.0f, 0.0f };
-#endif
-const Vec vec3_802f9738 = { 0.0f, 0.0f, 0.0f };
-#ifdef MUST_MATCH
-// Retail keeps this in .rodata, but MWCC only materialises its address with lis+addi
-// (instead of folding the copy into lwzu) when the object is not const.
-__declspec(section ".rodata") Vec vec3_802f9744 = { 0.9f, 0.9f, 0.9f };
-#else
-const Vec vec3_802f9744 = { 0.9f, 0.9f, 0.9f };
-#endif
-const Vec vec3_802f9750 = { 0.75f, 0.75f, 0.75f };
-const Vec vec3_802f975c = { -96.0f, 106.0f, 0.0f };
-#ifdef MUST_MATCH
-// Non-const for the same reason as vec3_802f9744: DispAudience's copy then keeps retail's lis+addi.
-__declspec(section ".rodata") Vec vec3_802f9768 = { 0.0f, 0.0f, -1.0f };
-#else
-const Vec vec3_802f9768 = { 0.0f, 0.0f, -1.0f };
-#endif
-const f32 dat_802f9774[] = {
-	0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-	1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-	0.0f, 1.075f, 0.0f, 0.075f, 1.0f, 0.075f, 1.0f, 1.075f,
-	0.0f, 0.075f, 0.0f, 1.075f, 1.0f, 1.075f, 0.0f, 1.075f,
-};
-
 __declspec(section ".sdata2") u32 dat_8041e608 = 0xFFFFFF00;
-__declspec(section ".sdata2") u32 dat_8041e60c = 0xFFFFFFCF;
-__declspec(section ".sdata2") u32 dat_8041e610 = 0xFFFFFFFF;
 
-// Default audience colour scratch word and the section's trailing 4-byte gap. Objects land in
-// reverse declaration order, so the gap is declared before unk_80423080.
+// The section's trailing 4-byte .sbss2 gap, after the audience colour literal's template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u8 gap_10_80423084_sbss2[4];
-__declspec(section ".sdata") u32 unk_80423080;
 #pragma section ".sdata" ".sbss"
 
 
@@ -206,7 +169,6 @@ __declspec(section ".sdata") u32 unk_80423080;
 
 extern BattleWork* _battleWorkPointer;
 
-extern u32 unk_80423080;
 typedef struct BattleAudienceTexCoords {
 	f32 v[32];
 } BattleAudienceTexCoords;
@@ -1748,14 +1710,8 @@ BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 //  - every `float_*_8041e6xx` external was replaced by its literal (0.0f, 1.0f, 10.0f, …), which is what the
 //    original source used: with literals MWCC colours the FP registers as the target does;
 //  - the outer `if (item+0x44)` was inverted so the else body is the fall-through branch;
-//  - the `case 0` vecA block is written/ordered so MWCC's scheduler reproduces the original's float
-//    load/store schedule (see the statement order of the MUST_MATCH block there);
-//  - the case-0 vecA block copies the zero Vec from a compound-literal rvalue (the
-//    `battleAudienceItemZeroVec` helper above), not from a named global: MWCC then emits the
-//    template object at the helper's source position, which is the original `vec3_802f972c`
-//    .rodata slot, and schedules the arithmetic `y, z, x` like the original instead of `z, x, y`.
-//    The helper's position is load-bearing (the template's offset follows it), so it sits with
-//    the data, not above this function;
+//  - the case-0 position is a compound literal stored after the scale/angle stores, not a copy of a
+//    named Vec: MWCC then schedules the arithmetic `y, z, x` like the original instead of `z, x, y`;
 //  - the case-3 inner `if (0x44 == 2)` jumps straight to the case-4 body like the original (a
 //    `goto`; without it MWCC falls through the `state != 4` check, 1 instruction);
 //  - the deactivate path reuses `member` for the second `BattleAudienceGetPtr` call, which is what the
@@ -1772,8 +1728,6 @@ void BattleAudienceItemCtrlProcess(void) {
 	BattleUnitPart* part;
 	BattleAudienceItemKind* kindItems;
 	Vec hitPos;
-	Vec vecA;
-	Vec vecB;
 	f32 dist;
 	f32 dx;
 	s8 turns;
@@ -1832,25 +1786,10 @@ void BattleAudienceItemCtrlProcess(void) {
 				item->mItemType = kindItems[offset].type;
 			}
 			item->timer = i + 0xb4;
-#ifdef MUST_MATCH
-			/* Statement order is a scheduling aid only: it makes MWCC emit the original's
-			   float load/store schedule.  The #else block is behaviourally identical. */
 			item->scale = 1.0f;
 			item->angleZ = 0.0f;
-			vecA = battleAudienceItemZeroVec();
-			vecA.x = member->position.x + kind->offsetX;
-			vecA.y = member->position.y + kind->offsetY - 10.0f;
-			vecA.z = member->position.z + 1.0f;
-			item->pos = vecA;
-#else
-			vecA = vec3_802f972c;
-			vecA.x = member->position.x + kind->offsetX;
-			vecA.y = member->position.y + kind->offsetY - 10.0f;
-			vecA.z = member->position.z + 1.0f;
-			item->scale = 1.0f;
-			item->angleZ = 0.0f;
-			item->pos = vecA;
-#endif
+			item->pos = (Vec){ member->position.x + kind->offsetX, member->position.y + kind->offsetY - 10.0f,
+			                   member->position.z + 1.0f };
 			item->state++;
 			/* fallthrough */
 		case 1:
@@ -1894,11 +1833,9 @@ void BattleAudienceItemCtrlProcess(void) {
 				if (offset >= 5) {
 					offset = 5;
 				}
-				vecB = vec3_802f9738;
-				vecB.x = member->dispPos.x + kind->offsetX;
-				vecB.y = member->dispPos.y + kind->offsetY + intplGetValue(0, offset, 5, -10.0f, 0.0f);
-				vecB.z = member->dispPos.z + 1.0f;
-				item->pos = vecB;
+				item->pos = (Vec){ member->dispPos.x + kind->offsetX,
+				                   member->dispPos.y + kind->offsetY + intplGetValue(0, offset, 5, -10.0f, 0.0f),
+				                   member->dispPos.z + 1.0f };
 			}
 			break;
 		case 2:
@@ -2077,8 +2014,6 @@ void BattleAudienceItemCtrlProcess(void) {
 }
 
 // Computing the case-10 `dx` before `radius` loads star+0x20 first, matching retail's register order.
-// The vec3_802f9744 copy emits retail's lis+addi only when the object is non-const (see its
-// MUST_MATCH definition).
 void BattleAudienceApSrcCtrlProcess(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceStar* star;
@@ -2167,7 +2102,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			star->state = 0xA;
 			star->frame = 0;
 			star->duration = irand(0xA) + 0xF;
-			star->scale = vec3_802f9744;
+			star->scale = (Vec){ 0.9f, 0.9f, 0.9f };
 			break;
 		case 10:
 			star->frame = star->frame + 1;
@@ -2225,9 +2160,8 @@ void BattleAudienceApSrcCtrlProcess(void) {
 }
 
 // The second loop reuses `i` (its second definition becomes a compiler object, so the backend copies the
-// shared zero into it: retail's `li r30,0 ... mr r28,r30`). Making the `star+0x44` store `volatile`
-// serialises it before the constant-Vec copy, and making the `star+0x20` store `volatile` keeps the
-// `star+0x2c` copy's loads out of the two rand blocks.
+// shared zero into it: retail's `li r30,0 ... mr r28,r30`). Making the `star+0x20` store `volatile`
+// keeps the `star+0x2c` copy's loads out of the two rand blocks.
 BOOL BattleAudienceApSrcEntry(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -2261,15 +2195,8 @@ BOOL BattleAudienceApSrcEntry(void) {
 	}
 	star->flags = 1;
 	star->state = 0;
-#ifdef MUST_MATCH
-	// Match-only: the original stores star+0x44 before the constant Vec copy and serialises that copy's
-	// loads/stores (lwz/lwz/stw/stw/lwz/stw); the named-global form lets MWCC software-pipeline it.
-	*(volatile s32*)&star->frame = 0;
-	*(volatile Vec*)&star->scale = *(const volatile Vec*)&vec3_802f9750;
-#else
-	star->scale = vec3_802f9750;
 	star->frame = 0;
-#endif
+	star->scale = (Vec){ 0.75f, 0.75f, 0.75f };
 	star->alpha = 0x80;
 	member = BattleAudienceGetPtr(ids[irand(count)]);
 	star->pos.x = member->position.x;
@@ -2291,11 +2218,7 @@ BOOL BattleAudienceApSrcEntry(void) {
 #else
 	star->startPos = star->pos;
 #endif
-#ifdef MUST_MATCH
-	*(volatile Vec*)&star->endPos = *(const volatile Vec*)&vec3_802f975c;
-#else
-	star->endPos = vec3_802f975c;
-#endif
+	star->endPos = (Vec){ -96.0f, 106.0f, 0.0f };
 	return TRUE;
 }
 
@@ -2470,11 +2393,7 @@ void BattleAudienceAnimProcess(void) {
 // named local at r1+0x8 and the hidden by-value copy at r1+0xc, matching the original; a plain
 // assignment puts them the other way round.
 static inline GXColor BattleAudienceDispAudience_color(u8 r, u8 g, u8 b, u8 a) {
-	GXColor color = *(GXColor*)&unk_80423080;
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
+	GXColor color = (GXColor){ r, g, b, a };
 	return color;
 }
 
@@ -2634,7 +2553,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			mtxRot[2][3] = 0.0f;
 		}
 
-		member->normal = vec3_802f9768;
+		member->normal = (Vec){ 0.0f, 0.0f, -1.0f };
 		PSMTXMultVec(mtxRot, &member->normal, &member->normal);
 
 		mtxScale[0][3] += offsetX;
@@ -2655,7 +2574,12 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		PSMTXConcat(cam->view, mtxScale, mtxDraw);
 		GXLoadPosMtxImm(mtxDraw, 0);
 
-		texCoords = *(BattleAudienceTexCoords*)dat_802f9774;
+		texCoords = (BattleAudienceTexCoords){ {
+			0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+			1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+			0.0f, 1.075f, 0.0f, 0.075f, 1.0f, 0.075f, 1.0f, 1.075f,
+			0.0f, 0.075f, 0.0f, 1.075f, 1.0f, 1.075f, 0.0f, 1.075f,
+		} };
 
 		texBase = 0;
 		front = BattleAudience_GetFront(i);
@@ -2786,12 +2710,9 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 	Vec pos;
 	Mtx mtx;
 
-	extern u32 dat_8041e60c;
-	extern u32 dat_8041e610;
-
 	BattleAudienceBaseGetPtr();
 	win = BattleAudienceWinGetPtr();
-	color = *(GXColor*)&dat_8041e60c;
+	color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF };
 	windowDispGX_Waku_col(win->posX, win->posY, 90.0f, 40.0f, 10.0f, 0, color);
 
 	pos = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -2801,7 +2722,7 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 
 	PSMTXTrans(mtx, 75.0f + win->posX,
 	           win->posY - 40.0f, 0.0f);
-	numberColor = *(GXColor*)&dat_8041e610;
+	numberColor = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
 	iconNumberDispGx(mtx, (s32)win->count, FALSE, numberColor);
 }
 
