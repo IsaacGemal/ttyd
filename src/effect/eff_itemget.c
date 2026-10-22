@@ -39,16 +39,6 @@ static GXColor color_tbl[10] = {
 u8 size_tbl[12] = {
 	0x32, 0x32, 0x32, 0x28, 0x0C, 0x0C, 0x0C, 0x0A, 0x0A, 0x0F, 0x00, 0x00
 };
-static const GXColor dat_80420b98 = { 0xFF, 0xFF, 0xFF, 0x00 };
-static const GXColor dat_80420b9c = { 0xFF, 0xFF, 0xFF, 0x00 };
-static const GXColor dat_80420ba0 = { 0xFF, 0xFF, 0xFF, 0x00 };
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it
-// with a small-data section and place the objects by hand, declared in reverse address order.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804232f8;
-__declspec(section ".sdata") GXColor unk_804232f4;
-__declspec(section ".sdata") GXColor unk_804232f0;
-#pragma section ".sdata" ".sbss"
 
 EffectEntry* effItemGetEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
@@ -191,12 +181,6 @@ void effItemGetMain(EffectEntry* effect) {
 	}
 }
 
-// builds the colour in the same stack temp the original GXSetChanMatColor call used
-static inline GXColor itemColor0(u8 a, GXColor c) {
-	c.a = a;
-	return c;
-}
-
 void effItemGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effItemGetData* data = effect->userdata;
@@ -292,10 +276,10 @@ void effItemGetDisp(CameraId camId, void* param) {
 			PSMTXConcat(cam->view, mtxBase, mtxTrans);
 			PSMTXTrans(mtxRot, 2.0f, -2.0f, 0.0f);
 			PSMTXConcat(mtxTrans, mtxRot, mtxTrans);
-			GXSetChanMatColor(GX_COLOR0A0, itemColor0(alphaA, unk_804232f0));
+			GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0, 0, 0, alphaA });
 		} else {
 			PSMTXConcat(cam->view, mtxBase, mtxTrans);
-			GXSetChanMatColor(GX_COLOR0A0, itemColor0(alphaB, dat_80420b98));
+			GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, alphaB });
 		}
 		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
@@ -348,13 +332,13 @@ void effItemGetDisp(CameraId camId, void* param) {
 				PSMTXConcat(mtxTex, mtxTrans, mtxTex);
 				PSMTXRotRad(mtxRot, 'z', data->angle);
 				PSMTXConcat(mtxTex, mtxRot, mtxTex);
-				GXSetChanMatColor(GX_COLOR0A0, itemColor0(alphaA, unk_804232f4));
+				GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0, 0, 0, alphaA });
 			} else {
 				PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
 				PSMTXConcat(mtxBase, mtxTrans, mtxTex);
 				PSMTXRotRad(mtxRot, 'z', data->angle);
 				PSMTXConcat(mtxTex, mtxRot, mtxTex);
-				GXSetChanMatColor(GX_COLOR0A0, itemColor0(data->alpha * 255 / 255, dat_80420b9c));
+				GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha * 255 / 255 });
 			}
 			PSMTXConcat(cam->view, mtxTex, mtxTrans);
 			GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
@@ -372,12 +356,6 @@ void effItemGetDisp(CameraId camId, void* param) {
 			GXTexCoord2f32(0.0f, 1.0f);
 		}
 	}
-}
-
-// builds the colour in the same stack temp the original GXSetChanMatColor call used
-static inline GXColor itemColor1(u8 a, GXColor c) {
-	c.a = a;
-	return c;
 }
 
 void effItemUseDisp(CameraId camId, void* param) {
@@ -436,13 +414,13 @@ void effItemUseDisp(CameraId camId, void* param) {
 				PSMTXRotRad(mtx2, 'z', data->angle);
 				PSMTXConcat(mtx1, mtx2, mtx1);
 				PSMTXConcat(mtx4, mtx1, mtx1);
-				GXSetChanMatColor(GX_COLOR0A0, itemColor1((data->alpha * 64) / 255, unk_804232f8));
+				GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0, 0, 0, (data->alpha * 64) / 255 });
 			} else {
 				PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
 				PSMTXRotRad(mtx2, 'z', data->angle);
 				PSMTXConcat(mtx1, mtx2, mtx1);
 				PSMTXConcat(mtx4, mtx1, mtx1);
-				GXSetChanMatColor(GX_COLOR0A0, itemColor1((data->alpha * 128) / 255, dat_80420ba0));
+				GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, (data->alpha * 128) / 255 });
 			}
 			{
 				f32 f = 21.333334f;

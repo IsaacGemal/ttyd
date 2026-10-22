@@ -31,7 +31,6 @@
 #include "evt/evt_img.h"
 #include "evt/evt_map.h"
 #include "party/party_motion.h"
-typedef struct SukiBtnTbl { s32 a[4]; } SukiBtnTbl;
 
 static const f32 float_1_804220d8 = 1.0f;
 extern s32 marioAttackEvent_Suki[];
@@ -93,31 +92,18 @@ typedef struct SukiBytes6 {
     u8 x[6];
 } SukiBytes6;
 
-// File .rodata, in the original object's address order (main_suki reaches dat_8030096c at +0x3C,
-// vec3_803009b4 at +0x84 and the img strings at +0x260 through the str_btl_wn_sac_sukkari_sukkiri base).
+// File .rodata, in the original object's address order (main_suki reaches its table literal at +0x3C,
+// its position literal at +0x84 and the img strings at +0x260 through the str_btl_wn_sac_sukkari_sukkiri
+// base).
 const char str_btl_wn_sac_sukkari_sukkiri[0x1C] = "btl_wn_sac_sukkari_sukkiri";
 const char str_msg_sukkari_sukkiri[0x14] = "msg_sukkari_sukkiri";
 const char str_msg_sac_7[0xC] = "msg_sac_7";
-__declspec(section ".rodata") Vec dat_8030096c[6] = {
-    {95.0f, 35.0f, -150.0f},
-    {180.0f, 80.0f, -150.0f},
-    {95.0f, 110.0f, -150.0f},
-    {10.0f, 80.0f, -150.0f},
-    {30.0f, -10.0f, -150.0f},
-    {160.0f, -10.0f, -150.0f},
-};
-__declspec(section ".rodata") Vec vec3_803009b4 = {0.0f, -1000.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_803009c0 = {0.0f, -45.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_803009cc = {0.0f, -45.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_803009d8 = {0.0f, -45.0f, 0.0f};
-const u32 dat_803009e4[4] = {0x100, 0x200, 0x400, 0x800};
 __declspec(section ".sdata2") const u8 N_ohko_rate_tbl[8] = { 0x32, 0x3C, 0x46, 0x50, 0x5A, 0x64, 0x00, 0x00 };
 extern u32 weapon_words[48];
 static u32 nice_event[8] = {
     0x0005005B, (u32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0xFFFFFF88,
     0x00000078, 0,                     2,          1,
 };
-__declspec(section ".sdata2") const GXColor dat_804220a0 = { 0x00, 0x00, 0x00, 0xFF };
 
 static SukiWork* get_ptr(void);
 static void main_base(void);
@@ -131,28 +117,19 @@ static s32 start_game(EventEntry* event, BOOL isFirstCall);
 static void disp_3D_alpha(CameraId camera, void* param);
 static void disp_3D(CameraId camera, void* param);
 
-#ifdef MUST_MATCH
-// MUST_MATCH: a 6x Vec struct assignment makes MWCC emit the original's inline 9-iteration copy
-// loop; a plain memcpy over a Vec[6] emits a real `bl memcpy`.
-typedef struct SukiTable6 {
-    Vec v[6];
-} SukiTable6;
-#endif
-
 // .text:0x5BC | 0x8024AE84 | size: 0x174
 s32 main_suki(EventEntry* event, BOOL isFirstCall) {
     SukiWork* work = get_ptr();
     s32* args = event->args;
-#ifdef MUST_MATCH
-    SukiTable6 table = *(SukiTable6*)dat_8030096c;
-#else
-    Vec table[6];
-#endif
+    Vec table[6] = {
+        {95.0f, 35.0f, -150.0f},
+        {180.0f, 80.0f, -150.0f},
+        {95.0f, 110.0f, -150.0f},
+        {10.0f, 80.0f, -150.0f},
+        {30.0f, -10.0f, -150.0f},
+        {160.0f, -10.0f, -150.0f},
+    };
     s32 i;
-
-#ifndef MUST_MATCH
-    memcpy(table, dat_8030096c, 0x48);
-#endif
 
     if (isFirstCall) {
         memset(work, 0, sizeof(SukiWork));
@@ -164,7 +141,7 @@ s32 main_suki(EventEntry* event, BOOL isFirstCall) {
         strcpy(work->img[3], "sac_suki_img3");
         strcpy(work->img[4], "sac_suki_img4");
         strcpy(work->img[5], "sac_suki_img5");
-        work->pos = vec3_803009b4;
+        work->pos = (Vec){0.0f, -1000.0f, 0.0f};
     }
     main_base();
     for (i = 0; i < 7; i++) {
@@ -189,10 +166,7 @@ static void main_base(void) {
         // fall through
     case 2:
         if (work->count == 0) {
-            Vec pos = vec3_803009c0;
-
-            pos.x = intplGetValue(4, work->counter, 15, -1000.0f, 0.0f);
-            work->pos = pos;
+            work->pos = (Vec){intplGetValue(4, work->counter, 15, -1000.0f, 0.0f), -45.0f, 0.0f};
         }
         if (work->counter == 0) {
             if (work->starState != 4) {
@@ -232,7 +206,7 @@ static void main_base(void) {
             else {
                 work->state = 4;
             }
-            work->pos = vec3_803009cc;
+            work->pos = (Vec){0.0f, -45.0f, 0.0f};
         }
         break;
     case 3:
@@ -305,10 +279,7 @@ static void main_base(void) {
     case 5:
         work->counter++;
         if (work->counter <= 30) {
-            Vec pos = vec3_803009d8;
-
-            pos.x = intplGetValue(4, work->counter, 30, 0.0f, -1000.0f);
-            work->pos = pos;
+            work->pos = (Vec){intplGetValue(4, work->counter, 30, 0.0f, -1000.0f), -45.0f, 0.0f};
         }
         break;
     default:
@@ -320,11 +291,7 @@ static void main_base(void) {
 // 0x8(r1) and the by-value parameter copy at 0xC(r1), as the retail build does; building it inline
 // in set_tev swaps those two slots.
 static inline GXColor make_tev_color(u8 flash) {
-    GXColor color = dat_804220a0;
-
-    color.r = flash;
-    color.g = flash;
-    color.b = flash;
+    GXColor color = (GXColor){flash, flash, flash, 0xFF};
     return color;
 }
 
@@ -332,7 +299,7 @@ static inline GXColor make_tev_color(u8 flash) {
 void main_button(s32 index) {
     SukiWork* work = get_ptr();
     SukiButton* button = &work->buttons[index];
-    SukiBtnTbl tbl = *(SukiBtnTbl*)dat_803009e4;
+    s32 tbl[4] = {0x100, 0x200, 0x400, 0x800};
     Vec pos;
 
     switch (button->state) {
@@ -343,7 +310,7 @@ void main_button(s32 index) {
         pos = (Vec){0.0f, -40.0f, 0.0f};
         pos.x = 60.0f * (f32)index - 30.0f * (f32)(work->max - 1);
         button->pos = pos;
-        button->button = tbl.a[irand(4)];
+        button->button = tbl[irand(4)];
         break;
     case 2:
         break;

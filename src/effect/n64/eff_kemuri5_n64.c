@@ -12,9 +12,6 @@
 // The zero Vec, the "Kemuri5N64" string and the int->float conversion double are pooled by the
 // compiler from the compound literal, the string literal and the (f32) conversion below.
 
-// .sdata2 GXColor: r=0x70, g=0x60, b=0x18, a=0x00.
-extern const GXColor dat_8041f358;
-
 // .data quad vertex array for effSetVtxDescN64 (kmr_a_1_v).
 static u32 kmr_a_1_v[14] = {
     0xFFF80007, 0x00000000, 0x0000FFFF, 0xFFFF0007,
@@ -143,12 +140,6 @@ void effKemuri5Main(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri5Disp, effect);
 }
 
-static inline void kemuri5SetColor(u8 a) {
-    GXColor color = dat_8041f358;
-    color.a = a;
-    GXSetTevColor(GX_TEVREG0, color);
-}
-
 void effKemuri5Disp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     CameraEntry* cam = camGetPtr(camId);
@@ -179,7 +170,7 @@ void effKemuri5Disp(CameraId camId, void* param) {
         if (data->alive == 0) {
             continue;
         }
-        kemuri5SetColor(data->alpha);
+        GXSetTevColor(GX_TEVREG0, (GXColor){ 0x70, 0x60, 0x18, data->alpha });
         PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
         PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
         PSMTXConcat(trans, rot, trans);
@@ -191,6 +182,3 @@ void effKemuri5Disp(CameraId camId, void* param) {
         tri2(0, 3, 1, 0, 0, 2, 3, 0);
     }
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041f358 = {0x70, 0x60, 0x18, 0x00};

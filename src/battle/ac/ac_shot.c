@@ -11,22 +11,10 @@
 #include "system.h"
 #include <string.h>
 
-// .rodata constants used by _draw_target_mark and actionCommandDisp. The original emitted these as
-// six named symbols 0xC apart; one contiguous array here produces the same bytes and lets the
-// code index from the single base pointer as retail does. It is non-const (as the text needs) but
-// __declspec(section) forces it into .rodata where the original keeps it.
-extern Vec vec3_802f92b8[6];
-
-// SFX name the original unit emitted into .rodata (defined at the end, after the vectors).
-
-// .sdata2 constants used by the whole unit; the original emits them as named symbols.
-extern u32 dat_8041e4a8;
-extern const GXColor dat_8041e4ac;
-extern const GXColor dat_8041e4b0;
-extern const GXColor dat_8041e4b4;
-
-// .sbss2 default colour the original emitted; referenced when building the icon colour.
-extern u32 unk_80423078;
+// .sdata2: dat_8041e4a8 is a mutable 0xFFFFFFFF word in the original; __declspec(section) keeps it
+// in .sdata2 so the text loads it instead of folding the immediate. The colour literals' templates
+// follow it.
+__declspec(section ".sdata2") u32 dat_8041e4a8 = 0xFFFFFFFF;
 
 // _disp_target_mark's action-command work area at BattleWork+0x1F4C. No header declares it,
 // so the fields are named from the original's uses. Offsets here are relative to 0x1F4C.
@@ -340,23 +328,11 @@ static void _ac_disp_init(BattleWork* work) {
     disp->value = 0.0f;
 }
 
-// The original builds the icon colour in a local and copies it to the by-value argument slot.
-static inline GXColor _makeIconColor(BattleACDispParams* disp) {
-    GXColor* tint = (GXColor*)&disp->field_0xC;
-    GXColor color = *(GXColor*)&unk_80423078;
-    color.r = tint->r;
-    color.g = tint->g;
-    color.b = tint->b;
-    color.a = tint->a;
-    return color;
-}
-
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
     AcShotWork* aw = (AcShotWork*)&ac->field_0x2BC[0];
     BattleACDispParams* disp = &ac->dispParams;
-    Vec v;
     f32 target;
     f32 baseX;
 
@@ -365,10 +341,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 
     baseX = -200.0f + x;
-    v = vec3_802f92b8[0];
-    v.x = baseX;
-    v.y = 25.0f + y;
-    iconDispGx(1.0f, &v, 0x10, 0x8C);
+    iconDispGx(1.0f, &(Vec){ baseX, 25.0f + y, 0.0f }, 0x10, 0x8C);
 
     target = aw->gauge / 100.0f;
     if (disp->value <= target) {
@@ -399,6 +372,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 
     {
+        GXColor* tint = (GXColor*)&disp->field_0xC;
         Mtx mtx;
         Mtx trans;
         Mtx scale;
@@ -408,7 +382,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                    33.0f + y, 0.0f);
         PSMTXScale(scale, disp->value, 1.0f, 1.0f);
         PSMTXConcat(trans, scale, mtx);
-        iconDispGxCol(mtx, 0x10, 0x8D, _makeIconColor(disp));
+        iconDispGxCol(mtx, 0x10, 0x8D, (GXColor){ tint->r, tint->g, tint->b, tint->a });
     }
 }
 
@@ -425,30 +399,17 @@ static inline Vec _drawTargetMarkRot(Vec v, f32 angle) {
     return v;
 }
 
-#ifdef MUST_MATCH
-#define DRW_VEC(i, name) (vecs[i])
-#else
-#define DRW_VEC(i, name) (name)
-#endif
-
 void _draw_target_mark(const GXColor* color, f32 x, f32 y, f32 z, f32 angle) {
-#ifdef MUST_MATCH
-    Vec* vecs = (Vec*)vec3_802f92b8;
-#endif
     Vec trans;
 
-    trans = DRW_VEC(1, vec3_802f92b8[1]);
-    trans.x = x;
-    trans.y = y;
-    trans.z = z;
+    trans = (Vec){ x, y, z };
 
-    _drawTargetMarkQuad(0x42, trans, DRW_VEC(2, vec3_802f92b8[2]),
-                        _drawTargetMarkRot(DRW_VEC(3, vec3_802f92b8[3]), -angle), *color);
+    _drawTargetMarkQuad(0x42, trans, (Vec){ 0.5f, 0.5f, 1.0f },
+                        _drawTargetMarkRot((Vec){ 0.0f, 0.0f, 0.0f }, -angle), *color);
 
-    _drawTargetMarkQuad(0x41, trans, DRW_VEC(4, vec3_802f92b8[4]),
-                        _drawTargetMarkRot(DRW_VEC(5, vec3_802f92b8[5]), angle), *color);
+    _drawTargetMarkQuad(0x41, trans, (Vec){ 0.5f, 0.5f, 1.0f },
+                        _drawTargetMarkRot((Vec){ 0.0f, 0.0f, 0.0f }, angle), *color);
 }
-#undef DRW_VEC
 
 void _disp_target_mark(CameraId cameraId, void* param) {
     BattleWork* work = param;
@@ -461,17 +422,8 @@ void _disp_target_mark(CameraId cameraId, void* param) {
     pos.y = 60.0f * cosfd(tm->rotZ) + tm->y;
     pos.z = tm->z;
     btlGetScreenPoint(&pos, &screen);
-    color = dat_8041e4ac;
+    color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
     _draw_target_mark(&color, screen.x, screen.y, screen.z, tm->rollAngle);
-}
-
-// The original builds the afterimage colour after intplGetValue and copies it to the by-value slot.
-static inline GXColor _makeAfterimageColor(f32 value) {
-    s32 alpha = (s32)intplGetValue(0, (s32)(30.0f - value), 0x1E, 255.0f,
-                                   0.0f);
-    GXColor color = dat_8041e4b4;
-    color.a = (u8)alpha;
-    return color;
 }
 
 void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
@@ -494,10 +446,11 @@ void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
                 btlGetScreenPoint(&pos, &screen);
                 value = aw->valueHistory[i];
                 if (value >= 30.0f) {
-                    GXColor color = dat_8041e4b0;
+                    GXColor color = {0x90, 0x80, 0xA0, 0xFF};
                     _draw_target_mark(&color, screen.x, screen.y, screen.z, aw->angleHistory[i]);
                 } else {
-                    GXColor color = _makeAfterimageColor(value);
+                    s32 alpha = (s32)intplGetValue(0, (s32)(30.0f - value), 0x1E, 255.0f, 0.0f);
+                    GXColor color = (GXColor){0x90, 0x80, 0xA0, alpha};
                     _draw_target_mark(&color, screen.x, screen.y, screen.z, aw->angleHistory[i]);
                 }
                 if (aw->valueHistory[i] <= 0.0f) {
@@ -508,33 +461,11 @@ void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
     }
 }
 
-// .rodata: the vector table then the SFX name, in the original's order. The compiler's pooled
-// 0.5/i2f doubles are emitted after these named objects. The table is non-const to keep the
-// retail load scheduling, forced into .rodata.
-__declspec(section ".rodata") Vec vec3_802f92b8[6] = {
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.5f, 0.5f, 1.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.5f, 0.5f, 1.0f},
-    {0.0f, 0.0f, 0.0f},
-};
-
-// .sdata2 definitions of this unit, in the original's order. dat_8041e4a8 is a mutable
-// 0xFFFFFFFF word in the original; __declspec(section) keeps it in .sdata2 so the text loads it
-// instead of folding the immediate.
-__declspec(section ".sdata2") u32 dat_8041e4a8 = 0xFFFFFFFF;
-const GXColor dat_8041e4ac = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041e4b0 = {0x90, 0x80, 0xA0, 0xFF};
-const GXColor dat_8041e4b4 = {0x90, 0x80, 0xA0, 0x00};
-
 // The original's .sdata2 also has a 4-byte zero tail (gap_09_8041E504_sdata2). It is the section's
 // 8-byte alignment padding: the pooled floats end at 0x5C and the linker pads the section to 0x60
 // with zeros, matching the original without an explicit object.
 
-// .sbss2 default colour followed by the 4-byte section-tail gap. Objects land in reverse
-// declaration order, so the gap is declared before unk_80423078.
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u8 gap_10_8042307C_sbss2[4];
-__declspec(section ".sdata") u32 unk_80423078;
 #pragma section ".sdata" ".sbss"

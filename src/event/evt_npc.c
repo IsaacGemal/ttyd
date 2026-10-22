@@ -27,11 +27,6 @@ s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u
 // prototype can't live in pmario_sound.h yet.
 
 
-// .sbss2 zero scratch colour, placed by hand (the default .sbss2 only holds compiler pool templates).
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80422fc0;
-#pragma section ".sdata" ".sbss"
-
 #pragma pool_data on
 
 #ifdef __MWERKS__
@@ -1792,7 +1787,6 @@ USER_FUNC(evt_npc_set_offscreen) {
 // needed: with it on MWCC emits &color (r4) before npc->description (r3); the original sets up the name argument first
 USER_FUNC(evt_npc_set_color) {
     GXColor color;
-    GXColor tmp;
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     u8 r = evtGetValue(event, args[1]);
@@ -1801,12 +1795,7 @@ USER_FUNC(evt_npc_set_color) {
     u8 a = evtGetValue(event, args[4]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     char* desc = npc->description;
-    tmp = unk_80422fc0;
-    tmp.r = r;
-    tmp.g = g;
-    tmp.b = b;
-    tmp.a = a;
-    color = tmp;
+    color = (GXColor){ r, g, b, a };
     npcSetColor(desc, &color);
     return EVT_RETURN_DONE;
 }

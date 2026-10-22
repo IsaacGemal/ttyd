@@ -18,24 +18,7 @@ extern const f32 float_0p9_80420f18;
 extern const f32 float_1p7_80420f1c;
 extern const f32 float_0p6_80420f20;
 extern const f32 float_48_80420f24;
-extern const u32 dat_80420f10;
-extern const u32 dat_80420f14;
-
-// .rodata
-const Vec vec3_802fe3c0 = { 0.0f, 0.0f, 0.0f };
-#ifdef MUST_MATCH
-// The non-const forms stop MWCC hoisting the loop-invariant cc/d8/e4 field loads out of the inner loop
-// (with const it preloads them into r23-r30 and the whole function's allocation shifts); the section
-// declspec keeps them in .rodata so the unit's section layout is unchanged.
-__declspec(section ".rodata") Vec vec3_802fe3cc = { 0.0f, 0.0f, 0.0f };
-__declspec(section ".rodata") Vec vec3_802fe3d8 = { 0.0f, 1.0f, 0.0f };
-__declspec(section ".rodata") Vec vec3_802fe3e4 = { 0.0f, 0.0f, 0.0f };
-#else
-const Vec vec3_802fe3cc = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fe3d8 = { 0.0f, 1.0f, 0.0f };
-const Vec vec3_802fe3e4 = { 0.0f, 0.0f, 0.0f };
-#endif
-const f64 double_0p21817_802fe3f0 = 0.21816615760326385;
+extern const f64 double_0p21817_802fe3f0;
 
 // .data
 static u32 tex_us[13] = {
@@ -128,10 +111,7 @@ EffectEntry* effStageClearEntry(s32 type, f32 x, f32 y, f32 z) {
 }
 
 static inline Vec initializeStageClearVec(Vec* input) {
-	Vec temp = vec3_802fe3c0;
-	temp.x = input->x;
-	temp.y = input->y;
-	temp.z = input->z;
+	Vec temp = (Vec){ input->x, input->y, input->z };
 	return temp;
 }
 
@@ -199,12 +179,11 @@ void effStageClearMain(EffectEntry* effect) {
 }
 
 static inline Vec getStageClearCamPos(void) {
-	Vec temp = vec3_802fe3cc;
 #ifdef MUST_MATCH
 	// Read the named double so the load comes off the base register instead of a pooled copy of it.
-	temp.z = 1.0f / (f32)tan(*(volatile const f64*)&double_0p21817_802fe3f0);
+	Vec temp = (Vec){ 0.0f, 0.0f, 1.0f / (f32)tan(*(volatile const f64*)&double_0p21817_802fe3f0) };
 #else
-	temp.z = 1.0f / (f32)tan(double_0p21817_802fe3f0);
+	Vec temp = (Vec){ 0.0f, 0.0f, 1.0f / (f32)tan(double_0p21817_802fe3f0) };
 #endif
 	return temp;
 }
@@ -291,10 +270,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 				GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
 				GXSetTevColorIn(0, 0xF, 8, 2, 0xF);
 				GXSetTevAlphaIn(0, 7, 4, 1, 7);
-				{
-					GXColor color = *(GXColor*)&dat_80420f10;
-					GXSetTevColor(1, color);
-				}
+				GXSetTevColor(1, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
 			} else {
 				if (shadow == 0) {
 					u32* tbl = texid_tbl[(u32)gp->language * 2];
@@ -321,10 +297,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 					GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
 					GXSetTevColorIn(2, 2, 0, 1, 0xF);
 					GXSetTevAlphaIn(2, 7, 7, 7, 4);
-					{
-						GXColor color = *(GXColor*)&dat_80420f14;
-						GXSetTevColor(1, color);
-					}
+					GXSetTevColor(1, (GXColor){ 0x36, 0x36, 0x36, 0xFF });
 				} else {
 					effGetTexObj(j + 0x49, &tex);
 					GXLoadTexObj(&tex, 0);
@@ -342,8 +315,8 @@ void effStageClearDisp(CameraId camId, void* param) {
 			GXSetCurrentMtx(0);
 			{
 				Vec camPos = getStageClearCamPos();
-				Vec camUp = vec3_802fe3d8;
-				Vec target = vec3_802fe3e4;
+				Vec camUp = { 0.0f, 1.0f, 0.0f };
+				Vec target = { 0.0f, 0.0f, 0.0f };
 
 				C_MTXLightPerspective(persp, 25.0f, 640.f,
 					0.5f, 0.5f,
@@ -380,10 +353,11 @@ BOOL effStageClearEndChk(EffectEntry* effect) {
 	return data->done != 0;
 }
 
-// .sdata2: the two GXColor words and the float constants, defined after the code so MWCC keeps them as
-// real objects rather than folding them into the function's literal pool.
-const u32 dat_80420f10 = 0x00000080;
-const u32 dat_80420f14 = 0x363636ff;
+// .rodata: the double follows the Vec templates.
+const f64 double_0p21817_802fe3f0 = 0.21816615760326385;
+
+// .sdata2: the float constants, defined after the code so MWCC keeps them as real objects rather than
+// folding them into the function's literal pool.
 const f32 float_0p9_80420f18 = 0.9f;
 const f32 float_1p7_80420f1c = 1.7f;
 const f32 float_0p6_80420f20 = 0.6f;

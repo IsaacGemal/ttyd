@@ -39,17 +39,6 @@ typedef struct TwoDDisplayer {
 TwoDDisplayer* twodPtr;
 u32 twodID;
 
-// .sbss2 scratch words (declared in reverse: placed in reverse of declaration order)
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_8042304c;
-__declspec(section ".sdata") GXColor unk_80423048;
-
-// .sdata2 constants owned by this translation unit (see config/G8MJ01/symbols.txt).
-extern const GXColor dat_8041cca8;
-extern const GXColor dat_8041ccac;
-
-// .sbss2 fog colors.
-
 static TwoDDisplayer* twodNameToPtr(s32 name) {
 	s32 i;
 	TwoDDisplayer* entry;
@@ -67,8 +56,6 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 	s32 i;
 	TwoDDisplayer* entry;
 	Vec pos;
-	GXColor color;
-	GXColor textColor;
 	char text[0x100];
 
 	for (i = 0; i < 100; i++) {
@@ -80,21 +67,19 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			continue;
 		}
 		if (!(entry->data & 0x80000000)) {
-			color = unk_80423048;
 			pos.x = entry->baseX + entry->x;
 			pos.y = entry->baseY + entry->y;
 			pos.z = 0.0f;
-			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, color);
+			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0, 0, 0, 0 });
 			iconDispGx(entry->scale, &pos, 0x10, (u16)entry->data);
 		} else {
 			FontDrawStart();
 			FontDrawScale(entry->scale);
-			textColor = unk_8042304c;
-			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, textColor);
+			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0, 0, 0, 0 });
 			sprintf(text, (char*)entry->data);
-			FontDrawColor(dat_8041cca8);
+			FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
 			FontDrawString(entry->baseX + entry->x, entry->baseY + entry->y, text);
-			FontDrawColor(dat_8041ccac);
+			FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			FontDrawString(entry->baseX + entry->x + 1.0f, entry->baseY + entry->y - 1.0f, text);
 		}
 	}
@@ -222,10 +207,6 @@ WAIT_FRAMES(1)
 END_LOOP
 RETURN
 EVT_END()
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041cca8 = { 0x00, 0x00, 0x00, 0xFF };
-const GXColor dat_8041ccac = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 #pragma explicit_zero_data on
 __declspec(section ".sdata") u32 gap_07_80411DDC_sdata = 0;

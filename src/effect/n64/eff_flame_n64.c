@@ -42,36 +42,7 @@ __declspec(section ".data") u32 stg_flame_3_v[28] = {
 	0xFFCEFFCE, 0xFFFE0000, 0x0000FFFF, 0xFFFF0032, 0xFFCEFFFE, 0x04000000, 0xFFFFFFFF,
 	0x00320032, 0xFFFE0400, 0x0400FFFF, 0xFFFFFFCE, 0x0032FFFE, 0x00000400, 0xFFFFFFFF,
 };
-
-
-// .sbss2 scratch colors referenced by the original display code (declared in reverse of the
-// original's address order: MWCC lays out nobits objects last-declared-first).
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423114;
-__declspec(section ".sdata") GXColor unk_80423110;
-#pragma section ".sdata" ".sbss"
 #pragma force_active reset
-
-/* Void helpers that build the colour and call GXSetTevColor inside: this is the shape that makes MWCC
-   give the two by-value GXColor temporaries the original's interleaved slots (colour1 temp/arg, then
-   colour2 temp/arg); building them in place leaves the temps grouped and the args below them. */
-static inline void effFlameSetColor1(effFlameData* data, s32 alpha) {
-	GXColor color = unk_80423110;
-	color.r = data->tev0Rgb[0];
-	color.g = data->tev0Rgb[1];
-	color.b = data->tev0Rgb[2];
-	color.a = alpha;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void effFlameSetColor2(effFlameData* data) {
-	GXColor color = unk_80423114;
-	color.r = data->tev1Rgba[0];
-	color.g = data->tev1Rgba[1];
-	color.b = data->tev1Rgba[2];
-	color.a = data->tev1Rgba[3];
-	GXSetTevColor(GX_TEVREG1, color);
-}
 
 /* Retail inlines a per-vertex helper; each inlining gets its own Vec slot. Passing
    the destination as a pointer (not `data` + `idx`) keeps the address out of a sixth callee-saved
@@ -488,8 +459,8 @@ void effFlameDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(cam->view, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 
-	effFlameSetColor1(data, alpha);
-	effFlameSetColor2(data);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->tev0Rgb[0], data->tev0Rgb[1], data->tev0Rgb[2], alpha });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->tev1Rgba[0], data->tev1Rgba[1], data->tev1Rgba[2], data->tev1Rgba[3] });
 
 	PSMTXScale(mtx2, 0.03125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(mtx2, GX_TEXMTX0, GX_MTX2x4);

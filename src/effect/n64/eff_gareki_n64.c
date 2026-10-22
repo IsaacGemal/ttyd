@@ -21,8 +21,6 @@ extern const f32 float_1p5_8041f04c;
 extern const f32 float_deg2rad_8041f050;
 extern const f32 float_0p03125_8041f040;
 extern const f32 float_0p010417_8041f044;
-__declspec(section ".sdata2") GXColor dat_8041f038 = { 0x66, 0x6D, 0x7B, 0x00 };
-__declspec(section ".sdata2") GXColor dat_8041f03c = { 0x96, 0x96, 0xC8, 0x00 };
 extern const f32 float_0p25_8041f070;
 extern const f32 float_2_8041f074;
 extern const f32 float_1_8041f078;
@@ -132,19 +130,6 @@ inline Vec initializeVec(Vec* input) {
     temp.y = input->y;
     temp.z = input->z;
     return temp;
-}
-
-
-static inline void effGarekiSetColor1(s32 a) {
-    GXColor color = dat_8041f038;
-    color.a = a;
-    GXSetTevColor(1, color);
-}
-
-static inline void effGarekiSetColor2(s32 a) {
-    GXColor color = dat_8041f03c;
-    color.a = a;
-    GXSetTevColor(1, color);
 }
 
 
@@ -282,7 +267,7 @@ void effGarekiDisp(CameraId camId, void* param) {
         PSMTXConcat(cam->view, base, base);
         GXLoadPosMtxImm(base, 0);
         GXSetCurrentMtx(0);
-        effGarekiSetColor1(data->alpha);
+        GXSetTevColor(1, (GXColor){ 0x66, 0x6D, 0x7B, data->alpha });
         gareki_dl(0);
     } else {
         alpha = data->alpha;
@@ -306,7 +291,7 @@ void effGarekiDisp(CameraId camId, void* param) {
             PSMTXConcat(cam->view, childMtx, childMtx);
             GXLoadPosMtxImm(childMtx, 0);
             GXSetCurrentMtx(0);
-            effGarekiSetColor2(alpha);
+            GXSetTevColor(1, (GXColor){ 0x96, 0x96, 0xC8, alpha });
             gareki_dl(i);
         }
     }

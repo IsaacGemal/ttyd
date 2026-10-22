@@ -5,7 +5,7 @@
 #include "driver/msgdrv.h"
 #include "manager/evtmgr_cmd.h"
 #include "manager/fontmgr.h"
-void FontDrawColor(GXColor* color);
+void FontDrawColor(GXColor color);
 #include "memory.h"
 
 #pragma pool_data off
@@ -31,8 +31,6 @@ extend_data(25,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-const GXColor dat_yuu_00014d98 = { 0xFF, 0xFF, 0xFF, 0x00 };
-
 // The fade factor is a real local, not folded into its use: with copy propagation off it keeps its own
 // (low) variable number, so MWCC colours the `field_10 * (1 - t)` product first (f0) and the fade gets f1, as
 // in the original. Each lerp is written `to * t + from * (1 - t)`, so fp_contract fuses the `t` product
@@ -42,8 +40,6 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     f32 scale = 2.0f;
     f32 halfWidth;
     f32 alphaF;
-    GXColor c;
-    GXColor color;
     f32 t;
     f32 fade;
 
@@ -64,10 +60,7 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     FontDrawStart();
     FontDrawScale(scale);
     FontDrawEdge();
-    color = dat_yuu_00014d98;
-    color.a = wp->alpha;
-    c = color;
-    FontDrawColor(&c);
+    FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, wp->alpha });
     FontDrawString(wp->field_08 - halfWidth, wp->field_0c, wp->msg);
     FontDrawEdgeOff();
 }

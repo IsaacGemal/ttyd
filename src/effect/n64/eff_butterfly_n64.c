@@ -11,7 +11,6 @@
 #include <stdlib.h>
 
 // .sdata2
-extern const u32 dat_8041eb68;
 extern const f32 float_0p3_8041eb6c;
 extern const f32 float_deg2rad_8041eb70;
 extern const f32 float_0p02_8041eb74;
@@ -303,23 +302,12 @@ void effButterflyMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&prevPosition), 1, effButterflyDisp, effect);
 }
 
-#ifdef MUST_MATCH
-static inline GXColor butterflyColor(u8 v) {
-    GXColor c = *(GXColor*)&dat_8041eb68;
-    c.r = v;
-    c.g = v;
-    c.b = v;
-    return c;
-}
-#endif
-
 void effButterflyDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     CameraEntry* cam;
     effButterflyData* data;
     s32 alpha;
     s32 type;
-    GXColor color;
     GXTexObj texObj;
     Mtx trans;
     Mtx scale;
@@ -340,15 +328,7 @@ void effButterflyDisp(CameraId camId, void* param) {
     GXLoadPosMtxImm(trans, 0);
     GXSetCurrentMtx(0);
 
-#ifdef MUST_MATCH
-    color = butterflyColor(alpha);
-#else
-    color = *(GXColor*)&dat_8041eb68;
-    color.r = alpha;
-    color.g = alpha;
-    color.b = alpha;
-#endif
-    GXSetTevColor(1, color);
+    GXSetTevColor(1, (GXColor){ alpha, alpha, alpha, 0xFF });
     GXSetNumChans(0);
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 0xFF);
@@ -370,7 +350,6 @@ void effButterflyDisp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_8041eb68 = 0x000000FF;
 const f32 float_0p3_8041eb6c = 0.3f;
 const f32 float_deg2rad_8041eb70 = 0.017453292f;
 const f32 float_0p02_8041eb74 = 0.02f;

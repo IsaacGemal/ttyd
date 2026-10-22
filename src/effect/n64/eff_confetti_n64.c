@@ -12,7 +12,6 @@
 
 
 // .sdata2 float constants (named after their original addresses).
-extern const f32 float_0p011489_8041ebf0;
 extern const f32 float_deg2rad_8041ebf4;
 extern const f32 float_0p0625_8041ebf8;
 extern const f32 float_0p0039062_8041ebfc;
@@ -27,11 +26,9 @@ extern const f32 float_0p01_8041ec1c;
 
 // .rodata effect name the original stores into EffectEntry::type.
 
-// .sbss2 scratch GXColor the original builds its TEV colour from, followed by the section's
-// trailing 4-byte gap.  Objects land in reverse declaration order, so the gap is declared first.
+// .sbss2 trailing 4-byte gap, after effConfettiDisp's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u8 gap_10_804230CC_sbss2[4];
-__declspec(section ".sdata") GXColor unk_804230c8;
 
 // .sdata tables and .data vertex arrays belonging to this unit.
 u8 color_table[36] = {
@@ -301,27 +298,6 @@ void effConfettiMain(EffectEntry* effect) {
 	}
 }
 
-// Retail builds each by-value GXColor in a scratch slot and word-copies it to the
-// outgoing slot.  Building the caller's colour local directly lands it at 0x8 and the second call's
-// temp at 0xc (a downward 0x10->0xc copy); putting each GXSetTevColor inside an inlined helper makes
-// mwcc lay its locals out in the original's order (colour at 0xc, second temp at 0x8, outgoing 0x10).
-// Same quirk as eff_thunder_n64.
-static inline void makeConfettiColor(u8 r, u8 g, u8 b, u8 a) {
-	GXColor c = unk_804230c8;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-
-#ifdef MUST_MATCH
-static inline void makeConfettiColor1(void) {
-	GXColor c = *(GXColor*)&float_0p011489_8041ebf0;
-	GXSetTevColor(GX_TEVREG1, c);
-}
-#endif
-
 // Reading the frame into `seq` rather than into `i` leaves `i` free for the loop counter, and
 // computing the animation index into `seq2` keeps the modulo out of the counter's live range.
 // `type % 10` is folded into the switch below; both loop-invariant expressions are hoisted into
@@ -379,12 +355,8 @@ void effConfettiDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx2, mtx0, mtx0);
 		GXLoadPosMtxImm(mtx0, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		makeConfettiColor(clr[0], clr[1], clr[2], alpha);
-#ifdef MUST_MATCH
-		makeConfettiColor1();
-#else
-		GXSetTevColor(GX_TEVREG1, *(GXColor*)&float_0p011489_8041ebf0);
-#endif
+		GXSetTevColor(GX_TEVREG0, (GXColor){ clr[0], clr[1], clr[2], alpha });
+		GXSetTevColor(GX_TEVREG1, (GXColor){ 0x3C, 0x3C, 0x3C, 0x00 });
 		idx2 = ((i + anm_seq[seq2]) & 0xF) << 6;
 		PSMTXScale(scaleMtx, float_0p0625_8041ebf8, float_0p0039062_8041ebfc, float_0_8041ec00);
 		PSMTXTrans(mtx0, float_0_8041ec00, (f32)idx2, float_0_8041ec00);
@@ -409,7 +381,6 @@ void effConfettiDisp(CameraId camId, void* param) {
 }
 
 // Named .sdata2 constants, defined after the code so the compiler reads them by name.
-const f32 float_0p011489_8041ebf0 = 0.0114889145f;
 const f32 float_deg2rad_8041ebf4 = 0.017453292f;
 const f32 float_0p0625_8041ebf8 = 0.0625f;
 const f32 float_0p0039062_8041ebfc = 0.00390625f;

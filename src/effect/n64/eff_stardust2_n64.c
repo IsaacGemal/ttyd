@@ -12,7 +12,6 @@
 #include <dolphin/mtx.h>
 
 // .sdata2 constants the code reads by name (named after their original addresses).
-extern const GXColor dat_8041fe88;
 extern const f32 float_deg2rad_8041fe8c;
 extern const f32 float_0p0056818_8041fe90;
 extern const f32 float_0p045455_8041fe94;
@@ -317,13 +316,6 @@ void effStardust2Main(EffectEntry* effect) {
     dispEntry(drawCam, dispCalcZ(&dispPosition), 2, effStardust2Disp, effect);
 }
 
-static inline GXColor stardustColor(u8 r, u8 g, u8 b) {
-    GXColor c = dat_8041fe88;
-    c.r = r;
-    c.g = g;
-    c.b = b;
-    return c;
-}
 void effStardust2Disp(CameraId camId, void* param) {
     EffectEntry* entry = param;
     CameraEntry* cam;
@@ -334,7 +326,6 @@ void effStardust2Disp(CameraId camId, void* param) {
     s32 colorIdx;
     effVtxArray* vtx;
     GXTexObj texObj;
-    GXColor color;
     Mtx mtx;
     Mtx scale;
     Mtx rot;
@@ -425,8 +416,7 @@ void effStardust2Disp(CameraId camId, void* param) {
         if (colorBByte > 0xFF) {
             colorBByte = 0xFF;
         }
-        color = stardustColor(colorRByte, colorGByte, colorBByte);
-        GXSetTevColor(GX_TEVREG0, color);
+        GXSetTevColor(GX_TEVREG0, (GXColor){ colorRByte, colorGByte, colorBByte, 0xFF });
 
         switch (vtxIndex & 7) {
         case 0:
@@ -464,7 +454,6 @@ void effStardust2N64SetDrawCam(EffectEntry* entry, s32 cam) {
 }
 
 // The constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041fe88 = { 0x00, 0x00, 0x00, 0xFF };
 const f32 float_deg2rad_8041fe8c = 0.017453292f;
 const f32 float_0p0056818_8041fe90 = 0.0056818184f;
 const f32 float_0p045455_8041fe94 = 0.045454547f;

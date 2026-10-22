@@ -63,9 +63,6 @@ extern s32 evt_goki_sub_intpl_init[];
 // Forward declarations: these const globals are defined later in the file at the
 // source positions their .rodata lives at, but the reordered functions above them
 // reference them.
-extern const Vec vec3_gor_00016020;
-extern const Vec vec3_gor_0001602c;
-extern const Vec vec3_gor_00016038;
 extern const Vec vec3_gor_000169f8;
 extern const Vec vec3_gor_00016a04;
 extern s32 evt_gor_villager_urouro_check_func[];
@@ -3934,6 +3931,9 @@ static USER_FUNC(delete_npc_regl_evt) {
     return EVT_RETURN_DONE;
 }
 
+const Vec vec3_gor_00016020 = {0.0f, 100.0f, 0.0f};
+const Vec vec3_gor_0001602c = {0.0f, 1.0f, 0.0f};
+
 static USER_FUNC(yami_view) {
     f32 value = evtGetFloat(event, event->args[0]);
     Vec camPos;
@@ -3941,7 +3941,7 @@ static USER_FUNC(yami_view) {
     Vec target;
     Mtx mtx;
 
-    target = vec3_gor_00016038;
+    target = (Vec){0.0f, 0.0f, 0.0f};
     target.z = value;
     camUp = vec3_gor_0001602c;
     camPos = vec3_gor_00016020;
@@ -3951,9 +3951,6 @@ static USER_FUNC(yami_view) {
     return EVT_RETURN_DONE;
 }
 
-const Vec vec3_gor_00016020 = {0.0f, 100.0f, 0.0f};
-const Vec vec3_gor_0001602c = {0.0f, 1.0f, 0.0f};
-const Vec vec3_gor_00016038 = {0.0f, 0.0f, 0.0f};
 static USER_FUNC(anim_tevcallback) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);

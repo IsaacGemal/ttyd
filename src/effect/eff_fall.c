@@ -74,16 +74,6 @@ __declspec(section ".data") u32 shibuki_dl_0_3[16] = {
 };
 #pragma force_active reset
 
-extern const GXColor dat_80420f5c;
-extern const GXColor dat_80420f60;
-extern const GXColor dat_80420f64;
-extern const GXColor dat_80420f68;
-extern const GXColor dat_80420f6c;
-extern const GXColor dat_80420f48;
-extern const GXColor dat_80420f4c;
-extern const GXColor dat_80420f50;
-extern const GXColor dat_80420f54;
-extern const GXColor dat_80420f58;
 // effFallMain constants and effect-local rodata (addresses from the target symbol table).
 // .sdata tables and the shake event script. `shibuki_normal_tbl`/`shibuki_color0_tbl` are the
 // GXSetArray sources; `evt_shake` is the local event script (the original names it local).
@@ -914,14 +904,6 @@ void effFallMain(EffectEntry* effect) {
 #pragma opt_propagation reset
 #pragma opt_lifetimes reset
 
-// Builds the type-8 light colour and the case 0/1 / case 2 material colours. Returning the colour by
-// value (rather than assigning a base and then `color.a`) is what puts the colour temp and its
-// outgoing argument copy in the target's stack slots; `effFallColA`'s (alpha, base) parameter order is
-// what lands the base word / alpha byte in the target's r5 / r0. Both build the
-// colour by value.
-static inline GXColor effFallCol8(u8 a) { GXColor c = dat_80420f58; c.a = a; return c; }
-static inline GXColor effFallColA(u8 a, GXColor c) { c.a = a; return c; }
-
 // GX display for the default/koopa/light types: a per-type textured quad, the procedural type-2 strip,
 // the type 4/5 animation halo, the type 6 koopa body and the type 8 light pose.
 // The viewYaw product, the case-0/1 half-angle products and the two GXChanMat colours go through
@@ -1008,7 +990,7 @@ void effFallDisp(CameraId cameraId, void* param) {
 			PSMTXConcat(camView->view, mtxPos, mtxPos);
 			GXLoadPosMtxImm(mtxPos, 0);
 			GXSetCurrentMtx(0);
-			GXSetChanMatColor(4, effFallColA(elem->alpha, dat_80420f48));
+			GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, elem->alpha });
 			PSMTXScale(mtxScale, 1.0f, 0.33333334f, 1.0f);
 			PSMTXTrans(mtxPos, 0.0f, (f32)elem->texFrame, 0.0f);
 			PSMTXConcat(mtxScale, mtxPos, mtxPos);
@@ -1034,7 +1016,7 @@ void effFallDisp(CameraId cameraId, void* param) {
 			PSMTXConcat(camView->view, mtxPos, mtxPos);
 			GXLoadPosMtxImm(mtxPos, 0);
 			GXSetCurrentMtx(0);
-			GXSetChanMatColor(4, effFallColA(elem->alpha, dat_80420f4c));
+			GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, elem->alpha });
 			PSMTXIdentity(mtxPos);
 			GXLoadTexMtxImm(mtxPos, 0x1e, 1);
 			for (j = 0; j < 0x1e; j += 2) {
@@ -1109,13 +1091,13 @@ void effFallDisp(CameraId cameraId, void* param) {
 				PSMTXTrans(mtxScale, 82.655f, -88.8f, 0.0f);
 				PSMTXConcat(mtxRot, mtxScale, mtxScale);
 				animPoseSetMaterialFlagOn(elem->poseId, 0x40);
-				color = dat_80420f50;
+				color = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 				animPoseSetMaterialEvtColor(elem->poseId, color);
 				animPoseDrawMtx(elem->poseId, mtxScale, 1, 0.0f, 10.f);
 				animPoseDrawMtx(elem->poseId, mtxScale, 2, 0.0f, 10.f);
 				animPoseDrawMtx(elem->poseId, mtxScale, 3, 0.0f, 10.f);
 				animPoseSetMaterialFlagOn(elem->poseId, 0x40);
-				color = dat_80420f54;
+				color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
 				animPoseSetMaterialEvtColor(elem->poseId, color);
 				animPoseDrawMtx(elem->poseId, mtxPos, 1, 0.0f, 10.f);
 				animPoseDrawMtx(elem->poseId, mtxPos, 2, 0.0f, 10.f);
@@ -1124,15 +1106,13 @@ void effFallDisp(CameraId cameraId, void* param) {
 			break;
 		}
 		case 8: {
-			GXColor color;
 			if (elem->poseId != -1) {
 				PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
 				PSMTXScale(mtxScale, elem->scale, elem->scale, elem->scale);
 				PSMTXConcat(mtxPos, mtxScale, mtxPos);
 				PSMTXConcat(mtxView, mtxPos, mtxPos);
 				animPoseSetMaterialFlagOn(elem->poseId, 0x40);
-				color = effFallCol8(elem->alpha);
-				animPoseSetMaterialEvtColor(elem->poseId, color);
+				animPoseSetMaterialEvtColor(elem->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, elem->alpha });
 				animPoseDrawMtx(elem->poseId, mtxPos, 1, 0.0f, 10.f);
 				animPoseDrawMtx(elem->poseId, mtxPos, 2, 0.0f, 10.f);
 				animPoseDrawMtx(elem->poseId, mtxPos, 3, 0.0f, 10.f);
@@ -1178,7 +1158,7 @@ void effFallDispInseki(CameraId cameraId, void* param) {
 				PSMTXConcat(mtxA, mtxB, mtxA);
 				PSMTXConcat(mtxA, mtxD, mtxA);
 				animPoseSetMaterialFlagOn(work[1].poseId, 0x40);
-				color = dat_80420f5c;
+				color = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 				animPoseSetMaterialEvtColor(work[1].poseId, color);
 			} else {
 				PSMTXTrans(mtxA, work[1].x, work[1].y, work[1].z);
@@ -1189,7 +1169,7 @@ void effFallDispInseki(CameraId cameraId, void* param) {
 				PSMTXConcat(mtxA, mtxB, mtxA);
 				PSMTXConcat(mtxA, mtxD, mtxA);
 				animPoseSetMaterialFlagOn(work[1].poseId, 0x40);
-				color = dat_80420f60;
+				color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
 				animPoseSetMaterialEvtColor(work[1].poseId, color);
 			}
 			animPoseDrawMtx(work[1].poseId, mtxA, 1, 0.0f, 10.f);
@@ -1209,11 +1189,9 @@ void effFallDispInseki(CameraId cameraId, void* param) {
 }
 
 // Full GX state, quad display list and both shibuki splash passes. The quad uses float literals and the
-// splash pointer is re-read from effect->userdata. `rad`/`nf31`/`half` and the effFallCol68 inline are
+// splash pointer is re-read from effect->userdata. `rad`/`nf31`/`half` are
 // the spellings that give the register-allocation clusters. `half` is deliberately non-const: a
 // literal folds and the compiler commutes `x * 0.5f` to `0.5f * x`, breaking the quad's operand order.
-static inline GXColor effFallCol68(GXColor c, u8 a) { c.a = a; return c; }
-
 void effFallDispWater(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	FallWork* work = effect->userdata;
@@ -1277,7 +1255,7 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	PSMTXConcat(mtxPos, mtxScale, mtxPos);
 	PSMTXConcat(mtxView, mtxPos, mtxPos);
 	GXLoadPosMtxImm(mtxPos, 0);
-	GXSetTevColor(1, dat_80420f64);
+	GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	nf31 = -f31;
 	half = 0.5f;
 	GXBegin(0x80, 0, 4);
@@ -1306,7 +1284,7 @@ void effFallDispWater(CameraId cameraId, void* param) {
 			PSMTXTrans(mtxPos, work[1].unk54 * k, 0.0f, 0.0f);
 		}
 		GXLoadTexMtxImm(mtxPos, 0x1e, 1);
-		GXSetTevColor(1, effFallCol68(dat_80420f68, work[1].alpha));
+		GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, work[1].alpha });
 		effGetTexObj(0x37, &texObj);
 		GXLoadTexObj(&texObj, 0);
 		GXClearVtxDesc();
@@ -1339,7 +1317,7 @@ void effFallDispWater(CameraId cameraId, void* param) {
 			PSMTXTrans(mtxPos, 0.0f, -work[1].unk54 * k, 0.0f);
 		}
 		GXLoadTexMtxImm(mtxPos, 0x1e, 1);
-		GXSetTevColor(1, dat_80420f6c);
+		GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		effGetTexObj(0x36, &texObj);
 		GXLoadTexObj(&texObj, 0);
 		GXClearVtxDesc();
@@ -1404,15 +1382,3 @@ s32 effFallCheckHit(EffectEntry* effect) {
 	return 0;
 }
 
-// .sdata2 objects, in the original address order. Defined after the code so the compiler does not
-// fold their values into the functions; the code loads each by name.
-const GXColor dat_80420f48 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_80420f4c = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_80420f50 = { 0x00, 0x00, 0x00, 0xFF };
-const GXColor dat_80420f54 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_80420f58 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_80420f5c = { 0x00, 0x00, 0x00, 0xFF };
-const GXColor dat_80420f60 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_80420f64 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_80420f68 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_80420f6c = { 0xFF, 0xFF, 0xFF, 0xFF };

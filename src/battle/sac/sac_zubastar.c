@@ -38,12 +38,6 @@ const char str_msg_zubastar[] = "msg_zubastar";
 const char str_msg_sac_8[] = "msg_sac_8";
 #pragma force_active reset
 
-extern const Vec vec3_802ff6b0;
-extern const Vec vec3_802ff698;
-extern const Vec vec3_802ff6a4;
-extern const Vec vec3_802ff7ac;
-extern const Vec vec3_802ff7b8;
-extern const Vec vec3_802ff7c4;
 extern const char str_SFX_BTL_SAC_ZUBA_STAR3[];
 
 // LOCAL_PROTO(psndSFX_pit): the retail callers disagree on the pitch width and
@@ -245,12 +239,7 @@ u32 weaponGetPower_ZubaStar(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit*
     return weapon->hpDamageWork[work->hitCount];
 }
 
-const Vec vec3_802ff6b0 = { 0.0f, 0.0f, 0.0f };
-
 // .text:0x1F58 | 0x802304E8 | size: 0xE4
-// A volatile struct copy reproduces the original's load/store interleave for vec3_802ff6b0. A volatile
-// store to bomb->count is needed too: it stops the scheduler hoisting the copy's first load above the
-// count store (the natural form is under #else).
 void zubastar_create_takaku(s32 count, Vec* points) {
     ZubaStarWork* work = GetZubaStarPtr();
     ZubaStarBomb* bomb;
@@ -260,15 +249,8 @@ void zubastar_create_takaku(s32 count, Vec* points) {
     bomb = work->bombs[work->bombCount];
     bomb->points = BattleAlloc(count * 0xC);
     bomb->state = 0;
-#ifdef MUST_MATCH
-    // Volatile count store: a volatile access cannot move across the volatile struct copy below,
-    // which keeps the count store before the copy's first load as the original schedules it.
-    *(volatile s32*)&bomb->count = count;
-    *(volatile Vec*)&bomb->pos = *(const volatile Vec*)&vec3_802ff6b0;
-#else
     bomb->count = count;
-    bomb->pos = vec3_802ff6b0;
-#endif
+    bomb->pos = (Vec){ 0.0f, 0.0f, 0.0f };
     bomb->timer = 0;
     bomb->maxTimer = 1;
     for (i = 0; i < count; i++) {
@@ -276,15 +258,6 @@ void zubastar_create_takaku(s32 count, Vec* points) {
     }
     work->bombCount++;
 }
-
-// Mutable views keep the two initialization copies in their original load/store order.
-#ifdef MUST_MATCH
-__declspec(section ".rodata") Vec vec3_802ff6bc = { 0.0f, 0.0f, 0.0f };
-__declspec(section ".rodata") Vec vec3_802ff6c8 = { 0.0f, 0.0f, 0.0f };
-#else
-const Vec vec3_802ff6bc = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802ff6c8 = { 0.0f, 0.0f, 0.0f };
-#endif
 
 // .text:0x1A90 | 0x80230020 | size: 0x4C8
 // Shared copy counters keep the prefix and suffix offsets in the same live ranges.
@@ -368,11 +341,11 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
                 }
             }
             bomb1->state = 0;
-            bomb1->pos = vec3_802ff6bc;
+            bomb1->pos = (Vec){ 0.0f, 0.0f, 0.0f };
             bomb1->timer = irand(0x80);
             bomb1->maxTimer = irand(5) + 1;
             bomb2->state = 0;
-            bomb2->pos = vec3_802ff6c8;
+            bomb2->pos = (Vec){ 0.0f, 0.0f, 0.0f };
             bomb2->timer = irand(0x80);
             bomb2->maxTimer = irand(5) + 1;
 
@@ -476,10 +449,10 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         points.v[3] = (Vec){ -96.0f, -240.0f, 0.0f };
         zubastar_create_takaku(4, points.v);
 #else
-        points[0] = vec3_802ff704;
-        points[1] = vec3_802ff710;
-        points[2] = vec3_802ff71c;
-        points[3] = vec3_802ff728;
+        points[0] = (Vec){ -96.0f, 240.0f, 0.0f };
+        points[1] = (Vec){ 304.0f, 240.0f, 0.0f };
+        points[2] = (Vec){ 304.0f, -240.0f, 0.0f };
+        points[3] = (Vec){ -96.0f, -240.0f, 0.0f };
         zubastar_create_takaku(4, points);
 #endif
         work->cursor = (Vec){ 0.0f, -1000.0f, 0.0f };

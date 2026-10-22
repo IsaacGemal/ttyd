@@ -1388,9 +1388,6 @@ EVT_END()
 
 const Vec vec3_muj_0000f360 = {0.0f, 100.0f, 0.0f};
 const Vec vec3_muj_0000f36c = {0.0f, 1.0f, 0.0f};
-const Vec vec3_muj_0000f378 = {0.0f, 0.0f, 0.0f};
-// dtk named this word as a float (3.003967f); it is the shop icons' GXColor.
-const GXColor float_3p004_muj_0000f384 = {0x40, 0x40, 0x40, 0xFF};
 
 static USER_FUNC(yami_view) {
     Vec camPos;
@@ -1399,7 +1396,7 @@ static USER_FUNC(yami_view) {
     Mtx mtx;
     f32 value = evtGetFloat(event, event->args[0]);
 
-    target = vec3_muj_0000f378;
+    target = (Vec){0.0f, 0.0f, 0.0f};
     target.z = value;
     up = vec3_muj_0000f36c;
     camPos = vec3_muj_0000f360;
@@ -1438,15 +1435,12 @@ static USER_FUNC(anim_tevcallback_mobj) {
 USER_FUNC(sekai_yami_omise) {
     char name[32];
     s32 i;
+    IconEntry* icon;
 
     for (i = 0; i < 6; i++) {
         sprintf(name, "shp%d", i);
-#ifdef MUST_MATCH
-        // Volatile read: retail reloads the colour each iteration instead of hoisting it.
-        iconNameToPtr(name)->color = *(volatile GXColor*)&float_3p004_muj_0000f384;
-#else
-        iconNameToPtr(name)->color = float_3p004_muj_0000f384;
-#endif
+        icon = iconNameToPtr(name);
+        icon->color = (GXColor){0x40, 0x40, 0x40, 0xFF};
     }
     return EVT_RETURN_DONE;
 }

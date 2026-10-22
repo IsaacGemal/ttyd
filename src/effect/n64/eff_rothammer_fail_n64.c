@@ -8,10 +8,9 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor gap_10_80423254_sbss2;
-__declspec(section ".sdata") GXColor unk_80423250;
 
 u32 size24x24_tex32x32_vtx[14] = {
     0xFFF4FFF4, 0x00000000, 0x00000000, 0x00FF000C,
@@ -113,12 +112,6 @@ void effRotHammerFailMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effRotHammerFailDisp, effect);
 }
 
-static inline void hammerSetColor(u8 alpha) {
-	GXColor color = unk_80423250;
-	color.a = alpha;
-	GXSetTevColor(GX_TEVREG1, color);
-}
-
 void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effRotHammerFailRecord* data;
@@ -173,7 +166,7 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	PSMTXConcat(cam->view, trans, work);
 
 	GXSetTevColor(GX_TEVREG0, (GXColor){ 0xE6, 0xDE, 0xDE, 0x82 });
-	hammerSetColor(frameFrac);
+	GXSetTevColor(GX_TEVREG1, (GXColor){ 0x00, 0x00, 0x00, frameFrac });
 
 	frameOffset = frameIndex * 32;
 	PSMTXScale(scale, 0.004464286f, 0.03125f, 0.0f);

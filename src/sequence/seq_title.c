@@ -26,24 +26,15 @@ extern GlobalWork* gp;
 TitleWork work2;
 TitleWork* wp2 = &work2;
 
-// This unit's .rodata: the six Vec constants come first, in retail's order. disp1 passes the
-// first two by name; disp2/titleMain/L_titleInit reach the rest by fixed offsets from the base.
-const Vec vec3_802c11a0[1] = {{ 0.0f, 0.0f, 0.0f }};
-const Vec vec3_802c11ac[1] = {{ 1.0f, 1.0f, 1.0f }};
-const Vec vec3_802c11b8[1] = {{ 0.0f, 0.0f, 0.0f }};
-const Vec vec3_802c11c4[1] = {{ 1.0f, 1.0f, 1.0f }};
-const Vec vec3_802c11d0[1] = {{ 0.0f, 0.0f, 0.0f }};
-const Vec vec3_802c11dc[1] = {{ 1.0f, 1.0f, 1.0f }};
-
-// The first string block of the .rodata pool (reached by fixed offsets from the base).
-const char str_demoTplPath[] = "%s/demo.tpl";
-const char str_c_peach[] = "c_peach";
-const char str_c_nazo[] = "c_nazo";
-const char str_MOBJ_GoldenTreasureBox[] = "MOBJ_GoldenTreasureBox";
-const char str_MOBJ_BigTreasureBox[] = "MOBJ_BigTreasureBox";
-const char str_c_roten[] = "c_roten";
-const char str_c_kuribo_n[] = "c_kuribo_n";
-const char str_c_tyusan[] = "c_tyusan";
+// The first string block of the .rodata pool, defined after disp2 so disp1/disp2's Vec templates come first.
+extern const char str_demoTplPath[];
+extern const char str_c_peach[];
+extern const char str_c_nazo[];
+extern const char str_MOBJ_GoldenTreasureBox[];
+extern const char str_MOBJ_BigTreasureBox[];
+extern const char str_c_roten[];
+extern const char str_c_kuribo_n[];
+extern const char str_c_tyusan[];
 
 //local prototypes
 static void pressStartGX(s32 alpha, f32 x, f32 y); // local to this file in the original
@@ -80,8 +71,8 @@ s32 N_getDebugMode(void) {
 }
 
 // The original's L_titleInit and titleMain reach the later pooled strings by fixed offsets from the
-// unit's first rodata object, vec3_802c11a0; plain literals are pooled the same way once the named
-// .rodata objects below are in place, so the natural (non-MATCH) form is the literal one.
+// .rodata base (disp1's first Vec template); plain literals are pooled the same way once the named
+// .rodata objects are in place, so the natural (non-MATCH) form is the literal one.
 void L_titleInit(SequenceWork* work) {
 	memset(wp2, 0, sizeof(TitleWork));
 	wp2->texture = fileAllocf(FILE_TYPE_TPL, "%s/mariost.tpl", getMarioStDvdRoot());
@@ -128,20 +119,6 @@ void L_titleInit(SequenceWork* work) {
 	camGetPtr(CAMERA_2D)->flags |= 0x400;
 }
 
-// This unit's .sdata2 GXColor constants (the original names them dat_80419480..). titleMain, disp1 and
-// disp2 pass them by value to fadeEntry/unk_80177008/winTexSet/FontDrawColor through *(GXColor*)&name.
-const GXColor dat_80419480 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_80419484 = {0x00, 0x00, 0x00, 0xFF};
-const GXColor dat_80419488 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041948c = {0x00, 0x00, 0x00, 0xFF};
-const GXColor dat_80419490 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_80419494 = {0x00, 0x00, 0x00, 0xFF};
-const GXColor dat_80419498 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041949c = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_804194a0 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_804194a4 = {0x00, 0x00, 0x00, 0xFF};
-const GXColor dat_804194a8 = {0x00, 0x00, 0x00, 0xFF};
-
 void titleMain(SequenceWork* work) {
 // The eight animation-name strings are named objects at the base of the pool (str_demoTplPath through str_c_tyusan);
 // the three later ones are pooled literals from this function. Using the named objects here keeps
@@ -179,20 +156,20 @@ void titleMain(SequenceWork* work) {
 				&& animGroupBaseAsync(TITLE_MAKU_C, 2, 0))
 			{
 				if (seqGetPrevSeq() == SEQ_LOAD) {
-					fadeEntry(0x40, 0, dat_80419480);
-					fadeEntry(0x1f, 0, dat_80419484);
+					fadeEntry(0x40, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+					fadeEntry(0x1f, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
 					wp2->tex5PosY = 120.0f;
 					wp2->tex6PosY = -170.0f;
 					wp2->waitTimer = 0;
 				}
 				else if (seqGetPrevSeq() == SEQ_GAME_OVER) {
-					fadeEntry(0x15, 0, dat_80419488);
-					fadeEntry(0x1d, 0, dat_8041948c);
+					fadeEntry(0x15, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+					fadeEntry(0x1d, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
 					wp2->waitTimer = 0x4e;
 				}
 				else {
-					fadeEntry(0x15, 0, dat_80419490);
-					fadeEntry(0x22, 0, dat_80419494);
+					fadeEntry(0x15, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+					fadeEntry(0x22, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
 					fadeSetNarrowFast();
 					wp2->waitTimer = 0x17;
 				}
@@ -209,7 +186,7 @@ void titleMain(SequenceWork* work) {
 			}
 			if (fadeIsFinish()) {
 				if (seqGetPrevSeq() != SEQ_LOAD) {
-					fadeEntry(0x14, 0x1f4, dat_80419498);
+					fadeEntry(0x14, 0x1f4, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 					wp2->step++;
 				}
 				else {
@@ -263,12 +240,12 @@ void titleMain(SequenceWork* work) {
 			}
 			break;
 		case 10:
-			fadeEntry(0x3f, 0, dat_8041949c);
+			fadeEntry(0x3f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			wp2->step++;
 			// fallthrough
 		case 11:
 			if (fadeIsFinish()) {
-				fadeEntry(0x1a, 0, dat_804194a0);
+				fadeEntry(0x1a, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 				wp2->step++;
 			}
 			break;
@@ -279,8 +256,8 @@ void titleMain(SequenceWork* work) {
 			}
 			break;
 		case 20:
-			fadeEntry(0x21, 0, dat_804194a4);
-			fadeEntry(0xa, 0x3e8, dat_804194a8);
+			fadeEntry(0x21, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
+			fadeEntry(0xa, 0x3e8, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
 			psndBGMOff_f_d(0x200, 0x3e8, 0);
 			wp2->phaseFrame = 0;
 			wp2->step++;
@@ -381,7 +358,7 @@ void disp1(CameraId cameraId, void* param) {
 	              camera->viewport[4], camera->viewport[5]);
 
 	winTexInit(*wp2->texture->data);
-	winTexSet(7, vec3_802c11a0[0], vec3_802c11ac[0], (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+	winTexSet(7, (Vec){ 0.0f, 0.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
 	*camGetPtr(cameraId) = camBackup;
 	GXSetProjectionv(projBackup);
@@ -389,22 +366,10 @@ void disp1(CameraId cameraId, void* param) {
 	              viewportBackup[5]);
 }
 
-// Match shape: the original copies the zero Vec into the by-value argument temp and then
-// overwrites x/y there (so the intermediate temp sits directly below the outgoing Vec home).
-// Taking the zero Vec by value reproduces that; a pointer/return pair allocates the temp in
-// the wrong slot (97.14%). The parameter order (zero, y, x) is the one that puts the wp2
-// x/y loads (tex5PosX to f1, tex5PosY to f0) the way the original does.
-static inline Vec disp2Vec(Vec v, f32 y, f32 x) {
-	v.x = x;
-	v.y = y;
-	return v;
-}
-
 // The two Vec by-value argument temp blocks sit in the original slots (scale 0x38/0x14,
 // intermediate 0x44/0x20, outgoing 0x50/0x2c), the pulse multiply matches, and the compiler's
 // int-to-float magic double is pooled at 0xb0 and read through the rodata base (`lfd f2, 0xb0(r31)`)
-// because the unit defines its .rodata. The Vec arguments are the named objects: taking
-// *(Vec*)(base + off) instead made the optimizer re-schedule the arg setup and cost ~10 points.
+// because the unit defines its .rodata.
 void disp2(CameraId cameraId, void* param) {
 	CameraEntry* camera = camGetPtr(CAMERA_2D);
 	f32 projBackup[GX_PROJECTION_SZ];
@@ -424,10 +389,10 @@ void disp2(CameraId cameraId, void* param) {
 
 	winTexInit(*wp2->texture->data);
 
-	unk_80177008(5, disp2Vec(vec3_802c11b8[0], wp2->tex5PosY, wp2->tex5PosX), vec3_802c11c4[0],
+	unk_80177008(5, (Vec){ wp2->tex5PosX, wp2->tex5PosY, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f },
 	             (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
-	winTexSet(6, disp2Vec(vec3_802c11d0[0], wp2->tex6PosY, wp2->tex6PosX), vec3_802c11dc[0],
+	winTexSet(6, (Vec){ wp2->tex6PosX, wp2->tex6PosY, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f },
 	          (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
 	wp2->pulseCounter += 1;
@@ -455,6 +420,17 @@ void disp2(CameraId cameraId, void* param) {
 	GXSetViewport(viewportBackup[0], viewportBackup[1], viewportBackup[2], viewportBackup[3], viewportBackup[4],
 	              viewportBackup[5]);
 }
+
+// The first string block of the .rodata pool (reached by fixed offsets from the base).
+const char str_demoTplPath[] = "%s/demo.tpl";
+const char str_c_peach[] = "c_peach";
+const char str_c_nazo[] = "c_nazo";
+const char str_MOBJ_GoldenTreasureBox[] = "MOBJ_GoldenTreasureBox";
+const char str_MOBJ_BigTreasureBox[] = "MOBJ_BigTreasureBox";
+const char str_c_roten[] = "c_roten";
+const char str_c_kuribo_n[] = "c_kuribo_n";
+const char str_c_tyusan[] = "c_tyusan";
+
 
 static void pressStartGX(s32 alpha, f32 x, f32 y) {
 	CameraEntry* camera = camGetCurPtr();

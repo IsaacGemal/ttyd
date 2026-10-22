@@ -5,11 +5,6 @@
 #include "driver/effdrv.h"
 #include "memory.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423098;
-
-
 #include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
@@ -44,9 +39,6 @@ extern const f32 float_0p5_8041e8f8;
 
 // .sdata sequence-length table indexed by the effect type (local to this file in the original).
 static s32 max_seq_num[2] = {0x18, 0x0C};
-
-// .sbss2 scratch GXColor the original builds its TEV colour from.
-
 
 // .data per-frame scale tables, local to this file in the original.
 static f32 scale_data[24] = {
@@ -236,12 +228,6 @@ void effAkariPoseMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effAkariPoseDisp, effect);
 }
 
-static inline GXColor akariColor(u8 alpha) {
-    GXColor c = unk_80423098;
-    c.a = alpha;
-    return c;
-}
-
 // The original reuses the header pointer as the parts cursor: `data++` steps it past the 0x38-byte
 // header and the loop steps it once per part, so the `part` cursor is `data` cast to the part type.
 // With a separate `part = data->part` pointer mwcc schedules the preheader `addi r30,r30,0x38`
@@ -251,7 +237,6 @@ void effAkariPoseDisp(CameraId camId, void* param) {
     effAkariPoseData* data;
     CameraEntry* cam;
     GXTexObj texObj;
-    GXColor color;
     Mtx mtx;
     Mtx scaleMtx;
     Mtx rotMtx;
@@ -294,8 +279,7 @@ void effAkariPoseDisp(CameraId camId, void* param) {
         PSMTXConcat(viewMtx, mtx, mtx);
         GXLoadPosMtxImm(mtx, 0);
         GXSetCurrentMtx(0);
-        color = akariColor((alpha * part->alpha) >> 8);
-        GXSetTevColor(1, color);
+        GXSetTevColor(1, (GXColor){ 0, 0, 0, (alpha * part->alpha) >> 8 });
         GXBegin(0x90, 0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }

@@ -23,15 +23,6 @@ static inline Vec makeHibashiraVec(f32 x, f32 y, f32 z) {
 
 // .rodata
 
-// .sdata2 white GXColor with zero alpha; the alpha byte is overwritten per pillar segment.
-extern const u32 dat_80422338;
-
-inline GXColor makeHibashiraColor(s32 alpha) {
-	GXColor color = *(GXColor*)&dat_80422338;
-	color.a = alpha;
-	return color;
-}
-
 EffectEntry* effHibashiraEntry(s32 type, s32 segmentCount, s32 lifetime, f32 x, f32 y, f32 z, f32 x2, f32 y2, f32 z2, f32 scale) {
 	EffectEntry* entry;
 	HibashiraData* data;
@@ -223,7 +214,7 @@ void effHibashiraDisp(CameraId camId, void* param) {
 			PSMTXConcat(sp10, spA0, spA0);
 
 			animPoseSetMaterialFlagOn(data->animPose, 0x40);
-			animPoseSetMaterialEvtColor(data->animPose, makeHibashiraColor((data->field_0x18 * alpha) / 255));
+			animPoseSetMaterialEvtColor(data->animPose, (GXColor){ 0xFF, 0xFF, 0xFF, (data->field_0x18 * alpha) / 255 });
 			animPoseMain(data->animPose);
 			animPoseDrawMtx(data->animPose, spA0, 1, 0.0f, 10.f);
 			animPoseDrawMtx(data->animPose, spA0, 2, 0.0f, 10.f);
@@ -231,6 +222,3 @@ void effHibashiraDisp(CameraId camId, void* param) {
 		}
 	}
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_80422338 = 0xFFFFFF00;

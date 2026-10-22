@@ -17,18 +17,15 @@ extern const f64 double_to_int_802fb680;
 // .data vertex array (32 vertices, 14 bytes each)
 extern u32 eff_snowfall_v[];
 
-// .sbss2 scratch GXColor the blend path builds its TEV colour from
-// the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423268;
-__declspec(section ".sdata") u32 gap_after_unk_80423268; // dtk's gap_10_8042326C_sbss2
+__declspec(section ".sdata") u32 gap_10_8042326C_sbss2;
 
 // .sdata2
 extern const f32 float_0p03125_8041fd14;
 extern const f32 float_0_8041fd18;
 extern const f32 float_2_8041fd1c;
 extern const f32 float_deg2rad_8041fd20;
-extern const GXColor dat_8041fd10;
 extern const f32 float_166_8041fd24;
 extern const f32 float_1000_8041fd28;
 extern const f32 float_0p05_8041fd2c;
@@ -50,34 +47,6 @@ typedef struct effSnowfallData {
 
 
 // clang-format off
-
-// The position Vec is built by this makeVec inline (the plain `Vec position = vec3_802fb668;` plus three
-// field stores schedules the loads worse).  `data++` rather than a byte-cast add is what makes mwcc colour
-// data r31 and the effect parameter r30 as the original does; together they give a byte-exact match.
-static inline Vec effSnowfallMakeVec(f32 x, f32 y, f32 z) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-
-	temp.x = x;
-	temp.y = y;
-	temp.z = z;
-	return temp;
-}
-
-
-static inline void effSnowfallSetBlendColor(GXColor* blend, s32 alpha) {
-	GXColor c = unk_80423268;
-	c.r = blend->r * 0xFF;
-	c.g = blend->g * 0xFF;
-	c.b = blend->b * 0xFF;
-	c.a = alpha * blend->a;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-
-static inline void effSnowfallSetPlainColor(s32 alpha) {
-	GXColor c = dat_8041fd10;
-	c.a = alpha;
-	GXSetTevColor(GX_TEVREG0, c);
-}
 
 void cam_clip_chk(void* p, s32 a, s32 b, s32 c) {
 	effSnowfallData* data = p;
@@ -166,7 +135,8 @@ EffectEntry* effSnowfallN64Entry(s32 type, s32 count) {
 	return effect;
 }
 
-
+// `data++` rather than a byte-cast add is what makes mwcc colour data r31 and the effect parameter r30 as the
+// original does.
 void effSnowfallMain(EffectEntry* effect) {
 	effSnowfallData* data = effect->userdata;
 	Vec position2;
@@ -176,7 +146,7 @@ void effSnowfallMain(EffectEntry* effect) {
 	s32 count;
 	s32 limit;
 
-	position = effSnowfallMakeVec(data->position.x, data->position.y, data->position.z);
+	position = (Vec){ data->position.x, data->position.y, data->position.z };
 	position2 = position;
 	camGetPtr(CAMERA_3D);
 	if (data->life < 100) {
@@ -257,9 +227,9 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	if (mapGetWork()->entries[0].flags & 2) {
 		mapGetBlend(&blend);
-		effSnowfallSetBlendColor(&blend, alpha);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ blend.r * 0xFF, blend.g * 0xFF, blend.b * 0xFF, alpha * blend.a });
 	} else {
-		effSnowfallSetPlainColor(alpha);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0xFF, alpha });
 	}
 	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)eff_snowfall_v);
@@ -322,7 +292,6 @@ u32 eff_snowfall_v[112] = {
 // clang-format on
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041fd10 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const f32 float_0p03125_8041fd14 = 0.03125f;
 const f32 float_0_8041fd18 = 0.0f;
 const f32 float_2_8041fd1c = 2.0f;

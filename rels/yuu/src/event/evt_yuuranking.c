@@ -44,26 +44,6 @@ typedef struct YuuRankingWork {
 static s32 yuu_kesan(s32 mode, s32 value, s32 bonus, s32 mult, s32 maxValue);
 static USER_FUNC(evt_yuuranking_main_func);
 static void evt_yuuranking_disp_func(CameraId cameraId, void* param);
-extern const u32 dat_yuu_00014a80;
-extern const u32 dat_yuu_00014a84;
-extern const u32 dat_yuu_00014a88;
-extern const u32 dat_yuu_00014a8c;
-extern const u32 dat_yuu_00014a90;
-extern const u32 dat_yuu_00014a94;
-extern const u32 dat_yuu_00014a98;
-extern const u32 dat_yuu_00014a9c;
-extern const u32 dat_yuu_00014aa0;
-extern const u32 dat_yuu_00014aa4;
-extern const u32 dat_yuu_00014aa8;
-extern const u32 dat_yuu_00014aac;
-extern const u32 dat_yuu_00014ab0;
-extern const u32 dat_yuu_00014ab4;
-extern const u32 dat_yuu_00014ab8;
-extern const u32 dat_yuu_00014abc;
-extern const u32 dat_yuu_00014ac0;
-extern const u32 dat_yuu_00014ac4;
-extern const u32 dat_yuu_00014ac8;
-extern const u32 dat_yuu_00014acc;
 extern const f32 float_1000_yuu_00014ad0;
 static s32 fontlenpitch(const s8* msg, s32 pitch);
 
@@ -183,7 +163,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     GXColor c18;
     GXColor c19;
 
-    c0 = *(GXColor*)&dat_yuu_00014a80;
+    c0 = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     WAKU_COL(c0, work->x + -196.0f, work->field_10 + 112.0f, 392.0f, 224.0f, 20.0f);
     switch (work->displayMode) {
     case 0:
@@ -194,14 +174,14 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         title = msgSearch(titleTbl[work->mode]);
         break;
     }
-    c1 = *(GXColor*)&dat_yuu_00014a84;
+    c1 = (GXColor){ 0x2B, 0xA3, 0xFF, 0xFF };
     {
         f32 k = 1.0f;
         frameWidth = k * FontGetMessageWidth(title) + 50.0f;
         WAKU_COL(c1, work->x + -(k * FontGetMessageWidth(title) + 50.0f) / 2.0f, WAKU_BOTTOM, frameWidth, 28.0f, 8.0f);
         FontDrawStart();
         FontDrawScale(1.0f);
-        c2 = *(GXColor*)&dat_yuu_00014a88;
+        c2 = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
         FontDrawColor(&c2);
         FontDrawMessage((s32)(work->x + k * -FontGetMessageWidth(title) / 2.0f), (s32)(work->field_10 + 128.0f), title);
     }
@@ -211,7 +191,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         case 0:
             FontDrawStart();
             FontDrawScale(1.0f);
-            c3 = *(GXColor*)&dat_yuu_00014a8c;
+            c3 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
             FontDrawColor(&c3);
             msg = msgSearch("menu_subtitle1_minigame1");
             yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
@@ -221,7 +201,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 if (work->state >= 4) {
                     FontDrawStart();
                     FontDrawScale(1.0f);
-                    c5 = *(GXColor*)&dat_yuu_00014a90;
+                    c5 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
                     FontDrawColor(&c5);
                     msg = msgSearch("menu_subtitle4_getmonte");
                     yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 32.0f, 1.0f);
@@ -231,7 +211,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 if (work->state >= 7) {
                     FontDrawStart();
                     FontDrawScale(1.0f);
-                    c6 = *(GXColor*)&dat_yuu_00014a94;
+                    c6 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
                     FontDrawColor(&c6);
                     if (work->mult > 1) {
                         msg = msgSearch("menu_subtitle2_minigame1");
@@ -252,7 +232,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     }
                 }
             } else {
-                c4 = *(GXColor*)&dat_yuu_00014a98;
+                c4 = (GXColor){ 0xFF, 0x3F, 0x3F, 0xFF };
                 FontDrawColor(&c4);
                 msg = msgSearch("menu_error_minigame1");
                 sprintf(buf, msg);
@@ -263,7 +243,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         case 2:
         case 3:
             FontDrawStart();
-            c7 = *(GXColor*)&dat_yuu_00014a9c;
+            c7 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
             FontDrawColor(&c7);
             switch (work->mode) {
             case 3:
@@ -287,7 +267,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
                 if (work->state >= 4) {
                     FontDrawStart();
-                    c9 = *(GXColor*)&dat_yuu_00014aa0;
+                    c9 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
                     FontDrawColor(&c9);
                     switch (work->mode) {
                     case 3:
@@ -304,7 +284,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 }
                 if (work->state >= 7) {
                     FontDrawStart();
-                    c10 = *(GXColor*)&dat_yuu_00014aa4;
+                    c10 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
                     FontDrawColor(&c10);
                     if (work->mult > 1) {
                         switch (work->mode) {
@@ -334,7 +314,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     }
                 }
             } else {
-                c8 = *(GXColor*)&dat_yuu_00014aa8;
+                c8 = (GXColor){ 0xFF, 0x3F, 0x3F, 0xFF };
                 FontDrawColor(&c8);
                 if (work->mode == 3) {
                     sprintf(buf, msgSearch("menu_error_minigame2"));
@@ -348,7 +328,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         case 1:
             FontDrawStart();
             FontDrawScale(1.0f);
-            c11 = *(GXColor*)&dat_yuu_00014aac;
+            c11 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
             FontDrawColor(&c11);
             msg = msgSearch("menu_subtitle1_minigame4");
             yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
@@ -358,7 +338,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 if (work->state >= 7) {
                     FontDrawStart();
                     FontDrawScale(1.0f);
-                    c13 = *(GXColor*)&dat_yuu_00014ab0;
+                    c13 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
                     FontDrawColor(&c13);
                     if (work->mult > 1) {
                         msg = msgSearch("menu_subtitle2_minigame4");
@@ -379,7 +359,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     }
                 }
             } else {
-                c12 = *(GXColor*)&dat_yuu_00014ab4;
+                c12 = (GXColor){ 0xFF, 0x3F, 0x3F, 0xFF };
                 FontDrawColor(&c12);
                 sprintf(buf, msgSearch("menu_error_minigame4"));
                 FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
@@ -392,7 +372,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
 
         FontDrawStart();
         FontDrawScale(1.0f);
-        c14 = *(GXColor*)&dat_yuu_00014ab8;
+        c14 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
         FontDrawColor(&c14);
         msg = msgSearch("menu_subtitle3_totalmonte");
         yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + -40.0f, 1.0f);
@@ -402,10 +382,10 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             s32 iy = (s32)(work->field_10 + -40.0f - 24.0f);
 
             PSMTXTrans(m, (f32)(ix - 10), (f32)(iy + 2), 0.0f);
-            c15 = *(GXColor*)&dat_yuu_00014abc;
+            c15 = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
             ICON_COL(m, 16, 0x13f, c15);
             PSMTXTrans(m, (f32)(ix + 60), (f32)(iy + 2), 0.0f);
-            c16 = *(GXColor*)&dat_yuu_00014ac0;
+            c16 = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
             ICON_NUM(m, work->monte, 0, c16);
         }
     } else {
@@ -413,7 +393,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         FontDrawScale(1.0f);
         FontDrawMessage((s32)(work->x + -150.4f), (s32)(work->field_10 + 80.0f), msgSearch("menu_subtitle5_rank"));
         FontDrawMessage((s32)(work->x + 75.19998f), (s32)(work->field_10 + 80.0f), msgSearch("menu_subtitle1_monte"));
-        c17 = *(GXColor*)&dat_yuu_00014ac4;
+        c17 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
         FontDrawColor(&c17);
         switch (work->mode) {
         case 0:
@@ -445,10 +425,10 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             FontDrawStart();
             FontDrawScale(1.0f);
             if (i != work->rankIndex) {
-                c18 = *(GXColor*)&dat_yuu_00014ac8;
+                c18 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
                 FontDrawColor(&c18);
             } else {
-                c19 = *(GXColor*)&dat_yuu_00014acc;
+                c19 = (GXColor){ 0xFF, 0x3F, 0x3F, 0xFF };
                 FontDrawColor(&c19);
             }
             msg = subTbl[i];
@@ -909,25 +889,5 @@ USER_FUNC(yuuranking_get_monte_31_text_51C0) {
 }
 
 
-const u32 dat_yuu_00014a80 = 0xFFFFFFFF;
-const u32 dat_yuu_00014a84 = 0x2BA3FFFF;
-const u32 dat_yuu_00014a88 = 0xFFFFFFFF;
-const u32 dat_yuu_00014a8c = 0x000000FF;
-const u32 dat_yuu_00014a90 = 0x000000FF;
-const u32 dat_yuu_00014a94 = 0x000000FF;
-const u32 dat_yuu_00014a98 = 0xFF3F3FFF;
-const u32 dat_yuu_00014a9c = 0x000000FF;
-const u32 dat_yuu_00014aa0 = 0x000000FF;
-const u32 dat_yuu_00014aa4 = 0x000000FF;
-const u32 dat_yuu_00014aa8 = 0xFF3F3FFF;
-const u32 dat_yuu_00014aac = 0x000000FF;
-const u32 dat_yuu_00014ab0 = 0x000000FF;
-const u32 dat_yuu_00014ab4 = 0xFF3F3FFF;
-const u32 dat_yuu_00014ab8 = 0x000000FF;
-const u32 dat_yuu_00014abc = 0xFFFFFFFF;
-const u32 dat_yuu_00014ac0 = 0xFFFFFFFF;
-const u32 dat_yuu_00014ac4 = 0x000000FF;
-const u32 dat_yuu_00014ac8 = 0x000000FF;
-const u32 dat_yuu_00014acc = 0xFF3F3FFF;
 const f32 float_1000_yuu_00014ad0 = 1000.0f;
 // clang-format on

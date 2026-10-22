@@ -45,12 +45,6 @@ static OSTime wwstart;
 static s32 x_flag_data[2];
 static LectureButton lbtn[2];
 
-// Pooled vectors referenced by lecture_button_* / effitemget_busaiku. The original REL defines these here.
-const Vec vec3_eki_0000a4e0 = {200.0f, -25.0f, 0.0f};
-const Vec vec3_eki_0000a4ec = {0.0f, 0.0f, 0.0f};
-const Vec vec3_eki_0000a4f8 = {0.0f, 2016.0f, 0.0f};
-const Vec vec3_eki_0000a504 = {0.0f, -2016.0f, 0.0f};
-
 #pragma force_active on
 static USER_FUNC(bgm_start_wait);
 static USER_FUNC(lect_push_b_check);
@@ -118,7 +112,7 @@ static USER_FUNC(lecture_button_rtn) {
     if (isFirstCall) {
         memset(lbtn, 0, sizeof(lbtn));
         for (i = 0; i < 2; i++) {
-            lbtn[i].position = vec3_eki_0000a4e0;
+            lbtn[i].position = (Vec){200.0f, -25.0f, 0.0f};
         }
     }
     count = 0;
@@ -225,7 +219,7 @@ static USER_FUNC(lecture_button_set_pos) {
     f32 y = evtGetFloat(event, args[2]);
     f32 z = evtGetFloat(event, args[3]);
     LectureButton* btn = lbtn + index;
-    Vec pos = vec3_eki_0000a4ec;
+    Vec pos = {0.0f, 0.0f, 0.0f};
 
     pos.x = x;
     pos.y = y;
@@ -388,9 +382,9 @@ static USER_FUNC(effitemget_busaiku) {
     Vec offset;
 
     if (flag != 0) {
-        offset = vec3_eki_0000a4f8;
+        offset = (Vec){0.0f, 2016.0f, 0.0f};
     } else {
-        offset = vec3_eki_0000a504;
+        offset = (Vec){0.0f, -2016.0f, 0.0f};
     }
     cam->presetPos = cam->cameraPos;
     cam->presetAt = cam->cameraAt;

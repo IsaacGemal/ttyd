@@ -9,10 +9,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sdata2
-extern u32 str_80421980;
-extern const u32 dat_80421984;
-
 // Builds the temporary position; the compiler emits the struct copy this way
 // (matches effVaporMain). The anonymous zero literal is deliberate: it must
 // land at .rodata:0 before the two EFF_batten strings.
@@ -23,14 +19,6 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
 	temp.z = z;
 	return temp;
 }
-
-#ifdef MUST_MATCH
-static inline GXColor battenColor(u8 alpha) {
-	GXColor c = *(GXColor*)&dat_80421984;
-	c.a = alpha;
-	return c;
-}
-#endif
 
 EffectEntry* effBattenEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
@@ -76,14 +64,6 @@ EffectEntry* effBattenEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 sca
 
 	return entry;
 }
-
-#ifdef MUST_MATCH
-static inline GXColor battenHeaderColor(u8 alpha) {
-	GXColor c = *(GXColor*)&str_80421980;
-	c.a = alpha;
-	return c;
-}
-#endif
 
 void effBattenMain(EffectEntry* effect) {
 	BattenData* data = effect->userdata;
@@ -207,7 +187,6 @@ void effBattenDisp(CameraId camId, void* param) {
 	Mtx mtxRot;
 	Mtx mtxScale;
 	Mtx mtxFinal;
-	GXColor color;
 	f32 x1;
 	f32 x0;
 	s32 i;
@@ -251,13 +230,7 @@ void effBattenDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtxScale, 0);
 		GXSetCurrentMtx(0);
 
-#ifdef MUST_MATCH
-		color = battenHeaderColor((headerAlpha * data->alpha) / 255);
-#else
-		color = *(GXColor*)&str_80421980;
-		color.a = (headerAlpha * data->alpha) / 255;
-#endif
-		GXSetChanMatColor(4, color);
+		GXSetChanMatColor(4, (GXColor){ 0xE8, 0xCD, 0x26, (headerAlpha * data->alpha) / 255 });
 
 		GXBegin(0x80, 0, 4);
 		GXPosition3f32(x0, x1, 0.0f);
@@ -277,7 +250,6 @@ void effBattenDisp2(CameraId camId, void* param) {
 	Mtx mtx;
 	Mtx scaleMtx;
 	Mtx rotMtx;
-	GXColor color;
 
 	if (data->animPoseId != -1) {
 		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
@@ -287,22 +259,10 @@ void effBattenDisp2(CameraId camId, void* param) {
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		PSMTXConcat(mtx, data->matrix, mtx);
 		animPoseSetMaterialFlagOn(data->animPoseId, 0x40);
-#ifdef MUST_MATCH
-		color = battenColor(data->alpha);
-#else
-		color = *(GXColor*)&dat_80421984;
-		color.a = data->alpha;
-#endif
-		animPoseSetMaterialEvtColor(data->animPoseId, color);
+		animPoseSetMaterialEvtColor(data->animPoseId, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 		animPoseMain(data->animPoseId);
 		animPoseDrawMtx(data->animPoseId, mtx, 1, 0.0f, 2.0f);
 		animPoseDrawMtx(data->animPoseId, mtx, 2, 0.0f, 2.0f);
 		animPoseDrawMtx(data->animPoseId, mtx, 3, 0.0f, 2.0f);
 	}
 }
-
-// The three named .sdata2 objects; defined after the code so they are emitted before the
-// functions' literal pool, in the original's order. Every other .sdata2 word is a pooled
-// literal written at its use (see the / 2.0f and / 8.0f reciprocals).
-__declspec(section ".sdata2") u32 str_80421980 = 0xE8CD2600;
-const u32 dat_80421984 = 0xFFFFFF00;

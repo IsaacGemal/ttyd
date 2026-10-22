@@ -9,13 +9,6 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool
-// templates, so pair it with a small-data section and place it by hand.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423210;
-__declspec(section ".sdata") GXColor unk_8042320c;
-__declspec(section ".sdata") GXColor unk_80423208;
-
 //.sdata
 u8 n_data[16] = {
 	0x0B, 0x0B, 0x0B, 0x0B, 0x11, 0x0B, 0x0B, 0x15,
@@ -262,35 +255,6 @@ void effPokopiPchargeMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effPokopiPchargeDisp, effect);
 }
 
-static inline void effPokopiPchargeSetColor1(u32 r, u32 g, u32 b) {
-	GXColor c = unk_8042320c;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	GXSetTevColor(GX_TEVREG1, c);
-}
-
-static inline void effPokopiPchargeSetColor2(u32 r, u32 g, u32 b, s32 a) {
-	GXColor c = unk_80423210;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-
-// These build the three Tev colours retail reads from the unk_80423208/0c/10 globals.  They are void
-// inlines (not a colour returned and passed on) because that is what makes MWCC pair each colour's
-// build slot with its outgoing argument slot; the direct form gives a different stack layout.
-static inline void effPokopiPchargeSetColor0(u32 r, u32 g, u32 b, s32 a) {
-	GXColor c = unk_80423208;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-
 void effPokopiPchargeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* camera;
@@ -331,8 +295,8 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtx, scale, mtx);
 	PSMTXConcat(camera->view, mtx, view);
 
-	effPokopiPchargeSetColor0(data->r, data->g, data->b, alpha);
-	effPokopiPchargeSetColor1(data->r2, data->g2, data->b2);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->r, data->g, data->b, alpha });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->r2, data->g2, data->b2, 0x00 });
 
 	GXSetNumChans(0);
 	GXSetNumTevStages(1);
@@ -356,10 +320,8 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 	tex9 = (effVtxArray*)&size10x10_tex32x32_2_vtx[28];
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		u32 a = (alpha * data->a) / 255;
-
 		scl = data->scale;
-		effPokopiPchargeSetColor2(r, g, b, a);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ r, g, b, (alpha * data->a) / 255 });
 
 		PSMTXRotRad(rot, 'z', 0.017453292f * data->rot);
 		PSMTXTrans(mtx, data->x + radialOffset, 0.0f, 0.0f);

@@ -5,8 +5,6 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 
-static const GXColor dat_80422408 = { 0xFF, 0xFF, 0xFF, 0x00 };
-
 EffectEntry* effLasMonEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	effLasMonData* data;
@@ -89,14 +87,6 @@ void effLasMonMain(EffectEntry* effect) {
 	}
 }
 
-/* Returning the colour through an inline aggregate forces MWCC to build it in the
-   return temporary (r1+8) and copy it to the by-value argument slot (r1+0xC), as retail does. */
-static inline GXColor effLasMonColor(u8 alpha) {
-	GXColor color = dat_80422408;
-	color.a = alpha;
-	return color;
-}
-
 void effLasMonDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effLasMonData* data = effect->userdata;
@@ -111,7 +101,7 @@ void effLasMonDisp(CameraId camId, void* param) {
 	PSMTXScale(mtx2, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx1, mtx2, mtx1);
 	animPoseSetMaterialFlagOn(data->animId, 0x40);
-	animPoseSetMaterialEvtColor(data->animId, effLasMonColor(data->field_0x1c));
+	animPoseSetMaterialEvtColor(data->animId, (GXColor){ 0xFF, 0xFF, 0xFF, data->field_0x1c });
 	animPoseMain(data->animId);
 	animPoseDrawMtx(data->animId, mtx1, 1, 0.0f, 10.0f);
 	animPoseDrawMtx(data->animId, mtx1, 2, 0.0f, 10.0f);

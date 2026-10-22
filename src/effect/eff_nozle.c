@@ -50,8 +50,6 @@ typedef struct effNozleData {
 	effNozleEntryData entries[]; // 0x44
 } effNozleData;
 
-extern u32 unk_80423300;
-
 // The original reaches this file's tables from its .data section anchor, lbl_803AE260.
 u32 lbl_803AE260[2];
 static u32 negone_one_374[2];
@@ -156,29 +154,6 @@ u32 nozle_1_dl_1_tbl[10];
 u32 nozle_4_dl_0_tbl[8];
 
 // clang-format off
-
-// The Vec temp is built in a returning inline that starts from an anonymous zero literal: MWCC pools
-// that literal as this unit's vec3_802fe6b8 (the file no longer defines it as a named object), and
-// building it directly in `out` schedules the first component load before the userdata load.
-static inline Vec nozleMakeVec(f32 x, f32 y, f32 z) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = x;
-	temp.y = y;
-	temp.z = z;
-	return temp;
-}
-
-
-#ifdef MUST_MATCH
-// The original builds the GXColor temp at 0x8 and copies it to the 0xc argument slot; building
-// it directly in `color` puts the temp in the swapped slot, so it is built in a returning inline.
-static inline GXColor nozleTevColor(u8 alpha) {
-	GXColor c = *(GXColor*)&unk_80423300;
-	c.a = alpha;
-	return c;
-}
-
-#endif
 
 // The original has each display-list loop in its own inline helper; with the loops inlined at
 // their call sites MWCC colours the function's pointers differently and rotates every loop
@@ -298,7 +273,7 @@ void effNozleMain(EffectEntry* effect) {
 	Vec pos;
 	Vec out;
 
-	out = nozleMakeVec(data->position.x, data->position.y, data->position.z);
+	out = (Vec){ data->position.x, data->position.y, data->position.z };
 	pos = out;
 
 	type = data->type;
@@ -373,7 +348,6 @@ void effNozleDisp(CameraId camId, void* param) {
 	s32 i;
 	CameraEntry* camera;
 	s32 alpha;
-	GXColor color;
 	GXTexObj tex;
 	Mtx transMtx;
 	Mtx rotMtx;
@@ -517,13 +491,7 @@ void effNozleDisp(CameraId camId, void* param) {
 		break;
 	case 3:
 		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-#ifdef MUST_MATCH
-		color = nozleTevColor(alpha);
-#else
-		color = *(GXColor*)&unk_80423300;
-		color.a = alpha;
-#endif
-		GXSetTevColor(GX_TEVREG0, color);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, alpha });
 		entry = effect->userdata;
 		entry++;
 		for (i = 1; i < effect->count; i++, entry++) {
@@ -1480,9 +1448,8 @@ static u8 scale_dt[44] = {
 
 #pragma force_active reset
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") u32 unk_80423300;
 #pragma force_active on
 __declspec(section ".sdata") u32 gap_10_80423304_sbss2;
 #pragma force_active reset

@@ -888,7 +888,6 @@ EVT_END()
 
 const Vec vec3_pik_00002824 = {0.0f, 100.0f, 0.0f};
 const Vec vec3_pik_00002830 = {0.0f, 1.0f, 0.0f};
-const Vec vec3_pik_0000283c = {0.0f, 0.0f, 0.0f};
 
 static USER_FUNC(yami_view) {
     Vec camPos;
@@ -897,7 +896,7 @@ static USER_FUNC(yami_view) {
     Mtx mtx;
     f32 value = evtGetFloat(event, event->args[0]);
 
-    target = vec3_pik_0000283c;
+    target = (Vec){0.0f, 0.0f, 0.0f};
     target.z = value;
     up = vec3_pik_00002830;
     camPos = vec3_pik_00002824;

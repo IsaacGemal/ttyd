@@ -19,22 +19,6 @@ void FontDrawColor(GXColor color);
 
 extern GlobalWork* gp;
 
-#ifdef MUST_MATCH
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates. Declared in reverse, as
-// MWCC emits these in reverse source order.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80422fe4;
-__declspec(section ".sdata") GXColor unk_80422fe0;
-#pragma section ".sdata" ".sbss"
-#else
-GXColor unk_80422fe0;
-GXColor unk_80422fe4;
-#endif
-extern GXColor dat_8041a4f0;
-extern GXColor dat_8041a4f4;
-extern GXColor dat_8041a4f8;
-extern GXColor dat_8041a4fc;
-extern GXColor dat_8041a510;
 
 const char R_no_messages_JP[] = "<col ff0000ff>\x83\x81\x83\x62\x83\x5A\x81\x5B\x83\x57\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1</col>\n<key>"; /*"メッセージがありません"*/
 const char R_no_messages_US[] = "<col ff0000ff>No messages.<col>\n<key>";
@@ -600,12 +584,12 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			}
 
 			if (tev) {
-				GXColor color = *(GXColor*)&dat_8041a4f0;
+				GXColor color = { 0x50, 0x50, 0x50, 0xFF };
 				switch (data->window->type) {
 				case WINDOW_TYPE_SYSTEM:
 				case WINDOW_TYPE_TEC:
 				case WINDOW_TYPE_MAJO:
-					color = *(GXColor*)&dat_8041a4f4;
+					color = (GXColor){ 0x6E, 0x6E, 0x6E, 0xFF };
 					break;
 				}
 				color.a = fade;
@@ -659,17 +643,11 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				fy = py - 3.2f * sa;
 
 				FontDrawScale(entry->scale);
-				{
-					GXColor color = *(GXColor*)&dat_8041a4f8;
-					FontDrawColor(color);
-				}
+				FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0x50 });
 				FontDrawCode(entry->glyph, fx, fy);
 				FontDrawEdge();
 				FontDrawRainbowColor();
-				{
-					GXColor color2 = *(GXColor*)&dat_8041a4fc;
-					FontDrawColor(color2);
-				}
+				FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 				FontDrawCode(entry->glyph, fx - 4.0f, fy + 4.0f);
 				FontDrawEdgeOff();
 				FontDrawRainbowColorOff();
@@ -1866,7 +1844,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 	BOOL drawn = FALSE;
 	Vec pos;
 
-	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422fe0);
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0, 0, 0, 0 });
 
 	switch (window->type) {
 	case WINDOW_TYPE_NORMAL:
@@ -2048,10 +2026,17 @@ void selectWindow_Main(WindowEntry* window) {
 	dispEntry(8, 400.f - (f32)window->priority, 0, selectWindow_Disp, window);
 }
 
+// .sdata2 colour words read by name in the message renderer, defined here so they precede
+// selectWindow_Disp's colour template.
+__declspec(section ".sdata2") u32 dat_8041a500 = 0xDCC8DCFF;
+__declspec(section ".sdata2") u32 dat_8041a504 = 0x00D914FF;
+__declspec(section ".sdata2") u32 dat_8041a508 = 0xDCC8DCFF;
+__declspec(section ".sdata2") u32 dat_8041a50c = 0x00D914FF;
+
 // Builds the waku colour in one expression so MWCC lands it in the same stack slot as the
 // original (a plain local followed by `color.a = ...` puts it one slot higher).
 static inline GXColor selectWindowColor(u8 a) {
-	GXColor c = dat_8041a510;
+	GXColor c = { 0xFF, 0xFF, 0xFF, 0x00 };
 	c.a = a;
 	return c;
 }
@@ -2062,7 +2047,7 @@ void selectWindow_Disp(CameraId camId, void* param) {
 	GXColor color;
 	Vec pos;
 
-	GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422fe4);
+	GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0, 0, 0, 0 });
 
 	color = selectWindowColor(window->alpha);
 	windowDispGX_Waku_col(window->x, window->y, window->height, window->width, 30.f, 0, color);
@@ -2076,17 +2061,6 @@ void selectWindow_Disp(CameraId camId, void* param) {
 
 	iconDispGxAlpha(&pos, 0x14, 0x1F0, (u8)window->alpha, 1.0f);
 }
-
-// .sdata2 colour words read by name in the message renderer.
-__declspec(section ".sdata2") GXColor dat_8041a4f0 = { 0x50, 0x50, 0x50, 0xFF };
-__declspec(section ".sdata2") GXColor dat_8041a4f4 = { 0x6E, 0x6E, 0x6E, 0xFF };
-__declspec(section ".sdata2") GXColor dat_8041a4f8 = { 0x00, 0x00, 0x00, 0x50 };
-__declspec(section ".sdata2") GXColor dat_8041a4fc = { 0xFF, 0xFF, 0xFF, 0xFF };
-__declspec(section ".sdata2") u32 dat_8041a500 = 0xDCC8DCFF;
-__declspec(section ".sdata2") u32 dat_8041a504 = 0x00D914FF;
-__declspec(section ".sdata2") u32 dat_8041a508 = 0xDCC8DCFF;
-__declspec(section ".sdata2") u32 dat_8041a50c = 0x00D914FF;
-__declspec(section ".sdata2") GXColor dat_8041a510 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
 // Named .sdata2 constants kept by tools/pool_plan.py, defined after the code in the original's order.
 #pragma explicit_zero_data on

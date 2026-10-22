@@ -12,14 +12,6 @@
 // .sdata2 constants live in this translation unit
 // (see config/G8MJ01/symbols.txt).
 
-// .sdata2 GXColor tints
-extern const GXColor dat_8041f5d0;
-extern const GXColor dat_8041f5d4;
-extern const GXColor dat_8041f5d8;
-extern const GXColor dat_8041f5dc;
-extern const GXColor dat_8041f5e0;
-extern const GXColor dat_8041f5e4;
-
 // .data vertex arrays, local to this file.
 static u32 size48x48_tex32x32_vtx[0x38 / 4] = {
     0xFFE8FFE8, 0x00000000, 0x00000000, 0x00FF0018, 0xFFE80000, 0x04000000, 0x000000FF,
@@ -131,42 +123,6 @@ void effLensflareMain(EffectEntry* effect) {
     dispEntry(4, dispCalcZ(&position), 2, effLensflareDisp, effect);
 }
 
-// Each TEV colour is set inside a void inline, which gives every call its own by-value colour slot
-// (build/copy pairs interleaved with the alpha computation).
-static inline void lensflareSetColor1(s32 a) {
-    GXColor color = dat_8041f5d0;
-    color.a = a;
-    GXSetTevColor(1, color);
-}
-
-static inline void lensflareSetColor2(s32 a) {
-    GXColor color = dat_8041f5d4;
-    color.a = a;
-    GXSetTevColor(1, color);
-}
-
-static inline void lensflareSetColor3(s32 a) {
-    GXColor color = dat_8041f5d8;
-    color.a = a;
-    GXSetTevColor(1, color);
-}
-
-static inline void lensflareSetColor4(s32 a) {
-    GXColor color = dat_8041f5dc;
-    color.a = a;
-    GXSetTevColor(1, color);
-}
-
-static inline void lensflareSetColor5(s32 a) {
-    GXColor color = dat_8041f5e4;
-    color.a = a;
-    GXSetTevColor(1, color);
-}
-
-static inline void lensflareSetColor6(void) {
-    GXSetTevColor(2, dat_8041f5e0);
-}
-
 // MWCC assigns the callee-saved GPRs partly by declaration order: `cam` must be
 // declared before `alpha` so cam lands in r27 and alpha in r26 (the loop counter
 // then reuses cam's r27).  The Mtx/GXTexObj relative order (trans, scale, rot,
@@ -198,7 +154,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
     PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
     PSMTXConcat(trans, rot, base);
     PSMTXConcat(cam->view, base, base);
-    lensflareSetColor1(alpha);
+    GXSetTevColor(1, (GXColor){ 0xFF, 0x40, 0x40, alpha });
     PSMTXRotRad(rot, 'z', 0.017453292f * (f32)(frame + (frame & 1) * 2));
     PSMTXConcat(base, rot, rot);
     GXLoadPosMtxImm(rot, 0);
@@ -217,7 +173,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
     GXLoadTexMtxImm(scale, 0x1e, 1);
     effGetTexObjN64(0x6f, &texObj);
     GXLoadTexObj(&texObj, 0);
-    lensflareSetColor2(alpha);
+    GXSetTevColor(1, (GXColor){ 0xFF, 0x40, 0x40, alpha });
     effSetVtxDescN64((effVtxArray*)size48x48_tex32x32_vtx);
     GXBegin(0x90, 0, 6);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -232,7 +188,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         if (f30 == zero) {
             continue;
         }
-        lensflareSetColor3(((((LensflareData*)data)->field_14 * alpha) >> 8));
+        GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, (((LensflareData*)data)->field_14 * alpha) >> 8 });
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 0xff);
         GXSetTevColorOp(0, 0, 0, 0, 1, 0);
@@ -261,8 +217,8 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         GXBegin(0x90, 0, 6);
         tri2(8, 9, 10, 0, 8, 10, 11, 0);
 
-        lensflareSetColor4(((((LensflareData*)data)->field_14 * alpha) >> 9));
-        lensflareSetColor6();
+        GXSetTevColor(1, (GXColor){ 0xFF, 0x00, 0xFF, (((LensflareData*)data)->field_14 * alpha) >> 9 });
+        GXSetTevColor(2, (GXColor){ 0xFF, 0x80, 0xFF, 0x00 });
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 0xff);
         GXSetTevColorOp(0, 0, 0, 0, 1, 0);
@@ -285,7 +241,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         GXBegin(0x90, 0, 6);
         tri2(4, 5, 6, 0, 4, 6, 7, 0);
 
-        lensflareSetColor5(((((LensflareData*)data)->field_14 * alpha) >> 8));
+        GXSetTevColor(1, (GXColor){ 0xFF, 0x40, 0x40, (((LensflareData*)data)->field_14 * alpha) >> 8 });
         {
             f32 a = 34.0f + data->field_20;
             PSMTXRotRad(rot, 'z', 0.017453292f * (a + (f32)frame));
@@ -304,13 +260,3 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041f5d0 = { 0xFF, 0x40, 0x40, 0x00 };
-const GXColor dat_8041f5d4 = { 0xFF, 0x40, 0x40, 0x00 };
-const GXColor dat_8041f5d8 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_8041f5dc = { 0xFF, 0x00, 0xFF, 0x00 };
-const GXColor dat_8041f5e0 = { 0xFF, 0x80, 0xFF, 0x00 };
-const GXColor dat_8041f5e4 = { 0xFF, 0x40, 0x40, 0x00 };

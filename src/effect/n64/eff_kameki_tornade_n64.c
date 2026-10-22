@@ -130,39 +130,6 @@ void effKamekiTornadeMain(EffectEntry* effect) {
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKamekiTornadeDisp, effect);
 }
-// Build the two by-value GXColors in helpers so MWCC gives their argument copies the same stack
-// slots as the original (the trick from effBattenDisp2/effTimestampSetColor).
-// Building the colour and calling GXSetTevColor inside the inline is what puts the build/copy temps
-// at the original's 0x28/0x2c and 0x20/0x24 slots; returning a GXColor from the helper puts the first
-// helper's build temp 4 bytes low (same shape as eff_fireworks_n64).
-static inline void kamekiTornadeSetColor(effKamekiTornadeData* data, s32 field24) {
-	GXColor color = unk_80423160;
-
-	color.r = data->colorR;
-	color.g = data->colorG;
-	color.b = data->colorB;
-	color.a = (u8)(s32)((f32)field24 * data->alphaScale);
-	GXSetTevColor(GX_TEVREG0, color);
-}
-#ifdef MUST_MATCH
-static inline void kamekiTornadeSetColor2(effKamekiTornadeData* data) {
-	GXColor color = *(GXColor*)&dat_8041f1d8;
-
-	color.r = data->color2R;
-	color.g = data->color2G;
-	color.b = data->color2B;
-	GXSetTevColor(GX_TEVREG1, color);
-}
-#else
-static inline GXColor kamekiTornadeSetColor2(effKamekiTornadeData* data) {
-	GXColor color = *(GXColor*)&dat_8041f1d8;
-
-	color.r = data->color2R;
-	color.g = data->color2G;
-	color.b = data->color2B;
-	return color;
-}
-#endif
 // One 14-byte vertex: copy the source, then rotate its s16 position through the matrix with the
 // SDK fast-cast inlines. Retail inlines this once per vertex, each with its own Vec temp and its
 // own GQR2-5 setup (same shape as eff_flame_n64/eff_sstar_n64).
@@ -237,13 +204,10 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXLoadTexObj(&texObj, GX_TEXMAP1);
 
-	kamekiTornadeSetColor(data, field24);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->colorR, data->colorG, data->colorB,
+	                                     (u8)(s32)((f32)field24 * data->alphaScale) });
 
-#ifdef MUST_MATCH
-	kamekiTornadeSetColor2(data);
-#else
-	GXSetTevColor(GX_TEVREG1, kamekiTornadeSetColor2(data));
-#endif
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->color2R, data->color2G, data->color2B, 0x20 });
 
 	GXSetCullMode(GX_CULL_NONE);
 
@@ -285,12 +249,12 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 		vtx = smartAlloc(0x1C0, 3)->address;
 		effSetVtxDescN64((effVtxArray*)vtx);
 
-		/* first half: the 0..15 ring, rotated about vec3_802fa84c */
+		/* first half: the 0..15 ring */
 		PSMTXTrans(work, 10.f * data->nodeX[i], 10.f * data->nodeY[i],
 		           10.f * data->nodeZ[i]);
 		PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->nodeTilt[i]);
 		PSMTXConcat(work, rotMtx, work);
-		axis = vec3_802fa84c;
+		axis = (Vec){ -0.03f, 1.0f, 0.1f };
 		PSMTXRotAxisRad(rotMtx, &axis, 0.017453292f * (data->spinAngle + (f32)(i * i)));
 		PSMTXConcat(work, rotMtx, work);
 		{
@@ -314,13 +278,13 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 			kamekiTornadeSetVtx(&vtx[j], &tbl[j], work);
 		}
 
-		/* second half: the 16..31 ring, rotated about vec3_802fa858 */
+		/* second half: the 16..31 ring */
 		PSMTXTrans(work, 10.f * data->nodeX[i + 1],
 		           10.f * data->nodeY[i + 1],
 		           10.f * data->nodeZ[i + 1]);
 		PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->nodeTilt[i + 1]);
 		PSMTXConcat(work, rotMtx, work);
-		axis = vec3_802fa858;
+		axis = (Vec){ 0.03f, 1.0f, 0.0f };
 		PSMTXRotAxisRad(rotMtx, &axis, 0.017453292f * (data->spinAngle + (f32)(i * i)));
 		PSMTXConcat(work, rotMtx, work);
 		{
@@ -371,14 +335,7 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 	}
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_8041f1d8 = 0x00000020;
-
-Vec __declspec(section ".rodata") vec3_802fa84c = { -0.03f, 1.0f, 0.1f };
-Vec __declspec(section ".rodata") vec3_802fa858 = { 0.03f, 1.0f, 0.0f };
-
-// .sbss2 zero colour and the 4-byte section-tail gap (declared in reverse so the gap lands higher).
+// .sbss2 4-byte section-tail gap, after effKamekiTornadeDisp's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u8 gap_10_80423164_sbss2[4];
-__declspec(section ".sdata") GXColor unk_80423160;
 #pragma section ".sdata" ".sbss"

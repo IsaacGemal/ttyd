@@ -41,10 +41,6 @@ typedef struct effBombN64Data {
 
 // .sdata2 float constants, named after their original addresses.
 
-// .sdata2 GXColor seeds the original builds its TEV colours from.
-extern const GXColor dat_8041e9d0;
-extern const GXColor dat_8041e9d4;
-
 // .data vertex array, local to this file in the original.
 static u32 size8x8_tex32x32_vtx[0x38 / 4] = {
 	0xFFFCFFFC, 0x00000000, 0x0000FFFF, 0xFFFF0004,
@@ -182,18 +178,6 @@ static void effBombMain(EffectEntry* effect) {
 	dispEntry(camId, dispCalcZ(&position), 2, effBombDisp, effect);
 }
 
-static inline void bombSetColor1(u8 a) {
-	GXColor c = dat_8041e9d0;
-	c.a = a;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-static inline void bombSetColor2(u8 b, u8 a) {
-	GXColor c = dat_8041e9d4;
-	c.b = b;
-	c.a = a;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-
 // The local declaration order is the shape MWCC needs to colour the callee-saved GPRs like the
 // original (data r29, camera r30, timer r31). The natural order (timer first) makes mwcc put timer in
 // r30 and camera in r31, ten instructions apart; with this order no #pragma is required.
@@ -205,7 +189,6 @@ static void effBombDisp(CameraId camId, void* param) {
 	Mtx rotMtx;
 	Mtx outMtx;
 	GXTexObj texObj;
-	GXColor color2;
 	s32 alpha;
 	s32 timer;
 	s32 blue;
@@ -237,7 +220,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	if (data->texType != -1) {
 		effGetTexObjN64(0x18, &texObj);
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
-		bombSetColor1(data->alpha);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0xF0, data->alpha });
 		PSMTXScale(scaleMtx, data->scale, data->scale, 1.0f);
 		PSMTXConcat(outMtx, scaleMtx, scaleMtx);
 		GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);
@@ -262,7 +245,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	} else {
 		blue = 0xFF;
 	}
-	bombSetColor2(blue, alpha);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, blue, alpha });
 
 	PSMTXScale(scaleMtx, data->animScale, data->animScale, data->animScale);
 	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->animRotZ);
@@ -289,7 +272,3 @@ static void effBombDisp(CameraId camId, void* param) {
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041e9d0 = { 0xFF, 0xFF, 0xF0, 0x00 };
-const GXColor dat_8041e9d4 = { 0xFF, 0xFF, 0x00, 0x00 };

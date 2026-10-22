@@ -14,16 +14,6 @@ const f32 float_32_80420edc;
 const f32 float_362_80420ee0;
 const f32 float_48_80420ee4;
 
-// .rodata
-#ifdef MUST_MATCH
-// MUST_MATCH: the original addresses this object with lis/addi (it is not in .sdata)
-// and, as a non-const object in .rodata, MWCC does not hoist its three loads above the
-// effect->userdata load in effPointGetMain (the natural `const` form does, and scores 96%).
-__declspec(section ".rodata") Vec vec3_802fe390 = { 0.0f, 0.0f, 0.0f };
-#else
-const Vec vec3_802fe390 = { 0.0f, 0.0f, 0.0f };
-#endif
-
 // .sdata texture ids indexed [language != 0][texture]
 static u32 texid_tbl[2][4] = {
 	{ 0x98, 0x99, 0x9A, 0x9B },
@@ -58,10 +48,7 @@ void effPointGetMain(EffectEntry* effect) {
 	Vec disp;
 
 	work = effect->userdata;
-	disp = vec3_802fe390;
-	disp.x = work->x;
-	disp.y = work->y;
-	disp.z = work->z;
+	disp = (Vec){ work->x, work->y, work->z };
 	position = disp;
 
 	work->frame++;

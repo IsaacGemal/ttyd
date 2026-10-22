@@ -30,13 +30,6 @@ u32 _enemy_can_use_item_table[] = {
     0x00000000,
 };
 
-// Part colour initialiser (opaque white).
-#ifdef MUST_MATCH
-// Retail places this colour template in the small read-only data section.
-__declspec(section ".sdata2") GXColor dat_8041c3b8 = { 0xFF, 0xFF, 0xFF, 0xFF };
-#else
-GXColor dat_8041c3b8 = { 0xFF, 0xFF, 0xFF, 0xFF };
-#endif
 // 30-byte status block copied between BattleWorkPartyInfo::field_4 and BattleUnit::mSleepTurns.
 #ifdef MUST_MATCH
 // For the struct-copy below: MWCC emits the original's lwzu/stwu copy loop for a struct
@@ -202,7 +195,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         part->mHitCursorOffset.x = 0.0f;
         part->mHitCursorOffset.y = 0.0f;
         part->mHitCursorOffset.z = 0.0f;
-        part->color = dat_8041c3b8;
+        part->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
         part->detectOffsetX = setup->field_0x18;
         part->poseTable = kindPart->poseTable;
         part->poseId = -1;

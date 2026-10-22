@@ -20,10 +20,6 @@ static USER_FUNC(check);
 static s32 color_change_evt(s32 enable);
 static void callback(MapTevCallback* param);
 
-// .rodata colors selected by the shadow-Mario TEV callback
-const GXColor dat_gra_00001e88 = {0x00, 0x00, 0x00, 0xFF};
-const GXColor dat_gra_00001e8c = {0x4D, 0x09, 0x52, 0xFF};
-
 // clang-format off
 extend_data(32,
      u64, negone_one, 0xBF8000003F800000,
@@ -50,9 +46,9 @@ static void callback(MapTevCallback* param) {
     s32 numIndStage = param->numIndStage;
 
     if (marioGetPtr()->flags & MARIO_FLAG_BG_MODE) {
-        GXSetTevColor(GX_TEVREG0, dat_gra_00001e88);
+        GXSetTevColor(GX_TEVREG0, (GXColor){0x00, 0x00, 0x00, 0xFF});
     } else {
-        GXSetTevColor(GX_TEVREG0, dat_gra_00001e8c);
+        GXSetTevColor(GX_TEVREG0, (GXColor){0x4D, 0x09, 0x52, 0xFF});
     }
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
     GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);

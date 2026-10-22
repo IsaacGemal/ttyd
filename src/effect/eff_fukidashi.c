@@ -15,20 +15,13 @@
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
-// pool_data: the original reaches this unit's .rodata (the sfx Vecs and strings) through one base
-// register seeded from vec3_802f3048, so let MWCC pool it instead of rematerialising lis/addi.
+// pool_data: the original reaches this unit's .rodata (the Vec templates and strings) through one base
+// register seeded from the first Vec template, so let MWCC pool it instead of rematerialising lis/addi.
 #pragma pool_data on
 
-// .sbss2 scratch colours referenced by effFukidashiDisp. The default .sbss2 only holds
-// compiler-generated pool templates, so pair it with the small-data section and place the objects by
-// hand; they land in reverse declaration order, so the 4-byte section-tail gap is declared first.
+// .sbss2: the 4-byte section-tail gap after effFukidashiDisp's colour templates.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u8 gap_10_8042300C_sbss2[4];
-__declspec(section ".sdata") u32 unk_80423008;
-__declspec(section ".sdata") u32 unk_80423004;
-__declspec(section ".sdata") u32 unk_80423000;
-__declspec(section ".sdata") u32 unk_80422ffc;
-__declspec(section ".sdata") u32 unk_80422ff8;
 #pragma section ".sdata" ".sbss"
 
 __declspec(section ".data") u8 lbl_8036BEA0[8] ATTRIBUTE_ALIGN(16) = {
@@ -326,31 +319,7 @@ __declspec(section ".data") u32 chuchu_dt[45] = {
 
 
 
-const Vec vec3_802f3048 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3054 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3060 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f306C = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3078 = { 0.0f, 0.0f, 0.0f };
 
-const u32 dat_8041c5b0 = 0xFFFFFF00;
-const u32 dat_8041c5b4 = 0xA0A0A000;
-const u32 dat_8041c5b8 = 0xFF000000;
-const u32 dat_8041c5bc = 0xA0000000;
-const u32 dat_8041c5c0 = 0xE0E0E000;
-const u32 dat_8041c5c4 = 0xFFFFFF00;
-const u32 dat_8041c5c8 = 0xFFFFFF00;
-const u32 dat_8041c5cc = 0xA0A0A000;
-const u32 dat_8041c5d0 = 0xFFCD2800;
-const u32 dat_8041c5d4 = 0x7F661400;
-
-// Local copy of system.c's inline helper so it inlines here (as in eff_queen.c).
-inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = input->x;
-	temp.y = input->y;
-	temp.z = input->z;
-	return temp;
-}
 
 void calc_pos(effFukidashiData* data, s32 index) {
 	CameraEntry* cam;
@@ -361,9 +330,7 @@ void calc_pos(effFukidashiData* data, s32 index) {
 	PartyEntry* party;
 
 	cam = camGetPtr(CAMERA_3D);
-	temp = vec3_802f3048;
-	temp.x = sin(MTXDegToRad(cam->viewYaw));
-	temp.z = -(f32)cos(MTXDegToRad(cam->viewYaw));
+	temp = (Vec){ sin(MTXDegToRad(cam->viewYaw)), 0.0f, -(f32)cos(MTXDegToRad(cam->viewYaw)) };
 	axis = temp;
 
 	PSMTXRotAxisRad(mtx, &axis, MTXDegToRad(-(data->angleBase - 20.0f + (f32)(index * 20))));
@@ -403,11 +370,9 @@ void calc_pos(effFukidashiData* data, s32 index) {
 }
 
 // This unit is built with pool_data on: MWCC reaches all of its .rodata through one base register
-// (vec3_802f3048). Copying the zero sfx Vecs as `Vec vec = vec3_...;` makes effFukidashiEntry seed
-// that base once and read the vectors base+offset, as retail does; a base+offset pointer copy
-// interleaves the loads and stores and a direct (Vec){0,0,0} template pools an eighth object that
-// shifts the strings. effFukidashiMain/effFukidashiDisp likewise read their zero Vecs through
-// pooled templates so only the five named Vecs sit before the pool.
+// (calc_pos's Vec template). The Vec literals' templates sit in use order: calc_pos's, the four sfx
+// positions of effFukidashiEntry, then initializeVec's (defined just before its user,
+// effFukidashiMain, so its template follows the others) and effFukidashiDisp's.
 //
 // The original compares the c==-2/-3 fallthrough as unsigned (cmplwi); `c != 0` emits cmpwi.
 #ifdef MUST_MATCH
@@ -481,44 +446,37 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 	if (c == -2 || c == -3) {
 		switch (a) {
 		case 0: {
-			Vec vec = vec3_802f3054;
-			vec.x = e;
-			vec.y = f;
-			vec.z = g;
-			psndSFXOn_3D((const char*)0x5D, &vec);
+			psndSFXOn_3D((const char*)0x5D, &(Vec){ e, f, g });
 			break;
 		}
 		case 1: {
-			Vec vec = vec3_802f3060;
-			vec.x = e;
-			vec.y = f;
-			vec.z = g;
-			psndSFXOn_3D((const char*)0x5E, &vec);
+			psndSFXOn_3D((const char*)0x5E, &(Vec){ e, f, g });
 			break;
 		}
 		}
 	} else if (FUKI_C_NONZERO(c) && c != -1) {
 		switch (a) {
 		case 0: {
-			Vec vec = vec3_802f306C;
-			vec.x = e;
-			vec.y = f;
-			vec.z = g;
-			psndSFXOn_3D("SFX_EVT_NPC_BIKKURI_MARK1", &vec);
+			psndSFXOn_3D("SFX_EVT_NPC_BIKKURI_MARK1", &(Vec){ e, f, g });
 			break;
 		}
 		case 1: {
-			Vec vec = vec3_802f3078;
-			vec.x = e;
-			vec.y = f;
-			vec.z = g;
-			psndSFXOn_3D("SFX_EVT_NPC_QUESTION_MARK1", &vec);
+			psndSFXOn_3D("SFX_EVT_NPC_QUESTION_MARK1", &(Vec){ e, f, g });
 			break;
 		}
 		}
 	}
 
 	return entry;
+}
+
+// Local copy of system.c's inline helper so it inlines here (as in eff_queen.c).
+inline Vec initializeVec(Vec* input) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
 }
 
 void effFukidashiMain(EffectEntry* effect) {
@@ -596,14 +554,6 @@ void effFukidashiMain(EffectEntry* effect) {
 	}
 }
 
-// Builds a GXColor from a base constant with the alpha byte overridden. Calling it directly as the
-// GXSet*/iconDispGxCol argument (rather than through a named local) makes the compiler reserve the
-// by-value argument slot first and the source copy below it, which is the original's stack layout.
-static inline GXColor fukidashiColor(u8 a, GXColor c) {
-	c.a = a;
-	return c;
-}
-
 // The frame (0x390), prologue (stmw r19), the single .data base r29 = lbl_8036BEA0 and every GPR/FPR
 // match the original. The register/stack allocation is pinned by these source facts:
 //  - the unit's .data (the 8 compiler literal pairs, anim_data_tenten, moja_model_* and chuchu_dt) is
@@ -617,10 +567,9 @@ static inline GXColor fukidashiColor(u8 a, GXColor c) {
 //    0x30, so this order makes the first loop's m0=0x268, m1=0x208, m2=0x1a8, m3=0x298, m4=0x1d8,
 //    m5=0x2c8, m6=0x238, m8=0x178, m9=0x148, light=0x108 and m7=0xd8, matching retail; the case-2
 //    scratch uses m7 and the case-0/1 `PSMTXConcat(m3, m0, m0)` writes back to m0, as retail does;
-//  - the 15 colours are built through a `fukidashiColor(u8, GXColor)` inline called directly in each
-//    GXSet* argument (no separate `color` local). That makes the compiler reserve the by-value call
-//    argument slot first and the source copy below it, so the colours land as the original's
-//    interleaved 8-byte [source,copy] pairs instead of two 4-byte banks.
+//  - the 15 colours are compound literals written directly in each GXSet* argument (no separate
+//    `color` local), so they land as the original's interleaved 8-byte [template copy, argument copy]
+//    pairs instead of two 4-byte banks.
 //  - loading `cam = camGetPtr(camId)` before `alpha = data->alpha` makes the compiler hoist the
 //    .data base `lis r5, lbl_8036BEA0@ha` ahead of the userdata load (`lwz r26, 0xc(r4)`), as retail;
 //  - computing `count = 1` before the `mapSetMaterialFog()` call matches retail's `li r23, 0x1`;
@@ -711,7 +660,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 			if (j == 0) {
 				effGetTexObj(5, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
-				GXSetChanMatColor(GX_COLOR0A0, fukidashiColor(alpha, *(GXColor*)&unk_80422ff8));
+				GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0, 0, 0, alpha });
 				PSMTXTrans(m0, 1.3f, -1.3f, 0.0f);
 				PSMTXConcat(m5, m0, m0);
 				PSMTXRotRad(m6, 'y', MTXDegToRad(data->spinY));
@@ -722,9 +671,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				effGetTexObj(4, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (i == 0) {
-					GXSetChanMatColor(GX_COLOR0A0, fukidashiColor(alpha, *(GXColor*)&dat_8041c5b0));
+					GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, alpha });
 				} else {
-					GXSetChanMatColor(GX_COLOR0A0, fukidashiColor(alpha, *(GXColor*)&dat_8041c5b4));
+					GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xA0, 0xA0, 0xA0, alpha });
 				}
 				PSMTXTrans(m0, 0.0f, 0.0f, 0.0f);
 				PSMTXConcat(m5, m0, m0);
@@ -775,7 +724,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 						GXLoadTexMtxImm(m0, GX_TEXMTX0, GX_MTX2x4);
 						break;
 				}
-				GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaA, *(GXColor*)&unk_80422ffc));
+				GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, alphaA });
 				PSMTXTransApply(m5, m8, 1.0f, -1.0f, 0.0f);
 				GXLoadPosMtxImm(m8, GX_PNMTX0);
 				if (data->type == 0) {
@@ -800,9 +749,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					GXTexCoord2f32(0.0f, 1.0f);
 				}
 				if (i == 0) {
-					GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5b8));
+					GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0x00, 0x00, alphaB });
 				} else {
-					GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5bc));
+					GXSetTevColor(GX_TEVREG0, (GXColor){ 0xA0, 0x00, 0x00, alphaB });
 				}
 				GXLoadPosMtxImm(m5, GX_PNMTX0);
 				if (data->type == 0) {
@@ -837,7 +786,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
 				GXSetNumChans(1);
 				GXSetChanCtrl(GX_COLOR0A0, GX_TRUE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT0, GX_DF_CLAMP, GX_AF_NONE);
-				GXSetChanAmbColor(GX_COLOR0A0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5c0));
+				GXSetChanAmbColor(GX_COLOR0A0, (GXColor){ 0xE0, 0xE0, 0xE0, alphaB });
 				v2 = (Vec){ 0.0f, 0.0f, 0.0f };
 				v2.x = data->position.x + 10.0f * (f32)cos((f32)gp->retraceCount / 10.0f);
 				v2.y = data->position.y;
@@ -845,7 +794,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				vec = v2;
 				PSMTXMultVec(camGetPtr(camId)->view, &vec, &vec);
 				GXInitLightPos(&light, vec.x, vec.y, vec.z);
-				GXInitLightColor(&light, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5c4));
+				GXInitLightColor(&light, (GXColor){ 0xFF, 0xFF, 0xFF, alphaB });
 				GXInitLightAttn(&light, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 				GXLoadLightObjImm(&light, GX_LIGHT0);
 				PSMTXTrans(m7, 5.0f, -8.0f, 0.0f);
@@ -884,9 +833,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					PSMTXConcat(m8, m3, m8);
 					PSMTXConcat(m8, m0, m8);
 					if (i == 0) {
-						iconDispGxCol(m8, 0x400, 0x18B, fukidashiColor(alpha, *(GXColor*)&dat_8041c5c8));
+						iconDispGxCol(m8, 0x400, 0x18B, (GXColor){ 0xFF, 0xFF, 0xFF, alpha });
 					} else {
-						iconDispGxCol(m8, 0x800, 0x18B, fukidashiColor(alpha, *(GXColor*)&dat_8041c5cc));
+						iconDispGxCol(m8, 0x800, 0x18B, (GXColor){ 0xA0, 0xA0, 0xA0, alpha });
 					}
 					PSMTXTrans(m0, 10.0f, 22.0f, 0.0f);
 					PSMTXConcat(m8, m0, m8);
@@ -910,7 +859,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-				GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&unk_80423000));
+				GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, alphaB });
 				effGetTexObj(8, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				for (j = 0; j < data->animCell; j++) {
@@ -941,7 +890,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				PSMTXTrans(m0, (f32)data->animCell, 0.0f, 0.0f);
 				PSMTXConcat(m3, m0, m3);
 				GXLoadTexMtxImm(m3, GX_TEXMTX0, GX_MTX2x4);
-				GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&unk_80423004));
+				GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, alphaB });
 				GXLoadPosMtxImm(m5, GX_PNMTX0);
 				GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 				GXPosition3f32(-7.0f, 7.0f, 0.0f);
@@ -972,7 +921,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				effGetTexObj(0xA, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (i == 0) {
-					GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaA, *(GXColor*)&unk_80423008));
+					GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, alphaA });
 					PSMTXTransApply(m5, m8, 1.0f, -1.0f, 0.0f);
 					PSMTXConcat(m8, m0, m8);
 					GXLoadPosMtxImm(m8, GX_PNMTX0);
@@ -986,9 +935,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					GXPosition3f32(-8.0f, -8.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 2.0f);
 					if (i == 0) {
-						GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5d0));
+						GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xCD, 0x28, alphaB });
 					} else {
-						GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5d4));
+						GXSetTevColor(GX_TEVREG0, (GXColor){ 0x7F, 0x66, 0x14, alphaB });
 					}
 					PSMTXConcat(m5, m0, m8);
 					GXLoadPosMtxImm(m8, GX_PNMTX0);

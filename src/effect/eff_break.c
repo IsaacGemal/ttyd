@@ -29,7 +29,6 @@ extern const f32 float_0_804210b0;
 extern const f32 float_2_804210cc;
 extern const f32 float_10_804210d0;
 extern const f32 float_20_804210c0;
-extern const Vec vec3_802fe610;
 extern f32 ty_data[21];
 extern f32 ty_data2[21];
 
@@ -82,18 +81,13 @@ EffectEntry* effBreakEntry(s32 type, s32 maxTimer, f32 x, f32 y, f32 z) {
 void effBreakMain(EffectEntry* effect) {
     BreakEffect* data = effect->userdata;
     Vec position;
-    Vec disp;
     f32 scale;
     f32 t;
     s32 max;
     s32 i;
     s32 done;
 
-    disp = vec3_802fe610;
-    disp.x = data->x;
-    disp.y = data->y;
-    disp.z = data->z;
-    position = disp;
+    position = (Vec){ data->x, data->y, data->z };
     // The target loads scale into f1, then the constant into f0, and multiplies f0*f1. Keeping the field in a
     // temp and writing the constant first gives that allocation (the pragma above is required for it to hold).
     t = data->scale;
@@ -273,7 +267,6 @@ f32 ty_data2[21] = {
 #pragma opt_common_subs reset
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const Vec vec3_802fe610 = { 0.0f, 0.0f, 0.0f };
 const f32 float_deg2rad_804210a8 = 0.017453292f;
 const f32 float_48_804210ac = 48.0f;
 const f32 float_0_804210b0 = 0.0f;

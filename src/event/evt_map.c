@@ -30,9 +30,6 @@ const char str_p_hikohki[12] = "p_hikohki";
 const char str_p_hune[8] = "p_hune";
 const char str_extparty[12] = "extparty";
 
-// .sdata2
-const u32 dat_80419958 = 0xFF;
-
 // .sbss2: the default .sbss2 is only used for compiler-generated pool
 // templates, so pair it with a small-data section and place these by hand.
 #pragma section ".sdata" ".sbss2"
@@ -92,18 +89,6 @@ USER_FUNC(evt_mapobj_scale) {
     return EVT_RETURN_DONE;
 }
 
-#ifdef MUST_MATCH
-// Built in an inline that returns the colour: puts the by-value argument copy above the local, as retail has it.
-static inline GXColor evtMapFogColor(s32 r, s32 g, s32 b) {
-    GXColor c = *(GXColor*)&dat_80419958;
-
-    c.r = r;
-    c.g = g;
-    c.b = b;
-    return c;
-}
-#endif
-
 USER_FUNC(evt_map_set_fog) {
     s32* args = event->args;
     s32 color = evtGetValue(event, args[0]);
@@ -112,16 +97,7 @@ USER_FUNC(evt_map_set_fog) {
     s32 r = evtGetValue(event, args[3]);
     s32 g = evtGetValue(event, args[4]);
     s32 b = evtGetValue(event, args[5]);
-#ifdef MUST_MATCH
-    mapSetFog(color, near, far, evtMapFogColor(r, g, b));
-#else
-    GXColor color2 = *(GXColor*)&dat_80419958;
-
-    color2.r = r;
-    color2.g = g;
-    color2.b = b;
-    mapSetFog(color, near, far, color2);
-#endif
+    mapSetFog(color, near, far, (GXColor){ r, g, b, 0xFF });
     return EVT_RETURN_DONE;
 }
 

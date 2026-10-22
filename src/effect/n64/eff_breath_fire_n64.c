@@ -4,12 +4,6 @@
 #include "memory.h"
 #include "eff/eff_n64.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804230b4;
-__declspec(section ".sdata") GXColor unk_804230b0;
-
-
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -34,8 +28,6 @@ extern const f32 float_4_8041ea94;
 extern const f32 float_10_8041ea98;
 
 // .rodata zero vector, int->float and mode-1 doubles are compiler-generated pool constants here.
-
-// .sbss2 zero GXColor locals the original copies before filling its fields.
 
 // .data vertex array of this unit; the original hands a 0x46-byte slice to effSetVtxDescN64.
 
@@ -161,24 +153,6 @@ void effBreathFireMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effBreathFireDisp, effect);
 }
 
-static inline void breathSetColor0(effBreathFireData* data) {
-	GXColor color = unk_804230b0;
-	color.r = data->color0R;
-	color.g = data->color0G;
-	color.b = data->color0B;
-	color.a = data->alpha;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void breathSetColor1(effBreathFireData* data, f32 s, s32 frame) {
-	GXColor color = unk_804230b4;
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = (u8)(float_256_8041ea80 * (s - (f32)frame));
-	GXSetTevColor(GX_TEVREG1, color);
-}
-
 void effBreathFireDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	effBreathFireData* data;
@@ -214,8 +188,8 @@ void effBreathFireDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
-	breathSetColor0(data);
-	breathSetColor1(data, s, frame);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->color0R, data->color0G, data->color0B, data->alpha });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->color1R, data->color1G, data->color1B, (u8)(float_256_8041ea80 * (s - (f32)frame)) });
 
 	effGetTexObjN64(0x77, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);

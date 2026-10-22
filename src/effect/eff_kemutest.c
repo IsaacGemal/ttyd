@@ -12,15 +12,12 @@
 #include "math_ext.h"
 
 #ifdef MUST_MATCH
-/* The retail unit owns this zero-initialized colour template and its padding. */
+/* The retail unit owns this padding after its .sbss2 colour template. */
 #pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804232d8;
 #pragma force_active on
 __declspec(section ".sdata") u32 gap_10_804232DC_sbss2;
 #pragma force_active reset
 #pragma section ".sdata" ".sbss"
-#else
-GXColor unk_804232d8;
 #endif
 
 typedef struct {
@@ -29,14 +26,6 @@ typedef struct {
 
 static f32 bom_dir[10] = { 10.0f, 40.0f, 80.0f, 170.0f, 140.0f, 100.0f, 25.0f, 155.0f, 60.0f, 120.0f };
 static f32 bom_spd[10] = { 2.2f, 2.7f, 3.0f, 2.2f, 2.7f, 3.0f, 1.9f, 1.9f, 1.5f, 1.5f };
-const Vec vec3_802fdc88 = { 0.5f, 0.3f, 0.8f };
-const Vec vec3_802fdc94 = { 0.0f, 10.0f, 10.0f };
-const Vec vec3_802fdca0 = { 0.0f, 5.0f, 20.0f };
-const effKemuTestQuad dat_802fdcac = { { 0.0f, 120.0f, 180.0f, 240.0f } };
-const Vec vec3_802fdcbc = { 0.0f, 120.0f, 240.0f };
-const Vec vec3_802fdcc8 = { 0.0f, 5.0f, -5.0f };
-const Vec vec3_802fdcd4 = { 5.0f, 0.0f, -2.0f };
-const Vec vec3_802fdce0 = { 0.0f, 1.0f, 2.0f };
 // effKemuTestEntry: case 4/13 uses an explicit direction pointer under MUST_MATCH so MWCC
 // assigns bom_dir to r22 and bom_spd to r21 while retaining the original FP instruction order.
 EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
@@ -177,11 +166,11 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->colorB = 0xFF;
 			work->scale = 1.0f;
 			if (type == 19) {
-				/* Each rodata vector is copied to a scratch Vec and indexed from there, in this
-				   declaration order (the copies' store scheduling follows it). */
-				Vec v88 = vec3_802fdc88;
-				Vec v94 = vec3_802fdc94;
-				Vec va0 = vec3_802fdca0;
+				/* Each table is an initialised local Vec indexed from there, in this declaration
+				   order (the copies' store scheduling follows it). */
+				Vec v88 = { 0.5f, 0.3f, 0.8f };
+				Vec v94 = { 0.0f, 10.0f, 10.0f };
+				Vec va0 = { 0.0f, 5.0f, 20.0f };
 
 				work->posX = (&v94.x)[i - 1];
 				work->posY = (&va0.x)[i - 1];
@@ -272,7 +261,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				}
 			}
 			else if (type == 5) {
-				effKemuTestQuad vac = dat_802fdcac;
+				effKemuTestQuad vac = { { 0.0f, 120.0f, 180.0f, 240.0f } };
 
 				spd = 3.0f;
 				work->velX = spd * (f32)sin(6.2831855f * vac.v[i] / 360.0f);
@@ -280,7 +269,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				work->scale = 0.5f;
 			}
 			else if (type == 21) {
-				Vec vbc = vec3_802fdcbc;
+				Vec vbc = { 0.0f, 120.0f, 240.0f };
 
 				spd = 3.0f;
 				work->velX = spd * (f32)sin(6.2831855f * (&vbc.x)[i] / 360.0f);
@@ -421,9 +410,9 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->colorB = 0xFF;
 			break;
 		case 22: {
-			Vec vc8 = vec3_802fdcc8;
-			Vec vd4 = vec3_802fdcd4;
-			Vec ve0 = vec3_802fdce0;
+			Vec vc8 = { 0.0f, 5.0f, -5.0f };
+			Vec vd4 = { 5.0f, 0.0f, -2.0f };
+			Vec ve0 = { 0.0f, 1.0f, 2.0f };
 
 			work->posX = (&vc8.x)[i - 1];
 			work->posY = (&vd4.x)[i - 1];
@@ -628,17 +617,6 @@ void effKemuTestMain(EffectEntry* effect) {
 	}
 }
 
-static inline GXColor kemuTestColor(effKemuTestData* data, u8 alpha) {
-	GXColor color = unk_804232d8;
-
-	color.r = data->colorR;
-	color.g = data->colorG;
-	color.b = data->colorB;
-	color.a = alpha;
-	return color;
-}
-
-/* kemuTestColor returns the channel-built GXColor so it lands in the original's stack slot. */
 void effKemuTestDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effKemuTestData* data = effect->userdata;
@@ -748,7 +726,7 @@ void effKemuTestDisp(CameraId camId, void* param) {
 					GXLoadPosMtxImm(mtx, 0);
 				}
 				else {
-					GXSetChanMatColor(GX_COLOR0A0, kemuTestColor(data, alpha));
+					GXSetChanMatColor(GX_COLOR0A0, (GXColor){ data->colorR, data->colorG, data->colorB, alpha });
 					PSMTXTrans(mtx, data->posX, data->posY, data->posZ);
 					PSMTXScale(scale, data->scale, data->scale, data->scale);
 					PSMTXConcat(view, mtx, mtx);

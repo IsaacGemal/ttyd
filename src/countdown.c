@@ -11,11 +11,6 @@
 #include <dolphin/mtx.h>
 
 extern GlobalWork* gp;
-// .sdata2 colours of this unit: white (0xFFFFFFFF) for the digits and the colon, and a yellowish 0xFFFFFF99 for the frame.
-__declspec(section ".sdata2") u32 dat_80420498 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8042049c = 0xFFFFFF99;
-#define COUNTDOWN_WHITE (*(GXColor*)&dat_80420498)
-#define COUNTDOWN_YELLOW (*(GXColor*)&dat_8042049c)
 
 //.sbss
 // the 4 bytes after wp in the target's .sbss (gap_08_80418B2C_sbss)
@@ -128,8 +123,8 @@ void countDownDisp(CameraId camId, void* param) {
 	Mtx scale;
 	Mtx base;
 
-	colColon = COUNTDOWN_WHITE;
-	colDigit = COUNTDOWN_WHITE;
+	colColon = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+	colDigit = colColon;
 	flags = work->flags;
 	msRaw = (s32)(work->limit - OSTicksToMilliseconds(work->elapsed));
 	if (flags & 4) {
@@ -143,7 +138,7 @@ void countDownDisp(CameraId camId, void* param) {
 	PSMTXTrans(base, work->x + work->dx, work->y + work->dy, 0.0f);
 	PSMTXScale(scale, 2.5f, 1.0f, 1.0f);
 	PSMTXConcat(base, scale, mtx);
-	iconDispGxCol(mtx, 0x10, 0x1F6, COUNTDOWN_YELLOW);
+	iconDispGxCol(mtx, 0x10, 0x1F6, (GXColor){ 0xFF, 0xFF, 0xFF, 0x99 });
 	digits[0] = sec / 100;
 	sec = sec % 100;
 	digits[1] = sec / 10;

@@ -6,9 +6,6 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// .sdata2: effFlowerDisp's TEV colour, first in the original unit's .sdata2.
-const u32 dat_8041efc8 = 0x000000FF;
-
 // Local copy of system.c's inline helper so it inlines here (as in eff_water_damage_n64.c).
 static inline Vec initializeVec(Vec* input) {
     Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -134,7 +131,6 @@ void effFlowerDisp(CameraId camId, void* param) {
     CameraEntry* cam;
     effFlowerData* data;
     GXTexObj texObj;
-    GXColor color;
     Mtx trans;
     Mtx scale;
     Mtx rot;
@@ -151,8 +147,7 @@ void effFlowerDisp(CameraId camId, void* param) {
     PSMTXConcat(cam->view, trans, trans);
     GXLoadPosMtxImm(trans, GX_PNMTX0);
 
-    color = *(GXColor*)&dat_8041efc8;
-    GXSetTevColor(GX_TEVREG0, color);
+    GXSetTevColor(GX_TEVREG0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
     GXSetCullMode(GX_CULL_NONE);
     effGetTexObjN64(0x4c, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);

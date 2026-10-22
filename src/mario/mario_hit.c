@@ -25,36 +25,6 @@
 #include "motion/mot_ship.h"
 #include "motion/mot_roll.h"
 
-// Vectors the original copies from memory where MWCC would fold or hoist a const one: non-const under MUST_MATCH
-// (the section keeps them in .rodata). The probe loops then reload their templates in the loop body (marioChkWallAround
-// after each sincosf instead of from three saved GPRs; the landing, ground and head probes per sample), and
-// marioSearchGroundRoll / marioSlitChkWallAround read theirs through MWCC's own .rodata base.
-#ifdef MUST_MATCH
-#define MEM_VEC static __declspec(section ".rodata") Vec
-#else
-#define MEM_VEC static const Vec
-#endif
-
-// vectors defined further down
-static const Vec vec3_802c5760;
-static const Vec vec3_802c576c;
-static const Vec vec3_802c5880;
-static const Vec vec3_802c588c;
-static const Vec vec3_802c5898;
-static const Vec vec3_802c58a4;
-static const Vec vec3_802c58b0;
-MEM_VEC vec3_802c57f0;
-MEM_VEC vec3_802c57fc;
-MEM_VEC vec3_802c5808;
-static const Vec vec3_802c5814;
-static const Vec vec3_802c5820;
-static const Vec vec3_802c5874;
-static const Vec vec3_802c5868;
-
-
-//.rodata
-MEM_VEC vec3_802c5730 = { 0.0f, 0.0f, 0.0f };
-MEM_VEC vec3_802c573c = { 0.0f, 0.0f, 0.0f };
 
 #define FP_NAN 1
 #define FP_INFINITE 2
@@ -285,14 +255,8 @@ HitEntry* marioHitCheck(f32* outX, f32* outY, f32* outZ, f32* distance,
     HitEntry* hit;
     f32 dist;
 
-    pos = vec3_802c5730;
-    dir = vec3_802c573c;
-    pos.x = x;
-    pos.y = y;
-    pos.z = z;
-    dir.x = nx;
-    dir.y = ny;
-    dir.z = nz;
+    pos = (Vec){ x, y, z };
+    dir = (Vec){ nx, ny, nz };
     dist = *distance;
     hit = marioHitCheckVec(&pos, &dir, &hitPos, &hitNormal, &dist);
     *distance = dist;
@@ -458,21 +422,6 @@ HitEntry* searchUnder2(Vec* out, f32 x, f32 y, f32 z) {
     out->x = (hit != NULL) ? hitPos.y : -1.0f;
     return hit;
 }
-
-MEM_VEC vec3_802c5778 = { 0.0f, -1.0f, 0.0f };
-MEM_VEC vec3_802c5784 = { 0.0f, 0.0f, 0.0f };
-MEM_VEC vec3_802c5790 = { 0.0f, -1.0f, 0.0f };
-MEM_VEC vec3_802c579c = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c57a8 = { 0.0f, -1.0f, 0.0f };
-MEM_VEC vec3_802c57b4 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c57c0 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c57cc = { 0.0f, -1.0f, 0.0f };
-static const Vec vec3_802c57d8 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c57e4 = { 0.0f, 0.0f, 0.0f };
-MEM_VEC vec3_802c57f0 = { 0.0f, 0.0f, 0.0f };
-MEM_VEC vec3_802c57fc = { 0.0f, 1.0f, 0.0f };
-MEM_VEC vec3_802c5808 = { 0.0f, 0.0f, 0.0f };
-
 
 void marioChkGnd(void) {
     MarioWork* wp = marioGetPtr();
@@ -780,7 +729,7 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     pz = wp->position.z;
     result = NULL;
     bestY = -10000.f;
-    up = vec3_802c5778;
+    up = (Vec){ 0.0f, -1.0f, 0.0f };
     for (i = 0; i < 5; i++) {
         if (i == 0) {
             ox = 0.0f;
@@ -798,10 +747,7 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
             ox = -f24;
             oz = -f23;
         }
-        p = vec3_802c5784;
-        p.x = px + ox;
-        p.y = py + fb;
-        p.z = pz + oz;
+        p = (Vec){ px + ox, py + fb, pz + oz };
         dist = fb + a;
         hit = marioHitCheckVec(&p, &up, &hitPos, &normal, &dist);
         if (hit != NULL) {
@@ -860,8 +806,8 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
 // accepted slope window is ang > 105 or ang < 75.
 // salvaged wave 59 version; its `fabs(...) <= dist` was flipped (the asm is cror eq,gt,eq = >=) and
 // is fixed here, the slope window (ang > 105 || ang < 75) re-checked.
-// The probe direction and start point are read from their named vectors (non-const under MUST_MATCH, MEM_VEC), so
-// MWCC addresses them through its own .rodata base as the original does; the loop index takes the start value
+// The probe direction and start point are Vec literals, whose templates MWCC addresses through its own .rodata base
+// as the original does; the loop index takes the start value
 // directly; the probe is the file's marioHitCheckVec (inlined); the slopeTiltZ store comes before the sqrt for the
 // third angle. Float declaration order from a rasim search. The rounded cosine sits in its own local before it is
 // negated (written inline, the constant and the negated cosine swap f0/f1-f2).
@@ -908,7 +854,7 @@ HitEntry* marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     posY = wp->position.y;
     posX = wp->position.x;
     posZ = wp->position.z;
-    dir = vec3_802c5790;
+    dir = (Vec){ 0.0f, -1.0f, 0.0f };
     if (__fabsf(wp->slopeAngle) < 0.01f) {
         dist = 2.0f;
         i = 0;
@@ -967,10 +913,7 @@ HitEntry* marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
         }
         py = posY + boxY;
         tdist = boxY + len;
-        p = vec3_802c579c;
-        p.x = posX + dx;
-        p.y = py;
-        p.z = posZ + dz;
+        p = (Vec){ posX + dx, py, posZ + dz };
         hit = marioHitCheckVec(&p, &dir, &out1, &out2, &tdist);
         if (hit != NULL) {
             f32 ang1;
@@ -1242,7 +1185,7 @@ HitEntry* marioChkLandon2(f32* out, f32 a, f32 b) {
     f27 = 0.25f * (wp->wPlayerCollisionBox.x * sn);
     c = (f32)cos(rad);
     f26 = 0.25f * (wp->wPlayerCollisionBox.x * -c);
-    up = vec3_802c57a8;
+    up = (Vec){ 0.0f, -1.0f, 0.0f };
     py = wp->position.y + b;
     px = wp->position.x;
     pz = wp->position.z;
@@ -1265,10 +1208,7 @@ HitEntry* marioChkLandon2(f32* out, f32 a, f32 b) {
         }
         d0 = h + fa;
         yy = py + h;
-        p = vec3_802c57b4;
-        p.x = px + ox;
-        p.y = yy;
-        p.z = pz + oz;
+        p = (Vec){ px + ox, yy, pz + oz };
         dist = d0;
         hit = marioHitCheckVec(&p, &up, &hitPos, &normal, &dist);
         if (hit != NULL) {
@@ -1287,6 +1227,12 @@ HitEntry* marioChkLandon2(f32* out, f32 a, f32 b) {
     }
     return NULL;
 }
+
+// Unreferenced in retail; they sit between marioChkLandon2's and marioSearchHead's templates.
+static const Vec vec3_802c57c0 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c57cc = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c57d8 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c57e4 = { 0.0f, 0.0f, 0.0f };
 
 #ifdef MUST_MATCH
 // The rolling form of the landing probe (a fixed 18.0 ray start, as marioHitCheckWidth's rolling width). Uncalled in
@@ -1542,23 +1488,8 @@ HitEntry* marioSearchHead(Vec* pos, f32* outY, f32 a) {
             oz = f28;
         }
         dist = f22;
-#ifdef MUST_MATCH
-        {
-            Vec t;
-
-            t = vec3_802c57f0;
-            t.x = pos->x + ox;
-            t.y = pos->y + f26;
-            t.z = pos->z + oz;
-            p = t;
-        }
-#else
-        p = vec3_802c57f0;
-        p.x = pos->x + ox;
-        p.y = pos->y + f26;
-        p.z = pos->z + oz;
-#endif
-        up = vec3_802c57fc;
+        p = (Vec){ pos->x + ox, pos->y + f26, pos->z + oz };
+        up = (Vec){ 0.0f, 1.0f, 0.0f };
         hit = marioHitCheck2(&p, &up, &hitPos, &normal, &dist);
         if (hit != NULL) {
             MarioWork* wp2;
@@ -1677,11 +1608,8 @@ HitEntry* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
             movePos(&ox, &oz, 3.0f, 180.f + wp->directionView);
             break;
         }
-        p = vec3_802c5808;
+        p = (Vec){ pos->x + ox, 1.0f + pos->y, pos->z + oz };
         dir = (Vec){ 0.0f, 1.0f, 0.0f };
-        p.x = pos->x + ox;
-        p.y = 1.0f + pos->y;
-        p.z = pos->z + oz;
         hitDist = dist;
         hit = marioHitCheckVec(&p, &dir, &out1, &out2, &hitDist);
         if (hit != NULL) {
@@ -1703,7 +1631,7 @@ HitEntry* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
     return NULL;
 }
 
-// 100%. `up` must be built as a compound literal (not the named vec3_802c5820 read) so MWCC
+// 100%. `up` must be built as a compound literal (not a named const Vec read) so MWCC
 // schedules its loads after y = a2 + a; the named read starts the copy one slot early and
 // costs the prologue interleave (96.55%). The literal is the spelling that matches.
 HitEntry* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
@@ -2205,13 +2133,6 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     return NULL;
 }
 
-static const Vec vec3_802c5868 = { 0.0f, -1.0f, 0.0f };
-static const Vec vec3_802c5874 = { 0.0f, -1.0f, 0.0f };
-static const Vec vec3_802c5880 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c588c = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c5898 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c58a4 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c58b0 = { 0.0f, 0.0f, 0.0f };
 
 HitEntry* dou10_yoko_yari(f32* out) {
     MarioWork* wp = marioGetPtr();
@@ -2239,7 +2160,7 @@ HitEntry* dou10_yoko_yari(f32* out) {
         dist = (wp->flags & 0x100000) ? 2.0f : 8.0f;
         tmp = pos;
         tmp.y += 60.f;
-        dir = vec3_802c5868;
+        dir = (Vec){ 0.0f, -1.0f, 0.0f };
         dist100 = 100.f;
         hit = marioHitCheckVec(&tmp, &dir, &hitPos, &hitNormal, &dist100);
         if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
@@ -2291,7 +2212,7 @@ HitEntry* dou10_yoko_yari2(f32* out) {
     }
     tmp = pos;
     tmp.y += 60.f;
-    dir = vec3_802c5874;
+    dir = (Vec){ 0.0f, -1.0f, 0.0f };
     dist = 100.f;
     hit = marioHitCheckVec(&tmp, &dir, &hitPos, &hitNormal, &dist);
     if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
@@ -2324,9 +2245,8 @@ HitEntry* dou10_yoko_yari2(f32* out) {
     return hit;
 }
 
-// Matches. The original builds targetPos by first copying a named zero vector
-// (vec3_802c5880 / vec3_802c5898) and then overwriting the components, and adds the
-// float_5 clearance after the copy; both shapes are needed for the exact stack layout.
+// Matches. targetPos and targetDir are compound literals copied into the query, and the
+// float_5 clearance is added after the copy; both shapes are needed for the exact stack layout.
 // 0x1E0 is unnamed MarioWork padding.
 HitEntry* N_dou10_yoko_yari3(void* unused) {
     MarioWork* wp = marioGetPtr();
@@ -2335,10 +2255,6 @@ HitEntry* N_dou10_yoko_yari3(void* unused) {
     f32 vx;
     f32 vy;
     f32 vz;
-    Vec v;
-    Vec dir;
-    Vec v2;
-    Vec dir2;
     HitCheckQuery query;
     HitEntry* hit;
 
@@ -2350,17 +2266,10 @@ HitEntry* N_dou10_yoko_yari3(void* unused) {
     vy = wp->position.y;
     vz = wp->position.z;
     movePos(&vx, &vz, 10.f, wp->directionView);
-    v = vec3_802c5880;
-    v.x = vx;
-    v.y = vy;
-    v.z = vz;
-    query.targetPos = v;
+    query.targetPos = (Vec){ vx, vy, vz };
     query.targetPos.y += 5.0f;
     sincosf(&sn, &cs, 0.0f);
-    dir = vec3_802c588c;
-    dir.x = sn;
-    dir.z = cs;
-    query.targetDir = dir;
+    query.targetDir = (Vec){ sn, 0.0f, cs };
     query.targetDistance = 40.f;
     hit = hitCheckVecFilter(&query, NULL);
     if (hit != NULL) {
@@ -2371,17 +2280,10 @@ HitEntry* N_dou10_yoko_yari3(void* unused) {
     vy = wp->position.y;
     vz = wp->position.z;
     movePos(&vx, &vz, -10.f, wp->directionView);
-    v2 = vec3_802c5898;
-    v2.x = vx;
-    v2.y = vy;
-    v2.z = vz;
-    query.targetPos = v2;
+    query.targetPos = (Vec){ vx, vy, vz };
     query.targetPos.y += 5.0f;
     sincosf(&sn, &cs, 0.0f);
-    dir2 = vec3_802c58a4;
-    dir2.x = sn;
-    dir2.z = cs;
-    query.targetDir = dir2;
+    query.targetDir = (Vec){ sn, 0.0f, cs };
     query.targetDistance = 40.f;
     hit = hitCheckVecFilter(&query, NULL);
     if (hit != NULL) {
@@ -2389,6 +2291,8 @@ HitEntry* N_dou10_yoko_yari3(void* unused) {
     }
     return hit;
 }
+
+static const Vec vec3_802c58b0 = { 0.0f, 0.0f, 0.0f };
 
 // The 0.01-rounded angle fields use 100.0 with an unconditional +0.5 (ROUND_CENTI). The probe is the file's own
 // marioHitCheckVec (inlined: its distance rounding is dead and its hitPos/normal tests fold, which is the original's
@@ -2661,12 +2565,7 @@ s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
     return 1;
 }
 
-MEM_VEC vec3_802c58f8 = { 0.0f, 0.0f, 0.0f };
-MEM_VEC vec3_802c5904 = { 0.0f, 0.0f, 0.0f };
-MEM_VEC vec3_802c5910 = { 0.0f, 0.0f, 0.0f };
 
-// Each dir vector is copied from its named template (MEM_VEC: non-const under MUST_MATCH, so the copy stays inside
-// the loop and is not hoisted as loop-invariant), then x/z are overwritten with sn/cs.
 s32 marioSlitChkWallAround(void) {
     MarioWork* wp = marioGetPtr();
     s32 flags[8];
@@ -2685,9 +2584,7 @@ s32 marioSlitChkWallAround(void) {
         Vec dir;
         flags[i] = 0;
         sincosf(&sn, &cs, angle);
-        dir = vec3_802c58f8;
-        dir.x = sn;
-        dir.z = cs;
+        dir = (Vec){ sn, 0.0f, cs };
         dist = 13.0f;
         hit = marioHitCheckVec(&pos, &dir, NULL, NULL, &dist);
         if (hit != NULL) {
@@ -2712,9 +2609,7 @@ s32 marioSlitChkWallAround(void) {
         Vec dir;
         if (flags[i] != 1) {
             sincosf(&sn, &cs, angle);
-            dir = vec3_802c5904;
-            dir.x = sn;
-            dir.z = cs;
+            dir = (Vec){ sn, 0.0f, cs };
             dist = 13.0f;
             hit = marioHitCheckVec(&pos, &dir, NULL, NULL, &dist);
             if (hit != NULL) {
@@ -2732,9 +2627,7 @@ s32 marioSlitChkWallAround(void) {
         Vec dir;
         if (flags[i] != 1) {
             sincosf(&sn, &cs, angle);
-            dir = vec3_802c5910;
-            dir.x = sn;
-            dir.z = cs;
+            dir = (Vec){ sn, 0.0f, cs };
             dist = 13.0f;
             hit = marioHitCheckVec(&pos, &dir, NULL, NULL, &dist);
             if (hit != NULL) {
@@ -2852,13 +2745,5 @@ void marioCheckWallShip(f32 a, f32 b) {
         PSVECAdd(&v2, &v3, &wp->position);
     }
 }
-
-#ifndef MUST_MATCH
-// The match build gets these four from compound-literal templates; the natural build names them.
-static const Vec vec3_802c5760 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c576c = { 0.0f, -1.0f, 0.0f };
-static const Vec vec3_802c5814 = { 0.0f, 1.0f, 0.0f };
-static const Vec vec3_802c5820 = { 0.0f, 1.0f, 0.0f };
-#endif
 
 //.sdata2 (defined after the code so the uses stay loads of the named symbols)

@@ -13,7 +13,6 @@ void FontDrawColor(GXColor* color);
 
 
 const Vec vec3_802fdc28 = { 0.0f, 0.0f, 0.0f };
-const char dat_802fdc34[0x20] = { 0x81, 0x7E };
 
 EffectEntry* effPeachFukidashiEntry(s32 type, NpcEntry* npc, s32 lifetime, f32 a, f32 b, f32 c, f32 radius, f32 angle) {
     EffectEntry* entry;
@@ -185,24 +184,7 @@ void effPeachFukidashiDisp(CameraId camId, void* param) {
     }
 
     if (data->flags & 0x80) {
-#ifdef MUST_MATCH
-        /* MUST_MATCH: retail copies the 0x20-byte banner string as eight word moves; a
-           memcpy call or a plain initialiser does not reproduce those instructions. */
-        char buf[0x20];
-
-        *(u32*)&buf[0x00] = *(u32*)&dat_802fdc34[0x00];
-        *(u32*)&buf[0x04] = *(u32*)&dat_802fdc34[0x04];
-        *(u32*)&buf[0x08] = *(u32*)&dat_802fdc34[0x08];
-        *(u32*)&buf[0x0C] = *(u32*)&dat_802fdc34[0x0C];
-        *(u32*)&buf[0x10] = *(u32*)&dat_802fdc34[0x10];
-        *(u32*)&buf[0x14] = *(u32*)&dat_802fdc34[0x14];
-        *(u32*)&buf[0x18] = *(u32*)&dat_802fdc34[0x18];
-        *(u32*)&buf[0x1C] = *(u32*)&dat_802fdc34[0x1C];
-#else
-        char buf[0x20];
-
-        memcpy(buf, dat_802fdc34, sizeof(buf));
-#endif
+        char buf[0x20] = { 0x81, 0x7E };
 
         colorTmp = red;
         PSMTXScale(m3, 0.75f, 0.75f, 0.75f);

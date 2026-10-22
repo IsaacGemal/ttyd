@@ -5,11 +5,6 @@
 #include "mario/mariost.h"
 #include "memory.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804231f0;
-
-
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
@@ -32,11 +27,6 @@ extern const f32 float_360_8041f8bc;
 // The compiler's int->float magic double (0x4330000080000000) is intentionally not
 // defined here: defining it duplicates the pool. Left out, the single pooled entry is
 // emitted at the original's .rodata+0x10 offset and resolves to the original address.
-
-// .sdata2 scratch/default tev colours (loaded whole, one channel overwritten).
-const GXColor dat_8041f888 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_8041f88c = { 0x00, 0x00, 0xFF, 0x00 };
-// .sbss2 scratch colour the second pass fills in; the reference reads it before writing.
 
 // The 40-point ring the display pass renders: signed 1-byte XYZ (times 10),
 // a 16-bit ST pair and RGB8.
@@ -269,30 +259,6 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 // The display pass: build the 40-point ring from point_data, draw the four bubbles,
 // then two indexed passes over the built vertices. Every coordinate conversion is
 // integer magic (fctiwz + lfd/fsubs), so no inline asm is needed.
-// Build each colour and make the GXSetTevColor call inside an inline: mwcc then places
-// each colour local and its by-value copy in the original's stack slots. Returning the
-// GXColor and calling outside packs all locals together instead.
-static inline void wprotectColor1(s32 a) {
-	GXColor c = dat_8041f888;
-	c.a = a;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-
-static inline void wprotectColor2(s32 a) {
-	GXColor c = dat_8041f88c;
-	c.a = a;
-	GXSetTevColor(GX_TEVREG1, c);
-}
-
-static inline void wprotectColor3(effOpukuWprotectData* data, s32 a) {
-	GXColor c = unk_804231f0;
-	c.r = data->colorR;
-	c.g = data->colorG;
-	c.b = data->colorB;
-	c.a = a;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-
 void effOpukuWprotectDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -356,8 +322,8 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 		point++;
 	}
 
-	wprotectColor1(alpha);
-	wprotectColor2(data->baseAlpha);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0xFF, alpha });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ 0x00, 0x00, 0xFF, data->baseAlpha });
 	GXSetNumChans(0);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -408,7 +374,7 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(scale, float_0p0625_8041f8a8, float_0p03125_8041f8a0, float_0_8041f890);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-	wprotectColor3(data, (s32)(float_0p3_8041f8ac * (f32)alpha));
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->colorR, data->colorG, data->colorB, (s32)(float_0p3_8041f8ac * (f32)alpha) });
 	GXSetCullMode(GX_CULL_FRONT);
 
 	DCFlushRange(vtx, 0x460);

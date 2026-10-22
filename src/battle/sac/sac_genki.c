@@ -45,62 +45,29 @@ static void disp_3D_alpha(CameraId camera, void* param);
 static void main_star(void);
 static void main_base(void);  // local to this file in the original
 static void disp_3D(CameraId cameraId, void* param);  // local to this file in the original
-// This unit's .rodata, in retail order: the vec3_803002b0...vec3_803003e8
-// f32[3] table (vec3_803002bc covers 0xc..0x17), then dat_803002c8 and the
-// strings. The layout only matters because MWCC folds its anonymous int->float
-// pool double into the section base when a function names several of these
-// objects, so the double must land at vec3_803002b0+0x1B8 (see main_star1).
-__declspec(section ".rodata") f32 vec3_803002b0[3] = {0.0f, -1000.0f, 0.0f};
-__declspec(section ".rodata") f32 vec3_803002bc[3] = {0.0f, 0.0f, 0.0f};
-const s32 dat_803002c8[3] = {0, 4, 2};
-// Match-only: retail defines these five as const. A non-const object stops MWCC's
-// -O4 scheduler from hoisting the named loads above the star stores (the const form
-// drops main_star0 to 88.17%); the section attribute keeps the bytes at their
-// retail .rodata offsets.
-__declspec(section ".rodata") f32 vec3_803002d4[3] = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") f32 vec3_803002e0[3] = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") f32 vec3_803002ec[3] = {0.0f, 180.0f, 0.0f};
-__declspec(section ".rodata") f32 vec3_803002f8[3] = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") f32 vec3_80300304[3] = {0.0f, -1000.0f, 0.0f};
-// Match-only: retail defines these five as const. A non-const object defeats
-// MWCC's load hoisting in main_star1 (a const object is provably stable, so the
-// -O4 scheduler lifts the named loads above the star stores, dropping the
-// function to 88.87%); the section attribute keeps the bytes at their retail
-// .rodata offsets.
-__declspec(section ".rodata") f32 vec3_80300310[3] = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") f32 vec3_8030031c[3] = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") f32 vec3_80300328[3] = {0.0f, 180.0f, 0.0f};
-__declspec(section ".rodata") f32 vec3_80300334[3] = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") f32 vec3_80300340[3] = {0.0f, -1000.0f, 0.0f};
-const f32 vec3_8030034c[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_80300358[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_80300364[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_80300370[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_8030037c[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_80300388[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_80300394[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_803003a0[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_803003ac[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_803003b8[3] = {0.5f, 0.5f, 1.0f};
-const f32 vec3_803003c4[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_803003d0[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_803003dc[3] = {0.5f, 0.5f, 1.0f};
-const f32 vec3_803003e8[3] = {0.0f, 0.0f, 0.0f};
+// .rodata: the Vec literals of main_weapon, main_star0 and main_star1 and main_object's
+// initialiser open the section; disp_3D's vectors follow it, then the strings.
+extern const f32 vec3_8030034c[3];
+extern const f32 vec3_80300358[3];
+extern const f32 vec3_80300364[3];
+extern const f32 vec3_80300370[3];
+extern const f32 vec3_8030037c[3];
+extern const f32 vec3_80300388[3];
+extern const f32 vec3_80300394[3];
+extern const f32 vec3_803003a0[3];
+extern const f32 vec3_803003ac[3];
+extern const f32 vec3_803003b8[3];
+extern const f32 vec3_803003c4[3];
+extern const f32 vec3_803003d0[3];
+extern const f32 vec3_803003dc[3];
+extern const f32 vec3_803003e8[3];
 
-// .sdata2 objects, in the original's address order. Only the seven icon colours, the
-// M_I_Y animation name and the .data-referenced zero are real objects; the float
-// constants are file-scope so the functions can name them, and MWCC folds each one
-// into its literal pool (the static definitions vanish, leaving the pooled words in
-// the original's order).
-const GXColor dat_80421d20 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_80421d24 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_80421d28 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_80421d2c = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_80421d30 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_80421d34 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_80421d38 = {0xFF, 0xFF, 0xFF, 0xFF};
-const char str_80421D3C[] = "M_I_Y";
-const f32 float_0_80421d44 = 0.0f;
+// .sdata2: the M_I_Y animation name and the .data-referenced zero are defined after disp_3D,
+// whose colour literals' templates open the section. The float constants are file-scope so
+// the functions can name them, and MWCC folds each one into its literal pool (the static
+// definitions vanish, leaving the pooled words in the original's order).
+extern const char str_80421D3C[6];
+extern const f32 float_0_80421d44;
 static const f32 float_0_80421d84 = 0.0f;
 static const f32 float_neg1000_80421d88 = -1000.0f;
 static const f32 float_7_80421dc8 = 7.0f;
@@ -520,7 +487,7 @@ void main_weapon(s32 idx) {
 
     switch (weapon->field_0) {
     case 0:
-        weapon->pos[0] = *(const Vec*)vec3_803002b0;
+        weapon->pos[0] = (Vec){0.0f, -1000.0f, 0.0f};
         break;
     case 1:
         weapon->field_4--;
@@ -531,13 +498,7 @@ void main_weapon(s32 idx) {
         BtlUnit_GetPos(mario, &weapon->pos[0].x, &weapon->pos[0].y, &weapon->pos[0].z);
         weapon->pos[0].x += 20.0f * mario->mSizeMultiplier;
         weapon->pos[0].y += 28.0f * mario->mSizeMultiplier;
-        {
-            Vec vel = *(const Vec*)vec3_803002bc;
-
-            vel.x = 10.0f * (f32)cos(angle);
-            vel.y = 10.0f * (f32)sin(angle);
-            weapon->vel = vel;
-        }
+        weapon->vel = (Vec){10.0f * (f32)cos(angle), 10.0f * (f32)sin(angle), 0.0f};
         for (i = 0; i < 7; i++) {
             GenkiEffect* eff = &genki->field_80[i];
 
@@ -729,8 +690,8 @@ void main_weapon(s32 idx) {
     }
 }
 
-// Matches. The int->float loads read the anonymous pool double (now at vec3_803002b0+0x1B8,
-// like retail's double_to_int_80300468) with an absolute `lis`, and the 30.0f literal as
+// Matches. The int->float loads read the anonymous pool double (at .rodata+0x1B8, like
+// retail's double_to_int_80300468) with an absolute `lis`, and the 30.0f literal as
 // `@NNN` instead of retail's `float_30_80421d80`; objdiff does not score those symbol names. The
 // `30.0f` literal, rather than a named constant (same value), is what makes MWCC emit
 // the original's interleaved `li`/`lfs` argument setup. Keeping `fifteen` in a variable fixed the
@@ -740,13 +701,9 @@ void main_object(s32 idx) {
     GenkiWork* genki = get_ptr();
     GenkiObject* obj = &genki->objects[idx];
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
-    s32 local[3];
+    s32 local[3] = {0, 4, 2};
     GenkiStar* star;
     f32 x, y, z;
-
-    local[0] = dat_803002c8[0];
-    local[1] = dat_803002c8[1];
-    local[2] = dat_803002c8[2];
 
     switch (obj->field_0) {
     case 0:
@@ -849,12 +806,9 @@ static void main_star(void) {
     }
 }
 
-// 100%: naming the vec3 objects directly (rather than reaching them through a
-// vec3_803002b0 pointer) makes MWCC anchor the .rodata section base in r31, fold the
+// 100%: the Vec literals make MWCC anchor the .rodata section base in r31, fold the
 // anonymous int->float pool double into `lfd fX, 0x1b8(r31)`, and pick the original's
-// callee-saved map (idx=r28, mario=r29, star=r30, vec=r31, genki=r27). The named
-// objects must be non-const (see the data block at the top): a const object lets the -O4
-// scheduler hoist its loads above the star stores and drops the function to 88%.
+// callee-saved map (idx=r28, mario=r29, star=r30, vec=r31, genki=r27).
 // Putting field_58 after field_54/field_3C/field_48 (its original source order) fixed
 // the case-1 schedule. Logic, schedule and constants match the assembly.
 void main_star0(s32 idx) {
@@ -877,8 +831,8 @@ void main_star0(s32 idx) {
         star->field_18 = star->field_C;
         star->field_24 = star->field_C;
         star->field_24.y += 30.0f;
-        star->field_3C = *(const Vec*)vec3_803002d4;
-        star->field_48 = *(const Vec*)vec3_803002e0;
+        star->field_3C = (Vec){0.0f, 0.0f, 0.0f};
+        star->field_48 = (Vec){0.0f, 0.0f, 0.0f};
         star->field_54 = 0.0f;
         star->field_58 = 6.283184f * (f32)idx / 7.0f;
         star->field_5C = 0.1f;
@@ -910,16 +864,11 @@ void main_star0(s32 idx) {
         star->field_48.y = intplGetValue(4, star->field_4, 0x78, 0.0f,
                                        2160.0f);
         if (star->field_4 >= 0x78) {
-            Vec v;
-
             star->field_0 = 3;
             star->field_4 = 0;
             star->field_18 = star->field_C;
-            v = *(const Vec*)vec3_803002ec;
-            v.x = 200.0f * (f32)rand() / 32767.0f;
-            v.z = star->field_18.z;
-            star->field_24 = v;
-            star->field_30 = *(const Vec*)vec3_803002f8;
+            star->field_24 = (Vec){200.0f * (f32)rand() / 32767.0f, 180.0f, star->field_18.z};
+            star->field_30 = (Vec){0.0f, 0.0f, 0.0f};
             star->field_30.y = (2.0f * (star->field_24.y - star->field_18.y) -
                               (60.0f * (60.0f *
                                (0.2f - 0.01f * (f32)idx)))) /
@@ -961,7 +910,7 @@ void main_star0(s32 idx) {
         if (genki->field_40 <= 0) {
             star->field_0 = 5;
             star->field_4 = 0;
-            star->field_C = *(const Vec*)vec3_80300304;
+            star->field_C = (Vec){0.0f, -1000.0f, 0.0f};
         }
         break;
     case 5:
@@ -980,11 +929,9 @@ void main_star0(s32 idx) {
     }
 }
 
-// 100%: naming the five vectors (rather than reaching them through a
-// vec3_803002b0 pointer) makes MWCC anchor the .rodata section base in r30, so its
-// anonymous int->float pool double folds into `lfd fY, 0x1b8(r30)` exactly as in
-// the original (the double lives at vec3_803002b0+0x1B8 thanks to the data block
-// at the top of this file). Logic, schedule and every constant match the assembly.
+// 100%: the Vec literals make MWCC anchor the .rodata section base in r30, so its
+// anonymous int->float pool double (at .rodata+0x1B8) folds into `lfd fY, 0x1b8(r30)`
+// exactly as in the original. Logic, schedule and every constant match the assembly.
 void main_star1(void) {
     GenkiWork* genki = get_ptr();
     GenkiStar* star = &genki->stars[0];
@@ -1005,8 +952,8 @@ void main_star1(void) {
         star->field_24 = star->field_C;
         star->field_24.y += 50.0f;
         star->field_24.z += -1.0f;
-        star->field_3C = *(const Vec*)&vec3_80300310[0];
-        star->field_48 = *(const Vec*)&vec3_8030031c[0];
+        star->field_3C = (Vec){0.0f, 0.0f, 0.0f};
+        star->field_48 = (Vec){0.0f, 0.0f, 0.0f};
         /* fallthrough */
     case 2:
         star->field_4++;
@@ -1029,16 +976,11 @@ void main_star1(void) {
         star->field_48.y = intplGetValue(4, star->field_4, 0x78, float_0_80421d84,
                                        2160.0f);
         if (star->field_4 >= 0x78) {
-            Vec v;
-
             star->field_0 = 3;
             star->field_4 = 0;
             star->field_18 = star->field_C;
-            v = *(const Vec*)&vec3_80300328[0];
-            v.x = 200.0f * (f32)rand() / 32767.0f;
-            v.z = star->field_18.z;
-            star->field_24 = v;
-            star->field_30 = *(const Vec*)&vec3_80300334[0];
+            star->field_24 = (Vec){200.0f * (f32)rand() / 32767.0f, 180.0f, star->field_18.z};
+            star->field_30 = (Vec){0.0f, 0.0f, 0.0f};
             star->field_30.y = (2.0f * (star->field_24.y - star->field_18.y) -
                               720.0f) / 120.0f;
         }
@@ -1078,7 +1020,7 @@ void main_star1(void) {
         if (genki->field_40 <= 0) {
             star->field_0 = 5;
             star->field_4 = 0;
-            star->field_C = *(const Vec*)&vec3_80300340[0];
+            star->field_C = (Vec){0.0f, -1000.0f, 0.0f};
         }
         break;
     case 5:
@@ -1134,11 +1076,11 @@ USER_FUNC(end_genki) {
 static void disp_2D(CameraId camera, void* param) {
 }
 
-// Reading each vector by name (`*(const Vec*)vec3_8030034c`) rather than through a
-// `vec3_803002b0` pointer makes MWCC anchor the whole .rodata section in r30 and copies the
+// Reading each vector by name (`*(const Vec*)vec3_8030034c`) rather than through a base
+// pointer makes MWCC anchor the whole .rodata section in r30 and copies the
 // trans/scale/rot/tmp locals into the original's slots. The two final quads call btlDispTex4
-// directly. The int->float loads read the compiler's anonymous pool double, which now lands
-// at vec3_803002b0+0x1B8 just like retail's double_to_int_80300468. Under MUST_MATCH the five icon colours are named
+// directly. The int->float loads read the compiler's anonymous pool double, which lands
+// at .rodata+0x1B8 just like retail's double_to_int_80300468. Under MUST_MATCH the five icon colours are named
 // locals passed by address, so MWCC allocates them 0x20..0x10 and the final colours 0xc/0x8.
 static void disp_3D(CameraId cameraId, void* param) {
     GenkiObject* obj;
@@ -1193,10 +1135,10 @@ static void disp_3D(CameraId cameraId, void* param) {
             frame = genki->field_28 % 12;
             if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
-                iconC1 = dat_80421d20;
+                iconC1 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
                 ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_1C, 0, &iconC1);
 #else
-                iconNumberDispGx3D(mtx, (s32)genki->field_1C, 0, dat_80421d20);
+                iconNumberDispGx3D(mtx, (s32)genki->field_1C, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #endif
 
             }
@@ -1229,10 +1171,10 @@ static void disp_3D(CameraId cameraId, void* param) {
                 frame = genki->field_2C % 12;
                 if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
-                    iconC2 = dat_80421d24;
+                    iconC2 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
                     ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_20, 0, &iconC2);
 #else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_20, 0, dat_80421d24);
+                    iconNumberDispGx3D(mtx, (s32)genki->field_20, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #endif
 
                 }
@@ -1266,10 +1208,10 @@ static void disp_3D(CameraId cameraId, void* param) {
                 frame = genki->field_30 % 12;
                 if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
-                    iconC3 = dat_80421d28;
+                    iconC3 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
                     ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC3);
 #else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, dat_80421d28);
+                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #endif
 
                 }
@@ -1302,10 +1244,10 @@ static void disp_3D(CameraId cameraId, void* param) {
                 frame = genki->field_30 % 12;
                 if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
-                    iconC4 = dat_80421d2c;
+                    iconC4 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
                     ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC4);
 #else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, dat_80421d2c);
+                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #endif
 
                 }
@@ -1417,10 +1359,10 @@ static void disp_3D(CameraId cameraId, void* param) {
             // The original passes `flags` without a sign extension; with the header's s16
             // parameter MWCC emits `extsh`, so call it through a u16 prototype. The named
             // `iconC5` address (not a by-value temp) gives it the original's 0x10 slot.
-            iconC5 = dat_80421d30;
+            iconC5 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
             ((void (*)(Mtx, u16, s32, GXColor*))iconDispGxCol)(mtx, flags, icon, &iconC5);
 #else
-            iconDispGxCol(mtx, flags, icon, dat_80421d30);
+            iconDispGxCol(mtx, flags, icon, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #endif
         }
     }
@@ -1443,7 +1385,7 @@ static void disp_3D(CameraId cameraId, void* param) {
             x += 10.0f;
             y += 30.0f;
             z += 10.0f;
-            color = dat_80421d34;
+            color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
             tmp = *(const Vec*)vec3_803003c4;
             tmp.z = 6.0f * (f32)genki->field_68;
             rot = tmp;
@@ -1463,7 +1405,7 @@ static void disp_3D(CameraId cameraId, void* param) {
             Vec tmp;
             GXColor color;
 
-            color = dat_80421d38;
+            color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
             tmp = *(const Vec*)vec3_803003e8;
             tmp.z = 6.0f * -(f32)genki->field_68;
             rot = tmp;
@@ -1477,6 +1419,23 @@ static void disp_3D(CameraId cameraId, void* param) {
         }
     }
 }
+
+const f32 vec3_8030034c[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_80300358[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_80300364[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_80300370[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_8030037c[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_80300388[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_80300394[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803003a0[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803003ac[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803003b8[3] = {0.5f, 0.5f, 1.0f};
+const f32 vec3_803003c4[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803003d0[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803003dc[3] = {0.5f, 0.5f, 1.0f};
+const f32 vec3_803003e8[3] = {0.0f, 0.0f, 0.0f};
+const char str_80421D3C[] = "M_I_Y";
+const f32 float_0_80421d44 = 0.0f;
 
 static void disp_3D_alpha(CameraId camera, void* param) {
 }

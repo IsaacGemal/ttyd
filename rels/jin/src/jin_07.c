@@ -149,8 +149,6 @@ static u32 senteresa_ext_entry_data[15] = {
 // but forced into .rodata to keep the original object's section layout.
 Vec vec3_jin_00007f9c __attribute__((section(".rodata"))) = {0.0f, 0.0f, 0.0f};
 Vec vec3_jin_00007fa8 __attribute__((section(".rodata"))) = {1.0f, 0.0f, 0.0f};
-const Vec vec3_jin_00007fb4 = {0.0f, 250.0f, 0.0f};
-const Vec vec3_jin_00007fc0 = {1.0f, 0.0f, 0.0f};
 
 // Functions are written in the reverse of their order in the asm (deferred inlining).
 
@@ -369,8 +367,8 @@ USER_FUNC(senteresa_okure_move) {
     f32 h11 = (t - 1.0f) * (t * t);
     f32 h10 = t * omt * omt;
     Vec pos;
-    Vec va = vec3_jin_00007fb4;
-    Vec vb = vec3_jin_00007fc0;
+    Vec va = {0.0f, 250.0f, 0.0f};
+    Vec vb = {1.0f, 0.0f, 0.0f};
     f32 h01 = (3.0f - two_t) * (t * t);
 
     pos.x = p0 * h00 + va.x * h10 + vb.x * h11 + p3 * h01;

@@ -137,27 +137,15 @@ typedef struct MagicHoraoVtx {
 	u8 clr2[4];   // 0x18, RGBA8
 } MagicHoraoVtx;
 
-// .sbss2 zero-initialised scratch colour the original builds its second TEV colour from, and
-// the padding word after it that the unit owns.
-#ifdef MUST_MATCH
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804231b8;
 #pragma force_active on
 __declspec(section ".sdata") u32 gap_10_804231BC_sbss2;
 #pragma force_active reset
 #pragma section ".sdata" ".sbss"
-#else
-GXColor unk_804231b8;
-#endif
 
-// Building the colours in inlines that return them keeps the by-value temporaries in the
+// Building the colour in an inline that returns it keeps the by-value temporaries in the
 // original's stack slots (a plain field-by-field form puts the local in the temporary's slot).
-static inline GXColor makeHoraoColor2(u8 a) {
-	GXColor c = unk_804231b8;
-	c.a = a;
-	return c;
-}
-
 static inline GXColor makeHoraoColor(GXColor c, s32 counter, u8 a) {
 	f32 angle = (6.2831855f * (f32)(counter * 30)) / 360.0f;
 	c.r = (s32)(25.0f * (f32)sin(angle) + 225.0f);
@@ -176,7 +164,6 @@ static inline GXColor makeHoraoColor(GXColor c, s32 counter, u8 a) {
 void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	effMagicHoraoData* data;
 	Mtx mtx1;
-	GXColor color2;
 	GXTexObj texObj;
 	f32 alpha;
 	s32 j;
@@ -227,8 +214,7 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		GXBegin(GX_TRIANGLES, 0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
-		color2 = makeHoraoColor2(((0x1E - data->timer) * 0xFF) / 0x1E);
-		GXSetTevColor(GX_TEVREG0, color2);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0x00, 0x00, 0x00, ((0x1E - data->timer) * 0xFF) / 0x1E });
 
 		GXSetNumTevStages(1);
 		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);

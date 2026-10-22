@@ -48,25 +48,6 @@ extern const char str_s_w_jp_mail_tpl[];
 extern u16 menu_skip_list[18];
 extern const char** luigi_book_list[5];
 extern WindowPartyDt winPartyDt[];
-extern const GXColor dat_8041d46c;
-extern const GXColor dat_8041d470;
-extern const GXColor dat_8041d474;
-extern const GXColor dat_8041d478;
-extern const GXColor dat_8041d47c;
-
-extern const GXColor dat_8041d4a4;
-
-// .sdata2 colours used by itemUseDisp (defined at the end of the file).
-extern const GXColor dat_8041d480;
-extern const GXColor dat_8041d484;
-extern const GXColor dat_8041d488;
-extern const GXColor dat_8041d48c;
-extern const GXColor dat_8041d490;
-extern const GXColor dat_8041d494;
-extern const GXColor dat_8041d498;
-extern const GXColor dat_8041d49c;
-extern const GXColor dat_8041d4a0;
-extern WindowPartyDt winPartyDt[];
 
 // .rodata prefix of window/win_item: the 60 msg_luigi_book strings. The Vec templates after them
 // come from the draw functions' compound literals, in source order.
@@ -881,18 +862,23 @@ void winItemDisp(CameraId camId, void* param, s32 idx) {
     for (i = 0; i < 2; i++) {
         if (i == w->itemTab) {
             winTexInit(*(TEXPalette**)w->winTpl->data);
-            winTexSet(0xB3, (Vec){x - 215.0f, 20.0f + (a - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, dat_8041d46c);
+            winTexSet(0xB3, (Vec){x - 215.0f, 20.0f + (a - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
             winTexInit_x2(*(TEXPalette**)w->winTpl->data);
             winTexSet_x2(i + 0x18, 0xB3, (Vec){c, 20.0f + (b - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, color);
         } else {
             winTexInit_x2(*(TEXPalette**)w->winTpl->data);
             winTexSet_x2(i + 0x18, 0xB3, (Vec){x - 215.0f, 20.0f + (a - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
-                         dat_8041d470);
+                         (GXColor){ 0x80, 0x80, 0x80, 0xFF });
         }
     }
 
     item_disp(w, x, y);
 }
+
+// item_disp's colours, defined here so they follow the earlier functions' templates.
+__declspec(section ".sdata2") const GXColor dat_8041d474 = { 0xFF, 0xFF, 0xFF, 0xFF };
+__declspec(section ".sdata2") const GXColor dat_8041d478 = { 0x00, 0x00, 0x00, 0xFF };
+__declspec(section ".sdata2") const GXColor dat_8041d47c = { 0x80, 0x80, 0x80, 0xFF };
 
 // Draws the item list (two columns, scrolled per tab), the scroll arrows and the sort caption.
 void item_disp(WindowWork* work, f32 x, f32 y) {
@@ -999,7 +985,7 @@ void itemUseDisp(WinMgrEntry* entry) {
     WindowWork* work = winGetPtr();
     WindowPartyDt* list[10];
     WindowPartyDt* party;
-    GXColor color = dat_8041d480;
+    GXColor color = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
     GXColor iconColor;
     GXColor white;
     s32 i;
@@ -1010,8 +996,8 @@ void itemUseDisp(WinMgrEntry* entry) {
     s32 gray;
     s32 n2;
 
-    white = dat_8041d484;
-    iconColor = dat_8041d484;
+    white = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+    iconColor = white;
     if (!winMgrAction(work->useTargetWin[0])) {
         s32 partyId;
 
@@ -1043,9 +1029,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             gray = 0;
             if (sel2e0 != 0) {
                 if (i == work->useTargetSel) {
-                    color = dat_8041d488;
+                    color = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
                 } else {
-                    color = dat_8041d48c;
+                    color = (GXColor){ 0x80, 0x80, 0x80, 0xFF };
                     gray = 1;
                 }
             }
@@ -1067,11 +1053,11 @@ void itemUseDisp(WinMgrEntry* entry) {
                 winTexSet(0xAF,
                           (Vec){0.9f * (f32)FontGetMessageWidth("\202g\202o") / 2 + (f32)(entry->x + 0xDC),
                                 (f32)(entry->y - 0x13 - i * 0x16), 0.0f},
-                          (Vec){1.0f, 1.0f, 1.0f}, dat_8041d490);
+                          (Vec){1.0f, 1.0f, 1.0f}, (GXColor){ 0xCB, 0x8C, 0xA2, 0xFE });
                 winTexSet(0xAF,
                           (Vec){0.9f * (f32)FontGetMessageWidth("\202g\202o") / 2 + (f32)(entry->x + 0xDC),
                                 (f32)(entry->y - 0x13 - (i + 1) * 0x16), 0.0f},
-                          (Vec){1.0f, 1.0f, 1.0f}, dat_8041d494);
+                          (Vec){1.0f, 1.0f, 1.0f}, (GXColor){ 0xCB, 0xBE, 0x89, 0xFE });
                 winFontInit();
                 winFontSet((Vec){(f32)(entry->x + 0x32), (f32)(entry->y - 8 - i * 0x16), 0.0f},
                            (Vec){1.0f, 1.0f, 1.0f}, color, msgSearch("name_mario"));
@@ -1087,7 +1073,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                     if (work->useTimer % 20 > 15) {
                         continue;
                     }
-                    color = dat_8041d498;
+                    color = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
                 }
                 winFontInit();
                 winFontSet((Vec){(f32)(entry->x + 0xDC), (f32)(entry->y - 8 - (i + 1) * 0x16), 0.0f},
@@ -1109,7 +1095,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                 winTexSet(0xAF,
                           (Vec){0.9f * (f32)FontGetMessageWidth("\202g\202o") / 2 + (f32)(entry->x + 0xDC),
                                 f31 + (f32)(entry->y - 8 - i * 0x1C) - 14.0f, 0.0f},
-                          (Vec){1.0f, 1.0f, 1.0f}, dat_8041d49c);
+                          (Vec){1.0f, 1.0f, 1.0f}, (GXColor){ 0xCB, 0x8C, 0xA2, 0xF4 });
                 if (gray) {
                     winIconGrayInit();
                 } else {
@@ -1144,7 +1130,7 @@ void itemUseDisp(WinMgrEntry* entry) {
     }
     winTexInit(*(TEXPalette**)work->winTpl->data);
     winTexSet(0, (Vec){2.0f + work->posX, work->posY - 2.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
-              dat_8041d4a0);
+              (GXColor){ 0x00, 0x00, 0x00, 0x80 });
     winTexSet(0, (Vec){work->posX, work->posY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
 }
 
@@ -1155,7 +1141,7 @@ void itemUseDisp2(WinMgrEntry* entry) {
     f32 width;
     GXColor color;
 
-    color = dat_8041d4a4;
+    color = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
     if (!winMgrAction(id)) {
         msg = msgSearch("msg_window_select_5");
         width = (f32)FontGetMessageWidth(msg);
@@ -1217,7 +1203,7 @@ static WinMgrDesc window_desc[2] = {
     },
 };
 
-// The unit's .sdata/.sdata2 objects and the .data tail. They are defined after the code so
+// The unit's .sdata objects and the .data tail. They are defined after the code so
 // MWCC emits real objects instead of folding their values into the functions that read them.
 #pragma explicit_zero_data on
 #pragma force_active on
@@ -1239,51 +1225,6 @@ u16 menu_skip_list[18] = {
     0x0009, 0x000A, 0x000B, 0x0006, 0x0007, 0x0008, 0x0005, 0x0003, 0x0002,
     0x0004, 0x0032, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077, 0x0078,
 };
-
-// .sdata2:0x4 | 0x8041D46C | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d46c = { 0x00, 0x00, 0x00, 0x80 };
-
-// .sdata2:0x8 | 0x8041D470 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d470 = { 0x80, 0x80, 0x80, 0xFF };
-
-// .sdata2:0xC | 0x8041D474 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d474 = { 0xFF, 0xFF, 0xFF, 0xFF };
-
-// .sdata2:0x10 | 0x8041D478 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d478 = { 0x00, 0x00, 0x00, 0xFF };
-
-// .sdata2:0x14 | 0x8041D47C | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d47c = { 0x80, 0x80, 0x80, 0xFF };
-
-// .sdata2:0x18 | 0x8041D480 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d480 = { 0x00, 0x00, 0x00, 0xFF };
-
-// .sdata2:0x1C | 0x8041D484 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d484 = { 0xFF, 0xFF, 0xFF, 0xFF };
-
-// .sdata2:0x20 | 0x8041D488 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d488 = { 0x00, 0x00, 0x00, 0xFF };
-
-// .sdata2:0x24 | 0x8041D48C | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d48c = { 0x80, 0x80, 0x80, 0xFF };
-
-// .sdata2:0x28 | 0x8041D490 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d490 = { 0xCB, 0x8C, 0xA2, 0xFE };
-
-// .sdata2:0x2C | 0x8041D494 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d494 = { 0xCB, 0xBE, 0x89, 0xFE };
-
-// .sdata2:0x30 | 0x8041D498 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d498 = { 0x00, 0x00, 0x00, 0xFF };
-
-// .sdata2:0x34 | 0x8041D49C | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d49c = { 0xCB, 0x8C, 0xA2, 0xF4 };
-
-// .sdata2:0x38 | 0x8041D4A0 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d4a0 = { 0x00, 0x00, 0x00, 0x80 };
-
-// .sdata2:0x3C | 0x8041D4A4 | size 0x4
-__declspec(section ".sdata2") const GXColor dat_8041d4a4 = { 0x00, 0x00, 0x00, 0xFF };
 
 #pragma force_active reset
 #pragma explicit_zero_data reset

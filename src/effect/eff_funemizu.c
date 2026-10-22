@@ -11,7 +11,6 @@
 #include <string.h>
 
 // Data objects defined later in this file or in other units, declared before their first use.
-extern const Vec vec3_802fe8a0;
 extern u32 funemizu_vertex_tbl[];
 extern u32 funemizu_texcoord0_tbl[];
 extern u32 gor_fune_vertex_tbl[];
@@ -32,9 +31,42 @@ extern const f32 float_0p5_8042147c;
 extern const f32 float_1p5_80421480;
 extern const f32 float_1_80421484;
 extern const s32 dat_80421468;
-extern const u32 dat_8042146c;
 
 extern FunemizuMapEntry unk_803b0640[];
+
+// The map-name strings open .rodata, ahead of effFunemizuMain's Vec template.
+const char str_dou_02[8] = "dou_02";
+const char str_dou_03[8] = "dou_03";
+const char str_dou_04[8] = "dou_04";
+const char str_dou_05[8] = "dou_05";
+const char str_dou_07[8] = "dou_07";
+const char str_dou_08[8] = "dou_08";
+const char str_dou_09[8] = "dou_09";
+const char str_dou_10[8] = "dou_10";
+const char str_dou_11[8] = "dou_11";
+const char str_dou_12[8] = "dou_12";
+const char str_gon_01[8] = "gon_01";
+const char str_gor_00[8] = "gor_00";
+const char str_gor_02[8] = "gor_02";
+const char str_hei_01[8] = "hei_01";
+const char str_las_04[8] = "las_04";
+const char str_las_09[8] = "las_09";
+const char str_mri_16[8] = "mri_16";
+const char str_muj_00[8] = "muj_00";
+const char str_muj_02[8] = "muj_02";
+const char str_muj_04[8] = "muj_04";
+const char str_muj_10[8] = "muj_10";
+const char str_802FE848[8] = "nok_00";
+const char str_nok_01[8] = "nok_01";
+const char str_pik_00[8] = "pik_00";
+const char str_pik_01[8] = "pik_01";
+const char str_802FE868[8] = "pik_04";
+const char str_tik_02[8] = "tik_02";
+const char str_tik_15[8] = "tik_15";
+const char str_tik_16[8] = "tik_16";
+const char str_tik_17[8] = "tik_17";
+const char str_tik_18[8] = "tik_18";
+const char str_tik_20[8] = "tik_20";
 
 u32 unk_80224298(void) {
 	FunemizuMapEntry* p;
@@ -138,10 +170,7 @@ void effFunemizuMain(EffectEntry* effect) {
 
 	data = effect->userdata;
 	dead = 0;
-	pos = vec3_802fe8a0;
-	pos.x = data->x;
-	pos.y = data->y;
-	pos.z = data->z;
+	pos = (Vec){ data->x, data->y, data->z };
 	pos2 = pos;
 
 	type = data->type;
@@ -451,18 +480,13 @@ found:
 
 #pragma opt_lifetimes reset
 
-// 100%: `data++` before the loop (rather than a separate `ptr`) and the GX colour helper below put the
-// pointer init and the by-value GXColor in the original's slots. The 0.0/1.0 vertex writes go through
-// FUNE_RELOAD so each GX write reloads them, as the original does.
-#ifdef MUST_MATCH
-// Match-only: building the colour through a helper lands the by-value GXColor in the original's stack
-// slot; the in-place build under #else lands it one word lower.
-static inline GXColor funemizuShibukiColor(u8 a) {
-	GXColor c = *(GXColor*)&dat_8042146c;
-	c.a = a;
-	return c;
-}
-#endif
+// The first .sdata2 word, defined after its users (defined first, it folds into them) and before
+// effFunemizuShibukiDisp's colour template, which follows it.
+const s32 dat_80421468 = -1;
+
+// 100%: `data++` before the loop (rather than a separate `ptr`) puts the pointer init in the original's
+// slot. The 0.0/1.0 vertex writes go through FUNE_RELOAD so each GX write reloads them, as the original
+// does.
 #ifdef MUST_MATCH
 // Volatile reads: retail reloads 0.0/1.0 from .sdata2 for every vertex component.
 #define FUNE_RELOAD(x) (*(volatile f32*)&(x))
@@ -477,7 +501,6 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 	Mtx mtx90;
 	Mtx mtx60;
 	Mtx mtx30;
-	GXColor color;
 	GXTexObj texObj;
 	s32 i;
 	f32 sz;
@@ -523,13 +546,7 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 		if (data->y < float_0_80421478) {
 			continue;
 		}
-#ifdef MUST_MATCH
-		GXSetChanMatColor(GX_COLOR0A0, funemizuShibukiColor(data->alpha));
-#else
-		color = *(GXColor*)&dat_8042146c;
-		color.a = data->alpha;
-		GXSetChanMatColor(GX_COLOR0A0, color);
-#endif
+		GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 		PSMTXTrans(mtx90, data->x, data->y, data->z);
 		PSMTXConcat(mtx30, mtx90, mtx90);
 		GXLoadPosMtxImm(mtx90, 0);
@@ -571,39 +588,6 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 // ---------------------------------------------------------------------------
 
 // .rodata: the map-name strings, in the original's address order.
-const char str_dou_02[8] = "dou_02";
-const char str_dou_03[8] = "dou_03";
-const char str_dou_04[8] = "dou_04";
-const char str_dou_05[8] = "dou_05";
-const char str_dou_07[8] = "dou_07";
-const char str_dou_08[8] = "dou_08";
-const char str_dou_09[8] = "dou_09";
-const char str_dou_10[8] = "dou_10";
-const char str_dou_11[8] = "dou_11";
-const char str_dou_12[8] = "dou_12";
-const char str_gon_01[8] = "gon_01";
-const char str_gor_00[8] = "gor_00";
-const char str_gor_02[8] = "gor_02";
-const char str_hei_01[8] = "hei_01";
-const char str_las_04[8] = "las_04";
-const char str_las_09[8] = "las_09";
-const char str_mri_16[8] = "mri_16";
-const char str_muj_00[8] = "muj_00";
-const char str_muj_02[8] = "muj_02";
-const char str_muj_04[8] = "muj_04";
-const char str_muj_10[8] = "muj_10";
-const char str_802FE848[8] = "nok_00";
-const char str_nok_01[8] = "nok_01";
-const char str_pik_00[8] = "pik_00";
-const char str_pik_01[8] = "pik_01";
-const char str_802FE868[8] = "pik_04";
-const char str_tik_02[8] = "tik_02";
-const char str_tik_15[8] = "tik_15";
-const char str_tik_16[8] = "tik_16";
-const char str_tik_17[8] = "tik_17";
-const char str_tik_18[8] = "tik_18";
-const char str_tik_20[8] = "tik_20";
-const Vec vec3_802fe8a0 = { 0.0f, 0.0f, 0.0f };
 
 #pragma force_active on
 #pragma explicit_zero_data on
@@ -788,9 +772,7 @@ __declspec(section ".sdata") u8 gor_fune_dl_1_size_tbl[4] = {
 #pragma force_active reset
 #pragma explicit_zero_data reset
 
-// .sdata2: the named float/word constants, in the original's address order.
-const s32 dat_80421468 = -1;
-const u32 dat_8042146c = 0xFFFFFF00;
+// .sdata2: the named float constants, in the original's address order.
 const f32 float_deg2rad_80421470 = 0.017453292f;
 const f32 float_3_80421474 = 3.0f;
 const f32 float_0_80421478 = 0.0f;

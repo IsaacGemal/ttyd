@@ -8,14 +8,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sdata2 colour of this unit.
-#ifdef MUST_MATCH
-// volatile: forces the per-element reload the original does (effBlowDisp 93.5% without it).
-const volatile u32 dat_8041e980 = 0xC8FFFF00;
-#else
-const GXColor dat_8041e980 = {0xC8, 0xFF, 0xFF, 0x00};
-#endif
-
 // .data: retail 16x16 quad vertex array.
 static u32 size16x16_tex32x32_vtx[14] = {
 	0xFFF8FFF8, 0x00000000, 0x0000FFFF, 0xFFFF0008,
@@ -23,16 +15,6 @@ static u32 size16x16_tex32x32_vtx[14] = {
 	0x00000400, 0x0400FFFF, 0xFFFFFFF8, 0x00080000,
 	0x00000400, 0xFFFFFFFF,
 };
-
-static inline void blowSetColor(u8 a) {
-#ifdef MUST_MATCH
-    GXColor color = *(GXColor*)&dat_8041e980;
-#else
-    GXColor color = dat_8041e980;
-#endif
-    color.a = a;
-    GXSetTevColor(1, color);
-}
 
 typedef struct effBlowParticle {
 	s32 type;        // 0x00 caller type value
@@ -412,7 +394,7 @@ void effBlowDisp(CameraId camId, void* param) {
     PSMTXTrans(base, data->x, data->y, data->z);
     deg2rad = float_deg2rad_8041e98c;
     for (i = 1, data++; i < effect->count; i++, data++) {
-        blowSetColor(data->field_0x58);
+        GXSetTevColor(1, (GXColor){ 0xC8, 0xFF, 0xFF, data->field_0x58 });
 
         PSMTXTrans(trans, data->x, data->y, data->z);
         PSMTXRotRad(rot, 'y', deg2rad * -camGetPtr(CAMERA_3D)->viewYaw);

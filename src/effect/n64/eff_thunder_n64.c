@@ -9,15 +9,6 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 
-// .rodata
-const Vec vec3_802fb868 = { 0.0f, 0.0f, 0.0f };
-
-// .sdata2
-const u32 dat_80420028 = 0x000000FF;
-const u32 dat_8042002c = 0x00000080;
-const u32 dat_80420030 = 0xFF2FC6FF;
-const u32 dat_80420034 = 0xFFFF0000;
-
 // .data: retail Ncube_inazuma_v vertex array (0x1E30 bytes).
 u32 Ncube_inazuma_v[1932] = {
 	0xFFABFF9A, 0x00000F2F, 0x0800FFFF, 0xFFFFFF79, 0xFF760000, 0x0FD50400, 0xFFFFFFFF, 0xFF9FFF2B,
@@ -420,12 +411,6 @@ void effThunderMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos2), 2, effThunderDisp, effect);
 }
 
-static inline void thunderSetColorA(u8 a) {
-	GXColor color = *(GXColor*)&dat_80420034;
-	color.a = a;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
 void effThunderDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	CameraEntry* cam;
@@ -453,7 +438,7 @@ void effThunderDisp(CameraId camId, void* param) {
 	}
 
 	if (type < 3) {
-		GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_80420028);
+		GXSetTevColor(GX_TEVREG1, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
 		GXSetNumChans(1);
 		GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 		GXSetNumTevStages(2);
@@ -478,7 +463,7 @@ void effThunderDisp(CameraId camId, void* param) {
 		GXSetTevColorIn(GX_TEVSTAGE3, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
 		GXSetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
 	} else {
-		GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8042002c);
+		GXSetTevColor(GX_TEVREG1, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
 		GXSetNumChans(0);
 		GXSetNumTevStages(4);
 		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -521,7 +506,7 @@ void effThunderDisp(CameraId camId, void* param) {
 		PSMTXConcat(cam->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_80420030);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0x2F, 0xC6, 0xFF });
 		break;
 	default:
 		PSMTXTrans(mtx, data->x, data->y, data->z);
@@ -532,7 +517,7 @@ void effThunderDisp(CameraId camId, void* param) {
 		PSMTXConcat(cam->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		thunderSetColorA(data->tevReg0A);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0x00, data->tevReg0A });
 		break;
 	}
 

@@ -27,8 +27,6 @@ extern const f32 float_200_804200c8;
 extern const f32 float_0p01_804200cc;
 extern const f32 float_0p05_804200d0;
 extern const f32 float_1_804200d4;
-extern GXColor unk_804232b0;
-extern GXColor unk_804232b4;
 
 EffectEntry* effTimestampN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 scale);
 void effTimestampMain(EffectEntry* effect);

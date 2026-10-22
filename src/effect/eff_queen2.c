@@ -10,18 +10,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool
-// templates, so pair it with a small-data section and place it by hand.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423360;
-
-// Builds the channel material colour from the .sbss2 template plus the effect's alpha.
-static inline GXColor makeQueen2Color(s32 alpha) {
-	GXColor color = *(GXColor*)&unk_80423360;
-	color.a = alpha;
-	return color;
-}
-
 EffectEntry* effQueen2Entry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	effQueen2Data* data;
@@ -141,14 +129,12 @@ void effQueen2Disp(CameraId camId, void* param) {
 	CameraEntry* camera = camGetPtr(camId);
 	Mtx mtx;
 	Mtx scale;
-	GXColor color;
 	f32 s;
 
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 
-	color = makeQueen2Color(data->alpha);
-	GXSetChanMatColor(4, color);
+	GXSetChanMatColor(4, (GXColor){ 0, 0, 0, data->alpha });
 
 	GXSetNumTexGens(0);
 	GXSetNumTevStages(1);

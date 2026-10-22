@@ -4,63 +4,14 @@
 #include "battle/battle.h"
 #include "battle/battle_stage.h"
 #include <dolphin/types.h>
-#include <string.h>
 
 // Locally declared prototypes (move to battle/battle_stage.h later).
-
-// .rodata
-const char dat_802f32f8[3][0x20] = {
-	"sys_activeUnit_1",
-	"sys_activeUnit_2",
-	"sys_activeUnit_3",
-};
-const Vec dat_802f3358[3] = {
-	{100.0f, 250.0f, 70.0f},
-	{-300.0f, 250.0f, 70.0f},
-	{-120.0f, 250.0f, -70.0f},
-};
-const Vec dat_802f337c[3] = {
-	{100.0f, 0.0f, -70.0f},
-	{-300.0f, 0.0f, -70.0f},
-	{-120.0f, 0.0f, -70.0f},
-};
-const Vec dat_802f33a0[3] = {
-	{15.0f, 0.0f, 15.0f},
-	{-15.0f, 0.0f, 15.0f},
-	{0.0f, 0.0f, -15.0f},
-};
-const Vec dat_802f33c4[3] = {
-	{0.0f, 0.0f, -1.0f},
-	{0.0f, 0.0f, -1.0f},
-	{0.0f, 0.0f, -1.0f},
-};
-const char dat_802f33e8[12] = "xxxxxxxxx";
-
-typedef struct Blob60 {
-	char b[0x60];
-} Blob60;
-
-typedef struct Vec3 {
-	Vec v[3];
-} Vec3;
-
-#ifdef MUST_MATCH
-// byte-blob copies reproduce the original's inline lwz/lhz/lbz copy schedule (memcpy would emit a call)
-typedef struct Blob3 {
-	u8 b[3];
-} Blob3;
-
-typedef struct Blob9 {
-	u8 b[9];
-} Blob9;
-#endif
 
 // .sbss2
 // .sbss2: the default .sbss2 is only used for compiler-generated pool
 // templates, so pair it with a small-data section and place it by hand.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u8 gap_10_80423034_sbss2[4];
-__declspec(section ".sdata") u8 unk_80423030[4];
 
 s32 evt_batstage_set_stg_dark(EventEntry* event, BOOL isFirstCall) {
 	s32* args = event->args;
@@ -139,33 +90,16 @@ s32 evt_batstage_return_aud_dark_base(EventEntry* event, BOOL isFirstCall) {
 s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	BattleWork* bw = _battleWorkPointer;
 	s32* args = event->args;
-	s32 mode;
-	u8 enabled[3];
-	u8 color[3][3];
-	Vec pos[3];
-	Vec target[3];
-	Vec unitOff[3];
-	Vec up[3];
-	char name[3][0x20];
+	s32 mode = evtGetValue(event, *args++);
+	char name[3][0x20] = { "sys_activeUnit_1", "sys_activeUnit_2", "sys_activeUnit_3" };
+	Vec pos[3] = { { 100.0f, 250.0f, 70.0f }, { -300.0f, 250.0f, 70.0f }, { -120.0f, 250.0f, -70.0f } };
+	Vec target[3] = { { 100.0f, 0.0f, -70.0f }, { -300.0f, 0.0f, -70.0f }, { -120.0f, 0.0f, -70.0f } };
+	Vec unitOff[3] = { { 15.0f, 0.0f, 15.0f }, { -15.0f, 0.0f, 15.0f }, { 0.0f, 0.0f, -15.0f } };
+	Vec up[3] = { { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f, -1.0f } };
+	u8 color[3][3] = { { 0x78, 0x78, 0x78 }, { 0x78, 0x78, 0x78 }, { 0x78, 0x78, 0x78 } };
+	u8 enabled[3] = { 0, 0, 0 };
 	s32 i;
 	s32 lightNo;
-
-	mode = evtGetValue(event, *args++);
-
-	*(Blob60*)name = *(const Blob60*)dat_802f32f8;
-
-	*(Vec3*)pos = *(const Vec3*)dat_802f3358;
-	*(Vec3*)target = *(const Vec3*)dat_802f337c;
-	*(Vec3*)unitOff = *(const Vec3*)dat_802f33a0;
-	*(Vec3*)up = *(const Vec3*)dat_802f33c4;
-#ifdef MUST_MATCH
-	*(Blob9*)color = *(const Blob9*)dat_802f33e8;
-	*(Blob3*)enabled = *(const Blob3*)unk_80423030;
-#else
-	memcpy(color, dat_802f33e8, sizeof(color));
-	*(u16*)enabled = *(const u16*)unk_80423030;
-	enabled[2] = unk_80423030[2];
-#endif
 
 	switch (mode) {
 	case 1:

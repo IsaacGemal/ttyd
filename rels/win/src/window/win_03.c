@@ -101,14 +101,12 @@ EVT_BEGIN(lookat_house)
     RETURN
 EVT_END()
 
-const Vec vec3_win_0000433c = { 290.0f, 150.0f, 491.0f };
-const Vec vec3_win_00004348 = { 290.0f, 90.0f, -6.0f };
 
 USER_FUNC(camera_action) {
     CameraEntry* camera = camGetPtr(CAMERA_3D);
     f32* work = (f32*)event->lwData;
-    Vec pos = vec3_win_0000433c;
-    Vec at = vec3_win_00004348;
+    Vec pos = { 290.0f, 150.0f, 491.0f };
+    Vec at = { 290.0f, 90.0f, -6.0f };
     f32 t;
     f32 sum;
 

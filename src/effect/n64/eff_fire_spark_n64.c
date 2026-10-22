@@ -5,12 +5,6 @@
 #include "eff/eff_n64.h"
 #include "memory.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423104;
-__declspec(section ".sdata") GXColor unk_80423100;
-
-
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <stdlib.h>
@@ -59,8 +53,6 @@ typedef struct effFireSparkData {
     f32 velYScale;        // 0x68, scales the random initial velY
     f32 velYTargetScale;  // 0x6C, scales the random velYTarget
 } effFireSparkData;
-
-extern const GXColor dat_8041ee98;
 
 EffectEntry* effFireSparkN64Entry(s32 type, s32 count, s32 life, f32 a4, f32 a5, f32 a6, f32 a7, f32 a8, f32 a9, f32 a10, f32 a11) {
     EffectEntry* effect;
@@ -199,29 +191,6 @@ void effFireSparkMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFireSparkDisp, effect);
 }
 
-// Building each TEV colour in a small void helper (same shape as bushSetColor) makes the by-value
-// argument copy land in the stack slot directly above the helper's local, as in the original. The KColor helper is needed too, so its
-// argument temp is allocated alongside the other two instead of last.
-static inline void setFireSparkColor1(effFireSparkData* data, s32 alpha) {
-    GXColor color = unk_80423100;
-    color.r = data->color1R;
-    color.g = data->color1G;
-    color.b = data->color1B;
-    color.a = alpha;
-    GXSetTevColor(GX_TEVREG0, color);
-}
-static inline void setFireSparkColor2(effFireSparkData* data) {
-    GXColor color = unk_80423104;
-    color.r = data->color2R;
-    color.g = data->color2G;
-    color.b = data->color2B;
-    color.a = data->color2A;
-    GXSetTevColor(GX_TEVREG1, color);
-}
-static inline void setFireSparkKColor(GXColor color) {
-    GXSetTevKColor(GX_KCOLOR0, color);
-}
-
 void effFireSparkDisp(CameraId camId, void* param) {
     EffectEntry* effect;
     effFireSparkData* data;
@@ -246,8 +215,8 @@ void effFireSparkDisp(CameraId camId, void* param) {
     PSMTXConcat(m0, m2, m0);
     PSMTXConcat(cam->view, m0, viewMtx);
 
-    setFireSparkColor1(data, alpha);
-    setFireSparkColor2(data);
+    GXSetTevColor(GX_TEVREG0, (GXColor){ data->color1R, data->color1G, data->color1B, alpha });
+    GXSetTevColor(GX_TEVREG1, (GXColor){ data->color2R, data->color2G, data->color2B, data->color2A });
 
     GXSetNumChans(0);
     GXSetNumTevStages(2);
@@ -265,7 +234,7 @@ void effFireSparkDisp(CameraId camId, void* param) {
     GXSetNumTexGens(2);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
-    setFireSparkKColor(dat_8041ee98);
+    GXSetTevKColor(GX_KCOLOR0, (GXColor){ 0x7F, 0x7F, 0x7F, 0x00 });
     effGetTexObjN64(0x8B, &texobj);
     GXLoadTexObj(&texobj, GX_TEXMAP0);
     effGetTexObjN64(0x65, &texobj);
@@ -296,6 +265,3 @@ void effFireSparkDisp(CameraId camId, void* param) {
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041ee98 = { 0x7F, 0x7F, 0x7F, 0x00 };

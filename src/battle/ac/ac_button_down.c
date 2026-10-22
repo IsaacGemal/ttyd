@@ -10,14 +10,6 @@
 
 static void actionCommandDisp(s32 type, f32 x, f32 y);
 
-// Vec literals the original unit emitted into .rodata (offsets listed in REPORT.md). The original .s
-// has five separate 0xC objects.
-const Vec vec3_802fd5d0 = {0.0f, 0.0f, -2.0f};
-const Vec vec3_802fd5dc = {0.0f, 0.0f, -2.0f};
-const Vec vec3_802fd5e8 = {0.0f, 0.0f, -2.0f};
-const Vec vec3_802fd5f4 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802fd600 = {0.0f, 0.0f, 0.0f};
-
 // The seven button masks, used for the "pick a unique button" modes.
 u32 _button_table[7] = {0x100, 0x200, 0x400, 0x800, 0x40, 0x20, 0x10};
 
@@ -60,7 +52,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
         smooth = 1;
     }
     // Literal, not a named str_SFX_AC_BUTTON_PUSH1: the compiler pools it after actionCommandDisp's
-    // generated int->float double, which is what puts the double at vec+0x40 (see below).
+    // generated int->float double, which is what puts the double at .rodata+0x40 (see below).
 #ifdef MUST_MATCH
     // (0, ...) is the allocator nudge described above; the value of the left operand is discarded.
     sfx = (0, "SFX_AC_BUTTON_PUSH1");
@@ -298,11 +290,10 @@ void battleAcDelete_ButtonDown(BattleWork* work) {
     work->actionCommands.mAcState = 1003;
 }
 
-// 100%: the five .rodata Vecs above must stay five separate objects, not one Vec[5] array. Only
-// then does MWCC anchor its generated int->float 2^52 pool double at vec+0x40 and reach it as
-// `lfd f1, 0x40(r31)`; with one array it emits a fresh lis/addi and the score is 95.17%. The banner
-// string battleAcMain uses must pool after that double, so battleAcMain writes it as a literal (a
-// declared str_SFX_AC_BUTTON_PUSH1 emits first and pushes the double to +0x50, 99.99%).
+// The templates of the five Vec literals below open .rodata, so MWCC places its generated int->float
+// 2^52 pool double at .rodata+0x40 and reaches it as `lfd f1, 0x40(r31)`. The banner string
+// battleAcMain uses must pool after that double, so battleAcMain writes it as a literal (a declared
+// str_SFX_AC_BUTTON_PUSH1 emits first and pushes the double to +0x50, 99.99%).
 // Using bd->buttons[k] directly in the zero test and the switch (no `button` temp) is what gives the
 // target's r3 = button / r4 = row base split through the switch.
 // The icon count (`limit`) and the drawn-button count (`count`) are separate locals, as are the two loop
@@ -325,33 +316,15 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
     limit = work->actionCommands.acParams[2] * 3 + 2;
     bd = (ButtonDownWork*)&work->actionCommands.field_0x2BC[0];
 
-    {
-        Vec t = vec3_802fd5d0;
-        t.x = iconX;
-        t.y = iconY;
-        iconDispGx(1.0f, &t, 0x10, 0x8F);
-    }
+    iconDispGx(1.0f, &(Vec){iconX, iconY, -2.0f}, 0x10, 0x8F);
 
     iconX += 16.0f;
     for (j = 1; j < limit; j++) {
-#ifdef MUST_MATCH
-        // volatile: stops MWCC hoisting the const vec3_802fd5dc load out of the loop, which the target does not do.
-        Vec t = *(volatile Vec*)&vec3_802fd5dc;
-#else
-        Vec t = vec3_802fd5dc;
-#endif
-        t.x = iconX;
-        t.y = iconY;
-        iconDispGx(1.0f, &t, 0x10, 0x8E);
+        iconDispGx(1.0f, &(Vec){iconX, iconY, -2.0f}, 0x10, 0x8E);
         iconX += 16.0f;
     }
 
-    {
-        Vec t = vec3_802fd5e8;
-        t.x = iconX;
-        t.y = iconY;
-        iconDispGx(1.0f, &t, 0x10, 0x90);
-    }
+    iconDispGx(1.0f, &(Vec){iconX, iconY, -2.0f}, 0x10, 0x90);
 
     flags = work->actionCommands.acFlag;
     if (flags & 1) {
@@ -412,15 +385,9 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
                 break;
         }
         if (bd->states[k] != 0) {
-            Vec v = vec3_802fd5f4;
-            v.x = baseX + (f32)(k * 0x30);
-            v.y = iconY;
-            iconDispGx(1.0f, &v, 0x10, pressed);
+            iconDispGx(1.0f, &(Vec){baseX + (f32)(k * 0x30), iconY, 0.0f}, 0x10, pressed);
         } else {
-            Vec v = vec3_802fd600;
-            v.x = baseX + (f32)(k * 0x30);
-            v.y = iconY;
-            iconDispGx(1.0f, &v, 0x10, released);
+            iconDispGx(1.0f, &(Vec){baseX + (f32)(k * 0x30), iconY, 0.0f}, 0x10, released);
         }
     }
 }

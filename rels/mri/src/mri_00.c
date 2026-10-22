@@ -1029,7 +1029,6 @@ EVT_END()
 
 const Vec vec3_mri_00020a58 = {0.0f, 100.0f, 0.0f};
 const Vec vec3_mri_00020a64 = {0.0f, 1.0f, 0.0f};
-const Vec vec3_mri_00020a70 = {0.0f, 0.0f, 0.0f};
 
 static USER_FUNC(yami_view) {
     Vec camPos;
@@ -1038,7 +1037,7 @@ static USER_FUNC(yami_view) {
     Mtx mtx;
     f32 value = evtGetFloat(event, event->args[0]);
 
-    target = vec3_mri_00020a70;
+    target = (Vec){0.0f, 0.0f, 0.0f};
     target.x = value;
     up = vec3_mri_00020a64;
     camPos = vec3_mri_00020a58;
@@ -1454,12 +1453,10 @@ static EVT_BEGIN(evt_switch_init)
     RETURN
 EVT_END()
 
-__declspec(section ".rodata") GXColor zero_mri_00020b88 = {0, 0, 0, 0};
-
 static USER_FUNC(sysflag) {
     if (gp->flags & 1) {
         gp->flags &= ~1;
-        fadeEntry(0x1C, 0, zero_mri_00020b88);
+        fadeEntry(0x1C, 0, (GXColor){0, 0, 0, 0});
     }
     return EVT_RETURN_DONE;
 }

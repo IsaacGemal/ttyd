@@ -65,10 +65,6 @@ extern const f64 double_15_80300908;
 // .sdata frame table, indexed by BattleActionCommandGetDifficulty().
 
 // .sdata2 constants.
-extern const GXColor dat_8042205c; // 0x808080FF
-extern const GXColor dat_80422060; // 0xFFFFFFFF
-extern const GXColor dat_80422064; // 0xFFFFFFFF
-extern const GXColor dat_80422068; // 0x808080FF
 extern const f32 float_0_8042206c;
 extern const f32 float_4_80422070;
 extern const f32 float_2_80422074;
@@ -230,7 +226,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		Vec scale;
 		Vec rot;
 		GXColor color;
-		color = dat_8042205c;
+		color = (GXColor){ 0x80, 0x80, 0x80, 0xFF };
 		rot = RODATA_VEC(3, vec3_803008a4);
 		scale = RODATA_VEC(2, vec3_80300898);
 		trans = screen;
@@ -253,7 +249,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		Vec rot;
 		Vec tmp;
 		GXColor color;
-		color = dat_80422060;
+		color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
 		tmp = RODATA_VEC(5, vec3_803008bc);
 		tmp.z = mt->rotZ;
 		rot = tmp;
@@ -269,7 +265,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		Vec rot;
 		Vec rotTmp;
 		GXColor color;
-		color = dat_80422064;
+		color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
 		rotTmp = RODATA_VEC(7, vec3_803008d4);
 		rotTmp.z = mt->rotZ;
 		rot = rotTmp;
@@ -290,7 +286,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		Vec rot;
 		Vec tmp;
 		GXColor color;
-		color = dat_80422068;
+		color = (GXColor){ 0x80, 0x80, 0x80, 0xFF };
 		tmp = RODATA_VEC(9, vec3_803008ec);
 		tmp.z = mt->rotZ;
 		rot = tmp;
@@ -349,10 +345,6 @@ const Vec vec3_803008f8 = { 0.0f, 0.0f, 0.0f };
 #pragma force_active on
 const f64 double_15_80300908 = 15.0;
 #pragma force_active reset
-const GXColor dat_8042205c = { 0x80, 0x80, 0x80, 0xFF };
-const GXColor dat_80422060 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_80422064 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_80422068 = { 0x80, 0x80, 0x80, 0xFF };
 const f32 float_0_8042206c = 0.0f;
 const f32 float_4_80422070 = 4.0f;
 const f32 float_2_80422074 = 2.0f;

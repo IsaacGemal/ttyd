@@ -31,11 +31,6 @@ u32 opuku_jetwrain_vtx[56] = {
 	0xFF60FF98, 0xFEC00000, 0x02800000, 0x00FFFF70, 0xFF98FEC0, 0x02800280, 0x000000FF,
 };
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a
-// small-data section and place it by hand.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804231d8;
-
 EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effOpukuJetwrainData* data;
@@ -83,17 +78,6 @@ static inline Vec initializeVec(Vec* input) {
 	temp.y = input->y;
 	temp.z = input->z;
 	return temp;
-}
-
-// Build the tev colour in an inline so mwcc keeps the temporary at 0x8(r1) and copies it to the
-// outgoing argument slot at 0xc(r1); with the channels set on a plain local the two slots swap.
-static inline GXColor makeTevColor(u8 r, u8 g, u8 b, u8 a) {
-	GXColor c = unk_804231d8;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	return c;
 }
 
 // Matching this function was allocator work only. Three source details move mwcc's coloring onto the
@@ -209,7 +193,6 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	Vec up;
 	Vec target;
 	Vec eye;
-	GXColor color;
 	camGetPtr(camId);
 	data = effect->userdata;
 	alpha = data->alpha;
@@ -234,8 +217,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(0, GX_CC_ZERO, GX_CC_C0, GX_CC_A0, GX_CC_TEXC);
 	GXSetTevAlphaIn(0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
-	color = makeTevColor(data->color1R, data->color1G, data->color1B, alpha >> 1);
-	GXSetTevColor(GX_TEVREG0, color);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->color1R, data->color1G, data->color1B, alpha >> 1 });
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetCullMode(GX_CULL_NONE);

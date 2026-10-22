@@ -3,13 +3,6 @@
 #include "driver/dispdrv.h"
 #include "memory.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804230f0;
-__declspec(section ".sdata") GXColor unk_804230ec;
-__declspec(section ".sdata") GXColor unk_804230e8;
-
-
 static u32 size32x32_tex32x32_vtx[14] = {
     0xFFF0FFF0, 0x00000000, 0x00000000, 0x00FF0010,
     0xFFF00000, 0xFC000000, 0x000000FF, 0x00100010,
@@ -17,12 +10,6 @@ static u32 size32x32_tex32x32_vtx[14] = {
     0x00000400, 0x000000FF,
 };
 
-extern const u32 dat_8041ed60;
-extern const u32 dat_8041ed64;
-
-const Vec vec3_802fa510 = { 0.0f, 0.0f, 0.0f };
-
-// The .sbss2 work colours and the two .sdata2 packed TEV colours are defined by the split map.
 EffectEntry* effExplosionN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effExplosionN64Data* data;
@@ -79,42 +66,6 @@ void effExplosionMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effExplosionDisp, effect);
 }
 
-static inline void explosionSetColor1(f32 s) {
-	GXColor c = unk_804230e8;
-	c.r = 255.0f * s;
-	c.g = 18.0f * s;
-	c.b = 59.0f * s;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-
-static inline void explosionSetColor2(f32 s, s32 a) {
-	GXColor c = unk_804230ec;
-	c.r = 255.0f * s;
-	c.g = 53.0f * s;
-	c.b = 24.0f * s;
-	c.a = a;
-	GXSetTevColor(GX_TEVREG1, c);
-}
-
-static inline void explosionSetColor3(f32 s) {
-	GXColor c = unk_804230f0;
-	c.r = 211.0f * s;
-	c.g = 255.0f * s;
-	c.b = 216.0f * s;
-	GXSetTevKColor(GX_KCOLOR0, c);
-}
-
-static inline void explosionSetColorAlt0(void) {
-	GXColor c = *(GXColor*)&dat_8041ed60;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-
-static inline void explosionSetColorAlt(s32 a) {
-	GXColor c = *(GXColor*)&dat_8041ed64;
-	c.a = a;
-	GXSetTevColor(GX_TEVREG1, c);
-}
-
 void effExplosionDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	effExplosionN64Data* data;
@@ -162,9 +113,9 @@ void effExplosionDisp(CameraId camId, void* param) {
 			colorScale = 1.0f;
 		}
 
-		explosionSetColor1(colorScale);
-		explosionSetColor2(colorScale, frac);
-		explosionSetColor3(colorScale);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 255.0f * colorScale, 18.0f * colorScale, 59.0f * colorScale, 0 });
+		GXSetTevColor(GX_TEVREG1, (GXColor){ 255.0f * colorScale, 53.0f * colorScale, 24.0f * colorScale, frac });
+		GXSetTevKColor(GX_KCOLOR0, (GXColor){ 211.0f * colorScale, 255.0f * colorScale, 216.0f * colorScale, 0 });
 
 		GXSetNumTevStages(4);
 		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -190,9 +141,9 @@ void effExplosionDisp(CameraId camId, void* param) {
 		GXSetTevKColorSel(GX_TEVSTAGE3, GX_TEV_KCSEL_K0);
 	}
 	else {
-		explosionSetColorAlt0();
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0x28, 0x7F });
 
-		explosionSetColorAlt(frac);
+		GXSetTevColor(GX_TEVREG1, (GXColor){ 0xFF, 0xFF, 0x8B, frac });
 
 		GXSetNumTevStages(3);
 		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -239,7 +190,3 @@ void effExplosionDisp(CameraId camId, void* param) {
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_8041ed60 = 0xFFFF287F;
-const u32 dat_8041ed64 = 0xFFFF8B00;

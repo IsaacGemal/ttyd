@@ -29,10 +29,9 @@ __declspec(section ".rodata") const u32 gap_04_802FA2EC_rodata = 0;
 #pragma force_active reset
 #pragma explicit_zero_data reset
 
-// .sbss2 zero GXColor scratch (declared in reverse so the 4-byte gap lands after it)
+// .sbss2 4-byte gap after effBoobooDisp's colour template
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor gap_10_804230AC_sbss2;
-__declspec(section ".sdata") GXColor unk_804230a8;
 #pragma section ".sdata" ".sbss"
 
 // .data
@@ -659,13 +658,6 @@ u32 boo_dl_2_31[8] ATTRIBUTE_ALIGN(32) = {
 };
 
 u8 anime_data_walk[8] = { 0x01, 0x01, 0x02, 0x02, 0x01, 0x01, 0x00, 0x00 };
-static inline GXColor boobooColor(u8 v) {
-	GXColor c = unk_804230a8;
-	c.r = v;
-	c.g = v;
-	c.b = v;
-	return c;
-}
 
 void boo_polygon_0(void) {
 	GXClearVtxDesc();
@@ -1067,7 +1059,6 @@ static inline void boo_polygon(int poly) {
 	}
 }
 
-// Building the GXColor with separate .r/.g/.b statements gives the original's by-value store order.
 // Storing the sin result in `f32 s` first pools 6.2832/360 before 63.0 as the original's .sdata2 does.
 void effBoobooDisp(CameraId camId, void* param) {
 	CameraEntry* camera;
@@ -1077,7 +1068,6 @@ void effBoobooDisp(CameraId camId, void* param) {
 	Mtx mtx;
 	Mtx scaleMtx;
 	Mtx rotMtx;
-	GXColor color;
 
 	camera = camGetPtr(camId);
 	data = ((EffectEntry*)param)->userdata;
@@ -1096,8 +1086,7 @@ void effBoobooDisp(CameraId camId, void* param) {
 				if (data->tex[i] == 8 || data->tex[i] == 9) {
 					f32 s = (f32)sin(6.2831855f * phase / 360.0f);
 					u8 bright = (u8)(63.0f + 63.0f * s);
-					color = boobooColor(bright);
-					GXSetTevColor(GX_TEVREG0, color);
+					GXSetTevColor(GX_TEVREG0, (GXColor){ bright, bright, bright, 0 });
 				}
 				boo_polygon(data->poly[i]);
 			}

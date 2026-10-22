@@ -13,7 +13,6 @@ extern const f32 float_0_8041f2f0;
 extern const f32 float_1_8041f2f4;
 extern const f32 float_8_8041f2ec;
 extern const f32 float_neg8_8041f2f8;
-extern const u32 dat_8041f2e8;
 
 typedef struct effKemuri3Data {
     s32 type;       // 0x0
@@ -157,12 +156,6 @@ void effKemuri3Main(EffectEntry* effect) {
     }
 }
 
-static inline void kemuri3SetColor(u8 alpha) {
-    GXColor color = *(GXColor*)&dat_8041f2e8;
-    color.a = alpha;
-    GXSetTevColor(1, color);
-}
-
 // Volatile load forces the original's one-load-per-store cadence for the shared
 // .sdata2 vertex constants; plain const loads get CSE'd into FPRs.
 #ifdef MUST_MATCH
@@ -207,7 +200,7 @@ void effKemuri3Disp(CameraId camId, void* param) {
         if (data->type == 0) {
             continue;
         }
-        kemuri3SetColor(data->field_08);
+        GXSetTevColor(1, (GXColor){ 0x70, 0x60, 0x19, data->field_08 });
         PSMTXConcat(cam->view, data->field_30, mtx);
         GXLoadPosMtxImm(mtx, 0);
         GXBegin(0x80, 0, 4);
@@ -254,7 +247,6 @@ void effKemuri3Disp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_8041f2e8 = 0x70601900;
 const f32 float_8_8041f2ec = 8.0f;
 const f32 float_0_8041f2f0 = 0.0f;
 const f32 float_1_8041f2f4 = 1.0f;

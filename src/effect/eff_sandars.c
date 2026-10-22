@@ -11,14 +11,6 @@
 #include "math_ext.h"
 
 // .sdata2 constants (definitions live in the retail object, referenced by name).
-extern const u32 dat_80421b98;
-// MUST_MATCH: volatile forces the per-vertex reloads the original has; the objects aren't volatile.
-#ifdef MUST_MATCH
-#define MATCH_VOLATILE volatile
-#else
-#define MATCH_VOLATILE
-#endif
-extern const MATCH_VOLATILE u32 dat_80421b9c;
 extern const f32 float_deg2rad_80421ba0;
 extern const f32 float_32_80421ba4;
 extern const f32 float_0p5_80421ba8;
@@ -33,20 +25,6 @@ static u8 scale_data[16] = {
 	0x59, 0x65, 0x6F, 0x75,
 	0x78, 0x4B, 0x00, 0x00,
 };
-
-/* Returning the colour through an inline aggregate makes MWCC build it in the return temporary (r1+8)
-   and copy it to the by-value argument slot (r1+0xC), as retail does. */
-static inline GXColor effSandarsColorAnim(u8 alpha) {
-	GXColor color = *(GXColor*)&dat_80421b98;
-	color.a = alpha;
-	return color;
-}
-
-static inline GXColor effSandarsColorDisp2(u8 alpha) {
-	GXColor color = *(GXColor*)&dat_80421b9c;
-	color.a = alpha;
-	return color;
-}
 
 EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	EffectEntry* entry;
@@ -236,7 +214,7 @@ void effSandarsDisp(CameraId camId, void* param) {
 	PSMTXScale(mtx40, data->animScale, data->animScale, data->animScale);
 	PSMTXConcat(mtx10, mtx40, mtx10);
 	animPoseSetMaterialFlagOn(data->poseId, 0x40);
-	animPoseSetMaterialEvtColor(data->poseId, effSandarsColorAnim(data->alpha));
+	animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 	animPoseMain(data->poseId);
 	animPoseDrawMtx(data->poseId, mtx10, 1, 0.0f, 4.0f);
 	animPoseDrawMtx(data->poseId, mtx10, 2, 0.0f, 4.0f);
@@ -299,7 +277,7 @@ void effSandarsDisp2(CameraId camId, void* param) {
 		PSMTXConcat(mtx30, mtxC0, mtxC0);
 		GXLoadPosMtxImm(mtxC0, 0);
 		GXSetCurrentMtx(0);
-		GXSetChanMatColor(GX_COLOR0A0, effSandarsColorDisp2(data->alpha));
+		GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(negSize, posSize, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
@@ -313,8 +291,6 @@ void effSandarsDisp2(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_80421b98 = 0xFFFFFF00;
-const MATCH_VOLATILE u32 dat_80421b9c = 0xFFFFFF00;
 const f32 float_deg2rad_80421ba0 = 0.017453292f;
 const f32 float_32_80421ba4 = 32.0f;
 const f32 float_0p5_80421ba8 = 0.5f;

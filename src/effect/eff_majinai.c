@@ -12,10 +12,6 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 
-extern const u32 dat_80422568;
-extern const u32 dat_8042256c;
-extern const u32 dat_80422570;
-extern const u32 dat_80422574;
 EffectEntry* effMajinaiEntry(s32 type, f32 x, f32 y, f32 z) {
     EffectEntry* effect;
     MajinaiWork* work;
@@ -39,7 +35,7 @@ EffectEntry* effMajinaiEntry(s32 type, f32 x, f32 y, f32 z) {
     work->animPose = -1;
 
     map = mapGetWork();
-    *(u32*)&map->entries[0].blend[2] = dat_80422568;
+    map->entries[0].blend[2] = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
 
     return effect;
 }
@@ -88,18 +84,13 @@ void effMajinaiMain(EffectEntry* effect) {
         case 1:
             map = mapGetWork();
             {
-                GXColor color;
                 s32 value = map->entries[0].blend[2].r;
 
                 value -= 5;
                 if (value < 0x40) {
                     value = 0x40;
                 }
-                color = *(GXColor*)&dat_8042256c;
-                color.r = value;
-                color.g = value;
-                color.b = value;
-                map->entries[0].blend[2] = color;
+                map->entries[0].blend[2] = (GXColor){ value, value, value, 0xFF };
             }
             map->entries[0].flags |= 8;
 
@@ -130,18 +121,13 @@ void effMajinaiMain(EffectEntry* effect) {
         case 3:
             map = mapGetWork();
             {
-                GXColor color;
                 s32 value = map->entries[0].blend[2].r;
 
                 value += 5;
                 if (value > 0xff) {
                     value = 0xff;
                 }
-                color = *(GXColor*)&dat_80422570;
-                color.r = value;
-                color.g = value;
-                color.b = value;
-                map->entries[0].blend[2] = color;
+                map->entries[0].blend[2] = (GXColor){ value, value, value, 0xFF };
             }
             map->entries[0].flags |= 8;
 
@@ -171,12 +157,6 @@ void effMajinaiMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMajinaiDisp, effect);
 }
 
-static inline void majinaiSetColor(MajinaiWork* work) {
-    GXColor color = *(GXColor*)&dat_80422574;
-    color.a = work->alpha;
-    animPoseSetMaterialEvtColor(work->animPose, color);
-}
-
 void effMajinaiDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     MajinaiWork* work = effect->userdata;
@@ -191,16 +171,10 @@ void effMajinaiDisp(CameraId cameraId, void* param) {
         PSMTXConcat(trans, rot, trans);
         PSMTXConcat(trans, scale, trans);
         animPoseSetMaterialFlagOn(work->animPose, 0x840);
-        majinaiSetColor(work);
+        animPoseSetMaterialEvtColor(work->animPose, (GXColor){ 0xFF, 0xFF, 0xFF, work->alpha });
         animPoseMain(work->animPose);
         animPoseDrawMtx(work->animPose, trans, 1, 0.0f, 10.0f);
         animPoseDrawMtx(work->animPose, trans, 2, 0.0f, 10.0f);
         animPoseDrawMtx(work->animPose, trans, 3, 0.0f, 10.0f);
     }
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_80422568 = 0xFFFFFFFF;
-const u32 dat_8042256c = 0x000000FF;
-const u32 dat_80422570 = 0x000000FF;
-const u32 dat_80422574 = 0xFFFFFF00;

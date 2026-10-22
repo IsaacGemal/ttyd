@@ -13,12 +13,9 @@
 
 // .rodata
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a
-// small-data section and place the object and the 4-byte section-tail gap by hand (the gap is declared
-// first so it lands higher).
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u8 gap_10_804231E4_sbss2[4];
-__declspec(section ".sdata") GXColor unk_804231e0;
 #pragma section ".sdata" ".sbss"
 
 // .sdata2
@@ -102,15 +99,6 @@ void effOpukuWcurtainMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effOpukuWcurtainDisp, effect);
 }
 
-static inline GXColor opukuWcurtainColor(s32 r, s32 g, s32 b, s32 a) {
-	GXColor c = unk_804231e0;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	return c;
-}
-
 // Builds the curtain's 24 vertices (two per column), transforms them through the effect's matrix with the
 // packed s16<->f32 fast casts, and draws them as triangle strips through effSetVtxDescN64. The s texture
 // coordinate is computed once per column so the compiler strength-reduces it into the same walking
@@ -134,7 +122,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	s32 counter = data->counter;
 
 	scale = 0.1f * data->scale;
-	GXSetTevColor(GX_TEVREG0, opukuWcurtainColor(data->field_0x18, data->field_0x1C, data->field_0x20, data->field_0x24));
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->field_0x18, data->field_0x1C, data->field_0x20, data->field_0x24 });
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTevStages(1);

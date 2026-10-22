@@ -22,8 +22,6 @@ typedef struct IndirectData {
 	smartEntry* texBuffer; // 0x34
 } IndirectData;
 
-extern const u32 dat_804222c0;
-
 EffectEntry* effIndirectEntry(s32 type, s32 timer, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	IndirectData* data;
@@ -91,12 +89,6 @@ void effIndirectMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D_EFFECTB, dispCalcZ(&pos2), 2, effIndirectDisp, effect);
 }
 
-static inline GXColor effIndirectMatColor(u8 alpha) {
-	GXColor color = *(GXColor*)&dat_804222c0;
-	color.a = alpha;
-	return color;
-}
-
 void effIndirectDisp(CameraId camId, void* param) {
 	f32 sixteen;
 	EffectEntry* effect = param;
@@ -149,7 +141,7 @@ void effIndirectDisp(CameraId camId, void* param) {
 	PSMTXConcat(trans, rotMtx, trans);
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-	GXSetChanMatColor(4, effIndirectMatColor(alpha));
+	GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, alpha });
 	GXSetNumTexGens(2);
 	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
 	GXSetTexCoordGen2(1, 0, 0, 0x1E, 0, 0x7D);
@@ -208,6 +200,3 @@ void effIndirectDisp(CameraId camId, void* param) {
 	GXPosition3f32(half, half, 0.0f);
 	GXTexCoord2f32(0.0f, v);
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_804222c0 = 0xFFFFFF00;

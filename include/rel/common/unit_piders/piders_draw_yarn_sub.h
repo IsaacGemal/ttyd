@@ -1,6 +1,5 @@
 // piders_draw_yarn_sub and piders_draw_yarn, shared by the Pider units (unit_piders, all three versions) and
-// unit_churantalar. Included where they sit in the unit's function order (it sets the .text layout). The unit defines
-// piders_getMatColor, which reads its own colour template, before piders_draw_yarn_sub.
+// unit_churantalar. Included where they sit in the unit's function order (it sets the .text layout).
 #include "battle/battle.h"
 #include "battle/battle_sub.h"
 #include "battle/battle_unit.h"
@@ -22,7 +21,7 @@ static void piders_draw_yarn_sub(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetNumChans(1);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
-    GXSetChanMatColor(GX_COLOR0A0, piders_getMatColor(yarn));
+    GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, yarn->field_0x18 });
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
     GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);

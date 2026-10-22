@@ -43,15 +43,12 @@ void iconDispGx(f32 scale, Vec* position, u16 flags, u16 iconId);
 extern ItemData itemDataTable[];
 extern const f32 float_0_8041db00[1];
 extern const f32 float_1p1_8041db30[1];
-extern u32 dat_8041d9bc;
-extern u32 dat_8041d9b4;
-extern u32 dat_8041d9b8;
 extern const f32 float_108_8041dadc[1];
 extern char str_uwn_d[];
 
-// The .sdata2 objects the unit names (floats up to the first pooled one, colour words, a few strings) are defined as one-element
+// The .sdata2 objects the unit names (floats up to the first pooled one, a few strings) are defined as one-element
 // const arrays and read as name[0] (a plain const f32 would be folded to an anonymous pool entry), in the original's order, in
-// the .sdata2 block below; the flush helpers before each function keep the pooled literals in source order after them.
+// the .sdata2 block at the end of the file, after the colour templates; the pooled literals follow them.
 extern const f32 float_neg150_8041dac8[1];
 extern const f32 float_120_8041dacc[1];
 extern const f32 float_300_8041dad0[1];
@@ -85,70 +82,6 @@ extern const f32 float_114_8041db50[1];
 extern const f32 float_28_8041db54[1];
 extern const f32 float_81_8041db58[1];
 extern const f32 float_111_8041db5c[1];
-extern u32 dat_8041d9c0;
-extern u32 dat_8041d9c4;
-extern u32 dat_8041d9c8;
-extern u32 dat_8041d9cc;
-extern u32 dat_8041d9d0;
-extern u32 dat_8041d9d4;
-extern u32 dat_8041d9d8;
-extern u32 dat_8041d9dc;
-extern u32 dat_8041d9e0;
-extern u32 dat_8041d9e4;
-extern u32 dat_8041d9e8;
-extern u32 dat_8041d9ec;
-extern u32 dat_8041d9f0;
-extern u32 dat_8041d9f4;
-extern u32 dat_8041d9f8;
-extern u32 dat_8041d9fc;
-extern u32 dat_8041da00;
-extern u32 dat_8041da04;
-extern u32 dat_8041da08;
-extern u32 dat_8041da0c;
-extern u32 dat_8041da10;
-extern u32 dat_8041da14;
-extern u32 dat_8041da18;
-extern u32 dat_8041da1c;
-extern u32 dat_8041da20;
-extern u32 dat_8041da24;
-extern u32 dat_8041da28;
-extern u32 dat_8041da2c;
-extern u32 dat_8041da30;
-extern u32 dat_8041da34;
-extern u32 dat_8041da38;
-extern u32 dat_8041da3c;
-extern u32 dat_8041da40;
-extern u32 dat_8041da44;
-extern u32 dat_8041da48;
-extern u32 dat_8041da4c;
-extern u32 dat_8041da50;
-extern u32 dat_8041da54;
-extern u32 dat_8041da58;
-extern u32 dat_8041da5c;
-extern u32 dat_8041da60;
-extern u32 dat_8041da64;
-extern u32 dat_8041da68;
-extern u32 dat_8041da6c;
-extern u32 dat_8041da70;
-extern u32 dat_8041da74;
-extern u32 dat_8041da78;
-extern u32 dat_8041da7c;
-extern u32 dat_8041da80;
-extern u32 dat_8041da84;
-extern u32 dat_8041da88;
-extern u32 dat_8041da8c;
-extern u32 dat_8041da90;
-extern u32 dat_8041da94;
-extern u32 dat_8041da98;
-extern u32 dat_8041da9c;
-extern u32 dat_8041daa0;
-extern u32 dat_8041daa4;
-extern u32 dat_8041daa8;
-extern u32 dat_8041daac;
-extern u32 dat_8041dab0;
-extern u32 dat_8041dab4;
-extern u32 dat_8041dab8;
-extern u32 dat_8041dabc;
 extern s32 badge_bottakuru100_table[];
 extern BadgeShopWork* bdsw;
 
@@ -174,113 +107,6 @@ static s16* mario_status_point_table[3];
 s32 coin_count_sfx_timer;
 static UnitWinWork* _wp;
 
-// .sdata2 objects, in the original's order.
-__declspec(section ".sdata2") u32 dat_8041d9b4 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9b8 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9bc = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9c0 = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041d9c4 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9c8 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9cc = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9d0 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9d4 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9d8 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9dc = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9e0 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9e4 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9e8 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9ec = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041d9f0 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9f4 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9f8 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041d9fc = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041da00 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da04 = 0xF0F0F0FF;
-__declspec(section ".sdata2") u32 dat_8041da08 = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041da0c = 0xA0A0A0FF;
-__declspec(section ".sdata2") u32 dat_8041da10 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da14 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da18 = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041da1c = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da20 = 0xF0F0F0FF;
-__declspec(section ".sdata2") u32 dat_8041da24 = 0xA0A0A0FF;
-__declspec(section ".sdata2") u32 dat_8041da28 = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041da2c = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da30 = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041da34 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da38 = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041da3c = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da40 = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041da44 = 0xA0A0A0FF;
-__declspec(section ".sdata2") u32 dat_8041da48 = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041da4c = 0xA0A0A0FF;
-__declspec(section ".sdata2") u32 dat_8041da50 = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041da54 = 0xA0A0A0FF;
-__declspec(section ".sdata2") u32 dat_8041da58 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da5c = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da60 = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041da64 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da68 = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041da6c = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da70 = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041da74 = 0xA0A0A0FF;
-__declspec(section ".sdata2") u32 dat_8041da78 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da7c = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da80 = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041da84 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da88 = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041da8c = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da90 = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041da94 = 0xA0A0A0FF;
-__declspec(section ".sdata2") u32 dat_8041da98 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041da9c = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041daa0 = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041daa4 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041daa8 = 0x2BA4FFFF;
-__declspec(section ".sdata2") u32 dat_8041daac = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041dab0 = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041dab4 = 0xA0A0A0FF;
-__declspec(section ".sdata2") u32 dat_8041dab8 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041dabc = 0xFFFFFFFF;
-__declspec(section ".sdata2") char str_uwn_d[] = "uwn%d";
-__declspec(section ".sdata2") const f32 float_neg150_8041dac8[1] = { -150.0f };
-__declspec(section ".sdata2") const f32 float_120_8041dacc[1] = { 120.0f };
-__declspec(section ".sdata2") const f32 float_300_8041dad0[1] = { 300.0f };
-__declspec(section ".sdata2") const f32 float_50_8041dad4[1] = { 50.0f };
-__declspec(section ".sdata2") const f32 float_20_8041dad8[1] = { 20.0f };
-__declspec(section ".sdata2") const f32 float_108_8041dadc[1] = { 108.0f };
-__declspec(section ".sdata2") const f32 float_neg240_8041dae0[1] = { -240.0f };
-__declspec(section ".sdata2") const f32 float_neg130_8041dae4[1] = { -130.0f };
-__declspec(section ".sdata2") const f32 float_480_8041dae8[1] = { 480.0f };
-__declspec(section ".sdata2") const f32 float_70_8041daec[1] = { 70.0f };
-__declspec(section ".sdata2") const f32 float_8_8041daf0[1] = { 8.0f };
-__declspec(section ".sdata2") const f32 float_neg304_8041daf4[1] = { -304.0f };
-__declspec(section ".sdata2") const f32 float_240_8041daf8[1] = { 240.0f };
-__declspec(section ".sdata2") const f32 float_60_8041dafc[1] = { 60.0f };
-__declspec(section ".sdata2") const f32 float_0_8041db00[1] = { 0.0f };
-__declspec(section ".sdata2") const f32 float_neg250_8041db04[1] = { -250.0f };
-__declspec(section ".sdata2") const f32 float_neg75_8041db08[1] = { -75.0f };
-__declspec(section ".sdata2") const f32 float_150_8041db0c[1] = { 150.0f };
-__declspec(section ".sdata2") const f32 float_45_8041db10[1] = { 45.0f };
-__declspec(section ".sdata2") const f32 float_neg220_8041db14[1] = { -220.0f };
-__declspec(section ".sdata2") const f32 float_neg113_8041db18[1] = { -113.0f };
-__declspec(section ".sdata2") const f32 float_0p7_8041db1c[1] = { 0.699999988079071f };
-__declspec(section ".sdata2") const f32 float_neg192_8041db20[1] = { -192.0f };
-__declspec(section ".sdata2") const f32 float_neg126_8041db24[1] = { -126.0f };
-__declspec(section ".sdata2") const f32 float_neg210_8041db28[1] = { -210.0f };
-__declspec(section ".sdata2") const f32 float_neg166_8041db2c[1] = { -166.0f };
-__declspec(section ".sdata2") const f32 float_1p1_8041db30[1] = { 1.100000023841858f };
-__declspec(section ".sdata2") const f32 float_neg168_8041db34[1] = { -168.0f };
-__declspec(section ".sdata2") const f32 float_neg172_8041db38[1] = { -172.0f };
-__declspec(section ".sdata2") const char str_fmt_04d[] = "%04d";
-__declspec(section ".sdata2") const f32 float_neg24_8041db44[1] = { -24.0f };
-__declspec(section ".sdata2") const f32 float_100_8041db48[1] = { 100.0f };
-__declspec(section ".sdata2") const f32 float_51_8041db4c[1] = { 51.0f };
-__declspec(section ".sdata2") const f32 float_114_8041db50[1] = { 114.0f };
-__declspec(section ".sdata2") const f32 float_28_8041db54[1] = { 28.0f };
-__declspec(section ".sdata2") const f32 float_81_8041db58[1] = { 81.0f };
-__declspec(section ".sdata2") const f32 float_111_8041db5c[1] = { 111.0f };
-
 #pragma pool_data on // the original addresses its .rodata through one base register
 void unitwin_selltable_disp(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
@@ -294,7 +120,7 @@ void unitwin_selltable_disp(WinMgrEntry* entry) {
 	if (winMgrAction(wp->winId[0]) == 0) {
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041d9b4);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString((f32)(-(s32)FontGetMessageWidth(msg) / 2), float_108_8041dadc[0], msg);
 		FontDrawEdgeOff();
 	}
@@ -315,7 +141,7 @@ void unitwin_selltable_disp(WinMgrEntry* entry) {
 		}
 		sprintf(buf, "%d", itemDataTable[wp->items[i]].discount_price);
 		PSMTXTrans(mtx, 12.0f * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
-		iconNumberDispGx(mtx, itemDataTable[wp->items[i]].discount_price, 0, *(GXColor*)&dat_8041d9b8);
+		iconNumberDispGx(mtx, itemDataTable[wp->items[i]].discount_price, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 	}
 }
 
@@ -352,7 +178,7 @@ void unitwin_point_disp(WinMgrEntry* entry) {
 			iconDispGx2(mtx, 0x10, 0x20A);
 		}
 		PSMTXTrans(mtx, 124.0f + (f32)entry->x, (f32)entry->y - 38.0f, float_0_8041db00[0]);
-		iconNumberDispGx(mtx, wp->dispNum, 0, *(GXColor*)&dat_8041d9bc);
+		iconNumberDispGx(mtx, wp->dispNum, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		{
 			s32 delta = pouch->mShopPoints - wp->dispNum;
 
@@ -705,15 +531,15 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		const char* sellDesc = itemDataTable[sellItem].description;
 
 		windowDispGX_Waku_col(float_neg150_8041dac8[0], float_120_8041dacc[0], float_300_8041dad0[0],
-		                      float_50_8041dad4[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041d9c0);
+		                      float_50_8041dad4[0], float_20_8041dad8[0], 0, (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041d9c4);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		len = strlen(sellName);
 		FontDrawString((f32)(s32)(((len * 0x18) >> 2) * -1), float_108_8041dadc[0], sellName);
 		FontDrawEdgeOff();
 		windowDispGX_Waku_col(float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0],
-		                      float_70_8041daec[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041d9c8);
+		                      float_70_8041daec[0], float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawMessage(-220, -138, msgSearch(sellDesc));
 
@@ -746,7 +572,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				}
 				PSMTXTrans(mtx, float_8_8041daf0[0] + (float_neg304_8041daf4[0] + sx),
 				           float_240_8041daf8[0] - (sy - float_60_8041dafc[0]), float_0_8041db00[0]);
-				iconNumberDispGx(mtx, price, 1, *(GXColor*)&dat_8041d9cc);
+				iconNumberDispGx(mtx, price, 1, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			}
 		}
 	}
@@ -759,7 +585,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		s32 cur;
 
 		windowDispGX_Waku_col(float_neg250_8041db04[0], float_neg75_8041db08[0], float_150_8041db0c[0],
-		                      float_45_8041db10[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041d9d0);
+		                      float_45_8041db10[0], float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		PSMTXTrans(mtx, float_neg220_8041db14[0], float_neg113_8041db18[0], float_0_8041db00[0]);
 		PSMTXScale(scale, float_0p7_8041db1c[0], float_0p7_8041db1c[0], float_0p7_8041db1c[0]);
 		PSMTXConcat(mtx, scale, mtx);
@@ -776,7 +602,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		PSMTXTrans(mtx, float_neg192_8041db20[0], float_neg113_8041db18[0], float_0_8041db00[0]);
 		iconDispGx2(mtx, 0x10, 0x1D6);
 		PSMTXTrans(mtx, float_neg126_8041db24[0], float_neg113_8041db18[0], float_0_8041db00[0]);
-		iconNumberDispGx(mtx, wp->dispCoin, 0, *(GXColor*)&dat_8041d9d4);
+		iconNumberDispGx(mtx, wp->dispCoin, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		{
 			s32 delta = cur - wp->dispCoin;
 
@@ -808,13 +634,13 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		Mtx scale;
 
 		windowDispGX_Waku_col(float_neg250_8041db04[0], float_neg130_8041dae4[0], float_150_8041db0c[0],
-		                      float_45_8041db10[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041d9d8);
+		                      float_45_8041db10[0], float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		PSMTXTrans(mtx, float_neg210_8041db28[0], float_neg166_8041db2c[0], float_0_8041db00[0]);
 		PSMTXScale(scale, float_1p1_8041db30[0], float_1p1_8041db30[0], float_1p1_8041db30[0]);
 		PSMTXConcat(mtx, scale, mtx);
 		iconDispGx2(mtx, 0x10, 0x1F1);
 		PSMTXTrans(mtx, float_neg126_8041db24[0], float_neg168_8041db34[0], float_0_8041db00[0]);
-		iconNumberDispGx(mtx, wp->dispNum, 0, *(GXColor*)&dat_8041d9dc);
+		iconNumberDispGx(mtx, wp->dispNum, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		if ((gp->retraceCount & 3) == 0) {
 			s32 delta = pouch->mShineSpriteCount - wp->dispNum;
 
@@ -835,14 +661,14 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			Mtx mtx;
 
 			windowDispGX_Waku_col(float_neg250_8041db04[0], float_neg130_8041dae4[0], float_150_8041db0c[0],
-			                      float_45_8041db10[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041d9e0);
+			                      float_45_8041db10[0], float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			PSMTXTrans(mtx, float_neg220_8041db14[0], float_neg172_8041db38[0], float_0_8041db00[0]);
 			iconDispGx2(mtx, 0x10, 0x140);
 			sprintf(buf, str_fmt_04d, lotteryGetPtr()->mTicketNum);
 			for (i = 0; i < 4; i++) {
 				PSMTXTrans(mtx, float_20_8041dad8[0] * (f32)i + float_neg126_8041db24[0] - float_60_8041dafc[0],
 				           float_neg168_8041db34[0], float_0_8041db00[0]);
-				iconNumberDispGx(mtx, (s8)buf[i] - '0', 0, *(GXColor*)&dat_8041d9e4);
+				iconNumberDispGx(mtx, (s8)buf[i] - '0', 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			}
 		}
 	}
@@ -857,12 +683,12 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 
 		cnt = (8 - cnt > 0) ? (8 - pouchGetKeepItemCnt()) : 0;
 		windowDispGX_Waku_col(float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0],
-		                      (f32)(0xdc - cnt * 0x18), float_20_8041dad8[0], 0, *(GXColor*)&dat_8041d9e8);
+		                      (f32)(0xdc - cnt * 0x18), float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		windowDispGX_Waku_col(float_51_8041db4c[0], float_114_8041db50[0], float_150_8041db0c[0], float_28_8041db54[0],
-		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041d9ec);
+		                      float_8_8041daf0[0], 0, (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041d9f0);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString(float_81_8041db58[0], float_111_8041db5c[0], msgSearch("msg_window_title_1"));
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -884,7 +710,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXSetScissor(scX, scY, scW, scH);
 		if (selDesc != 0) {
 			windowDispGX_Waku_col(float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0],
-			                      float_70_8041daec[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041d9f4);
+			                      float_70_8041daec[0], float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			FontDrawStart();
 			FontDrawMessage(-220, -138, msgSearch(selDesc));
 		}
@@ -953,12 +779,12 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		}
 
 		windowDispGX_Waku_col(float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0],
-		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, *(GXColor*)&dat_8041d9f8);
+		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		windowDispGX_Waku_col(float_51_8041db4c[0], float_114_8041db50[0], float_150_8041db0c[0], float_28_8041db54[0],
-		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041d9fc);
+		                      float_8_8041daf0[0], 0, (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041da00);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString((f32)(xofs + 0x33), float_111_8041db5c[0], title);
 		FontDrawEdgeOff();
 
@@ -970,7 +796,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			PSMTXTrans(mtx, 244.0f, 82.0f, float_0_8041db00[0]);
 			PSMTXScale(scale, 0.6000000238418579f, 0.6000000238418579f, 0.6000000238418579f);
 			PSMTXConcat(mtx, scale, mtx);
-			iconDispGxCol(mtx, 0x10, 0x211, *(GXColor*)&dat_8041da04);
+			iconDispGxCol(mtx, 0x10, 0x211, (GXColor){ 0xF0, 0xF0, 0xF0, 0xFF });
 			if (wp->mode == 0xD) {
 				iconId = 0x18D;
 			} else if (wp->mode == 0x10) {
@@ -987,7 +813,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		for (i = 0; i < limit; i++) {
 			s32 item;
 			s32 flag = 0;
-			GXColor icolor = *(GXColor*)&dat_8041da08;
+			GXColor icolor = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 			ItemData* data;
 
 			switch (wp->mode) {
@@ -1046,7 +872,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				if (wp->mode == 0xD) {
 					if (data->star_piece_price > pouchGetStarPiece()) {
 						flag = 0x20;
-						icolor = *(GXColor*)&dat_8041da0c;
+						icolor = (GXColor){ 0xA0, 0xA0, 0xA0, 0xFF };
 					}
 				}
 				iconDispGx(0.5f, &(Vec){ 11.0f, wp->listY + (f32)(0x38 - dispCnt * 0x18), 0.0f }, (u16)(flag | 0x10), ((ItemDataView*)data)->icon_id);
@@ -1111,7 +937,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXSetScissor(scX, scY, scW, scH);
 		if (selDesc != 0) {
 			windowDispGX_Waku_col(float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0],
-			                      float_70_8041daec[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041da10);
+			                      float_70_8041daec[0], float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			FontDrawStart();
 			FontDrawMessage(-220, -138, msgSearch(selDesc));
 		}
@@ -1138,12 +964,12 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			prefix = jdt->unk14.luigiNewjohoReadFlag;
 		}
 		windowDispGX_Waku_col(float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0],
-		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, *(GXColor*)&dat_8041da14);
+		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		windowDispGX_Waku_col(float_51_8041db4c[0], float_114_8041db50[0], float_150_8041db0c[0], float_28_8041db54[0],
-		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041da18);
+		                      float_8_8041daf0[0], 0, (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041da1c);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString(71.0f, float_111_8041db5c[0], title);
 		FontDrawEdgeOff();
 		if (wp->mode == 0x11) {
@@ -1153,7 +979,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			PSMTXTrans(mtx, 244.0f, 82.0f, float_0_8041db00[0]);
 			PSMTXScale(scale, 0.6000000238418579f, 0.6000000238418579f, 0.6000000238418579f);
 			PSMTXConcat(mtx, scale, mtx);
-			iconDispGxCol(mtx, 0x10, 0x211, *(GXColor*)&dat_8041da20);
+			iconDispGxCol(mtx, 0x10, 0x211, (GXColor){ 0xF0, 0xF0, 0xF0, 0xFF });
 			iconDispGx(0.6000000238418579f, &(Vec){ 244.0f, 86.0f, 0.0f }, 0x10, 0x18B);
 		}
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -1167,10 +993,10 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 
 			if (johoya_get((u8*)prefix, info->storyId) != 0) {
 				sprintf(buf, "");
-				tcolor = *(GXColor*)&dat_8041da24;
+				tcolor = (GXColor){ 0xA0, 0xA0, 0xA0, 0xFF };
 			} else {
 				sprintf(buf, "%3d", info->unkA);
-				tcolor = *(GXColor*)&dat_8041da28;
+				tcolor = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 			}
 			FontDrawStart();
 			saved = ((char*)info->initEndPos)[info->tagEndPos];
@@ -1202,19 +1028,19 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		m8 = 8 - wp->rowCount;
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
 		windowDispGX_Waku_col(float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0],
-		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, *(GXColor*)&dat_8041da2c);
+		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		windowDispGX_Waku_col(16.0f, float_114_8041db50[0], float_120_8041dacc[0], float_28_8041db54[0],
-		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041da30);
+		                      float_8_8041daf0[0], 0, (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041da34);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString(41.0f, float_111_8041db5c[0], msgSearch("msg_window_title_7"));
 		FontDrawEdgeOff();
 		windowDispGX_Waku_col(167.0f, float_114_8041db50[0], 85.0f, float_28_8041db54[0], float_8_8041daf0[0], 0,
-		                      *(GXColor*)&dat_8041da38);
+		                      (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041da3c);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString(177.0f, float_111_8041db5c[0], msgSearch("msg_window_title_8"));
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -1232,21 +1058,21 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				}
 				if (evtGetValue(NULL, 0xF8406022) == 0) {
 					if (pouch->partyData[party_id_table[i]].techLevel < 1) {
-						nameColor = *(GXColor*)&dat_8041da40;
+						nameColor = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 						lvl = 0;
 						flag = 0;
 					} else {
-						nameColor = *(GXColor*)&dat_8041da44;
+						nameColor = (GXColor){ 0xA0, 0xA0, 0xA0, 0xFF };
 						lvl = 1;
 						flag = 0x20;
 					}
 				} else {
 					if (pouch->partyData[party_id_table[i]].techLevel < 2) {
-						nameColor = *(GXColor*)&dat_8041da48;
+						nameColor = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 						lvl = 0;
 						flag = 0;
 					} else {
-						nameColor = *(GXColor*)&dat_8041da4c;
+						nameColor = (GXColor){ 0xA0, 0xA0, 0xA0, 0xFF };
 						lvl = 2;
 						flag = 0x20;
 					}
@@ -1256,11 +1082,11 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					continue;
 				}
 				if (pouch->partyData[party_id_table[i]].techLevel > 0) {
-					nameColor = *(GXColor*)&dat_8041da50;
+					nameColor = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 					lvl = 0;
 					flag = 0;
 				} else {
-					nameColor = *(GXColor*)&dat_8041da54;
+					nameColor = (GXColor){ 0xA0, 0xA0, 0xA0, 0xFF };
 					lvl = 1;
 					flag = 0x20;
 				}
@@ -1295,7 +1121,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXSetScissor(scX, scY, scW, scH);
 		if ((s8)help[0] != 0) {
 			windowDispGX_Waku_col(float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0],
-			                      float_70_8041daec[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041da58);
+			                      float_70_8041daec[0], float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			FontDrawStart();
 			FontDrawMessage(-220, -138, msgSearch(help));
 		}
@@ -1313,19 +1139,19 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		m8 = 8 - wp->rowCount;
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
 		windowDispGX_Waku_col(float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0],
-		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, *(GXColor*)&dat_8041da5c);
+		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		windowDispGX_Waku_col(16.0f, float_114_8041db50[0], float_120_8041dacc[0], float_28_8041db54[0],
-		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041da60);
+		                      float_8_8041daf0[0], 0, (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041da64);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString(21.0f, float_111_8041db5c[0], msgSearch("msg_window_title_9"));
 		FontDrawEdgeOff();
 		windowDispGX_Waku_col(167.0f, float_114_8041db50[0], 85.0f, float_28_8041db54[0], float_8_8041daf0[0], 0,
-		                      *(GXColor*)&dat_8041da68);
+		                      (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041da6c);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString(177.0f, float_111_8041db5c[0], msgSearch("msg_window_title_10"));
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -1344,11 +1170,11 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				}
 			}
 			if (cnt == 0) {
-				rowColor = *(GXColor*)&dat_8041da70;
+				rowColor = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 				changed = 0;
 				flag = 0;
 			} else {
-				rowColor = *(GXColor*)&dat_8041da74;
+				rowColor = (GXColor){ 0xA0, 0xA0, 0xA0, 0xFF };
 				changed = 1;
 				flag = 0x20;
 			}
@@ -1396,7 +1222,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXSetScissor(scX, scY, scW, scH);
 		if ((s8)help[0] != 0) {
 			windowDispGX_Waku_col(float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0],
-			                      float_70_8041daec[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041da78);
+			                      float_70_8041daec[0], float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			FontDrawStart();
 			FontDrawMessage(-220, -138, msgSearch(help));
 		}
@@ -1413,19 +1239,19 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		m8 = 8 - wp->rowCount;
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
 		windowDispGX_Waku_col(float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0],
-		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, *(GXColor*)&dat_8041da7c);
+		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		windowDispGX_Waku_col(16.0f, float_114_8041db50[0], float_120_8041dacc[0], float_28_8041db54[0],
-		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041da80);
+		                      float_8_8041daf0[0], 0, (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041da84);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString(21.0f, float_111_8041db5c[0], msgSearch("msg_window_title_9"));
 		FontDrawEdgeOff();
 		windowDispGX_Waku_col(167.0f, float_114_8041db50[0], 85.0f, float_28_8041db54[0], float_8_8041daf0[0], 0,
-		                      *(GXColor*)&dat_8041da88);
+		                      (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041da8c);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString(177.0f, float_111_8041db5c[0], msgSearch("msg_window_title_10"));
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -1444,11 +1270,11 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				}
 			}
 			if (cnt < 2) {
-				rowColor = *(GXColor*)&dat_8041da90;
+				rowColor = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 				changed = 0;
 				flag = 0;
 			} else {
-				rowColor = *(GXColor*)&dat_8041da94;
+				rowColor = (GXColor){ 0xA0, 0xA0, 0xA0, 0xFF };
 				changed = 1;
 				flag = 0x20;
 			}
@@ -1479,7 +1305,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXSetScissor(scX, scY, scW, scH);
 		if ((s8)help[0] != 0) {
 			windowDispGX_Waku_col(float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0],
-			                      float_70_8041daec[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041da98);
+			                      float_70_8041daec[0], float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			FontDrawStart();
 			FontDrawMessage(-220, -138, msgSearch(help));
 		}
@@ -1496,19 +1322,19 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		m8 = 8 - wp->rowCount;
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
 		windowDispGX_Waku_col(float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0],
-		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, *(GXColor*)&dat_8041da9c);
+		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		windowDispGX_Waku_col(16.0f, float_114_8041db50[0], float_120_8041dacc[0], float_28_8041db54[0],
-		                      float_8_8041daf0[0], 0, *(GXColor*)&dat_8041daa0);
+		                      float_8_8041daf0[0], 0, (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041daa4);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString(21.0f, float_111_8041db5c[0], msgSearch("msg_window_title_9"));
 		FontDrawEdgeOff();
 		windowDispGX_Waku_col(167.0f, float_114_8041db50[0], 85.0f, float_28_8041db54[0], float_8_8041daf0[0], 0,
-		                      *(GXColor*)&dat_8041daa8);
+		                      (GXColor){ 0x2B, 0xA4, 0xFF, 0xFF });
 		FontDrawStart();
 		FontDrawEdge();
-		FontDrawColor(*(GXColor*)&dat_8041daac);
+		FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawString(177.0f, float_111_8041db5c[0], msgSearch("msg_window_title_10"));
 		FontDrawEdgeOff();
 		GXGetScissor(&scX, &scY, &scW, &scH);
@@ -1521,11 +1347,11 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			GXColor rowColor;
 			if (i == wp->excludeId) { continue; }
 			if (mario_status_point_table[i][0] - mario_status_henka_table[i] > 0) {
-				rowColor = *(GXColor*)&dat_8041dab0;
+				rowColor = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 				blocked = 0;
 				flag = 0;
 			} else {
-				rowColor = *(GXColor*)&dat_8041dab4;
+				rowColor = (GXColor){ 0xA0, 0xA0, 0xA0, 0xFF };
 				blocked = 1;
 				flag = 0x20;
 			}
@@ -1556,7 +1382,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXSetScissor(scX, scY, scW, scH);
 		if ((s8)help[0] != 0) {
 			windowDispGX_Waku_col(float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0],
-			                      float_70_8041daec[0], float_20_8041dad8[0], 0, *(GXColor*)&dat_8041dab8);
+			                      float_70_8041daec[0], float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			FontDrawStart();
 			FontDrawMessage(-220, -138, msgSearch(help));
 		}
@@ -1605,7 +1431,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			}
 		}
 		windowDispGX_Waku_col(-280.0f, float_100_8041db48[0], float_240_8041daf8[0], (f32)((lines - 1) * 0x18 + 0x2D),
-		                      float_20_8041dad8[0], 0, *(GXColor*)&dat_8041dabc);
+		                      float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 		FontDrawStart();
 		{
 			s32 w2;
@@ -1714,3 +1540,43 @@ USER_FUNC(unitwin_setmariolevel) {
 	evtSetValue(event, args[3], unk);
 	return EVT_RETURN_DONE;
 }
+
+// .sdata2 objects the code reads by name, in the original's order after the colour templates.
+__declspec(section ".sdata2") char str_uwn_d[] = "uwn%d";
+__declspec(section ".sdata2") const f32 float_neg150_8041dac8[1] = { -150.0f };
+__declspec(section ".sdata2") const f32 float_120_8041dacc[1] = { 120.0f };
+__declspec(section ".sdata2") const f32 float_300_8041dad0[1] = { 300.0f };
+__declspec(section ".sdata2") const f32 float_50_8041dad4[1] = { 50.0f };
+__declspec(section ".sdata2") const f32 float_20_8041dad8[1] = { 20.0f };
+__declspec(section ".sdata2") const f32 float_108_8041dadc[1] = { 108.0f };
+__declspec(section ".sdata2") const f32 float_neg240_8041dae0[1] = { -240.0f };
+__declspec(section ".sdata2") const f32 float_neg130_8041dae4[1] = { -130.0f };
+__declspec(section ".sdata2") const f32 float_480_8041dae8[1] = { 480.0f };
+__declspec(section ".sdata2") const f32 float_70_8041daec[1] = { 70.0f };
+__declspec(section ".sdata2") const f32 float_8_8041daf0[1] = { 8.0f };
+__declspec(section ".sdata2") const f32 float_neg304_8041daf4[1] = { -304.0f };
+__declspec(section ".sdata2") const f32 float_240_8041daf8[1] = { 240.0f };
+__declspec(section ".sdata2") const f32 float_60_8041dafc[1] = { 60.0f };
+__declspec(section ".sdata2") const f32 float_0_8041db00[1] = { 0.0f };
+__declspec(section ".sdata2") const f32 float_neg250_8041db04[1] = { -250.0f };
+__declspec(section ".sdata2") const f32 float_neg75_8041db08[1] = { -75.0f };
+__declspec(section ".sdata2") const f32 float_150_8041db0c[1] = { 150.0f };
+__declspec(section ".sdata2") const f32 float_45_8041db10[1] = { 45.0f };
+__declspec(section ".sdata2") const f32 float_neg220_8041db14[1] = { -220.0f };
+__declspec(section ".sdata2") const f32 float_neg113_8041db18[1] = { -113.0f };
+__declspec(section ".sdata2") const f32 float_0p7_8041db1c[1] = { 0.699999988079071f };
+__declspec(section ".sdata2") const f32 float_neg192_8041db20[1] = { -192.0f };
+__declspec(section ".sdata2") const f32 float_neg126_8041db24[1] = { -126.0f };
+__declspec(section ".sdata2") const f32 float_neg210_8041db28[1] = { -210.0f };
+__declspec(section ".sdata2") const f32 float_neg166_8041db2c[1] = { -166.0f };
+__declspec(section ".sdata2") const f32 float_1p1_8041db30[1] = { 1.100000023841858f };
+__declspec(section ".sdata2") const f32 float_neg168_8041db34[1] = { -168.0f };
+__declspec(section ".sdata2") const f32 float_neg172_8041db38[1] = { -172.0f };
+__declspec(section ".sdata2") const char str_fmt_04d[] = "%04d";
+__declspec(section ".sdata2") const f32 float_neg24_8041db44[1] = { -24.0f };
+__declspec(section ".sdata2") const f32 float_100_8041db48[1] = { 100.0f };
+__declspec(section ".sdata2") const f32 float_51_8041db4c[1] = { 51.0f };
+__declspec(section ".sdata2") const f32 float_114_8041db50[1] = { 114.0f };
+__declspec(section ".sdata2") const f32 float_28_8041db54[1] = { 28.0f };
+__declspec(section ".sdata2") const f32 float_81_8041db58[1] = { 81.0f };
+__declspec(section ".sdata2") const f32 float_111_8041db5c[1] = { 111.0f };

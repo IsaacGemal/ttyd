@@ -7,12 +7,6 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// .sbss2 scratch colours: the original keeps these uninitialised GXColors in .sbss2, reached through
-// .sdata declarations (declared in reverse: placed in reverse of declaration order).
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804230e4;
-__declspec(section ".sdata") GXColor unk_804230e0;
-
 typedef struct effExpBomData {
 	s16 frame; //0x0
 	s16 life; //0x2
@@ -142,18 +136,6 @@ void effExpBomMain(EffectEntry* effect) {
 	}
 }
 
-static inline void effExpBomSetColor1(s32 alpha) {
-	GXColor color = unk_804230e0;
-	color.a = alpha;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void effExpBomSetColor2(s32 count) {
-	GXColor color = unk_804230e4;
-	color.a = (count * 210) >> 4;
-	GXSetTevColor(GX_TEVREG1, color);
-}
-
 void effExpBomDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	effExpBomData* data;
@@ -214,9 +196,9 @@ void effExpBomDisp(CameraId camId, void* param) {
 				texIndex = (s32)sine;
 			}
 
-			effExpBomSetColor1(alpha);
+			GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, alpha });
 
-			effExpBomSetColor2(count);
+			GXSetTevColor(GX_TEVREG1, (GXColor){ 0, 0, 0, (count * 210) >> 4 });
 
 			GXSetNumChans(0);
 			GXSetNumTexGens(2);

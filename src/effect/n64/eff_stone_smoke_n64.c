@@ -4,16 +4,8 @@
 #include "eff/eff_n64.h"
 #include "memory.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_8042328c;
-__declspec(section ".sdata") GXColor unk_80423288;
-
-
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-
-// .sbss2 scratch GXColors the original builds its TEV colours from.
 
 // .data
 static u32 size16x16_tex32x32_vtx[14] = {
@@ -104,27 +96,6 @@ void effStoneSmokeMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effStoneSmokeDisp, effect);
 }
 
-static inline void effStoneSmokeSetColor0(effStoneSmokeN64Data* data, s32 alpha) {
-	GXColor c = unk_80423288;
-	c.r = data->color1R;
-	c.g = data->color1G;
-	c.b = data->color1B;
-	c.a = alpha;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-static inline void effStoneSmokeSetColor1(effStoneSmokeN64Data* data) {
-	GXColor c = unk_8042328c;
-	c.r = data->color2R;
-	c.g = data->color2G;
-	c.b = data->color2B;
-	GXSetTevColor(GX_TEVREG1, c);
-}
-
-// Building each TEV colour and calling GXSetTevColor inside the same inline makes mwcc
-// allocate that colour's build slot and its by-value argument copy together
-// (0x8/0xc for colour1, 0x10/0x14 for colour0), as retail does. Building both colours
-// first and calling GXSetTevColor afterwards groups the build slots and the copies
-// (the old 99.90% layout). Two separate inlines, one per colour, are needed.
 void effStoneSmokeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effStoneSmokeN64Data* data;
@@ -145,8 +116,8 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, mtx, mtx);
 	GXLoadPosMtxImm(mtx, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
-	effStoneSmokeSetColor0(data, alpha);
-	effStoneSmokeSetColor1(data);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->color1R, data->color1G, data->color1B, alpha });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->color2R, data->color2G, data->color2B, 0 });
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);

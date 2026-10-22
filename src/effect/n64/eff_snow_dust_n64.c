@@ -9,13 +9,6 @@
 #include <stdlib.h>
 #include "evt/evt_cmd.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804232d0;
-__declspec(section ".sdata") GXColor unk_804232cc;
-__declspec(section ".sdata") GXColor unk_804232c8;
-
-
 extern s32 negone_one[];
 extern s32 one_negone[];
 
@@ -123,39 +116,6 @@ static u32 size32x32_tex32x32_vtx[18] = {
 };
 #pragma force_active reset
 
-
-
-//.sbss2
-
-static inline void snowDustSetTopColor(effSnowDustData* data) {
-	GXColor color = unk_804232c8;
-	color.r = data->topR;
-	color.g = data->topG;
-	color.b = data->topB;
-	color.a = data->topA;
-	GXSetTevColor(GX_TEVREG1, color);
-}
-
-
-static inline void snowDustSetItemColor(effSnowDustData* ptr, f32 f31) {
-	GXColor color = unk_804232cc;
-	color.r = ptr->colorR;
-	color.g = ptr->colorG;
-	color.b = ptr->colorB;
-	color.a = (u8)(s32)(f31 * (f32)ptr->alpha);
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
-
-static inline void snowDustSetItemKColor(effSnowDustData* ptr) {
-	GXColor kcolor = unk_804232d0;
-	kcolor.r = 0x50 - ptr->frame;
-	kcolor.g = 0x50 - ptr->frame;
-	kcolor.b = 0x50 - ptr->frame;
-	kcolor.a = 0x50 - ptr->frame;
-	GXSetTevKColor(GX_KCOLOR0, kcolor);
-}
-
 EffectEntry* effSnowDustN64Entry(s32 type, f32 x, f32 y, f32 z, s32 count, s32 life, f32 a6, f32 a7, f32 scale) {
 	EffectEntry* effect;
 	effSnowDustData* data;
@@ -241,9 +201,6 @@ EffectEntry* effSnowDustN64Entry(s32 type, f32 x, f32 y, f32 z, s32 count, s32 l
 }
 
 
-extern const Vec vec3_802fb968;
-
-
 // The f32 declaration order gives the target's callee-saved FPRs (cosYaw f31, sinYaw f30, spreadX and
 // halfSpreadX f29, baseX/Y/Z f28..f26, spreadY/offset/dist f25). The `+=` easing steps and the split
 // distABf*0.97 multiply keep the volatile FPRs. The two compiler-generated int->float magic doubles
@@ -274,7 +231,7 @@ void effSnowDustMain(EffectEntry* effect) {
 	f32 dist;
 
 	data = effect->userdata;
-	position = vec3_802fb968;
+	position = (Vec){ 0.0f, 0.0f, 0.0f };
 	position.x = data->x;
 	position.y = data->y;
 	position.z = data->z;
@@ -446,7 +403,7 @@ void effSnowDustDisp(CameraId camId, void* param) {
 	data = effect->userdata;
 	f31 = (data->alpha / 255.0f) * data->scale;
 	type = data->type;
-	snowDustSetTopColor(data);
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->topR, data->topG, data->topB, data->topA });
 	switch (type) {
 		case 0:
 		case 6:
@@ -554,8 +511,10 @@ void effSnowDustDisp(CameraId camId, void* param) {
 		PSMTXConcat(cam->view, mtx, mtx);
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		snowDustSetItemColor(data, f31);
-		snowDustSetItemKColor(data);
+		GXSetTevColor(GX_TEVREG0,
+		              (GXColor){ data->colorR, data->colorG, data->colorB, (u8)(s32)(f31 * (f32)data->alpha) });
+		GXSetTevKColor(GX_KCOLOR0,
+		               (GXColor){ 0x50 - data->frame, 0x50 - data->frame, 0x50 - data->frame, 0x50 - data->frame });
 		GXLoadTexMtxImm(texMtxA, GX_TEXMTX0, GX_MTX2x4);
 		PSMTXTrans(mtx, data->texScrollX, data->texScrollY, 0.0f);
 		PSMTXConcat(texMtxB, mtx, mtx);
@@ -627,6 +586,3 @@ void effSnowDustDisp(CameraId camId, void* param) {
 }
 
 // clang-format on
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const Vec vec3_802fb968 = { 0.0f, 0.0f, 0.0f };

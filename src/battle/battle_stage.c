@@ -56,13 +56,6 @@ __declspec(section ".sdata") u32 gap_07_8041183C_sdata = 0;
 
 //.sdata2 objects are defined at the end of the file.
 
-// .rodata zero/constant vectors this unit emitted; MWCC pools every access
-// through the vec3_802f31a8 base, and the int->float conversion double the
-// compiler emits lands after them at +0x78 (see batSpotInit).
-const Vec vec3_802f31a8[] = {{0.0f, 0.0f, 0.0f}};
-const Vec vec3_802f31b4[] = {{0.0f, 0.0f, 0.0f}};
-const Vec vec3_802f31c0[] = {{0.0f, 0.0f, 0.0f}};
-const Vec vec3_802f31cc[] = {{0.0f, 0.0f, 0.0f}};
 extern const f32 float_0_8041c7f0;
 extern const f32 float_1_8041c7f4;
 extern const f32 float_0p25_8041c7f8;
@@ -85,7 +78,6 @@ extern f32 float_105_8041c848;
 extern f32 float_2_8041c838;
 extern f32 float_0p34907_8041c83c;
 extern f32 float_neg1000_8041c82c;
-extern s32 dat_8041c7ec;
 
 typedef struct ScreenWork {
 	void* texBuffer;      //0x0
@@ -390,10 +382,9 @@ void BattleStageDispLight(CameraId camId, void* param) {
 			s32 j;
 			u8 r, g, b;
 
-			dir = vec3_802f31a8[0];
-			dir.x = stage->lights[i].targetCur.x - stage->lights[i].posCur.x;
-			dir.y = stage->lights[i].targetCur.y - stage->lights[i].posCur.y;
-			dir.z = stage->lights[i].targetCur.z - stage->lights[i].posCur.z;
+			dir = (Vec){stage->lights[i].targetCur.x - stage->lights[i].posCur.x,
+			            stage->lights[i].targetCur.y - stage->lights[i].posCur.y,
+			            stage->lights[i].targetCur.z - stage->lights[i].posCur.z};
 			axis = dir;
 			width = stage->lights[i].widthCur;
 			up = stage->lights[i].upCur;
@@ -578,11 +569,7 @@ void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ea
 	light->posFramesTotal = frames;
 	light->posEase = ease;
 	if (frames == 0) {
-		Vec tmp = vec3_802f31b4[0];
-		tmp.x = x;
-		tmp.y = y;
-		tmp.z = z;
-		light->posCur = tmp;
+		light->posCur = (Vec){x, y, z};
 	}
 }
 
@@ -602,11 +589,7 @@ void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease
 	light->targetEase = ease;
 	light->flags &= ~4;
 	if (frames == 0) {
-		Vec tmp = vec3_802f31c0[0];
-		tmp.x = x;
-		tmp.y = y;
-		tmp.z = z;
-		light->targetCur = tmp;
+		light->targetCur = (Vec){x, y, z};
 	}
 }
 #pragma opt_propagation reset
@@ -639,11 +622,7 @@ void BattleStageLightSetUpVec(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease)
 	light->upFramesTotal = frames;
 	light->upEase = ease;
 	if (frames == 0) {
-		Vec tmp = vec3_802f31cc[0];
-		tmp.x = x;
-		tmp.y = y;
-		tmp.z = z;
-		light->upCur = tmp;
+		light->upCur = (Vec){x, y, z};
 	}
 }
 #pragma opt_propagation reset
@@ -726,13 +705,9 @@ BattleSpotWork* BatSpotGetPtr(void) {
     return wp;
 }
 
-// The (Vec){...} compound literals are deliberate: their parse-time templates
-// become the .rodata words at +0x30/+0x3c/+0x48, which lets MWCC address them
-// (and the int->float conversion double at +0x78) off the vec3_802f31a8 base,
-// exactly as the original does. Naming those three vectors as globals instead
-// emits the templates after the named objects and gives the double its own
-// base. vec3_802f31fc/208/214 must be defined after this function (see below)
-// for the same reason.
+// The (Vec){...} compound literals' templates become the .rodata words at
+// +0x30/+0x3c/+0x48, which lets MWCC address them (and the int->float conversion
+// double at +0x78) off the .rodata base, exactly as the original does.
 void batSpotInit(void) {
 	int i;
 	BattleSpotEntry* entry;
@@ -749,16 +724,9 @@ void batSpotInit(void) {
 		entry->pos = v;
 		entry->rot = (Vec){0.0f, 0.0f, 0.0f};
 		entry->scale = (Vec){20.0f, 20.0f, 150.0f};
-		entry->color = *(GXColor*)&dat_8041c7ec;
+		entry->color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
 	}
 }
-
-// Defined here (not at the top) so the compound-literal templates batSpotInit
-// pools land at +0x30 before these named vectors; the original's .rodata is
-// vec3 a8/b4/c0/cc, then the d8/e4/f0 templates, then fc/208/214.
-const Vec vec3_802f31fc[] = {{0.0f, 0.0f, 0.0f}};
-const Vec vec3_802f3208[] = {{1.0f, 1.0f, 1.0f}};
-const Vec vec3_802f3214[] = {{0.0f, 0.0f, 0.0f}};
 
 // Keep batSpotMain out of line: BattleStageMain calls it.
 void batSpotMain() {
@@ -883,7 +851,6 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 BattleSpotEntry* batSpotEntry(void) {
 	int i;
 	BattleSpotEntry* entry = wp->entries;
-	const Vec* g = vec3_802f31a8;
 
 	for (i = 0; i < wp->count; i++, entry++) {
 		if (!(entry->flags & 1)) {
@@ -891,9 +858,9 @@ BattleSpotEntry* batSpotEntry(void) {
 		}
 	}
 
-	entry->pos = g[7];
-	entry->scale = g[8];
-	entry->rot = g[9];
+	entry->pos = (Vec){0.0f, 0.0f, 0.0f};
+	entry->scale = (Vec){1.0f, 1.0f, 1.0f};
+	entry->rot = (Vec){0.0f, 0.0f, 0.0f};
 	entry->color = *(GXColor*)&unk_8042302c;
 	entry->flags |= 1;
 
@@ -1111,7 +1078,6 @@ void tou_gamen_screen_tev(void* param) {
 // code so MWCC emits them before its own pooled literals. dat_8041c7e8's 0xFF
 // word is the compiler's pool entry for the colour literal in
 // BattleStageLightSetLightColor, so it is not defined here as a separate object.
-__declspec(section ".sdata2") s32 dat_8041c7ec = -1;
 #pragma explicit_zero_data on
 __declspec(section ".sdata2") const f32 float_0_8041c7f0 = 0.0f;
 #pragma explicit_zero_data reset

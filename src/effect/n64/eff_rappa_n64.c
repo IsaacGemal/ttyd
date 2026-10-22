@@ -8,11 +8,9 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor gap_10_80423234_sbss2;
-__declspec(section ".sdata") GXColor unk_80423230;
-
 
 // .data: one effVtxArray (0x38 bytes) for the textured quad.
 static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
@@ -28,8 +26,6 @@ static u8 color_rotation_data[40] = {
 	0xB4, 0xB4, 0xFE, 0xB4, 0xDD, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5,
 	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
 };
-
-// .sbss2: shared scratch GXColor, only its bytes are overwritten (see eff_small_star_n64.c).
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_sstar.c).
 inline Vec initializeVec(Vec* input) {
@@ -129,19 +125,6 @@ void effRappaMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effRappaDisp, e);
 }
 
-// Building the TEV colour in an inlined helper allocates it at r1+0x8 and word-copies it to the
-// outgoing arg slot at r1+0xc (the original's layout); building it directly in effRappaDisp puts
-// it at r1+0xc (the known GXColor temp/pass swap, see eff_onpu_n64.c).
-static inline void rappaSetColor(s32 idx1, s32 idx2, s32 idx3, s32 alpha) {
-	GXColor color = unk_80423230;
-
-	color.r = color_rotation_data[idx1 % 36];
-	color.g = color_rotation_data[idx2 % 36];
-	color.b = color_rotation_data[idx3 % 36];
-	color.a = alpha;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
 void effRappaDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 idx1;
@@ -185,7 +168,7 @@ void effRappaDisp(CameraId camId, void* param) {
 	idx3 = base + 5;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		rappaSetColor(idx1, idx2, idx3, alpha);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ color_rotation_data[idx1 % 36], color_rotation_data[idx2 % 36], color_rotation_data[idx3 % 36], alpha });
 
 		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
 		PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041fae4 * -camGetPtr(CAMERA_3D)->viewYaw);

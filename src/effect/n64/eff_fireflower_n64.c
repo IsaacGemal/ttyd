@@ -10,10 +10,6 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// The unit's .sdata2 colors, before the compiler's float pool.
-__declspec(section ".sdata2") u32 dat_8041eec8 = 0xFF000000;
-__declspec(section ".sdata2") u32 dat_8041eecc = 0xFF000000;
-
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_8039CA10[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 
@@ -49,20 +45,6 @@ static u32 size32x32_tex32x32_vtx[14] = {
 
 // .sdata scale table indexed by data->timer in state 1 (signed bytes: loaded with extsb).
 static s8 scale_data[] = "27<AFKPUZ_dgigd";
-
-// Building each GXColor and calling GXSetTevColor inside the inline gives the original's
-// local/outgoing-argument stack slots (the plain form groups them the wrong way).
-static inline void effFireFlowerSetColor1(u8 a) {
-	GXColor c = *(GXColor*)&dat_8041eec8;
-	c.a = a;
-	GXSetTevColor(1, c);
-}
-
-static inline void effFireFlowerSetColor2(u8 a) {
-	GXColor c = *(GXColor*)&dat_8041eecc;
-	c.a = a;
-	GXSetTevColor(2, c);
-}
 
 EffectEntry* effFireFlowerN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
@@ -286,8 +268,8 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 	PSMTXConcat(trans, rot, m);
 	PSMTXConcat(m, scale, m);
 
-	effFireFlowerSetColor1(data->color1A);
-	effFireFlowerSetColor2(data->color2A);
+	GXSetTevColor(1, (GXColor){ 0xFF, 0x00, 0x00, data->color1A });
+	GXSetTevColor(2, (GXColor){ 0xFF, 0x00, 0x00, data->color2A });
 
 	GXSetCullMode(0);
 	GXSetNumChans(1);

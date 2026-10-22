@@ -51,12 +51,6 @@ extern const f32 float_6p2832_8041ef28;
 extern const f32 float_360_8041ef2c;
 extern const f32 float_0p5_8041ef30;
 
-// Shared scratch GXColors (zero-initialised in the original .sbss2).
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_8042310c;
-__declspec(section ".sdata") GXColor unk_80423108;
-#pragma section ".sdata" ".sbss"
-
 EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 velX, f32 velY, f32 velZ, f32 targetRadius) {
 	EffectEntry* entry;
 	effFireworksData* data;
@@ -189,30 +183,7 @@ static inline Vec effFireworksPos(f32 x, f32 y, f32 z) {
 	return v;
 }
 
-// Building the colour and calling GXSetTevColor inside the inline is what puts color0's
-// build temp at 0x10 and color1's argument copy at 0xc; returning a GXColor from the
-// inline put color0's build temp 4 bytes low (at 0xc).
-static inline void effFireworksSetColor0(effFireworksData* data, u8 a) {
-	GXColor c = unk_80423108;
-	c.r = data->color0[0];
-	c.g = data->color0[1];
-	c.b = data->color0[2];
-	c.a = a;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-
-static inline void effFireworksSetColor1(effFireworksData* data) {
-	GXColor c = unk_8042310c;
-	c.r = data->color0[0];
-	c.g = data->color0[1];
-	c.b = data->color0[2];
-	GXSetTevColor(GX_TEVREG1, c);
-}
-
 // Codegen shapes this function needs:
-// - The two GXColor helpers build the colour and call GXSetTevColor themselves; that
-//   puts the build temp at 0x10/0x8 and the two argument copies at 0x14/0xc. Returning
-//   the GXColor from an inline put the first build temp 4 bytes low.
 // - width/height go through w/h/t temporaries, and the quad's `ey` is held in `s`
 //   (the scratch f32) so MWCC colours ex/ey in f2/f1 and loads the z constant into f0.
 // - `zero` keeps the two C_MTXOrtho uses in one register.
@@ -297,8 +268,8 @@ void effFireworksDisp(CameraId camId, void* param) {
 	baseY = data->y;
 	baseZ = data->z;
 	radius = data->radius;
-	effFireworksSetColor0(data, alpha);
-	effFireworksSetColor1(data);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->color0[0], data->color0[1], data->color0[2], alpha });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->color0[0], data->color0[1], data->color0[2], 0 });
 
 	if (mode == 1) {
 		vp = (s8*)vtx_data[type][0];

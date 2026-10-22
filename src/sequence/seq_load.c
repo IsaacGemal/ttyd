@@ -91,13 +91,6 @@ typedef struct WinDt {
     u8 navRight; //0x1B
 } WinDt;
 
-// loadDraw copies the 4x4 angle table to the stack in one 64-byte block before indexing it;
-// a struct assignment reproduces that copy (an array typedef cannot be assigned).
-struct LoadAngleTable
-{
-    f32 v[4][4];
-};
-
 #define LOAD_TEX_PALETTE() ((TEXPalette*)*wp->file->data)
 
 static LoadWork work;
@@ -141,100 +134,35 @@ WinDt win_dt3[4] = {
     { 140.0f, -65.0f, -120.0f, 60.0f, 10, 0, 1, 1, 2, 2 },
 };
 
-const GXColor fade_color_start = {0, 0, 0, 0xFF};
-const GXColor fade_color_title = {0, 0, 0, 0xFF};
-const GXColor fade_color_continue = {0, 0, 0, 0xFF};
-const GXColor fade_color_name_entry = {0, 0, 0, 0xFF};
-const GXColor fade_color_name_on = {0, 0, 0, 0xFF};
-const GXColor fade_color_name_done = {0, 0, 0, 0xFF};
-const GXColor fade_color_name_cancel = {0, 0, 0, 0xFF};
-// Colors/data the loadDraw screen reads by name (the original's .sdata2 block).
-const GXColor dat_8041bd84 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041bd88 = {0xA0, 0xA0, 0xA0, 0xFF};
-const GXColor dat_8041bd8c = {0x80, 0x80, 0x80, 0x80};
-const GXColor dat_8041bd90 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041bd94 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041bd98 = {0xC0, 0xC0, 0xC0, 0xFF};
-const GXColor dat_8041bd9c = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041bda0 = {0x20, 0x20, 0x20, 0xFF};
-const GXColor dat_8041bda4 = {0, 0, 0, 0xFF};
-const GXColor dat_8041bda8 = {0, 0, 0, 0xFF};
-const GXColor dat_8041bdac = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041bdb0 = {0xFF, 0xFF, 0xFF, 0xFF};
-const u32 dat_8041bdb4 = 0x40;
-const GXColor dat_8041bdb8 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041bdbc = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041bdc0 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041bdc4 = {0xFF, 0xFF, 0xFF, 0xFF};
-const u32 dat_8041bdc8 = 0x40;
-const GXColor dat_8041bdcc = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041bdd0 = {0xFF, 0xFF, 0xFF, 0xFF};
-const u32 dat_8041bdd4 = 0x80;
-const u32 dat_8041bdd8 = 0x80;
-
-const Vec vec3_802ed670 = {0, 0, 0};
-const Vec vec3_802ed67c = {1, 1, 1};
-const Vec vec3_802ed688 = {0, 0, 0};
-const Vec vec3_802ed694 = {1, 1, 1};
-const Vec vec3_802ed6a0 = {0, 0, 0};
-const Vec vec3_802ed6ac = {1, 1, 1};
-const Vec vec3_802ed6b8 = {0, 0, 0};
-const Vec vec3_802ed6c4 = {1, 1, 1};
-const Vec vec3_802ed6d0 = {0, 100, 0};
-const Vec vec3_802ed6dc = {1, 1, 1};
-const Vec vec3_802ed6e8 = {0, 0, 0};
-const Vec vec3_802ed6f4 = {1, 1, 1};
-const Vec vec3_802ed700 = {-4, 0, 0};
-const Vec vec3_802ed70c = {1, 1, 1};
-const Vec vec3_802ed718 = {0, 0, 0};
-const Vec vec3_802ed724 = {1, 1, 1};
-const Vec vec3_802ed730 = {0, 0, 0};
-const Vec vec3_802ed73c = {1, 1, 1};
-const Vec vec3_802ed748 = {0, 100, 0};
-const Vec vec3_802ed754 = {1, 1, 1};
-const Vec vec3_802ed760 = {0, 0, 0};
-const Vec vec3_802ed76c = {1, 1, 1};
-const Vec vec3_802ed778 = {-4, 0, 0};
-const Vec vec3_802ed784 = {1, 1, 1};
-const Vec vec3_802ed790 = {0, 0, 0};
-const Vec vec3_802ed79c = {1, 1, 1};
-const u32 copy_angles[] = {0x00000000, 0xC2B40000, 0xC3340000, 0xC3070000, 0x42B40000, 0x00000000, 0x43070000, 0x43340000, 0x00000000, 0xC2340000, 0x00000000, 0xC2B40000, 0x42340000, 0x00000000, 0x42B40000, 0x00000000};
-const Vec vec3_802ed7e8 = {0, 0, 0};
-const Vec vec3_802ed7f4 = {1, 1, 1};
-const Vec vec3_802ed800 = {0, 0, 0};
-const Vec vec3_802ed80c = {1, 1, 1};
-const Vec vec3_802ed818 = {0, 0, 0};
-const Vec vec3_802ed824 = {1, 1, 1};
-const Vec vec3_802ed830 = {0, 0, 0};
-const Vec vec3_802ed83c = {1, 1, 1};
-const char animgroup_OFF_f_in_out_mario[] = "OFF_f_in_out_mario\000";
-const char animgroup_OFF_f_in_out_kuppa[] = "OFF_f_in_out_kuppa\000";
-const char animgroup_OFF_f_in_out_peach[] = "OFF_f_in_out_peach\000";
-const char map_aji_10[] = "aji_10\000";
-const char map_kpa_00[] = "kpa_00\000";
-const char map_nok_01[] = "nok_01\000";
-const char bero_nokotarou[] = "nokotarou\000\000";
-const char map_hei_00[] = "hei_00\000";
-const char map_mri_00[] = "mri_00\000";
-const char map_mri_01[] = "mri_01\000";
-const char map_tou_02[] = "tou_02\000";
-const char map_usu_00[] = "usu_00\000";
-const char map_gor_04[] = "gor_04\000";
-const char map_muj_12[] = "muj_12\000";
-const char map_muj_00[] = "muj_00\000";
-const char map_pik_03[] = "pik_03\000";
-const char map_gor_01[] = "gor_01\000";
-const char bero_resha_return[] = "resha_return\000\000\000";
-const char map_pik_01[] = "pik_01\000";
-const char map_aji_18[] = "aji_18\000";
-const char bero_e_bero[] = "e_bero\000";
-const char map_gor_00[] = "gor_00\000";
-const char map_jin_04[] = "jin_04\000";
-const char map_aaa_00[] = "aaa_00\000";
-const char bero_prologue[] = "prologue\000\000\000";
-const f64 double_480_802ed948 = 480;
-const f64 double_32_802ed950 = 32;
-const f64 double_544_802ed958 = 544;
+// Defined after loadDraw, whose compound-literal templates come first in .rodata.
+extern const char animgroup_OFF_f_in_out_mario[];
+extern const char animgroup_OFF_f_in_out_kuppa[];
+extern const char animgroup_OFF_f_in_out_peach[];
+extern const char map_aji_10[];
+extern const char map_kpa_00[];
+extern const char map_nok_01[];
+extern const char bero_nokotarou[];
+extern const char map_hei_00[];
+extern const char map_mri_00[];
+extern const char map_mri_01[];
+extern const char map_tou_02[];
+extern const char map_usu_00[];
+extern const char map_gor_04[];
+extern const char map_muj_12[];
+extern const char map_muj_00[];
+extern const char map_pik_03[];
+extern const char map_gor_01[];
+extern const char bero_resha_return[];
+extern const char map_pik_01[];
+extern const char map_aji_18[];
+extern const char bero_e_bero[];
+extern const char map_gor_00[];
+extern const char map_jin_04[];
+extern const char map_aaa_00[];
+extern const char bero_prologue[];
+extern const f64 double_480_802ed948;
+extern const f64 double_32_802ed950;
+extern const f64 double_544_802ed958;
 
 s32 stone_id[] = { 0x197, 0x198, 0x19A, 0x19C, 0x19D, 0x199, 0x19B };
 
@@ -327,8 +255,7 @@ void seq_loadMain(SequenceWork* workArg) {
             }
             break;
         case 3: {
-            GXColor color = fade_color_start;
-            fadeEntry(0x1C, 0, color);
+            fadeEntry(0x1C, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
             workArg->state++;
             break;
         }
@@ -499,7 +426,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0xa:
-            fadeEntry(0x1b, 0, fade_color_title);
+            fadeEntry(0x1b, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
             wp->step++;
             break;
 
@@ -528,7 +455,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x16:
-            fadeEntry(0x1b, 0, fade_color_continue);
+            fadeEntry(0x1b, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
             psndBGMOff_f_d(0x200, 0x7d0, 0);
             wp->step++;
             break;
@@ -549,7 +476,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x1e:
-            fadeEntry(0x1b, 0, fade_color_name_entry);
+            fadeEntry(0x1b, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
             wp->step++;
             break;
 
@@ -562,14 +489,14 @@ void loadMain(SequenceWork* workArg) {
         case 0x20:
             if (nameEntPrepare()) {
                 nameEntOn(0);
-                fadeEntry(0x1c, 0, fade_color_name_on);
+                fadeEntry(0x1c, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
                 wp->step++;
             }
             break;
 
         case 0x21:
             if (fadeIsFinish() && !nameEntWait()) {
-                fadeEntry(0x18, 0, fade_color_name_done);
+                fadeEntry(0x18, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
                 if (!nameEntIsCancel()) {
                     psndBGMOff_f_d(0x200, 0xbb8, 0);
                 }
@@ -581,7 +508,7 @@ void loadMain(SequenceWork* workArg) {
             if (fadeIsFinish()) {
                 nameEntOff();
                 if (nameEntIsCancel()) {
-                    fadeEntry(0x1c, 0, fade_color_name_cancel);
+                    fadeEntry(0x1c, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
                     wp->step = 1;
                 } else {
                     strcpy(gp->playerName, nameEntGetName());
@@ -927,30 +854,16 @@ static inline void loadDrawQuad(s32 texId, f32 x, f32 y, f32 w, f32 h, const f64
     GXTexCoord2f32(1.0f, 0.0f);
 }
 
-// A by-value Vec copied from a template with x/y replaced. The template is a by-value parameter, so
-// its copy lands among each call's argument temps as in the original.
-static inline Vec loadDrawVec(f32 x, f32 y, Vec base) {
-    base.x = x;
-    base.y = y;
-    return base;
-}
-
-// Same, for the calls that only move y and keep the base's x/z.
-static inline Vec loadDrawVecY(f32 y, Vec base) {
-    base.y = y;
-    return base;
-}
-
 void loadDraw(void) {
     CameraEntry* cam = camGetPtr(CAMERA_2D);
-    GXColor white = dat_8041bd84;
-    GXColor greyA0 = dat_8041bd88;
+    GXColor white = { 0xFF, 0xFF, 0xFF, 0xFF };
+    GXColor greyA0 = { 0xA0, 0xA0, 0xA0, 0xFF };
     s32 i;
     s32 j;
     WinDt* wd;
     CardData* card;
     CardSaveSlot* slot;
-    GXColor grey80 = dat_8041bd8c;
+    GXColor grey80 = { 0x80, 0x80, 0x80, 0x80 };
     f32 viewport[6];
     f32 projection[7];
     char nameBuf[0x20];
@@ -971,7 +884,7 @@ void loadDraw(void) {
     GXSetZCompLoc(0);
     GXSetAlphaCompare(6, 0x80, 1, 0, 0);
     GXSetZMode(0, 7, 0);
-    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041bd90);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
     GXSetNumChans(0);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetNumTevStages(1);
@@ -1015,18 +928,18 @@ void loadDraw(void) {
         case 0xd:
             color.a = 0xFE;
             winTexInit(LOAD_TEX_PALETTE());
-            winTexSet(0xe, loadDrawVec(wd->x, wd->y, vec3_802ed670), vec3_802ed67c, color);
+            winTexSet(0xe, (Vec){ wd->x, wd->y, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, color);
             winTexInit(LOAD_TEX_PALETTE());
-            winTexSet(wd->texId, loadDrawVec(wd->x, wd->y + 60.0f, vec3_802ed688), vec3_802ed694, color);
+            winTexSet(wd->texId, (Vec){ wd->x, wd->y + 60.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, color);
             break;
         default:
             winTexInit_x2(LOAD_TEX_PALETTE());
-            winTexSet_x2(wd->texId, wd->texId2, loadDrawVec(wd->x, wd->y, vec3_802ed6a0), vec3_802ed6ac, color);
+            winTexSet_x2(wd->texId, wd->texId2, (Vec){ wd->x, wd->y, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, color);
             break;
         }
     }
 
-    windowDispGX_Waku_col(-250.0f, 200.0f, 500.0f, 40.0f, 20.0f, 0, dat_8041bd94);
+    windowDispGX_Waku_col(-250.0f, 200.0f, 500.0f, 40.0f, 20.0f, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
     FontDrawStart();
     {
         const char* msg = wp->message;
@@ -1054,13 +967,9 @@ void loadDraw(void) {
         wd = &win_dt[i];
 
         FontDrawStart();
-#ifdef MUST_MATCH
-        FontDrawColor(*(volatile GXColor*)&dat_8041bd98); // volatile read: retail reloads the colour at each call
-#else
-        FontDrawColor(dat_8041bd98);
-#endif
+        FontDrawColor((GXColor){ 0xC0, 0xC0, 0xC0, 0xFF });
         if (i == wp->cursor) {
-            FontDrawColor(dat_8041bd9c);
+            FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
         }
         FontDrawScale(0.6f);
         FontDrawEdge();
@@ -1068,13 +977,9 @@ void loadDraw(void) {
         FontDrawString(wd->x - 100.0f, 84.0f + wd->y, nameBuf);
         FontDrawEdgeOff();
         FontDrawScale(1.0f);
-#ifdef MUST_MATCH
-        FontDrawColor(*(volatile GXColor*)&dat_8041bda0); // volatile read: retail reloads the colour at each call
-#else
-        FontDrawColor(dat_8041bda0);
-#endif
+        FontDrawColor((GXColor){ 0x20, 0x20, 0x20, 0xFF });
         if (i == wp->cursor) {
-            FontDrawColor(dat_8041bda4);
+            FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
         }
 
         if (flags & 2) {
@@ -1136,7 +1041,7 @@ void loadDraw(void) {
                 PSMTXTrans(mtx, 8.0f + (half2 + (wd->x - half)), 1.0f + (wd->y - 22.0f), 0.0f);
                 PSMTXScale(mtx2, 1.5f, 1.5f, 1.5f);
                 PSMTXConcat(mtx, mtx2, mtx);
-                c = dat_8041bda8;
+                c = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
                 iconDispGxCol(mtx, 0, 0x201, c);
             }
 
@@ -1167,48 +1072,48 @@ void loadDraw(void) {
 
     if (wp->step >= 0x64 && wp->step < 0xc8) {
         winTexInit(LOAD_TEX_PALETTE());
-        winTexSet(0xf, vec3_802ed6b8, vec3_802ed6c4, dat_8041bdac);
+        winTexSet(0xf, (Vec){ 0.0f, 0.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
         winTexInit_x2(LOAD_TEX_PALETTE());
-        winTexSet_x2(0x13, 0x1f, vec3_802ed6d0, vec3_802ed6dc, dat_8041bdb0);
+        winTexSet_x2(0x13, 0x1f, (Vec){ 0.0f, 100.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
         for (j = 0; j < 3; j++) {
             if (j == wp->soundCursor) {
                 winTexInit(LOAD_TEX_PALETTE());
-                winTexSet(0x33, loadDrawVecY((f32)(0x32 - j * 0x32), vec3_802ed6e8), vec3_802ed6f4, *(GXColor*)&dat_8041bdb4);
+                winTexSet(0x33, (Vec){ 0.0f, (f32)(0x32 - j * 0x32), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0x00, 0x00, 0x00, 0x40 });
                 winTexInit_x2(LOAD_TEX_PALETTE());
-                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY((f32)(0x36 - j * 0x32), vec3_802ed700), vec3_802ed70c, dat_8041bdb8);
+                winTexSet_x2(j + 0x15, 0x33, (Vec){ -4.0f, (f32)(0x36 - j * 0x32), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
             } else {
                 winTexInit_x2(LOAD_TEX_PALETTE());
-                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY((f32)(0x32 - j * 0x32), vec3_802ed718), vec3_802ed724, dat_8041bdbc);
+                winTexSet_x2(j + 0x15, 0x33, (Vec){ 0.0f, (f32)(0x32 - j * 0x32), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
             }
         }
     }
 
     if (wp->step >= 0xc8 && wp->step < 0x12c) {
         winTexInit(LOAD_TEX_PALETTE());
-        winTexSet(0xf, vec3_802ed730, vec3_802ed73c, dat_8041bdc0);
+        winTexSet(0xf, (Vec){ 0.0f, 0.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
         winTexInit_x2(LOAD_TEX_PALETTE());
-        winTexSet_x2(0x14, 0x1f, vec3_802ed748, vec3_802ed754, dat_8041bdc4);
+        winTexSet_x2(0x14, 0x1f, (Vec){ 0.0f, 100.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
         for (j = 0; j < 2; j++) {
             if (j == wp->rumbleCursor) {
                 winTexInit(LOAD_TEX_PALETTE());
-                winTexSet(0x33, loadDrawVecY((f32)(0x1e - j * 0x32), vec3_802ed760), vec3_802ed76c, *(GXColor*)&dat_8041bdc8);
+                winTexSet(0x33, (Vec){ 0.0f, (f32)(0x1e - j * 0x32), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0x00, 0x00, 0x00, 0x40 });
                 winTexInit_x2(LOAD_TEX_PALETTE());
-                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY((f32)(0x22 - j * 0x32), vec3_802ed778), vec3_802ed784, dat_8041bdcc);
+                winTexSet_x2(j + 0x18, 0x33, (Vec){ -4.0f, (f32)(0x22 - j * 0x32), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
             } else {
                 winTexInit_x2(LOAD_TEX_PALETTE());
-                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY((f32)(0x1e - j * 0x32), vec3_802ed790), vec3_802ed79c, dat_8041bdd0);
+                winTexSet_x2(j + 0x18, 0x33, (Vec){ 0.0f, (f32)(0x1e - j * 0x32), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
             }
         }
     }
 
     if (wp->step == 0x33 && wp->copyDst < 4) {
-        struct LoadAngleTable angles = *(struct LoadAngleTable*)copy_angles;
+        f32 angles[4][4] = { { 0.0f, -90.0f, -180.0f, -135.0f }, { 90.0f, 0.0f, 135.0f, 180.0f }, { 0.0f, -45.0f, 0.0f, -90.0f }, { 45.0f, 0.0f, 90.0f, 0.0f } };
         f32 f29;
         f32 f30;
 
-        if (!(f32)fmod(angles.v[wp->copySrc][wp->copyDst], 90.0)) {
+        if (!(f32)fmod(angles[wp->copySrc][wp->copyDst], 90.0)) {
             f32 mod = (f32)(wp->copySrc % 2);
             f32 fa = (f32)(wp->copySrc / 2);
             f32 fb = (f32)(wp->copyDst / 2);
@@ -1229,22 +1134,51 @@ void loadDraw(void) {
             Mtx mtx;
 
             winTexInit(LOAD_TEX_PALETTE());
-            winTexSetRot(0x1d, loadDrawVec(2.0f + f29, f30 - 2.0f, vec3_802ed7e8), vec3_802ed7f4, angles.v[wp->copySrc][wp->copyDst], *(GXColor*)&dat_8041bdd4);
-            winTexSetRot(0x1d, loadDrawVec(f29, f30, vec3_802ed800), vec3_802ed80c, angles.v[wp->copySrc][wp->copyDst], white);
+            winTexSetRot(0x1d, (Vec){ 2.0f + f29, f30 - 2.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, angles[wp->copySrc][wp->copyDst], (GXColor){ 0x00, 0x00, 0x00, 0x80 });
+            winTexSetRot(0x1d, (Vec){ f29, f30, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, angles[wp->copySrc][wp->copyDst], white);
             (void)mtx;
         }
     }
 
     if (!(wp->flags & 0x40)) {
         winTexInit(LOAD_TEX_PALETTE());
-        winTexSet(0, loadDrawVec(wp->cursorX + 2.0f, wp->cursorY - 2.0f, vec3_802ed818), vec3_802ed824, *(GXColor*)&dat_8041bdd8);
-        winTexSet(0, loadDrawVec(wp->cursorX, wp->cursorY, vec3_802ed830), vec3_802ed83c, white);
+        winTexSet(0, (Vec){ wp->cursorX + 2.0f, wp->cursorY - 2.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0x00, 0x00, 0x00, 0x80 });
+        winTexSet(0, (Vec){ wp->cursorX, wp->cursorY, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white);
     }
 
     GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
     GXSetProjectionv(projection);
     *camGetCurPtr() = saved;
 }
+
+const char animgroup_OFF_f_in_out_mario[] = "OFF_f_in_out_mario\000";
+const char animgroup_OFF_f_in_out_kuppa[] = "OFF_f_in_out_kuppa\000";
+const char animgroup_OFF_f_in_out_peach[] = "OFF_f_in_out_peach\000";
+const char map_aji_10[] = "aji_10\000";
+const char map_kpa_00[] = "kpa_00\000";
+const char map_nok_01[] = "nok_01\000";
+const char bero_nokotarou[] = "nokotarou\000\000";
+const char map_hei_00[] = "hei_00\000";
+const char map_mri_00[] = "mri_00\000";
+const char map_mri_01[] = "mri_01\000";
+const char map_tou_02[] = "tou_02\000";
+const char map_usu_00[] = "usu_00\000";
+const char map_gor_04[] = "gor_04\000";
+const char map_muj_12[] = "muj_12\000";
+const char map_muj_00[] = "muj_00\000";
+const char map_pik_03[] = "pik_03\000";
+const char map_gor_01[] = "gor_01\000";
+const char bero_resha_return[] = "resha_return\000\000\000";
+const char map_pik_01[] = "pik_01\000";
+const char map_aji_18[] = "aji_18\000";
+const char bero_e_bero[] = "e_bero\000";
+const char map_gor_00[] = "gor_00\000";
+const char map_jin_04[] = "jin_04\000";
+const char map_aaa_00[] = "aaa_00\000";
+const char bero_prologue[] = "prologue\000\000\000";
+const f64 double_480_802ed948 = 480;
+const f64 double_32_802ed950 = 32;
+const f64 double_544_802ed958 = 544;
 
 void continueGame(void) {
     MarioWork* mario;

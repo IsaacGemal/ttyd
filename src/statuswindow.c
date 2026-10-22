@@ -21,15 +21,8 @@ extern const f32 float_1_8041c904;
 extern const f32 float_3p1416_8041c908;
 extern const f32 float_0p5_8041c90c;
 
-// .sdata2 colour constants of this unit (white with alpha), passed to the icon draw functions.
+// .sdata2 white shared by every iconNumberDispGx call in statusWinDisp.
 __declspec(section ".sdata2") u32 dat_8041c8e0 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041c8e4 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041c8e8 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041c8ec = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041c8f0 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041c8f4 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041c8f8 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041c8fc = 0xFFFFFFFF;
 
 #define STATUS_WIN_OPEN_FRAMES 16.0f // open and close ramp lengths at animSpeed 1
 #define STATUS_WIN_CLOSE_FRAMES 28.0f
@@ -438,7 +431,7 @@ void statusWinDisp(CameraId camId, void* param) {
         PSMTXTrans(mtx, baseX + (f32)dtEntry->xpos, baseY - (f32)dtEntry->ypos, float_0_8041c900);
         PSMTXScale(scale, dtEntry->scale, dtEntry->scale, dtEntry->scale);
         PSMTXConcat(mtx, scale, mtx);
-        SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colAlways, *(GXColor*)&dat_8041c8e4);
+        SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colAlways, ((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }));
     }
 
     if (!(wp->blinkMask & STATUS_BLINK_MARIO_HP) || v6 != 0) {
@@ -513,7 +506,7 @@ void statusWinDisp(CameraId camId, void* param) {
             PSMTXTrans(mtx, baseX + (f32)dtEntry->xpos, baseY - (f32)dtEntry->ypos, float_0_8041c900);
             PSMTXScale(scale, dtEntry->scale, dtEntry->scale, dtEntry->scale);
             PSMTXConcat(mtx, scale, mtx);
-            SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colParty, *(GXColor*)&dat_8041c8e8);
+            SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colParty, ((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }));
         }
         if (!(wp->blinkMask & STATUS_BLINK_PARTY_HP) || v6 != 0) {
             number = wp->partyHp;
@@ -530,27 +523,27 @@ void statusWinDisp(CameraId camId, void* param) {
         PSMTXTrans(badgeMtx, -190.0f, ty2, float_0_8041c900);
         PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
         PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-        SW_ICON_COL(badgeMtx, 0x10, 0x212, colB212, *(GXColor*)&dat_8041c8ec);
+        SW_ICON_COL(badgeMtx, 0x10, 0x212, colB212, ((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }));
         if (swByteGet(0) >= 7 || partyChkJoin(1) != 0) {
             PSMTXTrans(badgeMtx, -250.0f, 16.0f + ty2, float_0_8041c900);
             PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
             PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-            SW_ICON_COL(badgeMtx, 0x10, 0x213, colB213, *(GXColor*)&dat_8041c8f0);
+            SW_ICON_COL(badgeMtx, 0x10, 0x213, colB213, ((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }));
         }
         PSMTXTrans(badgeMtx, -190.0f, 50.0f + ty2, float_0_8041c900);
         PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
         PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-        SW_ICON_COL(badgeMtx, 0x10, 0x214, colB214, *(GXColor*)&dat_8041c8f4);
+        SW_ICON_COL(badgeMtx, 0x10, 0x214, colB214, ((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }));
         if (swByteGet(0) >= 0x14 || pouchGetHaveBadgeCnt() != 0) {
             PSMTXTrans(badgeMtx, -130.0f, 16.0f + ty2, float_0_8041c900);
             PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
             PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-            SW_ICON_COL(badgeMtx, 0x10, 0x215, colB215, *(GXColor*)&dat_8041c8f8);
+            SW_ICON_COL(badgeMtx, 0x10, 0x215, colB215, ((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }));
         }
         PSMTXTrans(badgeMtx, -190.0f, ty2 - 25.0f, float_0_8041c900);
         PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
         PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-        SW_ICON_COL(badgeMtx, 0x10, 0x216, colB216, *(GXColor*)&dat_8041c8fc);
+        SW_ICON_COL(badgeMtx, 0x10, 0x216, colB216, ((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }));
     }
 }
 

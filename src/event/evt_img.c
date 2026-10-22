@@ -11,22 +11,8 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool
-// templates, so pair it with a small-data section and place it by hand.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80422fd0;
-
-// Inlined into their callers; `inline` keeps the compiler from emitting a
-// standalone copy (the original object has no such symbols).
-static inline GXColor makeColor(u8 r, u8 g, u8 b, u8 a) {
-	GXColor color = unk_80422fd0;
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	return color;
-}
-
+// Inlined into its caller; `inline` keeps the compiler from emitting a
+// standalone copy (the original object has no such symbol).
 static inline Vec makeVec(f32 x, f32 y, f32 z) {
 	Vec point = (Vec){0.0f, 0.0f, 0.0f};
 	point.x = x;
@@ -262,7 +248,7 @@ USER_FUNC(evt_img_set_color) {
 	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
 
 	animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-	animPoseSetMaterialEvtColor(entry->poseId, makeColor(r, g, b, a));
+	animPoseSetMaterialEvtColor(entry->poseId, (GXColor){r, g, b, a});
 	return EVT_RETURN_DONE;
 }
 

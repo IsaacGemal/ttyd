@@ -32,5 +32,4 @@ EffectEntry* effWhirlwindN64Entry(s32 type, s32 mario, s32 life, f32 size);
 #include "driver/camdrv.h"
 void effWhirlwindMain(EffectEntry* effect);
 void effWhirlwindDisp(CameraId camId, void* param);
-extern GXColor unk_80423088;
 extern const char str_WhirlwindN64[];

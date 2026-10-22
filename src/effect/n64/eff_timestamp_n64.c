@@ -67,18 +67,6 @@ s32 pos_data[10][3] = {
 	{ 140, 90, 25 },
 };
 
-// .sbss2 zero-initialised scratch colours the display code builds its TEV colours from (this
-// compiler lays such objects out last-declared first, so the higher address comes first).
-#ifdef MUST_MATCH
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804232b4;
-__declspec(section ".sdata") GXColor unk_804232b0;
-#pragma section ".sdata" ".sbss"
-#else
-GXColor unk_804232b4;
-GXColor unk_804232b0;
-#endif
-
 EffectEntry* effTimestampN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effTimestampN64Data* data;
@@ -186,23 +174,6 @@ void effTimestampMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effTimestampDisp, effect);
 }
 
-// The two by-value GXColor builds live in helpers so the compiler gives their temporaries the
-// same stack slots as the original (same shape as effFireDustSetColor/effFireDustSetVtxColor).
-static inline void effTimestampSetColor(effTimestampN64Data* data) {
-	GXColor color = unk_804232b0;
-	color.a = data->whiteFade;
-	GXSetTevColor(GX_TEVREG1, color);
-}
-
-static inline void effTimestampSetVtxColor(effTimestampN64Data* data, s32 counter, s32 i) {
-	GXColor color = unk_804232b4;
-	color.r = colr[i];
-	color.g = colg[i];
-	color.b = colb[i];
-	color.a = (counter * data->pieceAlpha[i]) / 255;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
 // The vertex loop is written per index (`&base[i * 2]`, `i * 400`, `timer * 10 + i * k`), so the
 // frontend strength-reduces it into the original's preheader copies; the texture row `i * 2 * 0x40U`
 // is unsigned, so the backend reduces it instead and its zero start becomes a copy of the `i * 400`
@@ -260,7 +231,7 @@ void effTimestampDisp(CameraId camId, void* param) {
 	scaleF = 0.015625f;
 	PSMTXScale(scale, scaleF, scaleF, 0.0f);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-	effTimestampSetColor(data);
+	GXSetTevColor(GX_TEVREG1, (GXColor){ 0, 0, 0, data->whiteFade });
 	entry = smartAlloc(0x1C0, HEAP_EFFECT);
 	base = entry->address;
 	for (i = 0; i < 16; i++) {
@@ -303,7 +274,7 @@ void effTimestampDisp(CameraId camId, void* param) {
 		PSMTXConcat(work, trans, trans);
 		GXLoadPosMtxImm(trans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		effTimestampSetVtxColor(data, counter, i);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ colr[i], colg[i], colb[i], (counter * data->pieceAlpha[i]) / 255 });
 		for (k = 0, j = 0; k < 15; k++, j += 2) {
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(j, j + 2, j + 1, j, j + 1, j + 2, j + 3, j);

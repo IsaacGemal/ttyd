@@ -22,8 +22,6 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 
 // .sdata2
 
-// .sdata2 word constant the original copies before filling the RGB fields.
-const GXColor dat_8041f948 = { 0, 0, 0, 0xFF };
 
 // .data per-type 16x16 particle placement grid; '.' marks an empty cell. Indexed as
 // data[type*0x100 + (0xF - row)*0x10 + col].
@@ -191,19 +189,10 @@ void effPeachDustMain(EffectEntry* effect) {
 	}
 }
 
-// Building the colour in an inline fixes the by-value GXColor stack slot, and routing the u8*k
-// multiply through an inline local makes mwcc emit the byte as fmuls's first operand.
+// Routing the u8*k multiply through an inline local makes mwcc emit the byte as fmuls's first operand.
 static inline s32 scaleColor(const u8* t, s32 i, f32 k) {
 	u8 c = t[i];
 	return (s32)(c * k);
-}
-
-static inline GXColor peachDustColor(u8 r, u8 g, u8 b) {
-	GXColor c = dat_8041f948;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	return c;
 }
 
 // Local declaration order is chosen to reproduce mwcc's GPR assignment (camera i colorType
@@ -216,7 +205,6 @@ void effPeachDustDisp(CameraId camId, void* param) {
 	Mtx rot;
 	Mtx view;
 	GXTexObj texObj;
-	GXColor color;
 	s32 r;
 	s32 g;
 	s32 b;
@@ -277,8 +265,7 @@ void effPeachDustDisp(CameraId camId, void* param) {
 		if (b > 0xFF) {
 			b = 0xFF;
 		}
-		color = peachDustColor(r, g, b);
-		GXSetTevColor(1, color);
+		GXSetTevColor(1, (GXColor){ r, g, b, 0xFF });
 		switch (colorType & 7) {
 		case 0:
 			vtx = &((effVtxArray*)size8x8_tex22x22_vtx)[3];

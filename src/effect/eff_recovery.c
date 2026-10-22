@@ -20,7 +20,6 @@ extern const u32 dat_8041cac0;
 extern const u32 dat_8041cac4;
 extern const u32 dat_8041cac8;
 extern const u32 dat_8041cacc;
-extern GXColor unk_80423040;
 extern GXColor unk_80423044;
 static u8 color_rotation_data[] = {
 	0xFE, 0xAC, 0xAC, 0xFE, 0xAC, 0xD5, 0xFE, 0xB4, 0x9A, 0xD5, 0xB4, 0xFE,
@@ -612,11 +611,8 @@ void effRecoveryDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 	for (i = 1; i < entry->count; i++, ptr++) {
 		s32 idx = (i + gp->retraceCount) % 12;
-		c = unk_80423040;
-		c.r = color_rotation_data[idx * 3 + 0];
-		c.g = color_rotation_data[idx * 3 + 1];
-		c.b = color_rotation_data[idx * 3 + 2];
-		c.a = ptr->color;
+		c = (GXColor){ color_rotation_data[idx * 3 + 0], color_rotation_data[idx * 3 + 1],
+		               color_rotation_data[idx * 3 + 2], ptr->color };
 		GXSetTevColor(GX_TEVREG0, c);
 		PSMTXTrans(mtx, ptr->x, ptr->y, ptr->z);
 		PSMTXScale(scale, ptr->scaleX, ptr->scaleY, ptr->scaleZ);
@@ -989,7 +985,6 @@ u32 recovery_effHermit_0[445] = {
 
 #pragma section ".sdata" ".sbss2" // put the two scratch colours in .sbss2
 __declspec(section ".sdata") GXColor unk_80423044; // original is in .sbss2; section redirect above
-__declspec(section ".sdata") GXColor unk_80423040; // declared in the original's reverse address order
 #pragma section ".sdata" ".sbss" // restore .sbss for later zero-initialised objects
 
 // Deferred functions are emitted after this opaque width object. The early helper has already

@@ -17,10 +17,6 @@ extern const f32 float_0p0034722_8041ea34;
 extern const f32 float_0_8041ea38;
 extern const f32 float_32_8041ea3c;
 
-const GXColor dat_8041ea20 = { 0xFF, 0xFF, 0xFF, 0x7F };
-const GXColor dat_8041ea24 = { 0xFF, 0xFF, 0x80, 0x7F };
-const GXColor dat_8041ea28 = { 0xFF, 0xFF, 0x8B, 0x00 };
-
 // .data: two quads of a 32x32 tile with the shared 32x32 atlas texture.
 static u32 size32x32_tex32x32_vtx[0xE] = {
 	0xFFF0FFF0, 0x00000000, 0x00000000, 0x00FF0010,
@@ -86,19 +82,11 @@ void effBomheiMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effBomheiDisp, e);
 }
 
-static inline GXColor bomheiColor(u8 alpha) {
-	GXColor c = dat_8041ea28;
-	c.a = alpha;
-	return c;
-}
-
-// 100%. The stage-2 colour is built by bomheiColor so its stack slot (0x8) matches the
-// original; the only remaining objdiff lines are the ignored double_to_int_802fa2c0 reloc labels.
+// 100%. The only remaining objdiff lines are the ignored double_to_int_802fa2c0 reloc labels.
 void effBomheiDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	effBomheiData* data;
 	CameraEntry* cam;
-	GXColor color;
 	GXTexObj texObj;
 	Mtx trans;
 	Mtx scale;
@@ -177,13 +165,12 @@ void effBomheiDisp(CameraId camId, void* param) {
 	GXSetCurrentMtx(0);
 
 	if (data->field_0x20 > 4.0f) {
-		GXSetTevColor(1, dat_8041ea20);
+		GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, 0x7F });
 	}
 	else {
-		GXSetTevColor(1, dat_8041ea24);
+		GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0x80, 0x7F });
 	}
-	color = bomheiColor(frac);
-	GXSetTevColor(2, color);
+	GXSetTevColor(2, (GXColor){ 0xFF, 0xFF, 0x8B, frac });
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

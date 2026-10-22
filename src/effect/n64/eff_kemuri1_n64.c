@@ -8,16 +8,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2 zero GXColor scratch the material colours are built from. The pragma pairs the default .sbss2
-// with a small-data section so the object lands where the original's does.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423168;
-#pragma section ".sdata" ".sbss"
-
-// .sdata2 colour constants this unit defines.
-const GXColor dat_8041f230 = { 0x80, 0x80, 0x80, 0x80 };
-const GXColor dat_8041f234 = { 0x00, 0x00, 0x00, 0x60 };
-
 typedef struct effKemuri1Data {
 	u16 type; //0x0
 	u8 align_2[2]; //0x2, TODO: verify align
@@ -325,18 +315,13 @@ void effKemuri1Main(EffectEntry* effect) {
 }
 
 // Draws every live entry as a camera-facing textured quad. Matching uses the same tricks as the sibling
-// effKemuri8Disp/effKemuri9Disp: a `half` local held in f29, the colour helpers above, and a two-variable
+// effKemuri8Disp/effKemuri9Disp: a `half` local held in f29, the colour helper above, and a two-variable
 // size (size/size2) with 0.0f/1.0f literals in the vertex stream.
-// Building each colour and making its GXSetChanMatColor call inside a void inline pairs the local with
+// Building the colour and making its GXSetChanMatColor call inside a void inline pairs the local with
 // its outgoing copy (0x8/0xc and 0x10), so the TEV colour's by-value temp lands at 0x14 as the
 // original's does (the plain `GXColor color` local would take 0x14 instead). Same shape as eff_kemuri8.
-static inline void kemuri1SetChanMatColorA(void) {
-	GXColor c = dat_8041f234;
-	GXSetChanMatColor(GX_COLOR0A0, c);
-}
-
 static inline void kemuri1SetChanMatColorB(u8 r, u8 g, u8 b) {
-	GXColor c = unk_80423168;
+	GXColor c = { 0, 0, 0, 0 };
 	c.r = r;
 	c.g = g;
 	c.b = b;
@@ -407,7 +392,7 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
-	GXSetTevColor(GX_TEVREG0, dat_8041f230);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ 0x80, 0x80, 0x80, 0x80 });
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -441,7 +426,7 @@ void effKemuri1Disp(CameraId camId, void* param) {
 
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
-				kemuri1SetChanMatColorA();
+				GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0x00, 0x00, 0x00, 0x60 });
 				PSMTXTrans(mtxTmp, 2.0f + data->position.x,
 					data->position.y - 2.0f, data->position.z);
 				PSMTXConcat(mtxBase, mtxTmp, mtxTmp);
@@ -485,8 +470,7 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	}
 }
 
-// The unit's float constants are the compiler's own pool entries; the only named .sdata2 objects are the
-// two colours above. The local `arg` in effKemuri1N64Entry keeps sin/cos from folding their arguments into
+// The unit's float constants are the compiler's own pool entries. The local `arg` in effKemuri1N64Entry keeps sin/cos from folding their arguments into
 // rodata doubles, and splitting the reviseAngle expression pools 90/180 before 6.28 as the original does.
 
 // 4-byte zero word that ends the unit's .rodata: an all-zero object needs explicit_zero_data to be emitted

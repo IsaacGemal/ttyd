@@ -19,9 +19,6 @@
 
 #pragma force_active on
 
-const u32 dat_yuu_00014dd0 = 0xFFFFFFFF;
-const u32 dat_yuu_00014dd4 = 0xFFFFFF99;
-
 // clang-format off
 extend_data(28,
      u64, negone_one, 0xBF8000003F800000,
@@ -102,8 +99,8 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     f32 xbase;
 
     work = param;
-    iconColor = *(GXColor*)&dat_yuu_00014dd0;
-    digitColor = *(GXColor*)&dat_yuu_00014dd0;
+    iconColor = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+    digitColor = iconColor;
 
     switch (work->mode) {
     case 0:
@@ -162,7 +159,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     PSMTXTrans(mtx, work->x, work->y, 0.0f);
     PSMTXScale(mtxScale, scale, 1.0f, 1.0f);
     PSMTXConcat(mtx, mtxScale, mtxTemp);
-    iconDispGxCol(mtxTemp, 0x10, 0x1F6, *(GXColor*)&dat_yuu_00014dd4);
+    iconDispGxCol(mtxTemp, 0x10, 0x1F6, (GXColor){ 0xFF, 0xFF, 0xFF, 0x99 });
 
     switch (work->mode) {
     case 0: {

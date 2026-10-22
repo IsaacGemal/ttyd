@@ -9,16 +9,6 @@
 #include "system.h"
 #include <string.h>
 
-// --- .rodata literals of this unit ---
-// The five Vec3 literals are one contiguous array; the original names them individually at 0xC
-// strides. Referencing them as an array is what makes mwcc keep a single base register.
-const Vec vec3_803001c0[5] = {
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-};
 // The int->float magic double (0x4330000080000000) is the compiler's own pool entry at
 // 0x80300200; naming it in the source duplicates it and the function then relocates to the
 // anonymous @NNN instead of the target's double_to_int_80300200. Leave it to the pool.
@@ -276,7 +266,6 @@ void battleAcDelete_PowerGaugeLv2(BattleWork* work) {
 // MATCHING (100%): all instructions agree; the anonymous `@NNN` for the 1.0f literal is the
 // symbol-only difference noted above and disappears when the unit links.
 static void actionCommandDisp(f32 x, f32 y) {
-    Vec* vec = (Vec*)vec3_803001c0;
     BattleActions* ac = &_battleWorkPointer->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
     PowerGaugeLv2DecWork* dec = (PowerGaugeLv2DecWork*)&ac->field_0x2BC[0];
@@ -294,12 +283,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     f31 = -200.0f + x;
     f30 = 25.0f + y;
 
-    {
-        Vec pos = vec[0];
-        pos.x = f31;
-        pos.y = f30;
-        iconDispGx(1.0f, &pos, 0x10, 0x8C);
-    }
+    iconDispGx(1.0f, &(Vec){f31, f30, 0.0f}, 0x10, 0x8C);
 
     {
         s32 flags = 0;
@@ -351,35 +335,21 @@ static void actionCommandDisp(f32 x, f32 y) {
         case 0x3EA:
         case 0x3EB:
         case 0x3EC:
-        {
-            Vec pos = vec[1];
-            pos.x = f31;
-            pos.y = 70.0f + y;
-            iconDispGx(1.0f, &pos, 0x10, icon0);
+            iconDispGx(1.0f, &(Vec){f31, 70.0f + y, 0.0f}, 0x10, icon0);
             break;
-        }
         case 0x3E8:
             if (dec->flag2 != 0) {
-                Vec pos = vec[2];
-                pos.x = f31;
-                pos.y = 70.0f + y;
-                iconDispGx(1.0f, &pos, 0x10, icon1);
+                iconDispGx(1.0f, &(Vec){f31, 70.0f + y, 0.0f}, 0x10, icon1);
             }
             else {
-                Vec pos = vec[3];
-                pos.x = f31;
-                pos.y = 70.0f + y;
-                iconDispGx(1.0f, &pos, 0x10, icon0);
+                iconDispGx(1.0f, &(Vec){f31, 70.0f + y, 0.0f}, 0x10, icon0);
             }
             break;
     }
 
     {
         s32 id = dec->flag2 != 0 ? 0x95 : 0x91;
-        Vec pos = vec[4];
-        pos.x = 120.0f + f31;
-        pos.y = f30;
-        iconDispGx(1.0f, &pos, 0x10, id);
+        iconDispGx(1.0f, &(Vec){120.0f + f31, f30, 0.0f}, 0x10, id);
     }
 }
 

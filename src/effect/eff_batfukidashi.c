@@ -10,9 +10,6 @@
 #include <stdio.h>
 
 
-// RGBA white with zero alpha; the draw code supplies the fade alpha.
-const u32 dat_80420468 = 0xFFFFFF00;
-
 const Vec vec3_802fd498 = { 0.0f, 0.0f, 0.0f };
 
 
@@ -61,15 +58,10 @@ static u8 offset_tbl[] = {
 
 void effCoinFukidashiMain(EffectEntry* effect) {
     CoinFukidashiData* data;
-    /* The Vec is built in `disp` and copied to `position` before dispCalcZ; a single local folds the copy away. */
     Vec position;
-    Vec disp = { 0.0f, 0.0f, 0.0f };
 
     data = effect->userdata;
-    disp.x = data->position.x;
-    disp.y = data->position.y;
-    disp.z = data->position.z;
-    position = disp;
+    position = (Vec){ data->position.x, data->position.y, data->position.z };
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
@@ -103,20 +95,12 @@ void effCoinFukidashiMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effCoinFukidashiDisp, effect);
 }
 
-// The GXColor is built through an inline return, which puts the colour temp in its own stack slot.
-static inline GXColor effCoinFukidashiColor(u8 alpha) {
-    GXColor color = *(GXColor*)&dat_80420468;
-    color.a = alpha;
-    return color;
-}
-
 // effCoinFukidashiDisp (1140 B, matched).
 void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     CameraEntry* cam;
     CoinFukidashiData* data;
     GXTexObj tex;
-    GXColor color;
     Mtx m0, m1, m2;
     f32 w, h;
     // 0.5f is held in a named local for the vertex and text maths; the literal directly would swap f0/f1.
@@ -137,8 +121,7 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     GXSetNumTevStages(1);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
     GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
-    color = effCoinFukidashiColor(alpha);
-    GXSetChanMatColor(GX_COLOR0A0, color);
+    GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, alpha });
 
     PSMTXTrans(m0, data->position.x, data->position.y + data->field_0x10, data->position.z);
     PSMTXScale(m1, data->scale, data->scale, data->scale);

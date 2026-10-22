@@ -58,8 +58,6 @@ typedef struct Kemuri4Vertex {
 
 extern const f32 float_0p0625_8041f32c;
 extern const f32 float_0_8041f330;
-// .sdata2 word constant (named after its original address).
-extern const u32 dat_8041f328;
 // .data vertex array of this unit (named after its original symbol).
 
 EffectEntry* effKemuri4N64Entry(s32 type, f32 x, f32 y, f32 z, f32 angleDeg, f32 direction) {
@@ -180,7 +178,6 @@ void effKemuri4Disp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	CameraEntry* cam;
 	GXTexObj texObj;
-	GXColor color;
 	Mtx mtx;
 	Mtx texMtx;
 	effVtxArray* vtx0;
@@ -219,8 +216,7 @@ void effKemuri4Disp(CameraId camId, void* param) {
 		GXSetTevAlphaIn(0, 7, 4, 1, 7);
 		PSMTXConcat(cam->view, data->matrix, mtx);
 		GXLoadPosMtxImm(mtx, 0);
-		color = *(GXColor*)&dat_8041f328;
-		GXSetTevColor(1, color);
+		GXSetTevColor(1, (GXColor){ 0xF0, 0xF0, 0xF0, 0xFF });
 		effSetVtxDescN64(vtx0);
 		GXBegin(0x90, 0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -237,6 +233,5 @@ void effKemuri4Disp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_8041f328 = 0xF0F0F0FF;
 const f32 float_0p0625_8041f32c = 0.0625f;
 const f32 float_0_8041f330 = 0.0f;

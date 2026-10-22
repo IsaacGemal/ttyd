@@ -24,18 +24,14 @@
 #define M_U16(m, off) (*(u16*)((u8*)(m) + (off)))
 #define M_S32(m, off) (*(s32*)((u8*)(m) + (off)))
 
-// .rodata
+// .rodata: vec3_802c5a80, then hitEstimate's Vec literals; the MOBJ names are defined after hitEstimate.
 const Vec vec3_802c5a80 = { 0.0f, 40.0f, 0.0f };
-const Vec vec3_802c5a8c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5a98 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5aa4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5ab0 = { 0.0f, 0.0f, 0.0f };
-const char str_MOBJ_Lv1Block[] = "MOBJ_Lv1Block";
-const char str_MOBJ_Lv1BigBlock[] = "MOBJ_Lv1BigBlock";
-const char str_MOBJ_Lv2Block[] = "MOBJ_Lv2Block";
-const char str_MOBJ_Lv2BigBlock[] = "MOBJ_Lv2BigBlock";
-const char str_MOBJ_Lv3Block[] = "MOBJ_Lv3Block";
-const char str_MOBJ_Lv3BigBlock[] = "MOBJ_Lv3BigBlock";
+extern const char str_MOBJ_Lv1Block[];
+extern const char str_MOBJ_Lv1BigBlock[];
+extern const char str_MOBJ_Lv2Block[];
+extern const char str_MOBJ_Lv2BigBlock[];
+extern const char str_MOBJ_Lv3Block[];
+extern const char str_MOBJ_Lv3BigBlock[];
 
 // .sdata
 s32 se_data[10] = {
@@ -823,16 +819,10 @@ void mot_ham2_post(void) {
     marioAdjustMoveDir();
 }
 
-// The original materialises dir3 into its own stack slot through a temp copy. A plain struct assignment is
-// forwarded away by the compiler, so the copy is forced through a cast; the natural form is under #else.
 HitEntry* hitEstimate(s32* type) {
     HitCheckQuery query;
     Vec pos;
     Vec dir3;
-    Vec dir0;
-    Vec dir1;
-    Vec dir2;
-    Vec dir3t;
     MarioWork* mario;
     HitEntry* hit;
     f32 angle;
@@ -864,12 +854,8 @@ HitEntry* hitEstimate(s32* type) {
     { f32 p = 3.1415927f; c = cos(p); } // a float local: a bare literal makes MWCC pool a double and load it with lfd
     pos = mario->position;
     pos.y = 4.0f + (mario->position.y + boxY);
-    dir0 = vec3_802c5a8c;
-    dir0.x = sa;
-    dir0.y = -c;
-    dir0.z = ca;
     query.targetPos = pos;
-    query.targetDir = dir0;
+    query.targetDir = (Vec){ sa, -c, ca };
     query.targetDistance = 14.0f;
     hit = hitCheckVecFilter(&query, NULL);
     if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
@@ -882,12 +868,8 @@ HitEntry* hitEstimate(s32* type) {
     pos.x = mario->position.x + sa * five;
     pos.z = mario->position.z + ca * five; }
     pos.y = mario->position.y + boxY;
-    dir1 = vec3_802c5a98;
-    dir1.x = sa;
-    dir1.y = -c;
-    dir1.z = ca;
     query.targetPos = pos;
-    query.targetDir = dir1;
+    query.targetDir = (Vec){ sa, -c, ca };
     query.targetDistance = 26.0f;
     hit = hitCheckVecFilter(&query, NULL);
     if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
@@ -900,12 +882,8 @@ HitEntry* hitEstimate(s32* type) {
     pos.x = mario->position.x + sa * five;
     pos.z = mario->position.z + ca * five; }
     pos.y = mario->position.y + boxY;
-    dir2 = vec3_802c5aa4;
-    dir2.x = sa;
-    dir2.y = -c;
-    dir2.z = ca;
     query.targetPos = pos;
-    query.targetDir = dir2;
+    query.targetDir = (Vec){ sa, -c, ca };
     query.targetDistance = 30.f;
     hit = hitCheckVecFilter(&query, NULL);
     if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
@@ -914,13 +892,7 @@ HitEntry* hitEstimate(s32* type) {
     }
 
     c = cos(float_0_8041a9a8);
-    dir3t = vec3_802c5ab0;
-    dir3t.y = -c;
-#ifdef MUST_MATCH
-    *(Vec*)&dir3 = *(Vec*)&dir3t;
-#else
-    dir3 = dir3t;
-#endif
+    dir3 = (Vec){ 0.0f, -c, 0.0f };
     for (i = 0; i < 2; i++) {
         if (i == 0) {
             dist = 36.0f;
@@ -948,6 +920,13 @@ HitEntry* hitEstimate(s32* type) {
     }
     return hit;
 }
+
+const char str_MOBJ_Lv1Block[] = "MOBJ_Lv1Block";
+const char str_MOBJ_Lv1BigBlock[] = "MOBJ_Lv1BigBlock";
+const char str_MOBJ_Lv2Block[] = "MOBJ_Lv2Block";
+const char str_MOBJ_Lv2BigBlock[] = "MOBJ_Lv2BigBlock";
+const char str_MOBJ_Lv3Block[] = "MOBJ_Lv3Block";
+const char str_MOBJ_Lv3BigBlock[] = "MOBJ_Lv3BigBlock";
 
 // Named .sdata2 prefix: the first three floats of the original's layout are real objects.
 const f32 float_2_8041a9a0 = 2.0f;

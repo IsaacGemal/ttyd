@@ -7,7 +7,6 @@
 #include <dolphin/gx.h>
 
 // .sdata2/.rodata constants, named to match the data objects retail uses.
-extern const u32 dat_80422420;
 extern const f32 float_deg2rad_80422424;
 extern const f32 float_8_80422428;
 extern const f32 float_6p2832_8042242c;
@@ -119,14 +118,6 @@ static inline f32 effSleepSin(u32 angle) {
 	return (f32)sin(rad * float_0p015625_80422430);
 }
 
-// A GXColor built through an inline return lands in the scratch slot retail uses
-// (same idiom as effCoinFukidashiColor).
-static inline GXColor effSleepColor(u8 alpha) {
-	GXColor color = *(GXColor*)&dat_80422420;
-	color.a = alpha;
-	return color;
-}
-
 // Materialise negEight*0.5 before the add; an inline helper adding its parameter second pins retail's
 // commutative fadds operand order, which a bare expression does not.
 static inline f32 effSleepLeftX(f32 negativeHalfWidth, f32 sine) {
@@ -149,7 +140,6 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 	Mtx mtxScale;
 	Mtx mtxRot;
 	Mtx mtxFinal;
-	GXColor color;
 	f32 negEight;
 	f32 one;
 	f32 negativeHalfWidth;
@@ -193,8 +183,7 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 			continue;
 		}
 
-		color = effSleepColor((data->field_0x14 * headerAlpha) / 255);
-		GXSetChanMatColor(4, color);
+		GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, (data->field_0x14 * headerAlpha) / 255 });
 
 		PSMTXTrans(mtxBase, data->position.x, data->position.y, data->position.z);
 		PSMTXScale(mtxScale, data->scale, data->scale, data->scale);
@@ -224,7 +213,6 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 }
 
 // The .sdata2 constants the code above loads by name, defined after it.
-const u32 dat_80422420 = 0xFFFFFF00;
 const f32 float_deg2rad_80422424 = 0.017453292f;
 const f32 float_8_80422428 = 8.0f;
 const f32 float_6p2832_8042242c = 6.2831855f;

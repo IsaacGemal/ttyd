@@ -22,11 +22,6 @@ extern const f32 float_0_8041eba0;
 extern const f32 float_6p2832_8041eba4;
 extern const f32 float_360_8041eba8;
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804230c4;
-__declspec(section ".sdata") GXColor unk_804230c0;
-
 #define FP_NAN 1
 #define FP_INFINITE 2
 #define FP_ZERO 3
@@ -254,26 +249,6 @@ void effCloudMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effCloudDisp, effect);
 }
 
-// Two helpers that each build the TEV colour locally and pass it by value: this puts mwcc's three
-// colour stack slots where the target has them (local r1+0x10, first copy r1+0x14, second copy r1+0xc).
-// The plain assignment shape lands them 4 bytes lower and shifts mtx/texObj down too.
-static inline void effCloudTevColor0(s32 r, s32 g, s32 b, s32 a) {
-	GXColor c = unk_804230c0;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-
-static inline void effCloudTevColor1(s32 r, s32 g, s32 b) {
-	GXColor c = unk_804230c4;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	GXSetTevColor(GX_TEVREG1, c);
-}
-
 // effCloudDisp's ring loop needed two changes to match: the Vtx pointer is rebuilt per iteration
 // (`((cloudVtx*)base) + i * 2`) instead of being a stepped function-scope pointer, which lands it in
 // r28; and a running `deg` that only counts active entries drives the alpha angle
@@ -360,9 +335,9 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	effGetTexObjN64(0x83, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 
-	effCloudTevColor0(data->color0R, data->color0G, data->color0B, alpha0);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->color0R, data->color0G, data->color0B, alpha0 });
 
-	effCloudTevColor1(data->color1R, data->color1G, data->color1B);
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->color1R, data->color1G, data->color1B, 0 });
 
 	GXLoadPosMtxImm(cam->view, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);

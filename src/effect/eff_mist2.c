@@ -10,21 +10,6 @@ extern const f32 float_16_80421cac;
 extern const f32 float_255_80421cb0;
 extern const f32 float_0p5_80421cb4;
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool
-// templates, so pair it with a small-data section and place it by hand.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423340;
-
-// Build the GXColor in a helper so the by-value argument lands in stack 0xc, as retail does.
-static inline GXColor effMist2Color(u8 r, u8 g, u8 b, u8 a) {
-	GXColor c = unk_80423340;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	return c;
-}
-
 EffectEntry* effMist2Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 range, f32 yOffset) {
 	EffectEntry* entry;
 	EffMist2Data* data;
@@ -161,14 +146,11 @@ void effMist2Main(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMist2Disp, effect);
 }
 
-// The GXColor build is in the inline above so the by-value argument lands in stack
-// 0xc, matching retail.
 void effMist2Disp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	EffMist2Data* work = effect->userdata;
 	CameraEntry* cam;
 	GXTexObj texObj;
-	GXColor color;
 	Mtx mtxTrans;
 	Mtx mtxRot;
 	Mtx mtxScale;
@@ -222,9 +204,8 @@ void effMist2Disp(CameraId cameraId, void* param) {
 		PSMTXConcat(mtxView, mtxTrans, mtxTrans);
 		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		color = effMist2Color(cr, cg, cb, (u8)(work->unk2C * (f32)alpha / float_255_80421cb0));
 		f27 = 8.0f;
-		GXSetChanMatColor(GX_COLOR0A0, color);
+		GXSetChanMatColor(GX_COLOR0A0, (GXColor){ cr, cg, cb, (u8)(work->unk2C * (f32)alpha / float_255_80421cb0) });
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(f28, f27, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);

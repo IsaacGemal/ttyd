@@ -325,12 +325,10 @@ static u32 name_tbl[18] = {
     (u32)"card_9", 0x00000001,
 };
 
-// Named zero/unit vectors used by uranai_cap. Defined as real .rodata objects
-// (in the target's order) so the code reaches them by name instead of the
-// compiler pooling anonymous compound-literal templates in the wrong slots.
+// uranai_cap's camera position and up vectors. As compound literals their templates would follow
+// camTarget's, the reverse of the target's .rodata order.
 static const Vec vec3_tik_00008358 = { 0.0f, 0.0f, 0.0f };
 static const Vec vec3_tik_00008364 = { 0.0f, 1.0f, 0.0f };
-static const Vec vec3_tik_00008370 = { 0.0f, 0.0f, 0.0f };
 
 EVT_BEGIN(evt_uranai_cap)
     CALL(uranai_cap_evt)
@@ -373,7 +371,7 @@ void uranai_cap(CameraId cameraId, void* param) {
     GXSetScissor(1, 1, width - 2, height - 2);
     C_MTXPerspective(persp, 25.0f, (f32)(width / height), 1.0f, 1000.0f);
     GXSetProjection(persp, GX_PERSPECTIVE);
-    camTarget = vec3_tik_00008370;
+    camTarget = (Vec){ 0.0f, 0.0f, 0.0f };
     camTarget.y = (f32)height / 3.0f;
     camUp = vec3_tik_00008364;
     camPos = vec3_tik_00008358;
