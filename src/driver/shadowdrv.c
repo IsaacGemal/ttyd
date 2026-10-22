@@ -271,16 +271,23 @@ __declspec(section ".sdata") u8 gap_07_8040F4AC_sdata[4] = { 0 };
 #pragma force_active reset
 #pragma explicit_zero_data reset
 
-// Data references use the original symbols, not pool constants.
-// The two GXGetTexBufferSize results are declared `unsigned long long` with the calls written out directly;
-// that keeps MWCC from staging each call result through r0 and keeps the block-2 bufferSize2/ramp16 r30/r31 rotation.
-void shadowInit(void) { //almost 1:1, minor regalloc
-    unsigned long long bufferSize;
+void shadowInit(void) {
+#ifdef MUST_MATCH
+    // Match-only: the two GXGetTexBufferSize results are kept in 64-bit locals (u32 stages each call result
+    // through r0), and the char shadow's texture buffer is stored through a `wp` copy of cswp.
+    u64 bufferSize;
     u8* ramp8;
-    unsigned long long bufferSize2;
+    u64 bufferSize2;
     u16* ramp16;
     u32 i;
     CharShadowWork* wp;
+#else
+    u32 bufferSize;
+    u8* ramp8;
+    u32 bufferSize2;
+    u16* ramp16;
+    u32 i;
+#endif
 
     cswp->flags = 0;
     cswp->drawCount = 0;
@@ -293,8 +300,12 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     cswp->entryCount = 0;
     cswp->entries = __memAlloc(HEAP_DEFAULT, sizeof(ShadowEntry) * 64);
     memset(cswp->entries, 0, sizeof(ShadowEntry) * 64);
+#ifdef MUST_MATCH
     wp = cswp;
     wp->texBuffer = smartAlloc(GXGetTexBufferSize(ShadowSizeTbl[0], ShadowSizeTbl[0], GX_TF_IA4, 0, 0), 0);
+#else
+    cswp->texBuffer = smartAlloc(GXGetTexBufferSize(ShadowSizeTbl[0], ShadowSizeTbl[0], GX_TF_IA4, 0, 0), 0);
+#endif
     dswp->flags = 2;
     dswp->drawCount = 0;
     dswp->configIdx = 0;
@@ -340,16 +351,38 @@ void shadowInit(void) { //almost 1:1, minor regalloc
         }                                           \
     } while (0)
 #ifdef MUST_MATCH
-// MUST_MATCH: retail passes each by-value GXColor through one of the function's fixed outgoing-argument
-// slots (r1+0xc fog, r1+0x18 battle, and the r1+0x10 scratch/r1+0x14 argument pair for the else path). Declaring the colours as function-scope locals and passing their addresses through a
-// GXColor*-taking function-pointer cast -- MWCC passes a by-value 4-byte GXColor as a pointer either way --
-// makes the register allocator lay those locals out in exactly those slots. The plain by-value calls are
-// under #else.
+// MUST_MATCH: in shadowCharShadowDisp_Projection retail passes the battle and else-path material colours through
+// fixed outgoing-argument slots (r1+0x18 battle, and the r1+0x10 scratch/r1+0x14 argument pair for the else path).
+// Declaring the colours as function-scope locals and passing their addresses through a GXColor*-taking
+// function-pointer cast -- MWCC passes a by-value 4-byte GXColor as a pointer either way -- makes the register
+// allocator lay those locals out in exactly those slots. The plain by-value calls are under #else. The original
+// passes compound literals here, in polygonInit, textureInit and in cylinderShadowDraw (dat_804198e4/e8 and the
+// four .sbss2 colours are their templates); that form needs the templates to be anonymous, not named objects.
 #define SHADOW_MAT_COLOR(chan, var, col) (var = (col), ((void (*)(s32, GXColor*))GXSetChanMatColor)((chan), &(var)))
-#define SHADOW_FOG_COLOR(var, col)                                                                                                                                       \
-    (var = (col),                                                                                                                                                        \
-     ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, &(var)))
+// MUST_MATCH: cylinderShadowDraw passes its by-value colours through inlines. An inline's parameter or local takes
+// a stack slot below the call-argument copies, where the original has the colour; a plain by-value argument gets
+// a copy above them, so the slots swap.
+static inline void shadowMatColor(GXColor c) {
+    GXSetChanMatColor(GX_COLOR0A0, c);
+}
+
+static inline void shadowTevColor(u8 a) {
+    GXColor c = unk_80422fa0;
+    c.a = a;
+    GXSetTevColor(GX_TEVREG0, c);
+}
+
+// MUST_MATCH: SHADOW_DISP_PROJ_SETUP reaches the projection matrix two ways, through an inline for `proj` and as
+// w->projection for the GXSetProjection argument, so the two are not CSE'd and its registers come out as retail's
+// (`&w->projection` in both places is 78 lines off).
+static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return &w->projection; }
+#define PROJ_MTX(w) shadowDispProjMtx(w)
+#else
+#define PROJ_MTX(w) (&(w)->projection)
 #endif
+// The viewport/scissor/look-at/projection block the original expands identically for the proj, proj+depth and
+// char shadow draw paths; it was a macro in the source. `size` is declared at function scope (not in the macro)
+// so all three expansions share one temp, which is what keeps it in retail's r27 in every branch.
 #define SHADOW_DISP_PROJ_SETUP(w, extra)                                                                                                   \
     do {                                                                                                                                   \
         ShadowConfigFields* cfg;                                                                                                           \
@@ -363,7 +396,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
         GXSetViewport(float_0_804198f4, float_0_804198f4, (f32)size, (f32)size, float_0_804198f4, float_1_80419904);                                                                        \
         GXSetScissor(1, 1, size - 2, size - 2);                                                                                            \
         cfg = (ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48);                                                                       \
-        proj = shadowDispProjMtx(w);                                                                                                   \
+        proj = PROJ_MTX(w);                                                                                                            \
         camPos = cfg->camPos;                                                                                                              \
         C_MTXLookAt(w->lookAt, &camPos, &cfg->up, &cfg->target);                                                              \
         if (cfg->isOrtho == 0) {                                                                                                             \
@@ -376,6 +409,63 @@ void shadowInit(void) { //almost 1:1, minor regalloc
         PSMTXCopy(camGetCurPtr()->view, tmp_view);                                                                                         \
         PSMTXCopy(w->lookAt, camGetCurPtr()->view);                                                                          \
     } while (0)
+
+// The GX setup of the polygon and texture shadow passes. Super Paper Mario's shadowdrv has these as the functions
+// polygonInit and textureInit, called from shadowDisp and the Projection, Polygon and Texture draws; here MWCC
+// inlines them.
+static inline void polygonInit(void) {
+    GXSetNumChans(1);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
+    GXSetChanMatColor(GX_COLOR0A0, cswp->color);
+    GXSetNumTexGens(0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
+    GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXSetCullMode(GX_CULL_NONE);
+    GXSetArray(GX_VA_POS, testKagePosArray, 0xC);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+}
+
+static inline void textureInit(void) {
+    GXTexObj texObj;
+
+    GXSetNumChans(1);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
+    GXSetChanMatColor(GX_COLOR0A0, cswp->color);
+    effGetTexObjN64(0x2C, &texObj);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_RASA, GX_CA_ZERO);
+    GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f9c);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+}
 
 void shadowMain(void) {
     dispEntry(CAMERA_3D, float_0_804198f4, 9, shadowDisp, NULL);
@@ -397,23 +487,6 @@ void shadowMain(void) {
     dswp->drawCount = 0;
 }
 
-static inline void shadowMatColor(GXColor c) {
-    GXSetChanMatColor(GX_COLOR0A0, c);
-}
-
-// The viewport/scissor/look-at/projection block the original expands identically for the
-// proj, proj+depth and char shadow draw paths; it was a macro in the source.
-// The projection matrix is reached two ways -- through shadowDispProjMtx for `proj` and as
-// w->projection for the GXSetProjection argument -- so the two are not CSE'd and the block's registers
-// come out as retail's.
-// `size` is declared at function scope (not in the macro) so all three expansions share one temp,
-// which is what keeps it in retail's r27 in every branch.
-
-
-// The projection matrix through an inline (writing `&w->projection` in the block CSEs with the
-// GXSetProjection argument, and the original recomputes it).
-static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return &w->projection; }
-
 // The instruction stream, calls and branches all match. shadowConfig (+0x40), testKagePosArray (+0xE0)
 // and vertex_tbl (+0x2C0) are defined in this unit's .data, so MWCC reaches them through the shared
 // base r31 = lbl_80303460 (`addi rX, r31, 0x40`) exactly as retail does. 100%: the shared `size`
@@ -427,27 +500,7 @@ void shadowDisp(CameraId cameraId, void* param) {
     if (cameraId == CAMERA_OFFSCREEN2 || cameraId == CAMERA_3D || cameraId == CAMERA_3D_EFFECTA || cameraId == CAMERA_3D_EFFECTB) {
         shadowCharShadowDisp_Polygon(cameraId, param);
         camGetCurPtr();
-        GXSetNumChans(1);
-        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-    shadowMatColor(cswp->color);
-        GXSetNumTexGens(0);
-        GXSetNumTevStages(1);
-        GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-        GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-        GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
-        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
-        GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
-        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
-        GXSetZCompLoc(GX_TRUE);
-        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-        GXSetCurrentMtx(GX_PNMTX0);
-        GXSetCullMode(GX_CULL_NONE);
-        GXSetArray(GX_VA_POS, testKagePosArray, 0xC);
-        GXClearVtxDesc();
-        GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
-        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+        polygonInit();
         GXClearVtxDesc();
         GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
         GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
@@ -510,7 +563,7 @@ BOOL _filter(HitCheckQuery* query, HitEntry* hit) {
     return TRUE;
 }
 
-// The `q` pointer plus `opt_propagation off` are both required (and only together): with either one
+// The `q` pointer (MUST_MATCH) plus `opt_propagation off` are both required (and only together): with either one
 // missing MWCC materialises `_filter` through r3 and schedules its low addi before `&query`, instead of
 // reserving r3 for `&query` and putting `_filter` straight in r4. The declaration order below then keeps
 // mtx in r29 and i in r30.
@@ -521,7 +574,9 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
     HitCheckQuery query;
     f32 (*mtx)[4];
     HitEntry* hit;
+#ifdef MUST_MATCH
     HitCheckQuery* q;
+#endif
     f32 size;
     f32 yScale;
     f32 zero;
@@ -537,12 +592,20 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
             continue;
         }
         if (entry->kind != 3 && (entry->flags & 1) != 0) {
+#ifdef MUST_MATCH
             q = &query;
             q->targetPos = entry->position;
             q->targetPos.y += float_1_80419904;
             q->targetDir = vec3_802c1a90;
             q->targetDistance = float_150_80419920;
             hit = hitCheckVecFilter(q, _filter);
+#else
+            query.targetPos = entry->position;
+            query.targetPos.y += float_1_80419904;
+            query.targetDir = vec3_802c1a90;
+            query.targetDistance = float_150_80419920;
+            hit = hitCheckVecFilter(&query, _filter);
+#endif
             if (hit == NULL) {
                 continue;
             }
@@ -574,9 +637,9 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
 #pragma opt_propagation reset
 
 // Body, control flow and the work/config register pair (r29/r30) match. The GXColor outgoing-argument
-// slots (the macros above) and the vertex block are reproduced under MUST_MATCH. `work` is `void*` with
-// `(CharShadowWork*)` casts at each use (the natural `CharShadowWork* work` makes MWCC pick r30/r29 and
-// drops to 96.80%). The two .sdata2 `~~` pool labels vanish when the unit links.
+// slots (the macros above) and the vertex block are reproduced under MUST_MATCH. Under MUST_MATCH `work` is
+// `void*`, cast at each use: typed CharShadowWork*, MWCC swaps work and config (r30/r29), whatever the
+// declaration order of the typed locals.
 // The vertex block is one straight run that MWCC cuts into scheduling blocks of about 100 initial
 // instructions, and the last cut decides where the `(float_0 + w) - we` fsubs lands. Under MUST_MATCH
 // PROJ_ZERO (every y, and v9's x) reads the zero through a cast: the front end then gives each use its own
@@ -589,7 +652,11 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
 #endif
 void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     ShadowConfigFields* config;
+#ifdef MUST_MATCH
     void* work;
+#else
+    CharShadowWork* work;
+#endif
     ShadowEntry* entry;
     f32 (*view)[4];
     u8 alpha;
@@ -605,7 +672,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     f32 de;
     s32 i;
 #ifdef MUST_MATCH
-    GXColor pBattleColor, pArgColor, pProjColor, pFogColor;
+    GXColor pBattleColor, pArgColor, pProjColor;
 #endif
 
     (void)camId;
@@ -616,31 +683,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     view = camGetCurPtr()->view;
     alpha = cswp->color.a;
 
-    GXSetNumChans(1);
-    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-    GXSetChanMatColor(GX_COLOR0A0, cswp->color);
-    GXSetNumTexGens(0);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
-#ifdef MUST_MATCH
-    SHADOW_FOG_COLOR(pFogColor, unk_80422f98);
-#else
-    GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
-#endif
-    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
-    GXSetZCompLoc(GX_TRUE);
-    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-    GXSetCurrentMtx(GX_PNMTX0);
-    GXSetCullMode(GX_CULL_NONE);
-    GXSetArray(GX_VA_POS, testKagePosArray, 0xC);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    polygonInit();
     GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     if (gp->inBattle != 0) {
 #ifdef MUST_MATCH
@@ -753,27 +796,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
     s32 i;
 
     view = camGetCurPtr()->view;
-    GXSetNumChans(1);
-    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-    shadowMatColor(cswp->color);
-    GXSetNumTexGens(0);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_RASA, GX_CA_ZERO);
-    GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
-    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
-    GXSetZCompLoc(GX_TRUE);
-    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-    GXSetCurrentMtx(GX_PNMTX0);
-    GXSetCullMode(GX_CULL_NONE);
-    GXSetArray(GX_VA_POS, testKagePosArray, 0xC);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    polygonInit();
     zero = float_0_804198f4;
     for (i = 0; i < cswp->entryCount; i++, entry++) {
         if (entry->size == zero) {
@@ -816,7 +839,6 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
     f32 (*view)[4];
     u16 left, top, right, bottom;
-    GXTexObj texObj;
     Mtx mtx;
     f32 zero;
     f32 size;
@@ -824,31 +846,7 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     s32 i;
 
     view = camGetCurPtr()->view;
-    GXSetNumChans(1);
-    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-    shadowMatColor(cswp->color);
-    effGetTexObjN64(0x2C, &texObj);
-    GXLoadTexObj(&texObj, GX_TEXMAP0);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_RASA, GX_CA_ZERO);
-    GXSetFog(GX_FOG_NONE, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f9c);
-    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
-    GXSetZCompLoc(GX_TRUE);
-    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-    GXSetCurrentMtx(GX_PNMTX0);
-    GXSetCullMode(GX_CULL_NONE);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    textureInit();
     size = float_2p5_80419918;
     negSize = -size;
     zero = float_0_804198f4;
@@ -918,15 +916,17 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     }
 }
 
+// With common subexpressions on, MWCC keeps the named float_0/float_1/float_255 loads in registers; retail reloads
+// them at each use, as MWCC does for literal constants (with literals the instructions match without the pragma, but
+// the named constants hold this unit's .sdata2 pool order). That reload keeps the fade clamp and alpha ramp in
+// separate FP temporaries.
 #pragma opt_common_subs off // needed: keeps the fade clamp and alpha ramp in separate FP temporaries
 void cylinder(ShadowEntry* entry) {
-    u8* base = lbl_80303460;
-
     if (entry->flags & 4) {
         GXSetArray(GX_VA_CLR0, color_tbl_nodecay, 4);
-        GXCallDisplayList(base + 0x140, 0x40);
-        GXCallDisplayList(base + 0x180, 0x40);
-        GXCallDisplayList(base + 0x1C0, 0x40);
+        GXCallDisplayList(cylinder_dl_top, 0x40);
+        GXCallDisplayList(cylinder_dl_bottom, 0x40);
+        GXCallDisplayList(cylinder_dl_side, 0x40);
     } else {
         f32 alpha = (f32)cswp->color.a;
         // The fade clamp is declared before the alpha ramp so the u8->f32 conversion scratch stays in f3.
@@ -950,30 +950,23 @@ void cylinder(ShadowEntry* entry) {
             f1 = float_1_80419904;
         }
         {
-            s32 c = (s32)(float_255_80419914 * f1);
+            u8 c = float_255_80419914 * f1;
             GXSetArray(GX_VA_CLR0, color_tbl, 4);
             if (float_0_804198f4 != f31) {
-                GXCallDisplayList(base + 0x200, 0x40);
+                GXCallDisplayList(cylinder_dl_top_inside, 0x40);
             }
-            if (float_1_80419904 != f31 && (c & 0xFF) != 0) {
-                GXCallDisplayList(base + 0x240, 0x40);
+            if (float_1_80419904 != f31 && c != 0) {
+                GXCallDisplayList(cylinder_dl_top_outside, 0x40);
             }
         }
-        GXCallDisplayList(base + 0x180, 0x40);
-        GXCallDisplayList(base + 0x1C0, 0x40);
+        GXCallDisplayList(cylinder_dl_bottom, 0x40);
+        GXCallDisplayList(cylinder_dl_side, 0x40);
     }
 }
 #pragma opt_common_subs reset
 
 // The three material passes each draw the cube display lists for type 1 and the cylinder otherwise; the
 // original expands this identically three times, so it was a macro in the source.
-
-// A by-value GXColor built in an inlined helper keeps its scratch slot where the original has it.
-static inline void shadowTevColor(u8 a) {
-    GXColor c = unk_80422fa0;
-    c.a = a;
-    GXSetTevColor(GX_TEVREG0, c);
-}
 
 
 void cylinderShadowDraw(CameraId camId, void* param) {
@@ -1006,7 +999,16 @@ void cylinderShadowDraw(CameraId camId, void* param) {
         }
         PSMTXConcat(view, entry->matrix, mtx);
         GXLoadPosMtxImm(mtx, GX_PNMTX0);
+#ifdef MUST_MATCH
         shadowTevColor(entry->mode);
+#else
+        {
+            GXColor c = unk_80422fa0;
+
+            c.a = entry->mode;
+            GXSetTevColor(GX_TEVREG0, c);
+        }
+#endif
         GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
         GXSetCullMode(GX_CULL_BACK);
         GXSetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_LO_CLEAR);
@@ -1020,14 +1022,22 @@ void cylinderShadowDraw(CameraId camId, void* param) {
         GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
         GXSetAlphaUpdate(GX_TRUE);
         GXSetColorUpdate(GX_FALSE);
+#ifdef MUST_MATCH
         shadowMatColor(unk_80422fa4);
+#else
+        GXSetChanMatColor(GX_COLOR0A0, unk_80422fa4);
+#endif
         GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
         SHADOW_ENTRY_DRAW(entry);
         GXSetCullMode(GX_CULL_BACK);
         GXSetBlendMode(GX_BM_BLEND, GX_BL_DSTALPHA, GX_BL_INVDSTALPHA, GX_LO_CLEAR);
         GXSetAlphaUpdate(GX_FALSE);
         GXSetColorUpdate(GX_TRUE);
+#ifdef MUST_MATCH
         shadowMatColor(cswp->color);
+#else
+        GXSetChanMatColor(GX_COLOR0A0, cswp->color);
+#endif
         SHADOW_ENTRY_DRAW(entry);
         if (camId == CAMERA_OFFSCREEN2) {
             sysWaitDrawSync();
@@ -1095,14 +1105,14 @@ s32 shadowEntryMode(s32 kind, f32 x, f32 y, f32 z, f32 size) {
     return id;
 }
 
-// The setters below address entries by byte offset (id * sizeof(ShadowEntry) + field offset): the original
-// adds the field offset to the index before the store (stbx), which entries[id].field doesn't reproduce.
 void shadowSetType(s32 id, s32 type) {
-    ((u8*)cswp->entries)[id * 0x5C + 3] = type;
+    ShadowEntry* entry = &cswp->entries[id];
+    entry->type = type;
 }
 
 void U_shadowSetMode(s32 id, s32 mode) {
-    ((u8*)cswp->entries)[id * 0x5C + 0x28] = mode;
+    ShadowEntry* entry = &cswp->entries[id];
+    entry->mode = mode;
 }
 
 void shadowSetVolumeDecay(s32 id, f32 x, f32 y, f32 z) {
@@ -1113,21 +1123,22 @@ void shadowSetVolumeDecay(s32 id, f32 x, f32 y, f32 z) {
 }
 
 void shadowSetSize(s32 id, f32 size) {
-    *(f32*)((u8*)cswp->entries + id * 0x5C + 0x10) = size;
+    ShadowEntry* entry = &cswp->entries[id];
+    entry->size = size;
 }
 
 void shadowSetCamId(s32 id, s32 camId) {
-    *(u16*)((u8*)cswp->entries + id * 0x5C + 0x1A) = camId;
+    ShadowEntry* entry = &cswp->entries[id];
+    entry->camId = camId;
 }
 
 void shadowSetCollision(s32 id, BOOL value) {
-    s32 offset = id * 0x5C;
-    u8* base = (u8*)cswp->entries;
+    ShadowEntry* entry = &cswp->entries[id];
     if (value) {
-        *(u16*)(base + offset) |= 1;
+        entry->flags |= 1;
     }
     else {
-        *(u16*)(base + offset) &= ~1;
+        entry->flags &= ~1;
     }
 }
 

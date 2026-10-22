@@ -1943,10 +1943,7 @@ USER_FUNC(gor_npc_fuwafuwa) {
     f32 elapsed;
     u32 idx;
     f32 v;
-    u32* now;
-    u32* saved;
     s32 name;
-    f32 base;
 
     name = evtGetValue(event, args[0]);
     npc = evtNpcNameToPtr(event, (const char*)name);
@@ -1961,9 +1958,7 @@ USER_FUNC(gor_npc_fuwafuwa) {
             event->userdataf[2] = npc->position.y;
             *(f32*)&event->field_84 = npc->position.z;
         }
-        now = (u32*)&gp->renderTime;
-        saved = (u32*)&event->savedTime;
-        time = (now[1] - saved[1]) / ((*(u32*)0x800000F8 >> 2) / 1000);
+        time = OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime);
         elapsed = sysMsec2FrameFloat((f32)time);
         idx = (u32)(s32)((0.5f + elapsed) * scale) % 40;
         v = event->userdataf[2];
@@ -2102,12 +2097,7 @@ USER_FUNC(minigameselect_msg_set) {
     while (msg[src] != '\n') {
         ((char*)exchange_msgp[0])[pos++] = msg[src++];
     }
-    {
-        char* base = (char*)exchange_msgp[0];
-        base[pos] = msg[src];
-    }
-    src++;
-    pos++;
+    ((char*)exchange_msgp[0])[pos++] = msg[src++];
 
     count = 0;
     for (i = 0; i < 4; i++) {
@@ -2116,10 +2106,7 @@ USER_FUNC(minigameselect_msg_set) {
                 ((char*)exchange_msgp[0])[pos++] = msg[src++];
             }
             count++;
-            {
-                char* base = (char*)exchange_msgp[0];
-                base[pos++] = msg[src++];
-            }
+            ((char*)exchange_msgp[0])[pos++] = msg[src++];
         } else {
             while (msg[src] != '\n') {
                 src++;
@@ -2131,27 +2118,23 @@ USER_FUNC(minigameselect_msg_set) {
     while (msg[src] != 0) {
         ((char*)exchange_msgp[0])[pos++] = msg[src++];
     }
-    {
-        char* base = (char*)exchange_msgp[0];
-        base[pos] = msg[src];
-    }
+#ifdef MUST_MATCH
+    // The terminator copy keeps the loop's (dead) increments: the plain store is 9 lines off.
+    ((char*)exchange_msgp[0])[pos++] = msg[src++];
+#else
+    ((char*)exchange_msgp[0])[pos] = msg[src];
+#endif
 
-    {
-        u32* base = exchange_msgp;
-        i = 0;
-        while (((s8*)base[0])[i] != '>') {
-            i++;
-        }
-        while (((s8*)base[0])[i] != ' ') {
-            i--;
-        }
+    i = 0;
+    while (((s8*)exchange_msgp[0])[i] != '>') {
+        i++;
+    }
+    while (((s8*)exchange_msgp[0])[i] != ' ') {
+        i--;
     }
     num = 0x50 - (4 - count) * 12;
-    {
-        u32* base = exchange_msgp;
-        ((char*)base[0])[i + 1] = num / 10 + '0';
-        ((char*)base[0])[i + 2] = num % 10 + '0';
-    }
+    ((char*)exchange_msgp[0])[i + 1] = num / 10 + '0';
+    ((char*)exchange_msgp[0])[i + 2] = num % 10 + '0';
 
     evtSetValue(event, args[1], exchange_msgp[0]);
     return EVT_RETURN_DONE;
@@ -2344,25 +2327,25 @@ static USER_FUNC(fall_rtn) {
 
         switch (e->field_0x1) {
         case 0:
-            if ((s32)e->field_0x2 != 0) {
-                e->field_0x2 = e->field_0x2 - 1;
+            if (e->field_0x2 != 0) {
+                e->field_0x2--;
             } else {
-                e->field_0x1 = e->field_0x1 + 1;
+                e->field_0x1++;
             }
             break;
         case 1:
             PSVECAdd(&e->field_0x8.field_0x4, &e->field_0x40, &e->field_0x8.field_0x4);
-            e->field_0x40.y = e->field_0x40.y - 0.81666666f;
+            e->field_0x40.y -= 0.81666666f;
             if (e->field_0x8.field_0x4.y <= 0.0f) {
                 e->field_0x8.field_0x4.y = 0.0f;
                 psndSFXOn_3D(sfx_leap, &e->field_0x8.field_0x4);
                 if (__fabsf(e->field_0x40.y) <= 4.0) {
-                    e->field_0x1 = e->field_0x1 + 1;
+                    e->field_0x1++;
                     e->field_0x4 = 300;
                 } else {
                     f32 scale;
                     scale = 0.5f + (f32)(rand() % 21) / 100.0f;
-                    e->field_0x40.y = e->field_0x40.y * -scale;
+                    e->field_0x40.y *= -scale;
                     e->field_0x40.x = 0.0f;
                     e->field_0x40.z = 0.0f;
                 }
@@ -2378,10 +2361,10 @@ static USER_FUNC(fall_rtn) {
             }
             break;
         case 2:
-            e->field_0x4 = e->field_0x4 - 1;
+            e->field_0x4--;
             if (e->field_0x4 == 0) {
                 e->field_0x0 = 1;
-                e->field_0x1 = e->field_0x1 + 1;
+                e->field_0x1++;
             }
             if (e->field_0x4 < 0x3c) {
                 if (e->field_0x4 & 2) {
@@ -4892,13 +4875,16 @@ USER_FUNC(goryuugijo_door_init_slot) {
         for (j = 0; j < 3; j++) {
             angle = &data->angle[i][j];
 
+#ifdef MUST_MATCH
+            // Retail zeroes the angle and wraps it (dead) before the random set.
             *angle = 0.0f;
             if (*angle >= 360.0f) {
                 *angle -= 360.0f;
             }
+#endif
             *angle = 45.0f * irand(8);
             mapObjRotate(drumname[i][j], 0.0f, 0.0f, *angle);
-            data->target[i][j] = *(u32*)((unsigned char*)upsidegara + i * 0x60 + j * 0x20 + irand(8) * 4);
+            data->target[i][j] = (&upsidegara[i * 0x18] + j * 8)[irand(8)];
             mapGrpFlagOn(drumname[i][j * 3 + 5], 1);
             mapGrpFlagOn(drumname[i][j * 3 + 6], 1);
             mapGrpFlagOn(drumname[i][j * 3 + 7], 1);
@@ -4917,8 +4903,9 @@ void goryuugijo_init_slot(EventEntry* event, BOOL isFirstCall) {
     data->flags &= ~1;
 }
 
-// Matching: indexing the u32 table as `&upsidegara[cur * 0x18]` (0x18 elements = 0x60 bytes) gives the
-// original's `add r0,r31,r5` / `add r5,r0,r27` two-step base, and `s8* d` gives the `lbzx r4` byte.
+// Matching: `&upsidegara[cur * 0x18] + i * 8` (one 0x60-byte slot table, one 0x20-byte drum row) gives the
+// original's `add r0,r31,r5` / `add r5,r0,r27` two-step base, and `s8* d` gives the `lbzx r4` byte. The table's
+// entries are compared signed (`cmpw`), hence the `(s32)` on the u32 data.
 void slot_neon_sub(void* arg0, SlotData* data) {
     s32 i;
     s32 r;
@@ -4936,16 +4923,16 @@ void slot_neon_sub(void* arg0, SlotData* data) {
     if (data->timer2 < 0x1b) {
         if (data->timer2 & 1) {
             for (i = 0; i < 3; i++) {
-                u8* up;
+                u32* up;
                 s8* d;
                 r = irand(8);
                 cur = data->now;
-                up = (u8*)&upsidegara[cur * 0x18] + i * 0x20;
+                up = &upsidegara[cur * 0x18] + i * 8;
                 d = &data->target[cur][i];
-                while (*(s32*)(up + r * 4) == *d) {
+                while ((s32)up[r] == *d) {
                     r = (r + 1) & 7;
                 }
-                *d = *(s32*)(up + r * 4);
+                *d = up[r];
                 if (data->flags & 2) {
                     int c = data->now;
                     mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
@@ -5019,7 +5006,7 @@ void slot_neon_sub(void* arg0, SlotData* data) {
         }
     }
     if (data->timer2 <= 0x4e) {
-        data->timer2 = data->timer2 + 1;
+        data->timer2++;
     }
 }
 
@@ -5087,11 +5074,13 @@ done:
     return changed;
 }
 
-// Inline helpers of goryuugijo_main_slot. Their locals become compiler temporaries when inlined, which is what
-// gives the original's registers: the stop sound's address goes straight into r31 (a named local in the caller
-// is materialised into r0 and copied), and slot_count_hit's `cnt = 0` / `i = 0` share one `li` (`mr r7, r8`).
-// slot_stop_sub must start the loop body (the reel-stopped test is inside it) for the sound address to be
-// hoisted out of the loop; `count` and `stop` are the caller's locals, so they keep their caller registers.
+#ifdef MUST_MATCH
+// Match-only helpers of goryuugijo_main_slot (no name evidence; the natural build writes them out). Their locals
+// become compiler temporaries when inlined, which is what gives the original's registers: the stop sound's address
+// goes straight into r31 (a named local in the caller is materialised into r0 and copied), and slot_count_hit's
+// `cnt = 0` / `i = 0` share one `li` (`mr r7, r8`). slot_stop_sub must start the loop body (the reel-stopped test is
+// inside it) for the sound address to be hoisted out of the loop; `count` and `stop` are the caller's locals, so
+// they keep their caller registers.
 static inline s32 slot_count_hit(SlotData* data, s32* gara) {
     s32 cnt = 0;
     s32 i;
@@ -5149,6 +5138,7 @@ static inline void slot_stop_sub(GoryuugijoWork* work, SlotData* data, s32 reel,
     }
     *count += slot_rotate_sub(work, data, reel);
 }
+#endif
 
 // Returns nothing: like goryuugijo_init_slot it is a `void` function stored in an evt UserFunction slot (the
 // original never writes r3). Phase 4's first table read keeps the step in `j` (written inline, the slotgara
@@ -5225,9 +5215,55 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
             }
         }
         changed = 0;
+#ifdef MUST_MATCH
         for (i = 0; i < 3; i++) {
             slot_stop_sub(work, data, i, &changed, &stop);
         }
+#else
+        for (i = 0; i < 3; i++) {
+            if (data->state[i] == 0) {
+                changed += 1;
+                continue;
+            }
+            if (i == data->cursor) {
+                switch (i) {
+                case 0:
+                    if (keyGetButtonTrg(0) & 0x100) {
+                        stop = 1;
+                    } else {
+                        stop = 0;
+                    }
+                    break;
+                case 1:
+                    if (keyGetButtonTrg(0) & 0x100) {
+                        stop = 1;
+                    } else {
+                        stop = 0;
+                    }
+                    break;
+                case 2:
+                    if (keyGetButtonTrg(0) & 0x100) {
+                        stop = 1;
+                    } else {
+                        stop = 0;
+                    }
+                    break;
+                }
+            } else {
+                stop = 0;
+            }
+            if (stop && data->state[i] == 2) {
+                data->state[i] = 3;
+                if (data->flags & 2) {
+                    data->count[i] = 0;
+                } else {
+                    data->count[i] = irand(2);
+                }
+                psndSFXOn("SFX_EVT_GAME_SLOT_STOP1");
+            }
+            changed += slot_rotate_sub(work, data, i);
+        }
+#endif
         if (changed == 3) {
             for (i = 0; i < 3; i++) {
                 goryuugijo_upsidewindow_disp_sub(data->now, i);
@@ -5255,10 +5291,25 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
                 data->phase = 6;
                 break;
             }
+#ifdef MUST_MATCH
             if (slot_count_hit(data, tmp1) < 2) {
                 data->phase = 6;
                 break;
             }
+#else
+            {
+                s32 cnt = 0;
+                for (i = 0; i < 3; i++) {
+                    if (data->target[data->now][i] == tmp1[i]) {
+                        cnt += 1;
+                    }
+                }
+                if (cnt < 2) {
+                    data->phase = 6;
+                    break;
+                }
+            }
+#endif
         }
         if (phase == 0 || phase == 0x12 || phase == 0x24) {
             for (i = 0; i < 3; i++) {

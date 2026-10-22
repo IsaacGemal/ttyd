@@ -263,9 +263,6 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) {
 	}
 }
 
-// dont_inline: retail calls the file's small helpers (BattleWaitAllActiveEvtEnd and others) with `bl` from
-// btlseqMove/BattleSequenceManager; without it MWCC inlines them.
-#pragma dont_inline on
 void btlseqInit(BattleWork* wp) {
 	MarioWork* mario;
 	PartyEntry* party;
@@ -2465,8 +2462,7 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 	if (wp->turnCount >= 2) {
 		BattleMajinaiCheck();
 	}
-	*((s32*)&wp->statusChangeMsg.mAnnouncedFlags + 1) = 0; // low word, then high: two stores, as retail
-	*(s32*)&wp->statusChangeMsg.mAnnouncedFlags = 0;
+	wp->statusChangeMsg.mAnnouncedFlags = 0;
 	BtlActRec_AddCount(&wp->field_16F1C[0x3B - 0x1C]);
 
 	for (i = 0; i < 64; i++) {
@@ -2789,7 +2785,6 @@ void _mapobj_data_touch_scale(s32 kind) { //1:1
 		}
 	}
 }
-#pragma dont_inline reset
 
 // EVT command (default_haikei_set_entry_event): 60-frame delay, then animates the A1/A2
 // background objects in over 15/20 frames. Returns 2 once both have finished (0 while animating).

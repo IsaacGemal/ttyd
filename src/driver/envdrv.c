@@ -207,7 +207,7 @@ void envCapture2(CameraId camId, void* param) { //1:1
         GXInitTexObjLOD(&wp->envBlurObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     }
     if (wp->flags & 0x40000000) {
-        if ((wp->unk98 & 1) && (wp->flags & 8)) {
+        if ((wp->unk98.flags & 1) && (wp->flags & 8)) {
             wp->flags &= ~4;
         }
         wp->flags |= 8;
@@ -504,11 +504,13 @@ void envDisp_DepthOfField(void) {
     s32 texCoord;
     GXTevStageID tevStage;
     GXColor color;
-    // The colour channels and the texcoord copy live in named locals; assigning them in place makes the
-    // two counters and the loop's i/id colour the other way round.
+#ifdef MUST_MATCH
+    // The colour channels and the texcoord copy live in named locals; with the plain assignments (#else)
+    // the two counters and the loop's i/id colour the other way round.
     s32 tc;
     u8 alpha;
     u8 red;
+#endif
 
     if (!(wp->flags & 0x80000000)) {
         return;
@@ -539,6 +541,7 @@ void envDisp_DepthOfField(void) {
         texCoord = 0;
         tevStage = 0;
         envDofTaps(&u->unk4, &texCoord, &tevStage);
+#ifdef MUST_MATCH
         red = u->unk2;
         color.r = red;
         alpha = 0xFF;
@@ -547,6 +550,13 @@ void envDisp_DepthOfField(void) {
         GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
         tc = texCoord++;
         envDofBlendStage(tevStage, tc, 2, 1);
+#else
+        color.r = u->unk2;
+        color.a = 0xFF;
+        GXSetTevKColor(0, color);
+        GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
+        envDofBlendStage(tevStage, texCoord++, 2, 1);
+#endif
         tevStage++;
         GXSetNumTexGens(texCoord);
         GXSetNumTevStages(tevStage);
@@ -564,9 +574,10 @@ void envDisp_DepthOfField(void) {
 #undef GXPosition3f32
 #endif
 
-// A by-value GXColor built as `color = dat; color.a = a;` and then passed lands its local at the higher
-// slot (sp+0x10 here) and the argument copy at sp+0xC, the wrong way round. Building the colour in an
-// inline that returns it puts the return temporary at sp+0xC and the argument at sp+0x10. The default
+#ifdef MUST_MATCH
+// A by-value GXColor built as `color = dat; color.a = a;` and then passed (#else) lands its local at the
+// higher slot (sp+0x10 here) and the argument copy at sp+0xC, the wrong way round. Building the colour in
+// an inline that returns it puts the return temporary at sp+0xC and the argument at sp+0x10. The default
 // (duration == 0) colour goes through a void helper too, or its argument temp takes sp+0x8 and pushes
 // the if-branch temporaries back up.
 static inline GXColor envDisp_MakeBlurColor(u8 alpha) {
@@ -577,9 +588,13 @@ static inline GXColor envDisp_MakeBlurColor(u8 alpha) {
 static inline void envDisp_SetBlurColorDefault(void) {
     GXSetTevKColor(GX_KCOLOR0, dat_8041e518);
 }
+#endif
 void envDisp_Blur(void) {
     EnvironmentWork* wp = envGetWork();
-    EnvironmentBlur* blur = (EnvironmentBlur*)&wp->unk98;
+    EnvironmentBlur* blur = &wp->unk98;
+#ifndef MUST_MATCH
+    GXColor color;
+#endif
     CameraEntry* cam;
     s32 alpha;
     f32 ratio;
@@ -617,10 +632,19 @@ void envDisp_Blur(void) {
             } else {
                 alpha = (s32)(120.0f * (1.0f - ratio) + 128.0f);
             }
+#ifdef MUST_MATCH
             GXSetTevKColor(GX_KCOLOR0, envDisp_MakeBlurColor(alpha));
         } else {
             envDisp_SetBlurColorDefault();
         }
+#else
+            color = dat_8041e514;
+            color.a = alpha;
+            GXSetTevKColor(GX_KCOLOR0, color);
+        } else {
+            GXSetTevKColor(GX_KCOLOR0, dat_8041e518);
+        }
+#endif
 
         GXLoadTexObj(&wp->envBlurObj, GX_TEXMAP0);
         GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
@@ -633,19 +657,14 @@ void envDisp_Blur(void) {
         GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
         GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-        // MWCC puts 0.5f in f3 and the int->float mask double in f4 only when the
-        // factor is a named local; with the literal the two swap and ~14 fmuls/fsubs differ.
-        {
-            f32 half = 0.5f;
-            GXPosition3f32(-gp->fbWidth * half, gp->efbHeight * half, 0.0f);
-            GXTexCoord2f32(0.0f, 0.0f);
-            GXPosition3f32(gp->fbWidth * half, gp->efbHeight * half, 0.0f);
-            GXTexCoord2f32(1.0f, 0.0f);
-            GXPosition3f32(gp->fbWidth * half, -gp->efbHeight * half, 0.0f);
-            GXTexCoord2f32(1.0f, 1.0f);
-            GXPosition3f32(-gp->fbWidth * half, -gp->efbHeight * half, 0.0f);
-            GXTexCoord2f32(0.0f, 1.0f);
-        }
+        GXPosition3f32(-gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
     }
 }
 
@@ -653,7 +672,7 @@ void envDisp_Blur(void) {
 
 void envBlurOn(s32 flag, s32 value) {
     EnvironmentWork* wp = envGetWork();
-    EnvironmentBlur* blur = (EnvironmentBlur*)&wp->unk98;
+    EnvironmentBlur* blur = &wp->unk98;
 
     wp->flags |= 0x40000000;
     wp->flags |= 4;
@@ -689,9 +708,10 @@ void envGlare(EnvironmentGlare* glare) {
     EnvironmentGlare* var_r21;
     GXTevKColorSel temp_r20_2;
     // The target keeps the sign-extended filter x0 in r20 and the texture-matrix index in r23;
-    // caching the cast in x0s and declaring var_r22_3 ahead of var_r23_2 gives those colours
-    // (an inline cast and a late declaration colour them differently).
+    // declaring var_r22_3 ahead of var_r23_2 and (MUST_MATCH) caching the cast in x0s give those colours.
+#ifdef MUST_MATCH
     s16 x0s;
+#endif
     EnvironmentGlare* var_r22_3;
     s32 temp_r29;
     s32 var_r28;
@@ -789,7 +809,9 @@ void envGlare(EnvironmentGlare* glare) {
     temp_r30_2 = temp_r27 + temp_r0;
     temp_r31 = temp_r26 + temp_r8;
     var_r21 = glare;
+#ifdef MUST_MATCH
     x0s = (s16)temp_r26;
+#endif
     while (var_r28 < temp_r29) {
         var_r22_3 = var_r21;
         var_r19_3 = 0;
@@ -806,6 +828,7 @@ void envGlare(EnvironmentGlare* glare) {
         GXSetNumTevStages((u8)(var_r19_3 * 2));
         GXSetNumTexGens((u8)var_r19_3);
         GXBegin(GX_QUADS, GX_VTXFMT7, 4);
+#ifdef MUST_MATCH
         GXPosition3s16(x0s, (s16)temp_r27, 0);
         GXTexCoord2u16(0, 0);
         GXPosition3s16((s16)temp_r31, (s16)temp_r27, 0);
@@ -814,6 +837,16 @@ void envGlare(EnvironmentGlare* glare) {
         GXTexCoord2u16(1, 1);
         GXPosition3s16(x0s, (s16)temp_r30_2, 0);
         GXTexCoord2u16(0, 1);
+#else
+        GXPosition3s16((s16)temp_r26, (s16)temp_r27, 0);
+        GXTexCoord2u16(0, 0);
+        GXPosition3s16((s16)temp_r31, (s16)temp_r27, 0);
+        GXTexCoord2u16(1, 0);
+        GXPosition3s16((s16)temp_r31, (s16)temp_r30_2, 0);
+        GXTexCoord2u16(1, 1);
+        GXPosition3s16((s16)temp_r26, (s16)temp_r30_2, 0);
+        GXTexCoord2u16(0, 1);
+#endif
     }
 }
 
@@ -912,10 +945,10 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
+#ifdef MUST_MATCH
 // envDisp_FF's copy of the unit's sqrtf: MWCC colours the last Newton step's `guess` into
 // f0 (matching the target) only when the last iteration is written as a returned expression
-// instead of a third assignment followed by `return x * guess;`. The shared sqrtf above is
-// left as it was (now unused); this is only for envDisp_FF.
+// instead of a third assignment followed by `return x * guess;` (sqrtf itself, under #else).
 static inline f32 envFF_Sqrtf(f32 x) {
     const f64 _half = .5;
     const f64 _three = 3.0;
@@ -932,6 +965,7 @@ static inline f32 envFF_Sqrtf(f32 x) {
     }
     return x;
 }
+#endif
 
 // `opt_propagation off` is required or MWCC rematerialises the polynomial coefficients into
 // every branch instead of hoisting them (same as evt_sub.c).
@@ -948,8 +982,7 @@ static inline f32 envFF_Sqrtf(f32 x) {
 // compare (the envDisp_DepthOfField shape); that is what puts it in f1 as the target does.
 // The two `angle * angle` squares are written inline so MWCC keeps them in f0. The tail
 // uses `v / 2.0f + 0.5f` (not `v * 0.5f`) so the fused fmadds takes the variable as its
-// first operand. All of this is needed. The .rodata double pool is emitted signed, mask, 0.5, 3.0, 0.0
-// by the immediately generated `envdrv_pool_i2f` helper above (see its comment).
+// first operand. All of this is needed.
 void envDisp_FF(void) {
     EnvironmentWork* wp = envGetWork();
     CameraEntry* cam;
@@ -985,7 +1018,11 @@ void envDisp_FF(void) {
         GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
         GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
+#ifdef MUST_MATCH
         scale = envFF_Sqrtf(gp->fbWidth / 2 * gp->fbWidth / 2 + gp->efbHeight / 2 * gp->efbHeight / 2);
+#else
+        scale = sqrtf(gp->fbWidth / 2 * gp->fbWidth / 2 + gp->efbHeight / 2 * gp->efbHeight / 2);
+#endif
 
         GXBegin(GX_LINES, GX_VTXFMT0, 2000);
         for (i = 0; i < 1000; i++) {
@@ -1079,8 +1116,12 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
     Mtx invC;
     Mtx rotC;
     Mtx scaleD;
+#ifdef MUST_MATCH
     // the target reserves 0x40 here (a 4x4 matrix), which leaves the 0x10 stack gap before scaleD
     Mtx44 frustumE;
+#else
+    Mtx frustumE;
+#endif
     Mtx invE;
     Mtx concatE;
     Mtx lookE;
@@ -1130,17 +1171,26 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
         f32 angX = 3.1415927f * wp->field_0x80 / 180.0f;
         f32 angY = 3.1415927f * wp->field_0x84 / 180.0f;
         f32 scale;
+#ifdef MUST_MATCH
         // a named temp for cos(angY) makes f0 the multiply accumulator, matching the target's operand order
         f32 c;
+#endif
 
         vecA = data->vec28;
         tmp = (f32)sin(angX);
+#ifdef MUST_MATCH
         c = (f32)cos(angY);
         vecB.x = -c * tmp;
         vecB.y = -(f32)sin(angY);
         tmp = (f32)cos(angX);
         c = (f32)cos(angY);
         vecB.z = -c * tmp;
+#else
+        vecB.x = -(f32)cos(angY) * tmp;
+        vecB.y = -(f32)sin(angY);
+        tmp = (f32)cos(angX);
+        vecB.z = -(f32)cos(angY) * tmp;
+#endif
         PSMTXMultVecSR(wp->field_0x70, &vecB, &vecB);
         C_VECHalfAngle(&vecB, &vecA, &vecC);
         PSMTXInvXpose(wp->field_0x78, mtx);
@@ -1439,7 +1489,7 @@ void envAddTev(s32 type, void* param) {
 // set-flag path in the else arm. The bbox `lhz` loads sit in both arms (inside the walk before the
 // `break`, and in the else), as in the original, so the walk running out falls through to the flag
 // comparisons with whatever those registers hold. The initial `flags` load is written through
-// `((MapObject*)yami->unk0)` rather than `obj`; that makes MWCC spill `yami` first (`mr r17, r3`)
+// `yami->unk0` rather than `obj`; that makes MWCC spill `yami` first (`mr r17, r3`)
 // and load obj with `lwz r3, 0x0(r3)` as the target does.
 #pragma opt_propagation off // stops MWCC re-evaluating yami->unk0, so obj/flags colour as the target
 #pragma opt_lifetimes off // needed: without it envSetWater 99.58%
@@ -1476,9 +1526,9 @@ void envSetWater(s32 arg0, void* arg1) {
     x0 = y0 = x1 = y1 = 0;
 #endif
 
-    obj = (MapObject*)yami->unk0;
+    obj = yami->unk0;
     tevStage = yami->tevStage;
-    flags = ((MapObject*)yami->unk0)->flags;
+    flags = yami->unk0->flags;
     texMap = yami->texMap;
     texCoord = yami->texCoord;
     numIndStage = yami->numIndStage;
@@ -1548,7 +1598,7 @@ void envSetWater(s32 arg0, void* arg1) {
     GXInitTexObj(&captureObj, capture, (u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GXInitTexObjLOD(&captureObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 
-    PSMTXMultVec(yami->unk4, &((MapObject*)yami->unk0)->center, &pos);
+    PSMTXMultVec(yami->unk4, &yami->unk0->center, &pos);
     scale = 1000.0f / PSVECDistance(&camGetCurPtr()->cameraPos, &pos);
     if (scale < 0.0f) {
         scale = 0.0f;
@@ -1633,11 +1683,7 @@ void envSetYamiView(Mtx mtx) {
 
 #pragma opt_propagation off  // keep texMap*4 and the loop counters in the target's callee-saved colouring
 void envSetYami(EnvironmentYami* yami) {
-    GlobalWork* g = gp;
-    EnvironmentWork* wp = g->inBattle ? &work[1] : &work[0];
-    u8* texMtx;
-    // texMap*4 kept in a callee-saved register (r29); declared before the counters so it colours after them.
-    s32 texMtxOff;
+    EnvironmentWork* wp = envGetWork();
     int tevStage = yami->tevStage;
     int texMap = yami->texMap;
     int texCoord = yami->texCoord;
@@ -1646,7 +1692,7 @@ void envSetYami(EnvironmentYami* yami) {
     GXTexObj texObj;
 
     u32 oldCount = v_count;
-    u32 newCount = g->retraceCount;
+    u32 newCount = gp->retraceCount;
     if (oldCount != newCount) {
         v_count = newCount;
 
@@ -1666,19 +1712,14 @@ void envSetYami(EnvironmentYami* yami) {
     C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u1, 0.5f);
     PSMTXConcat(mtx, wp->yamiView, mtx);
     PSMTXConcat(mtx, yami->unk4, mtx);
-    texMtx = (u8*)dat_802f9338.tbl;
-    texMtxOff = texMap * 4;
-    GXLoadTexMtxImm(mtx, *(s32*)(texMtx + texMtxOff), GX_MTX3x4);
-    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, *(s32*)(texMtx + texMtxOff), GX_FALSE, GX_PTIDENTITY);
+    GXLoadTexMtxImm(mtx, dat_802f9338.tbl[texMap], GX_MTX3x4);
+    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 
     C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u2, 0.5f);
     PSMTXConcat(mtx, wp->yamiView, mtx);
     PSMTXConcat(mtx, yami->unk4, mtx);
-    {
-        s32* p = (s32*)((u8*)dat_802f9338.tbl + texMtxOff);
-        GXLoadTexMtxImm(mtx, *++p, GX_MTX3x4);
-        GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, *p, GX_FALSE, GX_PTIDENTITY);
-    }
+    GXLoadTexMtxImm(mtx, dat_802f9338.tbl[texMap + 1], GX_MTX3x4);
+    GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, dat_802f9338.tbl[texMap + 1], GX_FALSE, GX_PTIDENTITY);
 
     TEXGetGXTexObjFromPalette(env_tpl, &texObj, 9);
     GXLoadTexObj(&texObj, texMap);

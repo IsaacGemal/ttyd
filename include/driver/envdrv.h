@@ -39,6 +39,14 @@ typedef struct EnvironmentUnk88 {
     f32 unk8; //0x8
 } EnvironmentUnk88;
 
+typedef struct EnvironmentBlur {
+    u16 flags; //0x0
+    u8 unk2[6]; //0x2
+    u64 renderTime; //0x8
+    s32 unk10; //0x10
+    s32 unk14; //0x14
+} EnvironmentBlur;
+
 typedef struct EnvironmentWork {
     s32 flags; //0x0
     smartEntry* capture; //0x4
@@ -55,22 +63,13 @@ typedef struct EnvironmentWork {
     f32 field_0x84; //0x84
     EnvironmentUnk88 unk88; //0x88
     u8 unk94[0x98 - 0x94]; //0x94
-    u16 unk98; //0x98, some substruct
-    u8 unk9A[0xB0 - 0x9A]; //0x9A
+    EnvironmentBlur unk98; //0x98, envBlurOn / envDisp_Blur
     EnvironmentGlareFilter filter; //0xB0
     Mtx yamiView; //0xC0, envSetYamiView
 } EnvironmentWork;
 
-typedef struct EnvironmentBlur {
-    u16 flags; //0x0
-    u8 unk2[6]; //0x2
-    u64 renderTime; //0x8
-    s32 unk10; //0x10
-    s32 unk14; //0x14
-} EnvironmentBlur;
-
 typedef struct EnvironmentYami {
-    void* unk0; //0x0
+    struct MapObject* unk0; //0x0, the object being drawn (MapTevCallback.obj)
     MtxPtr unk4; //0x4
     s32 unk8; //0x8
     s32 tevStage; //0xC

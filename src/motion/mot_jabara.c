@@ -543,7 +543,7 @@ void mot_jabara(void) {
         sp74 = mario->position;
         sp34 = JABARA_F32(float_25_8041ab20);
         var_r28 = 0;
-        hit = (HitEntry*)marioSearchHead(&sp74, &sp34, JABARA_F32(float_200_8041ab24));
+        hit = marioSearchHead(&sp74, &sp34, JABARA_F32(float_200_8041ab24));
         if (hit != NULL) {
             if (!(mario->buttonHeld & 0x100)) {
                 ((JabaraWork*)marioGetPtr()->motStruct)->unk1C++;
@@ -669,7 +669,7 @@ void mot_jabara(void) {
         if (var_f28 < JABARA_F32(float_neg6_8041ab58)) {
             var_f28 = JABARA_F32(float_neg6_8041ab58);
         }
-        hit = (HitEntry*)marioChkLandon(&sp3C, var_f28);
+        hit = marioChkLandon(&sp3C, var_f28);
         if (hit == NULL) {
             mario->position.y = mario->position.y + var_f28;
             break;
@@ -787,7 +787,7 @@ void mot_jabara(void) {
             f30 = (f32)sin((JABARA_F32(float_3p1416_8041ab80) * mario->targetYaw) / 180.0f);
             mario->dispOfs.z = spd * f30 + mario->dispOfs.z;
             dy = JABARA_F32(float_neg1_8041ab84) * (f32)sin(RDBL(0xA0, double_1p5708_802c5c28));
-            hit = (HitEntry*)marioChkLandon2(&sp3C, dy, mario->dispOfs.y);
+            hit = marioChkLandon2(&sp3C, dy, mario->dispOfs.y);
             if (hit == NULL) {
                 mario->position.y = mario->position.y + dy;
                 if ((f32)mario->screenY > JABARA_F32(float_480_8041ab18)) {

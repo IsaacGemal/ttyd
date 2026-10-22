@@ -295,13 +295,11 @@ void BattleStageDisp(void) {
 	dispEntry(4, float_6000_8041c850, 2, BattleStageDispLight, NULL);
 }
 
-#pragma dont_inline on // keep DarkByPoint out of line: the original calls it.
 void DarkByPoint(u8 color, f32 x, f32 y, f32 z) {
 	GXPosition3f32(x, y, z);
 	GXColor4u8(0, 0, 0, color);
 }
 
-// Keep DarkBySquare out of line: the original calls it.
 // The original declares the colour last (its caller evaluates it after the
 // floats); the ABI is identical, so this compiles to the same body either way.
 void DarkBySquare(f32 a, f32 b, f32 c, f32 d, f32 z, u8 color) {
@@ -311,7 +309,6 @@ void DarkBySquare(f32 a, f32 b, f32 c, f32 d, f32 z, u8 color) {
 	DarkByPoint(color, c, d, z);
 	DarkByPoint(color, a, d, z);
 }
-#pragma dont_inline reset
 
 // opt_common_subs off: with common subexpression elimination on, MWCC loads the
 // shared float constants in the reverse order (f2 before f1). DarkBySquare's
@@ -590,7 +587,6 @@ void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ea
 }
 
 // Copy propagation off: without it BattleStageLightSetTarget stops matching.
-#pragma dont_inline on
 void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
 	BattleStage* stage = &_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
@@ -613,7 +609,6 @@ void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease
 		light->targetCur = tmp;
 	}
 }
-#pragma dont_inline reset
 #pragma opt_propagation reset
 
 void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s32 frames, u8 ease) {
@@ -653,7 +648,6 @@ void BattleStageLightSetUpVec(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease)
 }
 #pragma opt_propagation reset
 
-#pragma dont_inline on // keep SetDark out of line: the wrappers call it.
 void BattleStageSetDark(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
 	dark->alphaFrom = dark->alpha;
 	dark->alphaTo = a;
@@ -676,7 +670,6 @@ void BattleStageSetDarkBase(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
 		dark->baseAlpha = a;
 	}
 }
-#pragma dont_inline reset
 
 void BattleStageSetStgDark(u8 a, s32 frames, s32 ease) {
 	BattleStage* stage = &_battleWorkPointer->stage;
@@ -710,11 +703,9 @@ void BattleStageReturnAudDarkBase(s32 frames, s32 ease) {
 	BattleStageSetDark(dark, dark->baseAlpha, frames, ease);
 }
 
-// dont_inline: without it the compiler inlines getSpline into BattleStageMain
 // opt_loop_invariants off: with it on, MWCC hoists float_0 and the int->float
 // conversion constant in the opposite register order (f2/f1 instead of f0/f2).
 #pragma opt_loop_invariants off
-#pragma dont_inline on
 f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) {
 	s32 i;
 
@@ -729,14 +720,12 @@ f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) 
 		return a[i] + t * (b[i] + t * (c[i] + t * d[i]));
 	}
 }
-#pragma dont_inline reset
 #pragma opt_loop_invariants reset
 
 BattleSpotWork* BatSpotGetPtr(void) {
     return wp;
 }
 
-#pragma dont_inline on
 // The (Vec){...} compound literals are deliberate: their parse-time templates
 // become the .rodata words at +0x30/+0x3c/+0x48, which lets MWCC address them
 // (and the int->float conversion double at +0x78) off the vec3_802f31a8 base,
@@ -780,7 +769,6 @@ void batSpotMain() {
         dispEntry(CAMERA_3D_IMAGE, float_neg1000_8041c82c, 0, batSpotDisp, NULL);
     }
 }
-#pragma dont_inline reset
 
 void batSpotDisp(CameraId camId, void* param) {
 	s32 i;
@@ -892,8 +880,6 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 
 //drawCone
 
-// TODO: get this to not inline into batSpotInit
-#pragma dont_inline on
 BattleSpotEntry* batSpotEntry(void) {
 	int i;
 	BattleSpotEntry* entry = wp->entries;
@@ -921,14 +907,11 @@ BattleSpotEntry* batSpotEntry(void) {
 
 static ScreenWork* screen_wp;
 
-// dont_inline: without it the compiler inlines randf into tou_gamen_screen_tev
-// (the original leaves it as a call).
 f32 randf(f32 min, f32 max) {
 	f32 r = (f32)rand() / float_32767_8041c81c;
 	f32 d = max - min;
 	return r * d + min;
 }
-#pragma dont_inline reset
 
 static void screen_capture(CameraId camId, void* param) {
 	GXSetTexCopySrc(0, 0, 0x260, 0x1E0);

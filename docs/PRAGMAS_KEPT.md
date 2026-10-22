@@ -232,7 +232,6 @@ polynomial family" in docs/CONTEXT.md has the detail.
 
 - `mapUnLoad` (opt_propagation, line 971): activeGroup = i folds to li r0 and the mapWork load is copied to both wp and entry; tried: `activeGroup = i = 0` (fixes i only); entry spellings; five decl orders; int i.
 - `mapMain` (opt_common_subs, line 1791): 429 lines of FPR recolouring through the inlined anim/Hermite helpers; tried: int loop counters (no change).
-- `mapSearchDmdJointSub2` (opt_lifetimes, line 3775): parameters a and c swap r29/r30 (22 lines); tried: a joint alias local; dropping name; all six decl orders; `if ((result = ...))`; `strcmp(...) == 0` blocks.
 - `spline_getvalue` (opt_lifetimes, line 4290): `t -= h` starts a new web, so knots[lo]/t/h recolour (42 lines); tried: `t -= knots[lo]` both orders; `t = t - knots[lo]`; a k0 local; a `u = t - h` local; int lo/hi/mid.
 
 ## src/driver/msgdrv.c

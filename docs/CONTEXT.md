@@ -5595,7 +5595,6 @@ evt_mobj, animdrv+mot_plane and battle_audience+battle_stage_object, editing onl
   (EQUIV, and MWCC no longer hangs on them, so those comments are stale). battle.h's BattleWorkCommand* mirrors and
   the unit_party_* weapon-table macros still cast msgSearch to `char*`. A BattleWeapon status sub-record at 0x80
   would clear battle_stage_object's 16 offsets if another version shows one.
-
 ## Second MUST_MATCH pass over the RELs, with the levers found since #1094 (2026-10-21, Claude Opus 5.5 with three Claude Opus 5.5 helpers, n9-q-o-mmrels2)
 
 Task (Isaac): redo #1094's pass over every MUST_MATCH region in rels/ (and the shared include/rel/common headers)
@@ -5913,3 +5912,112 @@ battle_seq, so none of those was edited.
   (3 more); tested only (outside this task's files). evt_mario's and evt_party's searchUnder2 casts once mario_hit
   is free to edit. PRAGMAS_KEPT's line numbers for party_motion and ac_monosiri_target have shifted; its entries
   still hold, except party_motion_jump's dead-assignments diff, now 18 lines (was 8).
+
+## The next twelve worst files by the cleanup index, deep-cleaned (2026-10-21, Claude Opus 5.5 orchestrating four Claude Opus 5.5 workers, n9-q-o-worst3)
+
+Task (Isaac): take mapdrv, envdrv, sac_genki, party_yoshi, gor_03, mario_hit, party_nokonoko, eff_fire, battle_stage,
+battle_camera, shadowdrv and battle_seq (`cleanup_index.py --top 30` after #1114) each as a whole, as #1110 and #1114
+did: raw offsets, MUST_MATCH, pragmas, gotos, function-pointer casts and puns, guarding existing unguarded hacks; no
+field renames without hard evidence, no data layout. The orchestrator took battle_camera, battle_stage and battle_seq;
+workers took mapdrv+envdrv, eff_fire+shadowdrv+sac_genki, party_yoshi+party_nokonoko and gor_03+mario_hit, editing only
+their own .c files (headers through a private include overlay, applied by the orchestrator).
+
+- **Method.** Untracked harness in build/tw3/: try.sh (one unit with its ninja command, obj_equiv against objects saved
+  from 4ee6832b; `NM=1`, `FLAGS=`, `OVL=`, `OUT=` per worker), var.py, fdiff.py, as #1114's. The first four workers
+  stopped together about 25 minutes in, with no report and some files mid-experiment (overlay-dependent); fresh workers
+  continued from their edits (checkpoints in build/tw3/w/*/checkpoint1) and reviewed them. Subagents could not write
+  report files in this harness, so their reports came back as messages; the orchestrator saved them as
+  build/tw3/w/*/REPORT.md. Every commit: tools/ci.py PASS on that commit's own tree (tools/tests stubbed for the eight
+  test_wave_launch environment errors, pyelftools through `uv run`), `build/G8MJ01/ok` recreated, fncast_lint and
+  local_prototypes clean; every header change compiled EQUIV and NM OK in every includer (mario_hit.h: 25 files;
+  mapdrv.h/envdrv.h: 789 sources).
+- **Counts** (tools/cleanup_index.py, 4ee6832b -> this branch): index **14.478 -> 14.487** per kLOC (10090 -> 10097
+  weighted). raw_offset 281 -> 232, opt_pragma 670 -> 626, goto 115 -> 106, fn_ptr_cast 51 -> 50, must_match 770 -> 838,
+  field_0x 4426 -> 4514, address_name 2625 -> 2632, unk_name 684 -> 690. The index rises because unguarded hacks were
+  guarded (+68 regions) and typing turned uncounted casts into counted `field_0xNN` placeholders (mapdrv +63). Per file
+  (per kLOC; weighted; raw / must_match / pragma / goto / fn_ptr_cast):
+  - mapdrv 25.958 -> 37.698 (103 -> 150): 16/4/8/2/0 -> 7/12/6/0/0; field_0x 55 -> 118
+  - envdrv 64.516 -> 72.158 (98 -> 113): 1/3/16/0/0 -> 0/16/16/0/0
+  - sac_genki 59.110 -> 59.487 (97 -> 95): 0/6/2/0/5 -> 0/6/0/0/5 (42 code lines went)
+  - party_yoshi 59.255 -> 70.405 (97 -> 113): 19/6/0/1/0 -> 15/18/0/1/0
+  - gor_03 16.485 -> 15.608 (89 -> 85): 1/4/0/2/0 -> 0/9/0/2/0; field_0x 79 -> 72
+  - mario_hit 33.648 -> 36.742 (89 -> 97): 0/4/4/0/0 -> 0/10/4/0/0
+  - party_nokonoko 64.353 -> 5.166 (89 -> 7): 32/1/0/7/0 -> 0/6/0/0/0; address_name 9 -> 0
+  - eff_fire 87.810 -> 92.369 (85 -> 92): 0/8/2/0/0 -> 0/13/2/0/0
+  - battle_stage 82.902 -> 71.354 (80 -> 68): 1/3/22/0/0 -> 1/3/10/0/0
+  - battle_camera 58.372 -> 51.618 (76 -> 67): 0/3/26/0/0 -> 0/10/0/0/0; field_0x 25 -> 35
+  - shadowdrv 60.606 -> 60.317 (76 -> 76): 6/8/4/0/3 -> 4/15/4/0/2
+  - battle_seq 26.345 -> 25.641 (72 -> 70): 0/3/4/0/1 -> 0/3/2/0/1
+- **Per-file `-inline noauto`** (#1114's lever): battle_camera, battle_stage, battle_seq and sac_genki are identical
+  without their 32 dont_inline lines and sac_genki's auto_inline pair. mario_hit is not (18 functions differ:
+  marioHitCheckVec and others are auto-inlined in retail).
+- **Typing.**
+  - BattleCameraWork 0xFC/0x100 are f32s (the current btl_camera_shake_w x and btl_camera_shake_h y offsets; battle_camera
+    is their only user). battle_seq's u64 mAnnouncedFlags is zeroed plainly (EQUIV; the two-word pun went).
+  - mario_hit.h: eleven probes return HitEntry* (each returns a hitCheckVecFilter/marioHitCheckVec result or NULL); the
+    casts in mario_hit, evt_mario, evt_party and mot_jabara go.
+  - mapdrv.h types the map file's chunks after their chunk strings (vcd_table's MapVtxArray pointers, texture_table,
+    material_name_table, animation_table), MapHeader.data/rel (u8*/u32*; SPM's MapFileContext has mainData/relTable
+    there), the texture-info block (an anonymous struct whose 0x8/0xA/0xC take TEXHeader's width/height/data), and
+    MapMatTexMtx's five channels also as an array (mapAnimColorObj indexes them). mapSearchDmdJoint/Sub/Sub2 take
+    MapFileJoint* and const char* (SPM's prototype; Sub2's opt_lifetimes pair goes; the '|' test is `(s8)*name`).
+  - envdrv.h: EnvironmentWork 0x98 is the EnvironmentBlur (name unk98 kept), 0xC0 an Mtx, EnvironmentYami.unk0 a
+    MapObject* (MapTevCallback.obj at the same offset).
+  - sac_genki's file-local GenkiStar: eighteen floats are six Vecs (whole-Vec copies at each offset; 16 puns go).
+  - gor_03's upsidegara is indexed as the u32[48] it is; party_nokonoko's field_10C updates read the field once
+    revise360's result is no longer staged through a local (the `f1` temp was what made the named field differ).
+- **Names with outside evidence.** shadowdrv's repeated GX setup is SPM's polygonInit (0x80035FC0) and textureInit
+  (0x80036174) (~/spm-refs/symbols.txt, called from shadowDisp/Projection/Polygon and Texture), now static inlines with
+  plain calls: four MUST_MATCH regions and a function-pointer cast macro go. mapdrv's inlined material lookup is SPM's
+  mapSearchDmdMaterial (0x8008C2EC). No struct field was renamed.
+- **Reshaped copies removed** (structural fakes): mario_hit's marioHitCheckVecRound (callers call marioHitCheckVec),
+  gndCenti/gndAngle(Plain); mapdrv's mapFindAnm (mapSearchAnmObj indexes `&wp->entries[i]` in its loop, which gives
+  retail's registers in it and its four inlined copies) and mapSearchTextureIdx; written-out copies of party_yoshi's
+  unk_800b474c and L_sweatEntry and party_nokonoko's nokonoko_use_post are calls.
+- **Guarded** (unguarded before; each plain form re-tested first and still different, plain `#else` arms): invented
+  inline names bcam_get_unit, getUnitPtr (battle_camera), marioHitCheckVecAttr, marioChkGndRollProbe (mario_hit),
+  slot_count_hit, slot_stop_sub (gor_03), yoshiSearchHead, yoshiRideHeight (party_yoshi), eff_fire's four colour
+  inlines, shadowdrv's shadowMatColor/shadowTevColor/shadowDispProjMtx, mapFlushColor; steering temps and copies
+  (battle_camera's `_t`, mario_hit's `ofs`/`t`, shadowdrv's u64 locals, `wp`, `q`, void* work); puns (party_nokonoko's
+  koops zero stores, party_yoshi's vec base pointer); dead stores (gor_03's angle wrap, its terminator copy's
+  increments, mapdrv's negated d == 0 flag, which replaces the `__cntlzw` intrinsic). envdrv's steering forms that
+  n9-q-s-mmenv had made the only version are guarded again under the current Standing rules.
+- **Rejected in review.** party.h union members giving the koops 0x178/0x17C bands an s32 type only for punned zero
+  stores (the pun respelled); a relabel of party_yoshi's ten_pool_helper as a STRIPPED FUNCTION PLACEHOLDER (nothing
+  shows a stripped function there; the original comment is back); eff_fire's placeholder patch (pool layout, not
+  EQUIV); mario_hit's `-pragma "inline_max_size(N)"` in extra_cflags (N 530..920 EQUIV and drops both pragma pairs, but
+  it is a pragma moved to the command line with no precedent: Isaac's call).
+- **Left, with what was tried** (details in the reports):
+  - battle_stage: BattleStageDispDark's opt_common_subs (the -640/640 loads swap: 24 lines), the light-setter
+    opt_propagation pairs (stage/light pointer folding; 28-42 lines; `light += idx` no better), drawCone's
+    MATCH_F32 reads (the extern constants are const .sdata2 definitions). battle_seq: battleSortPhaseMoveTable's
+    propagation (count takes r31 in every shape, 30 lines), `_rule_disp`'s Waku_col cast (passing the global by value is
+    an r6/r7 swap, 12 lines), the `(0, x)` commas (54 lines plain; the weapon is a u8 data definition).
+  - mapdrv: `entry + 0x178` (writes past MapEntry), the packed-list walk (6-16 lines), mapUnLoad's propagation (5 lines
+    over ~70 variants), mapMain's common_subs (493), spline_getvalue's lifetimes (28). The single-use loader inlines
+    (mapLoadHeader, mapLoadRelocate, mapLoadAnimTable, mapLoadDispFlags) and the mapAnim*/mapDrawObjectFog/spline_*
+    inlines are invented names left unguarded: guarding them means hand-expanding most of _mapLoad (decision for a
+    later pass; SPM's `Locate` may be evidence for mapLoadHeader). The `zero` locals stay plain.
+  - envdrv: the sin/cos pairs (family decision), DoF's inline_max_size (278-856 lines), envSetWater (26/35),
+    envSetYami (92), envDofFar as a call of envDofTaps (14), envGlare's 8-byte int walk (6).
+  - shadowdrv: u64 bufferSize (any 32-bit type 4-6 lines), cylinder's common_subs (pool order), the Texture FIFO
+    block, `shadowConfig + idx * 0x48` (u8[144] data). sac_genki: the icon-colour casts (fncast2's verdict; plain calls
+    170 lines). eff_fire: Disp3's volatile zero-Vec reads (184-384).
+  - party_yoshi: 0x2A0/0x2B4 raw (MarioWork's union names there are other types), yoshi_use's volatile copies,
+    yoshi_exit's goto. party_nokonoko: fadd32's operand order (16 shapes, best 2). gor_03: slot_rotate_sub's gotos
+    (115-198), fall_rtn's string commas (16), main_slot's dead OR terms (17). mario_hit's pragma pairs (see above).
+- **For a reviewer.** mario_hit's and gor_03's `#else` arms are written-out copies of the guarded inlines (mario_hit's
+  roll probe uses its own `probe` local so the natural build keeps the outer `hit`). party_yoshi's `!= 0xFFFFFFFFu`
+  compares an s32 field unsigned, as retail. mapdrv's MapMatTexMtx union and MapVtxList (file-local) are new types;
+  the new type names come from chunk strings. shadowdrv's setters keep an `entry` element pointer (retail's folded
+  stbx; plain 8 lines).
+- **Leads.** The `.sbss2` "templates" in eff_fire and shadowdrv are MWCC's own compound-literal templates: with
+  `(GXColor){...}` at the sites (as SPM writes them) all of eff_fire's colour-inline guards and most of shadowdrv's
+  colour regions go, EQUIV (data layout; patches in build/tw3/w/eff/). party_yoshi: one zero-Vec inline with compound
+  literals removes its goto and 11 regions (needs an inline name and deletes three vec3 definitions; patch in
+  build/tw3/w/party/). Typed data definitions that clear puns: shadowConfig, eff_fire's col_tbl and colours,
+  sac_genki's vec3_*. `#pragma pool_data on` is redundant in party_yoshi and party_nokonoko. hitdrv can read the typed
+  vcd_table; evt_map with a GXColor* mapGetFog; hei_09's envSetWater argument is a MapTevCallback*; the spline
+  functions could take f32*. EventEntry 0x84 is a fourth userdata word (gor_03 writes it through a pun, muj reads
+  userdataf[3] past a [3] array). A separate local holding a call result can be what keeps a named field from
+  matching: fold it before keeping a raw offset.
