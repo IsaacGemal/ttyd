@@ -29,10 +29,6 @@ extern s32 quake_evt[];
 extern s32 quake_bgmode_evt[];
 extern s32 evt_gazigazi[];
 
-// .rodata named constants.
-const Vec vec3_802f3238 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3244 = { 0.0f, 0.0f, 0.0f };
-
 // marioDmgRetQuakeOn
 void marioDmgRetQuakeOn(void) {
 	evtEntry(!marioBgmodeChk() ? quake_evt : quake_bgmode_evt, 0, 0);
@@ -79,9 +75,6 @@ s32 marioChkDamageSink(void) {
 void set_damage_root_ypos(f32 y) {
 	marioGetPtr()->damageRootY = y;
 }
-// The 0x98/0xA4 Vec copies below are copied through double-volatile casts to keep the original
-// unscheduled per-component load/store order (the plain copy hoists `lwz 0x8(r30)` and `lwz 0xC(r30)`
-// one instruction too early). That fix is worth 0.80% and is guarded by MUST_MATCH (rule 7).
 // case 0x14 keeps the returned Vec in a pointer local and assigns floorY from it in an if/else; the
 // plain ternary gives floorY f31 and spd f30, the reversed of the original's spd=f31/floorY=f30.
 void mot_damage(void) {
@@ -125,14 +118,8 @@ void mot_damage(void) {
 				effSplashEntry(0, pos.x, pos.y, pos.z, 1.0f);
 			}
 		}
-#ifdef MUST_MATCH
-		// The original copies each Vec with an unscheduled per-component load/store pair.
-		*(volatile Vec*)&mario->dispOfs = *(volatile Vec*)&vec3_802f3238;
-		*(volatile Vec*)&mario->dispOfs2 = *(volatile Vec*)&vec3_802f3244;
-#else
-		mario->dispOfs = vec3_802f3238;
-		mario->dispOfs2 = vec3_802f3244;
-#endif
+		mario->dispOfs = (Vec){ 0.0f, 0.0f, 0.0f };
+		mario->dispOfs2 = (Vec){ 0.0f, 0.0f, 0.0f };
 		npcStopForEvent();
 	}
 
