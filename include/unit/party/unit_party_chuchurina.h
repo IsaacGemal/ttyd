@@ -1,6 +1,7 @@
 #pragma once
 
 #include "driver/camdrv.h"
+#include "battle/battle_database_common.h"
 
 void mono_disp(CameraId cameraId, void* param);
 void mono_capture(CameraId cameraId, void* param);
@@ -14,10 +15,10 @@ extern f32 float_304_8041ddcc;
 extern f32 float_1_8041ddd0;
 extern f32 float_neg240_8041ddd4;
 extern u32 dat_8041ddb8;
-extern u32 partyWeapon_ChuchurinaNormalAttackLeftLast[48];
-extern u32 partyWeapon_ChuchurinaItemSteal[48];
-extern u32 partyWeapon_ChuchurinaMadowaseAttack[48];
-extern u32 partyWeapon_ChuchurinaKiss[48];
+extern BattleWeapon partyWeapon_ChuchurinaNormalAttackLeftLast;
+extern BattleWeapon partyWeapon_ChuchurinaItemSteal;
+extern BattleWeapon partyWeapon_ChuchurinaMadowaseAttack;
+extern BattleWeapon partyWeapon_ChuchurinaKiss;
 extern s32 btldefaultevt_avoid_counter_event[];
 extern s32 lbl_80003500[];
 extern s32 evt_audience_acrobat_notry[];

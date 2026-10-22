@@ -3,13 +3,14 @@
 typedef struct EventEntry EventEntry;
 
 #include <dolphin/types.h>
+#include "battle/battle_database_common.h"
 void N__disp_2D(s32 type, s32 index);
 void main_button(s32 index);
 s32 main_suki(EventEntry* event, BOOL isFirstCall);
 
 typedef struct MapTevCallback MapTevCallback;
 void set_tev(MapTevCallback* param);
-extern u32 weapon_words[48];
+extern BattleWeapon weapon_words;
 s32 end_suki(EventEntry* event, BOOL isFirstCall);
 s32 wait_star_stone_up_end(EventEntry* event, BOOL isFirstCall);
 s32 star_stone_get_attack_point(EventEntry* event);

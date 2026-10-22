@@ -29,6 +29,7 @@
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
 #include "battle/battle_weapon_power.h"
+#include "battle/battle_database_common.h"
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_8037EC10[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
@@ -47,7 +48,7 @@ USER_FUNC(_chuchu_make_extra_work_area) {
 #define TECH_MENU_ENTRY(table)                                                        \
     cmd->mWeaponTable[*count].mIndex = -1;                                            \
     cmd->mWeaponTable[*count].mItem = 0;                                              \
-    cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                 \
+    cmd->mWeaponTable[*count].mWeaponParams = (table);                                \
     cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
     cmd->mWeaponTable[*count].mIcon =                                                 \
         cmd->mWeaponTable[*count].mWeaponParams->icon;                                \
@@ -515,69 +516,158 @@ static __declspec(section ".data") u32 one_negone_359[2] = {
     0x3F800000, 0xBF800000,
 };
 
-// TODO: type
-u32 pose_table_chuchurina_stay[48] = {
-    0x00000009, (u32)"PCH_D_4", 0x00000002, (u32)"PCH_D_4",
-    0x00000003, (u32)"PCH_X_1", 0x00000004, (u32)"PCH_D_2",
-    0x00000005, (u32)"PCH_X_1", 0x00000001, (u32)"PCH_N_1",
-    0x0000001B, (u32)"PCH_D_3", 0x0000001C, (u32)"PCH_S_1",
-    0x00000025, (u32)"PCH_G_1", 0x0000001F, (u32)"PCH_G_1",
-    0x00000027, (u32)"PCH_D_1", 0x00000028, (u32)"PCH_W_1",
-    0x0000002A, (u32)"PCH_R_1", 0x00000039, (u32)"PCH_D_2",
-    0x00000038, (u32)"PCH_D_2", 0x0000003C, (u32)"PCH_D_4",
-    0x0000003D, (u32)"PCH_D_2", 0x00000041, (u32)"PCH_T_1",
-    0x00000034, (u32)"PCH_I_1", 0x00000043, (u32)"PCH_C_1",
-    0x00000040, (u32)"PCH_X_1", 0x00000031, (u32)"PCH_O_1",
-    0x0000002D, (u32)"PCH_G_1", 0x00000045, (u32)"PCH_S_1",
+BattleDispPose pose_table_chuchurina_stay[24] = {
+    { 0x09, "PCH_D_4" },
+    { 0x02, "PCH_D_4" },
+    { 0x03, "PCH_X_1" },
+    { 0x04, "PCH_D_2" },
+    { 0x05, "PCH_X_1" },
+    { 0x01, "PCH_N_1" },
+    { 0x1B, "PCH_D_3" },
+    { 0x1C, "PCH_S_1" },
+    { 0x25, "PCH_G_1" },
+    { 0x1F, "PCH_G_1" },
+    { 0x27, "PCH_D_1" },
+    { 0x28, "PCH_W_1" },
+    { 0x2A, "PCH_R_1" },
+    { 0x39, "PCH_D_2" },
+    { 0x38, "PCH_D_2" },
+    { 0x3C, "PCH_D_4" },
+    { 0x3D, "PCH_D_2" },
+    { 0x41, "PCH_T_1" },
+    { 0x34, "PCH_I_1" },
+    { 0x43, "PCH_C_1" },
+    { 0x40, "PCH_X_1" },
+    { 0x31, "PCH_O_1" },
+    { 0x2D, "PCH_G_1" },
+    { 0x45, "PCH_S_1" },
 };
 
 
-// TODO: type
-static u32 data_table[16] = {
-    0x00000005, (u32)&chuchurina_appeal_event, 0x00000006, (u32)&attack_audience_event,
-    0x00000001, (u32)__makeTechMenuFunc, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000040, (u32)&party_win_reaction, 0x00000007, (u32)subset_attack_ready_jump_event,
-    0x0000002F, (u32)btldefaultevt_avoid_counter_event, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[8] = {
+    { 0x05, chuchurina_appeal_event },
+    { 0x06, attack_audience_event },
+    { 0x01, __makeTechMenuFunc },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x40, party_win_reaction },
+    { 0x07, subset_attack_ready_jump_event },
+    { 0x2F, btldefaultevt_avoid_counter_event },
+    { 0x00, NULL },
 };
 
-// TODO: type
-u32 unitpartsdata_Party_Chuchurina[76] = {
-    0x00000001, (u32)"btl_un_chuchurina", (u32)"c_tyutyu", 0x00000000,
-    0x00000000, 0x00000000, 0x41800000, 0x41C00000,
-    0x40A00000, 0x00000000, 0x41C00000, 0x00000000,
-    0x00140018, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table_chuchurina_stay, 0x00000002,
-    (u32)"btl_un_chuchurina", (u32)"c_tyutyu", 0x00000000, 0x00000000,
-    0x00000000, 0x41800000, 0x41C00000, 0x40A00000,
-    0x00000000, 0x41C00000, 0x00000000, 0x00140018,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x13010000,
-    0x00000000, (u32)&pose_table_chuchurina_stay, 0x00000003, (u32)"btl_un_chuchurina",
-    (u32)"c_tyutyu", 0x00000000, 0x00000000, 0x00000000,
-    0x41800000, 0x41C00000, 0x40A00000, 0x00000000,
-    0x41C00000, 0x00000000, 0x00140018, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x13010000, 0x00000000,
-    (u32)&pose_table_chuchurina_stay, 0x00000004, (u32)"btl_un_chuchurina", (u32)"c_tyutyu",
-    0x00000000, 0x00000000, 0x00000000, 0x41800000,
-    0x41C00000, 0x40A00000, 0x00000000, 0x41C00000,
-    0x00000000, 0x00140018, 0x00FF0000, (u32)&defence,
-    (u32)&defence_attr, 0x13010000, 0x00000000, (u32)&pose_table_chuchurina_stay,
+BattleUnitKindPart unitpartsdata_Party_Chuchurina[4] = {
+    {
+        1,                                    // partNum
+        "btl_un_chuchurina",                  // partName
+        "c_tyutyu",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x00000009,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_chuchurina_stay,           // poseTable
+    },
+    {
+        2,                                    // partNum
+        "btl_un_chuchurina",                  // partName
+        "c_tyutyu",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x13010000,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_chuchurina_stay,           // poseTable
+    },
+    {
+        3,                                    // partNum
+        "btl_un_chuchurina",                  // partName
+        "c_tyutyu",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x13010000,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_chuchurina_stay,           // poseTable
+    },
+    {
+        4,                                    // partNum
+        "btl_un_chuchurina",                  // partName
+        "c_tyutyu",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x13010000,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_chuchurina_stay,           // poseTable
+    },
 };
 
-// TODO: type
-u32 unitdata_Party_Chuchurina[49] = {
-    0x000000E6, (u32)"btl_un_chuchurina", 0x000A0005, 0x05010100,
-    0x00000064, 0x00090014, 0x0021000A, 0x00160000,
-    0x00000000, 0x41400000, 0x00000000, 0x00000000,
-    0x00000000, 0x41F00000, 0x00000000, 0x00000000,
-    0x41F00000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41200000,
-    0x00000000, 0x00000000, 0x41200000, 0x41AB999A,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_PARTY_DAMAGE1",
-    (u32)"SFX_MARIO_DAMAGE_FIRE1", (u32)"SFX_MARIO_DAMAGE_ICE1", (u32)"SFX_MARIO_DAMAGE_BIRIBIRI1", 0x02000000,
-    (u32)&regist, 0x04000000, (u32)&unitpartsdata_Party_Chuchurina, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unitdata_Party_Chuchurina = {
+    UNIT_MS_MOWZ,                    // mUnitType
+    "btl_un_chuchurina",             // name
+    10,                              // maxHp
+    5,                               // maxFp
+    5,                               // mDangerHP
+    1,                               // mPerilHP
+    1,                               // mLevel
+    0,                               // mBonusExp
+    0,                               // bonusCoinRolls
+    0,                               // bonusCoinRate
+    0,                               // baseCoin
+    100,                             // escapeRate
+    9,                               // field_0x14
+    20,                              // width
+    33,                              // height
+    { 10, 22 },                      // statusIconOffset
+    { 0.0f, 12.0f, 0.0f },           // centerOffset
+    { 0, 0 },                        // hpGaugeOffset
+    { 0.0f, 30.0f, 0.0f },           // talkTogeBaseOffset
+    { 0.0f, 30.0f, 0.0f },           // field_0x3C
+    { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
+    0.0f,                            // field_0x54
+    0.0f,                            // field_0x58
+    { 10.0f, 0.0f, 0.0f },           // bintaHitOffset
+    { 10.0f, 21.45f, 0.0f },         // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },            // cutBaseOffset
+    0.0f,                            // cutWidth
+    0.0f,                            // cutHeight
+    0,                               // turnOrder
+    0,                               // turnOrderVariance
+    -1,                              // swallowRate
+    0,                               // swallowAttribute
+    100,                             // field_0x8C
+    20,                              // itemStealParam
+    { 0.0f, 0.0f, 0.0f },            // starPointDispOffset
+    "SFX_PARTY_DAMAGE1",             // damageSfxName
+    "SFX_MARIO_DAMAGE_FIRE1",        // fireDamageSfxName
+    "SFX_MARIO_DAMAGE_ICE1",         // iceDamageSfxName
+    "SFX_MARIO_DAMAGE_BIRIBIRI1",    // electricDamageSfxName
+    0x02000000,                      // attributeFlags
+    (BattleVulnerableStatus*)regist, // vulnStatus
+    4,                               // numParts
+    unitpartsdata_Party_Chuchurina,  // mParts
+    init_event,                      // initEvtScript
+    data_table,                      // dataTable
 };
 
 static EVT_BEGIN(battle_entry_event)
@@ -617,116 +707,550 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 partyWeapon_ChuchurinaNormalAttackLeft[48] = {
-    (u32)"btl_wn_pcr_normal", 0x01500000, 0x00000000, (u32)"msg_pch_binta",
-    0x64000000, 0x3F800000, 0x01016432, 0x00000000,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00150302,
-    (u32)"msg_ac_binta", 0x00034047, 0x00000202, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyChuchurinaAttack_NormalAttack, 0x00000064, 0x00020300, 0x00000000,
+BattleWeapon partyWeapon_ChuchurinaNormalAttackLeft = {
+    "btl_wn_pcr_normal",                      // name
+    336,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pch_binta",                          // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    21,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_binta",                           // acHelpMsg
+    0x00034047,                               // special
+    0x00000202,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyChuchurinaAttack_NormalAttack,       // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 2, 3, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_ChuchurinaNormalAttackRight[48] = {
-    (u32)"btl_wn_pcr_normal", 0x01500000, 0x00000000, (u32)"msg_pch_binta",
-    0x64000000, 0x3F800000, 0x01016432, 0x00000000,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00160302,
-    (u32)"msg_ac_binta", 0x00034047, 0x00000202, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyChuchurinaAttack_NormalAttack, 0x00000064, 0x00020300, 0x00000000,
+BattleWeapon partyWeapon_ChuchurinaNormalAttackRight = {
+    "btl_wn_pcr_normal",                      // name
+    336,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pch_binta",                          // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    22,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_binta",                           // acHelpMsg
+    0x00034047,                               // special
+    0x00000202,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyChuchurinaAttack_NormalAttack,       // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 2, 3, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_ChuchurinaNormalAttackLeftLast[48] = {
-    (u32)"btl_wn_pcr_normal", 0x01500000, 0x00000000, (u32)"msg_pch_binta",
-    0x64000000, 0x3F800000, 0x01016432, (u32)weaponGetACOutputParam,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00170302,
-    (u32)"msg_ac_binta", 0x00034047, 0x00000002, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyChuchurinaAttack_NormalAttack, 0x00000064, 0x00020200, 0x00000000,
+BattleWeapon partyWeapon_ChuchurinaNormalAttackLeftLast = {
+    "btl_wn_pcr_normal",                      // name
+    336,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pch_binta",                          // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetACOutputParam,                   // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    23,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_binta",                           // acHelpMsg
+    0x00034047,                               // special
+    0x00000002,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyChuchurinaAttack_NormalAttack,       // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_ChuchurinaNormalAttackRightLast[48] = {
-    (u32)"btl_wn_pcr_normal", 0x01500000, 0x00000000, (u32)"msg_pch_binta",
-    0x64000000, 0x3F800000, 0x01016432, (u32)weaponGetACOutputParam,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00180302,
-    (u32)"msg_ac_binta", 0x00034047, 0x00000002, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyChuchurinaAttack_NormalAttack, 0x00000064, 0x00020200, 0x00000000,
+BattleWeapon partyWeapon_ChuchurinaNormalAttackRightLast = {
+    "btl_wn_pcr_normal",                      // name
+    336,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pch_binta",                          // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetACOutputParam,                   // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    24,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_binta",                           // acHelpMsg
+    0x00034047,                               // special
+    0x00000002,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyChuchurinaAttack_NormalAttack,       // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_ChuchurinaMadowaseAttack[48] = {
-    (u32)"btl_wn_pcr_madowase", 0x01520000, 0x00000000, (u32)"msg_pch_madowaseru",
-    0x64030000, 0x3F800000, 0x03056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    (u32)"msg_ac_madowaseru", 0x00020000, 0x000007FF, 0x80002004,
-    0x00000000, 0x64030000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyChuchurinaAttack_MadowaseAttack, 0x00000064, 0x00000500, 0x00000000,
+BattleWeapon partyWeapon_ChuchurinaMadowaseAttack = {
+    "btl_wn_pcr_madowase",                    // name
+    338,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pch_madowaseru",                     // description
+    100,                                      // baseAccuracy
+    3,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    3,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_madowaseru",                      // acHelpMsg
+    0x00020000,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    100,                                      // dizzyChance
+    3,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyChuchurinaAttack_MadowaseAttack,     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_ChuchurinaItemSteal[48] = {
-    (u32)"btl_wn_pcr_steal", 0x01510000, 0x00000000, (u32)"msg_pch_heart_catch",
-    0x64020000, 0x3F800000, 0x01056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00140302,
-    (u32)"msg_ac_heart_catch", 0x00020000, 0x00000202, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyChuchurinaAttack_ItemSteal, 0x00000064, 0x00000500, 0x00000000,
+BattleWeapon partyWeapon_ChuchurinaItemSteal = {
+    "btl_wn_pcr_steal",                       // name
+    337,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pch_heart_catch",                    // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    20,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_heart_catch",                     // acHelpMsg
+    0x00020000,                               // special
+    0x00000202,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyChuchurinaAttack_ItemSteal,          // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_ChuchurinaKiss[48] = {
-    (u32)"btl_wn_pcr_kiss", 0x01530000, 0x00000000, (u32)"msg_pch_kiss",
-    0x640A0000, 0x3F800000, 0x01056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101160, 0x10000000, 0x00000302,
-    (u32)"msg_ac_chuchurina_kiss", 0x00020008, 0x000007FF, (u32)lbl_80003500,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyChuchurinaAttack_Kiss, 0x00000064, 0x00000500, 0x00000000,
+BattleWeapon partyWeapon_ChuchurinaKiss = {
+    "btl_wn_pcr_kiss",                        // name
+    339,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pch_kiss",                           // description
+    100,                                      // baseAccuracy
+    10,                                       // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101160,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_chuchurina_kiss",                 // acHelpMsg
+    0x00020008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    (u32)lbl_80003500,                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyChuchurinaAttack_Kiss,               // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 
@@ -944,9 +1468,9 @@ EVT_BEGIN(partyChuchurinaAttack_NormalAttack)
     SET_VALUE(LW(0), LW(10))
     MODULO(LW(0), 2)
     IF_INT_NOT_EQUAL(LW(0), 0)
-        SET_VALUE(LW(12), PTR(partyWeapon_ChuchurinaNormalAttackRight))
+        SET_VALUE(LW(12), PTR(&partyWeapon_ChuchurinaNormalAttackRight))
     ELSE
-        SET_VALUE(LW(12), PTR(partyWeapon_ChuchurinaNormalAttackLeft))
+        SET_VALUE(LW(12), PTR(&partyWeapon_ChuchurinaNormalAttackLeft))
     END_IF
     CALL(btlevtcmd_GetUnitWork, -2, 4, LW(15))
     IF_INT_NOT_EQUAL(LW(15), 0)
@@ -968,10 +1492,10 @@ EVT_BEGIN(partyChuchurinaAttack_NormalAttack)
     END_IF
     GOTO(21)
     LABEL(20)
-    IF_INT_EQUAL(LW(12), PTR(partyWeapon_ChuchurinaNormalAttackLeft))
-        SET_VALUE(LW(12), PTR(partyWeapon_ChuchurinaNormalAttackLeftLast))
+    IF_INT_EQUAL(LW(12), PTR(&partyWeapon_ChuchurinaNormalAttackLeft))
+        SET_VALUE(LW(12), PTR(&partyWeapon_ChuchurinaNormalAttackLeftLast))
     ELSE
-        SET_VALUE(LW(12), PTR(partyWeapon_ChuchurinaNormalAttackRightLast))
+        SET_VALUE(LW(12), PTR(&partyWeapon_ChuchurinaNormalAttackRightLast))
     END_IF
     LABEL(21)
     CALL(btlevtcmd_PreCheckCounter, -2, LW(3), LW(4), LW(12), 256, LW(0))
@@ -987,10 +1511,10 @@ EVT_BEGIN(partyChuchurinaAttack_NormalAttack)
         CASE_OR_EQUAL(15)
         CASE_OR_EQUAL(16)
         CASE_OR_EQUAL(17)
-        IF_INT_EQUAL(LW(12), PTR(partyWeapon_ChuchurinaNormalAttackLeft))
-            SET_VALUE(LW(12), PTR(partyWeapon_ChuchurinaNormalAttackLeftLast))
+        IF_INT_EQUAL(LW(12), PTR(&partyWeapon_ChuchurinaNormalAttackLeft))
+            SET_VALUE(LW(12), PTR(&partyWeapon_ChuchurinaNormalAttackLeftLast))
         ELSE
-            SET_VALUE(LW(12), PTR(partyWeapon_ChuchurinaNormalAttackRightLast))
+            SET_VALUE(LW(12), PTR(&partyWeapon_ChuchurinaNormalAttackRightLast))
         END_IF
         BEGIN_SIBLING_EVENT_GET_ID(LW(15))
             SET_VALUE(LW(7), LW(13))
@@ -1681,7 +2205,7 @@ EVT_BEGIN(partyChuchurinaAttack_ItemSteal)
     CALL(btlevtcmd_CommandPayWeaponCost, -2)
     CALL(btlevtcmd_RunDataEventChild, -2, 7)
     SET_VALUE(LW(14), 0)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(partyWeapon_ChuchurinaItemSteal), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&partyWeapon_ChuchurinaItemSteal), 256, LW(5))
     IF_INT_EQUAL(LW(5), 5)
         CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 42)
         CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(3.0f))
@@ -1692,7 +2216,7 @@ EVT_BEGIN(partyChuchurinaAttack_ItemSteal)
         CALL(btlevtcmd_FaceDirectionAdd, LW(3), LW(0), 20)
         CALL(btlevtcmd_TransStageFloorPosition, LW(0), LW(1), LW(2))
         CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(partyWeapon_ChuchurinaItemSteal), 256, LW(5))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&partyWeapon_ChuchurinaItemSteal), 256, LW(5))
         RETURN
     END_IF
     CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 42)
@@ -1734,7 +2258,7 @@ EVT_BEGIN(partyChuchurinaAttack_ItemSteal)
     END_IF
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
     CALL(evt_btl_camera_set_zoom, 0, 350)
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(partyWeapon_ChuchurinaItemSteal), 256, LW(5))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&partyWeapon_ChuchurinaItemSteal), 256, LW(5))
     CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
     CALL(btlevtcmd_GetHeight, -2, LW(15))
     MULTIPLY(LW(15), 2)

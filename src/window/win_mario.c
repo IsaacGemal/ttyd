@@ -42,7 +42,7 @@ typedef struct LinkDt {
 } LinkDt;
 
 extern LinkDt linkDt[];
-extern BattleWeapon* superActionTable[];
+extern BattleWeapon* superActionTable[18];
 
 // .rodata strings, before the code: their jumptable pools land after them
 const char str_msg_menu_mario_lv[20] = "msg_menu_mario_lv\x00\x00\x00";

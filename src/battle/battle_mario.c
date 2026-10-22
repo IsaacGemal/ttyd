@@ -4195,13 +4195,10 @@ BattleWeapon marioWeapon_Suki = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 superActionTable[18] = {
-    (u32)&marioWeapon_Genki0, (u32)&marioWeapon_Deka, (u32)&marioWeapon_BakuGame, (u32)&marioWeapon_Muki,
-    (u32)&marioWeapon_Scissor, (u32)&marioWeapon_Genki1, (u32)&marioWeapon_Suki, (u32)&marioWeapon_ZubaStar,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+BattleWeapon* superActionTable[18] = {
+    &marioWeapon_Genki0, &marioWeapon_Deka, &marioWeapon_BakuGame, &marioWeapon_Muki, &marioWeapon_Scissor,
+    &marioWeapon_Genki1, &marioWeapon_Suki, &marioWeapon_ZubaStar, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL,
 };
 
 static EVT_BEGIN(marioAttackEvent_NormalJump)

@@ -31,19 +31,8 @@
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
 #include "unit/party/unit_party_chuchurina.h"
+#include "battle/battle_database_common.h"
 #pragma pool_data on // the original addresses its .rodata through one base register
-
-// A pose-sound table entry. No header declares this type; the layout matches the
-// 0x14-byte entries of `posesound_normal_attack` and the fields BtlUnit_ControlPoseSoundMain
-// reads (pose name 0x0, volume 0x4, callback 0x8, sound name 0xC, pitch 0x10, flags 0x12).
-typedef struct PoseSoundEntry {
-    const char* poseName;                                   // 0x0
-    f32 volume;                                             // 0x4
-    s32 (*callback)(BattleUnit*, struct PoseSoundEntry*, void*); // 0x8
-    const char* soundName;                                  // 0xC
-    s16 pitch;                                              // 0x10
-    u16 flags;                                              // 0x12
-} PoseSoundEntry;
 
 extern u32 lbl_80379A00[2];
 #pragma force_active on
@@ -52,10 +41,10 @@ extern s32 one_negone[];
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
 static s32 init_event[54];
 static s32 damage_event[16];
-u32 partyWeapon_YoshiNormalAttack[48];
-u32 partyWeapon_YoshiNomikomi_Shot[48];
-u32 partyWeapon_YoshiEggAttack_Minimini[48];
-u32 partyWeapon_YoshiCallGuard[48];
+BattleWeapon partyWeapon_YoshiNormalAttack;
+BattleWeapon partyWeapon_YoshiNomikomi_Shot;
+BattleWeapon partyWeapon_YoshiEggAttack_Minimini;
+BattleWeapon partyWeapon_YoshiCallGuard;
 s32 partyYoshiAttack_NormalAttack[1025];
 s32 partyYoshiAttack_Nomikomi[1000];
 s32 partyYoshiAttack_EggAttack[1266];
@@ -120,29 +109,43 @@ static __declspec(section ".data") u32 one_negone_359[2] = {
     0x3F800000, 0xBF800000,
 };
 
-// TODO: type
-u32 pose_table_yoshi_stay[50] = {
-    0x00000009, (u32)"PYS_D_5", 0x00000002, (u32)"PYS_D_5",
-    0x00000003, (u32)"PYS_X_1", 0x00000004, (u32)"PYS_D_2",
-    0x00000005, (u32)"PYS_X_1", 0x00000001, (u32)"PYS_N_1",
-    0x0000001B, (u32)"PYS_D_3", 0x0000001C, (u32)"PYS_S_1",
-    0x00000025, (u32)"PYS_G_2", 0x0000001F, (u32)"PYS_G_1",
-    0x00000027, (u32)"PYS_D_1", 0x00000028, (u32)"PYS_W_1",
-    0x0000002A, (u32)"PYS_R_1", 0x00000039, (u32)"PYS_D_2",
-    0x00000038, (u32)"PYS_D_2", 0x0000003C, (u32)"PYS_D_4",
-    0x0000003D, (u32)"PYS_D_2", 0x00000041, (u32)"PYS_T_1",
-    0x00000034, (u32)"PYS_I_1", 0x00000043, (u32)"PYS_C_1",
-    0x00000042, (u32)"PYS_O_1", 0x00000040, (u32)"PYS_F_1",
-    0x00000031, (u32)"PYS_F_1", 0x0000002D, (u32)"PYS_G_1",
-    0x00000045, (u32)"PYS_S_1",
+BattleDispPose pose_table_yoshi_stay[25] = {
+    { 0x09, "PYS_D_5" },
+    { 0x02, "PYS_D_5" },
+    { 0x03, "PYS_X_1" },
+    { 0x04, "PYS_D_2" },
+    { 0x05, "PYS_X_1" },
+    { 0x01, "PYS_N_1" },
+    { 0x1B, "PYS_D_3" },
+    { 0x1C, "PYS_S_1" },
+    { 0x25, "PYS_G_2" },
+    { 0x1F, "PYS_G_1" },
+    { 0x27, "PYS_D_1" },
+    { 0x28, "PYS_W_1" },
+    { 0x2A, "PYS_R_1" },
+    { 0x39, "PYS_D_2" },
+    { 0x38, "PYS_D_2" },
+    { 0x3C, "PYS_D_4" },
+    { 0x3D, "PYS_D_2" },
+    { 0x41, "PYS_T_1" },
+    { 0x34, "PYS_I_1" },
+    { 0x43, "PYS_C_1" },
+    { 0x42, "PYS_O_1" },
+    { 0x40, "PYS_F_1" },
+    { 0x31, "PYS_F_1" },
+    { 0x2D, "PYS_G_1" },
+    { 0x45, "PYS_S_1" },
 };
 
-// TODO: type
-static u32 data_table[16] = {
-    0x00000005, (u32)&yoshi_appeal_event, 0x00000006, (u32)&attack_audience_event,
-    0x00000001, (u32)__makeTechMenuFunc, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000040, (u32)&party_win_reaction, 0x00000007, (u32)subset_attack_ready_jump_event,
-    0x0000002F, (u32)btldefaultevt_avoid_counter_event, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[8] = {
+    { 0x05, yoshi_appeal_event },
+    { 0x06, attack_audience_event },
+    { 0x01, __makeTechMenuFunc },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x40, party_win_reaction },
+    { 0x07, subset_attack_ready_jump_event },
+    { 0x2F, btldefaultevt_avoid_counter_event },
+    { 0x00, NULL },
 };
 
 // TODO: type
@@ -161,77 +164,188 @@ static u32 regist[6] = {
     0x64646464, 0x64640000,
 };
 
-// TODO: type
-u32 pose_table_egg_g[8] = {
-    0x0000001C, (u32)"CHU_C_1", 0x0000001F, (u32)"CHU_C_1",
-    0x00000027, (u32)"CHU_C_1", 0x00000045, (u32)"CHU_C_1",
+BattleDispPose pose_table_egg_g[4] = {
+    { 0x1C, "CHU_C_1" },
+    { 0x1F, "CHU_C_1" },
+    { 0x27, "CHU_C_1" },
+    { 0x45, "CHU_C_1" },
 };
 
-// TODO: type
-u32 pose_table_egg_y[8] = {
-    0x0000001C, (u32)"CHU_C_2", 0x0000001F, (u32)"CHU_C_2",
-    0x00000027, (u32)"CHU_C_2", 0x00000045, (u32)"CHU_C_2",
+BattleDispPose pose_table_egg_y[4] = {
+    { 0x1C, "CHU_C_2" },
+    { 0x1F, "CHU_C_2" },
+    { 0x27, "CHU_C_2" },
+    { 0x45, "CHU_C_2" },
 };
 
-// TODO: type
-u32 pose_table_egg_p[8] = {
-    0x0000001C, (u32)"CHU_C_3", 0x0000001F, (u32)"CHU_C_3",
-    0x00000027, (u32)"CHU_C_3", 0x00000045, (u32)"CHU_C_3",
+BattleDispPose pose_table_egg_p[4] = {
+    { 0x1C, "CHU_C_3" },
+    { 0x1F, "CHU_C_3" },
+    { 0x27, "CHU_C_3" },
+    { 0x45, "CHU_C_3" },
 };
 
-// TODO: type
-u32 unitpartsdata_Party_Yoshi[133] = {
-    0x00000001, (u32)"btl_un_yoshi", (u32)"c_babyyoshi", 0x00000000,
-    0x00000000, 0x00000000, 0x41800000, 0x41C00000,
-    0x40A00000, 0x00000000, 0x41C00000, 0x00000000,
-    0x00140018, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table_yoshi_stay, 0x00000002,
-    (u32)"btl_un_yoshi", (u32)"c_tamago", 0x00000000, 0x00000000,
-    0x00000000, 0x41800000, 0x41C00000, 0x40A00000,
-    0x00000000, 0x41C00000, 0x00000000, 0x00140018,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x13010000,
-    0x00000000, (u32)&pose_table_egg_g, 0x00000003, (u32)"btl_un_yoshi",
-    (u32)"c_tamago", 0x00000000, 0x00000000, 0x00000000,
-    0x41800000, 0x41C00000, 0x40A00000, 0x00000000,
-    0x41C00000, 0x00000000, 0x00140018, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x13010000, 0x00000000,
-    (u32)&pose_table_egg_g, 0x00000004, (u32)"btl_un_yoshi", (u32)"c_tamago",
-    0x00000000, 0x00000000, 0x00000000, 0x41800000,
-    0x41C00000, 0x40A00000, 0x00000000, 0x41C00000,
-    0x00000000, 0x00140018, 0x00FF0000, (u32)&defence,
-    (u32)&defence_attr, 0x13010000, 0x00000000, (u32)&pose_table_egg_g,
-    0x00000005, (u32)"btl_un_yoshi", (u32)"c_tamago", 0x00000000,
-    0x00000000, 0x00000000, 0x41800000, 0x41C00000,
-    0x40A00000, 0x00000000, 0x41C00000, 0x00000000,
-    0x00140018, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x13010000, 0x00000000, (u32)&pose_table_egg_g, 0x00000006,
-    (u32)"btl_un_yoshi", (u32)"c_tamago", 0x00000000, 0x00000000,
-    0x00000000, 0x41800000, 0x41C00000, 0x40A00000,
-    0x00000000, 0x41C00000, 0x00000000, 0x00140018,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x13010000,
-    0x00000000, (u32)&pose_table_egg_g, 0x00000007, (u32)"btl_un_yoshi",
-    (u32)"c_tamago", 0x00000000, 0x00000000, 0x00000000,
-    0x41800000, 0x41C00000, 0x40A00000, 0x00000000,
-    0x41C00000, 0x00000000, 0x00140018, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x13010000, 0x00000000,
-    (u32)&pose_table_egg_g,
+BattleUnitKindPart unitpartsdata_Party_Yoshi[7] = {
+    {
+        1,                                    // partNum
+        "btl_un_yoshi",                       // partName
+        "c_babyyoshi",                        // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x00000009,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_yoshi_stay,                // poseTable
+    },
+    {
+        2,                                    // partNum
+        "btl_un_yoshi",                       // partName
+        "c_tamago",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x13010000,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_egg_g,                     // poseTable
+    },
+    {
+        3,                                    // partNum
+        "btl_un_yoshi",                       // partName
+        "c_tamago",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x13010000,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_egg_g,                     // poseTable
+    },
+    {
+        4,                                    // partNum
+        "btl_un_yoshi",                       // partName
+        "c_tamago",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x13010000,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_egg_g,                     // poseTable
+    },
+    {
+        5,                                    // partNum
+        "btl_un_yoshi",                       // partName
+        "c_tamago",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x13010000,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_egg_g,                     // poseTable
+    },
+    {
+        6,                                    // partNum
+        "btl_un_yoshi",                       // partName
+        "c_tamago",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x13010000,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_egg_g,                     // poseTable
+    },
+    {
+        7,                                    // partNum
+        "btl_un_yoshi",                       // partName
+        "c_tamago",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x13010000,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_egg_g,                     // poseTable
+    },
 };
 
-// TODO: type
-u32 unitdata_Party_Yoshi[49] = {
-    0x000000E2, (u32)"btl_un_yoshi", 0x000A0005, 0x05010100,
-    0x00000064, 0x00090014, 0x00210008, 0x001C0000,
-    0x00000000, 0x41400000, 0x00000000, 0x00000000,
-    0x00000000, 0x42200000, 0x00000000, 0x00000000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41200000,
-    0x00000000, 0x00000000, 0x41200000, 0x41AB999A,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_PARTY_DAMAGE1",
-    (u32)"SFX_MARIO_DAMAGE_FIRE1", (u32)"SFX_MARIO_DAMAGE_ICE1", (u32)"SFX_MARIO_DAMAGE_BIRIBIRI1", 0x02000000,
-    (u32)&regist, 0x07000000, (u32)&unitpartsdata_Party_Yoshi, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unitdata_Party_Yoshi = {
+    UNIT_YOSHI,                      // mUnitType
+    "btl_un_yoshi",                  // name
+    10,                              // maxHp
+    5,                               // maxFp
+    5,                               // mDangerHP
+    1,                               // mPerilHP
+    1,                               // mLevel
+    0,                               // mBonusExp
+    0,                               // bonusCoinRolls
+    0,                               // bonusCoinRate
+    0,                               // baseCoin
+    100,                             // escapeRate
+    9,                               // field_0x14
+    20,                              // width
+    33,                              // height
+    { 8, 28 },                       // statusIconOffset
+    { 0.0f, 12.0f, 0.0f },           // centerOffset
+    { 0, 0 },                        // hpGaugeOffset
+    { 0.0f, 40.0f, 0.0f },           // talkTogeBaseOffset
+    { 0.0f, 40.0f, 0.0f },           // field_0x3C
+    { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
+    0.0f,                            // field_0x54
+    0.0f,                            // field_0x58
+    { 10.0f, 0.0f, 0.0f },           // bintaHitOffset
+    { 10.0f, 21.45f, 0.0f },         // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },            // cutBaseOffset
+    0.0f,                            // cutWidth
+    0.0f,                            // cutHeight
+    0,                               // turnOrder
+    0,                               // turnOrderVariance
+    -1,                              // swallowRate
+    0,                               // swallowAttribute
+    100,                             // field_0x8C
+    20,                              // itemStealParam
+    { 0.0f, 0.0f, 0.0f },            // starPointDispOffset
+    "SFX_PARTY_DAMAGE1",             // damageSfxName
+    "SFX_MARIO_DAMAGE_FIRE1",        // fireDamageSfxName
+    "SFX_MARIO_DAMAGE_ICE1",         // iceDamageSfxName
+    "SFX_MARIO_DAMAGE_BIRIBIRI1",    // electricDamageSfxName
+    0x02000000,                      // attributeFlags
+    (BattleVulnerableStatus*)regist, // vulnStatus
+    7,                               // numParts
+    unitpartsdata_Party_Yoshi,       // mParts
+    init_event,                      // initEvtScript
+    data_table,                      // dataTable
 };
 
 static EVT_BEGIN(battle_entry_event)
@@ -271,155 +385,646 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 partyWeapon_YoshiNormalAttack[48] = {
-    (u32)"btl_wn_pys_normal", 0x01500000, 0x00000000, (u32)"msg_pys_hip_drop",
-    0x64000000, 0x3F800000, 0x01016432, (u32)weaponGetPowerFromPartyAttackLv,
-    0x00000001, 0x00000001, 0x00000001, 0x00000001,
-    0x00000001, 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_hip_drop", 0x00035097, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyYoshiAttack_NormalAttack, 0x000A0A64, 0x0A050505, 0x05050000,
+BattleWeapon partyWeapon_YoshiNormalAttack = {
+    "btl_wn_pys_normal",                         // name
+    336,                                         // icon
+    ITEM_NULL,                                   // item
+    "msg_pys_hip_drop",                          // description
+    100,                                         // baseAccuracy
+    0,                                           // baseFpCost
+    0,                                           // baseSpCost
+    0,                                           // superguardType
+    1.0f,                                        // field_0x14
+    1,                                           // mStylishCommandMultiplier
+    1,                                           // field_0x19
+    100,                                         // mBingoSlotChance
+    50,                                          // field_0x1B
+    weaponGetPowerFromPartyAttackLv,             // hpDamageFn
+    { 1, 1, 1, 1, 1, 1, 0, 0 },                  // hpDamageWork
+    NULL,                                        // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                  // fpDamageWork
+    0x01001260,                                  // targetClassFlags
+    0x20001004,                                  // targetPropertyFlags
+    0,                                           // element
+    0,                                           // field_0x6D
+    3,                                           // actionLevel
+    2,                                           // field_0x6F
+    "msg_ac_hip_drop",                           // acHelpMsg
+    0x00035097,                                  // special
+    0x0000000C,                                  // counterResistanceFlags
+    0x80002004,                                  // targetWeightingFlags
+    0,                                           // sleepChance
+    0,                                           // sleepTime
+    0,                                           // stopChance
+    0,                                           // stopTime
+    0,                                           // dizzyChance
+    0,                                           // dizzyTime
+    0,                                           // poisonChance
+    0,                                           // poisonTime
+    0,                                           // poisonStrength
+    0,                                           // confuseChance
+    0,                                           // confuseTime
+    0,                                           // electricChance
+    0,                                           // electricTime
+    0,                                           // dodgyChance
+    0,                                           // dodgyTime
+    0,                                           // burnChance
+    0,                                           // burnTime
+    0,                                           // freezeChance
+    0,                                           // freezeTime
+    0,                                           // sizeChangeChance
+    0,                                           // sizeChangeTime
+    0,                                           // sizeChangeStrength
+    0,                                           // atkChangeChance
+    0,                                           // atkChangeTime
+    0,                                           // atkChangeStrength
+    0,                                           // defChangeChance
+    0,                                           // defChangeTime
+    0,                                           // defChangeStrength
+    0,                                           // allergicChance
+    0,                                           // allergicTime
+    0,                                           // ohkoChance
+    0,                                           // chargeStrength
+    0,                                           // fastChance
+    0,                                           // fastTime
+    0,                                           // slowChance
+    0,                                           // slowTime
+    0,                                           // frightChance
+    0,                                           // galeForceChance
+    0,                                           // paybackTime
+    0,                                           // holdFastTime
+    0,                                           // invisibleChance
+    0,                                           // invisibleTime
+    0,                                           // hpRegenTime
+    0,                                           // hpRegenStrength
+    0,                                           // fpRegenTime
+    0,                                           // fpRegenStrength
+    partyYoshiAttack_NormalAttack,               // mAttackEvtScript
+    { 0, 10, 10, 100, 10, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_YoshiNomikomi_Shot[48] = {
-    (u32)"btl_wn_pys_lv1", 0x01510000, 0x00000000, (u32)"msg_pys_nomikomi",
-    0x64040000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromPartyAttackLv,
-    0x00000002, 0x00000004, 0x00000003, 0x00000005,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00060302,
-    (u32)"msg_ac_nomikomi", 0x00020047, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyYoshiAttack_Nomikomi, 0x00000064, 0x00050500, 0x00000000,
+BattleWeapon partyWeapon_YoshiNomikomi_Shot = {
+    "btl_wn_pys_lv1",                         // name
+    337,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pys_nomikomi",                       // description
+    100,                                      // baseAccuracy
+    4,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromPartyAttackLv,          // hpDamageFn
+    { 2, 4, 3, 5, 3, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    6,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_nomikomi",                        // acHelpMsg
+    0x00020047,                               // special
+    0x000007FB,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyYoshiAttack_Nomikomi,                // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_YoshiNomikomi_Spew[48] = {
-    (u32)"btl_wn_pys_lv1", 0x01510000, 0x00000000, (u32)"msg_pys_nomikomi",
-    0x64040000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromPartyAttackLv,
-    0x00000002, 0x00000004, 0x00000003, 0x00000005,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00050302,
-    (u32)"msg_ac_nomikomi", 0x00020047, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyYoshiAttack_Nomikomi, 0x00000064, 0x00050505, 0x00000000,
+BattleWeapon partyWeapon_YoshiNomikomi_Spew = {
+    "btl_wn_pys_lv1",                         // name
+    337,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pys_nomikomi",                       // description
+    100,                                      // baseAccuracy
+    4,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromPartyAttackLv,          // hpDamageFn
+    { 2, 4, 3, 5, 3, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    5,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_nomikomi",                        // acHelpMsg
+    0x00020047,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyYoshiAttack_Nomikomi,                // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 5, 5, 5, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_YoshiNomikomi_Dmg0[48] = {
-    (u32)"btl_wn_pys_lv1", 0x01510000, 0x00000000, (u32)"msg_pys_nomikomi",
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerDefault,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00000302,
-    (u32)"msg_ac_nomikomi", 0x00020040, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyYoshiAttack_Nomikomi, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon partyWeapon_YoshiNomikomi_Dmg0 = {
+    "btl_wn_pys_lv1",                         // name
+    337,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pys_nomikomi",                       // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_nomikomi",                        // acHelpMsg
+    0x00020040,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyYoshiAttack_Nomikomi,                // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_YoshiNomikomi_Fire[48] = {
-    (u32)"btl_wn_pys_lv1", 0x01510000, 0x00000000, (u32)"msg_pys_nomikomi",
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerDefault,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x01000302,
-    (u32)"msg_ac_nomikomi", 0x00020040, 0x000007FF, 0x80000004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyYoshiAttack_Nomikomi, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon partyWeapon_YoshiNomikomi_Fire = {
+    "btl_wn_pys_lv1",                         // name
+    337,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pys_nomikomi",                       // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 1, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    1,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_nomikomi",                        // acHelpMsg
+    0x00020040,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80000004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyYoshiAttack_Nomikomi,                // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_YoshiNomikomi_Involved[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x00000000, 0x00000000, (u32)weaponGetPowerFromPartyAttackLv,
-    0x00000001, 0x00000004, 0x00000002, 0x00000005,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02100260, 0x20102000, 0x00000302,
-    0x00000000, 0x00020040, 0x000007FF, 0x00000004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon partyWeapon_YoshiNomikomi_Involved = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    0.0f,                                     // field_0x14
+    0,                                        // mStylishCommandMultiplier
+    0,                                        // field_0x19
+    0,                                        // mBingoSlotChance
+    0,                                        // field_0x1B
+    weaponGetPowerFromPartyAttackLv,          // hpDamageFn
+    { 1, 4, 2, 5, 3, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02100260,                               // targetClassFlags
+    0x20102000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020040,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x00000004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_YoshiEggAttack_Minimini[48] = {
-    (u32)"btl_wn_pys_lv2", 0x01520000, 0x00000000, (u32)"msg_pys_wonder_egg",
-    0x64030000, 0x3F800000, 0x02056432, (u32)weaponGetPowerDefault,
-    0x00000001, 0x00000001, 0x00000001, 0x00000001,
-    0x00000001, 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    (u32)"msg_ac_wonder_egg", 0x00020003, 0x000007FF, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000064, 0x03FE0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyYoshiAttack_EggAttack, 0x00000064, 0x00030300, 0x00000000,
+BattleWeapon partyWeapon_YoshiEggAttack_Minimini = {
+    "btl_wn_pys_lv2",                         // name
+    338,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pys_wonder_egg",                     // description
+    100,                                      // baseAccuracy
+    3,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    2,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 1, 1, 1, 1, 1, 1, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_wonder_egg",                      // acHelpMsg
+    0x00020003,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    100,                                      // sizeChangeChance
+    3,                                        // sizeChangeTime
+    -2,                                       // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyYoshiAttack_EggAttack,               // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 3, 3, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_YoshiCallGuard[48] = {
-    (u32)"btl_wn_pys_lv3", 0x01530000, 0x00000000, (u32)"msg_pys_taigun_yoshi",
-    0x64060000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromPartyAttackLv,
-    0x00000001, 0x00000001, 0x00000001, 0x00000001,
-    0x00000001, 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    (u32)"msg_ac_taigun_yoshi", 0x00020017, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyYoshiAttack_CallGuard, 0x00141464, 0x14140505, 0x14050000,
+BattleWeapon partyWeapon_YoshiCallGuard = {
+    "btl_wn_pys_lv3",                              // name
+    339,                                           // icon
+    ITEM_NULL,                                     // item
+    "msg_pys_taigun_yoshi",                        // description
+    100,                                           // baseAccuracy
+    6,                                             // baseFpCost
+    0,                                             // baseSpCost
+    0,                                             // superguardType
+    1.0f,                                          // field_0x14
+    1,                                             // mStylishCommandMultiplier
+    5,                                             // field_0x19
+    100,                                           // mBingoSlotChance
+    50,                                            // field_0x1B
+    weaponGetPowerFromPartyAttackLv,               // hpDamageFn
+    { 1, 1, 1, 1, 1, 1, 0, 0 },                    // hpDamageWork
+    NULL,                                          // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                    // fpDamageWork
+    0x02101260,                                    // targetClassFlags
+    0x20000000,                                    // targetPropertyFlags
+    0,                                             // element
+    0,                                             // field_0x6D
+    3,                                             // actionLevel
+    2,                                             // field_0x6F
+    "msg_ac_taigun_yoshi",                         // acHelpMsg
+    0x00020017,                                    // special
+    0x000007FF,                                    // counterResistanceFlags
+    0x80002004,                                    // targetWeightingFlags
+    0,                                             // sleepChance
+    0,                                             // sleepTime
+    0,                                             // stopChance
+    0,                                             // stopTime
+    0,                                             // dizzyChance
+    0,                                             // dizzyTime
+    0,                                             // poisonChance
+    0,                                             // poisonTime
+    0,                                             // poisonStrength
+    0,                                             // confuseChance
+    0,                                             // confuseTime
+    0,                                             // electricChance
+    0,                                             // electricTime
+    0,                                             // dodgyChance
+    0,                                             // dodgyTime
+    0,                                             // burnChance
+    0,                                             // burnTime
+    0,                                             // freezeChance
+    0,                                             // freezeTime
+    0,                                             // sizeChangeChance
+    0,                                             // sizeChangeTime
+    0,                                             // sizeChangeStrength
+    0,                                             // atkChangeChance
+    0,                                             // atkChangeTime
+    0,                                             // atkChangeStrength
+    0,                                             // defChangeChance
+    0,                                             // defChangeTime
+    0,                                             // defChangeStrength
+    0,                                             // allergicChance
+    0,                                             // allergicTime
+    0,                                             // ohkoChance
+    0,                                             // chargeStrength
+    0,                                             // fastChance
+    0,                                             // fastTime
+    0,                                             // slowChance
+    0,                                             // slowTime
+    0,                                             // frightChance
+    0,                                             // galeForceChance
+    0,                                             // paybackTime
+    0,                                             // holdFastTime
+    0,                                             // invisibleChance
+    0,                                             // invisibleTime
+    0,                                             // hpRegenTime
+    0,                                             // hpRegenStrength
+    0,                                             // fpRegenTime
+    0,                                             // fpRegenStrength
+    partyYoshiAttack_CallGuard,                    // mAttackEvtScript
+    { 0, 20, 20, 100, 20, 20, 5, 5, 20, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 posesound_normal_attack[75] = {
-    (u32)"PYS_W_1", 0x3C23D70A, (u32)_yoshi_slide_move_sound, (u32)"SFX_PARTY_BATTLE_MOVE1L",
-    0x00000001, (u32)"PYS_W_1", 0x3E800000, (u32)_yoshi_slide_move_sound,
-    (u32)"SFX_PARTY_BATTLE_MOVE1R", 0x00000001, (u32)"PYS_R_1", 0x3C23D70A,
-    (u32)_yoshi_slide_move_sound, (u32)"SFX_PARTY_BATTLE_MOVE1L", 0x00000001, (u32)"PYS_R_1",
-    0x3DCCCCCD, (u32)_yoshi_slide_move_sound, (u32)"SFX_PARTY_BATTLE_MOVE1R", 0x00000001,
-    (u32)"PYS_R_4", 0x3C23D70A, (u32)_yoshi_slide_move_sound, (u32)"SFX_PARTY_BATTLE_MOVE1L",
-    0x05540001, (u32)"PYS_R_4", 0x3D4CCCCD, (u32)_yoshi_slide_move_sound,
-    (u32)"SFX_PARTY_BATTLE_MOVE1R", 0x05540001, (u32)"PYS_R_4", 0x3DCCCCCD,
-    (u32)_yoshi_slide_move_sound, (u32)"SFX_PARTY_BATTLE_MOVE1L", 0x05540001, (u32)"PYS_R_4",
-    0x3E19999A, (u32)_yoshi_slide_move_sound, (u32)"SFX_PARTY_BATTLE_MOVE1R", 0x05540001,
-    (u32)"PYS_R_5", 0x3C23D70A, (u32)_yoshi_slide_move_sound, (u32)"SFX_PARTY_BATTLE_MOVE1L",
-    0x09530001, (u32)"PYS_R_5", 0x3D088889, (u32)_yoshi_slide_move_sound,
-    (u32)"SFX_PARTY_BATTLE_MOVE1R", 0x09530001, (u32)"PYS_R_5", 0x3DAAAAAB,
-    (u32)_yoshi_slide_move_sound, (u32)"SFX_PARTY_BATTLE_MOVE1L", 0x09530001, (u32)"PYS_R_5",
-    0x3DEEEEEF, (u32)_yoshi_slide_move_sound, (u32)"SFX_PARTY_BATTLE_MOVE1R", 0x09530001,
-    (u32)"PYS_A_3", 0x3C23D70A, (u32)_yoshi_slide_move_sound, (u32)"SFX_PARTY_BATTLE_MOVE1L",
-    0x09530001, (u32)"PYS_A_3", 0x3DAAAAAB, (u32)_yoshi_slide_move_sound,
-    (u32)"SFX_PARTY_BATTLE_MOVE1R", 0x09530001, 0x00000000, 0x00000000,
-    (u32)_yoshi_slide_move_sound, 0x00000000, 0x00000001,
+BtlUnitPoseSound posesound_normal_attack[15] = {
+    { "PYS_W_1", 0.01f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1L", 0, 1 },
+    { "PYS_W_1", 0.25f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1R", 0, 1 },
+    { "PYS_R_1", 0.01f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1L", 0, 1 },
+    { "PYS_R_1", 0.1f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1R", 0, 1 },
+    { "PYS_R_4", 0.01f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1L", 1364, 1 },
+    { "PYS_R_4", 0.05f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1R", 1364, 1 },
+    { "PYS_R_4", 0.1f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1L", 1364, 1 },
+    { "PYS_R_4", 0.15f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1R", 1364, 1 },
+    { "PYS_R_5", 0.01f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1L", 2387, 1 },
+    { "PYS_R_5", 0.033333335f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1R", 2387, 1 },
+    { "PYS_R_5", 0.083333336f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1L", 2387, 1 },
+    { "PYS_R_5", 0.11666667f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1R", 2387, 1 },
+    { "PYS_A_3", 0.01f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1L", 2387, 1 },
+    { "PYS_A_3", 0.083333336f, _yoshi_slide_move_sound, "SFX_PARTY_BATTLE_MOVE1R", 2387, 1 },
+    { NULL, 0.0f, _yoshi_slide_move_sound, NULL, 0, 1 },
 };
 
 EVT_BEGIN(partyYoshiAttack_NormalAttack)
@@ -814,13 +1419,13 @@ EVT_BEGIN(partyYoshiAttack_Nomikomi)
     WAIT_FRAMES(7)
     CALL(_get_swallow_param, LW(3), LW(7))
     IF_INT_EQUAL(LW(7), -1)
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(partyWeapon_YoshiNomikomi_Dmg0), 0x80000100, LW(5))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&partyWeapon_YoshiNomikomi_Dmg0), 0x80000100, LW(5))
         WAIT_FRAMES(43)
         GOTO(90)
     END_IF
     CALL(btlevtcmd_GetResultAC, LW(0))
     IF_BITS_CLEAR(LW(0), 2)
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(partyWeapon_YoshiNomikomi_Dmg0), 0x80000100, LW(5))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&partyWeapon_YoshiNomikomi_Dmg0), 0x80000100, LW(5))
         WAIT_FRAMES(43)
         GOTO(90)
     END_IF
@@ -863,9 +1468,9 @@ EVT_BEGIN(partyYoshiAttack_Nomikomi)
             CALL(btlevtcmd_OffAttribute, LW(3), 16777216)
             CALL(_check_swallow_attribute, LW(3), 2, LW(0))
             IF_INT_EQUAL(LW(0), 0)
-                CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(partyWeapon_YoshiNomikomi_Spew), 0x80000100, LW(5))
+                CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&partyWeapon_YoshiNomikomi_Spew), 0x80000100, LW(5))
             ELSE
-                CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(partyWeapon_YoshiNomikomi_Shot), 0x80000100, LW(5))
+                CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&partyWeapon_YoshiNomikomi_Shot), 0x80000100, LW(5))
             END_IF
             CALL(btlevtcmd_GetResultAC, LW(0))
             IF_BITS_SET(LW(0), 2)
@@ -937,13 +1542,13 @@ EVT_BEGIN(partyYoshiAttack_Nomikomi)
     CALL(evt_eff, STRING("eff"), STRING("breath_fire"), 1, LW(0), LW(1), LW(2), LW(3), LW(4), LW(5), 1, 2, 60, FLOAT(0.5f), FLOAT(30.0f))
     WAIT_FRAMES(60)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(partyWeapon_YoshiNomikomi_Fire))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&partyWeapon_YoshiNomikomi_Fire))
     CALL(btlevtcmd_GetSelectEnemy, LW(10), LW(11))
     LABEL(10)
     IF_INT_EQUAL(LW(10), -1)
         GOTO(90)
     END_IF
-    CALL(btlevtcmd_CheckDamage, -2, LW(10), LW(11), PTR(partyWeapon_YoshiNomikomi_Fire), 0x80000100, LW(5))
+    CALL(btlevtcmd_CheckDamage, -2, LW(10), LW(11), PTR(&partyWeapon_YoshiNomikomi_Fire), 0x80000100, LW(5))
     CALL(btlevtcmd_GetSelectNextEnemy, LW(10), LW(11))
     GOTO(10)
     LABEL(90)
@@ -1006,44 +1611,44 @@ EVT_BEGIN(partyYoshiAttack_EggAttack)
     CALL(btlevtcmd_CommandPayWeaponCost, -2)
     CALL(btlevtcmd_RunDataEventChild, -2, 7)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(partyWeapon_YoshiEggAttack_Minimini))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(partyWeapon_YoshiEggAttack_Minimini), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&partyWeapon_YoshiEggAttack_Minimini))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&partyWeapon_YoshiEggAttack_Minimini), LW(3), LW(4))
     CALL(btlevtcmd_SetPartsWork, -2, 2, 3, LW(3))
     CALL(btlevtcmd_SetPartsWork, -2, 2, 4, LW(4))
     CALL(btlevtcmd_SetPartsWork, -2, 2, 5, 0)
     CALL(btlevtcmd_SetPartsWork, -2, 2, 6, 0)
     CALL(btlevtcmd_SetPartsWork, -2, 2, 7, 0)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(partyWeapon_YoshiEggAttack_Minimini))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(partyWeapon_YoshiEggAttack_Minimini), LW(10), LW(11))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&partyWeapon_YoshiEggAttack_Minimini))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&partyWeapon_YoshiEggAttack_Minimini), LW(10), LW(11))
     CALL(btlevtcmd_SetPartsWork, -2, 7, 3, LW(10))
     CALL(btlevtcmd_SetPartsWork, -2, 7, 4, LW(11))
     CALL(btlevtcmd_SetPartsWork, -2, 7, 5, 0)
     CALL(btlevtcmd_SetPartsWork, -2, 7, 6, 0)
     CALL(btlevtcmd_SetPartsWork, -2, 7, 7, 0)
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(partyWeapon_YoshiEggAttack_Minimini))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(partyWeapon_YoshiEggAttack_Minimini), LW(10), LW(11))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&partyWeapon_YoshiEggAttack_Minimini))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&partyWeapon_YoshiEggAttack_Minimini), LW(10), LW(11))
     CALL(btlevtcmd_SetPartsWork, -2, 6, 3, LW(10))
     CALL(btlevtcmd_SetPartsWork, -2, 6, 4, LW(11))
     CALL(btlevtcmd_SetPartsWork, -2, 6, 5, 0)
     CALL(btlevtcmd_SetPartsWork, -2, 6, 6, 0)
     CALL(btlevtcmd_SetPartsWork, -2, 6, 7, 0)
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(partyWeapon_YoshiEggAttack_Minimini))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(partyWeapon_YoshiEggAttack_Minimini), LW(10), LW(11))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&partyWeapon_YoshiEggAttack_Minimini))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&partyWeapon_YoshiEggAttack_Minimini), LW(10), LW(11))
     CALL(btlevtcmd_SetPartsWork, -2, 5, 3, LW(10))
     CALL(btlevtcmd_SetPartsWork, -2, 5, 4, LW(11))
     CALL(btlevtcmd_SetPartsWork, -2, 5, 5, 0)
     CALL(btlevtcmd_SetPartsWork, -2, 5, 6, 0)
     CALL(btlevtcmd_SetPartsWork, -2, 5, 7, 0)
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(partyWeapon_YoshiEggAttack_Minimini))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(partyWeapon_YoshiEggAttack_Minimini), LW(10), LW(11))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&partyWeapon_YoshiEggAttack_Minimini))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&partyWeapon_YoshiEggAttack_Minimini), LW(10), LW(11))
     CALL(btlevtcmd_SetPartsWork, -2, 4, 3, LW(10))
     CALL(btlevtcmd_SetPartsWork, -2, 4, 4, LW(11))
     CALL(btlevtcmd_SetPartsWork, -2, 4, 5, 0)
     CALL(btlevtcmd_SetPartsWork, -2, 4, 6, 0)
     CALL(btlevtcmd_SetPartsWork, -2, 4, 7, 0)
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(partyWeapon_YoshiEggAttack_Minimini))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(partyWeapon_YoshiEggAttack_Minimini), LW(10), LW(11))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&partyWeapon_YoshiEggAttack_Minimini))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&partyWeapon_YoshiEggAttack_Minimini), LW(10), LW(11))
     CALL(btlevtcmd_SetPartsWork, -2, 3, 3, LW(10))
     CALL(btlevtcmd_SetPartsWork, -2, 3, 4, LW(11))
     CALL(btlevtcmd_SetPartsWork, -2, 3, 5, 0)
@@ -1103,7 +1708,7 @@ EVT_BEGIN(partyYoshiAttack_EggAttack)
                 ADD(LW(13), 1)
                 GOTO(25)
             ELSE
-                CALL(btlevtcmd_AudienceDeclareACResult, PTR(partyWeapon_YoshiEggAttack_Minimini), -1)
+                CALL(btlevtcmd_AudienceDeclareACResult, PTR(&partyWeapon_YoshiEggAttack_Minimini), -1)
                 CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PYS_A_5"))
                 WAIT_FRAMES(54)
                 CALL(evt_audience_ap_recovery)
@@ -1128,7 +1733,7 @@ EVT_BEGIN(partyYoshiAttack_EggAttack)
     CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
     ADD(LW(1), 40)
     CALL(btlevtcmd_ACSuccessEffect, LW(6), LW(0), LW(1), LW(2))
-    CALL(btlevtcmd_AudienceDeclareACResult, PTR(partyWeapon_YoshiEggAttack_Minimini), LW(6))
+    CALL(btlevtcmd_AudienceDeclareACResult, PTR(&partyWeapon_YoshiEggAttack_Minimini), LW(6))
     LABEL(10)
     CALL(evt_sub_random, 2, LW(0))
     CALL(btlevtcmd_SetPartsWork, -2, LW(12), 0, LW(0))
@@ -1142,7 +1747,7 @@ EVT_BEGIN(partyYoshiAttack_EggAttack)
     END_SWITCH
     CALL(btlevtcmd_AnimeChangePoseType, -2, LW(12), 69)
     CALL(btlevtcmd_SetPartsWork, -2, LW(12), 1, 4)
-    CALL(btlevtcmd_SetPartsWork, -2, LW(12), 2, PTR(partyWeapon_YoshiEggAttack_Minimini))
+    CALL(btlevtcmd_SetPartsWork, -2, LW(12), 2, PTR(&partyWeapon_YoshiEggAttack_Minimini))
     LABEL(20)
     CALL(btlevtcmd_GetStatusMg, -2, LW(6))
     CALL(btlevtcmd_SetPartsScale, -2, LW(12), FLOAT(1.0f), FLOAT(1.0f), FLOAT(1.0f))
@@ -1385,7 +1990,7 @@ EVT_BEGIN(_egg_attack_event)
 EVT_END()
 
 EVT_BEGIN(partyYoshiAttack_CallGuard)
-    SET_VALUE(LW(12), PTR(partyWeapon_YoshiCallGuard))
+    SET_VALUE(LW(12), PTR(&partyWeapon_YoshiCallGuard))
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(12))
     CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
@@ -1754,15 +2359,15 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 
-    TECH_MENU_ENTRY((BattleWeapon*)partyWeapon_YoshiNormalAttack);
+    TECH_MENU_ENTRY(&partyWeapon_YoshiNormalAttack);
     if (techLv >= 0) {
-        TECH_MENU_ENTRY((BattleWeapon*)partyWeapon_YoshiNomikomi_Shot);
+        TECH_MENU_ENTRY(&partyWeapon_YoshiNomikomi_Shot);
     }
     if (techLv >= 1) {
-        TECH_MENU_ENTRY((BattleWeapon*)partyWeapon_YoshiEggAttack_Minimini);
+        TECH_MENU_ENTRY(&partyWeapon_YoshiEggAttack_Minimini);
     }
     if (techLv >= 2) {
-        TECH_MENU_ENTRY((BattleWeapon*)partyWeapon_YoshiCallGuard);
+        TECH_MENU_ENTRY(&partyWeapon_YoshiCallGuard);
     }
 }
 
@@ -1950,7 +2555,7 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
 }
 
 
-s32 _yoshi_slide_move_sound(BattleUnit* unit, PoseSoundEntry* entry) {
+s32 _yoshi_slide_move_sound(BattleUnit* unit, BtlUnitPoseSound* entry, void* ps) {
     return BtlUnit_snd_se(unit, entry->soundName, 0xF1194D80, (s16)(unit->work[4] * unit->work[5] / 100));
 }
 

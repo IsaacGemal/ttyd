@@ -45,7 +45,7 @@ extern s32 sac_ac_help_on[];
 extern s32 sac_ac_help_off[];
 
 extern char str_ofs[4];
-extern u32 weapon_scissor[];
+extern BattleWeapon weapon_scissor;
 
 // Double constants emitted in this translation unit's .sdata2.
 
@@ -542,20 +542,82 @@ u32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* 
 }
 
 // .data:0x0..0xC0
-u32 weapon_scissor[48] = {
-    (u32)"btl_wn_sac_scissor", 0x019C0000, 0x00000000, (u32)"msg_scissor",
-    0x64000400, 0x3F800000, 0x01056432, (u32)(void*)&weaponGetPower_Scissor,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
-    0x02101260, 0x20000000, 0x00000302, (u32)"msg_sac_5",
-    0x000200C8, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)(void*)marioAttackEvent_Scissor, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon weapon_scissor = {
+    "btl_wn_sac_scissor",                     // name
+    412,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_scissor",                            // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    4,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPower_Scissor,                   // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_sac_5",                              // acHelpMsg
+    0x000200C8,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_Scissor,                 // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 // .data:0xC0..0x180
@@ -967,7 +1029,7 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
         }
         target = BattleGetUnitPtr(battleWork, work->hitUnitIds[i]);
         part = BtlUnit_GetPartsPtr(target, BtlUnit_GetBodyPartsId(target));
-        BattleCheckDamage(mario, target, part, (BattleWeapon*)weapon_scissor, 0);
+        BattleCheckDamage(mario, target, part, &weapon_scissor, 0);
         damage = 1;
     }
     if (allHit == 1) {

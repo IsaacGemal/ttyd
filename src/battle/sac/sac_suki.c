@@ -31,6 +31,7 @@
 #include "evt/evt_img.h"
 #include "evt/evt_map.h"
 #include "party/party_motion.h"
+#include "battle/battle_database_common.h"
 
 static const f32 float_1_804220d8 = 1.0f;
 extern s32 marioAttackEvent_Suki[];
@@ -99,7 +100,7 @@ const char str_btl_wn_sac_sukkari_sukkiri[0x1C] = "btl_wn_sac_sukkari_sukkiri";
 const char str_msg_sukkari_sukkiri[0x14] = "msg_sukkari_sukkiri";
 const char str_msg_sac_7[0xC] = "msg_sac_7";
 __declspec(section ".sdata2") const u8 N_ohko_rate_tbl[8] = { 0x32, 0x3C, 0x46, 0x50, 0x5A, 0x64, 0x00, 0x00 };
-extern u32 weapon_words[48];
+extern BattleWeapon weapon_words;
 static EVT_BEGIN(nice_event)
     CALL(btlevtcmd_ACSuccessEffect, LW(0), -120, 120, 0)
     RETURN
@@ -676,13 +677,13 @@ static s32 set_weapon(EventEntry* event, BOOL isFirstCall) {
     SukiBytes6 tbl;
 
     tbl = *(SukiBytes6*)N_ohko_rate_tbl;
-    memcpy(work->weapon, weapon_words, 0xC0);
+    memcpy(work->weapon, &weapon_words, 0xC0);
     work->weapon[0x9E] = tbl.x[index - 1];
 #else
     u8 tbl[6];
 
     memcpy(tbl, N_ohko_rate_tbl, 6);
-    memcpy(work->weapon, weapon_words, 0xC0);
+    memcpy(work->weapon, &weapon_words, 0xC0);
     work->weapon[0x9E] = tbl[index - 1];
 #endif
     evtSetValue(event, args[1], (s32)work->weapon);
@@ -785,19 +786,82 @@ static void main_star(void);
 static void main_base(void);
 
 #pragma force_active on
-u32 weapon_words[48] = {
-    (u32)(void*)str_btl_wn_sac_sukkari_sukkiri, 0x01990000, 0x00000000, (u32)(void*)str_msg_sukkari_sukkiri,
-    0x64000200, 0x3F800000, 0x01056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    (u32)(void*)str_msg_sac_7, 0x00020008, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00006400,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)marioAttackEvent_Suki, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon weapon_words = {
+    str_btl_wn_sac_sukkari_sukkiri,           // name
+    409,                                      // icon
+    ITEM_NULL,                                // item
+    str_msg_sukkari_sukkiri,                  // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    2,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    str_msg_sac_7,                            // acHelpMsg
+    0x00020008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    100,                                      // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_Suki,                    // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 EVT_BEGIN(marioAttackEvent_Suki)
@@ -807,7 +871,7 @@ EVT_BEGIN(marioAttackEvent_Suki)
     IF_INT_NOT_EQUAL(LW(0), 0)
         SET_VALUE(LW(14), -1)
     END_IF
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_words), LW(3), LW(4))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_words), LW(3), LW(4))
     CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         GOTO(99)
@@ -879,8 +943,8 @@ EVT_BEGIN(marioAttackEvent_Suki)
         CALL(evt_snd_sfxon, STRING((char*)"SFX_BTL_SAC_SUKKIRI4_2"), 0)
         IF_INT_EQUAL(LW(10), 0)
             CALL(btlevtcmd_GetEnemyBelong, -2, LW(1))
-            CALL(btlevtcmd_SamplingEnemy, -2, LW(1), PTR(weapon_words))
-            CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_words), LW(3), LW(4))
+            CALL(btlevtcmd_SamplingEnemy, -2, LW(1), PTR(&weapon_words))
+            CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_words), LW(3), LW(4))
             CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
             LABEL(5)
             IF_INT_EQUAL(LW(3), -1)
@@ -925,8 +989,8 @@ EVT_BEGIN(marioAttackEvent_Suki)
     END_LOOP
     CALL_CHILD(flash_cancel_evt)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_words))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_words), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_words))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_words), LW(3), LW(4))
     CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
     LABEL(10)
     IF_INT_EQUAL(LW(3), -1)
@@ -978,8 +1042,8 @@ EVT_BEGIN(flash_evt)
         CALL(btlevtcmd_OnPartsAttribute, LW(14), LW(15), 33554432)
     END_IF
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_words))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_words), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_words))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_words), LW(3), LW(4))
     CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
     LABEL(5)
     IF_INT_EQUAL(LW(3), -1)
@@ -1000,8 +1064,8 @@ EVT_BEGIN(flash_main_evt)
     SUBTRACT(LW(11), LW(10))
     CALL(flash_update, LW(10))
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_words))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_words), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_words))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_words), LW(3), LW(4))
     CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
     LABEL(5)
     IF_INT_EQUAL(LW(3), -1)
@@ -1050,8 +1114,8 @@ EVT_BEGIN(flash_cancel_evt)
         CALL(btlevtcmd_OffPartsAttribute, LW(14), LW(15), 33554432)
     END_IF
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_words))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_words), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_words))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_words), LW(3), LW(4))
     CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
     LABEL(5)
     IF_INT_EQUAL(LW(3), -1)

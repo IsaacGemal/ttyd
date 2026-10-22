@@ -29,13 +29,13 @@ extern s32 btl_majolyne_zoom_17_data_5C2D4[];
 extern s32 btl_marilyn_zoom_17_data_5C2B8[];
 extern s32 btl_vivian_zoom_17_data_5C29C[];
 extern s32 majo_unison_phase_event_17_data_5C5E4[];
-extern s32 pose_table_chuchurina_stay[];
-extern s32 pose_table_clauda_stay[];
+extern BattleDispPose pose_table_chuchurina_stay[24];
+extern BattleDispPose pose_table_clauda_stay[25];
 extern BattleDispPose pose_table_nokotarou_stay[26];
 extern BattleDispPose pose_table_nokotarou_turn[12];
-extern s32 pose_table_sanders_stay[];
-extern s32 pose_table_vivian_stay[];
-extern s32 pose_table_yoshi_stay[];
+extern BattleDispPose pose_table_sanders_stay[25];
+extern BattleDispPose pose_table_vivian_stay[24];
+extern BattleDispPose pose_table_yoshi_stay[25];
 extern BattleUnitKind unit_boss_majolyne_las;
 extern BattleUnitKind unit_boss_marilyn_las;
 static USER_FUNC(_krb_get_dir);
@@ -1862,20 +1862,20 @@ static BattleDataEntry data_table_christine[2] = {
 
 static BattleUnitKindPart parts_christine[1] = {
     {
-        1,                                                 // partNum
-        "btl_un_rampell",                                  // partName
-        "c_pkr",                                           // modelName
-        { 0.0f, 0.0f, 0.0f },                              // positionOffset
-        { 15.0f, 25.0f, 0.0f },                            // hitBaseOffset
-        { 0.0f, 30.0f, 0.0f },                             // hitCursorBaseOffset
-        20,                                                // field_0x30
-        30,                                                // field_0x32
-        255,                                               // baseAlpha
-        &defence_christine,                                // defense
-        &defence_attr_christine,                           // defenseAttr
-        0x00000009,                                        // attributes
-        0,                                                 // counterAttributes
-        (struct BattleDispPose*)pose_table_christine_stay, // poseTable
+        1,                         // partNum
+        "btl_un_rampell",          // partName
+        "c_pkr",                   // modelName
+        { 0.0f, 0.0f, 0.0f },      // positionOffset
+        { 15.0f, 25.0f, 0.0f },    // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },     // hitCursorBaseOffset
+        20,                        // field_0x30
+        30,                        // field_0x32
+        255,                       // baseAlpha
+        &defence_christine,        // defense
+        &defence_attr_christine,   // defenseAttr
+        0x00000009,                // attributes
+        0,                         // counterAttributes
+        pose_table_christine_stay, // poseTable
     },
 };
 
@@ -2348,20 +2348,20 @@ static BattleDataEntry data_table_nokotarou[3] = {
 
 static BattleUnitKindPart parts_nokotarou[1] = {
     {
-        1,                                                 // partNum
-        "btl_un_rampell",                                  // partName
-        "c_pnk",                                           // modelName
-        { 0.0f, 0.0f, 0.0f },                              // positionOffset
-        { 15.0f, 25.0f, 0.0f },                            // hitBaseOffset
-        { 0.0f, 30.0f, 0.0f },                             // hitCursorBaseOffset
-        20,                                                // field_0x30
-        30,                                                // field_0x32
-        255,                                               // baseAlpha
-        &defence_nokotarou,                                // defense
-        &defence_attr_nokotarou,                           // defenseAttr
-        0x00001009,                                        // attributes
-        0,                                                 // counterAttributes
-        (struct BattleDispPose*)pose_table_nokotarou_stay, // poseTable
+        1,                         // partNum
+        "btl_un_rampell",          // partName
+        "c_pnk",                   // modelName
+        { 0.0f, 0.0f, 0.0f },      // positionOffset
+        { 15.0f, 25.0f, 0.0f },    // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },     // hitCursorBaseOffset
+        20,                        // field_0x30
+        30,                        // field_0x32
+        255,                       // baseAlpha
+        &defence_nokotarou,        // defense
+        &defence_attr_nokotarou,   // defenseAttr
+        0x00001009,                // attributes
+        0,                         // counterAttributes
+        pose_table_nokotarou_stay, // poseTable
     },
 };
 
@@ -2872,20 +2872,20 @@ static BattleDataEntry data_table_clauda[2] = {
 
 static BattleUnitKindPart parts_clauda[1] = {
     {
-        1,                                              // partNum
-        "btl_un_rampell",                               // partName
-        "c_windy",                                      // modelName
-        { 0.0f, 0.0f, 0.0f },                           // positionOffset
-        { 15.0f, 25.0f, 0.0f },                         // hitBaseOffset
-        { 0.0f, 30.0f, 0.0f },                          // hitCursorBaseOffset
-        20,                                             // field_0x30
-        30,                                             // field_0x32
-        255,                                            // baseAlpha
-        &defence_clauda,                                // defense
-        &defence_attr_clauda,                           // defenseAttr
-        0x00000009,                                     // attributes
-        0,                                              // counterAttributes
-        (struct BattleDispPose*)pose_table_clauda_stay, // poseTable
+        1,                      // partNum
+        "btl_un_rampell",       // partName
+        "c_windy",              // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence_clauda,        // defense
+        &defence_attr_clauda,   // defenseAttr
+        0x00000009,             // attributes
+        0,                      // counterAttributes
+        pose_table_clauda_stay, // poseTable
     },
 };
 
@@ -3163,20 +3163,20 @@ static BattleDataEntry data_table_yoshi[2] = {
 
 static BattleUnitKindPart parts_yoshi[1] = {
     {
-        1,                                             // partNum
-        "btl_un_rampell",                              // partName
-        "c_babyyoshi",                                 // modelName
-        { 0.0f, 0.0f, 0.0f },                          // positionOffset
-        { 15.0f, 25.0f, 0.0f },                        // hitBaseOffset
-        { 0.0f, 30.0f, 0.0f },                         // hitCursorBaseOffset
-        20,                                            // field_0x30
-        30,                                            // field_0x32
-        255,                                           // baseAlpha
-        &defence_yoshi,                                // defense
-        &defence_attr_yoshi,                           // defenseAttr
-        0x00000009,                                    // attributes
-        0,                                             // counterAttributes
-        (struct BattleDispPose*)pose_table_yoshi_stay, // poseTable
+        1,                      // partNum
+        "btl_un_rampell",       // partName
+        "c_babyyoshi",          // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence_yoshi,         // defense
+        &defence_attr_yoshi,    // defenseAttr
+        0x00000009,             // attributes
+        0,                      // counterAttributes
+        pose_table_yoshi_stay,  // poseTable
     },
 };
 
@@ -3458,20 +3458,20 @@ BattleDataEntry data_table_vivian[2] = {
 
 BattleUnitKindPart parts_vivian[1] = {
     {
-        1,                                              // partNum
-        "btl_un_rampell",                               // partName
-        "c_vivian",                                     // modelName
-        { 0.0f, 0.0f, 0.0f },                           // positionOffset
-        { 15.0f, 25.0f, 0.0f },                         // hitBaseOffset
-        { 0.0f, 30.0f, 0.0f },                          // hitCursorBaseOffset
-        20,                                             // field_0x30
-        30,                                             // field_0x32
-        255,                                            // baseAlpha
-        &defence_vivian,                                // defense
-        &defence_attr_vivian,                           // defenseAttr
-        0x00000009,                                     // attributes
-        0,                                              // counterAttributes
-        (struct BattleDispPose*)pose_table_vivian_stay, // poseTable
+        1,                      // partNum
+        "btl_un_rampell",       // partName
+        "c_vivian",             // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence_vivian,        // defense
+        &defence_attr_vivian,   // defenseAttr
+        0x00000009,             // attributes
+        0,                      // counterAttributes
+        pose_table_vivian_stay, // poseTable
     },
 };
 
@@ -3733,20 +3733,20 @@ BattleDataEntry data_table_sanders[2] = {
 
 BattleUnitKindPart parts_sanders[1] = {
     {
-        1,                                               // partNum
-        "btl_un_rampell",                                // partName
-        "c_bomt_n",                                      // modelName
-        { 0.0f, 0.0f, 0.0f },                            // positionOffset
-        { 16.0f, 24.0f, 5.0f },                          // hitBaseOffset
-        { 0.0f, 24.0f, 0.0f },                           // hitCursorBaseOffset
-        20,                                              // field_0x30
-        24,                                              // field_0x32
-        255,                                             // baseAlpha
-        &defence_sanders,                                // defense
-        &defence_attr_sanders,                           // defenseAttr
-        0x00000009,                                      // attributes
-        0,                                               // counterAttributes
-        (struct BattleDispPose*)pose_table_sanders_stay, // poseTable
+        1,                       // partNum
+        "btl_un_rampell",        // partName
+        "c_bomt_n",              // modelName
+        { 0.0f, 0.0f, 0.0f },    // positionOffset
+        { 16.0f, 24.0f, 5.0f },  // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },   // hitCursorBaseOffset
+        20,                      // field_0x30
+        24,                      // field_0x32
+        255,                     // baseAlpha
+        &defence_sanders,        // defense
+        &defence_attr_sanders,   // defenseAttr
+        0x00000009,              // attributes
+        0,                       // counterAttributes
+        pose_table_sanders_stay, // poseTable
     },
 };
 
@@ -4004,20 +4004,20 @@ BattleDataEntry data_table_chuchurina[2] = {
 
 BattleUnitKindPart parts_chuchurina[1] = {
     {
-        1,                                                  // partNum
-        "btl_un_rampell",                                   // partName
-        "c_tyutyu",                                         // modelName
-        { 0.0f, 0.0f, 0.0f },                               // positionOffset
-        { 16.0f, 24.0f, 5.0f },                             // hitBaseOffset
-        { 0.0f, 24.0f, 0.0f },                              // hitCursorBaseOffset
-        20,                                                 // field_0x30
-        24,                                                 // field_0x32
-        255,                                                // baseAlpha
-        &defence_chuchurina,                                // defense
-        &defence_attr_chuchurina,                           // defenseAttr
-        0x00000009,                                         // attributes
-        0,                                                  // counterAttributes
-        (struct BattleDispPose*)pose_table_chuchurina_stay, // poseTable
+        1,                          // partNum
+        "btl_un_rampell",           // partName
+        "c_tyutyu",                 // modelName
+        { 0.0f, 0.0f, 0.0f },       // positionOffset
+        { 16.0f, 24.0f, 5.0f },     // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },      // hitCursorBaseOffset
+        20,                         // field_0x30
+        24,                         // field_0x32
+        255,                        // baseAlpha
+        &defence_chuchurina,        // defense
+        &defence_attr_chuchurina,   // defenseAttr
+        0x00000009,                 // attributes
+        0,                          // counterAttributes
+        pose_table_chuchurina_stay, // poseTable
     },
 };
 

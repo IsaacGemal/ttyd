@@ -12,7 +12,7 @@
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
-extern BattleDispPose pose_table_clauda_stay[];
+extern BattleDispPose pose_table_clauda_stay[25];
 static BattleVulnerableStatus regist_clauda;
 static BattleDataEntry data_table_clauda[2];
 static BattleUnitKindPart parts_clauda;

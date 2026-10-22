@@ -27,40 +27,40 @@
 #include "unit/party/unit_party_chuchurina.h"
 
 // Data objects defined later in this file or in the party units, declared here (their headers don't list data).
-extern u32 partyWeapon_ChuchurinaNormalAttackLeft[48];
-extern u32 partyWeapon_NokotarouKouraAttack[48];
-extern u32 partyWeapon_NokotarouSyubibinKoura[48];
-extern u32 partyWeapon_NokotarouKouraGuard[48];
-extern u32 partyWeapon_NokotarouTsuranukiKoura[48];
-extern u32 partyWeapon_VivianNormalAttack[48];
-extern u32 partyWeapon_VivianShadowGuard[48];
-extern u32 partyWeapon_VivianMagicalPowder[48];
-extern u32 partyWeapon_VivianCharmKissAttack[48];
-extern u32 partyWeapon_YoshiNormalAttack[48];
-extern u32 partyWeapon_YoshiNomikomi_Shot[48];
-extern u32 partyWeapon_YoshiEggAttack_Minimini[48];
-extern u32 partyWeapon_YoshiCallGuard[48];
+extern BattleWeapon partyWeapon_ChuchurinaNormalAttackLeft;
+extern BattleWeapon partyWeapon_NokotarouKouraAttack;
+extern BattleWeapon partyWeapon_NokotarouSyubibinKoura;
+extern BattleWeapon partyWeapon_NokotarouKouraGuard;
+extern BattleWeapon partyWeapon_NokotarouTsuranukiKoura;
+extern BattleWeapon partyWeapon_VivianNormalAttack;
+extern BattleWeapon partyWeapon_VivianShadowGuard;
+extern BattleWeapon partyWeapon_VivianMagicalPowder;
+extern BattleWeapon partyWeapon_VivianCharmKissAttack;
+extern BattleWeapon partyWeapon_YoshiNormalAttack;
+extern BattleWeapon partyWeapon_YoshiNomikomi_Shot;
+extern BattleWeapon partyWeapon_YoshiEggAttack_Minimini;
+extern BattleWeapon partyWeapon_YoshiCallGuard;
 
 
 // ---- data ----
 // .sdata: each partner's four moves; .data: the partner table. Defined before the code so their strings
 // pool first, as in the original.
-u32 chri_waza[4] = { (u32)partyWeapon_ChristineNormalAttack, (u32)partyWeapon_ChristineMonosiri, (u32)partyWeapon_ChristineRenzokuAttack, (u32)partyWeapon_ChristineKiss };
-u32 noko_waza[4] = { (u32)partyWeapon_NokotarouKouraAttack, (u32)partyWeapon_NokotarouSyubibinKoura, (u32)partyWeapon_NokotarouKouraGuard, (u32)partyWeapon_NokotarouTsuranukiKoura };
-u32 cloud_waza[4] = { (u32)partyWeapon_ClaudaNormalAttack, (u32)partyWeapon_ClaudaBreathAttack, (u32)partyWeapon_ClaudaPredationAttack, (u32)partyWeapon_ClaudaKumogakureAttack };
-u32 yoshi_waza[4] = { (u32)partyWeapon_YoshiNormalAttack, (u32)partyWeapon_YoshiNomikomi_Shot, (u32)partyWeapon_YoshiEggAttack_Minimini, (u32)partyWeapon_YoshiCallGuard };
-u32 vivi_waza[4] = { (u32)partyWeapon_VivianNormalAttack, (u32)partyWeapon_VivianShadowGuard, (u32)partyWeapon_VivianMagicalPowder, (u32)partyWeapon_VivianCharmKissAttack };
-u32 sand_waza[4] = { (u32)partyWeapon_SandersNormalAttack, (u32)partyWeapon_SandersTimeBombSet, (u32)partyWeapon_SandersCounterSet, (u32)partyWeapon_SandersSuperBombAttack };
-u32 chu_waza[4] = { (u32)partyWeapon_ChuchurinaNormalAttackLeft, (u32)partyWeapon_ChuchurinaItemSteal, (u32)partyWeapon_ChuchurinaMadowaseAttack, (u32)partyWeapon_ChuchurinaKiss };
+BattleWeapon* chri_waza[4] = { &partyWeapon_ChristineNormalAttack, &partyWeapon_ChristineMonosiri, &partyWeapon_ChristineRenzokuAttack, &partyWeapon_ChristineKiss };
+BattleWeapon* noko_waza[4] = { &partyWeapon_NokotarouKouraAttack, &partyWeapon_NokotarouSyubibinKoura, &partyWeapon_NokotarouKouraGuard, &partyWeapon_NokotarouTsuranukiKoura };
+BattleWeapon* cloud_waza[4] = { &partyWeapon_ClaudaNormalAttack, &partyWeapon_ClaudaBreathAttack, &partyWeapon_ClaudaPredationAttack, &partyWeapon_ClaudaKumogakureAttack };
+BattleWeapon* yoshi_waza[4] = { &partyWeapon_YoshiNormalAttack, &partyWeapon_YoshiNomikomi_Shot, &partyWeapon_YoshiEggAttack_Minimini, &partyWeapon_YoshiCallGuard };
+BattleWeapon* vivi_waza[4] = { &partyWeapon_VivianNormalAttack, &partyWeapon_VivianShadowGuard, &partyWeapon_VivianMagicalPowder, &partyWeapon_VivianCharmKissAttack };
+BattleWeapon* sand_waza[4] = { &partyWeapon_SandersNormalAttack, &partyWeapon_SandersTimeBombSet, &partyWeapon_SandersCounterSet, &partyWeapon_SandersSuperBombAttack };
+BattleWeapon* chu_waza[4] = { &partyWeapon_ChuchurinaNormalAttackLeft, &partyWeapon_ChuchurinaItemSteal, &partyWeapon_ChuchurinaMadowaseAttack, &partyWeapon_ChuchurinaKiss };
 
 WindowPartyDt winPartyDt[7] = {
-    { 1, 0x155, "name_party0", "msg_menu_party_kuri", "EFF_m_kuriko", "W_1", "d_mario", "R_2", (const char*)chri_waza },
-    { 2, 0x156, "name_party1", "msg_menu_party_noko", "EFF_m_noko", "W_1", "d_mario", "R_3", (const char*)noko_waza },
-    { 5, 0x15F, "name_party4", "msg_menu_party_cloud", "EFF_m_cloud", "W_1", "d_mario", "R_4", (const char*)cloud_waza },
-    { 4, 0x158, "name_party3", "msg_menu_party_yoshi", "EFF_m_yoshi", "W_1", "d_mario", "R_5", (const char*)yoshi_waza },
-    { 6, 0x160, "name_party5", "msg_menu_party_vivi", "c_vivian", "PTR_S_1", "d_mario", "R_12", (const char*)vivi_waza },
-    { 3, 0x157, "name_party2", "msg_menu_party_bom", "EFF_m_bomb", "W_1", "d_mario", "R_13", (const char*)sand_waza },
-    { 7, 0x161, "name_party6", "msg_menu_party_chu", "EFF_m_chu", "W_1", "d_mario", "R_14", (const char*)chu_waza },
+    { 1, 0x155, "name_party0", "msg_menu_party_kuri", "EFF_m_kuriko", "W_1", "d_mario", "R_2", chri_waza },
+    { 2, 0x156, "name_party1", "msg_menu_party_noko", "EFF_m_noko", "W_1", "d_mario", "R_3", noko_waza },
+    { 5, 0x15F, "name_party4", "msg_menu_party_cloud", "EFF_m_cloud", "W_1", "d_mario", "R_4", cloud_waza },
+    { 4, 0x158, "name_party3", "msg_menu_party_yoshi", "EFF_m_yoshi", "W_1", "d_mario", "R_5", yoshi_waza },
+    { 6, 0x160, "name_party5", "msg_menu_party_vivi", "c_vivian", "PTR_S_1", "d_mario", "R_12", vivi_waza },
+    { 3, 0x157, "name_party2", "msg_menu_party_bom", "EFF_m_bomb", "W_1", "d_mario", "R_13", sand_waza },
+    { 7, 0x161, "name_party6", "msg_menu_party_chu", "EFF_m_chu", "W_1", "d_mario", "R_14", chu_waza },
 };
 
 void winPartyInit(WindowWork* work) {
@@ -292,7 +292,7 @@ s32 winPartyMain(WindowWork* work) {
 
         work->targetX = -10.0f;
         work->targetY = -26.0f * (f32)work->wazaSel + 5.0f;
-        winMsgEntry(work, 0, ((BattleWeapon**)winPartyDt[work->selPartyDt].waza)[work->wazaSel]->description, NULL);
+        winMsgEntry(work, 0, winPartyDt[work->selPartyDt].waza[work->wazaSel]->description, NULL);
         break;
     }
     default:
@@ -573,8 +573,8 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
             char buf[64];
 
             winFontSetLabel((Vec){y, listY = (listTop - (f32)(i * 26)) - 30.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
-                            loopBlack, ((BattleWeapon**)winPartyDt[work->selPartyDt].waza)[i]->name);
-            weapon = ((BattleWeapon**)winPartyDt[work->selPartyDt].waza)[i];
+                            loopBlack, winPartyDt[work->selPartyDt].waza[i]->name);
+            weapon = winPartyDt[work->selPartyDt].waza[i];
             sprintf(buf, "%s", winZenkakuStr(weapon->baseFpCost));
             winFontSet((Vec){(costX - (f32)(FontGetMessageWidth(buf) >> 1)) - 2.0f, listY, 0.0f},
                        (Vec){1.0f, 1.0f, 1.0f}, loopBlack, buf);

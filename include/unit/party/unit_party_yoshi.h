@@ -13,5 +13,5 @@ USER_FUNC(_check_swallow_attribute);
 USER_FUNC(_wait_yoshig_run);
 USER_FUNC(_wait_yoshig_complete);
 USER_FUNC(_gundan_yoshi_run_effect);
-struct PoseSoundEntry;
-s32 _yoshi_slide_move_sound(BattleUnit* unit, struct PoseSoundEntry* entry);
+struct BtlUnitPoseSound;
+s32 _yoshi_slide_move_sound(BattleUnit* unit, struct BtlUnitPoseSound* entry, void* ps);

@@ -10,7 +10,7 @@ extern BattleWeapon marioWeapon_JyabaraJump;
 extern BattleWeapon marioDefaultWeapon_Hammer;
 extern BattleWeapon marioWeapon_KaitenHammer;
 extern BattleWeapon marioWeapon_UltraHammer;
-extern u32 superActionTable[];
+extern BattleWeapon* superActionTable[18];
 extern BattleWeapon ItemWeaponData_CookingItem;
 extern s32 marioAttackEvent_MajinaiDefenceUp[];
 

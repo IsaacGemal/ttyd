@@ -569,12 +569,12 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 		s32 j;
 		mask = pouch->mStarPowersObtained;
 		for (j = 0; j < 16; j++) {
-			if ((mask & (1 << j)) != 0 && ((BattleWeapon**)superActionTable)[j] != NULL) {
+			if ((mask & (1 << j)) != 0 && superActionTable[j] != NULL) {
 				cmd->weaponTable[count].mIndex = -1;
 				cmd->weaponTable[count].mItem = 0;
-				cmd->weaponTable[count].mWeaponParams = ((BattleWeapon**)superActionTable)[j];
+				cmd->weaponTable[count].mWeaponParams = superActionTable[j];
 				cmd->weaponTable[count].mEnabled = 0;
-				cmd->weaponTable[count].mIcon = ((BattleWeapon**)superActionTable)[j]->icon;
+				cmd->weaponTable[count].mIcon = superActionTable[j]->icon;
 				cmd->weaponTable[count].mDisableReason = 0;
 				if (cmd->weaponTable[count].mWeaponParams->name != NULL) {
 					cmd->weaponTable[count].mName = msgSearch(cmd->weaponTable[count].mWeaponParams->name);
