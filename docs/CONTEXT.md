@@ -6151,10 +6151,10 @@ only loaded them.
   symbols.txt, which includes the natural compile of every changed file without MUST_MATCH and the data ratchet;
   fncast_lint and local_prototypes clean.
 - **gap_ objects stay.** Round 1's salvage and two helpers had deleted the `.sbss2` `gap_*` pad after a template
-  wherever the build stayed identical. The task's rules keep gap/force_active dummies, so all of them were restored (15
+  wherever the build stayed identical. The task's rules keep gap/force_active dummies, so all of them were restored (19
   files: ac_shot, eff_damage_star, eff_energy, eff_mist, eff_nozle, eff_magic1/magic_horao/opuku_jetw/opuku_wcurtain/
-  opuku_wgun/pokopi_thunder/rappa/rothammer_fail/snowfall/whirlwind_n64, plus fukidashi, kemutest, seq_mapchange,
-  win_log by the helpers) at the original's offset (checked against the target split). With a gap back, objdiff no
+  opuku_wgun/pokopi_thunder/rappa/rothammer_fail/snowfall/whirlwind_n64, and, by the helpers, eff_fukidashi,
+  eff_kemutest, seq_mapchange, win_log) at the original's offset (checked against the target split). With a gap back, objdiff no
   longer pairs the template by position, so its symbols.txt line is renamed to the compiler's `@NNN`
   (`scope:local`), as round 1 did for eff_sstar. snowfall's gap uses its map name `gap_10_8042326C_sbss2`. The restored
   `#pragma section` lines are the original's: ci lint passes against the branch base, not against the previous commit.
