@@ -5573,8 +5573,10 @@ void goryuugijo_disp_slot(CameraId cameraId, void* param) {
     }
 }
 
-// Matches with a switch on the negated key check (an if/else if-converts; the switch keeps cntlzw/srwi.).
 static USER_FUNC(mario_keyoff_wait) {
+#ifdef MUST_MATCH
+    // A two-way switch on the negated test keeps retail's materialised compare (cntlzw/srwi.);
+    // the plain if (#else) is if-converted.
     switch (!marioChkKey()) {
     case 0:
         break;
@@ -5582,6 +5584,12 @@ static USER_FUNC(mario_keyoff_wait) {
         return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_YIELD;
+#else
+    if (marioChkKey()) {
+        return EVT_RETURN_YIELD;
+    }
+    return EVT_RETURN_BLOCK;
+#endif
 }
 
 USER_FUNC(teresa_badge_item_list_init) {
