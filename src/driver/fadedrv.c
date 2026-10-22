@@ -1334,7 +1334,6 @@ void disp_maku(CameraId camId, void* param) {
 	f32 f31;
 	f32 tx;
 	f32 ty;
-	f32 half = 0.5f;
 #ifdef MUST_MATCH
 	// See the note on the `+ zero` below.
 	f32 zero = 0.0f;
@@ -1389,7 +1388,7 @@ void disp_maku(CameraId camId, void* param) {
 
 		camera = camGetPtr(CAMERA_3D);
 		f30 = camera->fovY;
-		f30 = f30 * half / 180.0f;
+		f30 = f30 / 2.0f / 180.0f;
 		f30 = 3.141592f * f30;
 		f30 = 24.0f / (f32)tan(f30);
 		camera = camGetPtr(CAMERA_3D);

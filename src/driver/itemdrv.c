@@ -1622,18 +1622,13 @@ void itemseq_Bound(ItemEntry* item) {
         item->position.z = nz;
         item->moveDir = angle;
         if (hit != NULL) {
-            f32 k = 0.25f;
-            item->moveSpeed = item->moveSpeed * k;
+            item->moveSpeed = item->moveSpeed / 4.0f;
         }
         if (!(item->status & 0x20) && !(item->flags & 0x800)) {
             hit = itemBoundHitCeiling(item, vy);
             if (hit != NULL) {
                 vy = 0.0f;
-                {
-                    f32 k = 0.25f;
-
-                    item->jumpPower = -item->jumpPower * k;
-                }
+                item->jumpPower = -item->jumpPower / 4.0f;
                 item->bounceTime = 0;
                 item->lastTime = item->curTime;
             }
@@ -1872,10 +1867,9 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
                          &hitY, &hitZ, &distance,
                          &hitNX, &hitNY, &hitNZ);
     if (hit != NULL) {
-        f32 half = 0.5f;
         dot = dirX * hitNX + dirZ * hitNZ;
-        nx = (dirX - dot * hitNX) * half;
-        nz = (dirZ - dot * hitNZ) * half;
+        nx = (dirX - dot * hitNX) * 0.5f;
+        nz = (dirZ - dot * hitNZ) * 0.5f;
         *outX = *outX + nx;
         *outZ = *outZ + nz;
         dirZ = reviseAngle(180.0f + (f32)*angle);
@@ -1890,10 +1884,9 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
                              &hitY, &hitZ, &distance,
                              &hitNX, &hitNY, &hitNZ);
         if (hit != NULL) {
-            f32 half = 0.5f;
             dot = dirX * hitNX + dirZ * hitNZ;
-            nx = (dirX - dot * hitNX) * half;
-            nz = (dirZ - dot * hitNZ) * half;
+            nx = (dirX - dot * hitNX) * 0.5f;
+            nz = (dirZ - dot * hitNZ) * 0.5f;
             *outX = *outX + nx;
             *outZ = *outZ + nz;
             dirZ = reviseAngle(180.0f + (f32)*angle);

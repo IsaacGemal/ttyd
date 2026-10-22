@@ -22,10 +22,10 @@
 #include "party.h"
 #include "mario/mario_party.h"
 
-extern u32 cubeDJ[26];
-extern u32 headDJ[26];
-extern u32 frontDJ[26];
-extern u32 front2DJ[26];
+u32 cubeDJ[26];
+u32 headDJ[26];
+u32 frontDJ[26];
+u32 front2DJ[26];
 
 #define MAX_MOBJ_WORK 3
 
@@ -200,9 +200,6 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
     Vec maxTmp;
     Mtx mtx;
     s32 i;
-#ifdef MUST_MATCH
-    u8* base = (u8*)negone_one_374;
-#endif
 
     animData = animPoseGetAnimBaseDataPtr(entry->poseId);
     minTmp = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -266,11 +263,7 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
             MTXConcat(trans, yrot, trans);
             MTXConcat(trans, xrot, trans);
             MTXConcat(trans, scale, mtx);
-#ifdef MUST_MATCH
-            memcpy(&entry->hitObj[0].unk4[8], (MapFileJoint*)(base + 0x16a4), 0x68);
-#else
             memcpy(&entry->hitObj[0].unk4[8], &cubeDJ, 0x68);
-#endif
             strcpy(entry->hitObj[0].name, str_MOBJ_);
             strcat(entry->hitObj[0].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
@@ -295,11 +288,7 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
             MTXConcat(trans, yrot, trans);
             MTXConcat(trans, xrot, trans);
             MTXConcat(trans, scale, mtx);
-#ifdef MUST_MATCH
-            memcpy(&entry->hitObj[0].unk4[8], (MapFileJoint*)(base + 0x1758), 0x68);
-#else
             memcpy(&entry->hitObj[0].unk4[8], &headDJ, 0x68);
-#endif
             strcpy(entry->hitObj[0].name, str_MOBJ_);
             strcat(entry->hitObj[0].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
@@ -324,21 +313,13 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
             MTXConcat(trans, yrot, trans);
             MTXConcat(trans, xrot, trans);
             MTXConcat(trans, scale, mtx);
-#ifdef MUST_MATCH
-            memcpy(&entry->hitObj[0].unk4[8], (MapFileJoint*)(base + 0x180c), 0x68);
-#else
             memcpy(&entry->hitObj[0].unk4[8], &frontDJ, 0x68);
-#endif
             strcpy(entry->hitObj[0].name, str_MOBJ_);
             strcat(entry->hitObj[0].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
             entry->hitObj[0].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[0].unk4[8], mtx);
             entry->hitObj[0].hitObject->mapObj = (MapObject*)entry;
-#ifdef MUST_MATCH
-            memcpy(&entry->hitObj[1].unk4[8], (MapFileJoint*)(base + 0x18c0), 0x68);
-#else
             memcpy(&entry->hitObj[1].unk4[8], &front2DJ, 0x68);
-#endif
             strcpy(entry->hitObj[1].name, str_MOBJ_tilde);
             strcat(entry->hitObj[1].name, entry->name);
             ((MapFileJoint*)&entry->hitObj[1].unk4[8])->name = entry->hitObj[1].name;
