@@ -20,7 +20,6 @@
 #include "system.h"
 
 #include <string.h>
-#include "matching.h"
 #include "battle/battle_actrecord.h"
 #include "eff/eff_damage_star.h"
 #include "eff/eff_fukidashi.h"
@@ -1516,10 +1515,6 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
     return work;
 }
 
-// The original loads the 0.5f multiplier from its own .sdata2 symbol; MATCH_F32 keeps the compiler
-// from folding it into an anonymous pooled literal (see matching.h).
-static const f32 float_0p5_8041bedc = 0.5f;
-
 s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32 a) {
     BattleWork* wp = _battleWorkPointer;
     s32 count;
@@ -1596,7 +1591,7 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
         rate = rate * 0x32 / 100;
     }
     if (wp->field_180C0.field_0x1E0 != NULL) {
-        rate = (s32)((f32)rate * MATCH_F32(float_0p5_8041bedc));
+        rate = (s32)((f32)rate / 2.0f);
     }
     if (irand(100) >= rate) {
         return 2;

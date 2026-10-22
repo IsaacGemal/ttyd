@@ -10,21 +10,6 @@
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// Float literals this unit emitted into .sdata2.
-extern const f32 float_0_8041c7d8;
-extern const f32 float_0p01_8041c7c0;
-extern const f32 float_neg300_8041c7d0;
-extern const f32 float_30_8041c7d4;
-extern const f32 float_neg1_8041c7dc;
-extern const f32 float_100_8041c7bc;
-extern const f32 float_neg200_8041c7ac;
-extern const f32 float_70_8041c7b0;
-extern const f32 float_1_8041c7b4;
-extern const f32 float_0p5_8041c7b8;
-extern const f32 float_neg288_8041c7c4;
-extern const f32 float_176_8041c7c8;
-extern const f32 float_45_8041c7cc;
-
 // sdata2 word this unit emitted; the original symbol is undefined elsewhere.
 __declspec(section ".sdata2") s32 dat_8041c7a8 = -1;
 
@@ -129,14 +114,14 @@ static void _init_param(BattleWork* work) {
     dec->initTimer = param;
     dec->goal = (f32)ac->acParams[2];
     dec->goalStep = (f32)ac->acParams[3] / 10.0f;
-    if (dec->goalStep != float_0_8041c7d8) {
+    if (dec->goalStep) {
         dec->goal = (f32)irand(100);
     }
     dec->power = (f32)ac->acParams[7];
-    disp->value = float_0p01_8041c7c0 * dec->power;
+    disp->value = 0.01f * dec->power;
     dec->presses = 0;
     dec->powerStep = ac->acParams[5];
-    dec->decay = float_0p01_8041c7c0 * (f32)ac->acParams[6];
+    dec->decay = 0.01f * (f32)ac->acParams[6];
     dec->gaugeWidth = 0xB2;
 
     timer = ac->guardFrames;
@@ -166,15 +151,15 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
     switch (ac->mAcState) {
     case 0:
         memset(disp, 0, 0x2C);
-        disp->iconX = float_neg300_8041c7d0;
-        disp->iconY = float_0_8041c7d8;
+        disp->iconX = -300.0f;
+        disp->iconY = 0.0f;
         disp->counter = 0x14;
         disp->field_0xC = dat_8041c7a8;
         disp->field_0x10 = 0;
         disp->dg = -0x10;
         disp->db = -0x10;
         disp->field_0x13 = 0;
-        disp->value = float_0_8041c7d8;
+        disp->value = 0.0f;
         ac->result = 1;
         dec->timer = 0;
         _init_param(work);
@@ -257,7 +242,7 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
         }
         if (dec->full == 0) {
             if (stateChanged) {
-                dec->power += float_0p01_8041c7c0 * (_power_table[difficulty] * (f32)dec->powerStep);
+                dec->power += 0.01f * (_power_table[difficulty] * (f32)dec->powerStep);
             }
 #ifdef MUST_MATCH
             // Volatile reads: retail reloads both fields here after the store above.
@@ -269,59 +254,24 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
 #endif
             v = target - v;
             dec->power = v;
-#ifdef MUST_MATCH
-            {
-                // Match-only: the volatile read forces the reload into f1 the target has;
-                // the natural form reuses f0 and swaps the compare operands.
-                f32 g = *(volatile f32*)&dec->power;
-                if (g <= float_0_8041c7d8) {
-                    dec->power = float_0_8041c7d8;
-                }
+            if (dec->power <= 0.0f) {
+                dec->power = 0.0f;
             }
-#else
-            if (dec->power <= float_0_8041c7d8) {
-                dec->power = float_0_8041c7d8;
-            }
-#endif
-#ifdef MUST_MATCH
-            {
-                // Match-only: the volatile read forces the reload into f1 the target has;
-                // the natural form reuses f0 and swaps the compare operands.
-                f32 g = *(volatile f32*)&dec->power;
-                if (g >= float_100_8041c7bc) {
-                    dec->power = float_100_8041c7bc;
-                    dec->full = 1;
-                }
-            }
-#else
-            if (dec->power >= float_100_8041c7bc) {
-                dec->power = float_100_8041c7bc;
+            if (dec->power >= 100.0f) {
+                dec->power = 100.0f;
                 dec->full = 1;
             }
-#endif
         }
-        if (float_0_8041c7d8 != dec->goalStep) {
+        if (0.0f != dec->goalStep) {
             dec->goal += dec->goalStep;
-            if (dec->goal <= float_0_8041c7d8) {
-                dec->goal = float_0_8041c7d8;
-                dec->goalStep = dec->goalStep * float_neg1_8041c7dc;
+            if (dec->goal <= 0.0f) {
+                dec->goal = 0.0f;
+                dec->goalStep *= -1.0f;
             }
-#ifdef MUST_MATCH
-            {
-                // Match-only: the volatile read forces the reload into f1 the target has;
-                // the natural form reuses f0 and swaps the compare operands.
-                f32 g = *(volatile f32*)&dec->goal;
-                if (g >= float_100_8041c7bc) {
-                    dec->goal = float_100_8041c7bc;
-                    dec->goalStep = dec->goalStep * float_neg1_8041c7dc;
-                }
+            if (dec->goal >= 100.0f) {
+                dec->goal = 100.0f;
+                dec->goalStep *= -1.0f;
             }
-#else
-            if (dec->goal >= float_100_8041c7bc) {
-                dec->goal = float_100_8041c7bc;
-                dec->goalStep = dec->goalStep * float_neg1_8041c7dc;
-            }
-#endif
         }
         if (dec->holdMask != 0 && BattlePadCheckNow(dec->holdMask) == 0) {
             dec->timer = 0;
@@ -370,7 +320,7 @@ void battleAcDisp_Repeatedly(CameraId camId, void* param) {
     case 100:
     case 1000:
     case 1001:
-        disp->iconX = intplGetValue(4, 20 - disp->counter, 20, float_neg300_8041c7d0, float_30_8041c7d4);
+        disp->iconX = intplGetValue(4, 20 - disp->counter, 20, -300.0f, 30.0f);
         actionCommandDisp(disp->iconX, disp->iconY);
         if (disp->counter > 0) {
             disp->counter--;
@@ -379,9 +329,9 @@ void battleAcDisp_Repeatedly(CameraId camId, void* param) {
     case 1002:
     case 1003:
         if (disp->counter >= 40) {
-            disp->iconX = intplGetValue(4, disp->counter - 40, 20, float_30_8041c7d4, float_neg300_8041c7d0);
+            disp->iconX = intplGetValue(4, disp->counter - 40, 20, 30.0f, -300.0f);
         } else {
-            disp->iconX = float_30_8041c7d4;
+            disp->iconX = 30.0f;
         }
         actionCommandDisp(disp->iconX, disp->iconY);
         if (disp->counter < 60) {
@@ -443,19 +393,19 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
         if (((disp->field_0x0 / 7) & 1) == 1) {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};
-            vec.x = float_neg200_8041c7ac + x;
-            vec.y = float_70_8041c7b0 + y;
-            iconDispGx(float_1_8041c7b4, &vec, 0x10, iconB);
+            vec.x = -200.0f + x;
+            vec.y = 70.0f + y;
+            iconDispGx(1.0f, &vec, 0x10, iconB);
         } else {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};
-            vec.x = float_neg200_8041c7ac + x;
-            vec.y = float_70_8041c7b0 + y;
-            iconDispGx(float_1_8041c7b4, &vec, 0x10, iconA);
+            vec.x = -200.0f + x;
+            vec.y = 70.0f + y;
+            iconDispGx(1.0f, &vec, 0x10, iconA);
         }
     } else {
         s32 alt = (disp->field_0x0 / 7) & 1;
-        f32 baseX = float_neg200_8041c7ac + x;
-        f32 baseY = float_70_8041c7b0 + y;
+        f32 baseX = -200.0f + x;
+        f32 baseY = 70.0f + y;
         s32 i;
         s32 off;
 
@@ -486,33 +436,33 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec vec = (Vec){0.0f, 0.0f, 0.0f};
                 vec.x = baseX + (f32)off;
                 vec.y = baseY;
-                iconDispGx(float_1_8041c7b4, &vec, 0x10, icon);
+                iconDispGx(1.0f, &vec, 0x10, icon);
             } else {
                 Vec vec = (Vec){0.0f, 0.0f, 0.0f};
                 vec.x = baseX + (f32)off;
                 vec.y = baseY;
-                iconDispGx(float_0p5_8041c7b8, &vec, 0x10, iconB);
+                iconDispGx(0.5f, &vec, 0x10, iconB);
             }
         }
     }
 
     target = dec->power;
-    target = target / float_100_8041c7bc;
+    target = target / 100.0f;
     v = disp->value;
     if (v <= target) {
-        disp->value = v + float_0p01_8041c7c0;
+        disp->value += 0.01f;
         if (disp->value > target) {
             disp->value = target;
         }
     } else {
-        disp->value = v - float_0p01_8041c7c0;
+        disp->value -= 0.01f;
         if (disp->value < target) {
             disp->value = target;
         }
     }
 
     flags = 0;
-    if (dec->full == 1 && disp->value >= float_1_8041c7b4) {
+    if (dec->full == 1 && disp->value >= 1.0f) {
         flags |= 1;
         p[0xD] += disp->dg;
         p[0xE] += disp->db;
@@ -533,28 +483,13 @@ static void actionCommandDisp(f32 x, f32 y) {
     BattleAcDrawGauge((s32)x, (s32)y, v, dec->gaugeWidth, 2, (ac->acFlag & 2) ? 100 : (s32)dec->goal, 100, 100, flags);
     {
         Vec vec = (Vec){0.0f, 0.0f, 0.0f};
-        vec.x = float_neg288_8041c7c4 + x + (float_176_8041c7c8 * dec->goal) / float_100_8041c7bc;
-        vec.y = float_45_8041c7cc + y;
-        iconDispGx(float_1_8041c7b4, &vec, 0x10, 0x96);
+        vec.x = -288.0f + x + (176.0f * dec->goal) / 100.0f;
+        vec.y = 45.0f + y;
+        iconDispGx(1.0f, &vec, 0x10, 0x96);
     }
     disp->field_0x0++;
     disp->field_0x4++;
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_neg200_8041c7ac = -200.0f;
-const f32 float_70_8041c7b0 = 70.0f;
-const f32 float_1_8041c7b4 = 1.0f;
-const f32 float_0p5_8041c7b8 = 0.5f;
-const f32 float_100_8041c7bc = 100.0f;
-const f32 float_0p01_8041c7c0 = 0.01f;
-const f32 float_neg288_8041c7c4 = -288.0f;
-const f32 float_176_8041c7c8 = 176.0f;
-const f32 float_45_8041c7cc = 45.0f;
-const f32 float_neg300_8041c7d0 = -300.0f;
-const f32 float_30_8041c7d4 = 30.0f;
-const f32 float_0_8041c7d8 = 0.0f;
-const f32 float_neg1_8041c7dc = -1.0f;
 
 // 20 zero bytes that end the unit's .sdata: an all-zero object needs explicit_zero_data to be emitted and force_active to survive the linker.
 #pragma explicit_zero_data on
