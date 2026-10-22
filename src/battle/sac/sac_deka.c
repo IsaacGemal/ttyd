@@ -133,36 +133,6 @@ typedef struct DekaWork {
 
 static DekaWork* get_ptr(void);
 
-// Small rodata tables main_star copies to the stack (the original inlines the copy).
-typedef struct { s32 v[11]; } DekaTableInt11;
-typedef struct { f32 v[6]; } DekaTableF32x6;
-// .rodata in retail order.
-#ifdef MUST_MATCH
-// Non-const so yuka_init's loop loads stay in the inner loop; the section keeps them in .rodata.
-__declspec(section ".rodata") Vec vec3_803004f8 = { 0, 0, 0 };
-__declspec(section ".rodata") Vec vec3_80300504 = { 0, 0, 0 };
-__declspec(section ".rodata") Vec vec3_80300510 = { 0, 0, 0 };
-#else
-const Vec vec3_803004f8 = { 0, 0, 0 };
-const Vec vec3_80300504 = { 0, 0, 0 };
-const Vec vec3_80300510 = { 0, 0, 0 };
-#endif
-__declspec(section ".rodata") Vec vec3_8030051c[1] = { { 0, 0, 0 } };
-__declspec(section ".rodata") Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
-__declspec(section ".rodata") Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
-#ifdef MUST_MATCH
-// Non-const so MWCC's scheduler keeps main_star's named loads in place; the section keeps them in .rodata.
-__declspec(section ".rodata") Vec vec3_80300540 = { 0.0f, 0.0f, 0.0f };
-__declspec(section ".rodata") Vec vec3_8030054c = { 0.0f, 0.0f, 0.0f };
-#else
-const Vec vec3_80300540 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_8030054c = { 0.0f, 0.0f, 0.0f };
-#endif
-const DekaTableInt11 dat_80300558 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
-const DekaTableInt11 dat_80300584 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
-const DekaTableF32x6 dat_803005b0 = { { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f } };
-const DekaTableF32x6 dat_803005c8 = { { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f } };
-
 // Vertex data allocated by yuka_init into matEntry->address (0x3870 bytes).
 typedef struct DekaYukaMesh {
     /*0x0000*/ Vec pos[2][0x81];
@@ -175,23 +145,6 @@ typedef struct DekaYukaMesh {
 
 // EVT script, local to this file in the original (.sdata).
 static s32 nice_event[8] = { 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0, 0x64, 0, 2, 1 };
-
-// main_star's .rodata objects (not in a header yet).
-
-const GXColor dat_80421e40 = { 0xFF, 0xFF, 0xFF, 0x00 };
-__declspec(section ".sdata2") GXColor dat_80421e44 = { 0xFF, 0xFF, 0xFF, 0x00 };
-const GXColor dat_80421e48 = { 0xFF, 0xFF, 0xFF, 0x00 };
-
-// The original builds each GXColor in a helper that returns it by value: the
-// helper's result lands in one stack slot and the assignment copies it to the
-// variable the call then passes.
-static inline GXColor disp2D_color(GXColor base, u8 alpha) {
-    base.a = alpha;
-    return base;
-}
-
-
-
 
 // .text:0x2CD0 | 0x80245CC8 | size: 0x130
 s32 main_deka(EventEntry* event, s32 arg) {
@@ -269,15 +222,11 @@ static void yuka_init(void) {
             tmp = (f32)p->height;
             z = p->plane0.z + tmp * (f32)i;
 
-            v = vec3_803004f8;
-            v.x = x;
-            v.z = z;
+            v = (Vec){ x, 0.0f, z };
             mesh->disp[i][j] = v;
-            v2 = vec3_80300504;
-            v2.x = x;
-            v2.z = z;
+            v2 = (Vec){ x, 0.0f, z };
             mesh->pos[i][j] = v2;
-            mesh->normal[i][j] = vec3_80300510;
+            mesh->normal[i][j] = (Vec){ 0.0f, 0.0f, 0.0f };
             tmp = (f32)j;
             mesh->texU[i][j] = 0.0078125f * tmp;
             mesh->texV[i][j] = (f32)i;
@@ -336,7 +285,7 @@ static void yuka_main(void) {
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 0x81; j++) {
-            v2 = vec3_8030051c[0];
+            v2 = (Vec){ 0.0f, 0.0f, 0.0f };
 
             PSVECSubtract(&mesh->prev[i][j], &mesh->prev[i][j + 1], &vA);
             PSVECNormalize(&vA, &vN);
@@ -548,7 +497,7 @@ void main_gauge(void) {
         case 1:
             p->gaugeState = 2;
             p->gaugeTimer = 0;
-            p->gaugePos = vec3_80300528;
+            p->gaugePos = (Vec){ -1000.0f, 100.0f, 0.0f };
             p->gaugeWidth = 500.f;
             p->gaugeAlpha = 0xFF;
             // fallthrough
@@ -605,7 +554,7 @@ void main_timing(s32 idx) {
             break;
         case 2:
             t->alpha = 0xFF;
-            t->offset = vec3_80300534;
+            t->offset = (Vec){ 0.0f, 0.0f, 0.0f };
             break;
         case 3:
             t->state = 4;
@@ -638,8 +587,8 @@ static void main_star(void) {
         p->starTarget = p->starPos;
         p->starTarget.y += 50.f;
         p->starTarget.z += -1.0f;
-        p->starScale = vec3_80300540;
-        p->starRot = vec3_8030054c;
+        p->starScale = (Vec){ 0.0f, 0.0f, 0.0f };
+        p->starRot = (Vec){ 0.0f, 0.0f, 0.0f };
         /* fallthrough */
     case 2:
         p->starTimer++;
@@ -704,11 +653,10 @@ static void main_star(void) {
         }
         /* fallthrough */
     case 7: {
-        DekaTableInt11 tbl;
+        s32 tbl[11] = { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 };
         f32 s;
-        tbl = dat_80300558;
         p->starTimer++;
-        s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starScaleFrom, p->starScaleTo);
+        s = intplGetValue(4, tbl[p->starTimer / 4], 5, p->starScaleFrom, p->starScaleTo);
         p->starScale.z = s;
         p->starScale.y = s;
         p->starScale.x = s;
@@ -727,11 +675,10 @@ static void main_star(void) {
         p->starScaleTo = 2.0f;
         /* fallthrough */
     case 9: {
-        DekaTableInt11 tbl;
+        s32 tbl[11] = { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 };
         f32 s;
-        tbl = dat_80300584;
         p->starTimer++;
-        s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starScaleFrom, p->starScaleTo);
+        s = intplGetValue(4, tbl[p->starTimer / 4], 5, p->starScaleFrom, p->starScaleTo);
         p->starScale.z = s;
         p->starScale.y = s;
         p->starScale.x = s;
@@ -751,17 +698,16 @@ static void main_star(void) {
         p->starCounter = 0;
         /* fallthrough */
     case 11: {
-        DekaTableF32x6 tblA;
-        DekaTableF32x6 tblB;
         s32 j;
 
         p->starPos.y = p->starPos.y + p->starVel;
         p->starVel += -0.5f;
         if (p->starPos.y < p->starTarget.y) {
-            tblA = dat_803005b0;
-            tblB = dat_803005c8;
+            f32 tblA[6] = { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f };
+            f32 tblB[6] = { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f };
+
             p->starCounter++;
-            btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], 0.0f);
+            btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA[p->combo], 0.0f);
             psndSFXOn("SFX_BTL_SAC_DOKKAN5");
             for (j = 0; j < 2; j++) {
                 s32 i;
@@ -778,7 +724,7 @@ static void main_star(void) {
                             p->yukaIndex[i] = 0x29;
                         }
                         p->yukaScale[i] = 43.0f;
-                        p->yukaUnk[i] = (f32)p->starCounter * tblB.v[p->combo] + 4.0f;
+                        p->yukaUnk[i] = (f32)p->starCounter * tblB[p->combo] + 4.0f;
                         break;
                     }
                 }
@@ -954,24 +900,16 @@ s32 end_deka(EventEntry* event) {
 }
 
 // Draws the deka gauge: two planes with a scaling middle section, a beat bar, then the
-// timing notes (timingCopy for the falling icons, timing for the resting ones). Each
-// GXColor is built in disp2D_color so the value lands in the same stack slot. The `width; left;
+// timing notes (timingCopy for the falling icons, timing for the resting ones). The `width; left;
 // right;` declaration order, the (deliberately kept) `s32 id;` local, and declaring the loop
 // cursor `DekaTiming* t;` *before* `s32 i;` (each loop then assigns it after a leading `f32 x;`
 // declaration) all steer MWCC's GPR/FPR colouring and constant hoisting; dropping any of them
 // regresses the score. The shapes that recover the original's FPR colouring are: the
-// `ratio` temp in each loop, the recomputed `left`/`right` at the plane transforms, and the
-// `volatile` GXColor `color` (own stack slot, MUST_MATCH only).
+// `ratio` temp in each loop and the recomputed `left`/`right` at the plane transforms.
 // .text:0xAA8 | 0x80243AA0 | size: 0x6B0
 static void disp_2D(CameraId cameraId, void* param) {
     DekaWork* p = get_ptr();
-#ifdef MUST_MATCH
-    // `volatile` gives `color` its own stack slot (0x38) separate from the
-    // disp2D_color return temp (0x34); without it MWCC coalesces them.
-    volatile GXColor color;
-#else
     GXColor color;
-#endif
     Mtx mtx;
     Mtx scale;
     Mtx trans;
@@ -989,7 +927,7 @@ static void disp_2D(CameraId cameraId, void* param) {
     right = mid + hw + e8;
 
     if (p->gaugeState >= 2 && p->gaugeState <= 5) {
-        color = disp2D_color(dat_80421e40, p->gaugeAlpha);
+        color = (GXColor){ 0xFF, 0xFF, 0xFF, p->gaugeAlpha };
         // `left` is recomputed at this call rather than copied out of its register, as in the original.
         PSMTXTrans(mtx, p->gaugePos.x - 0.5f * p->gaugeWidth - e8, p->gaugePos.y, p->gaugePos.z);
         btlDispTexPlane2(mtx, 0x43, color, 0);
@@ -1032,7 +970,7 @@ static void disp_2D(CameraId cameraId, void* param) {
                 x = ratio * width + left + t->offset.x;
             }
 
-            color = disp2D_color(dat_80421e44, p->gaugeAlpha);
+            color = (GXColor){ 0xFF, 0xFF, 0xFF, p->gaugeAlpha };
             color.a = color.a * (t->alpha / 255.0f);
 
             if (t->kind == 1) {
@@ -1063,7 +1001,7 @@ static void disp_2D(CameraId cameraId, void* param) {
             }
 
             if (t->state >= 2 && t->state <= 5) {
-                color = disp2D_color(dat_80421e48, p->gaugeAlpha);
+                color = (GXColor){ 0xFF, 0xFF, 0xFF, p->gaugeAlpha };
                 color.a = color.a * (t->alpha / 255.0f);
 
                 if (t->kind == 1) {

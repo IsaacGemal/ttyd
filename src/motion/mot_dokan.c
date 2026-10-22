@@ -12,40 +12,6 @@
 
 // Local prototypes for functions whose headers don't declare them yet. Listed in REPORT.md.
 
-// The original copies each Vec with an unscheduled per-component load/store pair; a volatile cast
-// stops MWCC's scheduler hoisting the third component's load (same shape as mot_damageToge).
-#ifdef MUST_MATCH
-#define COPY_VEC(dst, src) (*(volatile Vec*)(dst) = *(volatile Vec*)(src))
-#define STORE_F32V(p, v) (*(volatile f32*)(p) = (v))
-#else
-#define COPY_VEC(dst, src) (*(dst) = *(src))
-#define STORE_F32V(p, v) (*(p) = (v))
-#endif
-
-// .rodata named constants, in the order they appear in the original.
-#ifdef MUST_MATCH
-// Non-const arrays placed in .rodata: MWCC then copies them with the original's r3/r0 load split. A const
-// scalar pools differently (r0/r3), which _partyEntry's two copies at offset 0x70 are sensitive to.
-__declspec(section ".rodata") Vec vec3_802f3d60[] = { { 0.0f, 0.0f, 0.0f } };
-__declspec(section ".rodata") Vec vec3_802f3d6c[] = { { 0.0f, 0.0f, 0.0f } };
-#else
-const Vec vec3_802f3d60[1] = { { 0.0f, 0.0f, 0.0f } };
-const Vec vec3_802f3d6c[1] = { { 0.0f, 0.0f, 0.0f } };
-#endif
-const Vec vec3_802f3d78 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3d84 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3d90 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3d9c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3da8 = { 0.0f, 16.0f, 0.0f };
-const Vec vec3_802f3db4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3dc0 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3dcc = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3dd8 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3de4 = { 0.0f, 16.0f, 0.0f };
-const Vec vec3_802f3df0 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3dfc = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802f3e08 = { 1.0f, 1.0f, 1.0f };
-
 void _partyEntry(s32 arg) {
     MarioWork* mario;
     PartyEntry* party;
@@ -85,7 +51,7 @@ void _partyEntry(s32 arg) {
                     party = partyGetPtr(member);
                     partyChgRunMode(party, 0xA);
                     if (arg == 0) {
-                        party->scale = vec3_802f3d60[0];
+                        party->scale = (Vec){ 0.0f, 0.0f, 0.0f };
                     }
                     party->flags |= PARTY_FLAG_DISABLE_FLOORS;
                     party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -104,7 +70,7 @@ void _partyEntry(s32 arg) {
             party = partyGetPtr(mario->currPartySlotId[i]);
             partyChgRunMode(party, 0xA);
             if (arg == 0) {
-                party->scale = vec3_802f3d6c[0];
+                party->scale = (Vec){ 0.0f, 0.0f, 0.0f };
             }
             party->flags |= PARTY_FLAG_DISABLE_FLOORS;
             party->flags |= PARTY_FLAG_FORCE_FALL;
@@ -121,13 +87,6 @@ void _partyEntry(s32 arg) {
     }
 }
 
-// Two scheduling shapes the original's compiler emitted that MWCC only reproduces with help:
-//  - Every Vec copy is an unscheduled load x/load y/store x/store y/load z/store z, so COPY_VEC reads both
-//    sides volatile to stop the scheduler hoisting the third component's load (same shape as mot_damageToge).
-//  - In the sub-motion-1 branch the second spinSpeed store is volatile (STORE_F32V): it keeps that branch's scale
-//    copy below both spinSpeed stores, which also settles the f1/f2/f0 assignment.
-// The float constants still pool into anonymous @NNN .sdata2 slots (MWCC folds consts defined above the code);
-// objdiff matches those by value, so they do not affect the score.
 void mot_dokan(void) {
     MarioWork* mario;
     PartyEntry* party;
@@ -157,8 +116,8 @@ void mot_dokan(void) {
             mario->dispDir = mario->dispReqDir;
             mario->currSubMotionId = 0x14;
             mario->spinSpeed = 0.0f;
-            STORE_F32V(&mario->spinSpeed, 30.0f);
-            COPY_VEC(&mario->scale, &vec3_802f3d78);
+            mario->spinSpeed = 30.0f;
+            mario->scale = (Vec){ 0.0f, 0.0f, 0.0f };
             _partyEntry(1);
         } else if (mario->field_0x3E == 0) {
             _partyEntry(0);
@@ -171,10 +130,10 @@ void mot_dokan(void) {
             if ((party = partyGetPtr(1)) != NULL) {
                 partyShadowOff(party);
             }
-            COPY_VEC(&mario->dispOfs, &vec3_802f3d84);
-            COPY_VEC(&mario->dispOfs2, &vec3_802f3d90);
-            COPY_VEC(&mario->dispRot, &vec3_802f3d9c);
-            COPY_VEC(&mario->dispPivot, &vec3_802f3da8);
+            mario->dispOfs = (Vec){ 0.0f, 0.0f, 0.0f };
+            mario->dispOfs2 = (Vec){ 0.0f, 0.0f, 0.0f };
+            mario->dispRot = (Vec){ 0.0f, 0.0f, 0.0f };
+            mario->dispPivot = (Vec){ 0.0f, 16.0f, 0.0f };
             marioSlitForceCancel();
             marioPaperOn("p_dokan_x");
             marioPaperLightOff();
@@ -185,11 +144,11 @@ void mot_dokan(void) {
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0;
         } else if (mario->field_0x3E == 4) {
-            COPY_VEC(&mario->scale, &vec3_802f3db4);
-            COPY_VEC(&mario->dispOfs, &vec3_802f3dc0);
-            COPY_VEC(&mario->dispOfs2, &vec3_802f3dcc);
-            COPY_VEC(&mario->dispRot, &vec3_802f3dd8);
-            COPY_VEC(&mario->dispPivot, &vec3_802f3de4);
+            mario->scale = (Vec){ 0.0f, 0.0f, 0.0f };
+            mario->dispOfs = (Vec){ 0.0f, 0.0f, 0.0f };
+            mario->dispOfs2 = (Vec){ 0.0f, 0.0f, 0.0f };
+            mario->dispRot = (Vec){ 0.0f, 0.0f, 0.0f };
+            mario->dispPivot = (Vec){ 0.0f, 16.0f, 0.0f };
             mario->directionView = toMovedir(mario->dispDir);
             mario->moveDir = mario->directionView;
             marioPaperOn("p_dokan_x");
@@ -217,7 +176,7 @@ void mot_dokan(void) {
         mario->scale.z = mario->scale.x;
         break;
     case 0x14:
-        COPY_VEC(&mario->scale, &vec3_802f3df0);
+        mario->scale = (Vec){ 0.0f, 0.0f, 0.0f };
         mario->currSubMotionId = 0x15;
         if (mario->flags & 0x02000000) {
             mario->dispOfs2.y = -2.0f;
@@ -333,8 +292,8 @@ void mot_dokan(void) {
         }
         break;
     case 0x67:
-        COPY_VEC(&mario->field_0xE0, &mario->position);
-        COPY_VEC(&mario->scale, &vec3_802f3dfc);
+        mario->field_0xE0 = mario->position;
+        mario->scale = (Vec){ 1.0f, 1.0f, 1.0f };
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;
         mario->dispFlags &= ~0x100;
@@ -388,8 +347,8 @@ void mot_dokan(void) {
         }
         break;
     case 0x71:
-        COPY_VEC(&mario->field_0xE0, &mario->position);
-        COPY_VEC(&mario->scale, &vec3_802f3e08);
+        mario->field_0xE0 = mario->position;
+        mario->scale = (Vec){ 1.0f, 1.0f, 1.0f };
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;
         mario->dispFlags &= ~0x100;

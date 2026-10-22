@@ -24,8 +24,7 @@
 // The plane data block of mario->motStruct.
 #define DATA ((MotionPlaneData*)mario->motStruct)
 
-// .rodata zero vectors used by the plane motion (original vec3_802c5c9c / vec3_802c5cd8...).
-// They are defined at the source positions that reproduce the original .rodata order.
+// vec3_802c5c9c (.rodata) is defined at the source position that reproduces the original .rodata order.
 
 // .data:0x0. Plane geometry/trig table read by chkCollision/flyMain (41 words, original order).
 f32 planeData[41] = {
@@ -100,10 +99,6 @@ const char* paper_plane[4] = {
     "p_hikohki_v",
 };
 
-// .rodata:0x50, after the four paper-plane names emitted by paper_plane above.
-const Vec vec3_802c5cd8 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5ce4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5cf0 = { 0.0f, 0.0f, 0.0f };
 // .rodata:0x90: the int->float conversion magic. Do NOT define it here: MWCC pools its own anonymous copy
 // for the compiler-generated `(f32)(s8)...` conversions, and defining a named object too emits a second copy
 // at 0x98 that shifts every following string by 8. Left undefined so the pooled copy lands at 0x90.
@@ -132,18 +127,10 @@ static inline void planeReset(void) {
 	MarioWork* m = marioGetPtr();
 
 	m->wPlayerCollisionBox.x = 20.0f;
-#ifdef MUST_MATCH
-	// Volatile store/loads keep the following volatile Vec copies below it, as the original schedules them.
-	*(volatile f32*)&m->wPlayerCollisionBox.y = 37.0f;
-	*(volatile Vec*)&m->dispRot = *(volatile Vec*)&vec3_802c5cd8;
-	*(volatile Vec*)&m->dispPivot = *(volatile Vec*)&vec3_802c5ce4;
-	*(volatile Vec*)&m->dispOfs = *(volatile Vec*)&vec3_802c5cf0;
-#else
 	m->wPlayerCollisionBox.y = 37.0f;
-	m->dispRot = vec3_802c5cd8;
-	m->dispPivot = vec3_802c5ce4;
-	m->dispOfs = vec3_802c5cf0;
-#endif
+	m->dispRot = (Vec){ 0.0f, 0.0f, 0.0f };
+	m->dispPivot = (Vec){ 0.0f, 0.0f, 0.0f };
+	m->dispOfs = (Vec){ 0.0f, 0.0f, 0.0f };
 	marioPaperOff();
 	marioChgPaper(NULL);
 	m->dispFlags &= ~0x8;

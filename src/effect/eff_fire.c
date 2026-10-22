@@ -11,49 +11,6 @@
 #include <dolphin/gx.h>
 #include <stdlib.h>
 
-// .sbss2 zero-init scratch words, declared in reverse address order because MWCC emits them backwards.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423064;
-__declspec(section ".sdata") u32 unk_80423060;
-__declspec(section ".sdata") u32 unk_8042305c;
-__declspec(section ".sdata") u32 unk_80423058;
-#pragma section ".sdata" ".sbss"
-
-#ifdef MUST_MATCH
-// Match-only: the colours built from the .sbss2 templates above go through inlines that return a GXColor. The
-// inline's local and its result take two stack slots below the call arguments' copies, where the original has them;
-// a named local built and passed directly sits above the copies, with the argument copy below it. The original
-// passes compound literals (`(GXColor){a, a, a, a}`), whose templates are the four .sbss2 words; that form needs
-// the words to be the compiler's own anonymous templates instead of the named objects above.
-static inline GXColor effFireDisp2Color(GXColor tevColor, u8 a) {
-	tevColor.r = a;
-	tevColor.g = a;
-	tevColor.b = a;
-	tevColor.a = a;
-	return tevColor;
-}
-
-static inline GXColor effFireDisp2KColor(GXColor tevKColor, u8 a) {
-	tevKColor.a = a;
-	return tevKColor;
-}
-
-static inline GXColor effFireDisp3KColor(u8 a) {
-	GXColor c = *(GXColor*)&unk_80423060;
-	c.a = a;
-	return c;
-}
-
-static inline GXColor effFireSmokeColor(effFireSmokeData* data) {
-	GXColor c = unk_80423064;
-	c.r = data->color.r;
-	c.g = data->color.g;
-	c.b = data->color.b;
-	c.a = data->color.a;
-	return c;
-}
-#endif
-
 #ifdef MUST_MATCH
 // Match-only: non-const object forced into .rodata so effFireEntry copies it with integer lwz/stw
 // (a const object is folded into lfsu), as the target does.
@@ -73,19 +30,6 @@ __declspec(section ".rodata") Vec vec3_802f8c4c = { 0.0f, 0.0f, 0.0f };
 #else
 const Vec vec3_802f8c4c = { 0.0f, 0.0f, 0.0f };
 #endif
-extern const u32 dat_8041e0bc;
-extern const u32 dat_8041e0c0;
-extern const u32 dat_8041e0c4;
-extern const u32 dat_8041e0c8;
-extern const u32 dat_8041e0cc;
-extern const u32 dat_8041e0d0;
-extern const u32 dat_8041e0d4;
-extern const u32 dat_8041e0d8;
-extern const u32 dat_8041e0dc;
-extern const u32 dat_8041e0e0;
-extern const u32 dat_8041e0e4;
-extern const u32 dat_8041e0e8;
-extern const u32 dat_8041e0b8;
 
 
 ScaleEntry scale1[13] = {
@@ -308,8 +252,8 @@ void effFireMain(EffectEntry* effect) {
 	default:
 		data->sparkTimer++;
 		if (data->sparkTimer > data->sparkInterval) {
-			// Per-type vertical spawn offsets packed into one word.
-			u32 packedYOffsets = dat_8041e0b8;
+			// Per-type vertical spawn offsets.
+			u8 yOffsets[4] = { 5, 10, 10, 10 };
 			// px/py/pz/sc are declared uninitialised and assigned in the order pz, sc, px, py, which colours
 			// pz=f29 and px=f31; declaring them with initialisers in this order gives pz=f31 and px=f29.
 			f32 px;
@@ -321,7 +265,7 @@ void effFireMain(EffectEntry* effect) {
 			pz = data->position.z - 5.0f;
 			sc = data->scale;
 			px = data->position.x;
-			py = data->position.y + (f32)((u8*)&packedYOffsets)[type];
+			py = data->position.y + (f32)yOffsets[type];
 
 			smokeEntry = effEntry();
 			smokeEntry->type = "FireSmoke";
@@ -456,8 +400,8 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_TEXA, GX_CA_A0, GX_CA_KONST, GX_CA_ZERO);
 	GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
 	GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
-	GXSetTevKColor(GX_KCOLOR0, *(GXColor*)&dat_8041e0bc);
-	GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041e0c0);
+	GXSetTevKColor(GX_KCOLOR0, (GXColor){ 0xFF, 0x00, 0x00, 0xFF });
+	GXSetTevColor(GX_TEVREG0, (GXColor){ 0x00, 0x00, 0x00, 0x64 });
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	{
@@ -485,21 +429,21 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ONE, GX_CC_KONST, GX_CC_RASC, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 	GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
-	GXSetTevKColor(GX_KCOLOR0, *(GXColor*)&dat_8041e0c4);
+	GXSetTevKColor(GX_KCOLOR0, (GXColor){ 0xF8, 0x99, 0x28, 0xFF });
 	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ONE, GX_CC_KONST, GX_CC_RASC, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 	GXSetTevKColorSel(GX_TEVSTAGE1, GX_TEV_KCSEL_K1);
-	GXSetTevKColor(GX_KCOLOR1, *(GXColor*)&dat_8041e0c8);
+	GXSetTevKColor(GX_KCOLOR1, (GXColor){ 0xF1, 0x9E, 0x8F, 0xFF });
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_COMP_A8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
 	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_TEXA, GX_CA_A2, GX_CA_KONST, GX_CA_ZERO);
 	GXSetTevKAlphaSel(GX_TEVSTAGE2, GX_TEV_KASEL_1);
-	GXSetTevColor(GX_TEVREG2, *(GXColor*)&dat_8041e0cc);
+	GXSetTevColor(GX_TEVREG2, (GXColor){ 0x00, 0x00, 0x00, 0x64 });
 	GXSetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -534,8 +478,6 @@ void effFireDisp2(CameraId camId, void* param) {
 	Mtx scaleMtx;
 	Mtx rotMtx;
 	Mtx mtx;
-	GXColor tevColor;
-	GXColor tevKColor;
 	s32 type;
 	f32 negHalf;
 	// Non-const dimensions retain runtime negation and the cached quad coordinates.
@@ -590,12 +532,12 @@ void effFireDisp2(CameraId camId, void* param) {
 	switch (type) {
 	case 3:
 	case 4:
-		GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041e0d0);
-		GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041e0d4);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xCD, 0x15, 0xFF });
+		GXSetTevColor(GX_TEVREG1, (GXColor){ 0xFF, 0x51, 0x00, 0xFF });
 		break;
 	case 8:
-		GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041e0d8);
-		GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041e0dc);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0x59, 0x33, 0x59, 0xFF });
+		GXSetTevColor(GX_TEVREG1, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
 		break;
 	}
 	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP0, GX_COLOR_NULL);
@@ -603,29 +545,14 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A2, GX_CA_ZERO);
-	tevColor = *(GXColor*)&unk_80423058;
-#ifdef MUST_MATCH
-	GXSetTevColor(GX_TEVREG2, effFireDisp2Color(tevColor, data->frameBlend));
-#else
-	tevColor.r = data->frameBlend;
-	tevColor.g = data->frameBlend;
-	tevColor.b = data->frameBlend;
-	tevColor.a = data->frameBlend;
-	GXSetTevColor(GX_TEVREG2, tevColor);
-#endif
+	GXSetTevColor(GX_TEVREG2, (GXColor){ data->frameBlend, data->frameBlend, data->frameBlend, data->frameBlend });
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
 	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_KONST, GX_CA_ZERO);
 	GXSetTevKAlphaSel(GX_TEVSTAGE2, GX_TEV_KASEL_K0_A);
-	tevKColor = *(GXColor*)&unk_8042305c;
-#ifdef MUST_MATCH
-	GXSetTevKColor(GX_KCOLOR0, effFireDisp2KColor(tevKColor, data->alpha));
-#else
-	tevKColor.a = data->alpha;
-	GXSetTevKColor(GX_KCOLOR0, tevKColor);
-#endif
+	GXSetTevKColor(GX_KCOLOR0, (GXColor){ 0, 0, 0, data->alpha });
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	negHalf = -width * half;
@@ -664,13 +591,13 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	switch (type) {
 	case 3:
-		GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&dat_8041e0e0);
+		GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xEA, 0x5D, 0x4C });
 		break;
 	case 4:
-		GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&dat_8041e0e4);
+		GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xEA, 0x5D, 0x26 });
 		break;
 	case 8:
-		GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&dat_8041e0e8);
+		GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0x00, 0x00, 0x00, 0x4C });
 		break;
 	}
 	GXSetNumTexGens(1);
@@ -740,7 +667,6 @@ void effFireDisp3(CameraId camId, void* param) {
 	Mtx mtx;
 	Mtx modelMtx;
 	GXColor blend;
-	GXColor tevColor;
 	Vec v;
 	Vec screen;
 	const GXColor* colorEntry;
@@ -814,13 +740,7 @@ void effFireDisp3(CameraId camId, void* param) {
 			GXSetTevColor(GX_TEVREG1, blend);
 		}
 	}
-#ifdef MUST_MATCH
-	tevColor = effFireDisp3KColor(data->alpha);
-#else
-	tevColor = *(GXColor*)&unk_80423060;
-	tevColor.a = data->alpha;
-#endif
-	GXSetTevColor(GX_TEVREG0, tevColor);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, data->alpha });
 	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
@@ -1013,7 +933,6 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireSmokeData* data = effect->userdata;
 	CameraEntry* camera;
-	GXColor color;
 	GXTexObj tex;
 	Mtx posMtx;
 	Mtx scaleMtx;
@@ -1040,16 +959,7 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&tex, GX_TEXMAP0);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-#ifdef MUST_MATCH
-	color = effFireSmokeColor(data);
-#else
-	color = unk_80423064;
-	color.r = data->color.r;
-	color.g = data->color.g;
-	color.b = data->color.b;
-	color.a = data->color.a;
-#endif
-	GXSetChanMatColor(GX_COLOR0A0, color);
+	GXSetChanMatColor(GX_COLOR0A0, (GXColor){ data->color.r, data->color.g, data->color.b, data->color.a });
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
 
@@ -1083,19 +993,3 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	GXPosition3f32(negHalf, negHalf, 0.0f);
 	GXTexCoord2f32(0.0f, 1.0f);
 }
-
-// Named color and offset words precede the anonymous float/string pool. Define them after the code
-// so MWCC preserves the objects instead of folding their contents into the functions.
-const u32 dat_8041e0b8 = 0x050A0A0A;
-const u32 dat_8041e0bc = 0xFF0000FF;
-const u32 dat_8041e0c0 = 0x00000064;
-const u32 dat_8041e0c4 = 0xF89928FF;
-const u32 dat_8041e0c8 = 0xF19E8FFF;
-const u32 dat_8041e0cc = 0x00000064;
-const u32 dat_8041e0d0 = 0xFFCD15FF;
-const u32 dat_8041e0d4 = 0xFF5100FF;
-const u32 dat_8041e0d8 = 0x593359FF;
-const u32 dat_8041e0dc = 0x000000FF;
-const u32 dat_8041e0e0 = 0xFFEA5D4C;
-const u32 dat_8041e0e4 = 0xFFEA5D26;
-const u32 dat_8041e0e8 = 0x0000004C;

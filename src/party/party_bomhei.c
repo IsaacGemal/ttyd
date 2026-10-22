@@ -30,10 +30,6 @@
 // .rodata / .sdata2 data referenced by this file's functions.
 const Vec vec3_802ccf48 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802ccf54 = {0.0f, -1.0f, 0.0f};
-#ifdef MUST_MATCH
-// Layout padding only, nothing references it: fills the original's slot between the two Vecs.
-const s32 dat_802ccf60[8] = {0, 45, -45, 90, -90, 135, -135, 180};
-#endif
 
 // .data / .sdata objects bomhei_use_main references.  m_w_7_sync is the frame table the
 // M_W_7 pose follows; the two evt scripts are the short/long camera shakes.
@@ -276,8 +272,8 @@ void bomhei_use_post(PartyEntry* party) {
 
 // .text:0x2138 | 0x800BF170 | size: 0x604
 // Matches: the six jump-stand string references pool off vec3_802ccf48 (+0x68)
-// once dat_802ccf60 and the int->float doubles below occupy their original
-// .rodata slots.
+// once check_front's angle-table template and the int->float doubles below occupy
+// their original .rodata slots.
 void bomhei_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     PartyEntry* p2;
@@ -1213,11 +1209,7 @@ void partyGetReturnPos(Vec* pos) {
 // at 0x58(r30) instead of an anonymous copy at 0xd8.
 // .text:0x0 | 0x800BCE50 | size: 0x3FC
 HitEntry* check_front(PartyEntry* party) {
-#ifdef MUST_MATCH
-    s32 angles[8];
-#else
     s32 angles[8] = {0, 45, -45, 90, -90, 135, -135, 180};
-#endif
     HitCheckQuery query;
     HitEntry* hit2;
     HitEntry* field138;
@@ -1229,15 +1221,6 @@ HitEntry* check_front(PartyEntry* party) {
     f32 f29;
     f32 limit;
 
-#ifdef MUST_MATCH
-    // Match-only: a 32-byte struct copy makes MWCC emit the stack copy straight
-    // from the named dat_802ccf60 array; the plain array initializer emits a
-    // second anonymous template at .rodata 0xd8.
-    {
-        typedef struct { s32 v[8]; } S32x8;
-        *(S32x8*)angles = *(const S32x8*)dat_802ccf60;
-    }
-#endif
     f29 = 0.8f * party->height;
     base = partyToMovedir(party, party->dispDir);
     for (i = 0; i < 8; i++) {

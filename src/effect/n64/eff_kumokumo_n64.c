@@ -19,15 +19,6 @@
 __declspec(section ".data") u8 lbl_803A2280[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 
 
-// the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section
-#pragma section ".sdata" ".sbss2"
-// MWCC emits these two tentative .sbss2 objects in reverse declaration order, and the linker places them in
-// emission order. Declaring a4 first puts a0 at 0x804231A0 and a4 at 0x804231A4, matching the target; the
-// swapped order moves a0 by 4 and the sda21 offsets in the code that reads them.
-__declspec(section ".sdata") u32 unk_804231a4;
-__declspec(section ".sdata") u32 unk_804231a0;
-extern const u32 dat_8041f578;
-extern const u32 dat_8041f57c;
 extern u32 cloud_normal_tbl[8];
 extern u32 cloud_color0_tbl[5];
 extern void* cloud_dl_0_tbl[4];
@@ -45,46 +36,6 @@ extern s32 negone_one[];
 extern s32 one_negone[];
 
 // clang-format off
-
-#ifdef MUST_MATCH
-static inline void effKumokumoSetColor1(effKumokumoData* data, s32 alpha) {
-	GXColor color = *(GXColor*)&unk_804231a0;
-
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = alpha;
-	GXSetTevColor(1, color);
-}
-
-
-static inline void effKumokumoSetColor2(effKumokumoData* data) {
-	GXColor color = *(GXColor*)&unk_804231a4;
-
-	color.r = data->color2R;
-	color.g = data->color2G;
-	color.b = data->color2B;
-	color.a = data->color2A;
-	GXSetTevColor(2, color);
-}
-
-
-static inline void effKumokumoSetMatColorA(s32 a) {
-	GXColor color = *(GXColor*)&dat_8041f578;
-
-	color.a = a;
-	GXSetChanMatColor(4, color);
-}
-
-
-static inline void effKumokumoSetMatColorB(s32 a) {
-	GXColor color = *(GXColor*)&dat_8041f57c;
-
-	color.a = a;
-	GXSetChanMatColor(4, color);
-}
-
-#endif
 
 // The four display-list loops must live in an inlined helper, not inline in effKumokumoDisp: with the
 // loops inline MWCC colours their counters k=r22/r23 instead of the target's r26/r25 (the rest of the
@@ -451,29 +402,8 @@ void effKumokumoDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(view, 0);
 	GXSetCurrentMtx(0);
 
-#ifdef MUST_MATCH
-	effKumokumoSetColor1(data, alpha);
-	effKumokumoSetColor2(data);
-#else
-	{
-		GXColor color = *(GXColor*)&unk_804231a0;
-
-		color.r = data->color1R;
-		color.g = data->color1G;
-		color.b = data->color1B;
-		color.a = alpha;
-		GXSetTevColor(1, color);
-	}
-	{
-		GXColor color = *(GXColor*)&unk_804231a4;
-
-		color.r = data->color2R;
-		color.g = data->color2G;
-		color.b = data->color2B;
-		color.a = data->color2A;
-		GXSetTevColor(2, color);
-	}
-#endif
+	GXSetTevColor(1, (GXColor){ data->color1R, data->color1G, data->color1B, alpha });
+	GXSetTevColor(2, (GXColor){ data->color2R, data->color2G, data->color2B, data->color2A });
 
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
@@ -634,25 +564,11 @@ void effKumokumoDisp(CameraId camId, void* param) {
 		if (data->lifetime != 0) {
 			continue;
 		}
-#ifdef MUST_MATCH
 		if (type != 3 && type != 4) {
-			effKumokumoSetMatColorA((data->color1A * alpha) / 255);
+			GXSetChanMatColor(4, (GXColor){ 0xDB, 0xDF, 0xE7, (data->color1A * alpha) / 255 });
 		} else {
-			effKumokumoSetMatColorB((data->color1A * alpha) / 255);
+			GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, (data->color1A * alpha) / 255 });
 		}
-#else
-		if (type != 3 && type != 4) {
-			GXColor c = *(GXColor*)&dat_8041f578;
-
-			c.a = (data->color1A * alpha) / 255;
-			GXSetChanMatColor(4, c);
-		} else {
-			GXColor c = *(GXColor*)&dat_8041f57c;
-
-			c.a = (data->color1A * alpha) / 255;
-			GXSetChanMatColor(4, c);
-		}
-#endif
 		PSMTXTrans(mtx, data->x, data->y, data->z);
 		PSMTXRotRad(rot, 'z', 0.017453292f * data->rotation);
 		PSMTXScale(scale, data->scale, data->scale, data->scale);
@@ -951,9 +867,5 @@ __declspec(section ".sdata") u32 gap_07_80413B4C_sdata = 0;
 #pragma force_active reset
 #pragma explicit_zero_data reset
 // clang-format on
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_8041f578 = 0xDBDFE700;
-const u32 dat_8041f57c = 0xFFFFFF00;
 
 #pragma force_active reset

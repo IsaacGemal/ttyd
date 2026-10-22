@@ -6039,3 +6039,22 @@ prints the Melee-family site total, unweighted and without names, for comparing 
 - The headline index on main went 14.471 -> 28.914 per kLOC under the new definition; compare numbers only within one
   definition. Melee-family sites on main: 10,696. Melee's own index on Melee (f0cdbb0a): 5,718 sites.
 
+
+## Colour and vector templates as compound literals (2026-10-22, Claude Opus 5.5, n9-q-o-literals)
+
+Many named `GXColor`/`Vec` objects (`dat_*`, `unk_*` in hand-placed `.sbss2`, `vec3_*`) were MWCC's own anonymous
+templates for compound literals. They are now written as `(GXColor){...}` / `(Vec){...}` (or initialised local
+arrays) at their uses, with the named definitions deleted along with the MUST_MATCH inlines, volatile copies,
+`COPY_VEC`-style macros and GXColor*-cast helpers that existed only to load them. Isaac approved the data change
+(the templates become `@NNN` locals; symbols.txt renames three in eff_sstar_n64, so CI needs `--allow-protected`).
+Precedent: Wind Waker writes 84 such literals and Twilight Princess 113.
+
+- **Done (13 files):** eff_thruhammer_n64, eff_recover_heart_n64, eff_kumokumo_n64, eff_sstar_n64, eff_glass_n64,
+  eff_fire, shadowdrv, mot_damage, mot_yoshi, mot_dokan, mot_plane, sac_deka, party_bomhei. Build matches, data
+  included.
+- **Tried and left:** mot_hammer, and some named objects in eff_fire (`vec3_802f8c4c`), shadowdrv
+  (`dat_804198ec`/`f0`) and mot_plane (`vec3_802c5c9c`): converting them changes section order or code.
+- **Index:** 28.914 -> 28.423 per kLOC (MUST_MATCH 834 -> 800).
+- **Next:** about 210 candidate files remain (n64 effects, other effects, battle/party, drivers, RELs). An
+  interrupted six-agent sweep left committed but unreviewed work in the tower's `~/ttyd-src/.claude/worktrees/agent-*`
+  branches; review those before redoing them.

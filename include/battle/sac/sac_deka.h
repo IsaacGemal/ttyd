@@ -15,4 +15,3 @@ void main_timing(s32 idx);
 void main_enemy(void);
 void main_gauge(void);
 u32 weaponGetPower_Deka(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part);
-extern Vec vec3_8030051c[];
