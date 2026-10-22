@@ -9,6 +9,9 @@ typedef struct BattleWorkUnitPart BattleUnitPart;
 
 typedef struct ZubaStarWork ZubaStarWork;
 
+typedef struct ZubaStarPoints4 { Vec v[4]; } ZubaStarPoints4;
+
+extern const Vec dat_802ff6d4[4];
 extern const char str_SFX_BTL_SAC_ZUBA_STAR2[];
 extern const char str_SFX_BTL_SAC_ZUBA_STAR1[];
 extern const char str_btl_wn_sac_zubastar[];

@@ -52,7 +52,9 @@ void effBalloonMain(EffectEntry* effect) {
 	f32 radius;
 	f32 angle;
 	f32 wave;
+#ifdef MUST_MATCH
 	f32 sinOffset;
+#endif
 	s32 i;
 	s32 phase;
 
@@ -80,9 +82,15 @@ void effBalloonMain(EffectEntry* effect) {
 			segs->x = radius * (f32)sin(angle);
 			segs->y = -radius * (f32)cos(angle);
 			wave = (f32)sin(6.2831855f * (f32)(i * 53) / 360.0f);
+#ifdef MUST_MATCH
+			// The sin in its own statement makes MWCC pool 30/5/2 before 1.5, the original's .sdata2 order.
 			sinOffset = (f32)sin(6.2831855f * (30.0f * (5.0f + (f32)i) +
 			                                  (f32)phase * (0.1f * wave + 2.0f)) / 360.0f);
 			segs->x += sinOffset * 1.5f;
+#else
+			segs->x += (f32)sin(6.2831855f * (30.0f * (5.0f + (f32)i) +
+			                                  (f32)phase * (0.1f * wave + 2.0f)) / 360.0f) * 1.5f;
+#endif
 			wave = (f32)cos(6.2831855f * (f32)(i * 36) / 360.0f);
 			segs->y += (f32)cos(6.2831855f * (50.0f * (5.0f + (f32)i) +
 			                                  (f32)phase * (0.1f * wave + 2.0f)) / 360.0f) * 1.5f;

@@ -6593,14 +6593,14 @@ src/party, src/mario and src/unit were a parallel branch's (mm3) and not edited.
   `build/G8MJ01/ok` recreated, changed C files compile without -DMUST_MATCH, fncast_lint and local_prototypes clean,
   tools/ci.py PASS with the tools/tests step stubbed (the same 9 environment errors as the chapters above). The
   header changes were checked over every user (222 for mariost.h, rels/party/mario included), matching and natural.
-- **Counts.** `grep -c MUST_MATCH` 512 -> 477: effect 139 -> 127, driver 101 -> 94, battle 122 -> 112, event 77 -> 73,
-  motion 35 -> 35, window 21 -> 21, manager 17 -> 15. Per file: battle_ac 3 -> 1, battle_audience 3 -> 2,
-  battle_stage_object 6 -> 5, sac_scissor 4 -> 2, sac_zubastar 6 -> 2, mapdrv 14 -> 12, mobjdrv 11 -> 6, eff_break
-  3 -> 2, eff_energy 2 -> 0, eff_naniga 4 -> 3, eff_stageclear 1 -> 0, eff_teresa 2 -> 0, eff_balloon_n64 4 -> 0,
-  eff_kemuri12_n64 1 -> 0, evt_badgeshop 1 -> 0, evt_mario 7 -> 6, evt_npc 2 -> 0, cardmgr 3 -> 2, winmgr 12 -> 11;
-  the other 113 files unchanged. Index (tools/cleanup_index.py) **19.962 -> 19.884** per kLOC (13835 -> 13777
-  weighted): must_match 736 -> 708, deref_cast 521 -> 513, raw_offset 196 -> 192, prim_ptr_cast 1969 -> 1965,
-  struct_ptr_cast 1461 -> 1460, address_name 1076 -> 1075.
+- **Counts** (after review fixes, rebased on dc2b0f89 (#1126)). `grep -c MUST_MATCH` 512 -> 483: effect 139 -> 129,
+  driver 101 -> 94, battle 122 -> 116, event 77 -> 73, motion 35 -> 35, window 21 -> 21, manager 17 -> 15. Per file:
+  battle_ac 3 -> 1, battle_audience 3 -> 2, battle_stage_object 6 -> 5, sac_scissor 4 -> 2, mapdrv 14 -> 12, mobjdrv
+  11 -> 6, eff_break 3 -> 2, eff_energy 2 -> 0, eff_naniga 4 -> 3, eff_stageclear 1 -> 0, eff_teresa 2 -> 0,
+  eff_balloon_n64 4 -> 2, eff_kemuri12_n64 1 -> 0, evt_badgeshop 1 -> 0, evt_mario 7 -> 6, evt_npc 2 -> 0, cardmgr
+  3 -> 2, winmgr 12 -> 11; the other files unchanged. Index (tools/cleanup_index.py) **19.920 -> 19.852** per kLOC
+  (13801 -> 13751 weighted): must_match 716 -> 693, deref_cast 527 -> 520, raw_offset 194 -> 190, prim_ptr_cast
+  1966 -> 1962, struct_ptr_cast 1460 -> 1459.
 - **Natural now.**
   - `#else` arms that had become identical since the last pass (the sweep): evt_mario's volatile party-flag updates,
     battle_audience's volatile startPos store, eff_stageclear's volatile double read, eff_teresa's READ_RODATA macro.
@@ -6620,7 +6620,8 @@ src/party, src/mario and src/unit were a parallel branch's (mm3) and not edited.
     copy of the same shape; eff_energy's mat colour (its guarded GXSetTevColor forwarder and unguarded invented
     effEnergySetMatColor inline go).
   - Expression shapes: eff_balloon_n64 keeps the raw sin/cos in `wave` and writes `0.1f * wave + 2.0f` at its use
-    (the embedded `wave =` assignment goes; `sinOffset` stays as the sin's own statement); eff_kemuri12_n64's
+    (the embedded `wave =` assignment goes; `sinOffset`, the sin in its own statement for the pool order, is
+    guarded); eff_kemuri12_n64's
     ternary is an if/else storing 1/0 with `isLast` declared first; evt_npc_glide_position tests `if (dx || dz)`
     (the named zero goes); evt_npc_flag_onoff's mask is `int` (the u32 complement temp goes); cardMain's `(s32)(s64)`
     round trip is `chan = CARDProbe(0) ? 0 : -1` (chan: the SDK's parameter name for the card slot);
@@ -6632,9 +6633,6 @@ src/party, src/mario and src/unit were a parallel branch's (mm3) and not edited.
     orchestrator kept it guarded as a steering pointer, with the plain subscript under `#else`).
   - sac_scissor: scissor_abs is `fabsf`, defined in the file exactly as the SDK's fake_tgmath.h defines it (math_ext.h
     only declares it; including fake_tgmath.h pulls `#pragma cplusplus on` and changes the object).
-  - sac_zubastar: the three `#else` arms together (each alone doesn't compile, which is why earlier passes missed it)
-    are the plain initialised `Vec points[4]`; it compiles in seconds (the recorded hang was ZubaStarPoints4's
-    initialiser). ZubaStarPoints4 and the dat_802ff6d4 extern leave the header.
   - Unguarded steering locals made plain: fadedrv/msgdrv `half` (`/ 2.0f`), itemdrv `half` (`* 0.5f`) and `k`
     (`/ 4.0f`).
 - **Reverted by the orchestrator** (EQUIV, not applied; patches in build/mm4/w/):
@@ -6710,6 +6708,10 @@ src/party, src/mario and src/unit were a parallel branch's (mm3) and not edited.
   helper). battle_ac's dropped `volatile` on a guarded data definition. evt_npc's bare float test. cardmgr's `chan`.
   eff_break's sizeof counts (they explain the redundant test as two compile-time counts that happen to be equal).
 - **Leads.**
+  - sac_zubastar: its three `#else` arms together are the plain initialised `Vec points[4]` and match (each alone
+    doesn't compile, which is why earlier passes missed it; the recorded hang was ZubaStarPoints4's initialiser). It
+    turns the guarded `zubastar_points_init` object into a compiler template `@NNN` (same bytes and place), so it is
+    a data-definition change: not applied, Isaac's call.
   - The deleted-constant patches above (eight files; the biggest readability win this pass found).
   - `searchUnder2(..., f32* out)` in include/mario/mario_hit.h with `*out = hit ? hitPos.y : -1.0f` in mario_hit.c
     removes evt_mario's two and evt_party's two regions (all 25 users EQUIV with mario_hit.c edited; that file is the
