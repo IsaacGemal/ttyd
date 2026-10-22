@@ -42,6 +42,7 @@ extern s32 subsetevt_confuse_flustered[];
 #include "rel/common/teresa_check/teresa_check_trans.h"
 #include "rel/common/teresa_check/teresa_check_move.h"
 #include "rel/common/teresa_check/teresa_check_teresa.h"
+#include "battle/battle_disp.h"
 
 
 /* ==== generated strings (.rodata) ==== */
@@ -70,18 +71,18 @@ static const char str_SFX_ENM_TELESA_MOVE2[24] = {0x53,0x46,0x58,0x5F,0x45,0x4E,
 static const char str_SFX_ENM_TELESA_MOVE1[21] = {0x53,0x46,0x58,0x5F,0x45,0x4E,0x4D,0x5F,0x54,0x45,0x4C,0x45,0x53,0x41,0x5F,0x4D,0x4F,0x56,0x45,0x31,0x00};
 
 /* ==== forward declarations (.data) ==== */
-u32 unit_purple_teresa_22_data_E620[49];
-u32 unit_purple_teresa_15_data_493B8[49];
+BattleUnitKind unit_purple_teresa_22_data_E620;
+BattleUnitKind unit_purple_teresa_15_data_493B8;
 static u32 defence[2];
 static u32 defence_attr[2];
 static u32 regist[6];
-static u32 parts[19];
-static u32 weapon_teresa_attack[48];
-static u32 weapon_teresa_trans_myself[48];
-static u32 weapon_teresa_trans[48];
-static u32 weapon_teresa_move[48];
-static u32 pose_table[34];
-static u32 data_table[2];
+static BattleUnitKindPart parts[1];
+static BattleWeapon weapon_teresa_attack;
+static BattleWeapon weapon_teresa_trans_myself;
+static BattleWeapon weapon_teresa_trans;
+static BattleWeapon weapon_teresa_move;
+static BattleDispPose pose_table[17];
+static BattleDataEntry data_table[1];
 static s32 init_event[47];
 static s32 damage_event[10];
 static s32 attack_event[153];
@@ -93,18 +94,451 @@ static s32 move_event_sub[103];
 static s32 wait_event[6];
 
 /* ==== generated data (.data) ==== */
-u32 unit_purple_teresa_22_data_E620[49] = {0x0000006A, (u32)(char*)str_btl_un_purple_teresa, 0x00080000, 0x01011800, 0x04460032, 0x270F0022, 0x00200000, 0x00200000, 0x00000000, 0x41800000, 0x00000000, 0x0000FFFD, 0x00000000, 0x00000000, 0x00000000, 0x41880000, 0x00000000, 0xC1200000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x41880000, 0x00000000, 0x00000000, 0x41880000, 0x41A66666, 0x00000000, 0x00000000, 0x41800000, 0x00000000, 0x42080000, 0x42000000, 0x00000002, 0x64140000, 0x00000000, 0x00000000, 0x00000000, (u32)(char*)str_SFX_ENM_TELESA_DAMAGED1, (u32)(char*)str_SFX_BTL_DAMAGE_FIRE1, (u32)(char*)str_SFX_BTL_DAMAGE_ICE1, (u32)(char*)str_SFX_BTL_DAMAGE_BIRIBIRI1, 0x00000004, (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event, (u32)&data_table};
-u32 unit_purple_teresa_15_data_493B8[49] = {0x0000006A, (u32)(char*)str_btl_un_purple_teresa, 0x00080000, 0x01011800, 0x04460032, 0x270F0022, 0x00200000, 0x00200000, 0x00000000, 0x41800000, 0x00000000, 0x0000FFFD, 0x00000000, 0x00000000, 0x00000000, 0x41880000, 0x00000000, 0xC1200000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x41880000, 0x00000000, 0x00000000, 0x41880000, 0x41A66666, 0x00000000, 0x00000000, 0x41800000, 0x00000000, 0x42080000, 0x42000000, 0x00000002, 0x64140000, 0x00000000, 0x00000000, 0x00000000, (u32)(char*)str_SFX_ENM_TELESA_DAMAGED1, (u32)(char*)str_SFX_BTL_DAMAGE_FIRE1, (u32)(char*)str_SFX_BTL_DAMAGE_ICE1, (u32)(char*)str_SFX_BTL_DAMAGE_BIRIBIRI1, 0x00000004, (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event, (u32)&data_table};
+BattleUnitKind unit_purple_teresa_22_data_E620 = {
+    UNIT_DARK_BOO,                   // mUnitType
+    str_btl_un_purple_teresa,        // name
+    8,                               // maxHp
+    0,                               // maxFp
+    1,                               // mDangerHP
+    1,                               // mPerilHP
+    24,                              // mLevel
+    0,                               // mBonusExp
+    4,                               // bonusCoinRolls
+    70,                              // bonusCoinRate
+    0,                               // baseCoin
+    50,                              // escapeRate
+    9999,                            // field_0x14
+    34,                              // width
+    32,                              // height
+    { 0, 32 },                       // statusIconOffset
+    { 0.0f, 16.0f, 0.0f },           // centerOffset
+    { 0, -3 },                       // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },            // talkTogeBaseOffset
+    { 17.0f, 0.0f, -10.0f },         // field_0x3C
+    { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
+    0.0f,                            // field_0x54
+    0.0f,                            // field_0x58
+    { 17.0f, 0.0f, 0.0f },           // bintaHitOffset
+    { 17.0f, 20.8f, 0.0f },          // kissHitOffset
+    { 0.0f, 16.0f, 0.0f },           // cutBaseOffset
+    34.0f,                           // cutWidth
+    32.0f,                           // cutHeight
+    0,                               // turnOrder
+    0,                               // turnOrderVariance
+    0,                               // swallowRate
+    2,                               // swallowAttribute
+    100,                             // field_0x8C
+    20,                              // itemStealParam
+    { 0.0f, 0.0f, 0.0f },            // starPointDispOffset
+    str_SFX_ENM_TELESA_DAMAGED1,     // damageSfxName
+    str_SFX_BTL_DAMAGE_FIRE1,        // fireDamageSfxName
+    str_SFX_BTL_DAMAGE_ICE1,         // iceDamageSfxName
+    str_SFX_BTL_DAMAGE_BIRIBIRI1,    // electricDamageSfxName
+    0x00000004,                      // attributeFlags
+    (BattleVulnerableStatus*)regist, // vulnStatus
+    1,                               // numParts
+    parts,                           // mParts
+    init_event,                      // initEvtScript
+    data_table,                      // dataTable
+};
+BattleUnitKind unit_purple_teresa_15_data_493B8 = {
+    UNIT_DARK_BOO,                   // mUnitType
+    str_btl_un_purple_teresa,        // name
+    8,                               // maxHp
+    0,                               // maxFp
+    1,                               // mDangerHP
+    1,                               // mPerilHP
+    24,                              // mLevel
+    0,                               // mBonusExp
+    4,                               // bonusCoinRolls
+    70,                              // bonusCoinRate
+    0,                               // baseCoin
+    50,                              // escapeRate
+    9999,                            // field_0x14
+    34,                              // width
+    32,                              // height
+    { 0, 32 },                       // statusIconOffset
+    { 0.0f, 16.0f, 0.0f },           // centerOffset
+    { 0, -3 },                       // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },            // talkTogeBaseOffset
+    { 17.0f, 0.0f, -10.0f },         // field_0x3C
+    { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
+    0.0f,                            // field_0x54
+    0.0f,                            // field_0x58
+    { 17.0f, 0.0f, 0.0f },           // bintaHitOffset
+    { 17.0f, 20.8f, 0.0f },          // kissHitOffset
+    { 0.0f, 16.0f, 0.0f },           // cutBaseOffset
+    34.0f,                           // cutWidth
+    32.0f,                           // cutHeight
+    0,                               // turnOrder
+    0,                               // turnOrderVariance
+    0,                               // swallowRate
+    2,                               // swallowAttribute
+    100,                             // field_0x8C
+    20,                              // itemStealParam
+    { 0.0f, 0.0f, 0.0f },            // starPointDispOffset
+    str_SFX_ENM_TELESA_DAMAGED1,     // damageSfxName
+    str_SFX_BTL_DAMAGE_FIRE1,        // fireDamageSfxName
+    str_SFX_BTL_DAMAGE_ICE1,         // iceDamageSfxName
+    str_SFX_BTL_DAMAGE_BIRIBIRI1,    // electricDamageSfxName
+    0x00000004,                      // attributeFlags
+    (BattleVulnerableStatus*)regist, // vulnStatus
+    1,                               // numParts
+    parts,                           // mParts
+    init_event,                      // initEvtScript
+    data_table,                      // dataTable
+};
 static u32 defence[2] = {0x00000000, 0x00000000};
 static u32 defence_attr[2] = {0x00000000, 0x00000000};
 static u32 regist[6] = {0x28286400, 0x28646428, 0x64556455, 0x645A3228, 0x55640064, 0x640A0000};
-static u32 parts[19] = {0x00000001, (u32)(char*)str_btl_un_purple_teresa, (u32)(char*)str_c_teresa_p, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x41C80000, 0x00000000, 0x00000000, 0x41F00000, 0x00000000, 0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x00000009, 0x00000000, (u32)&pose_table};
-static u32 weapon_teresa_attack[48] = {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x64000001, 0x3F800000, 0x01010101, (u32)&weaponGetPowerDefault, 0x00000005, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x01101260, 0x20000000, 0x00000302, 0x00000000, 0x00000087, 0x000007FF, 0x80002004, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000064, 0x00000000, 0x00000000};
-static u32 weapon_teresa_trans_myself[48] = {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x64000000, 0x3F800000, 0x01010101, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x01101260, 0x20000000, 0x00000302, 0x00000000, 0x00000108, 0x000007FF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x64020000, 0x00000000, 0x00000000, 0x00000064, 0x00000000, 0x00000000};
-static u32 weapon_teresa_trans[48] = {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x64000000, 0x3F800000, 0x01010101, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x01101160, 0x20000000, 0x00000302, 0x00000000, 0x00000108, 0x000007FF, 0x80000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x64020000, 0x00000000, 0x00000000, 0x00000064, 0x00000000, 0x00000000};
-static u32 weapon_teresa_move[48] = {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x64000000, 0x3F800000, 0x01010101, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x01100160, 0x20000000, 0x00000302, 0x00000000, 0x00000008, 0x000007FF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000064, 0x00000000, 0x00000000};
-static u32 pose_table[34] = {0x00000001, (u32)(char*)str_N_1, 0x00000002, (u32)(char*)str_Y_1, 0x00000009, (u32)(char*)str_Y_1, 0x00000005, (u32)(char*)str_K_1, 0x00000004, (u32)(char*)str_X_1, 0x00000003, (u32)(char*)str_X_1, 0x0000001C, (u32)(char*)str_000026BC, 0x0000001D, (u32)(char*)str_Q_1, 0x0000001E, (u32)(char*)str_Q_1, 0x0000001F, (u32)(char*)str_A_2, 0x00000027, (u32)(char*)str_D_1, 0x00000028, (u32)(char*)str_W_1, 0x0000002A, (u32)(char*)str_R_1, 0x00000038, (u32)(char*)str_X_1, 0x00000039, (u32)(char*)str_X_1, 0x00000041, (u32)(char*)str_T_1, 0x00000045, (u32)(char*)str_000026BC};
-static u32 data_table[2] = {0x00000000, 0x00000000};
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                                    // partNum
+        str_btl_un_purple_teresa,             // partName
+        str_c_teresa_p,                       // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 0.0f, 25.0f, 0.0f },                // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        30,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x00000009,                           // attributes
+        0,                                    // counterAttributes
+        pose_table,                           // poseTable
+    },
+};
+static BattleWeapon weapon_teresa_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 5, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+};
+static BattleWeapon weapon_teresa_trans_myself = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    100,                                      // invisibleChance
+    2,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+};
+static BattleWeapon weapon_teresa_trans = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101160,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80000000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    100,                                      // invisibleChance
+    2,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+};
+static BattleWeapon weapon_teresa_move = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01100160,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+};
+static BattleDispPose pose_table[17] = {
+    { 0x01, str_N_1 },
+    { 0x02, str_Y_1 },
+    { 0x09, str_Y_1 },
+    { 0x05, str_K_1 },
+    { 0x04, str_X_1 },
+    { 0x03, str_X_1 },
+    { 0x1C, str_000026BC },
+    { 0x1D, str_Q_1 },
+    { 0x1E, str_Q_1 },
+    { 0x1F, str_A_2 },
+    { 0x27, str_D_1 },
+    { 0x28, str_W_1 },
+    { 0x2A, str_R_1 },
+    { 0x38, str_X_1 },
+    { 0x39, str_X_1 },
+    { 0x41, str_T_1 },
+    { 0x45, str_000026BC },
+};
+static BattleDataEntry data_table[1] = {
+    { 0x00, NULL },
+};
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
     CALL(btlevtcmd_SetEventAttack, -2, PTR(attack_event))
@@ -197,8 +631,8 @@ static EVT_BEGIN(normal_attack_event)
         CALL(btlevtcmd_GetFirstAttackTarget, LW(3), LW(4))
     ELSE
         CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_teresa_attack))
-        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_teresa_attack), LW(3), LW(4))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_teresa_attack))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_teresa_attack), LW(3), LW(4))
     END_IF
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
@@ -208,10 +642,10 @@ static EVT_BEGIN(normal_attack_event)
         END_IF
         GOTO(99)
     END_IF
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_teresa_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_teresa_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_teresa_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_teresa_attack))
     CALL(evt_btl_camera_set_mode, 0, 8)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
@@ -252,7 +686,7 @@ static EVT_BEGIN(normal_attack_event)
     END_SIBLING_EVENT
     CALL(btlevtcmd_AnimeChangePose, -2, 1, PTR((char*)str_A_2))
     WAIT_FRAMES(15)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_teresa_attack), 0, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_teresa_attack), 0, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -282,8 +716,8 @@ static EVT_BEGIN(normal_attack_event)
         CALL(evt_btl_camera_shake_h, 0, 1, 1, 8, 0)
         CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
         CALL(evt_btl_camera_add_zoom, 0, -50)
-        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_teresa_attack))
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_teresa_attack), 256, LW(5))
+        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_teresa_attack))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_teresa_attack), 256, LW(5))
         WAIT_FRAMES(30)
         GOTO(98)
         LABEL(98)
@@ -301,9 +735,9 @@ static EVT_BEGIN(trans_myself_event)
     SET_VALUE(LW(3), -2)
     SET_VALUE(LW(4), 1)
     CALL(btlevtcmd_CheckStatus, -2, 18, LW(8))
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_teresa_trans_myself))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_teresa_trans_myself))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_teresa_trans_myself))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_teresa_trans_myself))
     CALL(evt_btl_camera_set_mode, 0, 7)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, -1)
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
@@ -344,16 +778,16 @@ static EVT_BEGIN(trans_myself_event)
     CALL(evt_btl_camera_set_mode, 0, 0)
     CALL(btlevtcmd_AnimeChangePose, -2, 1, PTR((char*)str_000026BC))
     CALL(btlevtcmd_SetAlpha, -2, 1, 255)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_teresa_trans_myself))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_teresa_trans_myself), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_teresa_trans_myself))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_teresa_trans_myself), 256, LW(5))
     RETURN
 EVT_END()
 
 static EVT_BEGIN(trans_event)
     LABEL(0)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_teresa_trans))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_teresa_trans), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_teresa_trans))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_teresa_trans), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         GOTO(99)
     END_IF
@@ -366,9 +800,9 @@ static EVT_BEGIN(trans_event)
     END_IF
     GOTO(0)
     LABEL(1)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_teresa_trans))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_teresa_trans))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_teresa_trans))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_teresa_trans))
     CALL(evt_btl_camera_set_mode, 0, 7)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, -1)
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
@@ -409,8 +843,8 @@ static EVT_BEGIN(trans_event)
     CALL(btlevtcmd_SetAlpha, -2, 1, 255)
     CALL(btlevtcmd_FaceDirectionAdd, -2, LW(0), 20)
     CALL(btlevtcmd_DivePosition, -2, LW(0), LW(1), LW(2), 40, 0, 0, 0, -1)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_teresa_trans_myself))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_teresa_trans_myself), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_teresa_trans_myself))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_teresa_trans_myself), 256, LW(5))
     CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
     CALL(btlevtcmd_DivePosition, -2, LW(0), LW(1), LW(2), 30, -5, 4, 0, -1)
     CALL(btlevtcmd_SetPartsRotate, -2, 1, 0, 0, 0)
@@ -424,8 +858,8 @@ EVT_END()
 
 static EVT_BEGIN(move_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_teresa_move))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_teresa_move), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_teresa_move))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_teresa_move), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
