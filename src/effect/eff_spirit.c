@@ -23,11 +23,6 @@ extern const f32 float_0p95_8042228c;
 extern const f32 float_0p1_80422290;
 extern const f32 float_3p1416_80422294;
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool
-// templates, so pair it with a small-data section and place it by hand.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423350;
-
 EffectEntry* effSpiritEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 targetX, f32 targetY, f32 targetZ,
                             f32 scale) {
     EffectEntry* entry;
@@ -168,22 +163,10 @@ void effSpiritMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSpiritDisp, effect);
 }
 
-// The original builds the material colour in a helper that returns it; the caller's local and its
-// outgoing-argument copy then land at 0x8/0xc as retail.
-static inline GXColor effSpiritMakeColor(effSpiritData* data) {
-    GXColor color = unk_80423350;
-    color.r = data->colorR;
-    color.g = data->colorG;
-    color.b = data->colorB;
-    color.a = (u8)(float_0p8_80422274 * (f32)data->alpha);
-    return color;
-}
-
 void effSpiritDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effSpiritData* data = effect->userdata;
     CameraEntry* cam;
-    GXColor color;
     GXTexObj texObj;
     Mtx mtxTrans;
     Mtx mtxRot;
@@ -204,8 +187,7 @@ void effSpiritDisp(CameraId camId, void* param) {
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumChans(1);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-    color = effSpiritMakeColor(data);
-    GXSetChanMatColor(GX_COLOR0A0, color);
+    GXSetChanMatColor(GX_COLOR0A0, (GXColor){ data->colorR, data->colorG, data->colorB, (u8)(float_0p8_80422274 * (f32)data->alpha) });
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     GXSetNumTevStages(1);

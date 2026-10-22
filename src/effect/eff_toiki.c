@@ -5,14 +5,6 @@
 #include "math_ext.h"
 #include "evt/evt_cmd.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423338;
-
-
-const Vec vec3_80300230 = { 0.0f, 0.0f, 0.0f };
-
-
 extern u32 queen_toiki_vertex_tbl[96];
 extern u32 queen_toiki_texcoord0_tbl[48];
 extern u32 queen_toiki_dl_0_tbl[14];
@@ -37,18 +29,6 @@ u32 queen_toiki_dl_0_12[8];
 u32 queen_toiki_dl_0_13[8];
 
 // clang-format off
-
-// Building the colour inside an inline that also issues GXSetTevColor makes MWCC allocate the
-// temp and the by-value argument copy together in retail's stack slots (0x8/0xc). The parameter order is
-// deliberate: it also lines up the field evaluation so r/g/b/a land in the original's registers.
-static inline void toikiSetColor(u8 a, u8 b, u8 g, u8 r) {
-	GXColor c = unk_80423338;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	GXSetTevColor(1, c);
-}
 
 // With the loop inlined at its call site MWCC colours dl/i/sz r28/r29/r30; splitting it into
 // this inline function gives the original's r29/r30/r31. The size table and the increment order are also
@@ -104,10 +84,7 @@ void effToikiMain(EffectEntry* effect) {
 	f32 angle;
 	f32 size;
 
-	sp = vec3_80300230;
-	sp.x = data->x;
-	sp.y = data->y;
-	sp.z = data->z;
+	sp = (Vec){ data->x, data->y, data->z };
 	pos = sp;
 	type = data->type;
 	if (effect->flags & 4) {
@@ -165,7 +142,7 @@ void effToikiDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
-	toikiSetColor(data->field_0x28, color_tbl[type].b, color_tbl[type].g, color_tbl[type].r);
+	GXSetTevColor(1, (GXColor){ color_tbl[type].r, color_tbl[type].g, color_tbl[type].b, data->field_0x28 });
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXTrans(mtx, data->field_0x24, 0.0f, 0.0f);

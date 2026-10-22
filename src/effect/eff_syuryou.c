@@ -9,9 +9,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// Full white with a zero alpha, replaced by the effect's colour below.
-const u32 dat_804222f8 = 0xFFFFFF00;
-
 // The strings are reached only as offsets from the anchor, so keep them linked.
 #pragma force_active on
 // .rodata anchor used to build the effect's world position.
@@ -134,12 +131,6 @@ void effSyuryouMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos2), 2, effSyuryouDisp, effect);
 }
 
-static inline void syuryouSetColor(SyuryouData* data) {
-	GXColor color = *(GXColor*)&dat_804222f8;
-	color.a = data->color;
-	animPoseSetMaterialEvtColor(data->poseId, color);
-}
-
 void effSyuryouDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	SyuryouData* data = effect->userdata;
@@ -154,7 +145,7 @@ void effSyuryouDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx, rotMtx, mtx);
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		animPoseSetMaterialFlagOn(data->poseId, 0x40);
-		syuryouSetColor(data);
+		animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, data->color });
 		animPoseMain(data->poseId);
 		animPoseDrawMtx(data->poseId, mtx, 1, 0.0f, 10.0f);
 		animPoseDrawMtx(data->poseId, mtx, 2, 0.0f, 10.0f);

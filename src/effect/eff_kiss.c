@@ -8,7 +8,8 @@
 #include "math_ext.h"
 
 // .sdata2: the colour words. The float constants are literals at each use; MWCC pools them after these
-// in code-generation order (effKissDisp2 first), which is retail's .sdata2 order.
+// and effKissDisp2's colour template in code-generation order (effKissDisp2 first), which is retail's
+// .sdata2 order.
 #ifdef MUST_MATCH
 #define SDATA2_CONST __declspec(section ".sdata2")
 #else
@@ -16,7 +17,6 @@
 #endif
 SDATA2_CONST char str_804213F0[4] = "<<<";
 SDATA2_CONST char str_804213F4[4] = "<<<";
-SDATA2_CONST u32 dat_804213f8 = 0xFFB5DA00;
 
 // .data
 // Each record is 3 bytes: radius, scaleX, scaleY (divided by 32 by the reader).
@@ -523,14 +523,7 @@ void effKissDisp(CameraId camId, void* param) {
 	}
 }
 
-// building the GXColor through an inline return puts the colour temp where retail keeps it.
-static inline GXColor effKissDisp2Color(u8 alpha) {
-	GXColor c = *(GXColor*)&dat_804213f8;
-	c.a = alpha;
-	return c;
-}
-
-// 100% matched. The colour inline puts the by-value GXColor temp in retail's slot; the vertex half-width
+// 100% matched. The vertex half-width
 // is `eight / 2.0f` in the loop (MWCC hoists it); splitting the yaw angle into two statements lands the negate and
 // multiply in retail's f1/f0; declaring i before alpha and deg before eight fixes the GPR/FPR picks.
 void effKissDisp2(CameraId camId, void* param) {
@@ -538,7 +531,6 @@ void effKissDisp2(CameraId camId, void* param) {
 	KissEffectWork* data = effect->userdata;
 	CameraEntry* cam = camGetPtr(camId);
 	CameraEntry* cam3d;
-	GXColor color;
 	Mtx trans;
 	Mtx scale;
 	Mtx rot;
@@ -579,8 +571,7 @@ void effKissDisp2(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	effGetTexObj(0x14, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
-	color = effKissDisp2Color(alpha);
-	GXSetChanMatColor(GX_COLOR0A0, color);
+	GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xB5, 0xDA, alpha });
 
 	eight = 8.0f;
 	deg = 0.017453292f;

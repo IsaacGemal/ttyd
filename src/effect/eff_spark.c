@@ -10,7 +10,6 @@
 // The original has these constants in .sdata2. Declared const, MWCC folds their values into its own pool;
 // the matching build keeps the definitions after the functions (so MWCC cannot fold them) and references
 // them through extern declarations here, which makes the loads reference the original symbols.
-extern const u32 dat_8041e270;
 extern const f32 float_deg2rad_8041e274;
 extern const f32 float_16_8041e278;
 #ifdef MUST_MATCH
@@ -48,16 +47,6 @@ static u8 a_data2[12] = {
 	0xFA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 };
-
-// Match-only: returning the colour from an inline lays the caller's local and the by-value
-// argument copy out at 0xc/0x8, as the original does (a plain local lands the pair the other way).
-#ifdef MUST_MATCH
-static inline GXColor sparkColor(s32 a) {
-	GXColor c = *(GXColor*)&dat_8041e270;
-	c.a = a;
-	return c;
-}
-#endif
 
 // Routing the 0.9 scale through a local assigned before the position stores recovers the target's f1
 // scale register. Rematerialising float_neg1 at its use site (instead of hoisting it into a `neg1`
@@ -206,8 +195,7 @@ void effSparkMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), mode, effSparkDisp, effect);
 }
 
-// float_0/float_1 are declared volatile so MWCC reloads them per vertex like the original; the color
-// build goes through the sparkColor inline for the 0xc/0x8 pair.
+// float_0/float_1 are declared volatile so MWCC reloads them per vertex like the original.
 // Advancing `data` before the header (`data++; for (i = 1; ...; i++, data++)`) makes MWCC emit the
 // `li i, 1` before the pointer `addi` in the loop preheader, matching the original (eff_starpoint shape).
 void effSparkDisp(CameraId camId, void* param) {
@@ -215,7 +203,6 @@ void effSparkDisp(CameraId camId, void* param) {
 	effSparkData* data = effect->userdata;
 	CameraEntry* cam;
 	GXTexObj texObj;
-	GXColor color;
 	Mtx mtxParticle;
 	Mtx mtxTrans;
 	Mtx mtxRot;
@@ -266,13 +253,7 @@ void effSparkDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtxParticle, 0);
 		GXSetCurrentMtx(0);
 
-#ifdef MUST_MATCH
-		color = sparkColor((alpha * data->alpha) >> 8);
-#else
-		color = *(GXColor*)&dat_8041e270;
-		color.a = (alpha * data->alpha) >> 8;
-#endif
-		GXSetChanMatColor(GX_COLOR0A0, color);
+		GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, (alpha * data->alpha) >> 8 });
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		// Match-only: the volatile declarations force MWCC to reload float_0/float_1 per vertex like the
 		// original, instead of CSE-ing them for the whole quad.
@@ -295,12 +276,10 @@ void effSparkDisp(CameraId camId, void* param) {
 // MUST_MATCH: .sdata2 constants defined after the functions so MWCC cannot fold their values;
 // float_0/float_1 are volatile so the FIFO writes reload them per vertex like the original
 // (as in eff_mahorn.c).
-const u32 dat_8041e270 = 0xFFFFFF00;
 const f32 float_deg2rad_8041e274 = 0.017453292f;
 const f32 float_16_8041e278 = 16.0f;
 const volatile f32 float_0_8041e27c = 0.0f;
 #else
-const u32 dat_8041e270 = 0xFFFFFF00;
 const f32 float_deg2rad_8041e274 = 0.017453292f;
 const f32 float_16_8041e278 = 16.0f;
 const f32 float_0_8041e27c = 0.0f;

@@ -7,11 +7,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_8042332c;
-__declspec(section ".sdata") GXColor unk_80423328;
-
 const GXColor dat_80421548 = { 0xFF, 0xFF, 0xFF, 0 };
 const f32 float_deg2rad_8042154c = 0.01745329252f;
 const f32 float_32_80421550 = 32.0f;
@@ -118,9 +113,7 @@ static inline void teresaColor0(u8 alpha) {
 }
 
 static inline void teresaColor1(u8 alpha) {
-	GXColor color = unk_80423328;
-
-	color.a = alpha;
+	GXColor color = (GXColor){ 0, 0, 0, alpha };
 	GXSetChanMatColor(4, color);
 }
 

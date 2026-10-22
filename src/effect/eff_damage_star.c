@@ -28,12 +28,11 @@ extern const f32 float_0p03705_8041ca0c;
 extern const f32 float_0p4967_8041ca10;
 extern const f32 float_0p2_8041ca14;
 
-// .sbss2 scratch object used by effDamageStarDisp's colour build. Declared in reverse
-// (the second is placed first) with the small-data section remapped to .sbss2.
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor gap_10_8042303C_sbss2;
-__declspec(section ".sdata") GXColor unk_80423038;
 #pragma section ".sdata" ".sbss"
+
 u32 damageStar_effHermit_0[312] = {
 	0x0000FD80, 0x00000008, 0x00000000, 0x0000000C, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
 	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000040, 0x00000000, 0x00000040, 0x00000000,
@@ -395,13 +394,9 @@ static inline void damageStarSendMatColor(GXColor color) {
     GXSetChanMatColor(4, color);
 }
 
-static inline void damageStarSetMatColor(s32 idx, u8 alpha) {
-    GXColor color = unk_80423038;
-    color.r = color_rotation_data[idx * 3 + 0];
-    color.g = color_rotation_data[idx * 3 + 1];
-    color.b = color_rotation_data[idx * 3 + 2];
-    color.a = alpha;
-    damageStarSendMatColor(color);
+static inline void damageStarSetMatColor(s32 idx, DamageStarData* elem) {
+    damageStarSendMatColor((GXColor){ color_rotation_data[idx * 3 + 0], color_rotation_data[idx * 3 + 1],
+                                      color_rotation_data[idx * 3 + 2], elem->alpha });
 }
 
 static inline void damageStarSendTevColor(GXColor color) {
@@ -505,7 +500,7 @@ void effDamageStarDisp(CameraId camId, void* param) {
         s32 idx;
 
         idx = (i + frame) % 12;
-        damageStarSetMatColor(idx, elem->alpha);
+        damageStarSetMatColor(idx, elem);
 
         PSMTXIdentity(mtx1D8);
         PSMTXScaleApply(mtx1D8, mtx1D8, elem->scaleX, elem->scaleY, elem->scaleZ);

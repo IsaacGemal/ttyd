@@ -3,10 +3,9 @@
 #include "driver/effdrv.h"
 #include "memory.h"
 
-// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor gap_10_8042335C_sbss2;
-__declspec(section ".sdata") GXColor unk_80423358;
 
 typedef struct EnergyData {
     s32 type;       // 0x00
@@ -121,11 +120,7 @@ static GXColor color_tbl[10] = {
 
 
 static inline void effEnergySetMatColor(EnergyData* data) {
-    GXColor color = unk_80423358;
-    color.r = data->alphaAnim;
-    color.g = data->alphaAnim;
-    color.b = data->alphaAnim;
-    color.a = data->alpha;
+    GXColor color = (GXColor){ data->alphaAnim, data->alphaAnim, data->alphaAnim, data->alpha };
     GXSetChanMatColor(4, color);
 }
 // Routing the two by-value GXSetTevColor calls through this forwarder makes MWCC build the

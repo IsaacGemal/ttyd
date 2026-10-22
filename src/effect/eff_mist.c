@@ -15,11 +15,9 @@ extern const f32 float_32_804214e4;
 extern const f32 float_255_804214e8;
 extern const f32 float_0p5_804214ec;
 
-// .sbss2 zero GXColor scratch. The original section holds unk_80423320 then the hidden
-// gap_10_80423324_sbss2; MWCC lays uninitialised globals out in reverse declaration order.
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor gap_10_80423324_sbss2;
-__declspec(section ".sdata") GXColor unk_80423320;
 #pragma section ".sdata" ".sbss"
 
 EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
@@ -201,25 +199,13 @@ void effMistMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMistDisp, effect);
 }
 
-// Build the GXColor in a helper: its return slot lands at 0x8 and the by-value argument copy at 0xc, as
-// retail.
-static inline GXColor mistColor(u8 r, u8 g, u8 b, u8 a) {
-	GXColor c = unk_80423320;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	return c;
-}
-
-// Matches the original: the colour helper above keeps retail's stack slots. The int->float magic
-// pools as its anonymous double (@261), which the linker names double_to_int_802fe918 from the map.
+// Matches the original. The int->float magic pools as its anonymous double (@261), which the linker
+// names double_to_int_802fe918 from the map.
 void effMistDisp(CameraId cameraId, void* param) {
 	EffectEntry* entry = param;
 	MistWork* work;
 	CameraEntry* cam;
 	GXTexObj texObj;
-	GXColor color;
 	Mtx mtxTrans;
 	Mtx mtxRot;
 	Mtx mtxScale;
@@ -267,10 +253,9 @@ void effMistDisp(CameraId cameraId, void* param) {
 		PSMTXConcat(mtxView, mtxTrans, mtxTrans);
 		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		color = mistColor(work->r, work->g, work->b, (u8)(work->alpha * (f32)alpha / float_255_804214e8));
+		GXSetChanMatColor(GX_COLOR0A0, (GXColor){ work->r, work->g, work->b, (u8)(work->alpha * (f32)alpha / float_255_804214e8) });
 		size = 16.0f;
 		half = -float_32_804214e4 * float_0p5_804214ec;
-		GXSetChanMatColor(GX_COLOR0A0, color);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(half, size, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);

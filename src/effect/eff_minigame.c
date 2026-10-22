@@ -26,12 +26,6 @@ u8 poyon_scale[40] = {
 	0x52, 0x75, 0x58, 0x6F, 0x5E, 0x69, 0x64, 0x64
 };
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool
-// templates, so pair it with a small-data section and place it by hand.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423308;
-const GXColor dat_804212b0 = { 0xFF, 0xFF, 0xFF, 0x00 };
-
 EffectEntry* effMiniGameEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	effMiniGameWork* data;
@@ -384,28 +378,8 @@ void effMiniGameMain(EffectEntry* effect) {
 	}
 }
 
-#ifdef MUST_MATCH
-// Match-only: returning the colour from an inline instead of building it in the caller puts the
-// by-value temporary and its outgoing copy in the original's stack slots. The start helper takes
-// the base colour as its second parameter so the division operands stay in r0/r6 and the temporary
-// lands at 0x10; the finish helper builds its own local at 0x8.
-static inline GXColor makeMiniGameStartColor(u8 alpha, GXColor color) {
-	color.a = alpha;
-	return color;
-}
-#endif
-
-#ifdef MUST_MATCH
-static inline GXColor makeMiniGameFinishColor(u8 alpha) {
-	GXColor color = *(GXColor*)&dat_804212b0;
-	color.a = alpha;
-	return color;
-}
-#endif
-
-// Matched with the MUST_MATCH colour helpers above, by reloading `effect->userdata` into the
-// outer-loop entry pointer and holding the three texture tables as base pointers, and by keeping
-// `f29 = -f30` inside the inner loop.
+// Matched by reloading `effect->userdata` into the outer-loop entry pointer and holding the three
+// texture tables as base pointers, and by keeping `f29 = -f30` inside the inner loop.
 void effMiniGameDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effMiniGameWork* data = effect->userdata;
@@ -501,23 +475,11 @@ void effMiniGameDisp(CameraId camId, void* param) {
 				GXInitTexObjLOD(&tex, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
 			}
 			GXLoadTexObj(&tex, GX_TEXMAP0);
-#ifdef MUST_MATCH
 			if (i == 0) {
-				GXSetChanMatColor(GX_COLOR0A0, makeMiniGameStartColor(entry->alpha * 140 / 255, unk_80423308));
+				GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0, 0, 0, entry->alpha * 140 / 255 });
 			} else {
-				GXSetChanMatColor(GX_COLOR0A0, makeMiniGameFinishColor(entry->alpha * 255 / 255));
+				GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, entry->alpha * 255 / 255 });
 			}
-#else
-			if (i == 0) {
-				GXColor color = unk_80423308;
-				color.a = entry->alpha * 140 / 255;
-				GXSetChanMatColor(GX_COLOR0A0, color);
-			} else {
-				GXColor color = dat_804212b0;
-				color.a = entry->alpha * 255 / 255;
-				GXSetChanMatColor(GX_COLOR0A0, color);
-			}
-#endif
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			f27 = 0.5f;
 			f28 = 20.0f;

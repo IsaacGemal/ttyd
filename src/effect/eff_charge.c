@@ -7,12 +7,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool
-// templates, so pair it with a small-data section and place it by hand.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_8042306c;
-__declspec(section ".sdata") GXColor unk_80423068;
-
 
 // Matches. The init loop must be the nested `for (j = 0; j < 2; j++, elem++)` shape with a signed
 // `s32 n = i + j - 1` (as in eff_thunderflare_n64): flat `elem[0]`/`elem[1]` writes let MWCC strength-reduce
@@ -152,20 +146,6 @@ void effChargeMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effChargeDisp, effect);
 }
 
-static inline GXColor effChargeColorBase(GXColor c, u8 r, u8 g, u8 b) {
-    c.r = r;
-    c.g = g;
-    c.b = b;
-    return c;
-}
-static inline GXColor effChargeColorElem(u8 r, u8 g, u8 b, u8 a) {
-    GXColor c = unk_8042306c;
-    c.r = r;
-    c.g = g;
-    c.b = b;
-    c.a = a;
-    return c;
-}
 // Matches. Two shapes were needed beyond the straightforward code: the -yaw angle is built from
 // `camGetPtr(cameraId)->viewYaw` inline (a cached `camera` local gives mwcc the wrong fpr and `fmuls` order),
 // and the zero-scale test is written `if (!scale) continue;` (a `scale == 0.0f` literal emits the reversed
@@ -173,7 +153,6 @@ static inline GXColor effChargeColorElem(u8 r, u8 g, u8 b, u8 a) {
 void effChargeDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     ChargeEffectData* data = effect->userdata;
-    GXColor color;
     GXTexObj tex;
     Mtx mtxF8;
     Mtx mtxC8;
@@ -197,7 +176,7 @@ void effChargeDisp(CameraId cameraId, void* param) {
     effGetTexObj(0x1e, &tex);
     GXLoadTexObj(&tex, GX_TEXMAP0);
 
-    GXSetTevColor(GX_TEVREG1, effChargeColorBase(unk_80423068, data->field_0x3C, data->field_0x40, data->field_0x44));
+    GXSetTevColor(GX_TEVREG1, (GXColor){ data->field_0x3C, data->field_0x40, data->field_0x44, 0 });
 
     GXSetNumChans(0);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
@@ -228,8 +207,7 @@ void effChargeDisp(CameraId cameraId, void* param) {
             continue;
         }
 
-        color = effChargeColorElem(colR, colG, colB, data->alpha);
-        GXSetTevColor(GX_TEVREG0, color);
+        GXSetTevColor(GX_TEVREG0, (GXColor){ colR, colG, colB, data->alpha });
 
         PSMTXTrans(mtxF8, data->x, data->y, data->z);
         PSMTXScale(mtx98, scale, scale, scale);

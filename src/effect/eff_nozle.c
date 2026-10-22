@@ -50,8 +50,6 @@ typedef struct effNozleData {
 	effNozleEntryData entries[]; // 0x44
 } effNozleData;
 
-extern u32 unk_80423300;
-
 // The original reaches this file's tables from its .data section anchor, lbl_803AE260.
 u32 lbl_803AE260[2];
 static u32 negone_one_374[2];
@@ -167,18 +165,6 @@ static inline Vec nozleMakeVec(f32 x, f32 y, f32 z) {
 	temp.z = z;
 	return temp;
 }
-
-
-#ifdef MUST_MATCH
-// The original builds the GXColor temp at 0x8 and copies it to the 0xc argument slot; building
-// it directly in `color` puts the temp in the swapped slot, so it is built in a returning inline.
-static inline GXColor nozleTevColor(u8 alpha) {
-	GXColor c = *(GXColor*)&unk_80423300;
-	c.a = alpha;
-	return c;
-}
-
-#endif
 
 // The original has each display-list loop in its own inline helper; with the loops inlined at
 // their call sites MWCC colours the function's pointers differently and rotates every loop
@@ -373,7 +359,6 @@ void effNozleDisp(CameraId camId, void* param) {
 	s32 i;
 	CameraEntry* camera;
 	s32 alpha;
-	GXColor color;
 	GXTexObj tex;
 	Mtx transMtx;
 	Mtx rotMtx;
@@ -517,13 +502,7 @@ void effNozleDisp(CameraId camId, void* param) {
 		break;
 	case 3:
 		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-#ifdef MUST_MATCH
-		color = nozleTevColor(alpha);
-#else
-		color = *(GXColor*)&unk_80423300;
-		color.a = alpha;
-#endif
-		GXSetTevColor(GX_TEVREG0, color);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, alpha });
 		entry = effect->userdata;
 		entry++;
 		for (i = 1; i < effect->count; i++, entry++) {
@@ -1478,11 +1457,4 @@ static u8 scale_dt[44] = {
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 
-#pragma force_active reset
-
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") u32 unk_80423300;
-#pragma force_active on
-__declspec(section ".sdata") u32 gap_10_80423304_sbss2;
 #pragma force_active reset

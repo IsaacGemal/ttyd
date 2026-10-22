@@ -19,8 +19,6 @@ typedef struct EffIrekaeruData {
 	s32 alpha;     // 0x20
 } EffIrekaeruData;
 
-const u32 dat_80421c00 = 0xFFFFFF00;
-
 
 EffectEntry* effIrekaeruEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffIrekaeruData* userdata;
@@ -102,12 +100,6 @@ void effIrekaeruMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos2), 2, effIrekaeruDisp, effect);
 }
 
-static inline void irekaeruSetColor(EffIrekaeruData* userdata) {
-	GXColor color = *(GXColor*)&dat_80421c00;
-	color.a = userdata->alpha;
-	animPoseSetMaterialEvtColor(userdata->poseId, color);
-}
-
 void effIrekaeruDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffIrekaeruData* userdata = effect->userdata;
@@ -122,7 +114,7 @@ void effIrekaeruDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx, rotMtx, mtx);
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		animPoseSetMaterialFlagOn(userdata->poseId, 0x40);
-		irekaeruSetColor(userdata);
+		animPoseSetMaterialEvtColor(userdata->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, userdata->alpha });
 		animPoseMain(userdata->poseId);
 		animPoseDrawMtx(userdata->poseId, mtx, 1, 0.0f, 2.0f);
 		animPoseDrawMtx(userdata->poseId, mtx, 2, 0.0f, 2.0f);
