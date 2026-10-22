@@ -6446,3 +6446,129 @@ of what is left is ABI or data layout (below).
   would clear ~500 reload-forced casts tree-wide (naming decision). evt_mobj's `"o_"`/`"i_"` name templates as local
   char arrays and dat_8041a130/kpa_pole_score_color as const GXColor are EQUIV (data). psndENVMain's reload blocks are
   inlined psndSFX_vol calls; psndBGMMain's `psbgm[i & 0xF]` block looks like another inlined function.
+## Fresh-eyes MUST_MATCH pass over rels/, src/party, src/mario, src/unit (2026-10-22, Claude Opus 5.5 orchestrating nine Claude Opus 5.5 workers, n9-q-mm3)
+
+Task (Isaac): retry every MUST_MATCH block in rels/ (144 lines), src/party (72), src/mario (31) and src/unit (7) after
+#1096/#1099/#1104/#1111, trying what the ledger doesn't record: declaration order and scope, honest local types,
+splitting/merging locals, loop shape, early returns, operand order, assignment in the condition, existing helpers, a
+matched sibling's shape. Files the parallel worst5 branch owns (evt_mobj, battle_stage_object, pmario_sound, sound,
+win_root, winmgr, eff_starstone, tou.c, mot_hammer, evt_npc, win_item, filemgr) were not touched; data layout was out
+of bounds.
+
+- **Method.** Untracked harness in build/mmfresh/ (try.py: compile one file with its ninja flags into a temp dir,
+  compare with the pre-branch object through tools/obj_equiv.py, print per-function normalised asm diffs; `--nat`
+  compiles without MUST_MATCH; `--overlay DIR` shadows a header for a what-if). Round 1: six workers over disjoint file
+  groups (gA party_motion/move/kuribo/cloud/hit; gB party_yoshi/bomhei/chuchu/nokonoko, unit_party_*; gC src/mario;
+  gD eki/rsh/hom/jon; gE yuu/gor/pik/tou_02/tou2; gF the other RELs). Round 2: three workers on the near-misses, told to
+  explain each difference from the retail asm and rewrite from it (r2a party/mario, r2b RELs, r2c the sfx-string
+  family). Reports, with every shape tried and its diff count, in build/mmfresh/{gA..gF,r2a,r2b,r2c}.txt. Every commit:
+  each touched object EQUIV (and every object including a changed header), `build/G8MJ01/ok` recreated, natural
+  compile clean, fncast_lint and local_prototypes clean, tools/ci.py PASS with its tools/tests step stubbed (the same 9
+  environment errors as the chapters above). At the end the whole tree's objects were obj_equiv'd against the
+  pre-branch snapshot (`--tree`): all equivalent.
+- **Counts** (`grep -c MUST_MATCH`, after the review's re-guards, rebased on 051713c4 (#1125)): rels **144 -> 134**,
+  src/party **72 -> 63**, src/mario **31 -> 29**, src/unit **7 -> 6**. Per file: party_motion 27 -> 20, party_yoshi
+  18 -> 16, mario_sbr 3 -> 1, unit_party_yoshi 2 -> 1, eki_00 9 -> 8, eki_03 4 -> 2, hom_00 4 -> 2, rsh_00 4 -> 3,
+  rsh_05 9 -> 8, yuu_00 6 -> 4, yuu_01 6 -> 4, yuu_02 6 -> 5, gor_03 10 -> 9, gor evt_yuuranking 3 -> 2, yuu
+  evt_yuuranking 2 -> 1, tik_05 1 -> 0, hei_10 3 -> 4 and rsh_06 8 -> 9 (re-guarded double copies). Index
+  (tools/cleanup_index.py, 051713c4 -> this branch) **19.962 -> 19.920** per kLOC (13835 -> 13801 weighted):
+  must_match 736 -> 716, opt_pragma 331 -> 327, fn_ptr_cast 48 -> 41, raw_offset 196 -> 194; deref_cast 521 -> 527
+  and address_name 1076 -> 1078 (party_yoshi searchGround, below).
+- **Forms that matched.**
+  - **Declarations, not call sites.** Footmark ids are `s32` (partyGetFootmarkId and the six footmark accessors in
+    party_move.h/.c, which took and returned u32 while the partyGetTarget* functions the same id goes to take s32):
+    with one type MWCC stops giving the converted id its own saved register, so party_motion's homing_walk/homing_fly
+    lose the signed `sid` copy, the three `f32* pz = &v.z` temps, the `(f32*)(u32)(s64)(s32)&v.z` round trip and the
+    unguarded `opt_common_subs off` and `opt_loop_invariants off` pairs (r2a; homing_fly's lerps are written
+    `position.y += 0.05f * (...)`). envGlareFilter takes `s16` coordinates: retail's definition never re-extends them,
+    and written straight on its parameters (`x0 -= x0 & 1;`, clamps, stores; no temporaries) it matches, so eki_03's
+    function-pointer cast and hom_00's volatile pointer at the test_glare calls go (r2b). Lesson: when every caller
+    of a function needs a hack at the call, test the callee's prototype and definition with `--overlay` first.
+  - **By-value compound literals.** Both evt_yuuranking copies pass their colours as `(GXColor){...}` straight into
+    the call; MWCC builds those temps in source order, which is retail's contiguous block, so the WAKU_COL/ICON_COL/
+    ICON_NUM fn-pointer-cast macros and 20 hand-ordered GXColor locals go, and the file's FontDrawColor local prototype
+    takes the colour by value as fontmgr.c defines it (gE). mri.c's hakari_color doesn't follow: every by-value form
+    is a stack-slot order difference (10 lines).
+  - **An existing function instead of a hand copy.** party_yoshi searchGround calls unk_800b474c instead of a
+    written-out body with a `(char*)vec + 0x30` string and a raw 0x2B4 store. It matches only when the zero-Vec copies
+    above it take yoshi_use's guarded volatile form instead of the `const Vec* vec` base pointer, so a hand-expanded
+    body (a refused structural fake) and two raw offsets are traded for the file's existing guarded idiom; that trade is
+    the index's +6 deref_cast / +2 address_name.
+  - **Invented inlines written out, consistently.** eki_00/rsh_05's moaPlayHit and moaSoundVec (no name evidence;
+    moaSoundVec was unguarded) are written as rsh_06 already has them, `{ Vec t = template; t.x/y/z = ...; v = t; }`
+    (gD); hei_10's sound position takes the same form, so its guard covers only the sfx call (r2c). yuu_00/01/02
+    fall_rtn write every coin range as `max -= min; ... 100.0f * max`, and the monte_rand inline (no evidence) goes:
+    retail keeps both subtractions in max's register (r2b).
+  - **Variables that say what they hold.** gor_03 kuzi_bomb_bomb_eff switches on `state` and writes `next`
+    (initialised from state): the t0/t1 copy chain goes. r2c traced why: the pre-allocation scheduler had hoisted the
+    npcNameToPtr string above the copy of the second evtGetValue result; the extra dependency orders the copy first.
+    mario_sbr marioGetStick is `invert = (flags & 0x02000000) || kpaGetStageViewType() == 0; y2 = invert ? 0 :
+    -p->wStickDir2;` (switch temp and the `(s8)` on an s8 field go). jump2 picks its motion with an if/else storing
+    0/1; unit_party_yoshi computes `halfHeight = 0.5f * BtlUnit_GetHeight(unit)` in one expression (the `t = t` goes).
+  - tik_05's sqrtf returns `x * (last Newton step)` instead of reassigning x.
+  - **Re-guarded after review.** mario.c marioCheckMenuDisable's `switch (!marioChkKey())` (a two-way switch on a 0/1
+    test that keeps the materialised compare; retail mario_keyoff_wait has no jump table, and the REL copies chose the
+    switch because if/else if-converts), rsh_00's store through `wp` right after `entry = &wp->entries[id]`, the `t -> v`
+    double copy in eki_00, rsh_05, hei_10 and rsh_06, and party_motion homing_walk's `(radius = 40.0f)` in both places:
+    each is now the MUST_MATCH arm, with the plain form as `#else`. They still replace worse tricks (the comma
+    assignment, the one-iteration loop).
+- **For a reviewer.** gor_03's `next`, unit_party_yoshi's `halfHeight` and party_motion's function-scope `mot` are
+  plain C but were picked from EQUIV candidates; each is listed with its alternatives in the reports.
+- **EQUIV but not applied (hacks by the rules).** mario.c yuu_ block as `if (notCtrl2 || (notKey = !marioChkKey()))`
+  (notKey never read); party_cloud RELOAD_MARIO as a shadowing `MarioWork* mario = party->playerPtr;` block; jon
+  raster_disp `q *= 32; row = q;`; muj_20 fune_eff's constant in its own local (`ofs = 85.0f`); barriern zanzou with
+  the sub taking a `const BarriernZanzouScale*` built from a local copy (v1/v2 and the shared headers; diffs in
+  build/mmfresh); gor_03 minigameselect_msg_set's terminator copy with dead `pos++`/`src++`; mariost RUMBLE_MS with a
+  local `OSDiffTick` (the SDK macro, missing from libs/dolsdk2004's os.h).
+- **Left, with what was tried** (shape counts and closest results per region in the reports):
+  - party_motion: `(s8)currentMemberId` (4 shapes, 2-4 lines; mario_party's twin, 5 shapes), jump's targetDist
+    self-stores (18 shapes, 19 lines), the redundant `hit == NULL` re-tests (an inlined NULL-safe attribute test with no
+    name). party_move partyForceWalk's hand-inlined partyChgSpeedPose (53 bodies, 28 lines; the parameter's register
+    comes from the inliner). party_hit partySearchHead (volatile + pragma: 329 lines without both).
+  - party_yoshi: the remaining `vec` base pointer and volatile copies (retail copies dispOfs then dispOfs2 without
+    interleaving, which MWCC does only for its own compound-literal templates: the data lead below), yoshiRideHeight/
+    yoshiSearchHead (no names; 20-64 lines written out, 4 only by reusing the f30 local). party_bomhei `frames = 10.5f`
+    (12 spellings all fold to `li 10`), its three do/while(0) blocks (retail keeps a dead `hit == NULL` compare; no
+    named helper in the tree). party_chuchu ChuchuSearchState (~50 shapes, best 8: retail copies `found` into `i` with
+    `mr`). party_nokonoko fadd32 (25 shapes, 2 lines: MWCC puts a folded constant first; mario_hit's `ofs = 5.0f`, 19
+    shapes, 3 lines, same cause), punned zero stores, double store. unit_party_chuchurina's getters (36 shapes, 57-96
+    lines: plain forms need seven saved registers, retail six).
+  - mario: mario.c's yuu_ gotos (59 shapes, best 2: MWCC never merges two return blocks); mario_hit marioHitCheckVecAttr
+    (written out, 68 lines of stack slots: retail gives each inline expansion its own area) and marioChkGndRollProbe
+    (written out grows .rodata by 8); mario_pouch comparators (calling pouchHiraganaToKatakana: 40 lines, all 120
+    local orders of the helper tried); mario_balloon's discarded marioGetPtr calls and uninitialised balloonType;
+    mario_party's per-slot kill (no named function has that body).
+  - RELs: rsh_00 `| dm` (96+10 shapes, 27-59 lines); the `q` row chains in eki_03/hom_00/jon (envdrv.c's matched yami
+    water loop as a model: 14/14/18 lines); rsh_05's fn-pointer casts (retail inlines moamoa_pose_change everywhere
+    except ext_moamoa_main); gor_03 slot_count_hit (26 shapes, 6 lines; any inline holding the loop matches, so the
+    original had one) and its slot_stop_sub inlines; yuu_02/yuu_03 monte_fill/yuu4_init_work (11 shapes, 6 lines;
+    retail starts the offset with `mr` of i); gor_irai irai_cancel_func (9 shapes, 8 lines); frankli `id = 0` (32
+    natural); tou_03 screen_tev `zero` (9 shapes, 16 lines; battle_stage.c's twin has the same guard); barriern zanzou
+    comma (9 new shapes, 3 lines); ss_check/ss_ch_check in mri_16/tik_00/win_04 (~38 shapes, 8-14 lines: retail loads
+    the args before the int-to-float conversion); mri.c hakari_color (above); evt_lect_dou ppos (needs a member at 0x8
+    in the shared evt_lect.h, no evidence for its type); bom_01's `? 1 : 0`, las_04/usu_00 self-assignments, las_05's
+    dead sqrtf, evt_yuunpc/gor_03 redundant terms, pik_02 puns: by rule.
+  - The sfx-string family (eki_00, rsh_05, rsh_06, hei_10, yuu_00/01/02, gor_03 fall_rtn, zako_group2, gon_03, bom_01,
+    las_05, tou_02; 2-12 shapes each, including the kuzi-style split). r2c's finding: retail forms each name once, in
+    the loop preheader, straight into a saved register (one `addi` plus a copy where two call sites share a literal).
+    In test files only an *integer* conversion of the literal at the call, `(int)"X"`, gets that front-end
+    loop-invariant motion (`opt_loop_invariants off` stops it); no pointer-typed spelling does, and a local set from an
+    address and live across a call is always `addi r0; mr rN, r0`. That supports the mmrels2 chapter's
+    `psndSFXOn(s32)` prototype explanation, still the only route (not applied; Isaac's call).
+  - Data layout, skipped by rule: party_motion's FB/FV/PM_RODATA/.sbss dummy, party_move's dead zero Vecs, the padded
+    strings (kuribo, bomhei, eki_00, rsh_00, rsh_06), party_hit/party_cloud/mario_hit stripped placeholders and pool
+    helpers (party_yoshi, unit_party_yoshi), the declspec Vecs (aji_13, magnum_battender_mkII, rsh_06, usu_00, yuu_02),
+    the const-template reloads (eki_00/rsh_05/rsh_06 pvec, eki_06 sw_entry, rsh_06 ext_moamoa_init, las_04, tou_02),
+    rsh.c Zero256, tou2's AREA_TOU, pik_02's c50/half_sym, gor evt_yuuranking's asm body; mario_sbr's US-only
+    marioSetBottomlessResetPosition (#ifndef, still called from evt_bero.c).
+- **Leads.**
+  - Header: `OSDiffTick` in libs/dolsdk2004/include/dolphin/os.h (protected path; it is in the metrowerks OSTime.h)
+    would make mariost's RUMBLE_MS natural. A field at 0x8 in LectureButton (include/rel/common/evt_lect.h) for the
+    ppos regions, if its type gets evidence.
+  - The FontDrawColor by-value form probably carries over to the other `FontDrawColor(GXColor*)` local prototypes
+    (tou2.c, gor_irai.c, dig_00, kpa, win_main, evt_window) and possibly battle_seq's `_rule_disp` Waku_col cast and
+    sac_genki's icon colours; if all go, the local-prototype exception for FontDrawColor may not be needed.
+  - src/driver/npcdrv.c:107's sqrtf still reassigns `x` before returning it; tik_05's `return x * (...)` form may fit.
+  - Data: party_yoshi's three vec3_802ccc* zero Vecs as compound literals would remove its remaining copy hacks
+    (siblings party_vivian, mot_dokan, mot_yoshi already write `(Vec){0.0f, 0.0f, 0.0f}`); party_nokonoko's float_30 and
+    party_bomhei's 10.5f as non-const objects would remove fadd32 and `frames`.

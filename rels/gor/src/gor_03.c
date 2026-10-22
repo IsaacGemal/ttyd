@@ -5737,21 +5737,11 @@ USER_FUNC(kuzi_get_keihin) {
     return EVT_RETURN_DONE;
 }
 
-// Matches: routing the two evtGetValue results through temporaries before the named locals keeps the
-// original's args[0]-then-args[1] call order and still materialises the npcNameToPtr string address
-// with `addi r3`. The plain form (type = evtGetValue(args[0]); state = evtGetValue(args[1]);) compiles
-// to `addi r0, r4, str@l; mr r3, r0` and scores 99.04%.
 USER_FUNC(kuzi_bomb_bomb_eff) {
     s32* args = event->args;
-#ifdef MUST_MATCH
-    s32 t0 = evtGetValue(event, args[0]);
-    s32 t1 = evtGetValue(event, args[1]);
-    s32 type = t0;
-    s32 state = t1;
-#else
     s32 type = evtGetValue(event, args[0]);
     s32 state = evtGetValue(event, args[1]);
-#endif
+    s32 next = state;
     NpcEntry* npc;
     npc = npcNameToPtr("グルメボム兵");
 
@@ -5763,32 +5753,32 @@ USER_FUNC(kuzi_bomb_bomb_eff) {
         if (npc->position.y > 25.0f) {
             effBombEntry(0, npc->position.x - 30.0f, npc->position.y, npc->position.z, 1.0f);
             if (type == 0) {
-                state = 1;
+                next = 1;
             } else {
-                state = 2;
+                next = 2;
             }
         }
         break;
     case 1:
         if (npc->position.y > 50.0f) {
             effBombEntry(0, npc->position.x + 30.0f, npc->position.y, npc->position.z, 1.0f);
-            state = 2;
+            next = 2;
         }
         break;
     case 2:
         if (npc->position.y > 75.0f) {
             effBombEntry(0, npc->position.x - 30.0f, npc->position.y, npc->position.z, 1.0f);
-            state = 3;
+            next = 3;
         }
         break;
     case 3:
         if (npc->position.y > 100.0f) {
             effBombEntry(0, npc->position.x + 30.0f, npc->position.y, npc->position.z, 1.0f);
-            state = 4;
+            next = 4;
         }
         break;
     }
-    evtSetValue(event, args[2], state);
+    evtSetValue(event, args[2], next);
     return EVT_RETURN_DONE;
 }
 

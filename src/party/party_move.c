@@ -52,20 +52,20 @@ static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot);
 static void flyMain(PartyEntry* party);
 
 
-Footmark* partyGetFootmarkPtr(u32 index) {
+Footmark* partyGetFootmarkPtr(s32 index) {
     u32 id = readId[index];
     return &footmarkBuf[index][id];
 }
 
-s32 partyGetFootmarkReadId(u32 index) {
+s32 partyGetFootmarkReadId(s32 index) {
     return readId[index];
 }
 
-s32 partyGetFootmarkWriteId(u32 index) {
+s32 partyGetFootmarkWriteId(s32 index) {
     return writeId[index];
 }
 
-u32 partyGetFootmarkId(u32* flags) {
+s32 partyGetFootmarkId(u32* flags) {
     return (*flags >> 2) & 1;
 }
 
@@ -337,7 +337,7 @@ f32 partyGetTargetMovespd2(PartyEntry* party) {
         return mario->mBaseDashSpeed;
 }
 
-void partyNextReadId(u32 index) {
+void partyNextReadId(s32 index) {
     if (readId[index] != writeId[index]) {
         readId[index]++;
         if (readId[index] >= 0x50) {
@@ -346,7 +346,7 @@ void partyNextReadId(u32 index) {
     }
 }
 
-void partyGetReadId(u32 index, f32* x, f32* y, f32* z) {
+void partyGetReadId(s32 index, f32* x, f32* y, f32* z) {
     Footmark* footmark;
     u32 id = readId[index];
     footmark = &footmarkBuf[index][id];
@@ -355,7 +355,7 @@ void partyGetReadId(u32 index, f32* x, f32* y, f32* z) {
     *z = footmark->pos.z;
 }
 
-void partyGetReadId2(u32 index, Vec* out) {
+void partyGetReadId2(s32 index, Vec* out) {
     Footmark* footmark;
     u32 id = readId[index];
     footmark = &footmarkBuf[index][id];

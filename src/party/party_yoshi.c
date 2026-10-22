@@ -1358,13 +1358,7 @@ void inertia(PartyEntry* party) {
     *(f32*)((u8*)mario + 0x2B4) = f5;
 }
 
-// 100%: the partyChgPose "PYS_S_2" string is pooled at vec3+0x30, so it is
-// reached through the vec3 base register (r31) rather than a fresh lis; the
-// 6-float zero copy is emitted as two Vec copies.
 void searchGround(PartyEntry* party) {
-#ifdef MUST_MATCH
-    const Vec* vec = &vec3_802cccd0;
-#endif
     HitEntry* hit = NULL;
     MarioWork* mario = party->playerPtr;
     s32 attr;
@@ -1421,15 +1415,16 @@ void searchGround(PartyEntry* party) {
             party->position.y += party->jumpPara3;
             set_damage_root_ypos(mario->position.y - 8.0f);
 #ifdef MUST_MATCH
+            // Volatile: keeps the playerPtr load ahead of the copies and the copies unpipelined.
             {
-                MarioWork* pl = party->playerPtr;
-                pl->dispOfs = vec[0];
-                pl->dispOfs2 = vec[1];
+                MarioWork* pl = *(MarioWork* volatile*)&party->playerPtr;
+                *(volatile Vec*)&pl->dispOfs = *(const volatile Vec*)&vec3_802cccd0;
+                *(volatile Vec*)&pl->dispOfs2 = *(const volatile Vec*)&vec3_802cccdc;
             }
             {
                 PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
                 if (extra != NULL) {
-                    extra->dispOffset = vec[2];
+                    *(volatile Vec*)&extra->dispOffset = *(const volatile Vec*)&vec3_802ccce8;
                 }
             }
 #else
@@ -1461,28 +1456,7 @@ void searchGround(PartyEntry* party) {
         }
 
         if (attr & 0xC00) {
-#ifdef MUST_MATCH
-            // unk_800b474c's body, written out: the pool places PYS_S_2 at vec3+0x30 and the original reaches
-            // it through the vec3 base register (r31); the inlined call loads it with a fresh lis.
-            MarioWork* m = marioGetPtr();
-
-            L_sweatEntry(party, NULL);
-            marioChgMot(0x20);
-            party->useMotionId = 0xA;
-            partyChgPose(party, (char*)vec + 0x30);
-            marioChgPose("M_Y_2");
-            m->field_0x2B0 = 0.0f;
-            *(f32*)((u8*)m + 0x2B4) = 0.0f;
-            partyChgRunMode(party, 0xD);
-            {
-                PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
-                if (extra != NULL) {
-                    partyChgRunMode(extra, 0xD);
-                }
-            }
-#else
             unk_800b474c(party);
-#endif
             partyChgRunMode(party, 0xD);
             {
                 PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());

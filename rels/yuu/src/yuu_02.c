@@ -253,10 +253,6 @@ static void monte_disp(CameraId cameraId, void* param) {
     }
 }
 
-static inline f32 monte_rand(f32 min, f32 max) {
-    return min + (f32)irand((s32)(100.0f * (max - min))) / 100.0f;
-}
-
 USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated = 0;
@@ -315,7 +311,8 @@ USER_FUNC(fall_rtn) {
                     min = montetable[tableIdx].x1;
                     max = montetable[tableIdx].x0;
                 }
-                base->pos.x = monte_rand(min, max);
+                max -= min;
+                base->pos.x = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
                 if (montetable[tableIdx].z0 < montetable[tableIdx].z1) {
                     min = montetable[tableIdx].z0;
                     max = montetable[tableIdx].z1;
@@ -323,13 +320,8 @@ USER_FUNC(fall_rtn) {
                     min = montetable[tableIdx].z1;
                     max = montetable[tableIdx].z0;
                 }
-#ifdef MUST_MATCH
-                // match-only: the in-place range makes MWCC keep it in max's register (f1)
-                max = max - min;
+                max -= min;
                 base->pos.z = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
-#else
-                base->pos.z = monte_rand(min, max);
-#endif
 
                 candidatePos = base->pos;
                 candidatePos.y = 0.0f;

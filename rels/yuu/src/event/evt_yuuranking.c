@@ -7,7 +7,7 @@
 #include "driver/windowdrv.h"
 #include "manager/evtmgr_cmd.h"
 #include "manager/fontmgr.h"
-void FontDrawColor(GXColor* color);
+void FontDrawColor(GXColor color);
 #include "memory.h"
 #include "pmario_sound.h"
 #include "system.h"
@@ -94,26 +94,13 @@ void yuu_draw_msg_fit(const char* msg, s32 maxWidth, f32 x, f32 y, f32 scale) {
 #define A74(i) ((s32)yuwp->rankScore[work->mode][i])
 #define AD4(i) ((s32)yuwp->rankMonte[work->mode][i])
 
-#ifdef MUST_MATCH
-// Match-only: taking each by-value colour's address keeps all 20 GXColor locals in one contiguous stack block,
-// the same address the by-value GC ABI passes in the argument register.
-#define WAKU_COL(c, x, y, w, h, curve) \
-    ((void (*)(u16, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &(c), (x), (y), (w), (h), (curve))
-#define ICON_COL(mtx, flags, id, c) ((void (*)(Mtx, s16, s32, GXColor*))iconDispGxCol)((mtx), (flags), (id), &(c))
-#define ICON_NUM(mtx, num, small, c) ((s32 (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx)((mtx), (num), (small), &(c))
-#else
-#define WAKU_COL(c, x, y, w, h, curve) windowDispGX_Waku_col((x), (y), (w), (h), (curve), 0, (c))
-#define ICON_COL(mtx, flags, id, c) iconDispGxCol((mtx), (flags), (id), (c))
-#define ICON_NUM(mtx, num, small, c) iconNumberDispGx((mtx), (num), (small), (c))
-#endif
 // Retail evaluates the title frame's lower edge as k + (field_10 + 128), in that operand order.
 #define WAKU_BOTTOM (k + (work->field_10 + 128.0f))
 
 // The top waku/FontDrawMessage maths (a non-const `k=1.0f` keeps the `fnmadds` that negates the sum, integer-negated
-// width), the signed `cmpwi` menu test and the `A74(i)/1000` recompute now match. Passing the by-value colours by
-// address (WAKU_COL/ICON_COL/ICON_NUM) puts all 20 GXColor locals in the target's contiguous 0x54..0x08 block, and
-// nesting the case-0 `menu_decimal_point` and the rank `menu_subtitle5_rank`/`menu_subtitle1_monte` msgSearch
-// results into their calls emits the format string and the 80.0f/75.2f literals in the target's `.rodata` order.
+// width), the signed `cmpwi` menu test and the `A74(i)/1000` recompute now match. Nesting the case-0
+// `menu_decimal_point` and the rank `menu_subtitle5_rank`/`menu_subtitle1_monte` msgSearch results into their
+// calls emits the format string and the 80.0f/75.2f literals in the target's `.rodata` order.
 // The title, the case-2/3 subtitles (`msg2`, shared by the three switches) and the other messages (`msg`) are
 // three locals, and the rank case-2/3 `rankValue` is the function-level one, declared between `title` and `msg`: that
 // order colours title/rankValue r28 and msg2 r27. The title frame takes FontGetMessageWidth straight into
@@ -140,31 +127,10 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     const char* msg2;
     s32 i;
     s32 j;
-    f32 frameWidth;
     f32 row;
-    GXColor c0;
-    GXColor c1;
-    GXColor c2;
-    GXColor c3;
-    GXColor c5;
-    GXColor c6;
-    GXColor c4;
-    GXColor c7;
-    GXColor c9;
-    GXColor c10;
-    GXColor c8;
-    GXColor c11;
-    GXColor c13;
-    GXColor c12;
-    GXColor c14;
-    GXColor c15;
-    GXColor c16;
-    GXColor c17;
-    GXColor c18;
-    GXColor c19;
 
-    c0 = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
-    WAKU_COL(c0, work->x + -196.0f, work->field_10 + 112.0f, 392.0f, 224.0f, 20.0f);
+    windowDispGX_Waku_col(work->x + -196.0f, work->field_10 + 112.0f, 392.0f, 224.0f, 20.0f, 0,
+                          (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
     switch (work->displayMode) {
     case 0:
         title = msgSearch(scoreTbl[work->mode]);
@@ -174,15 +140,13 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         title = msgSearch(titleTbl[work->mode]);
         break;
     }
-    c1 = (GXColor){ 0x2B, 0xA3, 0xFF, 0xFF };
     {
         f32 k = 1.0f;
-        frameWidth = k * FontGetMessageWidth(title) + 50.0f;
-        WAKU_COL(c1, work->x + -(k * FontGetMessageWidth(title) + 50.0f) / 2.0f, WAKU_BOTTOM, frameWidth, 28.0f, 8.0f);
+        windowDispGX_Waku_col(work->x + -(k * FontGetMessageWidth(title) + 50.0f) / 2.0f, WAKU_BOTTOM,
+                              k * FontGetMessageWidth(title) + 50.0f, 28.0f, 8.0f, 0, (GXColor){ 0x2B, 0xA3, 0xFF, 0xFF });
         FontDrawStart();
         FontDrawScale(1.0f);
-        c2 = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
-        FontDrawColor(&c2);
+        FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
         FontDrawMessage((s32)(work->x + k * -FontGetMessageWidth(title) / 2.0f), (s32)(work->field_10 + 128.0f), title);
     }
 
@@ -191,8 +155,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         case 0:
             FontDrawStart();
             FontDrawScale(1.0f);
-            c3 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-            FontDrawColor(&c3);
+            FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
             msg = msgSearch("menu_subtitle1_minigame1");
             yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
             if (work->currentValue >= 0) {
@@ -201,8 +164,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 if (work->state >= 4) {
                     FontDrawStart();
                     FontDrawScale(1.0f);
-                    c5 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-                    FontDrawColor(&c5);
+                    FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
                     msg = msgSearch("menu_subtitle4_getmonte");
                     yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 32.0f, 1.0f);
                     sprintf(buf, "%4d", work->bonus);
@@ -211,8 +173,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 if (work->state >= 7) {
                     FontDrawStart();
                     FontDrawScale(1.0f);
-                    c6 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-                    FontDrawColor(&c6);
+                    FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
                     if (work->mult > 1) {
                         msg = msgSearch("menu_subtitle2_minigame1");
                         yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
@@ -232,8 +193,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     }
                 }
             } else {
-                c4 = (GXColor){ 0xFF, 0x3F, 0x3F, 0xFF };
-                FontDrawColor(&c4);
+                FontDrawColor((GXColor){ 0xFF, 0x3F, 0x3F, 0xFF });
                 msg = msgSearch("menu_error_minigame1");
                 sprintf(buf, msg);
                 FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
@@ -243,8 +203,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         case 2:
         case 3:
             FontDrawStart();
-            c7 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-            FontDrawColor(&c7);
+            FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
             switch (work->mode) {
             case 3:
                 msg2 = msgSearch("menu_subtitle1_minigame2");
@@ -267,8 +226,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
                 if (work->state >= 4) {
                     FontDrawStart();
-                    c9 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-                    FontDrawColor(&c9);
+                    FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
                     switch (work->mode) {
                     case 3:
                         msg2 = msgSearch("menu_subtitle4_getmonte");
@@ -284,8 +242,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 }
                 if (work->state >= 7) {
                     FontDrawStart();
-                    c10 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-                    FontDrawColor(&c10);
+                    FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
                     if (work->mult > 1) {
                         switch (work->mode) {
                         case 3:
@@ -314,8 +271,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     }
                 }
             } else {
-                c8 = (GXColor){ 0xFF, 0x3F, 0x3F, 0xFF };
-                FontDrawColor(&c8);
+                FontDrawColor((GXColor){ 0xFF, 0x3F, 0x3F, 0xFF });
                 if (work->mode == 3) {
                     sprintf(buf, msgSearch("menu_error_minigame2"));
                 } else {
@@ -328,8 +284,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         case 1:
             FontDrawStart();
             FontDrawScale(1.0f);
-            c11 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-            FontDrawColor(&c11);
+            FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
             msg = msgSearch("menu_subtitle1_minigame4");
             yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 56.0f, 1.0f);
             if (work->currentValue < work->maxValue) {
@@ -338,8 +293,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 if (work->state >= 7) {
                     FontDrawStart();
                     FontDrawScale(1.0f);
-                    c13 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-                    FontDrawColor(&c13);
+                    FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
                     if (work->mult > 1) {
                         msg = msgSearch("menu_subtitle2_minigame4");
                         yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + 8.0f, 1.0f);
@@ -359,8 +313,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     }
                 }
             } else {
-                c12 = (GXColor){ 0xFF, 0x3F, 0x3F, 0xFF };
-                FontDrawColor(&c12);
+                FontDrawColor((GXColor){ 0xFF, 0x3F, 0x3F, 0xFF });
                 sprintf(buf, msgSearch("menu_error_minigame4"));
                 FontDrawStringPitch(buf, work->x + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
             }
@@ -372,8 +325,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
 
         FontDrawStart();
         FontDrawScale(1.0f);
-        c14 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-        FontDrawColor(&c14);
+        FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
         msg = msgSearch("menu_subtitle3_totalmonte");
         yuu_draw_msg_fit(msg, 165, work->x + -150.4f, work->field_10 + -40.0f, 1.0f);
         {
@@ -382,19 +334,16 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             s32 iy = (s32)(work->field_10 + -40.0f - 24.0f);
 
             PSMTXTrans(m, (f32)(ix - 10), (f32)(iy + 2), 0.0f);
-            c15 = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
-            ICON_COL(m, 16, 0x13f, c15);
+            iconDispGxCol(m, 16, 0x13f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
             PSMTXTrans(m, (f32)(ix + 60), (f32)(iy + 2), 0.0f);
-            c16 = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
-            ICON_NUM(m, work->monte, 0, c16);
+            iconNumberDispGx(m, work->monte, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
         }
     } else {
         FontDrawStart();
         FontDrawScale(1.0f);
         FontDrawMessage((s32)(work->x + -150.4f), (s32)(work->field_10 + 80.0f), msgSearch("menu_subtitle5_rank"));
         FontDrawMessage((s32)(work->x + 75.19998f), (s32)(work->field_10 + 80.0f), msgSearch("menu_subtitle1_monte"));
-        c17 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-        FontDrawColor(&c17);
+        FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
         switch (work->mode) {
         case 0:
             msg = msgSearch("menu_subtitle1_minigame1");
@@ -425,11 +374,9 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             FontDrawStart();
             FontDrawScale(1.0f);
             if (i != work->rankIndex) {
-                c18 = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
-                FontDrawColor(&c18);
+                FontDrawColor((GXColor){ 0x00, 0x00, 0x00, 0xFF });
             } else {
-                c19 = (GXColor){ 0xFF, 0x3F, 0x3F, 0xFF };
-                FontDrawColor(&c19);
+                FontDrawColor((GXColor){ 0xFF, 0x3F, 0x3F, 0xFF });
             }
             msg = subTbl[i];
             if ((s8)msg[0] == 'm' && (s8)msg[1] == 'e' && (s8)msg[2] == 'n' && (s8)msg[3] == 'u' && (s8)msg[4] == '_') {
@@ -502,9 +449,6 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
 #undef AD4
 #undef A74
 #undef A14
-#undef WAKU_COL
-#undef ICON_COL
-#undef ICON_NUM
 #undef WAKU_BOTTOM
 
 USER_FUNC(evt_yuuranking_main_func) {

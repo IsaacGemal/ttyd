@@ -244,16 +244,8 @@ static USER_FUNC(test_glare) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
     else {
-#ifdef MUST_MATCH
-        // MUST_MATCH: the `s16` call-site signature is what fixes the schedule (see the comment above
-        // the function); passing the same values through the header's `s32` prototype loses it.
-        ((void (*)(s32, s16, s16, s16, s16))envGlareFilter)(
-            1, obj->bboxTop - 0x32, obj->bboxLeft - 0x32,
-            obj->bboxBottom + 0x32, obj->bboxRight + 0x32);
-#else
-        envGlareFilter(1, (s16)(obj->bboxTop - 0x32), (s16)(obj->bboxLeft - 0x32),
-                       (s16)(obj->bboxBottom + 0x32), (s16)(obj->bboxRight + 0x32));
-#endif
+        envGlareFilter(1, obj->bboxTop - 0x32, obj->bboxLeft - 0x32,
+                       obj->bboxBottom + 0x32, obj->bboxRight + 0x32);
         envGlareFilterZ(1.148f);
     }
     return 0;

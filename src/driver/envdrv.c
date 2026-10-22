@@ -819,9 +819,8 @@ void envGlare(EnvironmentGlare* glare) {
     }
 }
 
-// 100%: the type store must follow the clamps (stores the type only after the sign/clamp checks) and
-// the four s16 temps need the original's declaration order for the register allocation to line up.
-void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
+// The type is stored only after the clamps.
+void envGlareFilter(s32 type, s16 y0, s16 x0, s16 y1, s16 x1) {
     EnvironmentWork* wp = envGetWork();
     EnvironmentGlareFilter* filter = &wp->filter;
 
@@ -834,29 +833,27 @@ void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
         wp->flags &= ~0x20000000;
     }
     else {
-        s16 tx1, ty1, tx0, ty0; // declaration order controls the register allocation of the four temps
-
-        tx0 = x0 - (x0 & 1);
-        ty0 = y0 - (y0 & 1);
-        tx1 = x1 + (x1 & 1);
-        ty1 = y1 + (y1 & 1);
-        if (tx0 < 0) {
-            tx0 = 0;
+        x0 -= x0 & 1;
+        y0 -= y0 & 1;
+        x1 += x1 & 1;
+        y1 += y1 & 1;
+        if (x0 < 0) {
+            x0 = 0;
         }
-        if (ty0 < 0) {
-            ty0 = 0;
+        if (y0 < 0) {
+            y0 = 0;
         }
-        if (tx1 > gp->fbWidth) {
-            tx1 = gp->fbWidth;
+        if (x1 > gp->fbWidth) {
+            x1 = gp->fbWidth;
         }
-        if (ty1 > gp->efbHeight) {
-            ty1 = gp->efbHeight;
+        if (y1 > gp->efbHeight) {
+            y1 = gp->efbHeight;
         }
         filter->type = type;
-        filter->y0 = ty0;
-        filter->x0 = tx0;
-        filter->y1 = ty1;
-        filter->x1 = tx1;
+        filter->y0 = y0;
+        filter->x0 = x0;
+        filter->y1 = y1;
+        filter->x1 = x1;
         filter->zscale = 0.0f;
         filter->flags &= ~1;
         wp->flags |= 0x20000000;

@@ -1391,24 +1391,6 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
 #else
 #define MOAMOA_POSE_CHANGE(e, a, b) moamoa_pose_change((e), (a), (b))
 #endif
-// Keeping both sound vectors in inline scopes reproduces their stack-slot order (as in eki_00).
-static inline Vec moaSoundVec(ExtPose* ep, const Vec* base) {
-    Vec v = *base;
-    v.x = (*ep->matrix)[0][3];
-    v.y = (*ep->matrix)[1][3];
-    v.z = (*ep->matrix)[2][3];
-    return v;
-}
-
-#ifdef MUST_MATCH
-static inline void moaPlayHit(ExtPose* ep) {
-    Vec w = vec3_rsh_00013758;
-    w.x = (*ep->matrix)[0][3];
-    w.y = (*ep->matrix)[1][3];
-    w.z = (*ep->matrix)[2][3];
-    psndSFXOn_3D((const char*)0x6C3, &w);
-}
-#endif
 // Per-frame update of every moamoa (the ordinary variant, no follower).
 static void ext_moamoa_main(void) {
 #ifdef MUST_MATCH
@@ -1562,7 +1544,22 @@ static void ext_moamoa_main(void) {
         }
         if ((wp->flags & 0x1) && !(entry->flags & 0x444) && (u32)i == gp->retraceCount % wp->poseNum
             && irand(1000) < 200) {
-            v = moaSoundVec(ep, &vec3_rsh_0001374c);
+#ifdef MUST_MATCH
+            // The copy through t places the template on the stack where the original has it.
+            {
+                Vec t = vec3_rsh_0001374c;
+
+                t.x = (*ep->matrix)[0][3];
+                t.y = (*ep->matrix)[1][3];
+                t.z = (*ep->matrix)[2][3];
+                v = t;
+            }
+#else
+            v = vec3_rsh_0001374c;
+            v.x = (*ep->matrix)[0][3];
+            v.y = (*ep->matrix)[1][3];
+            v.z = (*ep->matrix)[2][3];
+#endif
 #ifdef MUST_MATCH
             psndSFXOn_3D((const char*)(u32)voiceSfx.p, &v);
 #else
@@ -1771,9 +1768,6 @@ static void ext_moamoa_main(void) {
             f = (f32)rand() / 32767.0f * randRange(5.0f, 6.0f) + 5.0f;
             grav = (f32)rand() / 32767.0f * randRange(0.2f, 0.3f) + 0.2f;
             if (voicePlayed == 0) {
-#ifdef MUST_MATCH
-                moaPlayHit(ep);
-#else
                 Vec w;
 
                 w = vec3_rsh_00013758;
@@ -1781,7 +1775,6 @@ static void ext_moamoa_main(void) {
                 w.y = (*ep->matrix)[1][3];
                 w.z = (*ep->matrix)[2][3];
                 psndSFXOn_3D((const char*)0x6C3, &w);
-#endif
                 voicePlayed = 1;
             }
             moamoa_jump(ep, entry, tx, -100.0f, ty, f, grav, 0x31, 0);

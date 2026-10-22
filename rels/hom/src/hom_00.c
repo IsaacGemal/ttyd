@@ -635,16 +635,7 @@ static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
     else {
-#ifdef MUST_MATCH
-        // MUST_MATCH: the volatile pointer holds the four halfword loads in the original's order; without it
-        // the scheduler moves the y0 `subi` one slot ahead of the y1 load.
-        volatile MapObject* p = obj;
-        envGlareFilter(1, (s16)(p->bboxTop - 0x32), (s16)(p->bboxLeft - 0x32), (s16)(p->bboxBottom + 0x32),
-                       (s16)(p->bboxRight + 0x32));
-#else
-        envGlareFilter(1, (s16)(obj->bboxTop - 0x32), (s16)(obj->bboxLeft - 0x32),
-                       (s16)(obj->bboxBottom + 0x32), (s16)(obj->bboxRight + 0x32));
-#endif
+        envGlareFilter(1, obj->bboxTop - 0x32, obj->bboxLeft - 0x32, obj->bboxBottom + 0x32, obj->bboxRight + 0x32);
     }
     return 0;
 }

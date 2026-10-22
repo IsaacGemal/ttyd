@@ -6,8 +6,8 @@ typedef struct HitEntry HitEntry;
 #include "party.h"
 struct PartyEntry;
 void partyChgMot(PartyEntry* party, s32 mot);
-u32 partyGetFootmarkId(u32* flags);
-void partyNextReadId(u32 index);
+s32 partyGetFootmarkId(u32* flags);
+void partyNextReadId(s32 index);
 void partyClearFootmark2(void);
 void partyMoveBesideMario(PartyEntry* party, s32 unk);
 void partyMoveBehindMario(PartyEntry* party, s32 unk);
@@ -49,10 +49,10 @@ f32 partyGetTargetDist3D(s32 id, Vec* pos);
 f32 partyGetTargetDist(s32 id, f32 x, f32 z);
 f32 partyGetTargetDistY(s32 id);
 f32 partyGetTargetDir(s32 id, f32 x, f32 z);
-s32 partyGetFootmarkWriteId(u32 index);
-s32 partyGetFootmarkReadId(u32 index);
-void partyGetReadId(u32 index, f32* x, f32* y, f32* z);
-void partyGetReadId2(u32 index, Vec* out);
+s32 partyGetFootmarkWriteId(s32 index);
+s32 partyGetFootmarkReadId(s32 index);
+void partyGetReadId(s32 index, f32* x, f32* y, f32* z);
+void partyGetReadId2(s32 index, Vec* out);
 void L_getTargetPos(s32 id, Vec* out);
 // Layout of a footmark record (0x10 bytes) inside footmarkBuf.
 typedef struct Footmark {
@@ -60,7 +60,7 @@ typedef struct Footmark {
     u8 pad[3];  // 0x1
     Vec pos;    // 0x4, copied whole from the mario/party position (lwz/stw struct copy)
 } Footmark;
-Footmark* partyGetFootmarkPtr(u32 index);
+Footmark* partyGetFootmarkPtr(s32 index);
 f32 partyGetTargetDistYFrom(s32 id, f32 y);
 f32 partyGetTargetMovespd2(PartyEntry* party);
 void partyMoveBehindMario3(PartyEntry* party, s32 mode, f32 dir);

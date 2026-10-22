@@ -550,10 +550,6 @@ EVT_END()
 
 // clang-format on
 
-static inline f32 monte_rand(f32 min, f32 max) {
-    return min + (f32)irand((s32)(100.0f * (max - min))) / 100.0f;
-}
-
 USER_FUNC(unk_yuu_00004250) {
     camShiftReset();
     return EVT_RETURN_DONE;
@@ -579,10 +575,9 @@ static void monte_disp(CameraId cameraId, void* param) {
     }
 }
 
-// Setting base->pos.z = 0.0f before the do-while (not at its top) matched the target's store layout, and
-// expanding the y-range monte_rand with `max -= min` (MUST_MATCH) made its subtraction reuse max's
-// register (f1), as the target does. The sfx string uses yuu_01's union shape (see the MUST_MATCH
-// blocks): a plain `const char*` adds an `mr`, and the union member alone colours it r29, not r26.
+// Setting base->pos.z = 0.0f before the do-while (not at its top) matched the target's store layout.
+// The sfx string uses yuu_01's union shape (see the MUST_MATCH blocks): a plain `const char*` adds an
+// `mr`, and the union member alone colours it r29, not r26.
 static USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated;
@@ -637,7 +632,8 @@ static USER_FUNC(fall_rtn) {
                     min = montetable[tableIdx].xMax;
                     max = montetable[tableIdx].xMin;
                 }
-                base->pos.x = monte_rand(min, max);
+                max -= min;
+                base->pos.x = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
                 if (montetable[tableIdx].yMin < montetable[tableIdx].yMax) {
                     min = montetable[tableIdx].yMin;
                     max = montetable[tableIdx].yMax;
@@ -645,13 +641,8 @@ static USER_FUNC(fall_rtn) {
                     min = montetable[tableIdx].yMax;
                     max = montetable[tableIdx].yMin;
                 }
-#ifdef MUST_MATCH
-                // match-only: the in-place range makes MWCC keep it in max's register (f1)
                 max -= min;
                 base->pos.y = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
-#else
-                base->pos.y = monte_rand(min, max);
-#endif
                 for (j = 0; j < pointIdx; j++) {
                     Vec diff;
                     // steps back by the 0x38-byte field_0x8, not by the 0x44-byte entry

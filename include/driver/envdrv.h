@@ -87,7 +87,7 @@ void envBlurOff(void);
 void envGlare(EnvironmentGlare* glare);
 void envGlareFilterZ(f32 z);
 void envSetYamiView(Mtx mtx);
-void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1);
+void envGlareFilter(s32 type, s16 y0, s16 x0, s16 y1, s16 x1);
 void envDisp_DepthOfField(void);
 void envDisp_FF(void);
 void envCapture(CameraId camId, void* param);

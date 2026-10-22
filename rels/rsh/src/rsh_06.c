@@ -2152,6 +2152,8 @@ static void ext_moamoa_main(void) {
         }
         if ((wp->flags & 0x1) && !(entry->flags & 0x444) && (u32)i == gp->retraceCount % wp->poseNum
             && irand(1000) < 200) {
+#ifdef MUST_MATCH
+            // The copy through t places the template on the stack where the original has it.
             {
                 Vec t = vec3_rsh_00013d94;
 
@@ -2160,6 +2162,12 @@ static void ext_moamoa_main(void) {
                 t.z = (*ep->matrix)[2][3];
                 v3 = t;
             }
+#else
+            v3 = vec3_rsh_00013d94;
+            v3.x = (*ep->matrix)[0][3];
+            v3.y = (*ep->matrix)[1][3];
+            v3.z = (*ep->matrix)[2][3];
+#endif
 #ifdef MUST_MATCH
             psndSFXOn_3D((const char*)(u32)sv.p, &v3);
 #else
