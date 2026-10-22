@@ -620,17 +620,29 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	}
 }
 
-// The original walks each display-list table with a small inline helper.  With the loop written as
-// an inlined helper (its parameters become the induction variables), MWCC colours the first loop's
-// counter r26 and its size induction r23; written directly in the caller the two come out swapped.
+#ifdef MUST_MATCH
+// MUST_MATCH: starStoneDLLoop has no outside evidence. Written as an inline (its parameters become the
+// induction variables), MWCC colours the first loop's counter r26 and its size induction r23; the loop
+// written directly in the caller swaps the two.
 static inline void starStoneDLLoop(u32* tbl, effStarStoneData* data, u8* sztbl, u32 n) {
-	u32 ctr;
+	s32 ctr;
 	for (ctr = 0; ctr < n; ctr++) {
-		if ((data->flags & 1) || (s32)ctr != 0) {
+		if ((data->flags & 1) || ctr != 0) {
 			GXCallDisplayList((void*)tbl[ctr], sztbl[ctr] << 5);
 		}
 	}
 }
+#else
+#define starStoneDLLoop(tbl, data, sztbl, n) \
+	{ \
+		s32 ctr; \
+		for (ctr = 0; ctr < (n); ctr++) { \
+			if (((data)->flags & 1) || ctr != 0) { \
+				GXCallDisplayList((void*)(tbl)[ctr], (sztbl)[ctr] << 5); \
+			} \
+		} \
+	}
+#endif
 
 void effStarStoneDisp_2(CameraId camId, void* param) {
 	EffectEntry* effect = param;

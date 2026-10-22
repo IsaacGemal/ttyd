@@ -19,8 +19,8 @@ FileManagerWork fileWork;
 FileManagerWork* afp = &fileWork;
 
 // A file stores its pointers as offsets from the file start; these add (or take away) the base address in place.
-#define FILE_RELOC(field, base) (*(u32*)&(field) += (u32)(base))
-#define FILE_UNRELOC(field, base) (*(u32*)&(field) -= (u32)(base))
+#define FILE_RELOC(field, base) ((field) = (void*)((u32)(field) + (u32)(base)))
+#define FILE_UNRELOC(field, base) ((field) = (void*)((u32)(field) - (u32)(base)))
 
 // Header views of the file types that fileGarbageDataAdrSet and fileGarbageDataAdrClear relocate (see FileType
 // in filemgr.h).
@@ -93,9 +93,9 @@ void fileInit(void) {
 }
 
 // Clears the file-relative addresses in a TPL (texture palette); the inverse of
-// fileUnpackTpl below. Kept as a separate inline because the TPL walk's loop counter and
-// byte-offset only take the original's r5/r6 when the walk is not expanded inside the switch.
-static inline void fileClearTpl(TEXPalette* tpl) {
+// fileUnpackTpl below. Super Paper Mario's filemgr.c has this walk as its own function, PackTexPalette;
+// here it is inlined into fileGarbageDataAdrClear.
+static inline void PackTexPalette(TEXPalette* tpl) {
 	u16 i;
 
 	if (tpl->versionNumber != 0x0020AF30) {
@@ -131,8 +131,7 @@ static inline void fileClearTpl(TEXPalette* tpl) {
 }
 
 // Turns a file's pointers back into file offsets before it moves (fileGarbageMoveMem); the inverse of
-// fileGarbageDataAdrSet. The TPL case goes through the fileClearTpl inline above so its loop counter and
-// byte offset take the original's r5/r6.
+// fileGarbageDataAdrSet.
 void fileGarbageDataAdrClear(FileEntry* entry) {
 	void* data = *entry->data;
 
@@ -196,7 +195,7 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 		}
 
 		case FILE_TYPE_TPL:
-			fileClearTpl(data);
+			PackTexPalette(data);
 			break;
 
 		case FILE_TYPE_ANIMPOSE: {
@@ -210,7 +209,7 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 					AnimTableEntry* elem = &pose->mpAnims[i];
 					AnimData* anim = elem->data;
 
-					FILE_UNRELOC(elem->data, data);
+					elem->data = (AnimData*)((u32)anim - (u32)data);
 					if ((u32)anim->clip >= (u32)anim) {
 						FILE_UNRELOC(anim->clip, anim);
 						FILE_UNRELOC(anim->frames, anim);
@@ -326,8 +325,8 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 	}
 }
 
-// The FILE_TYPE_TPL walk lives in this helper: as a separate inline its loop counter
-// colours to the original's r4 (with the body inline it takes r5).
+// The FILE_TYPE_TPL walk. Super Paper Mario's filemgr.c has it as its own function, UnpackTexPalette, a name
+// the SDK's texPalette.c UnpackTexPalette (texPalette.h) already takes in this build.
 static inline void fileUnpackTpl(TEXPalette* tpl) {
 	u16 i;
 	if (tpl->versionNumber != 0x0020AF30) {
