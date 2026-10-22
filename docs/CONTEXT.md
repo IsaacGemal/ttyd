@@ -41,7 +41,8 @@ anything worth keeping into a chapter here.
   Isaac merges or explicitly delegates merging; he authorized the Sep 28-29 overnight run.
 - Reviews: one fresh Claude review per PR (Codex out of usage), findings fixed before merge. A unit that links is
   proven byte-for-byte by the checksum, so reviews look at what it can't see: names, types, headers, hacks,
-  readability (scripts must be EVT macros, never hex).
+  readability (scripts must be EVT macros, never hex). Since 2026-10-22 (n9-q-hexevt) no script in src/ or rels/ is
+  hex or EVT_CMD words any more; the 21 hits `grep -rE '0x000[0-9A-F]005[BCDE]' src rels` still gives are data.
 - In flight: Claude #3's branch grind-7 (one more shared unit, and `-fp_contract on` in cflags_rel: a compiler
   flag change, checksums pass; Isaac to look), to be rebased on main as one PR.
 - Next, in rough order: (1) complete the battle structs (BattleUnitKind, BattleVulnerableStatus, unit defence and
@@ -6265,3 +6266,55 @@ are (no new MUST_MATCH regions).
   changes, so it was run under `uv run --with pyelftools`, after which configure.py must be rerun with the normal Python:
   it writes the uv interpreter's path into build.ninja); fncast_lint and local_prototypes pass. Worker reports with
   their `Model:` lines are in build/retype/G1-G8/REPORT.md (untracked).
+
+### Event scripts: the last raw-hex scripts as EVT macros (2026-10-22, Claude Opus 5.5, n9-q-hexevt)
+
+The standing rule says scripts are EVT macros, never hex; 39 files still held scripts as `s32`/`u32` arrays of opcode
+words (4,463 hits for `grep -rE '0x000[0-9A-F]005[BCDE]' src rels`), and five more spelled small scripts as
+`EVT_CMD(...)`/`OPCODE_*` words. All of them are `EVT_BEGIN` scripts now: **371 scripts in 39 files**, every one with
+its symbol name, `static`, section declspec and position unchanged. Build byte-identical after every commit.
+
+- **Method.** tools/ttydasm decodes from the linked binary, so it prints ELF names and string contents: it would have
+  turned the named string objects (unit_purple_teresa's padded `str_*` arrays, evt_shop's `str_8041BC10`, the pool
+  zero `zero_80420520` some scripts pass as `""`) into new literals and moved data, and it resolves same-named statics
+  (`nice_event`, `evt_shake`, `main_evt`, `quake_evt`) to whichever copy it finds first. So the conversion read the
+  C source instead (a one-off script, not kept): split each initialiser into words, decode them with evtmgr.h's
+  opcode numbers and evt_cmd.h's macro table, and print each argument the way ttydasm does (LW/LF/GW/GSW/GSWF...,
+  `FLOAT(x)` as the shortest decimal that encodes to the same word, `EVTDAT_POINTER_MAX`, decimal otherwise, flat
+  `CASE_*`, no `END` line), but keep the source's own expression for every pointer argument. ttydasm on the built
+  ELF was the cross-check: of the 396 scripts in the changed DOL files (older ones included), 345 print identically;
+  the rest differ by those named strings, by ttydasm picking another file's same-named static, by literals the source
+  spells with escapes (padding NULs; win_main's octal Shift-JIS for ゆうれい, kept as written), or are older scripts
+  in the same files (`STRING((char*)"...")` casts, evt_bero's unindented pair).
+- **Pointer arguments.** `(u32)&f`/`(s32)f` became `f` as a CALL's first argument and `PTR(f)` elsewhere (the macros
+  cast only CALL's first argument, CALL_CHILD and SPAWN_EVENT); `&` was dropped only for arrays and functions, kept
+  for scalars (`PTR(&BeroEX)`). String literals became `STRING("...")`, padding NULs kept inside the literal where the
+  source had them (evt_memcard). A pointer to a `const` object keeps the source's `(char*)`/`(void*)` cast:
+  MWCC refuses `(s32)` on a const pointer in an initializer ("illegal implicit conversion from 'const char *' to
+  'char *'"), so `PTR((char*)str_A_1)`, `PTR((void*)&zero_80420520)` (83 sites).
+- **Irregular scripts, written by hand from the decoder's output.** `npc_event.c`'s `met_init_event_common` has no
+  END_SCRIPT in the original (a script that runs it goes on into `met_set_anim_wait_event`, the next object): an
+  `EVT_BEGIN` closed with `};` and a comment. aji_02/aji_05's `hikaru_yuka_init` has an END_EVENT word after its
+  END_SCRIPT: the END_SCRIPT is spelled `OPCODE_END_SCRIPT,` (as `EVT_END()` spells it) followed by `RETURN` and `};`
+  (`EVT_CMD(0, OPCODE_END_SCRIPT),` there trips tools/local_prototypes.py, which reads the tag macro on the line above
+  as a return type). bom_02's `mario_jump` runs into `lbl_3_data_76CC`: the symbol map starts that object at the third
+  argument of the script's last CALL, so both objects stay and the CALL is written across them
+  (`EVT_CMD(4, OPCODE_USER_FUNC), (s32)evt_npc_flag_onoff, 0,` / `STRING("ホワイト"), 32,`). Merging them would drop a
+  symbols.txt symbol.
+- **Not scripts, left as they are.** The 21 grep hits left in 6 files are data whose words happen to look like opcode
+  words: battle_audience_kind_data's audience animation bytecode, eff_holography_n64's display list, muj_00's
+  `kaizoku_vs_dai3_*pos` coordinate tables, las_29's `hikari_data`, gor_02's `stg5_list` item list and a
+  party_chuchu search table. A sweep of every `s32`/`u32` array in src/ and rels/ found no other array, or tail or
+  interior run of one, that decodes as a script. No new evt_cmd.h macro was needed (the missing ones, DEBUG_BP,
+  DEBUG_MSG_CLEAR, DEBUG_NAME and DEBUG_REM, are never used).
+- Stale `// TODO: type` markers above the converted scripts went with them; comments calling a script a "table"
+  now say script. evt_bero's older `default_entevt`/`default_outevt` (unindented, inside `clang-format off`) are
+  untouched.
+- **Index** (`tools/cleanup_index.py`, 176dceaf -> this branch): 21.493 -> 19.987 per kLOC (14888 -> 13849 weighted);
+  ptr_to_int 2694 -> 1572; prim_ptr_cast 1901 -> 1984 (the const-object casts above, which the index counted once as
+  ptr_to_int behind the outer `(u32)` before). unit_purple_teresa 243 -> 57 weighted (2430 -> 121 per kLOC; the
+  rest is its raw tables), npc_event 126 -> 16, evt_shop 198 -> 80, battle_stage_object 330 -> 262.
+- Verified before each commit: `ninja` recreates build/G8MJ01/ok; tools/ci.py PASS with its tools/tests step stubbed
+  (the same 9 environment failures as the chapters above), run under `uv run --with pyelftools`, then configure.py
+  rerun with the normal Python; fncast_lint and local_prototypes pass. All 39 changed objects also built with
+  `configure.py --non-matching` (ci's natural step looks REL files up by their stem, so this was done by hand too).
