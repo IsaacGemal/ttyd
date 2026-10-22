@@ -21,7 +21,6 @@
 
 // Raw accessors for MarioWork scratch words this motion reads with a type no union member has.
 #define M_S16(m, off) (*(s16*)((u8*)(m) + (off)))
-#define M_U16(m, off) (*(u16*)((u8*)(m) + (off)))
 #define M_S32(m, off) (*(s32*)((u8*)(m) + (off)))
 
 // .rodata: vec3_802c5a80, then hitEstimate's Vec literals; the MOBJ names are defined after hitEstimate.
@@ -61,21 +60,12 @@ s32 marioGetHammerLevel(void) {
     return pouchGetPtr()->hammerLevel;
 }
 
-#ifdef MUST_MATCH
-// Inline helper for the `type == 7 ? 3 : type` clamp: through a helper the type lands in r0 and the clamped
-// value in r3, as in the target; the plain expression swaps the two.
-static inline s32 clampHammerType(s32 t) {
-    return (t == 7) ? 3 : t;
-}
-#endif
-
 // The `type == 7 ? 3 : type` clamp, the se_data update order, the switches, the pool and every callee-saved
 // register (base r31, mario r30, r28/r29, f30/f31) match. The pose-time clamp `b <= 10 ? b : 10` is branchy
 // in the target (`cmpwi; bgt; mr r0,r3; b end; li r0,10`); the plain ternary is if-converted to the one
-// instruction shorter `cmpwi; mr r0,r3; ble; li r0,10`. The clamp goes through a temp `t` whose condition and
-// arm are syntactically different (the named field vs this file's raw accessor), which blocks that
-// if-conversion, and `opt_dead_assignments off` keeps the `r27 = t` copy so the target's `r0`/`r27` split
-// survives. Together they give the target's bytes.
+// instruction shorter `cmpwi; mr r0,r3; ble; li r0,10`. Under MUST_MATCH the clamp goes through a temp `t` whose
+// arm rereads the field while the condition tests `b`, which blocks that if-conversion, and
+// `opt_dead_assignments off` keeps the `r27 = t` copy so the target's `r0`/`r27` split survives.
 // Common subexpression elimination off keeps the rodata base in r31 and the mario pointer in r30; with it on
 // the two are swapped and every access thereafter shifts. Needed only for this function.
 #pragma opt_common_subs off
@@ -85,7 +75,6 @@ void mot_hammer(void) {
     MarioWork* mario2;
     MarioWork* mario3;
     MapObjectEntry* mobj;
-    s32 mt;
     s32 sound;
     s32 r28, rp;
     u32 i;
@@ -199,7 +188,12 @@ void mot_hammer(void) {
         }
         if (type != 0) {
 #ifdef MUST_MATCH
-            M_S32(mario, 0x2A0) = clampHammerType(type);
+            // A register copy of the address-taken type: the clamped value lands in r0 and the type in r3, as in
+            // the target; the plain expression swaps the two.
+            {
+                s32 t = type;
+                M_S32(mario, 0x2A0) = (t == 7) ? 3 : t;
+            }
 #else
             M_S32(mario, 0x2A0) = (type == 7) ? 3 : type;
 #endif
@@ -239,8 +233,13 @@ void mot_hammer(void) {
         }
     } else {
         s32 b = mario->multiTimer;
+#ifdef MUST_MATCH
+        // The arm rereads the field instead of `b`, which keeps the clamp branchy as in the target.
         s32 t = (b <= 10) ? mario->multiTimer : 10;
         r27 = t;
+#else
+        r27 = (b <= 10) ? b : 10;
+#endif
         if (b == 10) {
             rp = 1;
         }
@@ -263,12 +262,13 @@ void mot_hammer(void) {
         pz = mario->position.z;
         if (!(mario->dispFlags & 0x80000000)) {
             eff = -1;
-            switch (mario->field_0x2A8) {            case 7:
+            switch (mario->field_0x2A8) {
+            case 7:
                 movePos(&px, &pz, 16.0f, toMovedir2(mario->dispReqDir, float_0_8041a9a8));
                 f31 = 53.0f;
                 eff = 0x16;
                 break;
-                        case 0:
+            case 0:
             case 6:
                 movePos(&px, &pz, 25.0f, toMovedir2(mario->dispReqDir, float_0_8041a9a8));
                 f31 = -3.0f;
@@ -284,15 +284,16 @@ void mot_hammer(void) {
                 f31 = 30.f;
                 eff = 0x16;
                 break;
-}
+            }
         } else {
             eff = -1;
-            switch (mario->field_0x2A8) {            case 7:
+            switch (mario->field_0x2A8) {
+            case 7:
                 movePos(&px, &pz, 16.0f, toMovedir2(mario->dispReqDir, -2.0f));
                 f31 = 53.0f;
                 eff = 0x16;
                 break;
-                        case 0:
+            case 0:
             case 6:
                 movePos(&px, &pz, 30.f, toMovedir2(mario->dispReqDir, -6.0f));
                 f31 = -3.0f;
@@ -308,7 +309,7 @@ void mot_hammer(void) {
                 f31 = 28.0f;
                 eff = 0x16;
                 break;
-}
+            }
         }
         if (eff > 0) {
             effKemuTestEntry(eff, px, f30 + f31, pz, 1.0f);
@@ -330,13 +331,13 @@ void mot_hammer(void) {
         while (i < 10) {
             if (pouchEquipCheckBadge(se_data[mario3->field_0x3A]) != 0) {
                 sound = se_data[mario3->field_0x3A + 1];
-                mario3->field_0x3A = mario3->field_0x3A + 2;
+                mario3->field_0x3A += 2;
                 if (mario3->field_0x3A >= 0xA) {
                     mario3->field_0x3A -= 0xA;
                 }
                 break;
             } else {
-                mario3->field_0x3A = mario3->field_0x3A + 2;
+                mario3->field_0x3A += 2;
                 if (mario3->field_0x3A >= 0xA) {
                     mario3->field_0x3A -= 0xA;
                 }
@@ -345,9 +346,7 @@ void mot_hammer(void) {
         }
         psndSFXOn_3D((const char*)sound, &mario3->position);
     }
-    mt = mario->multiTimer + 1;
-    mario->multiTimer = mt;
-    if (mt > 0x14) {
+    if (++mario->multiTimer > 0x14) {
         mario->flags &= ~0x80;
         marioChgMot(0);
     }
@@ -425,10 +424,6 @@ void mot_hammer2(void) {
     f32 hx;
     f32 ca;
     f32 sa;
-    f32 px__;
-    f32 py__;
-    f32 pz__;
-    f32 one__;
     s32 level;
 
     if (mario->trigFlags & 1) {
@@ -492,7 +487,7 @@ void mot_hammer2(void) {
         /* fallthrough to case 0xA */
     case 0xA:
         if (marioGetRub(0x200, &rub1, &rub2, &rub3) == 1) {
-            mario->field_0x2B4 = mario->field_0x2B4 & ~1;
+            mario->field_0x2B4 &= ~1;
             mario->field_0x41++;
             if (mario->field_0x41 >= 0x14) {
                 mario->field_0x41 = 0x14;
@@ -672,7 +667,7 @@ void mot_hammer2(void) {
         } else {
             mario->multiTimer = 0x48;
         }
-        M_U16(mario, 0x2A4) = 0;
+        M_S16(mario, 0x2A4) = 0;
         if (mario->field_0x42 == 3) {
             mario->wCamVal1 = 38.0f;
         } else if (mario->field_0x42 == 2) {
@@ -680,12 +675,25 @@ void mot_hammer2(void) {
         } else if (mario->field_0x42 <= 1) {
             mario->wCamVal1 = 15.0f;
         }
-        py__ = 20.f;
-        px__ = mario->position.x;
-        py__ += mario->position.y;
-        pz__ = mario->position.z;
-        one__ = 1.0f;
-        effUltraHammerEntry(mario->dispHalfTurn != 0, mario->multiTimer, px__, py__, pz__, one__);
+#ifdef MUST_MATCH
+        // Argument temps: with propagation off they keep the 20.0f load first and the multiTimer load last.
+        {
+            f32 px__;
+            f32 py__;
+            f32 pz__;
+            f32 one__;
+
+            py__ = 20.f;
+            px__ = mario->position.x;
+            py__ += mario->position.y;
+            pz__ = mario->position.z;
+            one__ = 1.0f;
+            effUltraHammerEntry(mario->dispHalfTurn != 0, mario->multiTimer, px__, py__, pz__, one__);
+        }
+#else
+        effUltraHammerEntry(mario->dispHalfTurn != 0, mario->multiTimer, mario->position.x, 20.f + mario->position.y,
+                            mario->position.z, 1.0f);
+#endif
         break;
     case 0x14:
         f31 = mario->dispDir;
@@ -866,9 +874,14 @@ HitEntry* hitEstimate(s32* type) {
     }
 
     { f32 p = 1.2217306f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
+#ifdef MUST_MATCH
     { f32 five = 5.0f; // local keeps the 5.0f load after the stack load (target order)
     pos.x = mario->position.x + sa * five;
     pos.z = mario->position.z + ca * five; }
+#else
+    pos.x = mario->position.x + sa * 5.0f;
+    pos.z = mario->position.z + ca * 5.0f;
+#endif
     pos.y = mario->position.y + boxY;
     query.targetPos = pos;
     query.targetDir = (Vec){ sa, -c, ca };
@@ -880,9 +893,14 @@ HitEntry* hitEstimate(s32* type) {
     }
 
     { f32 p = 0.7853982f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
+#ifdef MUST_MATCH
     { f32 five = 5.0f; // local keeps the 5.0f load after the stack load (target order)
     pos.x = mario->position.x + sa * five;
     pos.z = mario->position.z + ca * five; }
+#else
+    pos.x = mario->position.x + sa * 5.0f;
+    pos.z = mario->position.z + ca * 5.0f;
+#endif
     pos.y = mario->position.y + boxY;
     query.targetPos = pos;
     query.targetDir = (Vec){ sa, -c, ca };

@@ -175,9 +175,9 @@ static void rankingInit(void);
 static s32 evt_open[165];
 s32 evt_doku_cake[234];
 s32 evt_michel_1[39];
-static u32 rank_work[2];
-static u32 disp_work[3];
-GansWork* gans_wp[1];
+static RankWork rank_work;
+static DispWork disp_work;
+GansWork* gans_wp;
 
 // clang-format off
 extend_data(0,
@@ -968,6 +968,9 @@ EVT_BEGIN(unk_evt_tou_00012b54)
     RETURN
 EVT_END()
 
+#ifdef MUST_MATCH
+// With `defer_codegen off` (below) functions are compiled in source order, so insert, defined after
+// rankingControll, can't be inlined there as in retail; this copy is inlined in its place.
 static inline void doInsert(s32* arr, s32 unused, s32 from, s32 to) {
     s32 i;
 
@@ -987,6 +990,8 @@ static inline void doInsert(s32* arr, s32 unused, s32 from, s32 to) {
         arr[to] = tmp;
     }
 }
+#define insert doInsert
+#endif
 
 EVT_BEGIN(evt_tou_match_make_default_sub)
     SET_VALUE(LF(0), 0)
@@ -2676,19 +2681,17 @@ EVT_BEGIN(evt_tou_match_after_default)
     RETURN
 EVT_END()
 
-// TODO: type
-static s32 champion_belt_onoff[1];
+static s32 champion_belt_onoff;
 
-GansWork* gans_wp[1];
+GansWork* gans_wp;
 
-// TODO: type
-static u32 rank_work[2];
+static RankWork rank_work;
 
-// TODO: type
-static u32 disp_work[3];
+static DispWork disp_work;
 
 // clang-format on
 
+#ifdef MUST_MATCH
 // Retail builds the GXColor in one scratch slot and copies it to the argument slot; returning it
 // from an inline reproduces that instead of writing the channels in place.
 static inline GXColor monitorColor(u8 alpha) {
@@ -2696,6 +2699,7 @@ static inline GXColor monitorColor(u8 alpha) {
     c.a = alpha;
     return c;
 }
+#endif
 
 // Emit the real functions in retail order so native conversion constants share the original pool slots.
 #ifdef MUST_MATCH
@@ -2703,7 +2707,7 @@ static inline GXColor monitorColor(u8 alpha) {
 #endif
 
 static USER_FUNC(tou_champion_belt_onoff) {
-    champion_belt_onoff[0] = evtGetValue(event, event->args[0]);
+    champion_belt_onoff = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -2725,7 +2729,7 @@ USER_FUNC(tou_champion_belt_27_text_34) {
         handle = effStarStoneEntry(9, zero, zero, zero, 0.6f);
         animPoseWorldPositionEvalOn(npc->poseId);
         event->userdata[0] = (s32)handle;
-        champion_belt_onoff[0] = 0;
+        champion_belt_onoff = 0;
     }
     pose = animPoseGetAnimPosePtr(npc->poseId);
     loc = pose->groupWorldPos->address;
@@ -2754,7 +2758,7 @@ USER_FUNC(tou_champion_belt_27_text_34) {
         ((effStarStoneData*)*ud)->y = -1000.0f;
         ((effStarStoneData*)*ud)->z = 0.0f;
     }
-    if (champion_belt_onoff[0] != 0) {
+    if (champion_belt_onoff != 0) {
         ((effStarStoneData*)*ud)->x = 0.0f;
         ((effStarStoneData*)*ud)->y = -1000.0f;
         ((effStarStoneData*)*ud)->z = 0.0f;
@@ -2860,7 +2864,7 @@ static USER_FUNC(getYoshiColor) {
 }
 
 USER_FUNC(onoff) {
-    gans_wp[0]->enabled = evtGetValue(event, event->args[0]);
+    gans_wp->enabled = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
@@ -2868,9 +2872,9 @@ void monitor_tev(void* param) {
     MapTevCallback* p = param;
     GXColor color;
 
-    if (gans_wp[0]->texReady != 0) {
+    if (gans_wp->texReady != 0) {
         GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-        GXLoadTexObj(smartTexObj(&gans_wp[0]->texObj, &gans_wp[0]->texData->address), 1);
+        GXLoadTexObj(smartTexObj(&gans_wp->texObj, &gans_wp->texData->address), 1);
         GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
         GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -2883,7 +2887,12 @@ void monitor_tev(void* param) {
         GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_TEXC, GX_CC_CPREV, GX_CC_A0, GX_CC_ZERO);
         GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
         GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-        color = monitorColor(gans_wp[0]->alpha);
+#ifdef MUST_MATCH
+        color = monitorColor(gans_wp->alpha);
+#else
+        color = *(GXColor*)&dat_tou_00009c38;
+        color.a = gans_wp->alpha;
+#endif
         GXSetTevColor(GX_TEVREG0, color);
         p->tevStage = 2;
         p->texCoord = 2;
@@ -2906,19 +2915,19 @@ USER_FUNC(make_monitor) {
         return EVT_RETURN_BLOCK;
     }
     work = (GansWork*)event->userdata[0];
-    gans_wp[0] = work;
+    gans_wp = work;
     work->texData = smartAlloc(GXGetTexBufferSize(0x80, 0x80, GX_TF_RGB5A3, 0, 0), 3);
     GXInitTexObj(&work->texObj, work->texData->address, 0x80, 0x80, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, 0);
     GXInitTexObjLOD(&work->texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    if (gans_wp[0]->enabled) {
-        gans_wp[0]->alpha += 4;
-        if (gans_wp[0]->alpha > 0x80) {
-            gans_wp[0]->alpha = 0x80;
+    if (gans_wp->enabled) {
+        gans_wp->alpha += 4;
+        if (gans_wp->alpha > 0x80) {
+            gans_wp->alpha = 0x80;
         }
     } else {
-        gans_wp[0]->alpha -= 4;
-        if (gans_wp[0]->alpha < 0) {
-            gans_wp[0]->alpha = 0;
+        gans_wp->alpha -= 4;
+        if (gans_wp->alpha < 0) {
+            gans_wp->alpha = 0;
         }
     }
     dispEntry(CAMERA_SHADOW, 0.0f, 3, gans_tex, work);
@@ -3022,11 +3031,9 @@ static USER_FUNC(evt_tou_print_ranking) {
     ((DispWork*)dwp[0])->targetScroll = (f32)(((DispWork*)dwp[0])->page * 0xdc);
     {
         DispWork* w = (DispWork*)dwp[0];
-        // Reading scroll through dwp[0] again instead of w keeps MWCC from reordering
-        // the two field loads (the natural w->scroll form lands scroll in f3 before f2's targetScroll)
-        f32 t = w->targetScroll - ((DispWork*)dwp[0])->scroll;
+        f32 t = w->targetScroll - w->scroll;
 
-        w->scroll = t * TOU_F32(float_0p125_tou_0000a888) + w->scroll;
+        w->scroll += t * TOU_F32(float_0p125_tou_0000a888);
     }
     dispEntry(CAMERA_2D, TOU_F32(float_300_tou_0000a88c), 0, disp_proc, NULL);
     return EVT_RETURN_BLOCK;
@@ -3068,19 +3075,13 @@ static void disp_proc(CameraId cameraId, void* param) {
     Mtx scale;
     Mtx mtx;
     char buf[0x100];
-    f32 c250;
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
         dt = (FighterEntry*)fighterDt;
     } else {
         dt = (FighterEntry*)fighterDt_re;
     }
-    {
-        f32 t = TOU_F32(float_250_tou_0000a890);
-        f32 h = TOU_F32(float_0p5_tou_0000a868);
-
-        f31 = -t * h;
-    }
+    f31 = -TOU_F32(float_250_tou_0000a890) * TOU_F32(float_0p5_tou_0000a868);
     windowDispGX_System(0, 0xff, f31 - TOU_F32(float_30_tou_0000a894), TOU_F32(float_165_tou_0000a898),
                         TOU_F32(float_310_tou_0000a89c), TOU_F32(float_330_tou_0000a8a0));
     FontDrawStart();
@@ -3092,9 +3093,8 @@ static void disp_proc(CameraId cameraId, void* param) {
         FontDrawColor(&color);
     }
     FontDrawMessage(-w / 2, (s32)TOU_F32(float_135_tou_0000a8b0), str_00001F74);
-    c250 = TOU_F32(float_250_tou_0000a890);
     scX = (u16)(TOU_F32(float_304_tou_0000a8b4) + f31);
-    scW = (u16)c250;
+    scW = (u16)TOU_F32(float_250_tou_0000a890);
     GXSetScissor(scX, (u16)TOU_F32(float_145_tou_0000a8b8), scW, (u16)TOU_F32(float_220_tou_0000a8bc));
     f27 = TOU_F32(float_10_tou_0000a8c0) + f31;
     rank = 0;
@@ -3406,7 +3406,7 @@ USER_FUNC(evt_tou_get_fighter_info_27_text_1CB8) {
 
 static USER_FUNC(evt_tou_get_next_match) {
     s32* args = event->args;
-    s32 x = evtGetValue(event, 0xf840650b);
+    s32 x = evtGetValue(event, GSWF(0x98B));
     s32 list[32];
     s32 i;
     s32 cnt = 0;
@@ -3529,7 +3529,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                doInsert(above, nAbove, idx, 0);
+                insert(above, nAbove, idx, 0);
             }
         }
 
@@ -3540,7 +3540,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                doInsert(above, nAbove, idx, 1);
+                insert(above, nAbove, idx, 1);
             }
         }
 
@@ -3551,7 +3551,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                doInsert(above, nAbove, idx, 10);
+                insert(above, nAbove, idx, 10);
             }
         }
 
@@ -3562,7 +3562,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                doInsert(above, nAbove, idx, 18);
+                insert(above, nAbove, idx, 18);
             }
         }
 
@@ -3573,7 +3573,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                doInsert(above, nAbove, idx, 19);
+                insert(above, nAbove, idx, 19);
             }
         }
 
@@ -3584,7 +3584,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                doInsert(above, nAbove, idx, 14);
+                insert(above, nAbove, idx, 14);
             }
         }
 
@@ -3595,7 +3595,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                doInsert(above, nAbove, idx, nAbove - 1);
+                insert(above, nAbove, idx, nAbove - 1);
             }
         }
     }
@@ -3630,7 +3630,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nBelow) {
-                doInsert(below, nBelow, idx, 0);
+                insert(below, nBelow, idx, 0);
             }
         }
 
@@ -3647,7 +3647,7 @@ static void rankingControll(void) {
                     }
                 }
                 if (bi2 < nBelow && bi2 > 0) {
-                    doInsert(below, nBelow, bi, bi2 - 1);
+                    insert(below, nBelow, bi, bi2 - 1);
                 }
             }
         }
@@ -3659,7 +3659,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nBelow) {
-                doInsert(below, nBelow, idx, 0);
+                insert(below, nBelow, idx, 0);
             }
         }
     }
@@ -3690,6 +3690,9 @@ static void rankingControll(void) {
     swByteSet(0x244, rank);
 }
 
+#ifdef MUST_MATCH
+#undef insert
+#endif
 static void insert(s32* arr, s32 unused, s32 from, s32 to) {
     s32 i;
     s32 val;
@@ -3812,23 +3815,23 @@ static void rankingInit(void) {
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
         ((RankWork*)rank_wp[0])->entries[0x15].flags |= 2;
         ((RankWork*)rank_wp[0])->entries[0x16].flags |= 2;
-        if (evtGetValue(NULL, 0xf84064ec)) {
+        if (evtGetValue(NULL, GSWF(0x96C))) {
             ((RankWork*)rank_wp[0])->entries[0x12].flags |= 2;
         }
-        if (evtGetValue(NULL, 0xf84064ed)) {
+        if (evtGetValue(NULL, GSWF(0x96D))) {
             ((RankWork*)rank_wp[0])->entries[0x15].flags &= ~2;
-            if (!evtGetValue(NULL, 0xf8406562)) {
+            if (!evtGetValue(NULL, GSWF(0x9E2))) {
                 ((RankWork*)rank_wp[0])->entries[0x15].flags |= 1;
             }
-            evtSetValue(NULL, 0xf8406562, 1);
+            evtSetValue(NULL, GSWF(0x9E2), 1);
         }
-        if (evtGetValue(NULL, 0xf84064f5)) {
+        if (evtGetValue(NULL, GSWF(0x975))) {
             ((RankWork*)rank_wp[0])->entries[0x0b].flags |= 2;
             ((RankWork*)rank_wp[0])->entries[0x16].flags &= ~2;
-            if (!evtGetValue(NULL, 0xf8406563)) {
+            if (!evtGetValue(NULL, GSWF(0x9E3))) {
                 ((RankWork*)rank_wp[0])->entries[0x16].flags |= 1;
             }
-            evtSetValue(NULL, 0xf8406563, 1);
+            evtSetValue(NULL, GSWF(0x9E3), 1);
         }
     }
     rankingControll();
