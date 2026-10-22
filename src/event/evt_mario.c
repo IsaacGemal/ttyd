@@ -1416,21 +1416,9 @@ USER_FUNC(evt_mario_jump_pos) {
                     dy = dy + 0.5f * mario->wPlayerCollisionBox.y;
                 }
             } else {
-#ifdef MUST_MATCH
-                // The original's `Vec vec` (12 bytes at 0x14) overlaps MWCC's
-                // int<->float conversion temporary, which then lives at 0x18; a full Vec pushes
-                // that temp to 0x20 (frame 0xa0 instead of 0x90). searchUnder2 only writes
-                // out->x, so a one-float home reproduces the frame (same idiom as evt_party.c).
                 f32 vec;
-#else
-                Vec vec;
-#endif
 
-#ifdef MUST_MATCH
-                if (searchUnder2((Vec*)&vec, x, y, z)) {
-#else
                 if (searchUnder2(&vec, x, y, z)) {
-#endif
                     dy = gravity;
                 } else {
                     dy = gravity;

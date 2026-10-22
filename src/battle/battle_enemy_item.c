@@ -7,7 +7,8 @@
 
 extern ItemData itemDataTable[];
 
-
+// MUST_MATCH (six calls below): retail sign-extends attackDirection before passing it to
+// BattleSamplingEnemy's s8 parameter; only the `(s32)` cast makes MWCC emit that extsb.
 
 void* BattleEnemyUseItemCheck(BattleUnit* unit) {
     s32 item = unit->heldItem;
@@ -83,7 +84,11 @@ void* _check_hp_recover_item(BattleUnit* unit) {
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
+#ifdef MUST_MATCH
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
+#else
+                        wp->alliances[unit->mAlliance].attackDirection);
+#endif
 
     for (i = 0; i < sampling->count; i++) {
         BattleUnit* target =
@@ -113,7 +118,11 @@ void* _check_fp_recover_item(BattleUnit* unit) {
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
+#ifdef MUST_MATCH
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
+#else
+                        wp->alliances[unit->mAlliance].attackDirection);
+#endif
 
     for (i = 0; i < sampling->count; i++) {
         BattleUnit* target =
@@ -145,7 +154,11 @@ void* _check_attack_item(BattleUnit* unit) {
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
+#ifdef MUST_MATCH
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
+#else
+                        wp->alliances[unit->mAlliance].attackDirection);
+#endif
 
     if (sampling->count <= 0) {
         return 0;
@@ -186,7 +199,11 @@ void* _check_status_attack_item(BattleUnit* unit) {
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
+#ifdef MUST_MATCH
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
+#else
+                        wp->alliances[unit->mAlliance].attackDirection);
+#endif
 
     if (sampling->count <= 0) {
         return 0;
@@ -243,7 +260,11 @@ void* _check_status_support_item(BattleUnit* unit) {
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
+#ifdef MUST_MATCH
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
+#else
+                        wp->alliances[unit->mAlliance].attackDirection);
+#endif
 
     if (sampling->count <= 0) {
         return 0;
@@ -302,7 +323,11 @@ void* _check_status_recover_item(BattleUnit* unit) {
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
                         weapon->targetClassFlags, weapon->targetPropertyFlags,
+#ifdef MUST_MATCH
                         (s32)wp->alliances[unit->mAlliance].attackDirection);
+#else
+                        wp->alliances[unit->mAlliance].attackDirection);
+#endif
 
     if (sampling->count <= 0) {
         return 0;

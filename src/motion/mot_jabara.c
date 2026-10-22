@@ -275,7 +275,9 @@ const f32 float_20_8041aaf4 = 20.0f;
 const f32 float_37_8041aaf8 = 37.0f;
 
 
-// Camera follow parameters for the stretched pose.
+#ifdef MUST_MATCH
+// Camera follow parameters for the stretched pose. The name has no outside evidence; written out at the calls
+// (#else) the object differs.
 static inline void jabaraSetCamParam(f32 a, f32 b, f32 c) {
     MarioWork* mario = marioGetPtr();
 
@@ -284,6 +286,7 @@ static inline void jabaraSetCamParam(f32 a, f32 b, f32 c) {
     mario->field_68 = c;
     mario->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
 }
+#endif
 
 // Restores Mario's facing, movement vectors and collision box when the motion ends.
 static inline void jabaraResetMario(void) {
@@ -491,7 +494,14 @@ void mot_jabara(void) {
         }
         L_allPartyRideOn();
         psndSFXOn_3D((const char*)0x182, &mario->position);
+#ifdef MUST_MATCH
         jabaraSetCamParam(0.2f, 0.005f, 1.5f);
+#else
+        mario->unk148 = 0.2f;
+        mario->unk150.z = 0.005f;
+        mario->field_68 = 1.5f;
+        mario->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
+#endif
         mario->multiTimer = 8;
         mario->currSubMotionId = 0xB;
         /* fallthrough */
@@ -520,7 +530,14 @@ void mot_jabara(void) {
                 }
                 marioChgPaper(RSTR(0x4C, str_PM_J_3B));
                 mario->field_0x42 = 3;
+#ifdef MUST_MATCH
                 jabaraSetCamParam(0.4f, 0.005f, 1.7f);
+#else
+                mario->unk148 = 0.4f;
+                mario->unk150.z = 0.005f;
+                mario->field_68 = 1.7f;
+                mario->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
+#endif
             } else if (jt == 2) {
                 if (!(marioGetPtr()->jabaraWork->flags & 0x20000)) {
                     marioGetPtr()->jabaraWork->flags |= 0x20000;
@@ -528,7 +545,14 @@ void mot_jabara(void) {
                 }
                 marioChgPaper(RSTR(0x54, str_PM_J_2B));
                 mario->field_0x42 = 2;
+#ifdef MUST_MATCH
                 jabaraSetCamParam(0.3f, 0.005f, 1.6f);
+#else
+                mario->unk148 = 0.3f;
+                mario->unk150.z = 0.005f;
+                mario->field_68 = 1.6f;
+                mario->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
+#endif
             }
         }
         marioChkGnd();

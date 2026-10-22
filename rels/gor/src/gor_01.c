@@ -2367,6 +2367,9 @@ EVT_BEGIN(evt_open_02_01_f2)
 EVT_END()
 
 static USER_FUNC(mario_keyoff_wait) {
+#ifdef MUST_MATCH
+    // A two-way switch on the negated test keeps retail's materialised compare (cntlzw/srwi.);
+    // the plain if (#else) is if-converted.
     switch (!marioChkKey()) {
     case 0:
         break;
@@ -2374,6 +2377,12 @@ static USER_FUNC(mario_keyoff_wait) {
         return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_YIELD;
+#else
+    if (marioChkKey()) {
+        return EVT_RETURN_YIELD;
+    }
+    return EVT_RETURN_BLOCK;
+#endif
 }
 
 EVT_BEGIN(evt_close_sub)

@@ -6725,3 +6725,76 @@ src/party, src/mario and src/unit were a parallel branch's (mm3) and not edited.
     `marioGetPtr();`, eff_kemuri effKemuri2Entry's zero/neg20/p7/one and effKemuri2Disp's p8/p12/n12p8; the
     jabaraSetCamParam/rollSetCamParam and yuugijou scale700/scale2000b inline names have no outside evidence.
   - win_mario's early pose-name selection looks like a second inlined copy of the tail's (needs an evidenced name).
+
+## Leftovers from #1125-#1127: language casts, searchUnder2, motionSfxId2, steering guards (2026-10-22, Claude Opus 5.5, n9-q-leftovers)
+
+Task (Isaac): the leads the last three chapters left. (1) The `(u32)gp->language` casts made redundant when #1127 retyped
+the field; (2) `searchUnder2` taking an `f32*`; (3) battle_enemy_item's six `(s32)` casts; (4) mot_hammer's 0x2B8 sound
+handle, named like mot_hip's if the evidence carries over; (5) the "unguarded steering seen outside any region" lists from
+#1126 and #1127, each guarded with a natural `#else` or removed if it is a no-op. Data layout was out of bounds.
+
+- **Method.** Untracked harness in build/lo/. try.py compiles each source for every object it builds (from `ninja -t
+  compdb`, so rel units like the three evt_kagemario copies resolve), then runs obj_equiv against objects saved before
+  the branch (`--nat` compiles without MUST_MATCH; `--alt` compiles a variant file in its place; `--fn` diffs one
+  function). alt.py writes variants, and users.py lists every unit that includes a header, following `.c` files
+  included into other units as well. ci.sh is tools/ci.py with its tools/tests step replaced: it runs the tests and
+  accepts only the 8 test_wave_launch environment errors (pyelftools comes from `uv run`). Each commit's files were
+  EQUIV and NAT OK one by one, header changes over every user (25 for mario_hit.h, 192 for mario.h). CI PASSed after
+  commits 2, 4 and 9. At the end, `obj_equiv --tree` over all 2,461 objects against the pre-branch snapshot showed no
+  difference. `build/G8MJ01/ok` was recreated, and fncast_lint and local_prototypes are clean.
+- **Counts** (`tools/cleanup_index.py`, 24f8d288 -> this branch): index **19.852 -> 19.879** per kLOC (13751 -> 13773
+  weighted). must_match 693 -> 728, raw_offset 190 -> 184, struct_ptr_cast 1459 -> 1457, prim_ptr_cast 1962 -> 1963.
+  The rise is the guards item 5 asked for (33 new regions) and battle_enemy_item's 6. Against it: the 4 regions
+  searchUnder2 removed, mot_hammer's 5 raw offsets and win_badge's 1.
+- **1. Language casts.** Only three were left, all in rels/: sys.c (2) and kpa.c (1). src/mario and src/party had
+  none. They are gone, and both objects are identical.
+- **2. searchUnder2(f32* out, ...).** mario_hit.c stores `*out = (hit != NULL) ? hitPos.y : -1.0f`. evt_mario's and
+  evt_party's callers already gave it a one-float home under MUST_MATCH; that is now the only form, so their four
+  regions and the `(Vec*)&` casts go. The locals keep their names (`vec`, `pos`) although they now hold the floor
+  height.
+- **3. battle_enemy_item.** The six `(s32)wp->alliances[...].attackDirection` casts are not no-ops. Retail
+  sign-extends the s8 before the call, and without the cast MWCC passes the byte unextended to BattleSamplingEnemy's
+  s8 parameter, so each function is one instruction short. They are guarded, with the plain argument under `#else`.
+  An `s32 attackDirection` prototype was tried as the declaration-level fix; it changes battle_event_cmd,
+  battle_seq_command and battle_item_data, so it was not kept.
+- **4. motionSfxId2.** mot_hammer stores -1 at 0x2B8 on entry and the `psndSFXOn_3D(0x162)` result in the swing. Later
+  it tests `(u32)` against 0xFFFFFFFF, calls psndSFXOff and stores -1 again. That is the pattern that named
+  `motionSfxId0/1`, so the 0x2B8 union gets `s32 motionSfxId2; // sound handle in mot_hammer (-1 when none)`, and
+  mot_hammer's five `M_S32(mario, 0x2B8)` sites use it. mot_stay's 0x2B8 counter and mot_jabara's zero store there are
+  not handles and stay raw.
+- **5. The steering lists.** #1126's chapter carries no such list. Its workers' reports were still in /tmp/mm3/*/
+  REPORT.txt and gave three items. #1127's per-worker notes are gone from build/mm4/, but its session transcripts give
+  the full lists, which add win_badge's selPtr, effKemuri2Main's re-read and effKemuriMain's `scale` to the ledger
+  summary. Each plain form was compiled first:
+  - **Plain now (no guard):** mot_slit's two `zero` locals. The thirteen `x == zero` tests become `!x`, and the two
+    `zero == x` tests become `x == 0.0f` (all-literal `== 0.0f` is 96 lines off). evt_nannpc nannpcMoveEntry's `zero`
+    becomes `if (!vlen)`.
+  - **Guarded, plain form under `#else`** (lines differing for the plain form in brackets):
+    - fadedrv z(): only the final `one *` multiply needs the local [13], so the early return and the first
+      projection take `1.0f` and `one` is block-local in the guarded return.
+    - windowdrv: `zero + ...`/`zero - ...` [703] and the two-statement `x4` [2].
+    - itemdrv: `height = 15.0f` [10-30; a single computed `y` 262].
+    - npcdrv: two `(s8)name[0] == 0` tests [2 each; retail `extsb.`], in mapdrv's form.
+    - evt_nannpc: the `offset` induction variable [18; pointer walk 122] and the discarded strcmp [53 without the
+      call], the latter omitted under `#else` (mario_balloon's precedent for discarded calls).
+    - mot_hammer hitEstimate: the `{ f32 p = ...; c = cos(p); }` locals [9]; two of the three join the existing
+      `five` regions.
+    - mot_ship: shipWakeUpdate's discarded marioGetPtr() together with the 0/1-flag ternary after it [318-454 for
+      the plain forms], and shipMove's doubled `sp0C = 0.0f` [153].
+    - eff_kemuri: effKemuri2Entry's constant copies [144], effKemuri2Main's re-read [29], effKemuriMain's `scale`
+      temps [24], effKemuri2Disp's p8/p12/n12p8 [20].
+    - win_badge: selPtr's matching arm is `(s32*)work->badgeSel + sel` (0x3E4 is badgeSel; the own-type cast keeps
+      retail's `work + sel*4` base), and the natural arm is `&work->badgeSel[sel]` [10].
+    - tik_00 mario_key_onoff_wait, gor_01/gor_03 mario_keyoff_wait: the `switch (!marioChkKey())`, as #1126's review
+      guarded mario.c's [8 for if/else and ternary].
+    - gon_03: `half = 0.5f`, block-local [the literal differs].
+    - jabaraSetCamParam, rollSetCamParam, scale700 and scale2000b (no outside evidence for the names): written out
+      at the calls the objects differ (the cam-param stores move their Vec template in .rodata; yuugijou 12 lines
+      each), so each inline and its calls are guarded, with the written-out code under `#else`.
+- **For a reviewer.** `motionSfxId2` continues the slot numbering of motionSfxId0/1, which is a real series (one
+  handle slot per offset). mot_slit's mixed `!x` and `x == 0.0f` spellings. The win_badge natural arm keeps a
+  three-use pointer local. mot_ship's guard includes the `b ? 0.3f : 0.6f` flag ternary beside the listed
+  marioGetPtr() call.
+- **Left.** Unguarded steering seen in passing that was on neither list: eff_levelup's `halfConst`/`yConst` constant
+  locals. The bare `marioGetPtr();` at the top of tik_00 mario_key_onoff_wait and of several mot_ship functions stays
+  unguarded (most likely unused-local initialisers in the original, not mid-function steering).

@@ -135,10 +135,14 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6, f32 float7) {
 	EffectEntry* entry = effEntry();
 	effKemuri2Data* data;
+#ifdef MUST_MATCH
+	// The four constants are copied into locals first (in this order); stored straight from the
+	// named constants (#else) the registers differ.
 	f32 zero;
 	f32 neg20;
 	f32 p7;
 	f32 one;
+#endif
 	f32 viewYaw;
 	f32 a2;
 	f32 sinVal;
@@ -163,6 +167,7 @@ EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 f
 	angle2 = float_6p2832_8041c714 * (f32)(s32)angle / float_360_8041c70c;
 	z = float_5_8041c718 + float5;
 	data->counter = 0;
+#ifdef MUST_MATCH
 	one = float_1_8041c6b0;
 	p7 = float_0p7_8041c71c;
 	neg20 = float_neg20_8041c720;
@@ -179,6 +184,20 @@ EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 f
 	data->alpha = 0xFF;
 	data->pulseScale = one;
 	data->scale = one;
+#else
+	data->dirX = sin(angle2);
+	data->dirZ = cos(angle2);
+	data->x = float3;
+	data->y = float4;
+	data->z = z;
+	data->speed = float_1_8041c6b0;
+	data->velY = float_0p7_8041c71c;
+	data->spinVel = float_neg20_8041c720;
+	data->spin = float_0_8041c6bc;
+	data->alpha = 0xFF;
+	data->pulseScale = float_1_8041c6b0;
+	data->scale = float_1_8041c6b0;
+#endif
 	return entry;
 }
 
@@ -210,12 +229,17 @@ void effKemuriMain(EffectEntry* effect) {
 		switch (type) {
 		case 0:
 			if ((u32)data->frame < 30U) {
+#ifdef MUST_MATCH
 				f32 scale;
 
 				scale = touchdown_scale[data->frame * 2];
 				data->scaleX = scale * float_0p0078125_8041c6f8;
 				scale = touchdown_scale[data->frame * 2 + 1];
 				data->scaleY = scale * float_0p0078125_8041c6f8;
+#else
+				data->scaleX = touchdown_scale[data->frame * 2] * float_0p0078125_8041c6f8;
+				data->scaleY = touchdown_scale[data->frame * 2 + 1] * float_0p0078125_8041c6f8;
+#endif
 			} else {
 				data->scaleX = float_1p5_8041c6fc;
 				data->scaleY = float_0p8_8041c6f0;
@@ -229,12 +253,17 @@ void effKemuriMain(EffectEntry* effect) {
 			break;
 		case 2:
 			if ((u32)data->frame < 30U) {
+#ifdef MUST_MATCH
 				f32 scale;
 
 				scale = heavy_scale[data->frame * 2];
 				data->scaleX = scale * float_0p0078125_8041c6f8;
 				scale = heavy_scale[data->frame * 2 + 1];
 				data->scaleY = scale * float_0p0078125_8041c6f8;
+#else
+				data->scaleX = heavy_scale[data->frame * 2] * float_0p0078125_8041c6f8;
+				data->scaleY = heavy_scale[data->frame * 2 + 1] * float_0p0078125_8041c6f8;
+#endif
 			} else {
 				data->scaleX = float_2_8041c704;
 				data->scaleY = float_1p2_8041c708;
@@ -266,8 +295,10 @@ static void effKemuri2Main(EffectEntry* effect) {
 	disp.y = data->y;
 	disp.z = data->z;
 	position = disp;
+#ifdef MUST_MATCH
 	/* The redundant re-read makes MWCC split data into r7/r31 as retail does. */
 	data = effect->userdata;
+#endif
 	angle = (f32)sin(float_3p1416_8041c6e0 * (f32)data->counter / float_30_8041c6e4);
 	data->counter++;
 	if (data->counter > 30) {
@@ -490,10 +521,12 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	Mtx outMtx;
 	Mtx tmpMtx;
 	s32 i;
+#ifdef MUST_MATCH
 	/* Names for the negSize source loads keep their volatile-FPR colouring. */
 	f32 p8;
 	f32 p12;
 	f32 n12p8;
+#endif
 
 	camera = camGetPtr(cameraId);
 
@@ -519,6 +552,7 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
+#ifdef MUST_MATCH
 	n12p8 = -float_12p8_8041c690;
 	p12 = float_12_8041c688;
 	p8 = float_8_8041c68c;
@@ -527,6 +561,12 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 		const f32 negSizeX = -p12;
 		const f32 negSizeY = -p8;
 		const f32 negSize2 = n12p8 * float_0p5_8041c6cc;
+#else
+	for (i = 0; i < 2; i++) {
+		const f32 negSizeX = -float_12_8041c688;
+		const f32 negSizeY = -float_8_8041c68c;
+		const f32 negSize2 = -float_12p8_8041c690 * float_0p5_8041c6cc;
+#endif
 
 		if ((data->heading > float_20_8041c694 && data->heading < float_160_8041c698) ||
 		    (data->heading > float_180_8041c69c && data->heading < float_340_8041c6a0)) {

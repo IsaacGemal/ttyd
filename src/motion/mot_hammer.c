@@ -431,7 +431,7 @@ void mot_hammer2(void) {
         mario->flags &= ~0x000F0000;
         mario->field_0x2B4 = 0;
         mario->currSubMotionId = 0;
-        M_S32(mario, 0x2B8) = -1;
+        mario->motionSfxId2 = -1;
     }
     switch (mario->currSubMotionId) {
     case 0:
@@ -478,7 +478,7 @@ void mot_hammer2(void) {
         marioPaperOn("p_kaiten_h");
         marioChgPaper("P_H_1C");
         marioPaperLightOff();
-        M_S32(mario, 0x2B8) = psndSFXOn_3D((const char*)0x162, &mario->position);
+        mario->motionSfxId2 = psndSFXOn_3D((const char*)0x162, &mario->position);
         mario->field_0x2B0 = float_0_8041a9a8;
         mario->poseTime = 0;
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], mario->field_0x2B0);
@@ -640,9 +640,9 @@ void mot_hammer2(void) {
         if (mario->buttonHeld & 0x200) {
             break;
         }
-        if ((u32)M_S32(mario, 0x2B8) != 0xFFFFFFFFu) {
-            psndSFXOff(M_S32(mario, 0x2B8));
-            M_S32(mario, 0x2B8) = -1;
+        if ((u32)mario->motionSfxId2 != 0xFFFFFFFF) {
+            psndSFXOff(mario->motionSfxId2);
+            mario->motionSfxId2 = -1;
         }
         m2 = marioGetPtr();
         m2->unk148 = float_0_8041a9a8;
@@ -861,7 +861,11 @@ HitEntry* hitEstimate(s32* type) {
     }
     sincosf(&sa, &ca, angle);
     boxY = mario->wPlayerCollisionBox.y;
+#ifdef MUST_MATCH
     { f32 p = 3.1415927f; c = cos(p); } // a float local: a bare literal makes MWCC pool a double and load it with lfd
+#else
+    c = cos(3.1415927f);
+#endif
     pos = mario->position;
     pos.y = 4.0f + (mario->position.y + boxY);
     query.targetPos = pos;
@@ -873,12 +877,13 @@ HitEntry* hitEstimate(s32* type) {
         return hit;
     }
 
-    { f32 p = 1.2217306f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
 #ifdef MUST_MATCH
+    { f32 p = 1.2217306f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
     { f32 five = 5.0f; // local keeps the 5.0f load after the stack load (target order)
     pos.x = mario->position.x + sa * five;
     pos.z = mario->position.z + ca * five; }
 #else
+    c = cos(1.2217306f);
     pos.x = mario->position.x + sa * 5.0f;
     pos.z = mario->position.z + ca * 5.0f;
 #endif
@@ -892,12 +897,13 @@ HitEntry* hitEstimate(s32* type) {
         return hit;
     }
 
-    { f32 p = 0.7853982f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
 #ifdef MUST_MATCH
+    { f32 p = 0.7853982f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
     { f32 five = 5.0f; // local keeps the 5.0f load after the stack load (target order)
     pos.x = mario->position.x + sa * five;
     pos.z = mario->position.z + ca * five; }
 #else
+    c = cos(0.7853982f);
     pos.x = mario->position.x + sa * 5.0f;
     pos.z = mario->position.z + ca * 5.0f;
 #endif

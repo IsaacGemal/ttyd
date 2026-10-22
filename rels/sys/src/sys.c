@@ -347,7 +347,7 @@ void display_func(CameraId cameraId, void* param) {
         GXLoadTexObj(&tex, GX_TEXMAP1);
         lightColor = getLightColor(entry->angle);
         GXSetChanMatColor(GX_COLOR0A0, (GXColor){ lightColor, lightColor, lightColor, 0xFF });
-        if ((u32)gp->language != 0) {
+        if (gp->language != 0) {
             PSMTXScale(mtx2, 0.8f, 0.8f, 0.8f);
         } else {
             PSMTXScale(mtx2, 1.0f, 1.0f, 1.0f);
@@ -369,7 +369,7 @@ void display_func(CameraId cameraId, void* param) {
             C_MTXLookAt(mtx5, &camPos, &up, &at);
         }
         PSMTXConcat(mtx4, mtx5, mtx4);
-        if ((u32)gp->language != 0) {
+        if (gp->language != 0) {
             PSMTXScale(mtx2, 0.5f, 0.5f, 0.5f);
         } else {
             PSMTXScale(mtx2, 1.0f, 1.0f, 1.0f);

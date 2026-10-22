@@ -59,6 +59,9 @@ PiantaParlorWork* yuwp;
 s32 yuuWindowEvt; // script window_open runs as a child event (the yuu counter sets it per mode)
 PiantaParlorWork yuugijouwork;
 
+#ifdef MUST_MATCH
+// Two inlines without outside evidence for their names; written out like the other rows (#else) the
+// object differs (12 lines each).
 static inline s32 scale700(u32 v) {
 	s32 r = (0x2BC - (s32)v) * 15 / 0x2BC;
 	return (r >= 0 ? r : 0);
@@ -68,6 +71,7 @@ static inline s32 scale2000b(u32 v) {
 	s32 q = ((s32)v - 0x12110) / 2000;
 	return (q >= 0 ? q : 0);
 }
+#endif
 
 // The rankMonte[1][1] element needs the assignment repeated in the true arm: with the plain ternary MWCC colours
 // yuwp r6/scaled r7 instead of the target's r7/r6. The helper form would be natural but it hoists the
@@ -108,11 +112,12 @@ void yuugijou_init(void) {
 	yuwp->rankScore[1][3] = 0x1B;
 	yuwp->rankScore[1][4] = 0x8A;
 
-	yuwp->rankMonte[1][0] = scale700(yuwp->rankScore[1][0]) + 1;
 #ifdef MUST_MATCH
+	yuwp->rankMonte[1][0] = scale700(yuwp->rankScore[1][0]) + 1;
 	// MUST_MATCH: the repeated assignment only shapes the register allocator (it CSEs to one quotient).
 	yuwp->rankMonte[1][1] = (scaled = (0x2BC - (s32)yuwp->rankScore[1][1]) * 15 / 0x2BC) >= 0 ? (scaled = (0x2BC - (s32)yuwp->rankScore[1][1]) * 15 / 0x2BC) : 0;
 #else
+	yuwp->rankMonte[1][0] = ((scaled = (0x2BC - (s32)yuwp->rankScore[1][0]) * 15 / 0x2BC) >= 0 ? scaled : 0) + 1;
 	yuwp->rankMonte[1][1] = ((scaled = (0x2BC - (s32)yuwp->rankScore[1][1]) * 15 / 0x2BC) >= 0 ? scaled : 0);
 #endif
 	yuwp->rankMonte[1][2] = ((scaled = (0x2BC - (s32)yuwp->rankScore[1][2]) * 15 / 0x2BC) >= 0 ? scaled : 0);
@@ -149,11 +154,19 @@ void yuugijou_init(void) {
 	yuwp->rankScore[3][3] = 0x1627E;
 	yuwp->rankScore[3][4] = 0x15950;
 
+#ifdef MUST_MATCH
 	yuwp->rankMonte[3][0] = scale2000b(yuwp->rankScore[3][0]) + 7;
 	yuwp->rankMonte[3][1] = scale2000b(yuwp->rankScore[3][1]) + 6;
 	yuwp->rankMonte[3][2] = scale2000b(yuwp->rankScore[3][2]) + 4;
 	yuwp->rankMonte[3][3] = scale2000b(yuwp->rankScore[3][3]) + 3;
 	yuwp->rankMonte[3][4] = scale2000b(yuwp->rankScore[3][4]) + 4;
+#else
+	yuwp->rankMonte[3][0] = ((scaled = ((s32)yuwp->rankScore[3][0] - 0x12110) / 2000) >= 0 ? scaled : 0) + 7;
+	yuwp->rankMonte[3][1] = ((scaled = ((s32)yuwp->rankScore[3][1] - 0x12110) / 2000) >= 0 ? scaled : 0) + 6;
+	yuwp->rankMonte[3][2] = ((scaled = ((s32)yuwp->rankScore[3][2] - 0x12110) / 2000) >= 0 ? scaled : 0) + 4;
+	yuwp->rankMonte[3][3] = ((scaled = ((s32)yuwp->rankScore[3][3] - 0x12110) / 2000) >= 0 ? scaled : 0) + 3;
+	yuwp->rankMonte[3][4] = ((scaled = ((s32)yuwp->rankScore[3][4] - 0x12110) / 2000) >= 0 ? scaled : 0) + 4;
+#endif
 }
 
 // The original splits the visibility test as `flag1 == 0 || flag2 == 0`; two separate early

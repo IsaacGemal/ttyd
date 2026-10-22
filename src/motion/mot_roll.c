@@ -197,7 +197,9 @@ BOOL marioRollCancel(void) {
     return TRUE;
 }
 
-// Camera follow parameters for the rolling pose.
+#ifdef MUST_MATCH
+// Camera follow parameters for the rolling pose. The name has no outside evidence; written out at the calls
+// (#else) the object differs.
 static inline void rollSetCamParam(f32 a, f32 b, f32 c) {
     MarioWork* m = marioGetPtr();
 
@@ -206,6 +208,7 @@ static inline void rollSetCamParam(f32 a, f32 b, f32 c) {
     m->field_68 = c;
     m->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
 }
+#endif
 
 void mot_roll_post(void) {
     MarioWork* mario = marioGetPtr();
@@ -677,7 +680,14 @@ void mot_roll(void) {
         if (mario->forceMoveTimer == 0) {
             mario->baseSpeed = 0.0f;
         }
+#ifdef MUST_MATCH
         rollSetCamParam(0.4f, 0.01f, 2.0f);
+#else
+        mario->unk148 = 0.4f;
+        mario->unk150.z = 0.01f;
+        mario->field_68 = 2.0f;
+        mario->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
+#endif
         marioGetPtr()->motRoll->unk8 = 0;
         marioGetPtr()->motRoll->state = 0;
         psndSFXOn_3D((char*)0x179, &mario->position);

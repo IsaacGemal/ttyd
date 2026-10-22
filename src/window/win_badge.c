@@ -128,7 +128,9 @@ void mario_change(WindowWork* work, s32 badgeId) {
 // 100%. Two shapes are needed to reproduce the original's register allocation/scheduling:
 //   - the condition is written inline (`itemDataTable[pouchHaveBadge(idx)].bp_cost`) so the `lwz`/`cmpw`
 //     land availableBP in r0 and bp_cost in r3 instead of r4/r0.
-//   - the sort key's 0x3E4 pointer is held in a named `selPtr`, which puts `sel` in r28 (not r27).
+//   - the sort key's pointer into badgeSel is held in a named `selPtr`, which puts `sel` in r28 (not r27);
+//     MUST_MATCH builds it as `(s32*)work->badgeSel + sel` (retail's `work + sel*4` base with the field
+//     offset on each load; `&work->badgeSel[sel]` folds the offset into the base, 10 lines).
 // The `void* arg0` copy is a scheduling aid only (see MUST_MATCH below): it materialises `work` into r3
 // before the `if`, so the `mr r3, r31` for winSortEntry is not sunk into the `lfs` delay slot.
 s32 winBadgeMain(WindowWork* work) {
@@ -215,7 +217,11 @@ s32 winBadgeMain(WindowWork* work) {
                     pouchRevisePartyParam();
                     mario_change(work, pouchHaveBadge(idx));
                 } else {
-                    s32* selPtr = (s32*)((u8*)work + 0x3E4) + sel;
+#ifdef MUST_MATCH
+                    s32* selPtr = (s32*)work->badgeSel + sel;
+#else
+                    s32* selPtr = &work->badgeSel[sel];
+#endif
                     s32 entryIdx = selPtr[0];
                     s32 idx = work->equipList[entryIdx].field_0x4;
                     if (work->equipList[entryIdx].field_0x0 != 0) {

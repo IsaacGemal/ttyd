@@ -484,14 +484,7 @@ USER_FUNC(evt_party_jump_pos) {
     f32 tmp, dy, ty, frames, tx, tz, d;
     s32 grounded;
     s32 msec, flag;
-#ifdef MUST_MATCH
-    // MUST_MATCH: the original's `Vec pos` (12 bytes at 0x8) overlaps MWCC's int<->float
-    // conversion temporary, which then lives at 0x10; a full Vec pushes that temp to 0x18.
-    // searchUnder2 only writes out->x, so a one-float home is enough to reproduce the frame.
     f32 pos;
-#else
-    Vec pos;
-#endif
 
     if (isFirstCall) {
         PartyEntry* p;
@@ -537,11 +530,7 @@ USER_FUNC(evt_party_jump_pos) {
                 dy = d;
             } else if (dy >= float_0_8041bb1c) {
                 dy += float_37_8041bb20;
-#ifdef MUST_MATCH
-            } else if (searchUnder2((Vec*)&pos, tx, ty, tz)) {
-#else
             } else if (searchUnder2(&pos, tx, ty, tz)) {
-#endif
                 dy = d;
             }
             dy = (dy + dy) / (tmp * tmp - tmp);

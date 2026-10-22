@@ -492,6 +492,9 @@ USER_FUNC(starmaniac_snd_on) {
 
 USER_FUNC(mario_key_onoff_wait) {
     marioGetPtr();
+#ifdef MUST_MATCH
+    // A two-way switch on the negated test keeps retail's materialised compare (cntlzw/srwi.);
+    // the plain if (#else) is if-converted.
     switch (!marioChkKey()) {
     case 0:
         break;
@@ -499,6 +502,12 @@ USER_FUNC(mario_key_onoff_wait) {
         return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_DONE;
+#else
+    if (marioChkKey()) {
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+#endif
 }
 
 

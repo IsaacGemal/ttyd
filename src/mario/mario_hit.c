@@ -406,7 +406,7 @@ HitEntry* marioSearchUnder(void) {
     return hit;
 }
 
-HitEntry* searchUnder2(Vec* out, f32 x, f32 y, f32 z) {
+HitEntry* searchUnder2(f32* out, f32 x, f32 y, f32 z) {
     Vec pos;
     Vec dir;
     Vec hitPos;
@@ -419,7 +419,7 @@ HitEntry* searchUnder2(Vec* out, f32 x, f32 y, f32 z) {
     dir = (Vec){ 0.0f, -1.0f, 0.0f };
     dist = 1037.0f;
     hit = marioHitCheckVec(&pos, &dir, &hitPos, &hitNormal, &dist);
-    out->x = (hit != NULL) ? hitPos.y : -1.0f;
+    *out = (hit != NULL) ? hitPos.y : -1.0f;
     return hit;
 }
 
