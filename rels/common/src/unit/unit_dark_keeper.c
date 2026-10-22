@@ -339,11 +339,9 @@ static BattleWeapon weapon_monban_throw_attack = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 pose_sound_timing_table[10] = {
-    (u32)"S_2", 0x3F2AAAAB, 0x00000000, (u32)"SFX_ENM_MONBAN_WAIT1",
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000001,
+static BtlUnitPoseSound pose_sound_timing_table[2] = {
+    { "S_2", 0.6666667f, NULL, "SFX_ENM_MONBAN_WAIT1", 0, 1 },
+    { NULL, 0.0f, NULL, NULL, 0, 1 },
 };
 
 static EVT_BEGIN(init_event)

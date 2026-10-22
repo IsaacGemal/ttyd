@@ -51,6 +51,7 @@
 #include "statuswindow.h"
 #include "system.h"
 #include "window/win_main.h"
+#include "driver/hitdrv.h"
 
 #pragma pool_data off
 
@@ -5064,21 +5065,20 @@ EVT_BEGIN(kurihakase_after3minutes)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 hitDmgRetPoints[52] = {
-    (u32)"A_ground_01", 0x43858000, 0x00000000, 0x43150000,
-    (u32)"dokan", 0xC3840000, 0x00000000, 0x43A30000,
-    (u32)"A_ground_03", 0xC3840000, 0x00000000, 0x43A30000,
-    (u32)"Ship_Change01", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"Ship_Change02", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"A_ground_06", 0x43858000, 0x00000000, 0x43150000,
-    (u32)"A_ground_07", 0x43858000, 0x00000000, 0x43150000,
-    (u32)"A_ground_08", 0x43858000, 0x00000000, 0x43150000,
-    (u32)"A_ground_02", 0x437C0000, 0xC26C0000, 0xC3948000,
-    (u32)"A_ground_09", 0x437C0000, 0xC26C0000, 0xC3948000,
-    (u32)"A_ground_10", 0x437C0000, 0xC26C0000, 0xC3948000,
-    (u32)"S_i04_kabe_01A1", 0x00000000, 0xC47A0000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn hitDmgRetPoints[13] = {
+    { "A_ground_01", { 267.0f, 0.0f, 149.0f } },
+    { "dokan", { -264.0f, 0.0f, 326.0f } },
+    { "A_ground_03", { -264.0f, 0.0f, 326.0f } },
+    { "Ship_Change01", { 0.0f, -1000.0f, 0.0f } },
+    { "Ship_Change02", { 0.0f, -1000.0f, 0.0f } },
+    { "A_ground_06", { 267.0f, 0.0f, 149.0f } },
+    { "A_ground_07", { 267.0f, 0.0f, 149.0f } },
+    { "A_ground_08", { 267.0f, 0.0f, 149.0f } },
+    { "A_ground_02", { 252.0f, -59.0f, -297.0f } },
+    { "A_ground_09", { 252.0f, -59.0f, -297.0f } },
+    { "A_ground_10", { 252.0f, -59.0f, -297.0f } },
+    { "S_i04_kabe_01A1", { 0.0f, -1000.0f, 0.0f } },
+    { NULL, { 0.0f, 0.0f, 0.0f } },
 };
 
 static EVT_BEGIN(gor_goki1_urouro)

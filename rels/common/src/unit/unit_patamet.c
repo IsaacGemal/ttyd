@@ -258,18 +258,15 @@ static BattleUnitKindPart parts_pata[1] = {
     },
 };
 
-// TODO: type
-static u32 pose_sound_timing_table[40] = {
-    (u32)"PMT_S_1", 0x3C23D70A, 0x00000000, (u32)"SFX_ENM_PATAMET_WAIT1",
-    0x00000001, (u32)"PMT_W_1", 0x3C23D70A, 0x00000000,
-    (u32)"SFX_ENM_PATAMET_WAIT1", 0x00000001, (u32)"PMT_R_1", 0x3C23D70A,
-    0x00000000, (u32)"SFX_ENM_PATAMET_WAIT1", 0x00000001, (u32)"PMT_A_1",
-    0x3C23D70A, 0x00000000, (u32)"SFX_ENM_PATAMET_WAIT1", 0x00000001,
-    (u32)"PMT_K_1", 0x3C23D70A, 0x00000000, (u32)"SFX_ENM_PATAMET_WAIT1",
-    0x00000001, (u32)"PMT_N_1", 0x3C23D70A, 0x00000000,
-    (u32)"SFX_ENM_PATAMET_WAIT1", 0x00000001, (u32)"PMT_X_1", 0x3C23D70A,
-    0x00000000, (u32)"SFX_ENM_PATAMET_WAIT1", 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000001,
+static BtlUnitPoseSound pose_sound_timing_table[8] = {
+    { "PMT_S_1", 0.01f, NULL, "SFX_ENM_PATAMET_WAIT1", 0, 1 },
+    { "PMT_W_1", 0.01f, NULL, "SFX_ENM_PATAMET_WAIT1", 0, 1 },
+    { "PMT_R_1", 0.01f, NULL, "SFX_ENM_PATAMET_WAIT1", 0, 1 },
+    { "PMT_A_1", 0.01f, NULL, "SFX_ENM_PATAMET_WAIT1", 0, 1 },
+    { "PMT_K_1", 0.01f, NULL, "SFX_ENM_PATAMET_WAIT1", 0, 1 },
+    { "PMT_N_1", 0.01f, NULL, "SFX_ENM_PATAMET_WAIT1", 0, 1 },
+    { "PMT_X_1", 0.01f, NULL, "SFX_ENM_PATAMET_WAIT1", 0, 1 },
+    { NULL, 0.0f, NULL, NULL, 0, 1 },
 };
 
 static EVT_BEGIN(init_event_pata)

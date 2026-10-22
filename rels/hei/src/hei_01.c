@@ -619,11 +619,10 @@ static NpcSetupInfo npcEnt[3] = {
     {NULL},
 };
 
-// TODO: type
-static u32 hitDmgRetPoints[12] = {
-    (u32)"mod_00", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_01", 0x00000000, 0xC47A0000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn hitDmgRetPoints[3] = {
+    { "mod_00", { 0.0f, -1000.0f, 0.0f } },
+    { "mod_01", { 0.0f, -1000.0f, 0.0f } },
+    { NULL, { 0.0f, 0.0f, 0.0f } },
 };
 
 static EVT_BEGIN(peach_mail)
@@ -782,4 +781,5 @@ EVT_BEGIN(hei_01_init_evt)
 EVT_END()
 
 #include "rel/common/set_dir.h"
+#include "driver/hitdrv.h"
 

@@ -643,20 +643,16 @@ static BattleDataEntry data_table[3] = {
     { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_sound_timing_table[45] = {
-    (u32)"S_3A", 0x3C23D70A, 0x00000000, (u32)"SFX_ENM_HEAVYB_WAIT3",
-    0x00000001, (u32)"S_3A", 0x3E888889, 0x00000000,
-    (u32)"SFX_ENM_HEAVYB_WAIT3", 0x00000001, (u32)"S_3A", 0x3F088889,
-    0x00000000, (u32)"SFX_ENM_HEAVYB_WAIT3", 0x00000001, (u32)"S_3A",
-    0x3F4CCCCD, 0x00000000, (u32)"SFX_ENM_HEAVYB_WAIT3", 0x00000001,
-    (u32)"S_4A", 0x3C23D70A, 0x00000000, (u32)"SFX_ENM_HEAVYB_WAIT3",
-    0x00000001, (u32)"S_4A", 0x3E2AAAAB, 0x00000000,
-    (u32)"SFX_ENM_HEAVYB_WAIT3", 0x00000001, (u32)"S_4A", 0x3EAAAAAB,
-    0x00000000, (u32)"SFX_ENM_HEAVYB_WAIT3", 0x00000001, (u32)"S_4A",
-    0x3F000000, 0x00000000, (u32)"SFX_ENM_HEAVYB_WAIT3", 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000001,
+static BtlUnitPoseSound pose_sound_timing_table[9] = {
+    { "S_3A", 0.01f, NULL, "SFX_ENM_HEAVYB_WAIT3", 0, 1 },
+    { "S_3A", 0.26666668f, NULL, "SFX_ENM_HEAVYB_WAIT3", 0, 1 },
+    { "S_3A", 0.53333336f, NULL, "SFX_ENM_HEAVYB_WAIT3", 0, 1 },
+    { "S_3A", 0.8f, NULL, "SFX_ENM_HEAVYB_WAIT3", 0, 1 },
+    { "S_4A", 0.01f, NULL, "SFX_ENM_HEAVYB_WAIT3", 0, 1 },
+    { "S_4A", 0.16666667f, NULL, "SFX_ENM_HEAVYB_WAIT3", 0, 1 },
+    { "S_4A", 0.33333334f, NULL, "SFX_ENM_HEAVYB_WAIT3", 0, 1 },
+    { "S_4A", 0.5f, NULL, "SFX_ENM_HEAVYB_WAIT3", 0, 1 },
+    { NULL, 0.0f, NULL, NULL, 0, 1 },
 };
 
 static BattleUnitKindPart parts[2] = {

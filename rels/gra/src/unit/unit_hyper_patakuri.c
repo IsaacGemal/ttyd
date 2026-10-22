@@ -332,17 +332,14 @@ static BattleDataEntry data_table_patakuri[3] = {
     { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_sound_timing_table[35] = {
-    (u32)"PTK_S_1", 0x3C23D70A, 0x00000000, (u32)"SFX_ENM_PATAKURI_WAIT1",
-    0x00000001, (u32)"PTK_W_1", 0x3C23D70A, 0x00000000,
-    (u32)"SFX_ENM_PATAKURI_MOVE1", 0x00000001, (u32)"PTK_R_1", 0x3C23D70A,
-    0x00000000, (u32)"SFX_ENM_PATAKURI_MOVE1", 0x00000001, (u32)"PTK_K_1",
-    0x3C23D70A, 0x00000000, (u32)"SFX_ENM_PATAKURI_WAIT1", 0x00000001,
-    (u32)"PTK_N_1", 0x3C23D70A, 0x00000000, (u32)"SFX_ENM_PATAKURI_WAIT1",
-    0x00000001, (u32)"PTK_I_1", 0x3C23D70A, 0x00000000,
-    (u32)"SFX_ENM_PATAKURI_WAIT1", 0x00000001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000001,
+static BtlUnitPoseSound pose_sound_timing_table[7] = {
+    { "PTK_S_1", 0.01f, NULL, "SFX_ENM_PATAKURI_WAIT1", 0, 1 },
+    { "PTK_W_1", 0.01f, NULL, "SFX_ENM_PATAKURI_MOVE1", 0, 1 },
+    { "PTK_R_1", 0.01f, NULL, "SFX_ENM_PATAKURI_MOVE1", 0, 1 },
+    { "PTK_K_1", 0.01f, NULL, "SFX_ENM_PATAKURI_WAIT1", 0, 1 },
+    { "PTK_N_1", 0.01f, NULL, "SFX_ENM_PATAKURI_WAIT1", 0, 1 },
+    { "PTK_I_1", 0.01f, NULL, "SFX_ENM_PATAKURI_WAIT1", 0, 1 },
+    { NULL, 0.0f, NULL, NULL, 0, 1 },
 };
 
 static EVT_BEGIN(init_event_patakuri)

@@ -36,6 +36,7 @@
 #include "system.h"
 #include "math_ext.h"
 #include "driver/mapdrv.h"
+#include "driver/hitdrv.h"
 
 // Data objects defined later in this file or in other units, declared before their first use.
 extern const Vec vec3_muj_0000e4cc;
@@ -3583,16 +3584,15 @@ EVT_BEGIN(mony_peton_boarding)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 hitDmgRetPoints[32] = {
-    (u32)"A_yuka01", 0x44876000, 0x420C0000, 0xC4388000,
-    (u32)"A_yuka06", 0x44118000, 0x420C0000, 0xC492A000,
-    (u32)"A_yuka03", 0x44876000, 0x420C0000, 0xC4388000,
-    (u32)"A_yuka04", 0x44876000, 0x420C0000, 0xC4388000,
-    (u32)"A_yuka02", 0x449B0000, 0x41600000, 0x42200000,
-    (u32)"A_yuka05", 0x449B0000, 0x41600000, 0x42200000,
-    (u32)"A_hasi_hon", 0x44830000, 0x41C00000, 0xC3D38000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn hitDmgRetPoints[8] = {
+    { "A_yuka01", { 1083.0f, 35.0f, -738.0f } },
+    { "A_yuka06", { 582.0f, 35.0f, -1173.0f } },
+    { "A_yuka03", { 1083.0f, 35.0f, -738.0f } },
+    { "A_yuka04", { 1083.0f, 35.0f, -738.0f } },
+    { "A_yuka02", { 1240.0f, 14.0f, 40.0f } },
+    { "A_yuka05", { 1240.0f, 14.0f, 40.0f } },
+    { "A_hasi_hon", { 1048.0f, 24.0f, -423.0f } },
+    { NULL, { 0.0f, 0.0f, 0.0f } },
 };
 
 EVT_BEGIN(muj_00_init_evt)

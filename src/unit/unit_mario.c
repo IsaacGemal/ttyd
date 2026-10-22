@@ -41,7 +41,7 @@ s32 mario_appeal_event[30];
 static s32 attack_audience_event[15];
 s32 btlataudevtMarioJump[237];
 s32 btlataudevtMarioHammer[356];
-static u32 pose_sound_timing_table[10];
+static BtlUnitPoseSound pose_sound_timing_table[2];
 static s32 damage_event[10];
 static s32 attack_event[2];
 static s32 wait_event[6];
@@ -254,7 +254,7 @@ s32 _get_local_frame(EventEntry* event, BOOL isFirstCall) {
 }
 
 
-s32 mario_pinch_pose_sound_callback(BattleUnit* unit) {
+s32 mario_pinch_pose_sound_callback(BattleUnit* unit, BtlUnitPoseSound* entry, void* ps) {
     s32 result;
     if (unit->work[8] & 1) {
         result = BtlUnit_snd_se(unit, "SFX_VOICE_MARIO_RELIEF2", 0xF1194D80, 0);
@@ -667,11 +667,9 @@ EVT_BEGIN(btlataudevtMarioHammer)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 pose_sound_timing_table[10] = {
-    (u32)"M_S_3", 0x3E800000, (u32)mario_pinch_pose_sound_callback, 0x00000000,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000001,
+static BtlUnitPoseSound pose_sound_timing_table[2] = {
+    { "M_S_3", 0.25f, mario_pinch_pose_sound_callback, NULL, 0, 1 },
+    { NULL, 0.0f, NULL, NULL, 0, 1 },
 };
 
 static EVT_BEGIN(damage_event)
