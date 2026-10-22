@@ -29,28 +29,6 @@
 s32 DoorFLAG;
 s32 door_mapflag;
 
-typedef struct DoorParam {
-    s32 field_00;    // 0x00
-    s32 field_04;    // 0x04
-    const char* field_08; // 0x08
-    s32 field_0C;    // 0x0C
-    const char* field_10; // 0x10
-    s32 field_14;    // 0x14
-    s32 field_18;    // 0x18
-    s32 field_1C;    // 0x1C
-    s32 field_20;    // 0x20
-    s32 field_24;    // 0x24
-    s32 field_28;    // 0x28
-    s32 field_2C;    // 0x2C
-    s32 field_30;    // 0x30
-    char** field_34; // 0x34
-    s32 field_38;    // 0x38
-    char** field_3C; // 0x3C
-    void** field_40; // 0x40
-    char** field_44; // 0x44
-    char** field_48; // 0x48
-} DoorParam;
-
 typedef struct DoorWork {
     DoorParam* param; // 0x00
     Vec in;           // 0x04
@@ -255,7 +233,7 @@ USER_FUNC(outside_group) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
-	evtSetValue(event, args[1], work->param->field_24);
+	evtSetValue(event, args[1], (s32)work->param->field_24);
 	return EVT_RETURN_DONE;
 }
 
@@ -264,7 +242,7 @@ USER_FUNC(door_group) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
-	evtSetValue(event, args[1], work->param->field_28);
+	evtSetValue(event, args[1], (s32)work->param->field_28);
 	return EVT_RETURN_DONE;
 }
 
@@ -273,8 +251,8 @@ USER_FUNC(inside_group) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
-	evtSetValue(event, args[1], work->param->field_2C);
-	evtSetValue(event, args[2], work->param->field_30);
+	evtSetValue(event, args[1], (s32)work->param->field_2C);
+	evtSetValue(event, args[2], (s32)work->param->field_30);
 	return EVT_RETURN_DONE;
 }
 
@@ -284,7 +262,7 @@ USER_FUNC(init_inside_group) {
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
 	evtSetValue(event, args[1], (s32)work->param->field_34);
-	evtSetValue(event, args[2], work->param->field_38);
+	evtSetValue(event, args[2], (s32)work->param->field_38);
 	return EVT_RETURN_DONE;
 }
 
@@ -293,10 +271,10 @@ USER_FUNC(animation) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
-	evtSetValue(event, args[1], work->param->field_14);
-	evtSetValue(event, args[2], work->param->field_18);
-	evtSetValue(event, args[3], work->param->field_1C);
-	evtSetValue(event, args[4], work->param->field_20);
+	evtSetValue(event, args[1], (s32)work->param->field_14);
+	evtSetValue(event, args[2], (s32)work->param->field_18);
+	evtSetValue(event, args[3], (s32)work->param->field_1C);
+	evtSetValue(event, args[4], (s32)work->param->field_20);
 	return EVT_RETURN_DONE;
 }
 
@@ -310,7 +288,7 @@ USER_FUNC(npc_dark) {
 	NpcEntry* npc;
 	MapObjectEntry* mobj;
 	ItemEntry* item;
-	char** list;
+	const char** list;
 	s32 i;
 
 	mario = marioGetPtr();
@@ -367,7 +345,7 @@ USER_FUNC(npc_light) {
 	NpcEntry* npc;
 	MapObjectEntry* mobj;
 	ItemEntry* item;
-	char** list;
+	const char** list;
 	s32 i;
 
 	mario = marioGetPtr();
@@ -419,10 +397,10 @@ USER_FUNC(get_noclip_map) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 	s32 index = evtGetValue(event, args[1]);
-	void** list = work->param->field_40;
+	const char** list = work->param->field_40;
 
 	if (list != NULL) {
-		void* value = list[index];
+		const char* value = list[index];
 		if (value != NULL) {
 			evtSetValue(event, args[2], (s32)value);
 			return EVT_RETURN_DONE;

@@ -1375,18 +1375,36 @@ EVT_BEGIN(chief_pig_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 kino_dt[38] = {
-    0x000000B0, 0x437A0000, 0x41800000, 0xC3960000,
-    0x0000000A, 0x43D78000, 0x41800000, 0xC3430000,
-    0x43C68000, 0x00000000, 0xC3280000, 0x43070000,
-    0x42F40000, 0xC32B0000, 0x43B70000, 0x42380000,
-    0xC3640000, 0xC2480000, 0x43AC8000, 0x00000000,
-    0xC3500000, (u32)"宿店員", (u32)"usugurayado_00", (u32)"usugurayado_01",
-    (u32)"usugurayado_02", (u32)"usugurayado_03", (u32)"usugurayado_04", (u32)"usugurayado_05",
-    (u32)"usugurayado_06", (u32)"usugurayado_07", (u32)"usugurayado_08", (u32)"usugurayado_09",
-    (u32)"usugurayado_10", (u32)"usugurayado_11", (u32)"usugurayado_12", (u32)"usugurayado_13",
-    0x00000000, 0x00000000,
+static KinopioData kino_dt = {
+    176,     // field_0
+    250.0f,  // field_4
+    16.0f,   // field_8
+    -300.0f, // field_C
+    10,      // ryoukin
+    431.0f,  // bedX
+    16.0f,   // bedY
+    -195.0f, // bedZ
+    397.0f,  // bedsideX
+    0.0f,    // bedsideY
+    -168.0f, // bedsideZ
+    135.0f,  // camX
+    122.0f,  // camY
+    -171.0f, // camZ
+    366.0f,  // camX2
+    46.0f,   // camY2
+    -228.0f, // camZ2
+    -50.0f,  // beddeg
+    345.0f,  // npctalkX
+    0.0f,    // npctalkY
+    -208.0f, // npctalkZ
+    "宿店員",   // npcname
+    { // msgs
+        "usugurayado_00", "usugurayado_01", "usugurayado_02", "usugurayado_03", "usugurayado_04",
+        "usugurayado_05", "usugurayado_06", "usugurayado_07", "usugurayado_08", "usugurayado_09",
+        "usugurayado_10", "usugurayado_11", "usugurayado_12", "usugurayado_13",
+    },
+    NULL,    // to_bed_evt
+    NULL,    // from_bed_evt
 };
 
 static const char* yado_npc[2] = {
@@ -3251,7 +3269,7 @@ EVT_BEGIN(usu_00_init_evt)
         CALL(evt_run_case_evt, 9, 1, STRING("A_ie3door"), 0, PTR(door_ie3_koopa_evt), 0)
     END_IF
     IF_INT_EQUAL(GF(1), 0)
-        CALL(evt_kinopio_setup, PTR(kino_dt))
+        CALL(evt_kinopio_setup, PTR(&kino_dt))
     END_IF
     CALL(evt_mapobj_flag_onoff, 1, 0, STRING("ki1"), 2)
     CALL(evt_mapobj_flag_onoff, 1, 0, STRING("ki2"), 2)

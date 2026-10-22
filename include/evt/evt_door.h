@@ -9,6 +9,29 @@ USER_FUNC(door_entry);
 void door_dark_flag_sub(s32 flag, const char** npcs, const char** mobjs, const char** items);
 void door_position_sub(s32 mode, const char* mapName, const char* hitIn, const char* hitOut, Vec* in, Vec* out, s32 flag);
 
+// A shop's or house's door, handed to the evt_door.c door scripts as their DoorWork's param
+typedef struct DoorParam {
+    s32 field_00;         // 0x00
+    s32 field_04;         // 0x04
+    const char* field_08; // 0x08
+    s32 field_0C;         // 0x0C
+    const char* field_10; // 0x10
+    const char* field_14; // 0x14
+    const char* field_18; // 0x18
+    const char* field_1C; // 0x1C
+    const char* field_20; // 0x20
+    const char* field_24; // 0x24
+    const char* field_28; // 0x28
+    const char* field_2C; // 0x2C
+    const char* field_30; // 0x30
+    const char* field_34; // 0x34
+    const char* field_38; // 0x38
+    const char** field_3C; // 0x3C, npcs
+    const char** field_40; // 0x40, get_noclip_map's list
+    const char** field_44; // 0x44, mobjs
+    const char** field_48; // 0x48, items
+} DoorParam;
+
 // A map's door, read by evt_door_entry and evt_door_param
 typedef struct DoorEntry {
     s32 flags;                    // 0x00 bit 0: npcNames hidden until the door is entered

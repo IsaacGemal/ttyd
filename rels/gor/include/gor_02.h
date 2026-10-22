@@ -3,7 +3,7 @@
 #include "evt/evt_cmd.h"
 #include "memory.h"
 
-typedef struct {
+typedef struct FollowPath {
     s32 unk0;
     s32* ptr;
     s32 count;

@@ -382,26 +382,52 @@ const char* yado_map[2] = {
     "S_yad_mae", NULL,
 };
 
-// Real type is DoorParam (local to src/event/evt_door.c, not in include/).
-static u32 yado_data[19] = {
-    0x00000001, 0x00000009, (u32)"A_yad_doa01", 0x00000009,
-    (u32)"A_yad_in_doa", (u32)"S_yado_open", (u32)"S_yado_doa_open", (u32)"S_yado_close",
-    (u32)"S_yado_doa_close", (u32)"S_yad_mae", (u32)"S_yad_doa01", (u32)"S_yado_in",
-    (u32)"A_yado_in", (u32)"S_yado_in", (u32)"A_yado_in", (u32)&yado_npc,
-    (u32)&yado_map, 0x00000000, 0x00000000,
+static DoorParam yado_data = {
+    1,                  // field_00
+    9,                  // field_04
+    "A_yad_doa01",      // field_08
+    9,                  // field_0C
+    "A_yad_in_doa",     // field_10
+    "S_yado_open",      // field_14
+    "S_yado_doa_open",  // field_18
+    "S_yado_close",     // field_1C
+    "S_yado_doa_close", // field_20
+    "S_yad_mae",        // field_24
+    "S_yad_doa01",      // field_28
+    "S_yado_in",        // field_2C
+    "A_yado_in",        // field_30
+    "S_yado_in",        // field_34
+    "A_yado_in",        // field_38
+    yado_npc,           // field_3C
+    yado_map,           // field_40
+    NULL,               // field_44
+    NULL,               // field_48
 };
 
 static const char* mise_npc[2] = {
     "店員", NULL,
 };
 
-// Real type is DoorParam (local to src/event/evt_door.c, not in include/).
-static u32 mise_data[19] = {
-    0x00000001, 0x00000009, (u32)"A_mise_doa", 0x00000009,
-    (u32)"A_mise_in_doa", (u32)"S_mise_open", (u32)"S_mise_doa_open", (u32)"S_mise_close",
-    (u32)"S_mise_doa_close", (u32)"S_mise_mae", (u32)"S_mise_doa", (u32)"S_mise_in",
-    (u32)"A_mise_in", (u32)"S_mise_in", (u32)"A_mise_in", (u32)&mise_npc,
-    0x00000000, 0x00000000, 0x00000000,
+static DoorParam mise_data = {
+    1,                  // field_00
+    9,                  // field_04
+    "A_mise_doa",       // field_08
+    9,                  // field_0C
+    "A_mise_in_doa",    // field_10
+    "S_mise_open",      // field_14
+    "S_mise_doa_open",  // field_18
+    "S_mise_close",     // field_1C
+    "S_mise_doa_close", // field_20
+    "S_mise_mae",       // field_24
+    "S_mise_doa",       // field_28
+    "S_mise_in",        // field_2C
+    "A_mise_in",        // field_30
+    "S_mise_in",        // field_34
+    "A_mise_in",        // field_38
+    mise_npc,           // field_3C
+    NULL,               // field_40
+    NULL,               // field_44
+    NULL,               // field_48
 };
 
 static const char* ie_npc[2] = {
@@ -412,13 +438,26 @@ static const char* ie_map[2] = {
     "S_ie_mae", NULL,
 };
 
-// Real type is DoorParam (local to src/event/evt_door.c, not in include/).
-static u32 ie_data[19] = {
-    0x00000001, 0x00000009, (u32)"A_ie_doa", 0x00000009,
-    (u32)"A_ie_in_doa", (u32)"S_ie_open", (u32)"S_ie_doa_open", (u32)"S_ie_close",
-    (u32)"S_ie_doa_close", (u32)"S_ie_mae", (u32)"S_ie_doa", (u32)"S_ie_in",
-    (u32)"A_ie_in", (u32)"S_ie_in", (u32)"A_ie_in", (u32)&ie_npc,
-    (u32)&ie_map, 0x00000000, 0x00000000,
+static DoorParam ie_data = {
+    1,                // field_00
+    9,                // field_04
+    "A_ie_doa",       // field_08
+    9,                // field_0C
+    "A_ie_in_doa",    // field_10
+    "S_ie_open",      // field_14
+    "S_ie_doa_open",  // field_18
+    "S_ie_close",     // field_1C
+    "S_ie_doa_close", // field_20
+    "S_ie_mae",       // field_24
+    "S_ie_doa",       // field_28
+    "S_ie_in",        // field_2C
+    "A_ie_in",        // field_30
+    "S_ie_in",        // field_34
+    "A_ie_in",        // field_38
+    ie_npc,           // field_3C
+    ie_map,           // field_40
+    NULL,             // field_44
+    NULL,             // field_48
 };
 
 static char* obj_list[12] = {
@@ -457,17 +496,35 @@ static char* shopper_data[38] = {
 };
 
 // Real type is KinopioData (local to src/event/evt_kinopio.c, not in include/).
-static u32 kino_dt[38] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000005, 0xC3868000, 0x42240000, 0xC3800000,
-    0xC3860000, 0x41C80000, 0xC35C0000, 0xC3F78000,
-    0x43630000, 0xC2600000, 0xC3A38000, 0x42B40000,
-    0xC3610000, 0xC1F00000, 0xC3A50000, 0x41C80000,
-    0xC3340000, (u32)"宿店員", (u32)"yado_00", (u32)"yado_01",
-    (u32)"yado_02", (u32)"yado_03", (u32)"yado_04", (u32)"yado_05",
-    (u32)"yado_06", (u32)"yado_07", (u32)"yado_08", (u32)"yado_09",
-    (u32)"yado_10", (u32)"yado_11", (u32)"yado_12", (u32)"yado_13",
-    0x00000000, 0x00000000,
+static KinopioData kino_dt = {
+    0,       // field_0
+    0.0f,    // field_4
+    0.0f,    // field_8
+    0.0f,    // field_C
+    5,       // ryoukin
+    -269.0f, // bedX
+    41.0f,   // bedY
+    -256.0f, // bedZ
+    -268.0f, // bedsideX
+    25.0f,   // bedsideY
+    -220.0f, // bedsideZ
+    -495.0f, // camX
+    227.0f,  // camY
+    -56.0f,  // camZ
+    -327.0f, // camX2
+    90.0f,   // camY2
+    -225.0f, // camZ2
+    -30.0f,  // beddeg
+    -330.0f, // npctalkX
+    25.0f,   // npctalkY
+    -180.0f, // npctalkZ
+    "宿店員",   // npcname
+    { // msgs
+        "yado_00", "yado_01", "yado_02", "yado_03", "yado_04", "yado_05", "yado_06", "yado_07", "yado_08",
+        "yado_09", "yado_10", "yado_11", "yado_12", "yado_13",
+    },
+    NULL,    // to_bed_evt
+    NULL,    // from_bed_evt
 };
 
 EVT_BEGIN(first_time_camera)
@@ -913,17 +970,17 @@ EVT_BEGIN(nok_00_init_evt)
         SET_VALUE(GSWF(1624), 1)
     END_IF
     CALL(evt_map_playanim, STRING("S_kawa"), 1, 0)
-    SET_VALUE(LW(0), PTR(yado_data))
+    SET_VALUE(LW(0), PTR(&yado_data))
     CALL_CHILD(evt_door_setup)
-    SET_VALUE(LW(0), PTR(mise_data))
+    SET_VALUE(LW(0), PTR(&mise_data))
     CALL_CHILD(evt_door_setup)
-    SET_VALUE(LW(0), PTR(ie_data))
+    SET_VALUE(LW(0), PTR(&ie_data))
     CALL_CHILD(evt_door_setup)
     IF_INT_NOT_EQUAL(GSW(0), 116)
         CALL(evt_mobj_save_blk, STRING("mobj_save"), 155, 60, -60, 0, 0)
     END_IF
     CALL(evt_shop_setup, PTR(obj_list), PTR(goods_list), PTR(shopper_data), PTR(trade_list))
-    CALL(evt_kinopio_setup, PTR(kino_dt))
+    CALL(evt_kinopio_setup, PTR(&kino_dt))
     LOOP(5)
         CALL(evt_sub_random, 10, LW(0))
         CALL(evt_eff, 0, STRING("butterfly"), LW(0), -395, 20, 250, 0, 0, 0, 0, 0, 0, 0, 0)

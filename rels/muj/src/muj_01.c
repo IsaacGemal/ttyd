@@ -1038,18 +1038,35 @@ static char* shopper_data[38] = {
     "shop_31", "shop_32", "shop_33", "shop_34",
 };
 
-// TODO: type
-static u32 kino_dt[38] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0000000A, 0x43C98000, 0x41880000, 0xC3360000,
-    0x43B18000, 0x00000000, 0xC31B0000, 0x43550000,
-    0x42F40000, 0xC2C20000, 0x43AA8000, 0x42340000,
-    0xC3320000, 0xC1F00000, 0x43B00000, 0x00000000,
-    0xC3070000, (u32)"宿店員", (u32)"yado_00", (u32)"yado_01",
-    (u32)"yado_02", (u32)"yado_03", (u32)"yado_04", (u32)"yado_05",
-    (u32)"yado_06", (u32)"yado_07", (u32)"yado_08", (u32)"yado_09",
-    (u32)"yado_10", (u32)"yado_11", (u32)"yado_12", (u32)"yado_13",
-    0x00000000, 0x00000000,
+static KinopioData kino_dt = {
+    0,       // field_0
+    0.0f,    // field_4
+    0.0f,    // field_8
+    0.0f,    // field_C
+    10,      // ryoukin
+    403.0f,  // bedX
+    17.0f,   // bedY
+    -182.0f, // bedZ
+    355.0f,  // bedsideX
+    0.0f,    // bedsideY
+    -155.0f, // bedsideZ
+    213.0f,  // camX
+    122.0f,  // camY
+    -97.0f,  // camZ
+    341.0f,  // camX2
+    45.0f,   // camY2
+    -178.0f, // camZ2
+    -30.0f,  // beddeg
+    352.0f,  // npctalkX
+    0.0f,    // npctalkY
+    -135.0f, // npctalkZ
+    "宿店員",   // npcname
+    { // msgs
+        "yado_00", "yado_01", "yado_02", "yado_03", "yado_04", "yado_05", "yado_06", "yado_07", "yado_08",
+        "yado_09", "yado_10", "yado_11", "yado_12", "yado_13",
+    },
+    NULL,    // to_bed_evt
+    NULL,    // from_bed_evt
 };
 
 EVT_BEGIN(kyoshu_event)
@@ -1796,7 +1813,7 @@ EVT_BEGIN(muj_01_init_evt)
     SET_VALUE(LW(0), PTR(yado_data))
     SPAWN_EVENT(evt_door_entry_custom01)
     CALL(evt_shop_setup, PTR(obj_list), PTR(goods_list), PTR(shopper_data), PTR(trade_list))
-    CALL(evt_kinopio_setup, PTR(kino_dt))
+    CALL(evt_kinopio_setup, PTR(&kino_dt))
     SWITCH(GSW(0))
         CASE_EQUAL(232)
         SPAWN_EVENT(nakamaware_event)

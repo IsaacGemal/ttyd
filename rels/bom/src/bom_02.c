@@ -1376,18 +1376,35 @@ static EVT_BEGIN(minnnanokoe_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 kino_dt[38] = {
-    0x000000C6, 0xC3D48000, 0x42480000, 0xC3480000,
-    0x0000000F, 0xC38E8000, 0x42380000, 0xC35F0000,
-    0xC3888000, 0x41F00000, 0xC3310000, 0xC3DE8000,
-    0x43810000, 0x42B00000, 0xC3AA8000, 0x42B80000,
-    0xC33F0000, 0xC1C80000, 0xC3A00000, 0x41F00000,
-    0xC2E60000, (u32)"宿店員", (u32)"yado_00", (u32)"yado_01",
-    (u32)"yado_02", (u32)"yado_03", (u32)"yado_04", (u32)"yado_05",
-    (u32)"yado_06", (u32)"yado_07", (u32)"yado_08", (u32)"yado_09",
-    (u32)"yado_10", (u32)"yado_11", (u32)"yado_12", (u32)"yado_13",
-    0x00000000, 0x00000000,
+static KinopioData kino_dt = {
+    198,     // field_0
+    -425.0f, // field_4
+    50.0f,   // field_8
+    -200.0f, // field_C
+    15,      // ryoukin
+    -285.0f, // bedX
+    46.0f,   // bedY
+    -223.0f, // bedZ
+    -273.0f, // bedsideX
+    30.0f,   // bedsideY
+    -177.0f, // bedsideZ
+    -445.0f, // camX
+    258.0f,  // camY
+    88.0f,   // camZ
+    -341.0f, // camX2
+    92.0f,   // camY2
+    -191.0f, // camZ2
+    -25.0f,  // beddeg
+    -320.0f, // npctalkX
+    30.0f,   // npctalkY
+    -115.0f, // npctalkZ
+    "宿店員",   // npcname
+    { // msgs
+        "yado_00", "yado_01", "yado_02", "yado_03", "yado_04", "yado_05", "yado_06", "yado_07", "yado_08",
+        "yado_09", "yado_10", "yado_11", "yado_12", "yado_13",
+    },
+    NULL,    // to_bed_evt
+    NULL,    // from_bed_evt
 };
 
 EVT_BEGIN(bom_02_init_evt)
@@ -1419,7 +1436,7 @@ EVT_BEGIN(bom_02_init_evt)
         CALL_CHILD(kiza_entry)
     END_SWITCH
     CALL(evt_shop_setup, PTR(obj_list), PTR(goods_list), PTR(shopper_data), PTR(trade_list))
-    CALL(evt_kinopio_setup, PTR(kino_dt))
+    CALL(evt_kinopio_setup, PTR(&kino_dt))
     SET_VALUE(LW(0), PTR(ie1_door))
     CALL_CHILD(evt_door_entry)
     SET_VALUE(LW(0), PTR(ie2_door))

@@ -91,15 +91,15 @@ s32 kurihakase_wall_remove[257];
 s32 kurihakase_lecture[286];
 s32 kurihakase_lecture_badge[272];
 s32 kurihakase_after3minutes[177];
-u32 stg0_list[1];
-u32 stg1_list[4];
-u32 stg2_list[4];
-u32 stg3_list[1];
-u32 stg5_list[2];
-u32 stg6_list[1];
-u32 stg7_list[6];
-u32 stg8_list[10];
-u32 follow[24];
+s32 stg0_list[1];
+s32 stg1_list[4];
+s32 stg2_list[4];
+s32 stg3_list[1];
+s32 stg5_list[2];
+s32 stg6_list[1];
+s32 stg7_list[6];
+s32 stg8_list[10];
+FollowPath follow[8];
 GXColor* _door[1];
 static u8* _ap[1];
 static u32 xlw[16];
@@ -3485,7 +3485,7 @@ USER_FUNC(monosiri_check) {
     s32 j;
     FollowPath* entry;
 
-    for (i = 0, entry = (FollowPath*)follow; i < 8; i++, entry++) {
+    for (i = 0, entry = follow; i < 8; i++, entry++) {
         if (stage < entry->unk0) {
             break;
         }
@@ -5163,57 +5163,47 @@ static EVT_BEGIN(mobj_box01)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 stg0_list[1] = {
-    0x00000008,
+s32 stg0_list[1] = {
+    8,
 };
 
-// TODO: type
-u32 stg1_list[4] = {
-    0x00000012, 0x00000014, 0x00000016, 0x00000017,
+s32 stg1_list[4] = {
+    18, 20, 22, 23,
 };
 
-// TODO: type
-u32 stg2_list[4] = {
-    0x0000001D, 0x0000001E, 0x00000021, 0x00000022,
+s32 stg2_list[4] = {
+    29, 30, 33, 34,
 };
 
-// TODO: type
-u32 stg3_list[1] = {
-    0x00000041,
+s32 stg3_list[1] = {
+    65,
 };
 
-// TODO: type
-u32 stg5_list[2] = {
-    0x0000005D, 0x00000063,
+s32 stg5_list[2] = {
+    93, 99,
 };
 
-// TODO: type
-u32 stg6_list[1] = {
-    0x0000006B,
+s32 stg6_list[1] = {
+    107,
 };
 
-// TODO: type
-u32 stg7_list[6] = {
-    0x00000075, 0x00000076, 0x0000001C, 0x00000078,
-    0x00000077, 0x00000079,
+s32 stg7_list[6] = {
+    117, 118, 28, 120, 119, 121,
 };
 
-// TODO: type
-u32 stg8_list[10] = {
-    0x00000083, 0x00000084, 0x00000085, 0x00000086,
-    0x00000087, 0x00000090, 0x00000091, 0x00000092,
-    0x00000093, 0x00000096,
+s32 stg8_list[10] = {
+    131, 132, 133, 134, 135, 144, 145, 146, 147, 150,
 };
 
-// TODO: type
-u32 follow[24] = {
-    0x00000017, (u32)&stg0_list, 0x00000001, 0x00000038,
-    (u32)&stg1_list, 0x00000004, 0x00000070, (u32)&stg2_list,
-    0x00000004, 0x000000A4, (u32)&stg3_list, 0x00000001,
-    0x00000105, (u32)&stg5_list, 0x00000002, 0x00000153,
-    (u32)&stg6_list, 0x00000001, 0x00000175, (u32)&stg7_list,
-    0x00000006, 0x00000191, (u32)&stg8_list, 0x0000000A,
+FollowPath follow[8] = {
+    { 23, stg0_list, 1 },
+    { 56, stg1_list, 4 },
+    { 112, stg2_list, 4 },
+    { 164, stg3_list, 1 },
+    { 261, stg5_list, 2 },
+    { 339, stg6_list, 1 },
+    { 373, stg7_list, 6 },
+    { 401, stg8_list, 10 },
 };
 
 EVT_BEGIN(evt_monosiri)

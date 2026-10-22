@@ -2256,13 +2256,13 @@ EVT_BEGIN(evt_badge_dummy)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 uwnobj_list[18] = {
-    (u32)"S_item_07", (u32)"A_item_08", (u32)&evt_badge_dummy, (u32)"S_item_08",
-    (u32)"A_item_09", (u32)&evt_badge_dummy, (u32)"S_item_09", (u32)"A_item_10",
-    (u32)&evt_badge_dummy, (u32)"S_item_10", (u32)"A_item_11", (u32)&evt_badge_dummy,
-    (u32)"S_item_11", (u32)"A_item_12", (u32)&evt_badge_dummy, 0x00000000,
-    0x00000000, 0x00000000,
+UnitWinObj uwnobj_list[6] = {
+    { "S_item_07", "A_item_08", evt_badge_dummy },
+    { "S_item_08", "A_item_09", evt_badge_dummy },
+    { "S_item_09", "A_item_10", evt_badge_dummy },
+    { "S_item_10", "A_item_11", evt_badge_dummy },
+    { "S_item_11", "A_item_12", evt_badge_dummy },
+    { NULL, NULL, NULL },
 };
 
 EVT_BEGIN(evt_open_02_01_f2)
@@ -2916,18 +2916,35 @@ EVT_BEGIN(gor_01_shop_setup)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 kino_dt[38] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000005, 0x43B80000, 0x432A0000, 0xC3938000,
-    0x43A50000, 0x431A0000, 0xC37A0000, 0x43020000,
-    0x43B90000, 0xC29E0000, 0x439C8000, 0x435C0000,
-    0xC3840000, 0xC1F00000, 0x43630000, 0x431A0000,
-    0xC3480000, (u32)"宿店員", (u32)"yado_00", (u32)"yado_01",
-    (u32)"yado_02", (u32)"yado_03", (u32)"yado_04", (u32)"yado_05",
-    (u32)"yado_06", (u32)"yado_07", (u32)"yado_08", (u32)"yado_09",
-    (u32)"yado_10", (u32)"yado_11", (u32)"yado_12", (u32)"yado_13",
-    0x00000000, 0x00000000,
+static KinopioData kino_dt = {
+    0,       // field_0
+    0.0f,    // field_4
+    0.0f,    // field_8
+    0.0f,    // field_C
+    5,       // ryoukin
+    368.0f,  // bedX
+    170.0f,  // bedY
+    -295.0f, // bedZ
+    330.0f,  // bedsideX
+    154.0f,  // bedsideY
+    -250.0f, // bedsideZ
+    130.0f,  // camX
+    370.0f,  // camY
+    -79.0f,  // camZ
+    313.0f,  // camX2
+    220.0f,  // camY2
+    -264.0f, // camZ2
+    -30.0f,  // beddeg
+    227.0f,  // npctalkX
+    154.0f,  // npctalkY
+    -200.0f, // npctalkZ
+    "宿店員",   // npcname
+    { // msgs
+        "yado_00", "yado_01", "yado_02", "yado_03", "yado_04", "yado_05", "yado_06", "yado_07", "yado_08",
+        "yado_09", "yado_10", "yado_11", "yado_12", "yado_13",
+    },
+    NULL,    // to_bed_evt
+    NULL,    // from_bed_evt
 };
 
 EVT_BEGIN(bar_door_anime)
@@ -4745,7 +4762,7 @@ EVT_BEGIN(gor_01_init_evt)
     SET_VALUE(LW(0), PTR(&door_data_04))
     CALL_CHILD(evt_door_entry)
     CALL_CHILD(gor_01_shop_setup)
-    CALL(evt_kinopio_setup, PTR(kino_dt))
+    CALL(evt_kinopio_setup, PTR(&kino_dt))
     CALL(evt_map_playanim, STRING("hae"), 1, 0)
     SPAWN_EVENT(koushukei_dai)
     SPAWN_EVENT(gate_disp)

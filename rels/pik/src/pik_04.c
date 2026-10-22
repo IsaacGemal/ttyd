@@ -678,18 +678,37 @@ EVT_BEGIN(evt_kinopio_from_bed)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 kino_dt[38] = {
-    0x000000DD, 0x43B40000, 0x42040000, 0xC36B0000,
-    0x0000001E, 0x43910000, 0x44A82000, 0x42A00000,
-    0x43870000, 0x44A64000, 0x42700000, 0x43390000,
-    0x44B44000, 0xC38E8000, 0x43938000, 0x44AD4000,
-    0xC1C00000, 0xC2700000, 0x43820000, 0x40A00000,
-    0x41F00000, (u32)"店員女", (u32)"stg7_pik_clear_20", (u32)"stg7_pik_clear_21",
-    (u32)"stg7_pik_clear_22", (u32)"stg7_pik_clear_23", (u32)"stg7_pik_clear_24", (u32)"stg7_pik_clear_25",
-    (u32)"stg7_pik_clear_26", (u32)"stg7_pik_clear_27", (u32)"stg7_pik_clear_28", (u32)"stg7_pik_clear_29",
-    (u32)"stg7_pik_clear_30", (u32)"stg7_pik_clear_31", (u32)"stg7_pik_clear_32", (u32)"stg7_pik_clear_33",
-    (u32)&evt_kinopio_to_bed, (u32)&evt_kinopio_from_bed,
+static KinopioData kino_dt = {
+    221,                  // field_0
+    360.0f,               // field_4
+    33.0f,                // field_8
+    -235.0f,              // field_C
+    30,                   // ryoukin
+    290.0f,               // bedX
+    1345.0f,              // bedY
+    80.0f,                // bedZ
+    270.0f,               // bedsideX
+    1330.0f,              // bedsideY
+    60.0f,                // bedsideZ
+    185.0f,               // camX
+    1442.0f,              // camY
+    -285.0f,              // camZ
+    295.0f,               // camX2
+    1386.0f,              // camY2
+    -24.0f,               // camZ2
+    -60.0f,               // beddeg
+    260.0f,               // npctalkX
+    5.0f,                 // npctalkY
+    30.0f,                // npctalkZ
+    "店員女",                // npcname
+    { // msgs
+        "stg7_pik_clear_20", "stg7_pik_clear_21", "stg7_pik_clear_22", "stg7_pik_clear_23",
+        "stg7_pik_clear_24", "stg7_pik_clear_25", "stg7_pik_clear_26", "stg7_pik_clear_27",
+        "stg7_pik_clear_28", "stg7_pik_clear_29", "stg7_pik_clear_30", "stg7_pik_clear_31",
+        "stg7_pik_clear_32", "stg7_pik_clear_33",
+    },
+    evt_kinopio_to_bed,   // to_bed_evt
+    evt_kinopio_from_bed, // from_bed_evt
 };
 
 static EVT_BEGIN(epilogue_npc_entry)
@@ -817,7 +836,7 @@ EVT_BEGIN(pik_04_init_evt)
     CALL(evt_item_entry, STRING("item_01"), 164, -305, 0, 105, 16, GSWF(3279), 0)
     CALL_CHILD(imginit)
     CALL(evt_run_case_evt, 9, 1, STRING("front_"), 0, PTR(kinopio_house_talk_evt), 0)
-    CALL(evt_kinopio_setup, PTR(kino_dt))
+    CALL(evt_kinopio_setup, PTR(&kino_dt))
     IF_INT_EQUAL(GSW(0), 402)
         CALL(evt_mario_kill_party, 0)
         CALL_CHILD(epilogue_npc_entry)

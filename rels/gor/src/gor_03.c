@@ -2482,9 +2482,8 @@ char* drumname[2][17] = {
 
 const GorSlotIconTable dat_gor_0001a46c = {{0x1f3, 0x1f3, 0x1f3}};
 
-// TODO: type
-u32 slotevttbl[2] = {
-    (u32)&slot1_set, (u32)&slot2_set,
+s32* slotevttbl[2] = {
+    slot1_set, slot2_set,
 };
 
 // TODO: type
@@ -5509,7 +5508,7 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
                 sp->hitObjName = drumname[m][4];
                 sp->swFlag = 0;
                 sp->activeFunc = 0;
-                sp->evtCode = (void*)slotevttbl[m];
+                sp->evtCode = slotevttbl[m];
                 sp->priority = 0;
                 memcpy(sp->lwData, event->lwData, 0x40);
                 data->caseId[m] = caseEntry(sp);

@@ -677,13 +677,26 @@ const char* son_item[] = {
     "iri_08", NULL,
 };
 
-// TODO: type
-u32 son_data[19] = {
-    0x00000001, 0x00000009, (u32)"A_son_doa", 0x00000009,
-    (u32)"A_son_in_doa", (u32)"S_son_open", (u32)"S_son_doa_open", (u32)"S_son_close",
-    (u32)"S_son_doa_close", (u32)"S_son_mae", (u32)"S_son_doa1", (u32)"S_son_in",
-    (u32)"A_son_in", (u32)"S_son_in", (u32)"A_son_in", (u32)&son_npc,
-    0x00000000, (u32)&son_mobj, (u32)&son_item,
+DoorParam son_data = {
+    1,                 // field_00
+    9,                 // field_04
+    "A_son_doa",       // field_08
+    9,                 // field_0C
+    "A_son_in_doa",    // field_10
+    "S_son_open",      // field_14
+    "S_son_doa_open",  // field_18
+    "S_son_close",     // field_1C
+    "S_son_doa_close", // field_20
+    "S_son_mae",       // field_24
+    "S_son_doa1",      // field_28
+    "S_son_in",        // field_2C
+    "A_son_in",        // field_30
+    "S_son_in",        // field_34
+    "A_son_in",        // field_38
+    son_npc,           // field_3C
+    NULL,              // field_40
+    son_mobj,          // field_44
+    son_item,          // field_48
 };
 
 const char* taro_npc[] = {
@@ -702,13 +715,26 @@ const char* taro_item[] = {
     "item_01", NULL,
 };
 
-// TODO: type
-u32 taro_data[19] = {
-    0x00000001, 0x00000009, (u32)"A_taro_doa", 0x00000009,
-    (u32)"A_taro_in_doa", (u32)"S_taro_open", (u32)"S_taro_doa_open", (u32)"S_taro_close",
-    (u32)"S_taro_doa_close", (u32)"S_taro_mae", (u32)"S_taro_doa", (u32)"S_taro_in",
-    (u32)"A_taro_in", (u32)"S_taro_in", (u32)"A_taro_in", (u32)&taro_npc,
-    (u32)&taro_map, (u32)&taro_mobj, (u32)&taro_item,
+DoorParam taro_data = {
+    1,                  // field_00
+    9,                  // field_04
+    "A_taro_doa",       // field_08
+    9,                  // field_0C
+    "A_taro_in_doa",    // field_10
+    "S_taro_open",      // field_14
+    "S_taro_doa_open",  // field_18
+    "S_taro_close",     // field_1C
+    "S_taro_doa_close", // field_20
+    "S_taro_mae",       // field_24
+    "S_taro_doa",       // field_28
+    "S_taro_in",        // field_2C
+    "A_taro_in",        // field_30
+    "S_taro_in",        // field_34
+    "A_taro_in",        // field_38
+    taro_npc,           // field_3C
+    taro_map,           // field_40
+    taro_mobj,          // field_44
+    taro_item,          // field_48
 };
 
 static const char* ie_npc[] = {
@@ -719,13 +745,26 @@ static const char* ie_map[] = {
     "S_ie_sit", NULL,
 };
 
-// TODO: type
-static u32 ie_data[19] = {
-    0x00000001, 0x00000009, (u32)"A_ie_doa", 0x00000009,
-    (u32)"S_ie_in_doa", (u32)"S_ie_open", (u32)"S_ie_doa_open", (u32)"S_ie_close",
-    (u32)"S_ie_doa_close", (u32)"S_ie_mae", (u32)"S_ie_doa", (u32)"S_ie_in",
-    (u32)"A_ie_in", (u32)"S_ie_in", (u32)"A_ie_in", (u32)&ie_npc,
-    (u32)&ie_map, 0x00000000, 0x00000000,
+static DoorParam ie_data = {
+    1,                // field_00
+    9,                // field_04
+    "A_ie_doa",       // field_08
+    9,                // field_0C
+    "S_ie_in_doa",    // field_10
+    "S_ie_open",      // field_14
+    "S_ie_doa_open",  // field_18
+    "S_ie_close",     // field_1C
+    "S_ie_doa_close", // field_20
+    "S_ie_mae",       // field_24
+    "S_ie_doa",       // field_28
+    "S_ie_in",        // field_2C
+    "A_ie_in",        // field_30
+    "S_ie_in",        // field_34
+    "A_ie_in",        // field_38
+    ie_npc,           // field_3C
+    ie_map,           // field_40
+    NULL,             // field_44
+    NULL,             // field_48
 };
 
 static HitDamageReturn hitDmgRetPoints[13] = {
@@ -1318,11 +1357,11 @@ EVT_BEGIN(nok_01_init_evt)
         END_IF
     END_IF
     CALL(evt_map_playanim, STRING("S_kawa"), 1, 0)
-    SET_VALUE(LW(0), PTR(son_data))
+    SET_VALUE(LW(0), PTR(&son_data))
     CALL_CHILD(evt_door_setup)
-    SET_VALUE(LW(0), PTR(taro_data))
+    SET_VALUE(LW(0), PTR(&taro_data))
     CALL_CHILD(evt_door_setup)
-    SET_VALUE(LW(0), PTR(ie_data))
+    SET_VALUE(LW(0), PTR(&ie_data))
     CALL_CHILD(evt_door_setup)
     IF_INT_GREATER_OR_EQUAL(GSW(0), 28)
         CALL(evt_map_playanim, STRING("S_mon"), 2, 0)
