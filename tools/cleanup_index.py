@@ -32,6 +32,15 @@ records old and new values for main and the reference points):
   0x500)`; `+ 1` there is usually a step past a header record, so it is not counted). The offset-macro rule uses
   the same pattern, so EM_VEC(off)'s `(*(Vec*)(base + (off)))` counts per call. Main (fd6a9b00) went 230 -> 1351
   raw offsets (index 14.203 -> 17.415) under the wider pattern.
+- struct_ptr_cast (1), prim_ptr_cast (1), deref_cast (2), ptr_to_int (1), abs_address (2), pad_stack (1),
+  longjmp (2), new 2026-10-22 (n9-q-idxmelee): the pointer-retype families Melee's cleanup index counts, written
+  here from its category list. A `(T*)` cast with no call or sizeof before it is a deref_cast when a unary `*`
+  reads through it, an abs_address when its operand is a 0x8XXXXXXX constant, and otherwise struct_ptr_cast or
+  prim_ptr_cast by T (void and char are primitive, as Melee counts them). ptr_to_int is an integer cast of `&x` or
+  of a pointer cast; `(s32)"name"` arguments in event scripts are not counted (the script format stores every
+  argument as s32). Casts that are part of a raw offset count only as that raw offset. The report also prints the
+  Melee-family site total (unweighted, names excluded) for comparing with Melee's own index. On main (2433c1fc)
+  the index went 14.471 -> 28.914 per kLOC under this definition.
 """
 import argparse
 import json
@@ -71,7 +80,52 @@ PATTERNS = {
     "fn_ptr_cast": (2, re.compile(r"\(\s*[\w\s]+\(\s*\*\s*\)\s*\(")),
     "inline_asm": (3, re.compile(r"\b(?:asm|__asm__|__asm)\b")),
 }
-WEIGHTS = {name: w for name, (w, _) in PATTERNS.items()}
+# Pointer retypes, the families Melee's cleanup index counts that the patterns above did not. A cast is `(T*)`
+# with no call or sizeof before it; one dereferenced with a unary `*` is a deref_cast; one onto a constant 0x8XXXXXXX
+# is an abs_address; otherwise struct_ptr_cast or prim_ptr_cast by T (`void*` and `char*` are primitive, as Melee
+# counts them). Casts that are part of a raw offset count only as that raw offset.
+PRIM_TYPES = frozenset("void char u8 s8 u16 s16 u32 s32 u64 s64 f32 f64 int short long float double BOOL bool".split())
+PTR_CAST = re.compile(r"\(\s*((?:(?:const|volatile|struct|unsigned|signed)\s+)*)(\w+)\s*(?:const\s*)?\*+\s*\)")
+PTR_TO_INT = re.compile(r"\(\s*(?:u32|s32|int|long|uintptr_t|unsigned(?:\s+(?:int|long))?)\s*\)\s*(?=&|\(\s*(?:"
+                        r"(?:const|volatile|struct|unsigned|signed)\s+)*\w+\s*\*+\s*\))")
+OUTER_RAW_CAST = re.compile(r"\(\s*(?:(?:const|volatile|struct|unsigned|signed)\s+)*\w+\s*\*+\s*\)\s*(?=\(\s*\(?\s*\(\s*"
+                            r"(?:" + _BYTE + r"|" + _CHAR + r")\))")
+EXTRA = {"struct_ptr_cast": 1, "prim_ptr_cast": 1, "deref_cast": 2, "ptr_to_int": 1, "abs_address": 2,
+         "pad_stack": 1, "longjmp": 2}
+PAD_STACK = re.compile(r"\bPAD_STACK\s*\(")
+LONGJMP = re.compile(r"\b(?:setjmp|longjmp)\s*\(")
+WEIGHTS = {name: w for name, (w, _) in PATTERNS.items()} | EXTRA
+MELEE_FAMILIES = ("raw_offset", "goto", "must_match", "opt_pragma", "struct_ptr_cast", "prim_ptr_cast", "deref_cast",
+                  "ptr_to_int", "abs_address", "pad_stack", "longjmp", "fn_ptr_cast", "inline_asm")
+
+
+def retype_counts(code):
+    """{category: count} of the pointer retypes in comment-stripped CODE, raw offsets excluded."""
+    def blank(m):
+        return " " * (m.end() - m.start())
+    code = RAW_OFFSET.sub(blank, OUTER_RAW_CAST.sub(blank, code))
+    counts = Counter()
+    counts["ptr_to_int"] = len(PTR_TO_INT.findall(code))
+    counts["pad_stack"] = len(PAD_STACK.findall(code))
+    counts["longjmp"] = len(LONGJMP.findall(code))
+    for m in PTR_CAST.finditer(code):
+        quals, base = m.group(1), m.group(2)
+        before = code[:m.start()].rstrip()
+        prev = before[-1:] if before else ""
+        if prev.isalnum() or prev in "_)]":  # a call, sizeof(T*) or a prototype's unnamed parameter
+            continue
+        after = code[m.end():m.end() + 12].lstrip()
+        if not after or not (after[0].isalnum() or after[0] in "_&(*\"-!~"):
+            continue
+        if re.match(r"0x8[0-9A-Fa-f]{7}\b", after):
+            counts["abs_address"] += 1
+        elif prev == "*" and not before[:-1].rstrip()[-1:].isalnum() and before[:-1].rstrip()[-1:] not in "_)]":
+            counts["deref_cast"] += 1
+        elif base in PRIM_TYPES or quals.strip() in ("unsigned", "signed"):
+            counts["prim_ptr_cast"] += 1
+        else:
+            counts["struct_ptr_cast"] += 1
+    return {k: v for k, v in counts.items() if v}
 SCOPES = ("src", "include")  # plus rels/*/src
 
 
@@ -152,6 +206,7 @@ def count_text(text):
         n = len(rx.findall(code)) + (macro_calls if name == "raw_offset" else 0)
         if n:
             counts[name] = n
+    counts.update(retype_counts(code))
     return lines, counts
 
 
@@ -221,6 +276,8 @@ def report(s, top):
     print(f"  {'category':14} {'count':>6} {'weight':>6} {'weighted':>8}")
     for c, v in s["categories"].items():
         print(f"  {c:14} {v['count']:6} {v['weight']:6} {v['weighted']:8}")
+    sites = sum(v["count"] for c, v in s["categories"].items() if c in MELEE_FAMILIES)
+    print(f"  Melee-family sites (unweighted, no names): {sites}")
     worst = sorted(((p, f) for p, f in s["files"].items() if f["weighted"]), key=lambda kv: (-kv[1]["weighted"], kv[0]))
     if worst and top:
         print(f"  worst {min(top, len(worst))} files by weighted count:")

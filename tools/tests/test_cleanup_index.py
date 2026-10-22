@@ -25,6 +25,27 @@ done:
 
 
 class CleanupIndex(unittest.TestCase):
+    def test_pointer_retypes(self):
+        text = """void f(Mario* m, void* p) {
+    Npc* n = (Npc*)p;
+    f32 a = *(f32*)&m->speed;
+    u32 b = (u32)&m->pos;
+    u8* c = (u8*)p;
+    s32 d = *(s32*)((u8*)m + 0x10);
+    Work* w = (Work*)0x80412345;
+    g(sizeof(Npc*));
+    evt((s32)"name", (s32)n);
+}
+void proto(Npc*);
+"""
+        counts = cleanup_index.count_text(text)[1]
+        self.assertEqual(counts["struct_ptr_cast"], 1)
+        self.assertEqual(counts["deref_cast"], 1)
+        self.assertEqual(counts["ptr_to_int"], 1)
+        self.assertEqual(counts["prim_ptr_cast"], 1)
+        self.assertEqual(counts["raw_offset"], 1)
+        self.assertEqual(counts["abs_address"], 1)
+
     def test_counts(self):
         lines, counts = cleanup_index.count_text(SRC)
         self.assertEqual(counts["raw_offset"], 1)
