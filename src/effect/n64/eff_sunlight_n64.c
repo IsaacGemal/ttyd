@@ -5,11 +5,6 @@
 #include "math_ext.h"
 #include "eff/eff_n64.h"
 
-// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423294;
-__declspec(section ".sdata") GXColor unk_80423290;
-
 u32 testsrc__s_v[98] = {
 	0x021301BA, 0x00190000, 0x0000FFFF, 0xFFFF02C3, 0x011C0019, 0x02000000, 0xFFFFFFFF,
 	0x064A0507, 0x00190200, 0x0800FFFF, 0xFFFF059A, 0x05A50019, 0x00000800, 0xFFFFFFFF,
@@ -157,35 +152,7 @@ void effSunlightMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSunlightDisp, effect);
 }
 
-// Matched by pooling the three view Vecs as file-local consts right after effSunlightMain's zero Vec,
-// so mwcc keeps one r31 base and reaches target/eye/up and the int->float double as offsets from it.
-// The colours are built and passed by inlined helpers: a helper that returns the GXColor leaves the
-// inlined local and the by-value copy in the wrong two stack slots when two colours are passed, while
-// inlining the whole GXSetTevColor call (helper builds the colour, then calls) reproduces the target
-// slots. `alpha` is declared before `type` to put them in r29/r28.
-const Vec vec3_802fb7d4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fb7e0 = { 0.0f, 0.0f, 100.0f };
-const Vec vec3_802fb7ec = { 0.0f, 1.0f, 0.0f };
-
-/* Inlining the whole call keeps the colour and its by-value copy in the target's two
-   stack slots; a helper that returns the GXColor puts them the other way round and mis-matches
-   when the function passes two colours. */
-static inline void effSunlightSetColor1(GXTevRegID id, effSunlightData* data, s32 alpha) {
-	GXColor c = unk_80423290;
-	c.r = data->r0;
-	c.g = data->g0;
-	c.b = data->b0;
-	c.a = alpha >> 1;
-	GXSetTevColor(id, c);
-}
-static inline void effSunlightSetColor2(GXTevRegID id, effSunlightData* data) {
-	GXColor c = unk_80423294;
-	c.r = data->r1;
-	c.g = data->g1;
-	c.b = data->b1;
-	c.a = data->a1;
-	GXSetTevColor(id, c);
-}
+// `alpha` is declared before `type` to put them in r29/r28.
 
 void effSunlightDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect;
@@ -209,9 +176,9 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	type = data->type;
 	alpha = data->alpha;
 
-	target = vec3_802fb7d4;
-	eye = vec3_802fb7e0;
-	up = vec3_802fb7ec;
+	target = (Vec){ 0.0f, 0.0f, 0.0f };
+	eye = (Vec){ 0.0f, 0.0f, 100.0f };
+	up = (Vec){ 0.0f, 1.0f, 0.0f };
 
 	if (alpha == 0) {
 		return;
@@ -229,8 +196,8 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(lookAt, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 
-	effSunlightSetColor1(GX_TEVREG0, data, alpha);
-	effSunlightSetColor2(GX_TEVREG1, data);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->r0, data->g0, data->b0, alpha >> 1 });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->r1, data->g1, data->b1, data->a1 });
 
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);

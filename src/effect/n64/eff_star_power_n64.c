@@ -7,13 +7,6 @@
 #include <dolphin/gx.h>
 #include "math_ext.h"
 
-// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423284;
-__declspec(section ".sdata") GXColor unk_80423280;
-__declspec(section ".sdata") GXColor unk_8042327c;
-__declspec(section ".sdata") GXColor unk_80423278;
-
 u8 testsrc_akari_v[560] = {
 	0x00, 0x93, 0xFF, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF,
 	0xFF, 0xFF, 0x00, 0x8F, 0xFF, 0xD2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -71,7 +64,6 @@ extern const f32 float_0p4_8041fe34;
 
 // .data: retail vertex array for this unit (two effVtxArray entries, 0x118 bytes apart).
 extern u8 testsrc_akari_v[];
-// .sbss2 scratch GXColors the original copies its TEV colours into before overwriting every byte.
 extern const f32 float_4_8041fe3c;
 extern const f32 float_0p4953_8041fe38;
 extern const f32 float_0p2234_8041fe40;
@@ -90,17 +82,10 @@ extern const f32 float_0p831_8041fe70;
 extern const f32 float_2p231_8041fe74;
 extern const f32 float_2p044_8041fe78;
 
-#ifdef MUST_MATCH
-// Non-const and forced into .rodata: with a plain `const` MWCC hoists two of the three
-// word loads into the prologue saves and the schedule no longer matches.
-__declspec(section ".rodata") Vec vec3_802fb718 = { 0.0f, 0.0f, 0.0f };
-#else
-const Vec vec3_802fb718 = { 0.0f, 0.0f, 0.0f };
-#endif
-// Inline copy of the file-local helper: zero-fill a Vec from the rodata constant, then
-// overwrite it with the supplied position; the temporary is returned by value.
+// Inline copy of the file-local helper: zero-fill a Vec, then overwrite it with the supplied
+// position; the temporary is returned by value.
 inline Vec initializeVec(Vec* input) {
-    Vec temp = vec3_802fb718;
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
     temp.x = input->x;
     temp.y = input->y;
     temp.z = input->z;
@@ -147,7 +132,7 @@ EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 
 // float_0p4953 in f3, the float_4*counter product in f7 and the counter*4 conversion in f4)
 // only comes out when the product assignment is folded into the field_0x40 multiply's first
 // operand; assigning f7 on its own line rotates them to f3/f2/f4/f3. The pool double is placed
-// after vec3_802fb718 only because "StarPowerN64" is written as a literal (a named const char[]
+// after the zero Vec template only because "StarPowerN64" is written as a literal (a named const char[]
 // would be laid out before the compiler's pooled constants).
 void effStarPowerMain(EffectEntry* effect) {
     EffStarPowerData* data = effect->userdata;
@@ -227,16 +212,6 @@ void effStarPowerMain(EffectEntry* effect) {
     }
 }
 
-// The original builds each TEV colour in a local GXColor and copies it into the outgoing argument
-// slot; returning the colour from an inline makes mwcc lay those two slots out the same way it did
-// in the original (the same quirk eff_akari_charge_n64.c documents).
-static inline GXColor starPowerColor(GXColor c, s32 r, s32 g, s32 b, s32 a) {
-    c.r = r;
-    c.g = g;
-    c.b = b;
-    c.a = a;
-    return c;
-}
 void effStarPowerDisp(CameraId camId, void* param) {
     s32 halfAlpha;
     EffStarPowerData* data;
@@ -341,8 +316,8 @@ void effStarPowerDisp(CameraId camId, void* param) {
         GXLoadPosMtxImm(work, 0);
         GXSetCurrentMtx(0);
         halfAlpha = color2A >> 1;
-        GXSetTevColor(1, starPowerColor(unk_80423278, color1R, color1G, color1B, halfAlpha));
-        GXSetTevColor(2, starPowerColor(unk_8042327c, color2R, color2G, color2B, halfAlpha));
+        GXSetTevColor(1, (GXColor){ color1R, color1G, color1B, halfAlpha });
+        GXSetTevColor(2, (GXColor){ color2R, color2G, color2B, halfAlpha });
         GXSetNumChans(1);
         GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
         GXSetNumTevStages(1);
@@ -395,8 +370,8 @@ void effStarPowerDisp(CameraId camId, void* param) {
         tri2(18, 14, 15, 0, 18, 15, 19, 0);
     }
 
-    GXSetTevColor(1, starPowerColor(unk_80423280, color1R, color1G, color1B, color1A));
-    GXSetTevColor(2, starPowerColor(unk_80423284, color2R, color2G, color2B, color1A));
+    GXSetTevColor(1, (GXColor){ color1R, color1G, color1B, color1A });
+    GXSetTevColor(2, (GXColor){ color2R, color2G, color2B, color1A });
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
     GXSetNumTevStages(1);

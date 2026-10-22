@@ -45,11 +45,6 @@ extern const f32 float_0p015625_8041ff7c;
 extern const f32 float_0p0039062_8041ff84;
 extern const f32 float_0p125_8041ff88;
 extern const f32 float_256_8041ffa4;
-// .rodata / .data / .sbss2 objects used by the display code.
-extern const Vec vec3_802fb7d4;
-extern const Vec vec3_802fb7e0;
-extern const Vec vec3_802fb7ec;
+// .rodata / .data objects used by the display code.
 extern const f64 double_to_int_802fb7f8;
 extern u32 testsrc__s_v[];
-extern GXColor unk_80423290;
-extern GXColor unk_80423294;
