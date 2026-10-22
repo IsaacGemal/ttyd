@@ -464,3 +464,8 @@ void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
 // The original's .sdata2 also has a 4-byte zero tail (gap_09_8041E504_sdata2). It is the section's
 // 8-byte alignment padding: the pooled floats end at 0x5C and the linker pads the section to 0x60
 // with zeros, matching the original without an explicit object.
+
+// .sbss2 4-byte gap after the unit's colour template.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_8042307C_sbss2[4];
+#pragma section ".sdata" ".sbss"
