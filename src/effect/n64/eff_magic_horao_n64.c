@@ -139,7 +139,9 @@ typedef struct MagicHoraoVtx {
 
 // .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
+#pragma force_active on
 __declspec(section ".sdata") u32 gap_10_804231BC_sbss2;
+#pragma force_active reset
 #pragma section ".sdata" ".sbss"
 
 // Building the colour in an inline that returns it keeps the by-value temporaries in the
