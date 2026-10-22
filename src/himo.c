@@ -80,14 +80,6 @@ static inline f32 himo_sqrtf(f32 x) {
     return x;
 }
 
-static inline Vec himo_makeVec(f32 x, f32 y, f32 z) {
-    Vec v = (Vec){0.0f, 0.0f, 0.0f};
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
-}
-
 // Constant pool base: MWCC addresses the file's .rodata through vec3_802f8068 in r31 (see the
 // .rodata block in the original asm); math_ext.h avoids math.h's weak sqrtf/sqrt doubles.
 void vivihimo(Mtx mtxA, Mtx mtxB, f32 phase, f32 spread, f32 offA, f32 offB) {
@@ -123,7 +115,7 @@ void vivihimo(Mtx mtxA, Mtx mtxB, f32 phase, f32 spread, f32 offA, f32 offB) {
     if (float_0_8041decc != axis.x || float_0_8041decc != axis.y || float_0_8041decc != axis.z) {
         PSVECNormalize(&axis, &axis);
         points = wp->points;
-        normal = himo_makeVec(-axis.x, -axis.y, -axis.z);
+        normal = (Vec){-axis.x, -axis.y, -axis.z};
         swing = float_2p5_8041deec * (f32)sin(float_0p1_8041dee8 * ((f32)gp->retraceCount * phase));
         PSVECSubtract(&wp->pos1, &wp->pos0, &diff);
 
