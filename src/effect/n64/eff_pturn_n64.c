@@ -27,12 +27,6 @@ u32 gap_07_80413C9C_sdata = 0;
 #pragma force_active reset
 #pragma explicit_zero_data reset
 
-// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order).
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_8042322c;
-__declspec(section ".sdata") GXColor unk_80423228;
-#pragma section ".sdata" ".sbss"
-
 // .data anchors ahead of the vertex arrays (compiler-generated in the original; kept so the
 // section bytes between lbl_803A4790 and the vertex arrays match).
 #pragma force_active on
@@ -238,18 +232,6 @@ void effPturnDisp(CameraId camId, void* param) {
     pturn_num_dispp(camId, param);
 }
 
-static inline void pturnMainSetColor(s32 a) {
-    GXColor color = unk_80423228;
-    color.a = a;
-    GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void pturnNumSetColor(s32 a) {
-    GXColor color = unk_8042322c;
-    color.a = a;
-    GXSetTevColor(GX_TEVREG0, color);
-}
-
 void pturn_main_dispp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     CameraEntry* cam;
@@ -288,7 +270,7 @@ void pturn_main_dispp(CameraId camId, void* param) {
             PSMTXConcat(work, trans, trans);
             GXLoadPosMtxImm(trans, GX_PNMTX0);
             GXSetCurrentMtx(GX_PNMTX0);
-            pturnMainSetColor(data->alpha);
+            GXSetTevColor(GX_TEVREG0, (GXColor){ 0x00, 0x00, 0x00, data->alpha });
             if (data->alpha == 0xFF) {
                 GXSetNumChans(1);
                 GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
@@ -371,7 +353,7 @@ void pturn_num_dispp(CameraId camId, void* param) {
             GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_RASC, GX_CC_ZERO);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-            pturnNumSetColor(data->alpha);
+            GXSetTevColor(GX_TEVREG0, (GXColor){ 0x00, 0x00, 0x00, data->alpha });
             effGetTexObjN64(0x53, &texObj);
             GXLoadTexObj(&texObj, GX_TEXMAP0);
             GXSetNumTexGens(1);

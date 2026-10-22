@@ -16,12 +16,6 @@
 // .data particle scale table indexed by the per-particle frame counter (defined below).
 static f32 scale_data[20];
 
-// .sbss2 zero GXColor scratch the original builds the TEV color from.
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804230fc;
-__declspec(section ".sdata") GXColor unk_804230f8;
-
 // Local to this unit in the original (`.fn main_dl, local`); defined further down.
 static void main_dl(EffectEntry* effect, Mtx matrix);
 
@@ -54,28 +48,6 @@ typedef struct effFireDustData {
     f32 field_0x64; // 0x64
     f32 field_0x68; // 0x68
 } effFireDustData;
-
-// Inlined in the original; keeping the TEV colour build in its own helper also reproduces
-// the stack slot the compiler picks for the by-value GXColor copy.
-static inline void effFireDustSetTev1Color(effFireDustData* data) {
-    GXColor color = unk_804230f8;
-    color.r = data->tev1R;
-    color.g = data->tev1G;
-    color.b = data->tev1B;
-    color.a = data->tev1A;
-    GXSetTevColor(GX_TEVREG1, color);
-}
-
-// Same by-value GXColor build, for the per-particle colour main_dl passes to
-// GXSetTevColor; the helper scope reproduces the original's stack slots.
-static inline void effFireDustSetTev0Color(s32 r, s32 g, s32 b, u8 a) {
-    GXColor color = unk_804230fc;
-    color.r = r;
-    color.g = g;
-    color.b = b;
-    color.a = a;
-    GXSetTevColor(GX_TEVREG0, color);
-}
 
 // NOTE: this file's functions are emitted in reverse source order. In the original the
 // order is main_dl, effFireDustDisp, effFireDustMain, effFireDustN64Entry; Entry is here,
@@ -229,7 +201,7 @@ void effFireDustDisp(CameraId camId, void* param) {
     PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
     PSMTXConcat(transMtx, scaleMtx, outMtx);
 
-    effFireDustSetTev1Color(data);
+    GXSetTevColor(GX_TEVREG1, (GXColor){ data->tev1R, data->tev1G, data->tev1B, data->tev1A });
 
     effGetTexObjN64(0x20, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -318,7 +290,7 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
         PSMTXConcat(matrix, mtx, mtx);
         GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
-        effFireDustSetTev0Color(c0, c1, c2, (u8)((f32)data->alpha * alphaScale));
+        GXSetTevColor(GX_TEVREG0, (GXColor){ c0, c1, c2, (u8)((f32)data->alpha * alphaScale) });
         switch (i & 7) {
             case 0:
                 vtx = (effVtxArray*)&size8x8_tex22x22_vtx[3 * 14];

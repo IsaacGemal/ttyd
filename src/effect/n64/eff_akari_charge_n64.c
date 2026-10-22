@@ -7,12 +7,6 @@
 #include "math_ext.h"
 #include "system.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423094;
-__declspec(section ".sdata") GXColor unk_80423090;
-
-
 #include <stdlib.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
@@ -82,8 +76,6 @@ static inline f32 sqrtf(f32 x) {
 	}
 	return x;
 }
-
-// .sbss2 scratch GXColors the original builds its TEV colours from.
 
 // .data vertex array, local to this file.
 
@@ -239,26 +231,6 @@ void effAkariChargeMain(EffectEntry* effect) {
 	}
 }
 
-// The original builds each TEV colour in a local GXColor and copies it into the outgoing argument
-// slot.  Returning the colour from an inline makes mwcc lay those two slots out the same way it did
-// in the original; building them inline in the caller puts the local/outgoing pair the wrong way
-// round (the same quirk eff_akari_pose_n64.c documents).
-static inline GXColor akariColorProj(GXColor c, s32 r, s32 g, s32 b) {
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	return c;
-}
-
-static inline GXColor akariColorPart(s32 r, s32 g, s32 b, s32 a) {
-	GXColor c = unk_80423094;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	return c;
-}
-
 // Naming 0.0f in the two integer-to-float PSMTXTrans calls would make mwcc hoist it into a fourth
 // fpr, which grows the frame and shifts every local, so they use 0.0f literals.
 // The original reuses the work pointer as the particle cursor (`data++` here and in the for-increment, as
@@ -306,7 +278,7 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtx, scaleMtx, viewMtx);
 	PSMTXConcat(cam->view, viewMtx, viewMtx);
 
-	GXSetTevColor(GX_TEVREG1, akariColorProj(unk_80423090, data->reg1R, data->reg1G, data->reg1B));
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->reg1R, data->reg1G, data->reg1B, 0 });
 	GXSetNumChans(0);
 	GXSetNumTevStages(2);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -329,9 +301,7 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		EffAkariChargeParticle* part = (EffAkariChargeParticle*)data;
-		GXColor color2;
-		color2 = akariColorPart(colR, colG, colB, (part->alpha * alpha) / 255);
-		GXSetTevColor(GX_TEVREG0, color2);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ colR, colG, colB, (part->alpha * alpha) / 255 });
 
 		PSMTXTrans(mtx, part->x, part->y, 0.0f);
 		PSMTXRotRad(rotMtx, 'z', 0.017453292f * part->angle);

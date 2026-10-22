@@ -24,10 +24,6 @@ typedef struct effFallLeafData {
 	s32 counter;     // 0x2C header only
 } effFallLeafData;
 
-extern const u32 dat_8041edb0;
-extern const u32 dat_8041edb4;
-extern const u32 dat_8041edb8;
-extern const u32 str_8041EDBC;
 extern const f32 float_deg2rad_8041edc0;
 extern const f32 float_0p03125_8041edc4;
 extern const f32 float_0p0078125_8041edc8;
@@ -46,32 +42,6 @@ extern const f32 float_0p05_8041edf8;
 extern const f32 float_0p92_8041edfc;
 extern const f32 float_10_8041ee00;
 extern const f32 float_0p5_8041ee04;
-
-const Vec vec3_802fa538 = { 0.0f, 0.0f, 0.0f };
-
-static inline void leafSetColor0(u8 a) {
-	GXColor color = *(GXColor*)&dat_8041edb0;
-	color.a = a;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void leafSetColor1(u8 a) {
-	GXColor color = *(GXColor*)&dat_8041edb4;
-	color.a = a;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void leafSetColor2(u8 a) {
-	GXColor color = *(GXColor*)&dat_8041edb8;
-	color.a = a;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void leafSetColor3(u8 a) {
-	GXColor color = *(GXColor*)&str_8041EDBC;
-	color.a = a;
-	GXSetTevColor(GX_TEVREG0, color);
-}
 
 // .data: retail vertex array (two 0x38-byte effVtxArray entries).
 static u32 size12x12_tex64x64_vtx[28] = {
@@ -149,10 +119,7 @@ void effFallLeafMain(EffectEntry* effect) {
 	f32 s;
 	f32 t;
 
-	position = vec3_802fa538;
-	position.x = data->x;
-	position.y = data->y;
-	position.z = data->z;
+	position = (Vec){ data->x, data->y, data->z };
 	position2 = position;
 
 	data->life--;
@@ -227,16 +194,16 @@ void effFallLeafDisp(CameraId cameraId, void* param) {
 	switch (type) {
 	case 0:
 	case 1:
-		leafSetColor0(data->tevReg0A);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0x14, 0x64, 0x14, data->tevReg0A });
 		break;
 	case 2:
-		leafSetColor1(data->tevReg0A);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0x32, 0x91, 0x3C, data->tevReg0A });
 		break;
 	case 3:
-		leafSetColor2(data->tevReg0A);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0xFF, data->tevReg0A });
 		break;
 	case 4:
-		leafSetColor3(data->tevReg0A);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ 0x75, 0x92, 0xA6, data->tevReg0A });
 		break;
 	}
 
@@ -292,10 +259,6 @@ void effFallLeafDisp(CameraId cameraId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_8041edb0 = 0x14641400;
-const u32 dat_8041edb4 = 0x32913C00;
-const u32 dat_8041edb8 = 0xFFFFFF00;
-const u32 str_8041EDBC = 0x7592A600;
 const f32 float_deg2rad_8041edc0 = 0.017453292f;
 const f32 float_0p03125_8041edc4 = 0.03125f;
 const f32 float_0p0078125_8041edc8 = 0.0078125f;

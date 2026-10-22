@@ -7,12 +7,6 @@
 #include <math_ext.h>
 #include <stdlib.h>
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804231b4;
-__declspec(section ".sdata") GXColor unk_804231b0;
-
-
 //.data
 u32 stg_magic2_2_line_v[91] = {
 	0xFFA90032, 0x00001555, 0x0800FFFF, 0xFF00FFA9, 0x0032F830, 0x15550000,
@@ -60,8 +54,6 @@ static GXColor color_rotation_data[6] = {
     { 0xB4, 0xFF, 0xDE, 0x73 },
     { 0xFF, 0xFF, 0x94, 0x9C },
 };
-
-//.sbss2
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_rankup.c).
 inline Vec initializeVec(Vec* input) {
@@ -179,19 +171,6 @@ void effMagic2Main(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMagic2Disp, effect);
 }
 
-static inline GXColor magic2Color2(s32 alpha) {
-	GXColor c = unk_804231b4;
-	c.a = alpha / 2;
-	return c;
-}
-
-static inline GXColor magic2Color1(GXColor c, u8* ptr, s32 alpha) {
-	c.r = ptr[0];
-	c.b = ptr[2];
-	c.a = alpha;
-	return c;
-}
-
 // The declaration order below is tuned so MWCC assigns the original's callee-saved registers
 // (data=r29, i=r28, idx=r27, alpha=r26, type=r25, rot=r24, vOffset=r23, rot2=r22,
 // effect=r21, uOffset=r20). The four uOffset/rot/vOffset/rot2 loads sit after the
@@ -241,14 +220,12 @@ void effMagic2Disp(CameraId camId, void* param) {
 	idx = data->timer * 3;
 	for (i = 0; i < effect->count; i++, data++) {
 		u8* ptr;
-		GXColor color2;
 
 		idx += 30;
 		idx %= 24;
 		ptr = (u8*)color_rotation_data + idx;
-		GXSetTevColor(1, magic2Color1(unk_804231b0, ptr, alpha));
-		color2 = magic2Color2(alpha);
-		GXSetTevColor(2, color2);
+		GXSetTevColor(1, (GXColor){ ptr[0], 0x00, ptr[2], alpha });
+		GXSetTevColor(2, (GXColor){ 0x00, 0x00, 0x00, alpha / 2 });
 		uOffset = data->uOffset;
 		rot = data->rot;
 		vOffset = data->vOffset;

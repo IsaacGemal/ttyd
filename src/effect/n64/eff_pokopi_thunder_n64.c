@@ -240,15 +240,10 @@ u8 yuragi_data2[0x108] = {
 // .sdata
 u8* yuragi_data_table[2] = { yuragi_data, yuragi_data2 };
 
-// .sbss2 scratch GXColor followed by the 4-byte section-tail gap. Objects land in reverse
-// declaration order, so the gap is declared before unk_80423220.
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u8 gap_10_80423224_sbss2[4];
-__declspec(section ".sdata") GXColor unk_80423220;
 #pragma section ".sdata" ".sbss"
-
-// .sdata2 scratch word the original builds the second TEV colour from.
-__declspec(section ".sdata2") const u32 dat_8041fa20 = 0x00000080;
 
 // Local view of one 14-byte vertex the original writes (pos/tex/colour, stride 0xE).
 typedef struct EffPokopiThunderVtx {
@@ -258,29 +253,6 @@ typedef struct EffPokopiThunderVtx {
 } EffPokopiThunderVtx;
 
 // The original's .sdata2 float pool, named after its addresses.
-
-// Retail builds each Tev colour from the unk_80423220/dat_8041fa20 globals and passes it straight to
-// GXSetTevColor. They are void inlines (not a colour returned and passed on) because that is what makes
-// MWCC pair each colour's build slot with its outgoing argument slot; the direct form gives a different
-// stack layout (same shape as effPokopiPchargeDisp).
-static inline void effPokopiThunderSetColor1(EffPokopiThunderData* data, s32 a) {
-	GXColor c = unk_80423220;
-	c.r = data->tev1R;
-	c.g = data->tev1G;
-	c.b = data->tev1B;
-	c.a = a;
-	GXSetTevColor(1, c);
-}
-
-#ifdef MUST_MATCH
-static inline void effPokopiThunderSetColor2(EffPokopiThunderData* data) {
-	GXColor c = *(GXColor*)&dat_8041fa20;
-	c.r = data->tev2R;
-	c.g = data->tev2G;
-	c.b = data->tev2B;
-	GXSetTevColor(2, c);
-}
-#endif
 
 static inline void effPokopiThunderDrawStrip(s32 count) {
 	s32 j;
@@ -312,7 +284,6 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	f32 amp;
 	f32 f20;
 	f32 viewport[6];
-	GXColor color2;
 	smartEntry* entry;
 	f32 f6;
 	f32 ct;
@@ -342,16 +313,8 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, mtx, mtx);
 	GXLoadPosMtxImm(mtx, 0);
 	GXSetCurrentMtx(0);
-	effPokopiThunderSetColor1(data, cr);
-#ifdef MUST_MATCH
-	effPokopiThunderSetColor2(data);
-#else
-	color2 = *(GXColor*)&dat_8041fa20;
-	color2.r = data->tev2R;
-	color2.g = data->tev2G;
-	color2.b = data->tev2B;
-	GXSetTevColor(2, color2);
-#endif
+	GXSetTevColor(1, (GXColor){ data->tev1R, data->tev1G, data->tev1B, cr });
+	GXSetTevColor(2, (GXColor){ data->tev2R, data->tev2G, data->tev2B, 0x80 });
 	GXSetNumChans(0);
 	GXSetNumTevStages(4);
 	GXSetTevOrder(0, 0, 0, 0xff);

@@ -14,8 +14,6 @@ static u8 anime_data[12] = {
     0x00, 0xFF, 0xD0, 0x1A, 0x78, 0x4D, 0xD0, 0xFE, 0xF0, 0xFE, 0x4C, 0x6E,
 };
 
-extern u32 dat_8041f650;
-extern GXColor unk_804231a8;
 EffectEntry* effMagic1N64Entry(s32 type, s32 count, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1) {
     EffectEntry* effect;
     effMagic1Data* data;
@@ -129,7 +127,7 @@ void effMagic1Main(EffectEntry* effect) {
 // across the sin call so it stays in a callee-saved GPR. Without the split the two
 // constants and the f3/f4 temps land in the opposite slots.
 static inline GXColor magic1Color2(u8* anime) {
-    GXColor c = *(GXColor*)&dat_8041f650;
+    GXColor c = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
     { s32 a = anime[1]; f32 s = MAGIC1_SIN2(anime[0]);
       c.r = (u8)(s32)(a + 0.5f * ((255 - a) * (1.0f + s))); }
     { s32 a = anime[2]; f32 s = MAGIC1_SIN2(anime[0]);
@@ -257,7 +255,7 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
             PSMTXConcat(mtx, mtxE, mtxE);
             GXLoadPosMtxImm(mtxE, 0);
 
-            GXSetTevColor(GX_TEVREG0, magic1Color1(unk_804231a8, anime, alpha));
+            GXSetTevColor(GX_TEVREG0, magic1Color1((GXColor){ 0x00, 0x00, 0x00, 0x00 }, anime, alpha));
             GXSetTevColor(GX_TEVREG1, magic1Color2(anime));
 
             size = (type == 0) ? 15 : 10;
@@ -323,12 +321,7 @@ void effMagic1Disp(CameraId camId, EffectEntry* effect) {
     }
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-__declspec(section ".sdata2") u32 dat_8041f650 = 0x000000FF;
-
-
-// .sbss2 scratch colour (declared in reverse: MWCC lays uninitialised globals out last-declared-first).
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor gap_10_804231AC_sbss2;
-__declspec(section ".sdata") GXColor unk_804231a8;
 #pragma section ".sdata" ".sbss"

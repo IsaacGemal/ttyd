@@ -15,9 +15,6 @@
 // string literal are pooled by the compiler, in .text order; defining them here
 // duplicates the pool (eff_opuku_wprotect_n64's recipe).
 
-// .sdata2 leading word the TEV colour is copied from (real object, emitted before the pool).
-const u32 dat_8041f840 = 0xC8;
-
 // .sdata alpha table (non-const: MWCC places it in .sdata, not .sdata2).
 static u8 a_data[12] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xC8, 0x80, 0x20 };
 
@@ -28,11 +25,9 @@ __declspec(section ".sdata") u32 gap_07_80413BFC_sdata = 0;
 #pragma force_active reset
 #pragma explicit_zero_data reset
 
-// .sbss2 scratch colour (same pattern as eff_opuku_wprotect_n64.c's unk_804231f0).
-// Declared gap first: MWCC lays uninitialised globals out in reverse declaration order.
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor gap_10_804231EC_sbss2;
-__declspec(section ".sdata") GXColor unk_804231e8;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_kemuri11.c).
 inline Vec initializeVec(Vec* input) {
@@ -167,21 +162,6 @@ void effOpukuWgunMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effOpukuWgunDisp, effect);
 }
 
-// Build each colour and make the GXSetTevColor call inside the inline: mwcc then places each colour local
-// and its by-value copy in the original's stack slots (the eff_opuku_wprotect pattern). Returning the GXColor
-// and calling outside packs all locals together instead.
-static inline void opukuWgunColor1(u8 r, u8 g, u8 b, u8 a) {
-	GXColor c = unk_804231e8;
-	c.r = r; c.g = g; c.b = b; c.a = a;
-	GXSetTevColor(GX_TEVREG0, c);
-}
-#ifdef MUST_MATCH
-static inline void opukuWgunColor2(u8 r, u8 g, u8 b) {
-	GXColor c = *(GXColor*)&dat_8041f840;
-	c.r = r; c.g = g; c.b = b;
-	GXSetTevColor(GX_TEVREG1, c);
-}
-#endif
 // The frame (0x190), the saved-register set (f21-f31, r22-r31), both TEV-colour blocks, the first vertex
 // loop, the transform loop, the GX state and the triangle loop all line up. The GQR2-5 setup retail runs
 // before the s16->f32 reads and before the f32->s16 writes is reproduced with OSInitFastCast, and the
@@ -189,10 +169,8 @@ static inline void opukuWgunColor2(u8 r, u8 g, u8 b) {
 // would lower to lha/fctiwz). The `zero` local keeps `data->z[i] + 0.0f` from folding away, which lands the
 // 0.0 in f31 and the 2pi/360/20/scale constants in retail's f28/f29/f30/f24; the `angle`/`rad` split gives
 // angle f22, rad/offX f23 and size f21; `alpha` is an s32 so a_data*data->alpha/255 stores with a plain stb (no
-// clrlwi); and the triangle loop's `if (j >= 0)` guard reproduces retail's always-taken test. The two TEV
-// colours are built inside the inline (the eff_opuku_wprotect pattern) so each colour local and its by-value
-// copy land in retail's stack slots (temp/arg 0x1c/0x20 and 0x14/0x18); returning the GXColor and calling
-// outside packed them differently. The f32->s16 temporaries land 4 apart (OSFastCast.h's temp is an f32).
+// clrlwi); and the triangle loop's `if (j >= 0)` guard reproduces retail's always-taken test. The f32->s16
+// temporaries land 4 apart (OSFastCast.h's temp is an f32).
 // The dispatch's redundant `beq` is restored by the MUST_MATCH doubled test below. The triangle loop reuses
 // `j` as its counter with `vert = j * 2` in the body: MWCC strength-reduces that multiply to an induction
 // variable initialised as `mr r23, r24` (not `li r23,0`), which is what puts the preheader in retail's
@@ -206,7 +184,6 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	Mtx scaleMtx;
 	Vec v;
 #define OW_VEC (&v)
-	GXColor color;
 	f32 scale;
 	f32 size;
 	f32 offX;
@@ -225,16 +202,8 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	type = data->type;
 	scale = data->scale;
 
-	opukuWgunColor1(data->field_0x34, data->field_0x38, data->field_0x3C, data->field_0x40);
-#ifdef MUST_MATCH
-	opukuWgunColor2(data->field_0x44, data->field_0x48, data->field_0x4C);
-#else
-	color = *(GXColor*)&dat_8041f840;
-	color.r = data->field_0x44;
-	color.g = data->field_0x48;
-	color.b = data->field_0x4C;
-	GXSetTevColor(GX_TEVREG1, color);
-#endif
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->field_0x34, data->field_0x38, data->field_0x3C, data->field_0x40 });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->field_0x44, data->field_0x48, data->field_0x4C, 0xC8 });
 
 	GXSetCullMode(GX_CULL_NONE);
 

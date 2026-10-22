@@ -99,13 +99,9 @@ u32 size6x22_tex32x32_vtx[14] = {
 // .sdata
 s32 dat_ry[8] = { 0, 0x28, 0x37, 0xBE, 0x14, 0x82, 0x10E, 0x12C };
 
-// .sbss2 zero GXColor scratch objects and the 4-byte section-tail gap. Objects land in reverse
-// declaration order, so the gap is declared before unk_804231d0.
+// .sbss2 4-byte gap after the unit's colour template.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u8 gap_10_804231D4_sbss2[4];
-__declspec(section ".sdata") GXColor unk_804231d0;
-__declspec(section ".sdata") GXColor unk_804231cc;
-__declspec(section ".sdata") GXColor unk_804231c8;
 #pragma section ".sdata" ".sbss"
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_kemuri11.c).
@@ -179,35 +175,6 @@ void effOpukuJetwMain(EffectEntry* effect) {
         }
         dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effOpukuJetwDisp, effect);
     }
-}
-
-// Building each TEV colour and calling GXSetTevColor inside one inline makes mwcc allocate the
-// colour's build slot and its by-value argument copy together, matching the original's slots.
-static inline void effOpukuJetwSetTev1(effOpukuJetwData* data, s32 alpha) {
-    GXColor color = unk_804231c8;
-    color.r = data->color2R;
-    color.g = data->color2G;
-    color.b = data->color2B;
-    color.a = alpha;
-    GXSetTevColor(GX_TEVREG1, color);
-}
-
-static inline void effOpukuJetwSetTev0a(s32 red, s32 green, s32 blue, s32 alpha) {
-    GXColor color = unk_804231cc;
-    color.r = red;
-    color.g = green;
-    color.b = blue;
-    color.a = alpha;
-    GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void effOpukuJetwSetTev0b(s32 red, s32 green, s32 blue, s32 alpha) {
-    GXColor color = unk_804231d0;
-    color.r = red;
-    color.g = green;
-    color.b = blue;
-    color.a = alpha;
-    GXSetTevColor(GX_TEVREG0, color);
 }
 
 // The column index is computed inside the row loop: MWCC's loop-invariant motion moves the modulo out to
@@ -289,10 +256,10 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     PSMTXConcat(rot, scale, scale);
     PSMTXConcat(work, scale, work);
 
-    effOpukuJetwSetTev1(data, alpha);
+    GXSetTevColor(GX_TEVREG1, (GXColor){ data->color2R, data->color2G, data->color2B, alpha });
 
     if (columns - 1 <= lifetime) {
-        effOpukuJetwSetTev0a(red, green, blue, alpha);
+        GXSetTevColor(GX_TEVREG0, (GXColor){ red, green, blue, alpha });
         GXLoadPosMtxImm(work, 0);
         GXSetCurrentMtx(0);
         effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
@@ -318,7 +285,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             PSMTXConcat(work, trans, trans);
             GXLoadPosMtxImm(trans, 0);
             GXSetCurrentMtx(0);
-            effOpukuJetwSetTev0b(red, green, blue, (alpha * table[col].alphaScale) >> 8);
+            GXSetTevColor(GX_TEVREG0, (GXColor){ red, green, blue, (alpha * table[col].alphaScale) >> 8 });
             effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);

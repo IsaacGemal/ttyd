@@ -32,22 +32,9 @@ __declspec(section ".sdata") u32 gap_07_80413A4C_sdata = 0;
 #pragma force_active reset
 #pragma explicit_zero_data reset
 
-// .sdata2
-// Retail reloads this scratch word every outer-loop iteration instead of hoisting it, which only happens
-// if the object is writable; the byte content and .sdata2 slot are identical either way.
-#ifdef MUST_MATCH
-__declspec(section ".sdata2") u32 dat_8041f158 = 0xFFFFFF00;
-#else
-const u32 dat_8041f158 = 0xFFFFFF00;
-#endif
-
-// .sbss2 zero GXColor scratch the original copies before filling their fields; declared in reverse so
-// the 4-byte gap lands after them.
+// .sbss2 4-byte gap after effHoraoSpellDisp's three colour templates.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor gap_10_8042315C_sbss2;
-__declspec(section ".sdata") GXColor unk_80423158;
-__declspec(section ".sdata") GXColor unk_80423154;
-__declspec(section ".sdata") GXColor unk_80423150;
 #pragma section ".sdata" ".sbss"
 
 // .data: 32 vertices (16 pairs), values read byte-for-byte from the original `.4byte` block.
@@ -86,7 +73,6 @@ effHoraoSpellVtx horao_spell_vtx[32] = {
 	{ { 0, 8, 0 }, { 7680, 1024 }, { 0, 0, 0, 0 } },
 };
 
-// The .sbss2 scratch GXColors are defined above; the .data vertex table is defined just above.
 EffectEntry* effHoraoSpellN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effHoraoSpellData* data;
@@ -178,40 +164,6 @@ static inline void effHoraoSpellSetVtx(effHoraoSpellVtx* vtx, effHoraoSpellVtx* 
 	vtx->pos[2] = __OSf32tos16(v.z);
 }
 
-// A GXColor built field-by-field and passed by value lands in the temporary's stack slot; the original
-// builds it in an inline that takes the base colour as a parameter (as makeHoraoColor does in
-// eff_magic_horao_n64), which moves the local above the by-value copy. The two early colours use
-// makeHoraoSpellColor. The loop colour (built from the three colX tables and the alpha) must pass its
-// base colour as the *last* parameter (makeHoraoSpellColor2p): that is what puts its by-value
-// temporary in retail's 0x24 word and keeps colr/colg/colb/alpha in r7/r6/r5/r0. The
-// makeHoraoSpellColor2 form, with the base read inside the inline, places the temporary in 0x20.
-#ifdef MUST_MATCH
-static inline GXColor makeHoraoSpellColor(GXColor c, s32 r, s32 g, s32 b, s32 a) {
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	return c;
-}
-
-static inline GXColor makeHoraoSpellColor2(s32 colorIdx, u8 a) {
-	GXColor c = unk_80423158;
-	c.r = colr[colorIdx];
-	c.g = colg[colorIdx];
-	c.b = colb[colorIdx];
-	c.a = a;
-	return c;
-}
-
-static inline GXColor makeHoraoSpellColor2p(s32 colorIdx, u8 a, GXColor c) {
-	c.r = colr[colorIdx];
-	c.g = colg[colorIdx];
-	c.b = colb[colorIdx];
-	c.a = a;
-	return c;
-}
-#endif
-
 // A second copy of effHoraoSpellSetVtx whose three tail stores keep the base colour pointer in the
 // register retail uses. The original helper derives one address base for all three stores; here
 // pos[0] goes through the function parameter while pos[1]/pos[2] go through a `vtx->pos` pointer,
@@ -241,10 +193,9 @@ static inline void effHoraoSpellSetVtx2(effHoraoSpellVtx* vtx, effHoraoSpellVtx*
 // with OSInitFastCast). This structure matches MWCC's allocation exactly: the five Mtx objects are
 // declared in retail's slot order, `k = j * 2` lets strength reduction emit one shared byte offset
 // (retail's r31) for vtx[] and horao_spell_vtx[] instead of running pointers, `(f32)(-counter * 2)`
-// lets counter and the encoded negCounter bits share r15, recomputing `angle = -0x11A + i * 0x24`
+// lets counter and the encoded negCounter bits share r15, and recomputing `angle = -0x11A + i * 0x24`
 // inside the outer loop makes the induction variable outrank the `counter * 8` CSE (angle r23,
-// counter*8 r22), and makeHoraoSpellColor2p takes the base colour as the *last* parameter so the
-// by-value GXColor temporary lands in retail's 0x24 word with colr/colg/colb/alpha in r7/r6/r5/r0.
+// counter*8 r22).
 void effHoraoSpellDisp(CameraId camId, void* param) {
 	Mtx transMtx;
 	s32 angle;
@@ -259,7 +210,6 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	s32 counter;
 	GXTexObj texObj;
 	EffectEntry* effect = param;
-	GXColor color;
 	effHoraoSpellData* data = effect->userdata;
 	s32 alpha;
 	f32 s;
@@ -278,23 +228,8 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 	PSMTXConcat(cam->view, transMtx, resultMtx);
 
-#ifdef MUST_MATCH
-	GXSetTevColor(GX_TEVREG0, makeHoraoSpellColor(unk_80423150, data->color1R, data->color1G, data->color1B, alpha));
-	GXSetTevColor(GX_TEVREG1, makeHoraoSpellColor(unk_80423154, data->color2R, data->color2G, data->color2B, data->color2A));
-#else
-	color = unk_80423150;
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = alpha;
-	GXSetTevColor(GX_TEVREG0, color);
-	color = unk_80423154;
-	color.r = data->color2R;
-	color.g = data->color2G;
-	color.b = data->color2B;
-	color.a = data->color2A;
-	GXSetTevColor(GX_TEVREG1, color);
-#endif
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->color1R, data->color1G, data->color1B, alpha });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->color2R, data->color2G, data->color2B, data->color2A });
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTevStages(2);
@@ -323,18 +258,8 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 		PSMTXConcat(resultMtx, rotMtx, transMtx);
 		GXLoadPosMtxImm(transMtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-#ifdef MUST_MATCH
-		GXSetTevColor(GX_TEVREG0, makeHoraoSpellColor2p(colorIdx, data->color1A, unk_80423158));
-#else
-		color = unk_80423158;
-		color.r = colr[colorIdx];
-		color.g = colg[colorIdx];
-		color.b = colb[colorIdx];
-		color.a = data->color1A;
-		GXSetTevColor(GX_TEVREG0, color);
-#endif
-		color = *(GXColor*)&dat_8041f158;
-		GXSetTevColor(GX_TEVREG1, color);
+		GXSetTevColor(GX_TEVREG0, (GXColor){ colr[colorIdx], colg[colorIdx], colb[colorIdx], data->color1A });
+		GXSetTevColor(GX_TEVREG1, (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 });
 		PSMTXScale(scaleMtx, 0.0078125f, 0.03125f, 0.0f);
 		PSMTXTrans(transMtx, (f32)(-counter * 2), 0.0f, 0.0f);
 		PSMTXConcat(scaleMtx, transMtx, scaleMtx);

@@ -7,15 +7,8 @@
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
-// .sbss2 zero scratch words (declared in reverse: placed in reverse of declaration order)
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") u32 unk_80423244;
-__declspec(section ".sdata") u32 unk_80423240;
-
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") f32 lbl_803A4C60[2] = { -1.0f, 1.0f };
-
-extern const u32 dat_8041fb38;
 
 // .rodata
 // The zero Vec (vec3_802fb4f0), the two int->float magic doubles (double_to_int_802fb500,
@@ -368,32 +361,6 @@ void effReleaseMain(EffectEntry* effect) {
 
 // .text
 
-// The three GXColors are built inside inline setters so each call gets its own
-// local-plus-by-value-copy stack pair, as in the original.
-static inline void releaseSetColor1(effReleaseN64Data* data) {
-    GXColor c = *(GXColor*)&unk_80423240;
-    c.r = data->tevReg1R;
-    c.g = data->tevReg1G;
-    c.b = data->tevReg1B;
-    c.a = data->tevReg1A;
-    GXSetTevColor(GX_TEVREG1, c);
-}
-
-static inline void releaseSetColor2(effReleaseN64Data* data, s32 i) {
-    GXColor c = *(GXColor*)&unk_80423244;
-    c.r = data->tevReg0R;
-    c.g = data->tevReg0G;
-    c.b = data->tevReg0B;
-    c.a = data->alphas[i];
-    GXSetTevColor(GX_TEVREG0, c);
-}
-
-static inline void releaseSetColor3(s32 alpha) {
-    GXColor c = *(GXColor*)&dat_8041fb38;
-    c.a = alpha;
-    GXSetChanMatColor(GX_COLOR0A0, c);
-}
-
 void effReleaseDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effReleaseN64Data* data;
@@ -429,7 +396,7 @@ void effReleaseDisp(CameraId camId, void* param) {
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 
     {
-    releaseSetColor1(data);
+    GXSetTevColor(GX_TEVREG1, (GXColor){ data->tevReg1R, data->tevReg1G, data->tevReg1B, data->tevReg1A });
     }
     GXSetCullMode(GX_CULL_NONE);
 
@@ -448,7 +415,7 @@ void effReleaseDisp(CameraId camId, void* param) {
         PSMTXConcat(cam->view, scale, scale);
         GXLoadPosMtxImm(scale, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
-        releaseSetColor2(data, i);
+        GXSetTevColor(GX_TEVREG0, (GXColor){ data->tevReg0R, data->tevReg0G, data->tevReg0B, data->alphas[i] });
 
         switch (i) {
             case 0:
@@ -537,7 +504,7 @@ void effReleaseDisp(CameraId camId, void* param) {
             GXSetProjection(ortho, GX_ORTHOGRAPHIC);
             GXSetNumChans(1);
             GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-            releaseSetColor3(alpha);
+            GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xD0, 0xD0, 0xD0, alpha });
             GXSetNumTevStages(1);
             GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
             GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -554,6 +521,3 @@ void effReleaseDisp(CameraId camId, void* param) {
         }
     }
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_8041fb38 = 0xD0D0D000;

@@ -7,14 +7,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423130;
-
-
 // .sdata2 constants (defined in the original unit's data section).
-
-// .sbss2 shared scratch GXColor, only its bytes are overwritten.
 
 // .sdata byte-indexed color rotation table (24 bytes).
 static u8 color_rotation_data[24] = {
@@ -30,20 +23,6 @@ static u32 size16x16_tex64x64_vtx[0x38 / 4] = {
 	0x00000800, 0x0C000000, 0x00FFFFF8, 0x00080000,
 	0x00000C00, 0x000000FF,
 };
-
-// Inlined in the original; the helper scope reproduces the stack slot the compiler
-// picks for the by-value GXColor copy (local at 0x8, outgoing copy at 0xC). Its index
-// argument is computed with `%=` in the caller (as in eff_wangflush_n64.c) so the
-// remainder reuses the dividend register r7.
-static inline void hagetakaFlushSetColor(s32 colorIndex, s32 alpha) {
-	GXColor color = unk_80423130;
-
-	color.r = color_rotation_data[colorIndex];
-	color.g = color_rotation_data[colorIndex + 1];
-	color.b = color_rotation_data[colorIndex + 2];
-	color.a = alpha;
-	GXSetTevColor(1, color);
-}
 
 EffectEntry* effHagetakaFlushN64Entry(s32 type, s32 unused, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
@@ -151,8 +130,10 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, 0);
 
 	colorIndex = data->field_0x14 * 3;
+	// `%=` (as in eff_wangflush_n64.c) lets the remainder reuse the dividend register r7.
 	colorIndex %= 24;
-	hagetakaFlushSetColor(colorIndex, alpha);
+	GXSetTevColor(1, (GXColor){ color_rotation_data[colorIndex], color_rotation_data[colorIndex + 1],
+	                            color_rotation_data[colorIndex + 2], alpha });
 
 	GXSetCullMode(0);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);

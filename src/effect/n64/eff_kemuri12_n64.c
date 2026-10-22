@@ -4,21 +4,10 @@
 #include "memory.h"
 #include "system.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423194;
-__declspec(section ".sdata") GXColor unk_80423190;
-
-
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
 // .sdata2 float constants (named after their original addresses).
-
-// .sbss2 zero GXColor scratch objects the original builds its TEV colors from.
-
-// .rodata constants (named after their original addresses).
-extern const Vec vec3_802faa28;
 
 // .data vertex data for the two Kemuri12 quad meshes. The original keeps the
 // first object local and the second global; kept as words and cast at the call.
@@ -108,21 +97,6 @@ void effKemuri12Main(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri12Disp, e);
 }
 
-static inline void setKemuriColor(GXTevRegID id, u8 r, u8 g, u8 b, u8 a) {
-    GXColor c = unk_80423190;
-    c.r = r;
-    c.g = g;
-    c.b = b;
-    c.a = a;
-    GXSetTevColor(id, c);
-}
-
-static inline void setKemuriAlphaColor(GXTevRegID id, u8 a) {
-    GXColor c = unk_80423194;
-    c.a = a;
-    GXSetTevColor(id, c);
-}
-
 void effKemuri12Disp(CameraId camId, void* param) {
     EffectEntry* effect;
     effKemuri12Data* data;
@@ -181,8 +155,8 @@ void effKemuri12Disp(CameraId camId, void* param) {
     GXLoadPosMtxImm(m0, GX_PNMTX0);
     GXSetCurrentMtx(GX_PNMTX0);
 
-    setKemuriColor(GX_TEVREG0, data->color[0], data->color[1], data->color[2], data->color[3]);
-    setKemuriAlphaColor(GX_TEVREG1, frameFraction);
+    GXSetTevColor(GX_TEVREG0, (GXColor){ data->color[0], data->color[1], data->color[2], data->color[3] });
+    GXSetTevColor(GX_TEVREG1, (GXColor){ 0, 0, 0, frameFraction });
 
     GXSetNumTexGens(2);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);

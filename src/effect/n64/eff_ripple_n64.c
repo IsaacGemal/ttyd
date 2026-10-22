@@ -7,17 +7,9 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// The unit's first .rodata object (retail +0x0): effRippleMain's zero position template.
-__declspec(section ".rodata") Vec vec3_802fb520 = { 0.0f, 0.0f, 0.0f };
-
 // .sdata2 constants owned by this unit (named after their original addresses).
 const f32 float_0p0625_8041fb9c;
 const f32 float_0_8041fba0;
-// .sbss2 TEV colour base (zero-initialised). The .sdata/.sbss2 pragma pair puts the object in
-// .sbss2; a plain tentative const definition would land in .sbss.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423248;
-#pragma section ".sdata" ".sbss"
 // .data vertex array for effRippleDisp (0x38 bytes).
 u32 size16x16_tex32x32_0_vtx[14] = {
 	0xFFF80000, 0xFFF80000, 0x00000000, 0x00FF0008, 0x0000FFF8, 0x04000000, 0x000000FF,
@@ -69,23 +61,17 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 
 
 // Retail colours `effect`/`timer`/`type` r28/r30/r29. At -O4,p the backend's second copy-propagation
-// round drops the copy of effRippleN64Entry's result and `effect` gets r30; -O2 keeps it, with the same 0x50 frame. `position` is built from the
-// .rodata zero vector (`vec3_802fb520`, defined above); the direct field writes
-// put the zero-vector load before the callee-save stores, as retail does.
+// round drops the copy of effRippleN64Entry's result and `effect` gets r30; -O2 keeps it, with the same 0x50 frame. `dispPos`'s
+// compound literal puts the template load before the callee-save stores, as retail does.
 #pragma push
 #pragma optimization_level 2 // only this function needs the level-2 allocation; see above
 void effRippleMain(EffectEntry* effect) {
 	EffRippleData* data = effect->userdata;
 	Vec dispPos;
-	Vec position;
 	s32 timer;
 	s32 type;
 
-	position = vec3_802fb520;
-	position.x = data->x;
-	position.y = data->y;
-	position.z = data->z;
-	dispPos = position;
+	dispPos = (Vec){ data->x, data->y, data->z };
 
 	timer = data->timer;
 	type = data->type;
@@ -177,7 +163,7 @@ void effRippleDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(0, 7, 4, 1, 7);
 
 	if (type == 1 || type == 10 || type == 3 || type == 30) {
-		effRippleSetColor(unk_80423248, data->alpha);
+		effRippleSetColor((GXColor){ 0x00, 0x00, 0x00, 0x00 }, data->alpha);
 	} else {
 		effRippleSetColor((GXColor){ 0xFF, 0xFF, 0xFF, 0x00 }, data->alpha);
 	}

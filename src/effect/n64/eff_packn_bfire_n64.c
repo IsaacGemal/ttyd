@@ -18,10 +18,6 @@ extern const f32 float_128_8041f8f8;
 extern const f32 float_deg2rad_8041f8fc;
 extern const f32 float_0p0039062_8041f904;
 extern const f32 float_0p015625_8041f908;
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804231fc;
-__declspec(section ".sdata") GXColor unk_804231f8;
 
 // .data vertex block (local symbol in the original object).
 static u32 size64x64_tex32x32_vtx[14] = {
@@ -246,26 +242,6 @@ void effPacknBfireMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effPacknBfireDisp, effect);
 }
 
-// Inlined in the original; keeping each TEV colour build in its own helper reproduces the stack
-// slot the compiler picks for the by-value GXColor copy.
-static inline void effPacknBfireSetColor0(effPacknBfireData* data, s32 alpha) {
-	GXColor color = unk_804231f8;
-	color.r = data->colorR0;
-	color.g = data->colorG;
-	color.b = data->colorB0;
-	color.a = alpha;
-	GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void effPacknBfireSetColor1(effPacknBfireData* data) {
-	GXColor color = unk_804231fc;
-	color.r = data->colorR1;
-	color.g = data->colorG;
-	color.b = data->colorB1;
-	color.a = data->colorA1;
-	GXSetTevColor(GX_TEVREG1, color);
-}
-
 void effPacknBfireDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	effPacknBfireData* data;
@@ -296,8 +272,8 @@ void effPacknBfireDisp(CameraId camId, void* param) {
 		return;
 	}
 
-	effPacknBfireSetColor0(data, alpha);
-	effPacknBfireSetColor1(data);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->colorR0, data->colorG, data->colorB0, alpha });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->colorR1, data->colorG, data->colorB1, data->colorA1 });
 
 	GXSetNumChans(0);
 	GXSetNumTevStages(5);

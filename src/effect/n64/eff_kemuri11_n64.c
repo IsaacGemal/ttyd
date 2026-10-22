@@ -5,14 +5,6 @@
 #include "memory.h"
 #include "system.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_8042318c;
-__declspec(section ".sdata") GXColor unk_80423188;
-__declspec(section ".sdata") GXColor unk_80423184;
-__declspec(section ".sdata") GXColor unk_80423180;
-
-
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include "math_ext.h"
@@ -30,8 +22,6 @@ extern const f32 float_0p8_8041f508;
 extern const f32 float_0p94_8041f50c;
 extern const f32 float_1p002_8041f540;
 extern const f32 float_128_8041f544;
-
-// .sbss2 zero GXColor scratch objects the original builds its TEV colors from.
 
 // .rodata constants (named after their original addresses).
 
@@ -219,40 +209,6 @@ EffectEntry* effKemuri11N64Entry(s32 type, f32 x, f32 y, f32 z) {
         effKemuri1N64Entry(6, x, y, z, float_0_8041f4fc);
     }
     return effect;
-}
-
-static inline void kemuri11SetColor0(s32 r, s32 g, s32 b, s32 a) {
-    GXColor color = unk_80423180;
-    color.r = r;
-    color.g = g;
-    color.b = b;
-    color.a = a;
-    GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void kemuri11SetColor1(s32 r, s32 g, s32 b) {
-    GXColor color = unk_80423184;
-    color.r = r;
-    color.g = g;
-    color.b = b;
-    GXSetTevColor(GX_TEVREG1, color);
-}
-
-static inline void kemuri11SetColor2(s32 r, s32 g, s32 b, s32 a) {
-    GXColor color = unk_80423188;
-    color.r = r;
-    color.g = g;
-    color.b = b;
-    color.a = a;
-    GXSetTevColor(GX_TEVREG0, color);
-}
-
-static inline void kemuri11SetColor3(s32 r, s32 g, s32 b) {
-    GXColor color = unk_8042318c;
-    color.r = r;
-    color.g = g;
-    color.b = b;
-    GXSetTevColor(GX_TEVREG1, color);
 }
 
 // The original's zero-Vec temp comes from a compound literal, not the named
@@ -489,12 +445,12 @@ void effKemuri11Disp(CameraId camId, void* param) {
     PSMTXConcat(cam->view, m2, m2);
 
     alpha = data->alpha;
-    kemuri11SetColor0(d0, d1, d2, alpha);
-    kemuri11SetColor1(d3, d4, d5);
+    GXSetTevColor(GX_TEVREG0, (GXColor){ d0, d1, d2, alpha });
+    GXSetTevColor(GX_TEVREG1, (GXColor){ d3, d4, d5, 0 });
     GXSetCullMode(GX_CULL_BACK);
     main_dl(effect, m2);
-    kemuri11SetColor2(c0, c1, c2, alpha);
-    kemuri11SetColor3(c3, c4, c5);
+    GXSetTevColor(GX_TEVREG0, (GXColor){ c0, c1, c2, alpha });
+    GXSetTevColor(GX_TEVREG1, (GXColor){ c3, c4, c5, 0 });
     GXSetCullMode(GX_CULL_FRONT);
     main_dl(effect, m2);
 }

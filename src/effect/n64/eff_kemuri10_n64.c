@@ -251,23 +251,6 @@ void effKemuri10Main(EffectEntry* effect) {
     dispEntry(camera, dispCalcZ(&position2), 2, effKemuri10Disp, effect);
 }
 
-// .data vertex array this unit defines in the original; its address is passed
-// to effSetVtxDescN64.
-// .sbss2 GXColor scratch this unit defines in the original.
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") u32 unk_80423178;
-
-// Build the TEV register colour from the scratch colour and the effect data.
-static inline void kemuri10SetColor(effKemuri10Data* data) {
-    GXColor color = *(GXColor*)&unk_80423178;
-    color.r = data->tevReg0R;
-    color.g = data->tevReg0G;
-    color.b = data->tevReg0B;
-    color.a = data->tevReg0A;
-    GXSetTevColor(GX_TEVREG0, color);
-}
-
 void effKemuri10Disp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effKemuri10Data* data;
@@ -296,7 +279,7 @@ void effKemuri10Disp(CameraId camId, void* param) {
     GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
     GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
-    kemuri10SetColor(data);
+    GXSetTevColor(GX_TEVREG0, (GXColor){ data->tevReg0R, data->tevReg0G, data->tevReg0B, data->tevReg0A });
     PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
     PSMTXConcat(m0, data->orient, m0);
     PSMTXScale(m1, data->scale, data->scale, data->scale);

@@ -16,22 +16,12 @@ u32 size32x16_tex64x32_vtx[14] = {
 };
 
 // .sdata2 float constants (named after their original addresses).
-extern const u32 dat_8041f700;
 extern const f32 float_0p015625_8041f704;
 extern const f32 float_0p03125_8041f708;
 extern const f32 float_0_8041f70c;
 extern const f32 float_deg2rad_8041f710;
 extern const f32 float_1_8041f714;
 // static const: folded into the pool at first use, so they keep the retail pool order.
-
-// .rodata zero vectors (named after their original addresses).
-#ifdef MUST_MATCH
-// volatile makes the loop rebuild each axis from the shared zero Vec through memory,
-// as retail does (same idiom as eff_sweat_n64.c's vec3_802fb810).
-const volatile Vec vec3_802fab48 = { 0.0f, 0.0f, 0.0f };
-#else
-const Vec vec3_802fab48 = { 0.0f, 0.0f, 0.0f };
-#endif
 
 // Inlined MetroWerks sqrtf (same shape as eff_blow_n64.c and eff_kemuri10_n64.c).
 int __float_nan[];
@@ -148,11 +138,7 @@ EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	effect->callback = effMagic3Main;
 	for (i = 0; i < 5; i++, data++) {
 		f32 yaw = float_6p2832_8041f718 * camGetPtr(CAMERA_3D)->viewYaw / float_360_8041f724;
-		Vec temp = vec3_802fab48;
-
-		temp.x = (f32)sin(yaw);
-		temp.z = -(f32)cos(yaw);
-		axis = temp;
+		axis = (Vec){ (f32)sin(yaw), 0.0f, -(f32)cos(yaw) };
 		angle = (i == 1) ? float_0_8041f70c : 100.0f * i / 4.0f - 50.0f;
 		PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041f710 * angle);
 		data->type = type;
@@ -239,8 +225,7 @@ void effMagic3Disp(CameraId camId, void* param) {
 	f32 angle;
 	s32 i;
 
-	color = *(GXColor*)&dat_8041f700;
-	color.a = data->alpha;
+	color = (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha };
 	GXSetTevColor(1, color);
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
@@ -275,7 +260,6 @@ void effMagic3Disp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const u32 dat_8041f700 = 0xFFFFFF00;
 const f32 float_0p015625_8041f704 = 0.015625f;
 const f32 float_0p03125_8041f708 = 0.03125f;
 const f32 float_0_8041f70c = 0.0f;

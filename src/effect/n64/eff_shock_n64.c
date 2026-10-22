@@ -4,12 +4,6 @@
 #include "driver/dispdrv.h"
 #include "memory.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_8042325c;
-__declspec(section ".sdata") GXColor unk_80423258;
-
-
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -100,12 +94,6 @@ u32 testsrc_shock_v[336] = {
     0x00FFFF4E, 0xFF990000, 0x01C5FEB6, 0xFFFFFFFF,
 };
 
-extern const GXColor dat_8041fc50;
-
-// .sdata2 constants referenced by the original.
-
-// .rodata constants owned by this unit in the original.
-const Vec vec3_802fb5c8 = { 0.0f, 0.0f, 0.0f };
 EffectEntry* effShockN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
 	EffectEntry* effect;
 	EffShockData* data;
@@ -211,26 +199,6 @@ void effShockMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effShockDisp, effect);
 }
 
-static inline void effShockSetColor1(EffShockData* data) {
-	GXColor color = unk_80423258;
-	color.r = data->tev1R;
-	color.g = data->tev1G;
-	color.b = data->tev1B;
-	color.a = data->field_0x18;
-	GXSetTevColor(1, color);
-}
-static inline void effShockSetColor2(EffShockData* data) {
-	GXColor color = unk_8042325c;
-	color.r = data->tev2R;
-	color.g = data->tev2G;
-	color.b = data->tev2B;
-	GXSetTevColor(2, color);
-}
-static inline void effShockSetColor3(EffShockData* data) {
-	GXColor color = dat_8041fc50;
-	color.a = data->field_0x14;
-	GXSetTevColor(1, color);
-}
 void effShockDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	EffShockData* data;
@@ -251,14 +219,14 @@ void effShockDisp(CameraId cameraId, void* param) {
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(cam->view, trans, viewMtx);
 
-	effShockSetColor1(data);
-	effShockSetColor2(data);
+	GXSetTevColor(1, (GXColor){ data->tev1R, data->tev1G, data->tev1B, data->field_0x18 });
+	GXSetTevColor(2, (GXColor){ data->tev2R, data->tev2G, data->tev2B, 0x00 });
 
 	GXSetCullMode(0);
 
 	if ((u32)(type - 1) <= 1 || type == 3) {
 		if (type == 1) {
-			effShockSetColor3(data);
+			GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0x00, data->field_0x14 });
 		}
 
 		PSMTXTrans(trans, 0.0f, data->field_0x2C, 0.0f);
@@ -343,6 +311,3 @@ void effShockDisp(CameraId cameraId, void* param) {
 		tri2(0x26, 0x25, 0x2F, 0, 0x26, 0x2F, 0x2C, 0);
 	}
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const GXColor dat_8041fc50 = { 0xFF, 0xFF, 0x00, 0x00 };

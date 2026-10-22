@@ -7,18 +7,11 @@
 #include "matching.h"
 #include "memory.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804230a0;
-
-
 // .sdata2 constants owned by this unit (named after their original addresses).
-extern const GXColor dat_8041e900;
 extern const f32 float_deg2rad_8041e904;
 extern const f32 float_6p2832_8041e908;
 extern const f32 float_360_8041e90c;
 
-// .sbss2 scratch GXColor the original builds its TEV colour from.
 // .rodata integer-to-float conversion constant.
 
 // .data vertex array, local to this unit (0x54 bytes).
@@ -103,31 +96,10 @@ void effAkariSflushMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effAkariSflushDisp, effect);
 }
 
-// effAkariSflushDisp: the TEV colour build is routed through two inlines, one per GXSetTevColor.  A plain
-// `color = <global>; color.r = ...; GXSetTevColor(1, color);` puts mwcc's colour local at the higher
-// stack slot and the by-value copy at the lower one (target: local r1+0xc, first copy r1+0x10, second
-// call's copy r1+0x8).  Two helpers that each build a local and make the call put all three slots where
-// the original has them (the same shape as effPikkyoloDisp).
-//
-// The 1.0f/30.0f/0.0f arguments stay as literals: the original rematerialises them from the pool each
-// inner iteration (pool entries 1.0f / 30.f / 0.0f); referencing
-// the named externs makes mwcc hoist them into callee-saved FPRs and shifts every other constant's
+// effAkariSflushDisp: the 1.0f/30.0f/0.0f arguments stay as literals: the original rematerialises them
+// from the pool each inner iteration (pool entries 1.0f / 30.f / 0.0f); referencing the named externs makes mwcc hoist them into callee-saved FPRs and shifts every other constant's
 // register.  The literals get anonymous .sdata2 labels (@227-@229), which objdiff scores as equal to
 // the named symbols, so the function is 100%.
-static inline void effAkariSflushColor1(s32 r, s32 g, s32 b, s32 a) {
-	GXColor c = unk_804230a0;
-	c.r = r;
-	c.g = g;
-	c.b = b;
-	c.a = a;
-	GXSetTevColor(1, c);
-}
-
-static inline void effAkariSflushColor2(void) {
-	GXColor c = dat_8041e900;
-	GXSetTevColor(2, c);
-}
-
 void effAkariSflushDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffAkariSflushData* data;
@@ -170,8 +142,8 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(1, 7, 7, 7, 0);
 	GXSetNumTexGens(0);
 
-	effAkariSflushColor1(data->color1R, data->color1G, data->color1B, alpha);
-	effAkariSflushColor2();
+	GXSetTevColor(1, (GXColor){ data->color1R, data->color1G, data->color1B, alpha });
+	GXSetTevColor(2, (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 });
 
 	GXSetCullMode(0);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
@@ -206,8 +178,6 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-
-const GXColor dat_8041e900 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const f32 float_deg2rad_8041e904 = 0.017453292f;
 const f32 float_6p2832_8041e908 = 6.2831855f;
 const f32 float_360_8041e90c = 360.0f;
