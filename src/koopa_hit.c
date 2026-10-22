@@ -194,9 +194,6 @@ static inline void kpaSetVec(Vec* n, f32 x, f32 y, f32 z) {
     n->z = z;
 }
 
-// Common-subexpression elimination merges the loop's `base - off` terms and colours the FPRs differently from
-// the target (f14/f15 for the long-lived locals), so it is disabled for this function only.
-#pragma opt_common_subs off
 void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
     MarioWork* mp;
     s32 i;
@@ -386,7 +383,6 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
 }
 
 
-#pragma opt_common_subs reset
 // The original clears the head/headDist arrays from an inlined loop: its counter lands in r27 and
 // the byte-offset induction variable in r28, which only comes out when the loop is expanded as an
 // inline helper's body (its locals rank above the function's own names in the allocator).

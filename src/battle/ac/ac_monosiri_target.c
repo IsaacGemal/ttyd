@@ -199,9 +199,6 @@ void battleAcDelete_MonosiriTarget(BattleWork* work) {
 	work->actionCommands.mAcState = 0x3EA;
 }
 
-// `opt_common_subs off`: with CSE on MWCC allocates the screen2 x/y update's 4.0f to f2 instead of
-// the original's f1; turning CSE off for this function restores the original FPR allocation.
-#pragma opt_common_subs off
 static void actionCommandDisp(f32 x, f32 y) {
 #ifdef MUST_MATCH
 	Vec* vecs = (Vec*)vec3_80300880;
@@ -319,7 +316,6 @@ static void actionCommandDisp(f32 x, f32 y) {
 		iconDispGx(float_1_80422088, &v, 0x10, icon);
 	}
 }
-#pragma opt_common_subs reset
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 #ifdef MUST_MATCH

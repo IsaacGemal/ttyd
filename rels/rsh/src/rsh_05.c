@@ -1240,7 +1240,6 @@ static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f
 // and inlining `camGetPtr(4)` (check_hammer's shape), and the two `(20+box.x)*0.5` sites match by
 // writing `(box.x + 20) / 2` (folded to the same fmuls).
 #pragma opt_lifetimes off // keeps the sin/cos coefficients in the target's FPRs
-#pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
 static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
     MarioWork* mario = marioGetPtr();
     Vec v65, v55c, vnoko, vparty, mpos, pvec;

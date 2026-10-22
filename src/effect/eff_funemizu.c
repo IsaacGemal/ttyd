@@ -124,8 +124,6 @@ static inline f32 clamp01(f32 v) {
 	return v;
 }
 
-// 100%: the clamp above needs opt_common_subs off so each constant test reloads the pool value.
-#pragma opt_common_subs off // without it MWCC CSEs the clamp's 1.0/0.0 into f1/f0 and drops the pool reloads
 void effFunemizuMain(EffectEntry* effect) {
 	EffFunemizuData* data;
 	EffFunemizuData* ptr;
@@ -230,7 +228,6 @@ void effFunemizuMain(EffectEntry* effect) {
 		dispEntry(camId, dispCalcZ(&pos2), 2, effFunemizuShibukiDisp, effect);
 	}
 }
-#pragma opt_common_subs reset
 
 
 // The `.sdata` addressing below comes from the `__declspec(section ".sdata")` on the display-list/colour/

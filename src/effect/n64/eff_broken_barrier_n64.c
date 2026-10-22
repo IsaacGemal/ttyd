@@ -206,7 +206,6 @@ static inline f32 effBrokenBarrierSqrt2(f32 x) {
     else if (isnan(x)) { return NAN; }
     return x;
 }
-#pragma opt_lifetimes off // default lifetime analysis coalesces the cos temp into f24; off restores the original f25-f27 colouring
 void effBrokenBarrierMain(EffectEntry* effect) {
     s32 rangeX;
     s32 rangeY;
@@ -350,7 +349,6 @@ void effBrokenBarrierMain(EffectEntry* effect) {
     }
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effBrokenBarrierDisp, effect);
 }
-#pragma opt_lifetimes reset
 
 // Builds the particle colour from the shared zero colour; the inline forces mwcc to
 // keep the named GXColor at r1+0x8 and its outgoing copy at r1+0xC (the original order).

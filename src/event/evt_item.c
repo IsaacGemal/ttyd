@@ -367,8 +367,6 @@ USER_FUNC(evt_item_move_3d_position) {
 	return EVT_RETURN_DONE;
 }
 
-#pragma opt_propagation off // needed by evt_item_get_important_item: keeps the sin/cos approximation constants in registers
-#pragma opt_lifetimes off // needed: without it evt_item_get_important_item 96.10%
 USER_FUNC(evt_item_get_important_item) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -415,8 +413,6 @@ USER_FUNC(evt_item_get_important_item) {
 	event->userdata[1] = *(s32*)&t;
 	return EVT_RETURN_BLOCK;
 }
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
 
 #ifdef MUST_MATCH
 // The .sdata2 pool's first word. Named, so it lands first in .sdata2 where retail has it; scale uses it too, so the

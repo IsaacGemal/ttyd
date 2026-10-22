@@ -119,9 +119,6 @@ static inline void hammerSetColor(u8 alpha) {
 	GXSetTevColor(GX_TEVREG1, color);
 }
 
-// Without this, MWCC CSEs the two branches' identical `offset + 32` and the flag==0 copy
-// reuses a dead register (addi r27, r27, 0x20) instead of the target's fresh r3.
-#pragma opt_common_subs off
 void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effRotHammerFailRecord* data;
@@ -206,7 +203,6 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 }
-#pragma opt_common_subs reset
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 

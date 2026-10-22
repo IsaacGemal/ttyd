@@ -37,7 +37,6 @@ const GXColor dat_yuu_00014d98 = { 0xFF, 0xFF, 0xFF, 0x00 };
 // (low) variable number, so MWCC colours the `field_10 * (1 - t)` product first (f0) and the fade gets f1, as
 // in the original. Each lerp is written `to * t + from * (1 - t)`, so fp_contract fuses the `t` product
 // into the fmadds as retail does.
-#pragma opt_propagation off
 void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     YuuTitleWork* wp = param;
     f32 scale = 2.0f;
@@ -72,7 +71,6 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     FontDrawString(wp->field_08 - halfWidth, wp->field_0c, wp->msg);
     FontDrawEdgeOff();
 }
-#pragma opt_propagation reset
 
 USER_FUNC(evt_yuutitle_main_func) {
     YuuTitleWork* wp = (YuuTitleWork*)event->lwData[0];

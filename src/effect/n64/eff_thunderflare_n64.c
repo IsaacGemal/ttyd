@@ -119,7 +119,6 @@ static inline Vec thunderflareMakeVec(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-#pragma opt_common_subs off // without it MWCC CSEs across the sin/cos calls and picks different callee-saved FPRs (100 lands in f24, not f28)
 void effThunderflareMain(EffectEntry* effect) {
 	EffThunderflareData* data;
 	Vec pos;
@@ -186,7 +185,6 @@ void effThunderflareMain(EffectEntry* effect) {
 	}
 	dispEntry(4, dispCalcZ(&pos), 2, effThunderflareDisp, effect);
 }
-#pragma opt_common_subs reset
 void effThunderflareDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam;

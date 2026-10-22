@@ -146,9 +146,7 @@ static inline Vec blowInitVec(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-// The first mag/sqrt block only matches with opt_common_subs off: without it MWCC CSEs the
-// float_0/float_1 pool loads across the two normalization blocks and the whole first half shifts
-// (same idiom as effKemuri10N64Entry). Passing the deg2rad*i*360/5 angle straight to
+// Passing the deg2rad*i*360/5 angle straight to
 // PSMTXRotAxisRad instead of through an `angle` temp fixed the angle block's scheduling.
 // The six loop-invariant values (2*dir and the -0.2*dir accelerations) are hoisted into named
 // locals before the loop and reused inside it; assigning them explicitly (rather than letting
@@ -157,7 +155,6 @@ static inline Vec blowInitVec(f32 x, f32 y, f32 z) {
 // as `0.05f * -dirX * 4.0f` keeps the first multiply's operands in the original's order (the
 // constant on the left). The .rodata+0 zero Vec resolves to the section symbol instead of
 // vec3_802fa250 (objdiff does not flag it).
-#pragma opt_common_subs off // without it MWCC CSEs the float_0/float_1 pool loads and the first mag/sqrt block shifts
 EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f32 dirY, f32 dirZ) {
 	EffectEntry* effect;
 	effBlowParticle* data;
@@ -278,7 +275,6 @@ EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX,
 
 	return effect;
 }
-#pragma opt_common_subs reset
 
 void effBlowMain(EffectEntry* effect) {
 	effBlowParticle* data;

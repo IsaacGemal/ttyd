@@ -1669,8 +1669,6 @@ void fan_disp(void) {
     extLoadTextureExit();
 }
 
-// Both pragmas are required: without `opt_propagation off` the function is 74.9%, without
-// `opt_lifetimes off` it is 95.5%.
 // Code-shape idioms that give retail's instructions and FPRs:
 //  - the random ranges use `randf(min, max)`, whose `r * (max - min) + min` emits MWCC's
 //    `fmadds rf, 90, ...` operand order directly (the hand-written `min + r * span` comes out with
@@ -1706,8 +1704,6 @@ static inline f32 fanAngle(f32 rf, f32 min, f32 span) {
     f32 a = (rf * span + min) * TWO_PI / 360.0f;
     return a;
 }
-#pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
-#pragma opt_lifetimes off // retail FPR colouring of the sin/cos inlines in the switch cases
 void ext_fan_main(void) {
     MarioWork* mario = marioGetPtr();
     ExtPose* pose;
@@ -1985,8 +1981,6 @@ void ext_fan_main(void) {
     psndSFX_pos(fan_wp->sfxId, &vec);
     psndSFX_vol(fan_wp->sfxId, (u8)(fan_wp->volume * fan_wp->idleCount / fan_wp->poseNum));
 }
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
 void ext_fan_dispent(void) {
     FanPose* fan;
     ExtPose* pose;
@@ -2085,11 +2079,6 @@ static inline f32 fanCosf(f32 rad) {
     return cosv;
 }
 
-#pragma opt_propagation off // stop MWCC rematerialising the sin/cos coefficients per branch
-#pragma opt_lifetimes off // match retail FPR colouring of rad and the sin/cos coefficients
-// check_hammer reached 100% with `opt_propagation off` + `opt_lifetimes off` (both required:
-// without them rad/coeffs land in the wrong FPRs) and the fanSinf temp spelling above.
-// The pragmas stay because each function is compiled under them separately.
 s32 check_hammer(FanPose* pose) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party;
@@ -2142,8 +2131,6 @@ s32 check_hammer(FanPose* pose) {
     }
     return 0;
 }
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
 USER_FUNC(evt_end_count) {
     evtSetValue(event, event->args[0], fan_wp->idleCount);
     return EVT_RETURN_DONE;

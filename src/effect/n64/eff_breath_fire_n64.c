@@ -107,7 +107,6 @@ inline Vec initializeVec(Vec* input) {
 // Matching notes: the zero vector, the int->float magic and the two mode-1 doubles are all compiler-
 // generated anonymous pool constants here, which puts .rodata exactly at vec+0, magic+0x10, 0.008+0x18,
 // 0.3+0x20 (the given named definitions emitted first and shifted every base+offset load).
-#pragma opt_common_subs off
 void effBreathFireMain(EffectEntry* effect) {
 	s32 life;
 	effBreathFireData* data = effect->userdata;

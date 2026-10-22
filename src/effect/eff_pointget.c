@@ -105,7 +105,6 @@ void effPointGetMain(EffectEntry* effect) {
 // does; MWCC's frontend loop-invariant hoisting would move them (and `f22 * f26`) into early temps that
 // take different FPRs. Naming float_48_80420ee4 fixes the 48<->32 assignment. Writing part2's
 // `base / 2.0f` as a division stops the compiler CSEing it with the inner loop's product.
-#pragma opt_loop_invariants off // the original keeps these per-iteration computations in place (as effKemuTestDisp)
 void effPointGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	PointGetWork* work = effect->userdata;
@@ -238,7 +237,6 @@ void effPointGetDisp(CameraId camId, void* param) {
 	}
 }
 
-#pragma opt_loop_invariants reset
 // Named .sdata2 constants kept by tools/pool_plan.py, defined after the code in the original's order.
 const char str_80420ED8[] = "%d";
 const f32 float_32_80420edc = 32.0f;

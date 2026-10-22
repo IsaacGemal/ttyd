@@ -87,7 +87,6 @@ static inline f32 sqrtf(f32 x) {
 	return x;
 }
 
-#pragma opt_common_subs off // without it MWCC CSEs the dir.z*norm multiply and the second float_0 load, changing FPR allocation
 EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
 	effMagic3Data* data;
@@ -171,7 +170,6 @@ EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	}
 	return effect;
 }
-#pragma opt_common_subs reset // scope the workaround above to effMagic3N64Entry only
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_onpu.c).
 inline Vec initializeVec(Vec* input) {

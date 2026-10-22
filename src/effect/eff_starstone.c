@@ -507,7 +507,6 @@ static inline GXColor starStoneTevColor(GXColor c, effStarStoneData* data) {
 }
 #endif
 
-#pragma opt_lifetimes off // the default lifetime analysis puts the loop counter in r25, not r27
 void effStarStoneDisp_1(CameraId camId, void* param) {
 	u32 i;
 	EffectEntry* effect = param;
@@ -661,7 +660,6 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 		STARSTONE_DL_LOOP(diamond_7_dl_1_tbl, diamond_7_dl_1_size_tbl, 0x21);
 	}
 }
-#pragma opt_lifetimes reset
 
 // The original walks each display-list table with a small inline helper.  With the loop written as
 // an inlined helper (its parameters become the induction variables), MWCC colours the first loop's
