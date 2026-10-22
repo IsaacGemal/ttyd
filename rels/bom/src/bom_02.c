@@ -737,7 +737,7 @@ EVT_BEGIN(mario_jump)
     END_INLINE_EVENT
     CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_FLD_JUMP2"), LW(10), LW(11), LW(12), 0)
     CALL(evt_mario_jump_pos, 335, 30, -130, 500, 2, -1000)
-    EVT_CMD(4, OPCODE_USER_FUNC), (s32)evt_npc_flag_onoff, 0,
+    EVT_CMD(4, OPCODE_USER_FUNC), PTR(evt_npc_flag_onoff), 0,
 };
 
 s32 lbl_3_data_76CC[] = {

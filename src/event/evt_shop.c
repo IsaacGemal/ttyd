@@ -669,7 +669,7 @@ USER_FUNC(evt_shop_setup) {
 		(&wp->nameWin)[i] = winMgrEntry(&window_desc[i]);
 	}
 	wp->openIdx = -1;
-	evtRunCaseEntry(9, 1, (s32)"a_shop_keihin", 0, (s32*)evt_shoplist, 0);
+	evtRunCaseEntry(9, 1, (s32)"a_shop_keihin", 0, evt_shoplist, 0);
 	return EVT_RETURN_DONE;
 }
 
