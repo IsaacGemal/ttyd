@@ -1245,26 +1245,36 @@ static f32 z(void) {
 	FadeEntry* entry = &wp->entries[1];
 	CameraEntry* cam;
 	Vec pos;
-	f32 one = 1.0f;
 	f32 denom;
 	f32 zpos;
 
 	if (camGetPtr(CAMERA_3D)->projType == 0) {
-		return one;
+		return 1.0f;
 	}
 
 	cam = camGetPtr(CAMERA_FADE);
 	PSMTXMultVec(cam->view, &entry->VirtualPos, &pos);
 	zpos = pos.z;
 	denom = (cam->viewport[5] - cam->viewport[4])
-	      * ((one / -zpos) * (cam->projection[2][2] * zpos + cam->projection[2][3]))
+	      * ((1.0f / -zpos) * (cam->projection[2][2] * zpos + cam->projection[2][3]))
 	      + cam->viewport[5];
 
 	cam = camGetPtr(CAMERA_3D);
 	PSMTXMultVec(cam->view, &entry->VirtualPos, &pos);
+#ifdef MUST_MATCH
+	{
+		// Retail multiplies this projection by 1.0f held in a register; without it the float
+		// registers differ (13 lines).
+		f32 one = 1.0f;
+		return ((cam->viewport[5] - cam->viewport[4])
+		      * (one * (cam->projection[2][2] * pos.z + cam->projection[2][3]))
+		      + cam->viewport[5]) / denom;
+	}
+#else
 	return ((cam->viewport[5] - cam->viewport[4])
-	      * (one * (cam->projection[2][2] * pos.z + cam->projection[2][3]))
+	      * (cam->projection[2][2] * pos.z + cam->projection[2][3])
 	      + cam->viewport[5]) / denom;
+#endif
 }
 static void zFill(void) {
 	CameraEntry* camera;

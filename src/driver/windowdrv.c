@@ -414,7 +414,6 @@ void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 
 void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width) {
 	CameraEntry* camera;
-	f32 zero;
 	f32 scroll;
 	Mtx mtx;
 	Mtx trans, scale;
@@ -512,10 +511,17 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 
 	GXPosition3f32(0.0f, 0.0f, 0.0f);
 	GXTexCoord2f32(0.0f, 0.0f);
-	// `zero` is a real local, not the literal 0.0f, so MWCC keeps the fadds/fsubs pair.
-	zero = 0.0f;
-	x2 = zero + (height - 32.0f);
-	y2 = zero - (width - 32.0f);
+#ifdef MUST_MATCH
+	{
+		// `zero` is a real local, not the literal 0.0f, so MWCC keeps the fadds/fsubs pair.
+		f32 zero = 0.0f;
+		x2 = zero + (height - 32.0f);
+		y2 = zero - (width - 32.0f);
+	}
+#else
+	x2 = height - 32.0f;
+	y2 = -(width - 32.0f);
+#endif
 
 	GXPosition3f32(x2, 0.0f, 0.0f); //f29 = x2, 0.0f + (height - 32.0f)
 	GXTexCoord2f32(1.0f, 0.0f);
@@ -591,9 +597,13 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 
 	x3 = height - 32.0f;
+#ifdef MUST_MATCH
 	// Two statements so MWCC encodes the fadds as `x3 + 32.0f` (fadds f25, f1, f0).
 	x4 = x3;
 	x4 += 32.0f; //f25 = x4
+#else
+	x4 = x3 + 32.0f;
+#endif
 
 	GXPosition3f32(x3, 0.0f, 0.0f);
 	GXTexCoord2f32(0.0f, 0.0f);

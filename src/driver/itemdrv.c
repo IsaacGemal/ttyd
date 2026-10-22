@@ -1851,7 +1851,10 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
     f32 dot;
     f32 nx;
     f32 nz;
+#ifdef MUST_MATCH
+    // The 15.0f probe height lives in a local; the literal at the two calls gives 30 lines of difference.
     f32 height = 15.0f;
+#endif
 
     *outX = item->position.x;
     *outZ = item->position.z;
@@ -1863,9 +1866,15 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
     sincosf(&sin, &cos, angleABf(0.0f, 0.0f, dirX, dirZ));
 
     distance = 10.0f + sqrtf(dirX * dirX + dirZ * dirZ);
+#ifdef MUST_MATCH
     hit = hitCheckFilter(NULL, item->position.x, item->position.y + height, item->position.z, sin, 0.0f, cos, &hitX,
                          &hitY, &hitZ, &distance,
                          &hitNX, &hitNY, &hitNZ);
+#else
+    hit = hitCheckFilter(NULL, item->position.x, item->position.y + 15.0f, item->position.z, sin, 0.0f, cos, &hitX,
+                         &hitY, &hitZ, &distance,
+                         &hitNX, &hitNY, &hitNZ);
+#endif
     if (hit != NULL) {
         dot = dirX * hitNX + dirZ * hitNZ;
         nx = (dirX - dot * hitNX) * 0.5f;
@@ -1880,9 +1889,15 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
     }
     else {
         distance = 10.0f + sqrtf(dirX * dirX + dirZ * dirZ);
+#ifdef MUST_MATCH
         hit = hitCheckFilter(NULL, item->position.x, item->position.y + height, item->position.z, sin, 0.0f, cos, &hitX,
                              &hitY, &hitZ, &distance,
                              &hitNX, &hitNY, &hitNZ);
+#else
+        hit = hitCheckFilter(NULL, item->position.x, item->position.y + 15.0f, item->position.z, sin, 0.0f, cos, &hitX,
+                             &hitY, &hitZ, &distance,
+                             &hitNX, &hitNY, &hitNZ);
+#endif
         if (hit != NULL) {
             dot = dirX * hitNX + dirZ * hitNZ;
             nx = (dirX - dot * hitNX) * 0.5f;
