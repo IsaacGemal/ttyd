@@ -61,34 +61,10 @@ extern MotTblEntry marioMotTbl[];
 
 // .sdata jump parameter tables, defined in this unit's reference assembly.
 f32 marioJumpData[10] = { 8.0f, -0.84f, 0.08f, -0.02f, -0.1f, -0.2f, 0.024f, -0.004f, 32.0f, -18.0f };
-const Vec vec3_802c59f0 = { 0.0f, 0.0f, 0.0f };
-#ifdef MUST_MATCH
-// The three map names that BOTTOMLESS_* reads at vec3_802c59f0 + 0xC/0x14/0x1C (8 bytes each); nothing else names them.
-#pragma force_active on
-const char str_win_03[8] = "win_03";
-const char str_win_01[8] = "win_01";
-const char str_tik_01[8] = "tik_01";
-#pragma force_active reset
-#endif
 extern f32 marioJumpSwData[];
 
 
 // clang-format off
-
-#ifdef MUST_MATCH
-// The original addresses the zero Vec and the three map names from one pooled base pointer.
-#define BOTTOMLESS_BASE const char* s = (const char*)&vec3_802c59f0;
-#define BOTTOMLESS_ZERO (*(const Vec*)s)
-#define BOTTOMLESS_WIN_03 (s + 0xC)
-#define BOTTOMLESS_WIN_01 (s + 0x14)
-#define BOTTOMLESS_TIK_01 (s + 0x1C)
-#else
-#define BOTTOMLESS_BASE
-#define BOTTOMLESS_ZERO vec3_802c59f0
-#define BOTTOMLESS_WIN_03 "win_03"
-#define BOTTOMLESS_WIN_01 "win_01"
-#define BOTTOMLESS_TIK_01 "tik_01"
-#endif
 
 void marioChgMoveMotion(void) {
     MarioWork* mario = marioGetPtr();
@@ -1569,7 +1545,6 @@ void mot_dummy(void) {
 
 
 void mot_bottomless(void) {
-    BOTTOMLESS_BASE
     f32 landY;
     f32 sx;
     f32 sy;
@@ -1590,15 +1565,15 @@ void mot_bottomless(void) {
         mario->airTimer = 0;
         mario->currSubMotionId = 0;
         if (mario->field_0xE0.y < -2000.0f) {
-            if (strcmp(gp->currentMapName, BOTTOMLESS_WIN_03) == 0) {
+            if (strcmp(gp->currentMapName, "win_03") == 0) {
                 f31 = 250.0f;
                 landY = 13.0f;
                 f29 = mario->position.z;
-            } else if (strcmp(gp->currentMapName, BOTTOMLESS_WIN_01) == 0) {
+            } else if (strcmp(gp->currentMapName, "win_01") == 0) {
                 f31 = 220.0f;
                 landY = 1.0f;
                 f29 = mario->position.z;
-            } else if (strcmp(gp->currentMapName, BOTTOMLESS_TIK_01) == 0) {
+            } else if (strcmp(gp->currentMapName, "tik_01") == 0) {
                 f31 = 100.0f;
                 landY = 120.0f;
                 f29 = mario->position.z;
@@ -1608,10 +1583,7 @@ void mot_bottomless(void) {
             landY = mario->field_0xE0.y;
             f29 = mario->field_0xE0.z;
         }
-        pos = BOTTOMLESS_ZERO;
-        pos.x = f31;
-        pos.y = 300.0f + landY;
-        pos.z = f29;
+        pos = (Vec){ f31, 300.0f + landY, f29 };
         vec2 = pos;
         while (1) {
             marioGetScreenPos(vec2, &sx, &sy, &sz);

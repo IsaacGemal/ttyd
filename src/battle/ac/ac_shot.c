@@ -11,11 +11,10 @@
 #include "system.h"
 #include <string.h>
 
-// .sdata2 constants used by the whole unit; the original emits them as named symbols.
-extern u32 dat_8041e4a8;
-extern const GXColor dat_8041e4ac;
-extern const GXColor dat_8041e4b0;
-extern const GXColor dat_8041e4b4;
+// .sdata2: dat_8041e4a8 is a mutable 0xFFFFFFFF word in the original; __declspec(section) keeps it
+// in .sdata2 so the text loads it instead of folding the immediate. The colour literals' templates
+// follow it.
+__declspec(section ".sdata2") u32 dat_8041e4a8 = 0xFFFFFFFF;
 
 // _disp_target_mark's action-command work area at BattleWork+0x1F4C. No header declares it,
 // so the fields are named from the original's uses. Offsets here are relative to 0x1F4C.
@@ -423,17 +422,8 @@ void _disp_target_mark(CameraId cameraId, void* param) {
     pos.y = 60.0f * cosfd(tm->rotZ) + tm->y;
     pos.z = tm->z;
     btlGetScreenPoint(&pos, &screen);
-    color = dat_8041e4ac;
+    color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
     _draw_target_mark(&color, screen.x, screen.y, screen.z, tm->rollAngle);
-}
-
-// The original builds the afterimage colour after intplGetValue and copies it to the by-value slot.
-static inline GXColor _makeAfterimageColor(f32 value) {
-    s32 alpha = (s32)intplGetValue(0, (s32)(30.0f - value), 0x1E, 255.0f,
-                                   0.0f);
-    GXColor color = dat_8041e4b4;
-    color.a = (u8)alpha;
-    return color;
 }
 
 void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
@@ -456,10 +446,11 @@ void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
                 btlGetScreenPoint(&pos, &screen);
                 value = aw->valueHistory[i];
                 if (value >= 30.0f) {
-                    GXColor color = dat_8041e4b0;
+                    GXColor color = {0x90, 0x80, 0xA0, 0xFF};
                     _draw_target_mark(&color, screen.x, screen.y, screen.z, aw->angleHistory[i]);
                 } else {
-                    GXColor color = _makeAfterimageColor(value);
+                    s32 alpha = (s32)intplGetValue(0, (s32)(30.0f - value), 0x1E, 255.0f, 0.0f);
+                    GXColor color = (GXColor){0x90, 0x80, 0xA0, alpha};
                     _draw_target_mark(&color, screen.x, screen.y, screen.z, aw->angleHistory[i]);
                 }
                 if (aw->valueHistory[i] <= 0.0f) {
@@ -469,14 +460,6 @@ void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
         }
     }
 }
-
-// .sdata2 definitions of this unit, in the original's order. dat_8041e4a8 is a mutable
-// 0xFFFFFFFF word in the original; __declspec(section) keeps it in .sdata2 so the text loads it
-// instead of folding the immediate.
-__declspec(section ".sdata2") u32 dat_8041e4a8 = 0xFFFFFFFF;
-const GXColor dat_8041e4ac = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041e4b0 = {0x90, 0x80, 0xA0, 0xFF};
-const GXColor dat_8041e4b4 = {0x90, 0x80, 0xA0, 0x00};
 
 // The original's .sdata2 also has a 4-byte zero tail (gap_09_8041E504_sdata2). It is the section's
 // 8-byte alignment padding: the pooled floats end at 0x5C and the linker pads the section to 0x60

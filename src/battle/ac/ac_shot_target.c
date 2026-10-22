@@ -54,13 +54,9 @@ const Vec vec3_802ff950[9] = {
 #endif
 
 // Data constants declared extern before use so MWCC references them by name instead of folding their
-// values into the instruction stream. They are defined at the bottom of this file. The original unit
-// emitted all of them; the definitions keep the .rodata/.sdata2 layout and byte values.
+// values into the instruction stream. They are defined at the bottom of this file, except dat_804218f8,
+// defined ahead of actionCommandDisp's colour literals; the definitions keep the .sdata2 layout.
 extern const u32 dat_804218f8;
-extern const u32 dat_804218fc;
-extern const u32 dat_80421900;
-extern const u32 dat_80421904;
-extern const u32 dat_80421908;
 extern const f32 float_2_8042190c;
 extern const f32 float_4_80421910;
 extern const f32 float_neg200_80421914;
@@ -338,6 +334,8 @@ static void _ac_disp_init(BattleWork* work) {
     disp->value = float_0_80421918;
 }
 
+const u32 dat_804218f8 = 0xFFFFFFFF;
+
 // The by-value temporaries copied into the btlDispTex4 argument slots are what the original does:
 // every call gets its own trans/scale/rot/color copies (like ac_monosiri_target's actionCommandDisp).
 // `vecs` must be declared before `work`: MWCC allocates the two address temps by declaration order
@@ -370,7 +368,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec scale;
             Vec rot;
             GXColor color;
-            color = *(const GXColor*)&dat_804218fc;
+            color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
             rot = RODATA_VEC(2, vec3_802ff950[2]);
             scale = RODATA_VEC(1, vec3_802ff950[1]);
             trans = screen;
@@ -384,7 +382,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec scale;
             Vec rot;
             GXColor color;
-            color = *(const GXColor*)&dat_80421900;
+            color = (GXColor){0x80, 0x80, 0x80, 0xFF};
             rot = RODATA_VEC(4, vec3_802ff950[4]);
             scale = RODATA_VEC(3, vec3_802ff950[3]);
             trans = screen;
@@ -397,7 +395,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec rot;
             Vec tmp;
             GXColor color;
-            color = *(const GXColor*)&dat_80421904;
+            color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
             tmp = RODATA_VEC(6, vec3_802ff950[6]);
             tmp.z = st->spin;
             rot = tmp;
@@ -414,7 +412,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec rot;
             Vec tmp;
             GXColor color;
-            color = *(const GXColor*)&dat_80421908;
+            color = (GXColor){0x80, 0x80, 0x80, 0xFF};
             tmp = RODATA_VEC(8, vec3_802ff950[8]);
             tmp.z = st->spin;
             rot = tmp;
@@ -425,11 +423,6 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 }
 
-const u32 dat_804218f8 = 0xFFFFFFFF;
-const u32 dat_804218fc = 0xFFFFFFFF;
-const u32 dat_80421900 = 0x808080FF;
-const u32 dat_80421904 = 0xFFFFFFFF;
-const u32 dat_80421908 = 0x808080FF;
 const f32 float_2_8042190c = 2.0f;
 const f32 float_4_80421910 = 4.0f;
 const f32 float_neg200_80421914 = -200.0f;
