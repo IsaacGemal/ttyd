@@ -7,6 +7,9 @@
 #include <dolphin/mtx.h>
 #include "mario/mario.h"
 
+// .sbss2 4-byte gap after the unit's colour template.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_8042308C_sbss2;
 #include <stdlib.h>
 
 // .sdata color tables (original symbols col_r/col_g/col_b at 0x80412D28-0x80412D33).

@@ -17,6 +17,10 @@ extern const f64 double_to_int_802fb680;
 // .data vertex array (32 vertices, 14 bytes each)
 extern u32 eff_snowfall_v[];
 
+// .sbss2 4-byte gap after the unit's colour template.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u32 gap_10_8042326C_sbss2;
+
 // .sdata2
 extern const f32 float_0p03125_8041fd14;
 extern const f32 float_0_8041fd18;
