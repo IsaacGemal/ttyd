@@ -9,9 +9,6 @@ extern ItemData itemDataTable[];
 
 
 
-// Keep the local _check_* helpers out of line: the original calls them with `bl` instead of
-// inlining their bodies into BattleEnemyUseItemCheck.
-#pragma dont_inline on
 void* BattleEnemyUseItemCheck(BattleUnit* unit) {
     s32 item = unit->heldItem;
     BattleWeapon* weapon;

@@ -329,8 +329,6 @@ void mot_hip(void) {
     }
 }
 
-// U_chkground is called (not inlined) by mot_hip in the original.
-#pragma dont_inline on
 s32 U_chkground(void) {
     MarioWork* mario = marioGetPtr();
     f32 landY;
@@ -369,7 +367,6 @@ s32 U_chkground(void) {
     }
     return 0;
 }
-#pragma dont_inline reset
 
 void mot_hip_post(void) {
     MarioWork* mario = marioGetPtr();

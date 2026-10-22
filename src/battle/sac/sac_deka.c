@@ -542,7 +542,6 @@ void main_gauge(void) {
     }
 }
 
-#pragma dont_inline on
 // .text:0x1EE0 | 0x80244ED8 | size: 0xB8
 void main_timing(s32 idx) {
     DekaWork* p = get_ptr();
@@ -567,7 +566,6 @@ void main_timing(s32 idx) {
             break;
     }
 }
-#pragma dont_inline reset
 
 // .text:0x1640 | 0x80244638 | size: 0x89C
 static void main_star(void) {
@@ -780,8 +778,6 @@ static void main_star(void) {
     }
 }
 
-#pragma dont_inline on
-// main_enemy is kept out of line: main_deka calls it rather than inlining it.
 // .text:0x15A4 | 0x8024459C | size: 0x9C
 void main_enemy(void) {
     BattleWork* work = _battleWorkPointer;
@@ -800,7 +796,6 @@ void main_enemy(void) {
         p->unitIds[j] = -1;
     }
 }
-#pragma dont_inline reset
 
 // .text:0x11A0 | 0x80244198 | size: 0x404
 // The int->float magic this function loads is the compiler's own pool entry (an anonymous
@@ -1141,13 +1136,10 @@ void yuka_disp(CameraId cameraId, void* param) {
     }
 }
 
-// get_ptr is kept out of line: the original callers all emit `bl get_ptr`.
-#pragma dont_inline on
 // .text:0x5D8 | 0x802435D0 | size: 0xC
 static DekaWork* get_ptr(void) {
     return (DekaWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
-#pragma dont_inline reset
 
 // .text:0x4BC | 0x8024327C | size: 0x354
 // tm/tj have function scope and are declared before ti, which reproduces the original's registers.

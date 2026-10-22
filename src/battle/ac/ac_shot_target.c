@@ -86,8 +86,6 @@ static void _ac_disp_init(BattleWork* work);
 // other scalar order) MWCC gives `rumbleType` r28 and `sfx` r24. `sfx` must be declared first,
 // then `ac`, `st`, `cont`, `smooth`, `u32 rumbleType`, `hit`, `unit`, `part` (the order below).
 // The `ac->`-qualified work-area access is required: without it st folds into work (18%).
-// The `#pragma dont_inline on` above `_ac_rumble_param_set` is required: without it MWCC inlines
-// the whole body at all four call sites and the function drops to 19.82%.
 s32 battleAcMain_ShotTarget(BattleWork* work) {
     const char* sfx;
     BattleActions* ac = &work->actionCommands;
@@ -241,9 +239,6 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
     return 1;
 }
 
-// dont_inline: the original keeps _ac_rumble_param_set as a real call (`bl _ac_rumble_param_set`);
-// without it MWCC inlines the body at both call sites.
-#pragma dont_inline on
 void _ac_rumble_param_set(u32 type, s16* period, s16* timer, f32* amplitude) {
     *period = irand(0x78) + 0x78;
     *timer = *period - 1;
@@ -277,7 +272,6 @@ void _ac_rumble_param_set(u32 type, s16* period, s16* timer, f32* amplitude) {
             break;
     }
 }
-#pragma dont_inline reset
 
 s32 battleAcResult_ShotTarget(BattleWork* work) {
     return work->actionCommands.result;
@@ -322,8 +316,6 @@ void battleAcDelete_ShotTarget(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EB;
 }
 
-// don't_inline: battleAcMain_ShotTarget calls this through the original `bl`.
-#pragma dont_inline on
 static void _ac_disp_init(BattleWork* work) {
     BattleACDispParams* disp = &work->actionCommands.dispParams;
 
@@ -345,7 +337,6 @@ static void _ac_disp_init(BattleWork* work) {
     disp->field_0x13 = 0;
     disp->value = float_0_80421918;
 }
-#pragma dont_inline reset
 
 // opt_common_subs off: with it on, the last screen2 update's 4.0f lands in f2 (original uses f1).
 #pragma opt_common_subs off

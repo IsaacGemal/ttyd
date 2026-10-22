@@ -26,8 +26,6 @@ void BattlePadManager(void) {
 	}
 }
 
-// dont_inline keeps BtlPad_WorkInit a real `bl` from BattlePadInit as in retail.
-#pragma dont_inline on
 void BtlPad_WorkInit(BattleWorkPad* pad) {
 	int i;
 
@@ -53,7 +51,6 @@ void BtlPad_WorkInit(BattleWorkPad* pad) {
 	pad->mHoldRepeatState = 0;
 	pad->mHoldRepeatFrameCounter = 0;
 }
-#pragma dont_inline reset
 
 void BtlPad_WorkUpdate(BattleWorkPad* pad, s32 chan) {
 	int i;
@@ -146,8 +143,6 @@ s32 BattlePadCheckTrigger(s32 mask) {
 	return BattlePadMultiCheckTrigger(0, mask);
 }
 
-// dont_inline keeps the MultiCheck helpers real `bl`s from the Check wrappers, as in retail.
-#pragma dont_inline on
 s32 BattlePadMultiCheckTrigger(s32 chan, s32 mask) {
 	u32* history = _battleWorkPointer->padWork[chan].mButtonsPressedHistory;
 	return history[0] & mask;
@@ -189,5 +184,3 @@ u32 BattlePadMultiCheckRepeat(s32 chan, s32 mask) {
 	u32* history = _battleWorkPointer->padWork[chan].mButtonsHeldHistory;
 	return history[0] & mask;
 }
-
-#pragma dont_inline reset

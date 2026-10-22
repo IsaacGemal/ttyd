@@ -1412,8 +1412,6 @@ USER_FUNC(evt_rsh_set_rnd_npc) {
     return EVT_RETURN_DONE;
 }
 
-// dont_inline keeps _get_rnd_npc_data out of line: original callers emit a real `bl _get_rnd_npc_data`.
-#pragma dont_inline on
 void* _get_rnd_npc_data(s32 type, s32 group, s32 index) {
     u32* data = NULL;
 
@@ -1464,7 +1462,6 @@ void* _get_rnd_npc_data(s32 type, s32 group, s32 index) {
     }
     return &data[index * 3];
 }
-#pragma dont_inline reset
 USER_FUNC(evt_rsh_get_rnd_npc_data) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);

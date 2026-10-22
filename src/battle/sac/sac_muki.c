@@ -1129,11 +1129,9 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
 }
 
 // .text:0x198 | 0x80246F64 | size: 0xC
-#pragma dont_inline on
 static MukiWork* get_ptr(void) {
     return (MukiWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
-#pragma dont_inline reset
 
 // .text:0xDC | 0x80246EA8 | size: 0xBC
 static s32 set_weapon(EventEntry* event, BOOL isFirstCall) {

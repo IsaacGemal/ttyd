@@ -24,9 +24,6 @@ u32 size16x16_tex32x32_0_vtx[14] = {
 	0x00080000, 0x00080400, 0x04000000, 0x00FFFFF8, 0x00000008, 0x00000400, 0x000000FF,
 };
 
-// dont_inline keeps effRippleN64Entry a real `bl` from effRippleMain as in retail.
-#pragma dont_inline on
-
 EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	EffRippleData* data;
@@ -69,7 +66,6 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->field_0x28 = y + scale;
 	return effect;
 }
-#pragma dont_inline reset
 
 
 // Retail colours `effect`/`timer`/`type` r28/r30/r29. At -O4,p the backend's second copy-propagation

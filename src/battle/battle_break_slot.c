@@ -33,9 +33,6 @@ typedef struct SlotCards5 {
     s32 v[5];
 } SlotCards5;
 
-// The original emits real calls to BattleBreakSlotGetPtr/ReelGetPtr.
-#pragma dont_inline on
-
 const char str_recovery[] = "recovery";
 
 // The original has these constants in .sdata2. They are declared extern const in the unit's header and defined
@@ -1042,5 +1039,3 @@ __declspec(section ".sdata2") const f32 float_0p2_80420554 = 0.2f;
 __declspec(section ".sdata2") const f32 float_0p15_80420558 = 0.15f;
 __declspec(section ".sdata2") const f32 float_32767_8042055c = 32767.0f;
 #pragma explicit_zero_data reset
-
-#pragma dont_inline reset

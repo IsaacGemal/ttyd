@@ -233,12 +233,9 @@ void zubaStarDispStar(CameraId cameraId, void* param) {
 }
 
 // .text:0x2078 | 0x80230608 | size: 0xC
-// Keep GetZubaStarPtr out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
 ZubaStarWork* GetZubaStarPtr(void) {
     return (ZubaStarWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
 }
-#pragma dont_inline reset
 
 // .text:0x203C | 0x802305CC | size: 0x3C
 u32 weaponGetPower_ZubaStar(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2,
@@ -254,8 +251,6 @@ const Vec vec3_802ff6b0 = { 0.0f, 0.0f, 0.0f };
 // A volatile struct copy reproduces the original's load/store interleave for vec3_802ff6b0. A volatile
 // store to bomb->count is needed too: it stops the scheduler hoisting the copy's first load above the
 // count store (the natural form is under #else).
-// dont_inline: the original calls zubastar_create_takaku from zubastar_main with `bl`.
-#pragma dont_inline on
 void zubastar_create_takaku(s32 count, Vec* points) {
     ZubaStarWork* work = GetZubaStarPtr();
     ZubaStarBomb* bomb;
@@ -281,7 +276,6 @@ void zubastar_create_takaku(s32 count, Vec* points) {
     }
     work->bombCount++;
 }
-#pragma dont_inline reset
 
 // Mutable views keep the two initialization copies in their original load/store order.
 #ifdef MUST_MATCH
@@ -392,8 +386,6 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
 }
 
 // .text:0x1990 | 0x8022FF20 | size: 0x100
-// Keep the intersection helper out of line.
-#pragma dont_inline on
 s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, f32 f8, f32* out1,
                         f32* out2) {
     f32 dx1 = f3 - f1;
@@ -437,7 +429,6 @@ s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, 
     }
     return 0;
 }
-#pragma dont_inline reset
 
 // MUST_MATCH: MWCC emits the original's inline 6-iteration copy loop only when `points` is copied
 // from a named 48-byte template. A `ZubaStarPoints4` local initializer (or an unused file-scope one)

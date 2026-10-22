@@ -40,9 +40,6 @@ s32 ac_signaltiming_ok_frame_range_2[7] = {0x1E, 0x1E, 0x1E, 0x1E, 0x19, 0x14, 0
 
 // SignalTiming's action-command work area at BattleWork+0x1F4C (see the unit header).
 
-// dont_inline: the original keeps _get_ok_frame_range as its own function and battleAcMain calls it
-// through a `bl`; without this MWCC's deferred inliner folds the two switch arms into the caller.
-#pragma dont_inline on
 s32 _get_ok_frame_range(s32 idx) {
     BattleWork* work = _battleWorkPointer;
 
@@ -53,7 +50,6 @@ s32 _get_ok_frame_range(s32 idx) {
         return work->actionCommands.acParams[7] + ac_signaltiming_ok_frame_range[idx];
     }
 }
-#pragma dont_inline reset
 
 // Required: without this pragma the callee-saved allocation rotates (the SFX pointers drop from
 // r31-r28 to r25-r28) and the function falls to ~95%. The rest of the shape is load-bearing too: the

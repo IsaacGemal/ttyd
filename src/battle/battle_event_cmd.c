@@ -6462,8 +6462,6 @@ USER_FUNC(btlevtcmd_SetPartsJumpSound) {
     return EVT_RETURN_DONE;
 }
 
-// the original calls _UnitMoveSoundControl with `bl`, not inlined
-#pragma dont_inline on
 void _UnitMoveSoundControl(BattleUnit* unit) {
     f32 x, y, z;
 
@@ -6471,14 +6469,12 @@ void _UnitMoveSoundControl(BattleUnit* unit) {
     _MoveSoundControlCore(unit, &unit->seMode, NULL, x, y, z);
 }
 
-// the original calls _PartsMoveSoundControl with `bl`, not inlined
 void _PartsMoveSoundControl(BattleUnitPart* part) {
     f32 x, y, z;
 
     BtlUnit_GetPartsPos(part, &x, &y, &z);
     _MoveSoundControlCore(part->mOwner, &part->seMode, part, x, y, z);
 }
-#pragma dont_inline reset
 
 // work is the unit's seMode, or the part's when owner is that part (NULL for the unit itself); x/y/z is where the
 // beat sounds play.
@@ -6530,19 +6526,15 @@ void _MoveSoundControlCore(BattleUnit* unit, BtlUnitSeMode* work, BattleUnitPart
     }
 }
 
-// the original calls _UnitMoveSoundControlEnd with `bl`, not inlined
-#pragma dont_inline on
 void _UnitMoveSoundControlEnd(BattleUnit* unit) {
     _MoveSoundControlEndCore(unit, &unit->seMode);
 }
 
-// the original calls _PartsMoveSoundControlEnd with `bl`, not inlined
 void _PartsMoveSoundControlEnd(BattleUnitPart* part) {
     BtlUnitSeMode* work = &part->seMode;
     _MoveSoundControlEndCore(part->mOwner, work);
 }
 
-// Keep _MoveSoundControlEndCore out of line: the original calls it rather than inlining.
 void _MoveSoundControlEndCore(BattleUnit* unit, BtlUnitSeMode* work) {
     // unsigned compare, as in retail (a signed one against -1 is an instruction shorter)
     if ((u32)work->sfxHandle != 0xFFFFFFFF) {
@@ -6550,7 +6542,6 @@ void _MoveSoundControlEndCore(BattleUnit* unit, BtlUnitSeMode* work) {
         work->sfxHandle = -1;
     }
 }
-#pragma dont_inline reset
 
 //s32* battleId, s32* a, s32* b, s32* c, s32* retIndex
 USER_FUNC(btlevtcmd_snd_se) {

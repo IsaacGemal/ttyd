@@ -253,11 +253,9 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	return work->actionCommands.mDefenseResult;
 }
 
-#pragma dont_inline on // retail keeps the BattleACPadCheckRecordTrigger call instead of inlining it
 s32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask) {
 	return _battleWorkPointer->actionCommands.pad.mButtonsPressedHistory[chan] & mask;
 }
-#pragma dont_inline reset
 
 s32 BattleActionCommandGetDefenceResult(void) {
 	return _battleWorkPointer->actionCommands.mDefenseResult;

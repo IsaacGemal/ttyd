@@ -552,7 +552,6 @@ static Vec v_list[8] = {
 
 // Builds a scratch EventEntry whose args are the eight values, the way
 // evt_cloud.c calls evt_img_alloc_capture.
-#pragma dont_inline on  // original emits calls to these helpers, not inlined copies
 static s32 _img_alloc_capture(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7) {
     EventEntry event;
     s32 captureArgs[10];
@@ -643,7 +642,6 @@ static void _mapclsofs_all(CloudEntry* cp) {
         mapGrpClearOffScreen(cp->mapGrpName[i]);
     }
 }
-#pragma dont_inline reset
 
 static USER_FUNC(evt_cloud_main) {
     CloudEntry* cp = (CloudEntry*)event->lwData[0];

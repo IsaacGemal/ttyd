@@ -90,10 +90,7 @@ extend_data(101,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// the original keeps the three calls as real `bl`s
-#pragma dont_inline on
 #include "rel/common/evt_lect/lect_mario_ido.h"
-#pragma dont_inline off
 
 #include "rel/common/evt_lect/lect_status.h"
 #include "rel/common/x_flag.h"
@@ -102,10 +99,7 @@ extend_data(101,
 #include "rel/common/evt_lect/lecture_button_set_icon_id.h"
 #include "rel/common/evt_lect/lecture_button_set_pos.h"
 
-// the original keeps the recursive call as a real `bl`
-#pragma dont_inline on
 #include "rel/common/evt_lect/lect_map_cam_chg.h"
-#pragma dont_inline off
 
 #include "rel/common/evt_lect/effitemget.h"
 #include "rel/common/evt_lect/effitemget_busaiku.h"

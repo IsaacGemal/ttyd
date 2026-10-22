@@ -23,8 +23,6 @@ BOOL BattleCheckEndUnitInitEvent(BattleWork* wp) {
     return valid;
 }
 
-// dont_inline keeps BattleRunHitEventDirect a real `bl` from BattleRunHitEvent as in retail.
-#pragma dont_inline on
 s32 BattleRunHitEventDirect(BattleUnit* unit, s32 damageCode, void* code) {
     EventEntry* evt;
     s32 id, newId;
@@ -63,7 +61,6 @@ s32 BattleRunHitEventDirect(BattleUnit* unit, s32 damageCode, void* code) {
     }
     return newId;
 }
-#pragma dont_inline reset
 
 s32 BattleRunHitEvent(BattleUnit* unit, s32 damageCode) {
     void* code;

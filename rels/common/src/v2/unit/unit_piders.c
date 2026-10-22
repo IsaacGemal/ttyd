@@ -1061,7 +1061,6 @@ static inline GXColor piders_getMatColor(PidersYarnWork* yarn) {
 }
 
 #ifdef MUST_MATCH
-#pragma dont_inline on // keep the GX vert helpers out of line, but inline piders_getMatColor
 void GXPosition3f32(f32 x, f32 y, f32 z) {
     GXWGFifo.f32 = x;
     GXWGFifo.f32 = y;
@@ -1069,7 +1068,6 @@ void GXPosition3f32(f32 x, f32 y, f32 z) {
 }
 
 void GXEnd(void) {}
-#pragma dont_inline off
 #endif
 
 static void piders_draw_yarn_sub(CameraId cameraId, void* param) {
@@ -1213,7 +1211,6 @@ static USER_FUNC(piders_renzoku_attack_set_target) {
     return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on // the pider target walkers are calls, not inlined, in the original
 static void piders_get_target(s32* outUnit, s32* outPart) {
     BattleWork* wp = _battleWorkPointer;
     BattleSampling* sampling = &wp->sampling;
@@ -1239,5 +1236,4 @@ static void piders_get_next_target(s32* outUnit, s32* outPart) {
         *outPart = 0;
     }
 }
-#pragma dont_inline off
 // clang-format on

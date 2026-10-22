@@ -584,8 +584,6 @@ void gcRumbleCheck(void) {
 	}
 }
 
-// dont_inline keeps L_gcResetCheck a real `bl` from marioStMain/gcDvdCheckThread, as in retail.
-#pragma dont_inline on
 void L_gcResetCheck(void) {
 	u32 code;
 
@@ -625,4 +623,3 @@ void L_gcResetCheck(void) {
 		while (1) {}
 	}
 }
-#pragma dont_inline reset

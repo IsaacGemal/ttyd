@@ -643,13 +643,11 @@ USER_FUNC(unk_gon_00000374) {
     return EVT_RETURN_DONE;
 }
 
-#pragma dont_inline on // randf is emitted as a separate function in the original
 static f32 randf(f32 min, f32 max) {
     f32 ratio = (f32)rand() / 32767.0f;
 
     return ratio * (max - min) + min;
 }
-#pragma dont_inline reset
 
 static void senkaron_ext_init(void) {
     s32 i;

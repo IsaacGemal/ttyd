@@ -380,14 +380,10 @@ void battleAcDisp_RepeatedlyLv(CameraId camId, void* param) {
     }
 }
 
-// dont_inline: the original keeps the battleAcDelete_RepeatedlyLv call in battleAcMain instead of
-// inlining its two stores.
-#pragma dont_inline on
 void battleAcDelete_RepeatedlyLv(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EA;
     BattleAcGaugeSeDelete();
 }
-#pragma dont_inline reset
 
 // optimize_for_size: the original actionCommandDisp is size-optimized (the /7 is a real `divw`, not the
 // magic-multiply -O4,p emits, and the frame/allocator match only at this level). Other functions in the

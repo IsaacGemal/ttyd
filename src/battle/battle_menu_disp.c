@@ -189,7 +189,6 @@ void battleMenuDispEnd(void) {
 	fileFree(_battleWorkPointer->menuTex);
 }
 
-#pragma dont_inline on
 void GetRingCenter(Vec* out) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
@@ -202,15 +201,12 @@ void GetRingCenter(Vec* out) {
     }
 }
 
-// The original emits real `bl GetRingOffset`/`bl GetRingCenter` calls from
-// DrawSubMenuCommonProcess (and DrawMainMenu), so keep them out of line.
 void GetRingOffset(f32* x, f32* y, f32 angle) {
     f32 a = 4.712389f - angle;
     f32 c = 80.0f * (f32)cos(a);
     *x = c;
     *y = 35.0f * (f32)sin(a);
 }
-#pragma dont_inline reset
 
 void DrawMainIcon(BattleMenuWork* window, BattleCommandAction* table, Mtx* mtxA, Vec* vecB, f32* scales) {
     BattleWork* wp = _battleWorkPointer;
@@ -422,8 +418,6 @@ void DrawMainIconCircle(BattleMenuWork* window, BattleCommandAction* entry, Mtx*
     }
 }
 
-// dont_inline: keep deferred inlining from pulling same-TU helpers into DrawSubIcon/DrawMainIcon.
-#pragma dont_inline on
 void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, s32* c, s32* d, s32* e, BattleCommandParty* table, s32 flag) {
     BattleWork* wp = _battleWorkPointer;
     BattleCursor* cursor;
@@ -447,7 +441,6 @@ void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, s32* c, s
         }
     }
 }
-#pragma dont_inline reset
 
 // Builds the text colour the sub icons tint their labels with.
 static inline GXColor SubIconFontColor(GXColor c, s32 alpha) {
@@ -837,8 +830,6 @@ void DrawMenuPartyChangeButton(void) {
     }
 }
 
-// _Sub is a real call in the original; without this MWCC inlines it into DrawMenuPartyChangeButton.
-#pragma dont_inline on
 void DrawMenuPartyChangeButton_Sub(u32 tex, f32 x, f32 y, f32 angle) {
     Mtx mtx;
 
@@ -849,7 +840,6 @@ void DrawMenuPartyChangeButton_Sub(u32 tex, f32 x, f32 y, f32 angle) {
         btlDispTexPlane2(mtx, tex, color, 0);
     }
 }
-#pragma dont_inline reset
 
 void DrawMenuPinchMark(void) {
     BattleWork* wp = _battleWorkPointer;
@@ -974,10 +964,6 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
     }
 }
 
-// The original emits a real `bl` to this function from every caller, so it must
-// be marked don't-inline itself (a surrounding region only stops its functions
-// being inlined elsewhere).
-#pragma dont_inline on
 void DrawMenuCursorAndScrollArrow(Vec pos) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -1016,8 +1002,6 @@ void DrawMenuCursorAndScrollArrow(Vec pos) {
     iconDispGx(1.0f, &vec, 0x14, 0x1F0);
 }
 
-// These are called, never inlined, in the original build. The unit's configure
-// entry still uses the default `-inline auto`, so keep them out of line here.
 void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, BattleCursor* menu) {
     BattleWork* wp = _battleWorkPointer;
     s32 i;
@@ -1087,7 +1071,6 @@ void InitSubMenuCommonProcess3(BattleMenuWork* window, BattleCursor* cursor) {
         }
     }
 }
-#pragma dont_inline reset
 
 void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 idx, s32 mode) {
     s32 i;
@@ -1786,7 +1769,6 @@ void BattleMenuDisp_Operation_End(BattleWork* wp) {
 // This declaration order, and the function-scope `entry`, are what make MWCC
 // pack the frame at the original offsets (outX/outY at 0x14/0x10, arr88 at 0x88,
 // ...) and hand r10/r9 to i/entry; the natural order does not.
-#pragma dont_inline on
 void DrawOperationWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -1831,7 +1813,6 @@ void DrawOperationWin(void) {
         DrawMenuHelpWin(entries[cursor->field_0].helpMsg, outX, outY);
     }
 }
-#pragma dont_inline reset
 
 void BattleMenuDisp_ChangePartySelect_Init(BattleWork* wp, u32 flags) {
     BattleMenuWork* window;
@@ -1859,7 +1840,6 @@ void BattleMenuDisp_ChangePartySelect_End(BattleWork* wp) {
 // This declaration order (and the split window/cursor assignment below) is what
 // makes MWCC place the locals at the original frame offsets and hand out
 // r30/r29/r28 to window/cursor/entries; the natural order does not match.
-#pragma dont_inline on
 void DrawChangePartyWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window;
@@ -1905,7 +1885,6 @@ void DrawChangePartyWin(void) {
         DrawMenuHelpWin(entries[cursor->field_0].mDescription, outX, outY);
     }
 }
-#pragma dont_inline reset
 
 void BattleMenuDisp_MultiItem_Init(BattleWork* wp, u32 flags) {
     BattleMenuWork* window;
@@ -1930,8 +1909,6 @@ void BattleMenuDisp_MultiItem_End(BattleWork* wp) {
     }
 }
 
-// The Disp wrappers must emit a real call, not an inline expansion of these.
-#pragma dont_inline on
 void DrawMultiItemWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -1974,7 +1951,6 @@ void DrawMultiItemWin(void) {
         DrawMenuHelpWin(entries[cursor->field_0].helpMsg, outX, outY);
     }
 }
-#pragma dont_inline reset
 
 #pragma explicit_zero_data on
 const f32 float_0_8041c144 = 0.0f;

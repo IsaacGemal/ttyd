@@ -71,8 +71,6 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 }
 
 
-// dont_inline: battleAcResult_TimingA calls this with `bl`; without it MWCC inlines the body.
-#pragma dont_inline on
 s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
 	AcTimingADecWork* dec = (AcTimingADecWork*)&work->actionCommands.field_0x2BC[0];
 	AcTimingAEntry* entry = _ac_timing_a_timing_tbl[
@@ -96,8 +94,6 @@ s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
 	}
 	return result;
 }
-
-#pragma dont_inline reset
 
 s32 battleAcResult_TimingA(BattleWork* work) {
 	BattleActions* ac = &work->actionCommands;
@@ -206,8 +202,6 @@ void battleAcDelete_TimingA(BattleWork* work) {
 }
 
 
-// dont_inline: the original keeps actionCommandDisp as its own local function (callers emit `bl`).
-#pragma dont_inline on
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
 	BattleActions* ac = &work->actionCommands;
@@ -300,6 +294,3 @@ AcTimingAEntry* _ac_timing_a_timing_tbl[7] = {
     (AcTimingAEntry*)_ac_timing_a_timing_lv_4, (AcTimingAEntry*)_ac_timing_a_timing_lv_5, (AcTimingAEntry*)_ac_timing_a_timing_lv_6,
 };
 // clang-format on
-
-#pragma dont_inline reset
-

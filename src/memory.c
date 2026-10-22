@@ -329,8 +329,6 @@ void L_smartReInit(void) {
 
 
 
-// dont_inline keeps the smartAutoFree/smartGarbage calls in smartAlloc as real `bl`s.
-#pragma dont_inline on
 void smartAutoFree(u32 a1) {
 	smartEntry* entry;
 	smartEntry* next;
@@ -356,7 +354,6 @@ void smartAutoFree(u32 a1) {
 		}
 	}
 }
-#pragma dont_inline reset
 
 void smartFree(smartEntry* entry) {
 	smartEntry* prev;

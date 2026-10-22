@@ -51,8 +51,6 @@ const Vec vec3_802fd560[9] = {
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// dont_inline: the original calls _CalcRollDir/_GetInputDir; MWCC inline-expanded them.
-#pragma dont_inline on
 s32 _GetInputDir(void) {
     BattleWork* work = _battleWorkPointer;
     u32 mask = *(u32*)&work->actionCommands.acParams[2];
@@ -119,7 +117,6 @@ s8 _CalcRollDir(void) {
         return diff;
     }
 }
-#pragma dont_inline reset
 
 s32 battleAcMain_StickRotate(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
@@ -427,8 +424,6 @@ void battleAcDisp_StickRotate(CameraId camId, void* param) {
 }
 
 
-// dont_inline: the original calls _get_icon_id from both display functions.
-#pragma dont_inline on
 s32 _get_icon_id(s8 id) {
     switch (id) {
         case 1:
@@ -451,7 +446,6 @@ s32 _get_icon_id(s8 id) {
             return 0x79;
     }
 }
-#pragma dont_inline reset
 
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
