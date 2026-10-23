@@ -321,11 +321,15 @@ void battleAcDelete_StickKeepLeft(BattleWork* work) {
     work->actionCommands.mAcState = 0x3ED;
 }
 
+#ifdef MUST_MATCH
+// Going through an inline keeps the 25.0f in its own FPR (f31); the plain `yy = 25.0f + y`
+// reuses y's register (f30) and the whole loop body shifts one FPR down. The inline's name has no
+// outside evidence.
+static inline f32 stickLeftAdd25(f32 v) { return 25.0f + v; }
+#endif
+
 // The original emits this last (the asm lists it first, and game code is compiled with
 // -inline auto,deferred, which emits functions in reverse source order).
-// Going through an inline keeps the 25.0f in its own FPR (f31); the plain `yy = 25.0f + y`
-// reuses y's register (f30) and the whole loop body shifts one FPR down.
-static inline f32 stickLeftAdd25(f32 v) { return 25.0f + v; }
 
 // The `ac` intermediate (`BattleActions*`, rather than spelling `work->actionCommands.` at every use)
 // is what makes MWCC colour `work` in r31 and the .rodata pool base in r30 as the original; with the
@@ -402,7 +406,11 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
         v.x = -288.0f + x;
+#ifdef MUST_MATCH
         v.y = yy = stickLeftAdd25(y);
+#else
+        v.y = yy = 25.0f + y;
+#endif
         iconDispGx(1.0f, &v, 0x10, 0x8F);
     }
 
