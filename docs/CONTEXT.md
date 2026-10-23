@@ -6921,12 +6921,12 @@ only where the object stays identical. Data layout otherwise untouched.
   build/pl/venv). Every commit: `build/G8MJ01/ok` recreated, changed files compile without MUST_MATCH, fncast_lint and
   local_prototypes clean, CI PASS (`--allow-protected` for symbols.txt, `--allow-configure` for the flags). At the end
   `obj_equiv --tree` over all 1,830 objects against the pre-branch ones: every one equivalent.
-- **Counts** (d8940c4e -> this branch). `tools/cleanup_index.py` **19.879 -> 19.721** per kLOC (13773 -> 13651
-  weighted): must_match 728 -> 701, deref_cast 520 -> 489, prim_ptr_cast 1963 -> 1933, opt_pragma 327 -> 325,
+- **Counts** (d8940c4e -> this branch). `tools/cleanup_index.py` **19.879 -> 19.723** per kLOC (13773 -> 13653
+  weighted): must_match 728 -> 703, deref_cast 520 -> 489, prim_ptr_cast 1963 -> 1933, opt_pragma 327 -> 325,
   address_name 1078 -> 1077; pool_constant (weight 0) 5857 -> 4933. `#if...MUST_MATCH` lines in src/ and rels/ 706 ->
-  679. File-scope named f32/f64 definitions 1134 -> 867 (statics included), those a MUST_MATCH region or
+  681. File-scope named f32/f64 definitions 1134 -> 867 (statics included), those a MUST_MATCH region or
   MATCH_F32/F64 names 139 -> 110. symbols.txt: 185 entries renamed to `@NNN` (scope:local). Code lines 692,849 ->
-  692,216.
+  692,222.
 - **1. Named pool constants.**
   - #1127's list: evt_telop (all eight constants; seven of its eight MUST_MATCH regions and the opt_common_subs pair
     go, and the font origin is `(width - scale * msgWidth) / 2.0f + (-15.0f)` without the steering locals), evt_item (EI_HALF), ac_crane_timing (MATCH_F32/MATCH_F64 and the file-local MATCH_F64 macro), eff_kemuri3_n64
@@ -6980,8 +6980,8 @@ only where the object stays identical. Data layout otherwise untouched.
   although the data ratchet passes without it (n9-q-addrall left its 462 names). The float truthiness tests (`if
   (mag)`, `if (!data->direction)`) and the `/ 2.0f` forms are what the object needs, not style. `+ (-15.0f)`-style
   additions keep the pool's negative constant. sac_genki's `f32 zero` block went (identical without it).
-  ac_stick_keep_left's stickLeftAdd25 inline is still needed (a plain `25.0f + y` shifts one FPR) and still has no
-  outside name. The thirteen new `extra_cflags` on Object lines.
+  ac_stick_keep_left's stickLeftAdd25 inline is still needed (a plain `25.0f + y` shifts one FPR) and has no outside
+  name, so it is under MUST_MATCH with `yy = 25.0f + y` under `#else`. The thirteen new `extra_cflags` on Object lines.
 - **Leads.** evt_win under `-char signed` with its two `((s8*)p)[i]` reads guarded (net: 5 casts for one region).
   eff_pturn and win_main are one literal's first use away from matching. The pool_sweep/lever_search harness could run
   again after other cleanups free more pools; it is in build/pl/tools (untracked).
