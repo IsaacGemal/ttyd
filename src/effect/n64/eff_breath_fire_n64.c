@@ -19,14 +19,6 @@ u32 stg_fire_breath_v[35] = {
     0xFF9C0005, 0x00000000, 0x000000FF,
 };
 
-extern const f32 float_256_8041ea80;
-extern const f32 float_0p0078125_8041ea84;
-extern const f32 float_0p03125_8041ea88;
-extern const f32 float_0_8041ea8c;
-extern const f32 float_deg2rad_8041ea90;
-extern const f32 float_4_8041ea94;
-extern const f32 float_10_8041ea98;
-
 // .rodata zero vector, int->float and mode-1 doubles are compiler-generated pool constants here.
 
 // .data vertex array of this unit; the original hands a 0x46-byte slice to effSetVtxDescN64.
@@ -64,7 +56,7 @@ EffectEntry* effBreathFireN64Entry(s32 kind, f32 x, f32 y, s32 children, f32 z, 
 	data->life = duration;
 	data->age = 0;
 	data->alpha = 0xFF;
-	data->texPos = float_0_8041ea8c;
+	data->texPos = 0.0f;
 	data->scaleRate = 0.1f;
 	data->endScale = data->baseScale;
 	if (kind == 0) {
@@ -77,7 +69,7 @@ EffectEntry* effBreathFireN64Entry(s32 kind, f32 x, f32 y, s32 children, f32 z, 
 		data->bendY = 0.2f * (endY - y) * (f32)(s32)(effTblRandN64(10, seed + 4) - 5);
 		data->bendZ = 0.2f * (endZ - z) * (f32)(s32)(effTblRandN64(10, seed + 5) - 5);
 	}
-	data->rise = float_0_8041ea8c;
+	data->rise = 0.0f;
 	data->color0R = 0xFF;
 	data->color0G = 0xAA;
 	data->color0B = 0x2A;
@@ -107,7 +99,7 @@ void effBreathFireMain(EffectEntry* effect) {
 	Vec position = initializeVec((Vec*)&data->posX);
 	EffectEntry* newEffect;
 
-	data->texPos = float_4_8041ea94 * (f32)data->age / float_10_8041ea98;
+	data->texPos = 4.0f * (f32)data->age / 10.0f;
 	data->life--;
 	data->age++;
 	life = data->life;
@@ -189,7 +181,7 @@ void effBreathFireDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
 	GXSetTevColor(GX_TEVREG0, (GXColor){ data->color0R, data->color0G, data->color0B, data->alpha });
-	GXSetTevColor(GX_TEVREG1, (GXColor){ data->color1R, data->color1G, data->color1B, (u8)(float_256_8041ea80 * (s - (f32)frame)) });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->color1R, data->color1G, data->color1B, (u8)(256.0f * (s - (f32)frame)) });
 
 	effGetTexObjN64(0x77, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -197,18 +189,18 @@ void effBreathFireDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP1);
 
 	frame2 = frame << 5;
-	PSMTXScale(scale, float_0p0078125_8041ea84, float_0p03125_8041ea88, float_0_8041ea8c);
-	PSMTXTrans(trans, (f32)frame2, float_0_8041ea8c, float_0_8041ea8c);
+	PSMTXScale(scale, 0.0078125f, 0.03125f, 0.0f);
+	PSMTXTrans(trans, (f32)frame2, 0.0f, 0.0f);
 	PSMTXConcat(scale, trans, scale);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-	PSMTXScale(scale, float_0p0078125_8041ea84, float_0p03125_8041ea88, float_0_8041ea8c);
-	PSMTXTrans(trans, (f32)(frame2 + 0x20), float_0_8041ea8c, float_0_8041ea8c);
+	PSMTXScale(scale, 0.0078125f, 0.03125f, 0.0f);
+	PSMTXTrans(trans, (f32)(frame2 + 0x20), 0.0f, 0.0f);
 	PSMTXConcat(scale, trans, scale);
 	GXLoadTexMtxImm(scale, GX_TEXMTX1, GX_MTX2x4);
 
 	PSMTXTrans(trans, data->posX, data->posY, data->posZ);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041ea90 * -camGetPtr(CAMERA_3D)->viewYaw);
-	PSMTXScale(scale, data->scale, data->scale, float_0_8041ea8c);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXScale(scale, data->scale, data->scale, 0.0f);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, trans);
 	PSMTXConcat(cam->view, trans, trans);
@@ -222,11 +214,3 @@ void effBreathFireDisp(CameraId camId, void* param) {
 	tri2(4, 2, 3, 0, 4, 0, 2, 0);
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_256_8041ea80 = 256.0f;
-const f32 float_0p0078125_8041ea84 = 0.0078125f;
-const f32 float_0p03125_8041ea88 = 0.03125f;
-const f32 float_0_8041ea8c = 0.0f;
-const f32 float_deg2rad_8041ea90 = 0.017453292f;
-const f32 float_4_8041ea94 = 4.0f;
-const f32 float_10_8041ea98 = 10.0f;

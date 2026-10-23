@@ -10,7 +10,6 @@
 #include "system.h"
 #include "peach.h"
 #include <string.h>
-#include "matching.h"
 #include "motion/mot_slit.h"
 #include "koopa_motion.h"
 #include "motion/mot_jabara.h"
@@ -21,11 +20,9 @@
 // Raw accessors for MarioWork fields not named in include/mario/mario.h.
 // Offsets are listed in REPORT.md.
 #define MWS32(m, off) (*(s32*)((u8*)(m) + (off)))
-#define MW_ZERO MATCH_F32(float_0_8041aef8)
 
 // .sdata2
 const char str_8041AEF0[] = "M_S_1";
-const f32 float_0_8041aef8 = 0.0f;
 
 void marioVoiceGlareOn(void) {
     MarioWork* mario = marioGetPtr();
@@ -90,7 +87,7 @@ void mot_stay(void) {
         if (mario->flags & MARIO_FLAG_IS_8_BIT) {
             marioChgPose(str_8041AEF0);
             if (!(mario->flags & 0x20)) {
-                mario->baseSpeed = MW_ZERO;
+                mario->baseSpeed = 0.0f;
             }
             mario->flags &= ~0x8000;
         } else {
@@ -120,14 +117,14 @@ void mot_stay(void) {
             }
         }
         if (!(mario->flags & 0x20)) {
-            mario->baseSpeed = MW_ZERO;
+            mario->baseSpeed = 0.0f;
         }
         mario->flags &= ~0x8000;
     }
 
     if (mario->flags & MARIO_FLAG_IS_8_BIT) {
         marioChkJump();
-        if (mario->controlStickSensitivity > MW_ZERO) {
+        if (mario->controlStickSensitivity > 0.0f) {
             s8 stickDir1 = mario->wStickDir1;
             s8 stickDir2 = mario->wStickDir2;
 
@@ -181,7 +178,7 @@ void mot_stay(void) {
     }
 
     if (mario->flags & MARIO_FLAG_IS_CARRYING_BOBBERY) {
-        if (mario->controlStickSensitivity > MW_ZERO) {
+        if (mario->controlStickSensitivity > 0.0f) {
             marioChgMot(MARIO_MOTION_WALK);
         }
         return;
@@ -224,7 +221,7 @@ void mot_stay(void) {
             }
         }
 
-        if (mario->wMotionTimer == 0 && mario->controlStickSensitivity > MW_ZERO && !bail) {
+        if (mario->wMotionTimer == 0 && mario->controlStickSensitivity > 0.0f && !bail) {
             s8 stickDir1 = mario->wStickDir1;
             s8 stickDir2 = mario->wStickDir2;
 

@@ -51,10 +51,6 @@ static BeroEntry bero_data[] = {
     { NULL },
 };
 
-extern const f32 zero_eki_00008ff0;
-extern const f32 float_6p2832_eki_00008ff4;
-extern const f32 float_360_eki_00008ff8;
-
 static EVT_BEGIN(evt_key)
     SET_VALUE(GSW(0), 314)
     RETURN
@@ -94,7 +90,7 @@ USER_FUNC(hit_move) {
 
     mtxGetRotationElement(hit->worldMtx, mtx, 'x', 'z');
     PSMTXMultVec(mtx, &vec, &vec);
-    angle = angleABf(zero_eki_00008ff0, zero_eki_00008ff0, vec.x, vec.z);
+    angle = angleABf(0.0f, 0.0f, vec.x, vec.z);
     diff = angle - event->userdataf[1];
 
     if (event->userdata[0] == 0) {
@@ -107,7 +103,7 @@ USER_FUNC(hit_move) {
     dist = distABf(mario->position.x, mario->position.z, pos.x, pos.z);
     // The temporary makes the compiler add diff into the angleABf result register, as the original does.
     tmp = angleABf(pos.x, pos.z, mario->position.x, mario->position.z);
-    diff = float_6p2832_eki_00008ff4 * (tmp + diff) / float_360_eki_00008ff8;
+    diff = 6.2831855f * (tmp + diff) / 360.0f;
 
     mario->riderDelta.x = (dist * (f32)sin(diff) + pos.x) - mario->position.x;
     mario->riderDelta.z = (pos.z - dist * (f32)cos(diff)) - mario->position.z;
@@ -133,9 +129,5 @@ EVT_BEGIN(eki_02_init_evt)
     RETURN
 EVT_END()
 // clang-format on
-
-const f32 zero_eki_00008ff0 = 0.0f;
-const f32 float_6p2832_eki_00008ff4 = 6.2831855f;
-const f32 float_360_eki_00008ff8 = 360.0f;
 
 #pragma force_active off

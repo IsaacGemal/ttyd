@@ -64,16 +64,6 @@ extern const f64 double_15_80300908;
 
 // .sdata frame table, indexed by BattleActionCommandGetDifficulty().
 
-// .sdata2 constants.
-extern const f32 float_0_8042206c;
-extern const f32 float_4_80422070;
-extern const f32 float_2_80422074;
-extern const f32 float_0p01_80422078;
-extern const f32 float_100_8042207c;
-extern const f32 float_neg200_80422080;
-extern const f32 float_50_80422084;
-extern const f32 float_1_80422088;
-
 static void actionCommandDisp(f32 x, f32 y);
 
 s32 _getmaxcount(void) {
@@ -102,7 +92,7 @@ s32 battleAcMain_MonosiriTarget(BattleWork* work) {
 	case 0:
 		memset(disp, 0, 0x2C);
 		disp->iconX = -300.0f;
-		disp->iconY = float_0_8042206c;
+		disp->iconY = 0.0f;
 		disp->counter = 0x14;
 		mt->frame = 0;
 		mt->maxcount = _getmaxcount();
@@ -110,7 +100,7 @@ s32 battleAcMain_MonosiriTarget(BattleWork* work) {
 		mt->curPos = mt->hitPos;
 		mt->startPos = mt->hitPos;
 		mt->hitFlag = 0;
-		mt->rotZ = float_0_8042206c;
+		mt->rotZ = 0.0f;
 		work->actionCommands.mAcState = 0x63;
 		work->actionCommands.result = 1;
 		mt->sfxId = -1;
@@ -123,7 +113,7 @@ s32 battleAcMain_MonosiriTarget(BattleWork* work) {
 	case 0x3E8:
 		mt->frame++;
 		mt->curPos.x = (mt->hitPos.x - 80.0f) +
-		               intplGetValue(0, mt->frame, mt->maxcount, float_0_8042206c, 160.0f);
+		               intplGetValue(0, mt->frame, mt->maxcount, 0.0f, 160.0f);
 		if (fabs(mt->curPos.x - mt->startPos.x) < 28.0) {
 			mt->hitFlag = 1;
 		}
@@ -186,7 +176,7 @@ void battleAcDisp_MonosiriTarget(CameraId camId, void* param) {
 
 	switch (work->actionCommands.mAcState) {
 	case 0x3E8:
-		actionCommandDisp(float_0_8042206c, float_0_8042206c);
+		actionCommandDisp(0.0f, 0.0f);
 		break;
 	}
 }
@@ -203,7 +193,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	MonosiriTargetWork* mt = (MonosiriTargetWork*)&work->actionCommands.field_0x2BC[0];
 	Vec screen;
 	Vec screen2;
-	f32 alpha = float_0_8042206c;
+	f32 alpha = 0.0f;
 
 	btlGetScreenPoint(&mt->curPos, &screen);
 	{
@@ -218,9 +208,9 @@ static void actionCommandDisp(f32 x, f32 y) {
 		btlDispTex4(0x42, &trans, &scale, &rot, &color);
 	}
 
-	screen.x += float_4_80422070;
-	screen.y -= float_4_80422070;
-	screen.z -= float_2_80422074;
+	screen.x += 4.0f;
+	screen.y -= 4.0f;
+	screen.z -= 2.0f;
 	{
 		Vec trans;
 		Vec scale;
@@ -236,8 +226,8 @@ static void actionCommandDisp(f32 x, f32 y) {
 	if (mt->hitFlag != 0) {
 		s32 rem = mt->counter % 0x1E;
 		if (rem < 0x14) {
-			alpha = float_0p01_80422078 *
-			        intplGetValue(5, rem, 0x14, float_100_8042207c, float_0_8042206c);
+			alpha = 0.01f *
+			        intplGetValue(5, rem, 0x14, 100.0f, 0.0f);
 		}
 	}
 
@@ -258,7 +248,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		btlDispTex4(0x41, &trans, &scale, &rot, &color);
 	}
 
-	if (alpha > float_0_8042206c) {
+	if (alpha > 0.0f) {
 		Vec trans;
 		Vec scale;
 		Vec scaleTmp;
@@ -277,9 +267,9 @@ static void actionCommandDisp(f32 x, f32 y) {
 		btlDispTex4(0x41, &trans, &scale, &rot, &color);
 	}
 
-	screen2.x += float_4_80422070;
-	screen2.y -= float_4_80422070;
-	screen2.z -= float_2_80422074;
+	screen2.x += 4.0f;
+	screen2.y -= 4.0f;
+	screen2.z -= 2.0f;
 	{
 		Vec trans;
 		Vec scale;
@@ -300,16 +290,16 @@ static void actionCommandDisp(f32 x, f32 y) {
 		s32 icon;
 		Vec v;
 
-		mt->rotZ += float_2_80422074;
+		mt->rotZ += 2.0f;
 		pressed = BattleACGetButtonIcon(0x100, 1);
 		icon = BattleACGetButtonIcon(0x100, 0);
 		if (fabs(mt->curPos.x - mt->startPos.x) < RODATA_D15) {
 			icon = pressed;
 		}
 		v = RODATA_VEC(10, vec3_803008f8);
-		v.x = float_neg200_80422080 + x;
-		v.y = float_50_80422084 + y;
-		iconDispGx(float_1_80422088, &v, 0x10, icon);
+		v.x = -200.0f + x;
+		v.y = 50.0f + y;
+		iconDispGx(1.0f, &v, 0x10, icon);
 	}
 }
 
@@ -345,11 +335,3 @@ const Vec vec3_803008f8 = { 0.0f, 0.0f, 0.0f };
 #pragma force_active on
 const f64 double_15_80300908 = 15.0;
 #pragma force_active reset
-const f32 float_0_8042206c = 0.0f;
-const f32 float_4_80422070 = 4.0f;
-const f32 float_2_80422074 = 2.0f;
-const f32 float_0p01_80422078 = 0.01f;
-const f32 float_100_8042207c = 100.0f;
-const f32 float_neg200_80422080 = -200.0f;
-const f32 float_50_80422084 = 50.0f;
-const f32 float_1_80422088 = 1.0f;

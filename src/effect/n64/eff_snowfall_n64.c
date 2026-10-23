@@ -27,11 +27,6 @@ extern const f32 float_0_8041fd18;
 extern const f32 float_2_8041fd1c;
 extern const f32 float_deg2rad_8041fd20;
 extern const f32 float_166_8041fd24;
-extern const f32 float_1000_8041fd28;
-extern const f32 float_0p05_8041fd2c;
-extern const f32 float_10_8041fd30;
-extern const f32 float_neg1p2_8041fd34;
-extern const f32 float_0p01_8041fd38;
 
 typedef struct effSnowfallData {
 	s32 active;      // 0x00
@@ -120,12 +115,12 @@ EffectEntry* effSnowfallN64Entry(s32 type, s32 count) {
 	for (i = 0; i < count; i++, particle++) {
 		CameraEntry* cam = camGetPtr(CAMERA_3D);
 
-		particle->position.x = cam->cameraPos.x + (f32)(rand() % 2000) - float_1000_8041fd28;
-		particle->position.y = cam->cameraPos.y + (f32)(rand() % 2000) - float_1000_8041fd28;
-		particle->position.z = cam->cameraPos.z + (f32)(rand() % 2000) - float_1000_8041fd28;
-		particle->velocity.x = ((f32)(rand() % 20) - float_10_8041fd30) * float_0p05_8041fd2c;
-		particle->velocity.y = float_neg1p2_8041fd34 - (f32)(rand() % 80) * float_0p01_8041fd38;
-		particle->velocity.z = ((f32)(rand() % 20) - float_10_8041fd30) * float_0p05_8041fd2c;
+		particle->position.x = cam->cameraPos.x + (f32)(rand() % 2000) - 1000.0f;
+		particle->position.y = cam->cameraPos.y + (f32)(rand() % 2000) - 1000.0f;
+		particle->position.z = cam->cameraPos.z + (f32)(rand() % 2000) - 1000.0f;
+		particle->velocity.x = ((f32)(rand() % 20) - 10.0f) * 0.05f;
+		particle->velocity.y = -1.2f - (f32)(rand() % 80) * 0.01f;
+		particle->velocity.z = ((f32)(rand() % 20) - 10.0f) * 0.05f;
 		particle->alpha = 0xFF;
 		particle->velocity.x *= 0.5f;
 		particle->velocity.y *= 0.5f;
@@ -297,10 +292,5 @@ const f32 float_0_8041fd18 = 0.0f;
 const f32 float_2_8041fd1c = 2.0f;
 const f32 float_deg2rad_8041fd20 = 0.017453292f;
 const f32 float_166_8041fd24 = 166.0f;
-const f32 float_1000_8041fd28 = 1000.0f;
-const f32 float_0p05_8041fd2c = 0.05f;
-const f32 float_10_8041fd30 = 10.0f;
-const f32 float_neg1p2_8041fd34 = -1.2f;
-const f32 float_0p01_8041fd38 = 0.01f;
 
 const char str_SnowfallN64[] = "SnowfallN64";

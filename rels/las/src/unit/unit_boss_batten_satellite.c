@@ -241,7 +241,7 @@ static BattleDataEntry data_table[15] = {
 };
 USER_FUNC(bts_wariai_enzan_1) {
     s32* args = event->args;
-    f32 f29 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
+    f32 f29 = evtGetFloat(event, args[0]) - 1.0f;
     f32 f30 = evtGetFloat(event, args[1]);
     f32 f31 = evtGetFloat(event, args[2]);
     f32 f1 = evtGetFloat(event, args[3]);
@@ -453,7 +453,7 @@ EVT_END()
 u32 bts_x_flag_data[1];
 USER_FUNC(bts_wariai_enzan_1f) {
     s32* args = event->args;
-    f32 f29 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
+    f32 f29 = evtGetFloat(event, args[0]) - 1.0f;
     f32 f30 = evtGetFloat(event, args[1]);
     f32 f31 = evtGetFloat(event, args[2]);
     f32 f1 = evtGetFloat(event, args[3]);
@@ -466,7 +466,7 @@ static inline f32 bts_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
 }
 USER_FUNC(bts_wariai_enzan_1f_intpl) {
     s32* args = event->args;
-    f32 f28 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
+    f32 f28 = evtGetFloat(event, args[0]) - 1.0f;
     f32 f29 = evtGetFloat(event, args[1]);
     f32 f31 = evtGetFloat(event, args[2]);
     f32 f30 = evtGetFloat(event, args[3]);
@@ -475,17 +475,17 @@ USER_FUNC(bts_wariai_enzan_1f_intpl) {
     f32 v;
     f32 f2;
     f32 t;
-    if (f1 >= float_14_las_000192d0) {
-        f2 = f1 - float_14_las_000192d0;
-        if (f2 >= float_14_las_000192d0) {
+    if (f1 >= 14.0f) {
+        f2 = f1 - 14.0f;
+        if (f2 >= 14.0f) {
             evtSetFloat(event, dest, f31);
             return EVT_RETURN_DONE;
         }
-        v = float_1_las_000192cc - bts_intpl((s32)f2, float_1_las_000192cc, zero_las_000192d4, (s32)(f29 - f28), (s32)f29);
+        v = 1.0f - bts_intpl((s32)f2, 1.0f, 0.0f, (s32)(f29 - f28), (s32)f29);
     } else {
-        v = bts_intpl((s32)f1, zero_las_000192d4, float_1_las_000192cc, (s32)(f29 - f28), (s32)f29);
+        v = bts_intpl((s32)f1, 0.0f, 1.0f, (s32)(f29 - f28), (s32)f29);
     }
-    t = float_1_las_000192cc - v;
+    t = 1.0f - v;
     evtSetFloat(event, dest, t * f31 + v * f30);
     return EVT_RETURN_DONE;
 }
@@ -496,7 +496,7 @@ USER_FUNC(bts_wariai_enzan_1f_intpl) {
 // the final term as `f30 * f1` so MWCC emits `fmuls f0, f30, f2` in the original's operand order.
 USER_FUNC(bts_wariai_enzan_1f_intpl_w) {
     s32* args = event->args;
-    f32 f28 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
+    f32 f28 = evtGetFloat(event, args[0]) - 1.0f;
     f32 f29 = evtGetFloat(event, args[1]);
     f32 f27 = evtGetFloat(event, args[2]);
     f32 f30 = evtGetFloat(event, args[3]);
@@ -507,36 +507,36 @@ USER_FUNC(bts_wariai_enzan_1f_intpl_w) {
     f32 f1;
     f32 f2;
     f32 t;
-    if (f26 >= float_14_las_000192d0) {
-        f26 = f26 - float_14_las_000192d0;
-        if (f26 >= float_14_las_000192d0) {
+    if (f26 >= 14.0f) {
+        f26 = f26 - 14.0f;
+        if (f26 >= 14.0f) {
             evtSetFloat(event, dest, f27);
             return EVT_RETURN_DONE;
         }
-        f25 = float_1_las_000192cc - bts_intpl((s32)f26, float_1_las_000192cc, zero_las_000192d4, (s32)(f29 - f28), (s32)f29);
+        f25 = 1.0f - bts_intpl((s32)f26, 1.0f, 0.0f, (s32)(f29 - f28), (s32)f29);
     } else {
-        f25 = bts_intpl((s32)f26, zero_las_000192d4, float_1_las_000192cc, (s32)(f29 - f28), (s32)f29);
+        f25 = bts_intpl((s32)f26, 0.0f, 1.0f, (s32)(f29 - f28), (s32)f29);
     }
-    if (f31 >= float_14_las_000192d0) {
-        f2 = f26 - float_14_las_000192d0;
-        if (f2 >= float_14_las_000192d0) {
+    if (f31 >= 14.0f) {
+        f2 = f26 - 14.0f;
+        if (f2 >= 14.0f) {
             evtSetFloat(event, dest, f27);
             return EVT_RETURN_DONE;
         }
-        f1 = float_1_las_000192cc - bts_intpl((s32)f2, float_1_las_000192cc, zero_las_000192d4, (s32)(f29 - f28), (s32)f29);
+        f1 = 1.0f - bts_intpl((s32)f2, 1.0f, 0.0f, (s32)(f29 - f28), (s32)f29);
     } else {
-        f1 = bts_intpl((s32)f31, zero_las_000192d4, float_1_las_000192cc, (s32)(f29 - f28), (s32)f29);
+        f1 = bts_intpl((s32)f31, 0.0f, 1.0f, (s32)(f29 - f28), (s32)f29);
     }
     f1 = f25 * f1;
-    t = float_1_las_000192cc - f1;
+    t = 1.0f - f1;
     evtSetFloat(event, dest, f27 * t + f30 * f1);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(bts_wariai_enzan_0) {
     s32* args = event->args;
-    f32 f30 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
-    f32 f29 = evtGetFloat(event, args[1]) - float_1_las_000192cc;
+    f32 f30 = evtGetFloat(event, args[0]) - 1.0f;
+    f32 f29 = evtGetFloat(event, args[1]) - 1.0f;
     f32 f31 = evtGetFloat(event, args[2]);
     f32 f1 = evtGetFloat(event, args[3]);
     evtSetValue(event, args[4], (s32)((f30 * f31 + f1 * (f29 - f30)) / f29));
@@ -545,8 +545,8 @@ USER_FUNC(bts_wariai_enzan_0) {
 
 USER_FUNC(bts_wariai_enzan_0f) {
     s32* args = event->args;
-    f32 f30 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
-    f32 f29 = evtGetFloat(event, args[1]) - float_1_las_000192cc;
+    f32 f30 = evtGetFloat(event, args[0]) - 1.0f;
+    f32 f29 = evtGetFloat(event, args[1]) - 1.0f;
     f32 f31 = evtGetFloat(event, args[2]);
     f32 f1 = evtGetFloat(event, args[3]);
     evtSetFloat(event, args[4], (f30 * f31 + f1 * (f29 - f30)) / f29);
@@ -576,7 +576,4 @@ USER_FUNC(bts_x_flag_wait) {
     return (evtGetValue(event, args[0]) - bts_x_flag_data[0]) == 0 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-const f32 float_1_las_000192cc = 1.0f;
-const f32 float_14_las_000192d0 = 14.0f;
-const f32 zero_las_000192d4 = 0.0f;
 // clang-format on

@@ -9,11 +9,6 @@
 #include <dolphin/mtx.h>
 #include <math_ext.h>
 
-extern const f32 float_0_8041f2f0;
-extern const f32 float_1_8041f2f4;
-extern const f32 float_8_8041f2ec;
-extern const f32 float_neg8_8041f2f8;
-
 typedef struct effKemuri3Data {
     s32 type;       // 0x0
     u16 field_0x4;  // 0x4
@@ -59,24 +54,24 @@ EffectEntry* effKemuri3N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     for (i = 0; i < 5; i++, data++) {
         data->type = 1;
         data->field_64 = 0.29999998f;
-        data->field_68 = float_0_8041f2f0;
-        data->field_6C = float_0_8041f2f0;
+        data->field_68 = 0.0f;
+        data->field_6C = 0.0f;
         data->position.x = x;
         data->position.y = y;
         data->position.z = z;
-        data->field_18 = float_1_8041f2f4;
-        data->field_1C = float_1_8041f2f4;
-        data->field_20 = float_1_8041f2f4;
+        data->field_18 = 1.0f;
+        data->field_1C = 1.0f;
+        data->field_20 = 1.0f;
         data->field_08 = 0xff;
         data->field_06 = 0x3c;
-        data->field_24 = float_0_8041f2f0;
+        data->field_24 = 0.0f;
         angle = a4 + (f32)(i * 72);
         data->field_28 = angle;
-        data->field_2C = float_0_8041f2f0;
+        data->field_2C = 0.0f;
         data->field_70 = 1.75f;
         data->field_74 = -0.08f;
-        data->field_78 = float_0_8041f2f0;
-        data->field_7C = float_0_8041f2f0;
+        data->field_78 = 0.0f;
+        data->field_7C = 0.0f;
         data->field_60 = -3.9f;
         angle = reviseAngle(data->field_28);
         angle = 6.2831855f * angle / 360.0f;
@@ -128,11 +123,11 @@ void effKemuri3Main(EffectEntry* effect) {
         data->field_70 += data->field_74;
         data->position.y += data->field_70;
 
-        if (data->field_70 < float_0_8041f2f0) {
+        if (data->field_70 < 0.0f) {
             data->field_78 = 0.004f;
         }
 
-        data->field_24 -= float_1_8041f2f4;
+        data->field_24 -= 1.0f;
         if (data->field_24 < -100.0f) {
             data->field_24 = -100.0f;
         }
@@ -155,14 +150,6 @@ void effKemuri3Main(EffectEntry* effect) {
         dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri3Disp, effect);
     }
 }
-
-// Volatile load forces the original's one-load-per-store cadence for the shared
-// .sdata2 vertex constants; plain const loads get CSE'd into FPRs.
-#ifdef MUST_MATCH
-static inline void kemuri3WriteF32(const f32* value) {
-    GXWGFifo.f32 = *(volatile const f32*)value;
-}
-#endif
 
 void effKemuri3Disp(CameraId camId, void* param) {
     EffectEntry* effect = param;
@@ -204,50 +191,18 @@ void effKemuri3Disp(CameraId camId, void* param) {
         PSMTXConcat(cam->view, data->field_30, mtx);
         GXLoadPosMtxImm(mtx, 0);
         GXBegin(0x80, 0, 4);
-#ifdef MUST_MATCH
-        kemuri3WriteF32(&float_8_8041f2ec);
-        kemuri3WriteF32(&float_0_8041f2f0);
-        kemuri3WriteF32(&float_8_8041f2ec);
+        GXPosition3f32(8.0f, 0.0f, 8.0f);
         GXColor4u8(0xff, 0xff, 0xff, 0xff);
-        kemuri3WriteF32(&float_1_8041f2f4);
-        kemuri3WriteF32(&float_0_8041f2f0);
-        kemuri3WriteF32(&float_8_8041f2ec);
-        kemuri3WriteF32(&float_0_8041f2f0);
-        kemuri3WriteF32(&float_neg8_8041f2f8);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(8.0f, 0.0f, -8.0f);
         GXColor4u8(0xff, 0xff, 0xff, 0xff);
-        kemuri3WriteF32(&float_1_8041f2f4);
-        kemuri3WriteF32(&float_1_8041f2f4);
-        kemuri3WriteF32(&float_neg8_8041f2f8);
-        kemuri3WriteF32(&float_0_8041f2f0);
-        kemuri3WriteF32(&float_neg8_8041f2f8);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-8.0f, 0.0f, -8.0f);
         GXColor4u8(0xff, 0xff, 0xff, 0xff);
-        kemuri3WriteF32(&float_0_8041f2f0);
-        kemuri3WriteF32(&float_1_8041f2f4);
-        kemuri3WriteF32(&float_neg8_8041f2f8);
-        kemuri3WriteF32(&float_0_8041f2f0);
-        kemuri3WriteF32(&float_8_8041f2ec);
+        GXTexCoord2f32(0.0f, 1.0f);
+        GXPosition3f32(-8.0f, 0.0f, 8.0f);
         GXColor4u8(0xff, 0xff, 0xff, 0xff);
-        kemuri3WriteF32(&float_0_8041f2f0);
-        kemuri3WriteF32(&float_0_8041f2f0);
-#else
-        GXPosition3f32(float_8_8041f2ec, float_0_8041f2f0, float_8_8041f2ec);
-        GXColor4u8(0xff, 0xff, 0xff, 0xff);
-        GXTexCoord2f32(float_1_8041f2f4, float_0_8041f2f0);
-        GXPosition3f32(float_8_8041f2ec, float_0_8041f2f0, float_neg8_8041f2f8);
-        GXColor4u8(0xff, 0xff, 0xff, 0xff);
-        GXTexCoord2f32(float_1_8041f2f4, float_1_8041f2f4);
-        GXPosition3f32(float_neg8_8041f2f8, float_0_8041f2f0, float_neg8_8041f2f8);
-        GXColor4u8(0xff, 0xff, 0xff, 0xff);
-        GXTexCoord2f32(float_0_8041f2f0, float_1_8041f2f4);
-        GXPosition3f32(float_neg8_8041f2f8, float_0_8041f2f0, float_8_8041f2ec);
-        GXColor4u8(0xff, 0xff, 0xff, 0xff);
-        GXTexCoord2f32(float_0_8041f2f0, float_0_8041f2f0);
-#endif
+        GXTexCoord2f32(0.0f, 0.0f);
     }
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_8_8041f2ec = 8.0f;
-const f32 float_0_8041f2f0 = 0.0f;
-const f32 float_1_8041f2f4 = 1.0f;
-const f32 float_neg8_8041f2f8 = -8.0f;

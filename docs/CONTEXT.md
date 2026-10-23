@@ -6900,3 +6900,88 @@ and the objdiff ratchet flat after every commit. Event scripts stay `s32` words.
   machine's environment failures, run under `uv run --with pyelftools`, configure.py rerun with the normal Python
   after); every changed C file also compiled without MUST_MATCH by hand (ci's natural step looks REL files up by stem);
   fncast_lint and local_prototypes pass.
+## Named pool constants, the zubastar template and per-file `-char signed`, applied (2026-10-22, Claude Opus 5.5, n9-q-poollit)
+
+Task (Isaac): apply the three decisions of the chapter above. (1) Delete named pool constants whose only job is a
+MUST_MATCH pool-order trick together with the trick, starting from #1127's reverted list, then sweep the tree; deleted
+objects' symbols.txt entries become `@NNN` as #1122 did; no helper or dummy functions. (2) sac_zubastar's three `#else`
+arms as the plain `Vec points[4]`. (3) `-char signed` for evt_mobj and any other file with many `(s8)` char casts, kept
+only where the object stays identical. Data layout otherwise untouched.
+
+- **Method.** Untracked harness in build/pl/: objects saved before the branch (build/pl/base, 1,830 objects); try.py
+  compiles a source (or a variant in its place) for every object it builds, from `ninja -t compdb`, and runs obj_equiv
+  against them (`--nat` without MUST_MATCH, `--flags` for an extra compiler flag). pool_sweep.py groups each file's named
+  scalar f32/f64 definitions with every top-level MUST_MATCH region that names them, and tries each group in mode A (its
+  regions replaced by the natural arm, its constants literal) and mode B (constants literal, regions kept): all groups at
+  once, then greedily from the highest address, each on top of those kept. lever_search.py hill-climbs over a few plain
+  rewrites (below) on the all-literal variant and keeps a result only when it is identical. s8_greedy.py drops `(s8)`
+  char-read casts one site at a time under `-char signed`. symrename.py maps each deleted object to the compiler's `@NNN`
+  local at the same place and edits symbols.txt; hdrclean.py removes header externs nothing else names. ci.py there is
+  tools/ci.py with its tests step accepting only the 8 test_wave_launch environment errors (pyelftools from a uv venv in
+  build/pl/venv). Every commit: `build/G8MJ01/ok` recreated, changed files compile without MUST_MATCH, fncast_lint and
+  local_prototypes clean, CI PASS (`--allow-protected` for symbols.txt, `--allow-configure` for the flags). At the end
+  `obj_equiv --tree` over all 1,830 objects against the pre-branch ones: every one equivalent.
+- **Counts** (d8940c4e -> this branch). `tools/cleanup_index.py` **19.879 -> 19.723** per kLOC (13773 -> 13653
+  weighted): must_match 728 -> 703, deref_cast 520 -> 489, prim_ptr_cast 1963 -> 1933, opt_pragma 327 -> 325,
+  address_name 1078 -> 1077; pool_constant (weight 0) 5857 -> 4933. `#if...MUST_MATCH` lines in src/ and rels/ 706 ->
+  681. File-scope named f32/f64 definitions 1134 -> 867 (statics included), those a MUST_MATCH region or
+  MATCH_F32/F64 names 139 -> 110. symbols.txt: 185 entries renamed to `@NNN` (scope:local). Code lines 692,849 ->
+  692,222.
+- **1. Named pool constants.**
+  - #1127's list: evt_telop (all eight constants; seven of its eight MUST_MATCH regions and the opt_common_subs pair
+    go, and the font origin is `(width - scale * msgWidth) / 2.0f + (-15.0f)` without the steering locals), evt_item (EI_HALF), ac_crane_timing (MATCH_F32/MATCH_F64 and the file-local MATCH_F64 macro), eff_kemuri3_n64
+    (with its volatile FIFO helper kemuri3WriteF32) and eff_sunlight_n64 converted. eff_bomhei_n64 stays: the third
+    `0.0` of its PSMTXTrans is a separate `lfs` in retail, which only the volatile read gives (a literal is copied with
+    `fmr`). eff_star_power_n64 stays: with literals MWCC pools 128/127 ahead of 6.2832/7.1234/360 (nine words move).
+  - The automated sweep converted 34 files (eff_kemuri3_n64 and eff_sunlight_n64 among them): party_yoshi (36, all its value-named statics), party_nokonoko (16),
+    battle_break_slot (12), sac_genki (7), ac_lst_rc_keep, ac_stick_keep_left, ac_monosiri_target (8), battle_camera,
+    sac_suki, eff_sandars, eff_spark, eff_stageclear, unit_party_chuchurina, mot_stay, and the n64 effects
+    breath_fire, gareki, kemuri3, magic3, opuku_jetwrain, opuku_wprotect, rappa, ripple, snowfall, sunlight, sweat,
+    thunderflare, water_damage; in the RELs bom_02, eki_02, las_08, unit_boss_batten_satellite and both
+    evt_yuuranking units. Most were outside n9-q-addrall's reach (value-named statics, header externs, MATCH_F32
+    reads) or in files that have changed since. Empty pragma pairs and comment headers
+    that only wrapped the deleted definitions went with them (battle_break_slot, unit_party_chuchurina).
+  - By hand: ac_repeatedly (all twelve; its four volatile-reload regions go), battle_damage (the static 0.5 behind
+    MATCH_F32), pik_02's hoshi_jump (the invented `c50`/`half_sym` statics and their reads; only the punned userdata
+    stores stay guarded), and with lever_search eff_kemuri7, eff_akari_pose, eff_butterfly, eff_fireworks and
+    eff_thunderflare.
+  - **Levers.** A literal operand is ordered differently from a named load in a commutative operation or a compare, so
+    `x * 0.5f` swaps FPRs where retail had a named 0.5. The plain forms that give retail's order: `x / 2.0f` for
+    `x * 0.5f` (telop, item, damage, pik_02, fireworks, akari_pose), compound assignment for `x = x * K` / `x = v + K`
+    (crane `velocity *= -1.0f`, repeatedly `+= 0.01f` / `-= 0.01f`), and `if (x)` / `if (!x)` for a test against 0.0f
+    (repeatedly, butterfly, kemuri7, thunderflare). Operand swaps (`K * x` vs `x * K`) never helped.
+  - **Mode B** (literals inside a region that stays): battle_camera's two `_t` product temps and party_nokonoko's
+    fadd32 and 0.4 regions keep their steering, now with literals.
+  - **Left, and why** (86 files still define named floats; with every float literal they fail, nearly all on pool
+    order): a trailing named
+    `.sdata2` gap word lands ahead of every compiler literal (mot_jump, ac_shot_target, battle_stage, battle_attack_audience,
+    eff_break, peach, mot_jabara); named strings or ints interleaved with the floats in `.sdata2` (mobjdrv, database,
+    ac_repeatedly's `dat_8041c7a8`, the dat_ ints of the ac_* gauges, which are loaded with `lwz`); literals first used
+    later than retail's named order (statuswindow, win_main's 0.5, eff_pturn's 360/4, battle_icon, battle_mario,
+    eff_akari_sflush, koopa, himo, eff_kemuri, eff_mizutama, eff_mobj_broken, eff_mahorn); a named zero added at run time
+    that a literal folds away (eff_cloud's `x + 0.0f`); FIFO vertex writes whose reload pattern only the volatile
+    constants give (eff_spirit, eff_spark's float_0, shadowdrv); `.rodata` doubles placed among other named objects
+    (battle_audience_kinopio); ac_monosiri_target's double inside the guarded `vecs` base. Per-file results are in
+    build/pl/sweep_apply.json, lever_all.txt and classify.txt.
+- **2. sac_zubastar.** The three arms together are `Vec points[4] = {...}` with plain element stores; the guarded
+  `zubastar_points_init`, the ZubaStarPoints4 copy type (header) and the punned copy go. MWCC's own template for the
+  initialiser is at the same `.rodata` place, so symbols.txt's `dat_802ff6d4` becomes `@297`. No hang (the recorded hang
+  was the ZubaStarPoints4 initialiser).
+- **3. `-char signed`.** evt_mobj (18 `(s8)name[i]` casts, five `*(s8*)childName` puns, and mobj_switch_float_blk's
+  `s8*` name walk). Twelve more files where the flag keeps the object identical and then every char-read cast goes:
+  fontmgr (60 of 61; the remaining `(s8)code` narrows a u32; msgAnalize's `msg++; (s8)*(msg - 1)` becomes `*msg++`
+  like its siblings), both evt_yuuranking units (5 each; fontlenpitch.h's static takes `const char*`, which drops the 14
+  `(s8*)buf` casts at its calls), mapdrv and npcdrv (their three guarded sign-extending tests: three MUST_MATCH regions
+  go), las_14, gon_11, evt_twoddisp, evt_nannpc, eff_number, eff_pointget, unk_0x8025de70. Not flagged: evt_win (5 of
+  7 go, but its two `((s8*)p)[i]` reads must stay and would then be no-op pointer casts, a guarded trick: lead);
+  msgdrv, romfont and gor_03 change with the flag as they are (they have unsigned char reads); battle_stage_object,
+  battle_damage, party, eff_opuku_jetwrain, evt_yuunpc and animdrv's `(s8)` casts narrow ints or u8 data, not chars.
+- **For a reviewer.** symbols.txt: the task asked for `@NNN` on every deleted object, so 185 entries were renamed
+  although the data ratchet passes without it (n9-q-addrall left its 462 names). The float truthiness tests (`if
+  (mag)`, `if (!data->direction)`) and the `/ 2.0f` forms are what the object needs, not style. `+ (-15.0f)`-style
+  additions keep the pool's negative constant. sac_genki's `f32 zero` block went (identical without it).
+  ac_stick_keep_left's stickLeftAdd25 inline is still needed (a plain `25.0f + y` shifts one FPR) and has no outside
+  name, so it is under MUST_MATCH with `yy = 25.0f + y` under `#else`. The thirteen new `extra_cflags` on Object lines.
+- **Leads.** evt_win under `-char signed` with its two `((s8*)p)[i]` reads guarded (net: 5 casts for one region).
+  eff_pturn and win_main are one literal's first use away from matching. The pool_sweep/lever_search harness could run
+  again after other cleanups free more pools; it is in build/pl/tools (untracked).

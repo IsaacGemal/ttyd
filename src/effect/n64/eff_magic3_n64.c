@@ -195,13 +195,13 @@ void effMagic3Main(EffectEntry* effect) {
 		}
 		if (life < 5) {
 			data->alpha = (s32)((f32)data->alpha * float_0p6_8041f72c);
-			data->vx *= float_0p7_8041f730;
-			data->vy *= float_0p7_8041f730;
-			data->vz *= float_0p7_8041f730;
+			data->vx *= 0.7f;
+			data->vy *= 0.7f;
+			data->vz *= 0.7f;
 			{
 				f32 sg = (f32)sin(angle / float_360_8041f724);
 				f32 sa = (f32)sin(float_6p2832_8041f718 * (f32)(data->alpha / 2) / float_360_8041f724);
-				f32 extra = (f32)(255 - data->alpha) / float_30_8041f734;
+				f32 extra = (f32)(255 - data->alpha) / 30.0f;
 				data->scale = float_3_8041f728 * sa + sg + extra;
 			}
 		}
@@ -271,5 +271,3 @@ const f32 float_0p4_8041f720 = 0.4f;
 const f32 float_360_8041f724 = 360.0f;
 const f32 float_3_8041f728 = 3.0f;
 const f32 float_0p6_8041f72c = 0.6f;
-const f32 float_0p7_8041f730 = 0.7f;
-const f32 float_30_8041f734 = 30.0f;

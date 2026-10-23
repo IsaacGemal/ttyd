@@ -10,14 +10,6 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// .sdata2
-extern const f32 float_0p3_8041eb6c;
-extern const f32 float_deg2rad_8041eb70;
-extern const f32 float_0p02_8041eb74;
-extern const f32 float_0p03125_8041eb78;
-extern const f32 float_0p015625_8041eb7c;
-extern const f32 float_0_8041eb80;
-
 // .data / .sdata
 // One 0x54-byte block of but_02_v; the table holds 30 of them (630 words).
 typedef struct butterflyVtxFrame {
@@ -200,7 +192,7 @@ static inline f32 butterflySqrtf(f32 x) {
     const f64 _half = .5;
     const f64 _three = 3.0;
 
-    if (x > float_0_8041eb80) {
+    if (x > 0.0f) {
         f64 guess = __frsqrte(x);
         guess = _half * guess * (_three - guess * guess * x);
         guess = _half * guess * (_three - guess * guess * x);
@@ -270,18 +262,18 @@ void effButterflyMain(EffectEntry* effect) {
         dx = targetX - px;
         dy = targetY - py;
         dz = targetZ - pz;
-        if (float_0_8041eb80 == dx && float_0_8041eb80 == dy && float_0_8041eb80 == dz) {
+        if (0.0f == dx && 0.0f == dy && 0.0f == dz) {
             dx = data->homePos.x - px;
             dy = data->homePos.y - py;
             dz = data->homePos.z - pz;
-            if (float_0_8041eb80 == dx && float_0_8041eb80 == dy && float_0_8041eb80 == dz) {
+            if (0.0f == dx && 0.0f == dy && 0.0f == dz) {
                 dx = 1.0f;
-                dy = float_0_8041eb80;
-                dz = float_0_8041eb80;
+                dy = 0.0f;
+                dz = 0.0f;
             }
         }
         mag = dx * dx + dy * dy + dz * dz;
-        if (mag != float_0_8041eb80) {
+        if (mag) {
             mag = 1.0f / butterflySqrtf(mag);
         }
         dx *= mag;
@@ -290,7 +282,7 @@ void effButterflyMain(EffectEntry* effect) {
         data->velocity.x = dx;
         data->velocity.y = dy;
         data->velocity.z = dz;
-        data->heading = angleABf(float_0_8041eb80, float_0_8041eb80, -data->velocity.x, data->velocity.z);
+        data->heading = angleABf(0.0f, 0.0f, -data->velocity.x, data->velocity.z);
     }
     data->frame += 3;
     if (data->frame >= 0x1E) {
@@ -319,10 +311,10 @@ void effButterflyDisp(CameraId camId, void* param) {
     type = data->type;
 
     PSMTXTrans(trans, data->position.x,
-               float_0p3_8041eb6c * (f32)y_data[data->frame] + data->position.y, data->position.z);
-    PSMTXRotRad(rot, 'y', float_deg2rad_8041eb70 * data->heading);
+               0.3f * (f32)y_data[data->frame] + data->position.y, data->position.z);
+    PSMTXRotRad(rot, 'y', 0.017453292f * data->heading);
     PSMTXConcat(trans, rot, trans);
-    PSMTXScale(scale, float_0p02_8041eb74, float_0p02_8041eb74, float_0p02_8041eb74);
+    PSMTXScale(scale, 0.02f, 0.02f, 0.02f);
     PSMTXConcat(trans, scale, trans);
     PSMTXConcat(cam->view, trans, trans);
     GXLoadPosMtxImm(trans, 0);
@@ -338,7 +330,7 @@ void effButterflyDisp(CameraId camId, void* param) {
     GXSetTevAlphaIn(0, 7, 7, 7, 4);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-    PSMTXScale(scale, float_0p03125_8041eb78, float_0p015625_8041eb7c, float_0_8041eb80);
+    PSMTXScale(scale, 0.03125f, 0.015625f, 0.0f);
     GXLoadTexMtxImm(scale, 0x1E, 1);
     effGetTexObjN64(type + 0x78, &texObj);
     GXLoadTexObj(&texObj, 0);
@@ -349,10 +341,3 @@ void effButterflyDisp(CameraId camId, void* param) {
     tri2(3, 4, 0, 0, 3, 5, 4, 0);
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_0p3_8041eb6c = 0.3f;
-const f32 float_deg2rad_8041eb70 = 0.017453292f;
-const f32 float_0p02_8041eb74 = 0.02f;
-const f32 float_0p03125_8041eb78 = 0.03125f;
-const f32 float_0p015625_8041eb7c = 0.015625f;
-const f32 float_0_8041eb80 = 0.0f;

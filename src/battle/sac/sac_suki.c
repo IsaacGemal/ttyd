@@ -33,7 +33,6 @@
 #include "party/party_motion.h"
 #include "battle/battle_database_common.h"
 
-static const f32 float_1_804220d8 = 1.0f;
 extern s32 marioAttackEvent_Suki[];
 s32 flash_evt[182];
 s32 flash_main_evt[52];
@@ -334,7 +333,7 @@ static void main_star(void) {
     case 1:
         work->starState = 2;
         work->starCounter = 0;
-        work->effect = effStarStoneEntry(5, 0.0f, -1000.0f, 0.0f, float_1_804220d8);
+        work->effect = effStarStoneEntry(5, 0.0f, -1000.0f, 0.0f, 1.0f);
         BtlUnit_GetPos(mario, &work->starCur.x, &work->starCur.y, &work->starCur.z);
         work->starCur.y += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
         work->starStart = work->starCur;
@@ -577,7 +576,7 @@ void N__disp_2D(s32 type, s32 index) {
     pos.x = button->pos.x;
     pos.y = button->pos.y + yoff + work->alpha + 60.0f;
     pos.z = button->pos.z;
-    iconDispGx(float_1_804220d8, &pos, 0x10, iconId);
+    iconDispGx(1.0f, &pos, 0x10, iconId);
 }
 
 // .text:0x668 | 0x80249F88 | size: 0x4

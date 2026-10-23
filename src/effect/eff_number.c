@@ -106,14 +106,14 @@ void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 			GXLoadPosMtxImm(tmp, 0);
 			GXSetCurrentMtx(0);
 
-			if ((s8)buf[len - 1 - j] == '-') {
+			if (buf[len - 1 - j] == '-') {
 				PSMTXScale(scale, 0.09090909f, 1.0f, 1.0f);
 				PSMTXTrans(tmp, 10.0f, 0.0f, 0.0f);
 				PSMTXConcat(scale, tmp, tmp);
 				GXLoadTexMtxImm(tmp, 30, GX_MTX2x4);
 			} else {
 				PSMTXScale(scale, 0.09090909f, 1.0f, 1.0f);
-				PSMTXTrans(tmp, (f32)((s8)buf[len - 1 - j] - '0'), 0.0f, 0.0f);
+				PSMTXTrans(tmp, (f32)(buf[len - 1 - j] - '0'), 0.0f, 0.0f);
 				PSMTXConcat(scale, tmp, tmp);
 				GXLoadTexMtxImm(tmp, 30, GX_MTX2x4);
 			}

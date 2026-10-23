@@ -10,13 +10,6 @@
 
 #include "evt/evt_item.h"
 
-#ifdef MUST_MATCH
-// MUST_MATCH: retail loads the .sdata2 0.5 by name here (the literal form pools differently and scores lower).
-extern const f32 float_0p5_8041af58;
-#define EI_HALF float_0p5_8041af58
-#else
-#define EI_HALF 0.5f
-#endif
 static inline f32 item_sin_approx(f32 angle) {
 	f32 v = 0.00761f;
 	f32 b = 0.16605f;
@@ -379,12 +372,12 @@ USER_FUNC(evt_item_get_important_item) {
 	f32 scale;
 	f32 d;
 
-	scale = EI_HALF;
+	scale = 0.5f;
 	if (isFirstCall) {
 		d = distABf(mx, mz, item->position.x, item->position.z) / scale;
 		f4 = my - item->position.y;
 		f2 = 0.1f * d;
-		t = f2 * EI_HALF + f4 / d;
+		t = f2 / 2.0f + f4 / d;
 		event->userdata[0] = *(s32*)&d;
 		event->userdata[1] = *(s32*)&t;
 		event->userdata[2] = *(s32*)&scale;
@@ -414,8 +407,3 @@ USER_FUNC(evt_item_get_important_item) {
 	return EVT_RETURN_BLOCK;
 }
 
-#ifdef MUST_MATCH
-// The .sdata2 pool's first word. Named, so it lands first in .sdata2 where retail has it; scale uses it too, so the
-// pool holds no second 0.5. Defined after the code so its uses stay loads.
-const f32 float_0p5_8041af58 = 0.5f;
-#endif

@@ -14,7 +14,6 @@
 extern const f32 float_deg2rad_80421ba0;
 extern const f32 float_32_80421ba4;
 extern const f32 float_0p5_80421ba8;
-extern const f32 float_16_80421bac;
 
 // .rodata
 
@@ -264,7 +263,7 @@ void effSandarsDisp2(CameraId camId, void* param) {
 
 	/* The quad half-size is materialised through the 32 and 0.5 pool entries. */
 	deg = float_deg2rad_80421ba0;
-	posSize = float_16_80421bac;
+	posSize = 16.0f;
 	negSize = -float_32_80421ba4 * float_0p5_80421ba8;
 
 	data = &data[1];
@@ -294,4 +293,3 @@ void effSandarsDisp2(CameraId camId, void* param) {
 const f32 float_deg2rad_80421ba0 = 0.017453292f;
 const f32 float_32_80421ba4 = 32.0f;
 const f32 float_0p5_80421ba8 = 0.5f;
-const f32 float_16_80421bac = 16.0f;

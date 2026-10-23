@@ -14,8 +14,6 @@ extern const f32 float_neg1_8041ffb8;
 extern const f32 float_9p6_8041ffb0;
 extern const f32 float_6p4_8041ffb4;
 extern const f32 float_0p5_8041ffc0;
-extern const f32 float_4p8_8041ffc4;
-extern const f32 float_1_8041ffc8;
 
 EffectEntry* effSweatN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale, f32 angle, s32 life) {
 	EffectEntry* effect;
@@ -214,7 +212,7 @@ void effSweatDisp(CameraId camId, void* param) {
 		x0 = float_0p5_8041ffc0 * -x1;
 		x1 = x1 * float_0p5_8041ffc0;
 #endif
-		y1 = float_4p8_8041ffc4;
+		y1 = 4.8f;
 		y0 = negHeight * float_0p5_8041ffc0;
 		GXWGFifo.f32 = x0;
 		GXWGFifo.f32 = y1;
@@ -224,18 +222,18 @@ void effSweatDisp(CameraId camId, void* param) {
 		GXWGFifo.f32 = x1;
 		GXWGFifo.f32 = y1;
 		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
-		GXWGFifo.f32 = MATCH_F32(float_1_8041ffc8);
+		GXWGFifo.f32 = 1.0f;
 		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
 		GXWGFifo.f32 = x1;
 		GXWGFifo.f32 = y0;
 		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
-		GXWGFifo.f32 = MATCH_F32(float_1_8041ffc8);
-		GXWGFifo.f32 = MATCH_F32(float_1_8041ffc8);
+		GXWGFifo.f32 = 1.0f;
+		GXWGFifo.f32 = 1.0f;
 		GXWGFifo.f32 = x0;
 		GXWGFifo.f32 = y0;
 		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
 		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
-		GXWGFifo.f32 = MATCH_F32(float_1_8041ffc8);
+		GXWGFifo.f32 = 1.0f;
 	}
 }
 
@@ -246,5 +244,3 @@ const f32 float_6p4_8041ffb4 = 6.4f;
 const f32 float_neg1_8041ffb8 = -1.0f;
 const f32 float_0_8041ffbc = 0.0f;
 const f32 float_0p5_8041ffc0 = 0.5f;
-const f32 float_4p8_8041ffc4 = 4.8f;
-const f32 float_1_8041ffc8 = 1.0f;

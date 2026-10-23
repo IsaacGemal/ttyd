@@ -1579,7 +1579,7 @@ s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
 s32 mobj_float_blk(MapObjectEntry* obj) {
     switch (obj->state) {
         case 0x63:
-            if (*(s8*)obj->childName == 0) {
+            if (obj->childName[0] == 0) {
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
                 HitEntry* hit;
 
@@ -1606,7 +1606,7 @@ s32 mobj_float_blk(MapObjectEntry* obj) {
             } else {
                 AnimTableEntry* anim = animPoseGetCurrentAnim(mobjNameToPtr(obj->childName)->poseId);
 
-                if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
+                if (anim->name[0] == 'A' && anim->name[2] >= '1' && anim->name[2] <= '3') {
                     animPoseSetAnim(obj->poseId, "A_1", 0);
                 } else {
                     animPoseSetAnim(obj->poseId, "S_1", 1);
@@ -1765,7 +1765,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 obj->unk1A0[1] = (obj->unk1A0[1] & 0x40000000) | idx;
             }
 #endif
-            if (*(s8*)obj->childName != 0) {
+            if (obj->childName[0] != 0) {
                 MapObjectEntry* child = mobjNameToPtr(obj->childName);
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
                 HitEntry* hit;
@@ -1785,8 +1785,8 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                         anim = animPoseGetCurrentAnim(obj->poseId);
                         {
                             BOOL isA;
-                            if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' &&
-                                (s8)anim->name[2] <= '3') {
+                            if (anim->name[0] == 'A' && anim->name[2] >= '1' &&
+                                anim->name[2] <= '3') {
                                 isA = 1;
                             } else {
                                 isA = 0;
@@ -1805,8 +1805,8 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                     if (evtCheckID(obj->eventId) != 0) {
                         anim = animPoseGetCurrentAnim(obj->poseId);
                         {
-                            s8* n = (s8*)anim->name;
-                            s8 c = n[0];
+                            char* n = anim->name;
+                            char c = n[0];
                             if (c == 'A' && n[2] >= '1' && n[2] <= '2') {
                                 animId = 0;
                             } else if (c == 'A' && n[2] == '3') {
@@ -1827,8 +1827,8 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 anim = animPoseGetCurrentAnim(obj->poseId);
                 {
                     BOOL isA;
-                    if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' &&
-                        (s8)anim->name[2] <= '3') {
+                    if (anim->name[0] == 'A' && anim->name[2] >= '1' &&
+                        anim->name[2] <= '3') {
                         isA = 1;
                     } else {
                         isA = 0;
@@ -1875,14 +1875,14 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
             if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
-            if (*(s8*)obj->childName != 0) {
+            if (obj->childName[0] != 0) {
                 mobjNameToPtr(obj->childName);
             }
             {
                 const char* nm;
                 AnimTableEntry* a = animPoseGetCurrentAnim(obj->poseId);
                 BOOL isA;
-                if ((s8)a->name[0] == 'A' && (s8)a->name[2] >= '1' && (s8)a->name[2] <= '3') {
+                if (a->name[0] == 'A' && a->name[2] >= '1' && a->name[2] <= '3') {
                     isA = 1;
                 } else {
                     isA = 0;
@@ -1922,7 +1922,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
             {
                 AnimTableEntry* anim = animPoseGetCurrentAnim(obj->poseId);
                 BOOL isA;
-                if (((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3')) {
+                if ((anim->name[0] == 'A' && anim->name[2] >= '1' && anim->name[2] <= '3')) {
                     isA = 1;
                 } else {
                     isA = 0;
@@ -1944,7 +1944,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
             if (obj->timer != 0) {
                 break;
             }
-            if (*(s8*)obj->childName != 0) {
+            if (obj->childName[0] != 0) {
                 MapObjectEntry* child = mobjNameToPtr(obj->childName);
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
                 HitEntry* hit;
@@ -1967,7 +1967,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
             } else {
                 AnimTableEntry* anim = animPoseGetCurrentAnim(obj->poseId);
                 BOOL isA;
-                if (((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3')) {
+                if ((anim->name[0] == 'A' && anim->name[2] >= '1' && anim->name[2] <= '3')) {
                     isA = 1;
                 } else {
                     isA = 0;
@@ -2031,7 +2031,7 @@ s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
     obj->timer = 0;
     mobjCalcMtx(obj);
     strcpy(obj->childName, childName);
-    if (*(s8*)obj->childName != 0) {
+    if (obj->childName[0] != 0) {
         f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
         MapObjectEntry* obj2 = mobjNameToPtr(obj->childName);
         HitEntry* hit;

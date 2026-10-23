@@ -92,45 +92,6 @@ f32 ofs_PYS_S_2[52] = {
 // int->float magic double (0x28), then the PYS_* strings (0x30..0x57) and the
 // mask double (0x58). Ours matches byte-for-byte; see the yoshi_use note.
 
-// .sdata2
-static const f32 float_0 = 0.0f;
-static const f32 float_1p5 = 1.5f;
-static const f32 float_0p75 = 0.75f;
-static const f32 float_10 = 10.0f;
-static const f32 float_11 = 11.0f;
-static const f32 float_neg0p4 = -0.4f;
-static const f32 float_neg15 = -15.0f;
-static const f32 float_1 = 1.0f;
-static const f32 float_8 = 8.0f;
-static const f32 float_neg6 = -6.0f;
-static const f32 float_5 = 5.0f;
-static const f32 float_30 = 30.0f;
-static const f32 float_neg0p07 = -0.07f;
-static const f32 float_neg0p5 = -0.5f;
-static const f32 float_0p01 = 0.01f;
-static const f32 float_256 = 256.0f;
-static const f32 float_16 = 16.0f;
-static const f32 float_0p1 = 0.1f;
-static const f32 float_90 = 90.0f;
-static const f32 float_270 = 270.0f;
-static const f32 float_180 = 180.0f;
-static const f32 float_neg0p01 = -0.01f;
-static const f32 float_3p1416 = 3.1415927f;
-static const f32 float_0p5 = 0.5f;
-static const f32 float_0p37 = 0.37f;
-static const f32 float_7 = 7.0f;
-static const f32 float_360 = 360.0f;
-static const f32 float_18 = 18.0f;
-static const f32 float_neg1 = -1.0f;
-static const f32 float_2 = 2.0f;
-static const f32 float_100 = 100.0f;
-static const f32 float_0p7 = 0.7f;
-static const f32 float_0p125 = 0.125f;
-static const f32 float_neg10 = -10.0f;
-static const f32 float_26 = 26.0f;
-static const f32 float_20 = 20.0f;
-
-
 void evt_set_yoshi_frm(s32 msec) {
     evt_yoshi_frm = sysMsec2Frame(msec);
 }
@@ -163,7 +124,7 @@ void L_sweatMain(PartyEntry* party) {
     }
 
     {
-        f32 y = party->position.y + float_18;
+        f32 y = party->position.y + 18.0f;
         f32 z = party->position.z;
         f32 x = party->position.x;
 
@@ -441,8 +402,8 @@ void unk_800b45e0(PartyEntry* party) {
 void yoshi_init(PartyEntry* party) {
     party->field_33 = 4;
     party->field_32 = 0;
-    party->height = float_26;
-    party->radius = float_20;
+    party->height = 26.0f;
+    party->radius = 20.0f;
     party->yoshiPsndSFXId = -1;
 }
 #define M_F(off) (*(f32*)((u8*)mario + (off)))
@@ -1276,14 +1237,14 @@ void L_yoshiFlyMove(PartyEntry* party) {
     f30 = mario->field_0x2B0;
     f31 = -*(f32*)((u8*)mario + 0x2B4);
 
-    f29 = float_0p1 * distABf(0.0f, 0.0f, f30, f31);
+    f29 = 0.1f * distABf(0.0f, 0.0f, f30, f31);
     lim = mario->mBaseDashSpeed * one;
     if (f29 >= lim) {
         f29 = lim;
     }
 
     f31 = angleABf(0.0f, 0.0f, f30, f31);
-    if (f29 < float_0p01) {
+    if (f29 < 0.01f) {
         f29 = 0.0f;
     }
 
@@ -1309,9 +1270,9 @@ void inertia(PartyEntry* party) {
     f32 sixteen = 16.0f;
 
     if (f3 == zero) {
-        f32 k = float_neg0p07;
+        f32 k = -0.07f;
         if (mario->hitobjWall != NULL) {
-            k = float_neg0p5;
+            k = -0.5f;
         }
         f4 = f4 * k + f4;
         f5 = f5 * k + f5;
@@ -1324,7 +1285,7 @@ void inertia(PartyEntry* party) {
     } else {
         f32 t = f4 * f4 + f5 * f5;
 
-        if (t <= float_256) {
+        if (t <= 256.0f) {
             s32 v = party->partyYoshiUse->direction;
             f4 = f3 * p01 + f4;
             if (v > 0 && f4 <= 0.0f) {

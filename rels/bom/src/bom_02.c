@@ -1150,7 +1150,6 @@ static char* shopper_data[] = {
 
 const Vec vec3_bom_00007cc0 = {0.0f, 100.0f, 0.0f};
 const Vec vec3_bom_00007ccc = {0.0f, 1.0f, 0.0f};
-extern const f32 float_100_bom_00007e7c;
 
 static USER_FUNC(yami_view) {
     Vec camPos;
@@ -1163,7 +1162,7 @@ static USER_FUNC(yami_view) {
     target.z = value;
     up = vec3_bom_00007ccc;
     camPos = vec3_bom_00007cc0;
-    camPos.z = float_100_bom_00007e7c + value;
+    camPos.z = 100.0f + value;
     C_MTXLookAt(mtx, &camPos, &up, &target);
     envSetYamiView(mtx);
     return EVT_RETURN_DONE;
@@ -1497,5 +1496,4 @@ EVT_BEGIN(bom_02_init_evt)
     RETURN
 EVT_END()
 // clang-format on
-const f32 float_100_bom_00007e7c = 100.0f;
 #pragma force_active off

@@ -625,7 +625,7 @@ static void _mapsetofs_all(CloudEntry* cp) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
-        if ((s8)cp->mapGrpName[i][0] == 0) {
+        if (cp->mapGrpName[i][0] == 0) {
             break;
         }
         mapGrpSetOffScreen(cp->mapGrpName[i], cp->offName);
@@ -636,7 +636,7 @@ static void _mapclsofs_all(CloudEntry* cp) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
-        if ((s8)cp->mapGrpName[i][0] == 0) {
+        if (cp->mapGrpName[i][0] == 0) {
             break;
         }
         mapGrpClearOffScreen(cp->mapGrpName[i]);
@@ -858,7 +858,7 @@ USER_FUNC(evt_iri_16_cloud_ent) {
     cp->flags = 1;
     strcpy(cp->animName, "P_oof_cloud_1");
     for (j = 0; j < 8; j++) {
-        if ((s8)a[j][0] == 0) {
+        if (a[j][0] == 0) {
             break;
         }
         strcpy(cp->mapGrpName[j], a[j]);

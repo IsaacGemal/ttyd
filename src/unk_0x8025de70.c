@@ -137,8 +137,8 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 		width2 = 50;
 		height2 = 50;
 		i = 0;
-		while ((s8)print_buffer[i] != '\0') {
-			if ((s8)print_buffer[i] == '\n') {
+		while (print_buffer[i] != '\0') {
+			if (print_buffer[i] == '\n') {
 				width2 = 50;
 				height2 += 24;
 				i++;

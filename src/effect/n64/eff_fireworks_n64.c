@@ -46,11 +46,6 @@ u32 vtx_data[3][2] = {
 	{ (u32)vtx3, 0x38 },
 };
 
-// .sdata2 constants (named after their original addresses in the asm).
-extern const f32 float_6p2832_8041ef28;
-extern const f32 float_360_8041ef2c;
-extern const f32 float_0p5_8041ef30;
-
 EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 velX, f32 velY, f32 velZ, f32 targetRadius) {
 	EffectEntry* entry;
 	effFireworksData* data;
@@ -145,7 +140,7 @@ void effFireworksMain(EffectEntry* effect) {
 	else {
 		b = 32 - counter;
 		data->trailX[counter & 3] = data->x - data->velX * (f32)b;
-		angle = float_6p2832_8041ef28 * (f32)(counter * 90 >> 5) / float_360_8041ef2c;
+		angle = 6.2831855f * (f32)(counter * 90 >> 5) / 360.0f;
 		sinAngle = (f32)sin(angle);
 		// The literal 80.0f lets MWCC keep the constant in f0 for both fnmsubs operands; a named
 		// extern leaves it in a third FPR and rotates the conversion/constant registers.
@@ -234,7 +229,7 @@ void effFireworksDisp(CameraId camId, void* param) {
 	data = effect->userdata;
 	alpha = data->color0[3];
 	type = data->type;
-	angle = float_6p2832_8041ef28 * -camGetPtr(CAMERA_3D)->viewYaw / float_360_8041ef2c;
+	angle = 6.2831855f * -camGetPtr(CAMERA_3D)->viewYaw / 360.0f;
 	sinA = (f32)sin(angle);
 	cosA = (f32)cos(angle);
 	mode = data->mode;
@@ -305,9 +300,9 @@ void effFireworksDisp(CameraId camId, void* param) {
 		w = (f32)gp->fbWidth;
 		h = (f32)gp->efbHeight;
 		t = position.x * w;
-		cx = t * float_0p5_8041ef30;
+		cx = t / 2.0f;
 		t = position.y * h;
-		cy = t * float_0p5_8041ef30;
+		cy = t / 2.0f;
 
 		target = (Vec){ 0.0f, 0.0f, 0.0f };
 		eye = (Vec){ 0.0f, 0.0f, 1000.0f };
@@ -335,8 +330,3 @@ void effFireworksDisp(CameraId camId, void* param) {
 	}
 }
 
-// .sdata2 constant definitions (placed last so the functions can't fold
-// their values and must reference the original symbols).
-const f32 float_6p2832_8041ef28 = 6.2831855f;
-const f32 float_360_8041ef2c = 360.0f;
-const f32 float_0p5_8041ef30 = 0.5f;

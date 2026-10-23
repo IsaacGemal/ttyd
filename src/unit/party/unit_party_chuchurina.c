@@ -365,7 +365,7 @@ void mono_disp(CameraId cameraId, void* param) {
         return;
     }
     GXInitTexObj(&texObj, tex, 0x260, 0x1E0, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, float_0_8041ddc0, float_0_8041ddc0, float_0_8041ddc0, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXLoadPosMtxImm(camera->view, GX_PNMTX0);
     GXSetCurrentMtx(GX_PNMTX0);
@@ -390,14 +390,14 @@ void mono_disp(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-    GXPosition3f32(float_neg304_8041ddc4, float_240_8041ddc8, float_0_8041ddc0);
-    GXTexCoord2f32(float_0_8041ddc0, float_0_8041ddc0);
-    GXPosition3f32(float_304_8041ddcc, float_240_8041ddc8, float_0_8041ddc0);
-    GXTexCoord2f32(float_1_8041ddd0, float_0_8041ddc0);
-    GXPosition3f32(float_304_8041ddcc, float_neg240_8041ddd4, float_0_8041ddc0);
-    GXTexCoord2f32(float_1_8041ddd0, float_1_8041ddd0);
-    GXPosition3f32(float_neg304_8041ddc4, float_neg240_8041ddd4, float_0_8041ddc0);
-    GXTexCoord2f32(float_0_8041ddc0, float_1_8041ddd0);
+    GXPosition3f32(-304.0f, 240.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(304.0f, 240.0f, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(304.0f, -240.0f, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(-304.0f, -240.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
     party = BattleGetPartyPtr(_battleWorkPointer);
     if (party != NULL) {
         parts = BtlUnit_GetPartsPtr(party, 1);
@@ -415,7 +415,7 @@ USER_FUNC(mono_main) {
 
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    dispEntry(CAMERA_2D, float_910_8041ddbc, 0, mono_disp, unit);
+    dispEntry(CAMERA_2D, 910.0f, 0, mono_disp, unit);
     return EVT_RETURN_BLOCK;
 }
 
@@ -426,7 +426,7 @@ USER_FUNC(mono_capture_event) {
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     BtlUnit_GetPartsPtr(unit, 1);
-    dispEntry(CAMERA_2D, float_910_8041ddbc, 0, mono_capture, unit);
+    dispEntry(CAMERA_2D, 910.0f, 0, mono_capture, unit);
     return EVT_RETURN_DONE;
 }
 
@@ -2677,14 +2677,3 @@ EVT_END()
 #pragma force_active off
 
 __declspec(section ".sdata2") u32 dat_8041ddb8 = 0xFFFFFF00;
-__declspec(section ".sdata2") const f32 float_910_8041ddbc = 910.0f;
-#pragma explicit_zero_data on
-#pragma force_active on
-__declspec(section ".sdata2") f32 float_0_8041ddc0 = 0.0f;
-#pragma force_active reset
-#pragma explicit_zero_data reset
-__declspec(section ".sdata2") f32 float_neg304_8041ddc4 = -304.0f;
-__declspec(section ".sdata2") f32 float_240_8041ddc8 = 240.0f;
-__declspec(section ".sdata2") f32 float_304_8041ddcc = 304.0f;
-__declspec(section ".sdata2") f32 float_1_8041ddd0 = 1.0f;
-__declspec(section ".sdata2") f32 float_neg240_8041ddd4 = -240.0f;

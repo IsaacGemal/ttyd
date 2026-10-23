@@ -330,7 +330,7 @@ void nannpc_ext_main_sub(void) {
     for (i = extGetPoseNum() - 1; i >= 0; i--) {
         NanNpcEntry* entry = &work->entries[i];
 
-        if ((s8)entry->name[0] != 0 && entry->callback != NULL) {
+        if (entry->name[0] != 0 && entry->callback != NULL) {
             entry->callback(entry);
         }
     }
@@ -345,7 +345,7 @@ void nannpc_ext_main_sub_fast(void) {
     for (i = extGetPoseNum() - 1; i >= 0; i--) {
         entry = &work->entries[i];
 
-        if ((s8)entry->name[0] != 0) {
+        if (entry->name[0] != 0) {
             if (entry->callback != NULL) {
                 entry->callback(entry);
             }

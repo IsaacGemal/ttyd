@@ -6,10 +6,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sdata2 data symbols owned by this unit.
-extern const f32 float_deg2rad_80420080;
-extern const f32 float_0p03125_80420084;
-extern const f32 float_0_80420088;
 // .rodata objects owned by this unit.
 // The pooled int->float conversion double, named so the `lfd` reloc resolves like the original.
 // .sbss2 data symbols owned by this unit.
@@ -78,7 +74,7 @@ EffectEntry* effThunderflareN64Entry(s32 type, s32 timer, f32 x, f32 y, f32 z, f
 		for (j = 0; j < 2; j++, elem++) {
 			s32 particle = i + j - 1;
 			elem->angle1 = (f32)(particle * 0xca8 / 30);
-			elem->angle2 = float_0_80420088;
+			elem->angle2 = 0.0f;
 			elem->radius = (f32)(particle * 100 / 30);
 			elem->field_0x00 = 0;
 		}
@@ -119,33 +115,33 @@ void effThunderflareMain(EffectEntry* effect) {
 		data->alpha = 0xff;
 	}
 	if (counter & 1) {
-		data->alpha = (s32)(float_0p5_8042008c * (f32)data->alpha);
+		data->alpha = (s32)(0.5f * (f32)data->alpha);
 	}
 
 	phase = data->counter & 1;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		angle1 = float_6p2832_80420090 * data->angle1 / float_360_80420094;
+		angle1 = 6.2831855f * data->angle1 / 360.0f;
 		radius = data->radius;
 		angle2raw = data->angle2;
 		sin1 = sin(angle1);
 		cos1 = cos(angle1);
-		angle2 = float_6p2832_80420090 * angle2raw / float_360_80420094;
+		angle2 = 6.2831855f * angle2raw / 360.0f;
 		sin2 = sin(angle2);
 		cos2 = cos(angle2);
 
 		data->x = cos2 * (radius * sin1);
 		data->y = cos2 * (radius * cos1);
 		data->z = radius * sin2;
-		data->alpha = (s32)((float_100_804200a0 - data->radius) * float_255_8042009c * float_2_80420098 / float_100_804200a0);
+		data->alpha = (s32)((100.0f - data->radius) * 255.0f * 2.0f / 100.0f);
 		if (data->alpha > 0xff) {
 			data->alpha = 0xff;
 		}
-		data->scale = float_0p2_804200a4 + data->radius / float_80_804200a8;
+		data->scale = 0.2f + data->radius / 80.0f;
 		data->radius -= (f32)(2 + (i & 3) * 2);
-		if (data->radius < float_0_80420088) {
-			data->radius = float_0_80420088;
-			data->scale = float_0_80420088;
+		if (data->radius < 0.0f) {
+			data->radius = 0.0f;
+			data->scale = 0.0f;
 		}
 		data->angle1 += phase ? 5 : 2;
 		data->angle2 += phase ? 2 : 5;
@@ -178,7 +174,7 @@ void effThunderflareDisp(CameraId camId, void* param) {
 	b = data->tevReg0B;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_80420080 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(cam->view, trans, base);
 
@@ -202,14 +198,14 @@ void effThunderflareDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, 0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	PSMTXScale(work, float_0p03125_80420084, float_0p03125_80420084, float_0_80420088);
+	PSMTXScale(work, 0.03125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(work, 0x1E, 1);
 	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64(size16x16_tex32x32_vtx);
 
 	for (i = 1; i < effect->count; i++, data++) {
 		scale = data->scale;
-		if (scale != float_0_80420088) {
+		if (scale) {
 			GXSetTevColor(GX_TEVREG0, (GXColor){ r, g, b, data->alpha });
 
 			PSMTXTrans(trans, data->x, data->y, data->z);
@@ -228,15 +224,3 @@ void effThunderflareDisp(CameraId camId, void* param) {
 	}
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_deg2rad_80420080 = 0.017453292f;
-const f32 float_0p03125_80420084 = 0.03125f;
-const f32 float_0_80420088 = 0.0f;
-const f32 float_0p5_8042008c = 0.5f;
-const f32 float_6p2832_80420090 = 6.2831855f;
-const f32 float_360_80420094 = 360.0f;
-const f32 float_2_80420098 = 2.0f;
-const f32 float_255_8042009c = 255.0f;
-const f32 float_100_804200a0 = 100.0f;
-const f32 float_0p2_804200a4 = 0.2f;
-const f32 float_80_804200a8 = 80.0f;

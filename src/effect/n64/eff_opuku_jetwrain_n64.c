@@ -11,14 +11,6 @@
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
 
-// .sdata2 float constants (named after their original addresses).
-static const f32 float_0_8041f7d8 = 0.0f;
-static const f32 float_480_8041f7dc = 480.0f;
-static const f32 float_608_8041f7e0 = 608.0f;
-static const f32 float_1_8041f7e4 = 1.0f;
-static const f32 float_32768_8041f7e8 = 32768.0f;
-static const f32 float_0p0039062_8041f7ec = 0.00390625f;
-
 // .data vertex array, modified in place by effOpukuJetwrainDisp.
 u32 opuku_jetwrain_vtx[56] = {
 	0xFF60FF88, 0xFEC00000, 0x00000000, 0x00FFFF70, 0xFF88FEC0, 0x02000000, 0x000000FF,

@@ -13,23 +13,6 @@ void FontDrawColor(GXColor color);
 #include <string.h>
 #include <stdlib.h>
 
-// .sdata2 constants this translation unit owns (named by their original address).
-#ifdef MUST_MATCH
-// volatile: the quad loop reloads the FP constants; non-volatile scored 92% vs 99.6%.
-extern const volatile f32 float_0_8041e7c4;
-extern const volatile f32 float_0p2_8041e7c8;
-extern const volatile f32 float_1_8041e7cc;
-#else
-extern const f32 float_0_8041e7c4;
-extern const f32 float_0p2_8041e7c8;
-extern const f32 float_1_8041e7cc;
-#endif
-extern const f32 float_neg15_8041e7d0;
-extern const f32 float_neg105_8041e7d4;
-extern const f32 float_100_8041e7d8;
-extern const f32 float_0p5_8041e7dc;
-extern const f32 float_24_8041e7e0;
-
 // The telop's private work. Only the fields this file uses are named.
 typedef struct TelopWork {
     s32 msgId;    // 0x0, index into msg_tbl
@@ -114,12 +97,6 @@ USER_FUNC(evt_telop_entry) {
     return EVT_RETURN_BLOCK;
 }
 
-// Scheduling shapes in this function:
-// - the font PSMTXTrans x/y are built into locals `a`/`b` so `0.5` and `(f32)msgWidth` get f5/f6
-//   the right way round;
-// - the ratio test's empty then-block (kept under MUST_MATCH) makes MWCC lay the assignment out of
-//   line, giving `bge body; b join` (see below).
-#pragma opt_common_subs off // needed: without it the ratio's int->float mask lands in f1, not f2
 void telop(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(cameraId);
     GXTexObj texObj;
@@ -152,16 +129,9 @@ void telop(CameraId cameraId, void* param) {
         f32 ty = (f32)(rand() % 64) / height;
         f32 tx = (f32)(rand() % 256) / width;
 
-        PSMTXTrans(texTrans, tx, ty, float_0_8041e7c4);
+        PSMTXTrans(texTrans, tx, ty, 0.0f);
     }
-#ifdef MUST_MATCH
-    {
-        f32 s = float_0p2_8041e7c8;
-        PSMTXScale(texScale, s, s, float_1_8041e7cc);
-    }
-#else
-    PSMTXScale(texScale, float_0p2_8041e7c8, float_0p2_8041e7c8, float_1_8041e7cc);
-#endif
+    PSMTXScale(texScale, 0.2f, 0.2f, 1.0f);
     PSMTXConcat(texTrans, texScale, texTrans);
     GXLoadTexMtxImm(texTrans, GX_TEXMTX0, GX_MTX2x4);
 
@@ -187,14 +157,7 @@ void telop(CameraId cameraId, void* param) {
     effGetTexObj(0x81, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     effGetTexObj(0x80, &texObj);
-#ifdef MUST_MATCH
-    {
-        f32 z = float_0_8041e7c4;
-        GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, z, z, z, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    }
-#else
-    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, float_0_8041e7c4, float_0_8041e7c4, float_0_8041e7c4, GX_FALSE, GX_FALSE, GX_ANISO_1);
-#endif
+    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     GXLoadTexObj(&texObj, GX_TEXMAP1);
 
     GXSetCullMode(GX_CULL_NONE);
@@ -213,19 +176,19 @@ void telop(CameraId cameraId, void* param) {
             GXSetTevColor(GX_TEVREG1, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
         }
 
-        PSMTXTrans(texTrans, float_neg15_8041e7d0 + (f32)y, float_neg105_8041e7d4 - (f32)y, float_0_8041e7c4);
+        PSMTXTrans(texTrans, -15.0f + (f32)y, -105.0f - (f32)y, 0.0f);
         PSMTXConcat(cam->view, texTrans, texTrans);
         GXLoadPosMtxImm(texTrans, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-        GXPosition3f32(float_0_8041e7c4, float_0_8041e7c4, float_0_8041e7c4);
-        GXTexCoord2f32(float_0_8041e7c4, float_0_8041e7c4);
-        GXPosition3f32(width, float_0_8041e7c4, float_0_8041e7c4);
-        GXTexCoord2f32(float_1_8041e7cc, float_0_8041e7c4);
-        GXPosition3f32(width, -height, float_0_8041e7c4);
-        GXTexCoord2f32(float_1_8041e7cc, float_1_8041e7cc);
-        GXPosition3f32(float_0_8041e7c4, -height, float_0_8041e7c4);
-        GXTexCoord2f32(float_0_8041e7c4, float_1_8041e7cc);
+        GXPosition3f32(0.0f, 0.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(width, 0.0f, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(width, -height, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(0.0f, -height, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
         GXEnd();
 
         i--;
@@ -242,21 +205,21 @@ void telop(CameraId cameraId, void* param) {
     {
         u16 msgWidth = FontGetMessageWidth(msg);
 
-        scale = float_1_8041e7cc;
+        scale = 1.0f;
 #ifdef MUST_MATCH
         // Match-only: the empty then-block makes MWCC lay the assignment out of line, emitting the
         // original's `bge body; b join`; the natural `>=` test gives a `cror`/`bne` pair instead.
         if (gp->language != 0) {
-            if ((f32)msgWidth / (width - float_100_8041e7d8) < scale) {
+            if ((f32)msgWidth / (width - 100.0f) < scale) {
                 scale = scale;
             } else {
-                scale = (width - float_100_8041e7d8) / (f32)msgWidth;
+                scale = (width - 100.0f) / (f32)msgWidth;
             }
         }
 #else
         if (gp->language != 0) {
-            if ((f32)msgWidth / (width - float_100_8041e7d8) >= scale) {
-                scale = (width - float_100_8041e7d8) / (f32)msgWidth;
+            if ((f32)msgWidth / (width - 100.0f) >= scale) {
+                scale = (width - 100.0f) / (f32)msgWidth;
             }
         }
 #endif
@@ -271,47 +234,14 @@ void telop(CameraId cameraId, void* param) {
         FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, alpha });
 
         msgWidth = FontGetMessageWidth(msg);
-        {
-            f32 a = width - scale * (f32)msgWidth;
-            f32 b = height - float_24_8041e7e0;
-            PSMTXTrans(fontTrans,
-                       a * float_0p5_8041e7dc + float_neg15_8041e7d0,
-                       float_neg105_8041e7d4 - b * float_0p5_8041e7dc,
-                       float_0_8041e7c4);
-        }
-#ifdef MUST_MATCH
-        {
-            f32 one = float_1_8041e7cc;
-            PSMTXScale(fontScale, scale, one, one);
-        }
-#else
-        PSMTXScale(fontScale, scale, float_1_8041e7cc, float_1_8041e7cc);
-#endif
+        PSMTXTrans(fontTrans,
+                   (width - scale * (f32)msgWidth) / 2.0f + (-15.0f),
+                   -105.0f - (height - 24.0f) / 2.0f,
+                   0.0f);
+        PSMTXScale(fontScale, scale, 1.0f, 1.0f);
         PSMTXConcat(fontTrans, fontScale, fontTrans);
         FontDrawStringMtx(fontTrans, msg);
     }
 }
 
-#pragma opt_common_subs reset
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-#ifdef MUST_MATCH
-const volatile f32 float_0_8041e7c4 = 0.0f;
-#else
-const f32 float_0_8041e7c4 = 0.0f;
-#endif
-#ifdef MUST_MATCH
-const volatile f32 float_0p2_8041e7c8 = 0.2f;
-#else
-const f32 float_0p2_8041e7c8 = 0.2f;
-#endif
-#ifdef MUST_MATCH
-const volatile f32 float_1_8041e7cc = 1.0f;
-#else
-const f32 float_1_8041e7cc = 1.0f;
-#endif
-const f32 float_neg15_8041e7d0 = -15.0f;
-const f32 float_neg105_8041e7d4 = -105.0f;
-const f32 float_100_8041e7d8 = 100.0f;
-const f32 float_0p5_8041e7dc = 0.5f;
-const f32 float_24_8041e7e0 = 24.0f;

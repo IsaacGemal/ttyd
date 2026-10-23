@@ -16,16 +16,6 @@ u32 foot_vtx[14] = {
     0x00000000, 0x000000FF,
 };
 
-// .sdata2 constants (defined by this unit in the original).
-extern const f32 float_0p03125_8041f3ec;
-extern const f32 float_0_8041f3f0;
-extern const f32 float_neg1_8041f3f4;
-extern const f32 float_1_8041f3f8;
-extern const f32 float_deg2rad_8041f3fc;
-extern const f32 float_30_8041f400;
-extern const f32 float_15_8041f404;
-extern const f32 float_180_8041f408;
-
 // .data vertex array defined by this unit.
 
 typedef struct effKemuri7Data {
@@ -79,25 +69,25 @@ EffectEntry* effKemuri7N64Entry(f32 x, f32 y, f32 z, f32 angleDeg, f32 direction
     effect->callback = effKemuri7Main;
 
     for (i = 0; i < 1; i++) {
-        yaw = float_30_8041f400 * direction + angleDeg - float_15_8041f404;
+        yaw = 30.0f * direction + angleDeg - 15.0f;
         data->active = 1;
-        data->field_0x6C = float_0_8041f3f0;
+        data->field_0x6C = 0.0f;
         data->position.x = x;
         data->position.y = y;
         data->position.z = z;
-        data->scaleX = float_1_8041f3f8;
-        data->scaleY = float_1_8041f3f8;
-        data->scaleZ = float_1_8041f3f8;
+        data->scaleX = 1.0f;
+        data->scaleY = 1.0f;
+        data->scaleZ = 1.0f;
         data->alpha = 0xFF;
         data->direction = direction;
-        data->field_0x70 = float_0_8041f3f0;
-        data->field_0x74 = float_0_8041f3f0;
+        data->field_0x70 = 0.0f;
+        data->field_0x74 = 0.0f;
         data->lifetime = 0xFF;
-        data->rotX = float_0_8041f3f0;
+        data->rotX = 0.0f;
         data->rotY = yaw;
-        data->rotZ = float_0_8041f3f0;
+        data->rotZ = 0.0f;
 
-        sideAngle = float_180_8041f408 * direction;
+        sideAngle = 180.0f * direction;
         baseAngle = reviseAngle(angleDeg);
         baseRad = 6.2831855f * baseAngle / 360.0f;
         data->sinAngle = (f32)sin(baseRad);
@@ -134,7 +124,7 @@ void effKemuri7Main(EffectEntry* effect) {
         }
         active = 1;
         PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
-        PSMTXRotRad(m1, 'y', float_deg2rad_8041f3fc * data->rotY);
+        PSMTXRotRad(m1, 'y', 0.017453292f * data->rotY);
         PSMTXConcat(m0, m1, data->matrix);
         data->alpha--;
     }
@@ -162,7 +152,7 @@ void effKemuri7Disp(CameraId camId, void* param) {
     GXSetNumChans(0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-    PSMTXScale(scale, float_0p03125_8041f3ec, float_0p03125_8041f3ec, float_0_8041f3f0);
+    PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
     GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
     GXSetNumTevStages(1);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -181,8 +171,8 @@ void effKemuri7Disp(CameraId camId, void* param) {
         }
         GXSetTevColor(1, (GXColor){ 0x70, 0x60, 0x18, data->alpha });
         PSMTXConcat(cam->view, data->matrix, work);
-        if (data->direction == float_0_8041f3f0) {
-            PSMTXScale(scale, float_neg1_8041f3f4, float_1_8041f3f8, float_1_8041f3f8);
+        if (!data->direction) {
+            PSMTXScale(scale, -1.0f, 1.0f, 1.0f);
             PSMTXConcat(work, scale, work);
         }
         GXLoadPosMtxImm(work, 0);
@@ -191,12 +181,3 @@ void effKemuri7Disp(CameraId camId, void* param) {
     }
 }
 
-// The pool constants, defined after the code that loads them (defined before, the compiler folds them).
-const f32 float_0p03125_8041f3ec = 0.03125f;
-const f32 float_0_8041f3f0 = 0.0f;
-const f32 float_neg1_8041f3f4 = -1.0f;
-const f32 float_1_8041f3f8 = 1.0f;
-const f32 float_deg2rad_8041f3fc = 0.017453292f;
-const f32 float_30_8041f400 = 30.0f;
-const f32 float_15_8041f404 = 15.0f;
-const f32 float_180_8041f408 = 180.0f;

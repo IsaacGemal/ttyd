@@ -1310,12 +1310,7 @@ void npcSetTalkPose(const char* name) {
     s32 total;
     int i;
 
-#ifdef MUST_MATCH
-    // Retail sign-extends the first byte before the test (char is unsigned here).
-    if ((s8)name[0] == 0) {
-#else
     if (name[0] == 0) {
-#endif
         return;
     }
 #ifdef MUST_MATCH
@@ -1367,12 +1362,7 @@ void npcSetStayPose(const char* name) {
     s32 total;
     int i;
 
-#ifdef MUST_MATCH
-    // Retail sign-extends the first byte before the test (char is unsigned here).
-    if ((s8)name[0] == 0) {
-#else
     if (name[0] == 0) {
-#endif
         return;
     }
 #ifdef MUST_MATCH

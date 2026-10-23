@@ -218,7 +218,7 @@ USER_FUNC(hi_onoff) {
     if (onoff != 0) {
         mapObj->flags &= ~1;
         hitObjGetPos(taimatu_data[index * 2 + 1], &pos);
-        effect = effTorchEntry(0, pos.x, pos.y, pos.z, float_0p7_las_00012688);
+        effect = effTorchEntry(0, pos.x, pos.y, pos.z, 0.7f);
         effSetName(effect, taimatu_data[index * 2 + 1]);
     } else {
         mapObj->flags |= 1;
@@ -284,6 +284,5 @@ EVT_BEGIN(las_08_init_evt)
     RETURN
 EVT_END()
 
-const f32 float_0p7_las_00012688 = 0.7f;
 // clang-format on
 #pragma force_active off

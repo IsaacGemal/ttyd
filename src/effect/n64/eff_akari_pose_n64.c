@@ -20,19 +20,6 @@ static inline Vec akariMakeVec(f32 x, f32 y, f32 z) {
     return temp;
 }
 
-// .sdata2 float constants (named after their original addresses).
-extern const f32 float_deg2rad_8041e8d0;
-extern const f32 float_0p03125_8041e8d4;
-extern const f32 float_0_8041e8d8;
-extern const f32 float_0p1_8041e8dc;
-extern const f32 float_0p2_8041e8e0;
-extern const f32 float_360_8041e8e4;
-extern const f32 float_6p2832_8041e8e8;
-extern const f32 float_16_8041e8ec;
-extern const f32 float_45_8041e8f0;
-extern const f32 float_1_8041e8f4;
-extern const f32 float_0p5_8041e8f8;
-
 // .rodata string and the pooled int->float conversion double (named after their original addresses).
 // The compiler only references this by name if it is non-const; a const definition is constant-folded
 // to an anonymous @NNN literal, which no longer matches the original `lfd ... double_to_int_802fa1c8`.
@@ -127,7 +114,7 @@ EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 
     data->scale = scale;
 
     seqNum = max_seq_num[type];
-    seqStep = seqNum * float_0p5_8041e8f8;
+    seqStep = seqNum / 2.0f;
     for (i = 1, part = data->part; i < count + 1; i++, part++) {
         part->seqIndex = (s32)(-1.0f - seqStep * (f32)(i & 1));
     }
@@ -176,11 +163,11 @@ void effAkariPoseMain(EffectEntry* effect) {
     data++;
     switch (type) {
     case 0:
-        velScale = float_0p1_8041e8dc;
-        lerpScale = float_0p2_8041e8e0;
+        velScale = 0.1f;
+        lerpScale = 0.2f;
         break;
     default:
-        velScale = float_0p2_8041e8e0;
+        velScale = 0.2f;
         lerpScale = velScale;
         break;
     }
@@ -194,16 +181,16 @@ void effAkariPoseMain(EffectEntry* effect) {
             continue;
         }
         if (part->seqIndex == 0) {
-            angle = float_360_8041e8e4 * (f32)i / (f32)(effect->count - 1);
-            rad = float_6p2832_8041e8e8 * angle / float_360_8041e8e4;
-            part->x = float_16_8041e8ec * (f32)sin(rad);
-            part->y = float_16_8041e8ec * (f32)cos(rad);
+            angle = 360.0f * (f32)i / (f32)(effect->count - 1);
+            rad = 6.2831855f * angle / 360.0f;
+            part->x = 16.0f * (f32)sin(rad);
+            part->y = 16.0f * (f32)cos(rad);
             part->vx = part->x * velScale;
             part->vy = part->y * velScale;
-            part->targetVx = float_0_8041e8d8;
-            part->targetVy = float_0_8041e8d8;
-            part->angle = -angle - float_45_8041e8f0;
-            part->scale = float_1_8041e8f4;
+            part->targetVx = 0.0f;
+            part->targetVy = 0.0f;
+            part->angle = -angle - 45.0f;
+            part->scale = 1.0f;
         }
         switch (type) {
         case 0:
@@ -219,8 +206,8 @@ void effAkariPoseMain(EffectEntry* effect) {
             part->x += part->vx;
             part->y += part->vy;
         } else {
-            part->x += float_0p2_8041e8e0 * part->vx;
-            part->y += float_0p2_8041e8e0 * part->vy;
+            part->x += 0.2f * part->vx;
+            part->y += 0.2f * part->vy;
         }
         part->vx += lerpScale * (part->targetVx - part->vx);
         part->vy += lerpScale * (part->targetVy - part->vy);
@@ -248,7 +235,7 @@ void effAkariPoseDisp(CameraId camId, void* param) {
     data = effect->userdata;
     alpha = data->alpha;
     PSMTXTrans(mtx, data->x, data->y, data->z);
-    PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041e8d0);
+    PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
     PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
     PSMTXConcat(mtx, rotMtx, mtx);
     PSMTXConcat(mtx, scaleMtx, mtx);
@@ -259,7 +246,7 @@ void effAkariPoseDisp(CameraId camId, void* param) {
     GXSetTevOp(0, 3);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-    PSMTXScale(scaleMtx, float_0p03125_8041e8d4, float_0p03125_8041e8d4, float_0_8041e8d8);
+    PSMTXScale(scaleMtx, 0.03125f, 0.03125f, 0.0f);
     GXLoadTexMtxImm(scaleMtx, 0x1e, 1);
     effGetTexObjN64(0x76, &texObj);
     GXLoadTexObj(&texObj, 0);
@@ -271,8 +258,8 @@ void effAkariPoseDisp(CameraId camId, void* param) {
         if (part->seqIndex < 0) {
             continue;
         }
-        PSMTXTrans(mtx, part->x, part->y, float_0_8041e8d8);
-        PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e8d0 * part->angle);
+        PSMTXTrans(mtx, part->x, part->y, 0.0f);
+        PSMTXRotRad(rotMtx, 'z', 0.017453292f * part->angle);
         PSMTXScale(scaleMtx, part->scale, part->scale, part->scale);
         PSMTXConcat(mtx, rotMtx, mtx);
         PSMTXConcat(mtx, scaleMtx, mtx);
@@ -284,19 +271,6 @@ void effAkariPoseDisp(CameraId camId, void* param) {
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_deg2rad_8041e8d0 = 0.017453292f;
-const f32 float_0p03125_8041e8d4 = 0.03125f;
-const f32 float_0_8041e8d8 = 0.0f;
-const f32 float_0p1_8041e8dc = 0.1f;
-const f32 float_0p2_8041e8e0 = 0.2f;
-const f32 float_360_8041e8e4 = 360.0f;
-const f32 float_6p2832_8041e8e8 = 6.2831855f;
-const f32 float_16_8041e8ec = 16.0f;
-const f32 float_45_8041e8f0 = 45.0f;
-const f32 float_1_8041e8f4 = 1.0f;
-const f32 float_0p5_8041e8f8 = 0.5f;
 
 // 16 zero bytes that end the unit's .sdata: an all-zero object needs explicit_zero_data to be emitted and force_active to survive the linker.
 #pragma explicit_zero_data on

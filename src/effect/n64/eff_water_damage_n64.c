@@ -24,24 +24,6 @@ typedef struct effWaterDamageData {
 	s32 isBig;       //0x38
 } effWaterDamageData; //0x3C
 
-static const f32 float_0p98_80420168 = 0.98f;
-static const f32 float_neg0p8_8042016c = -0.8f;
-static const f32 float_neg0p1_80420170 = -0.1f;
-static const f32 float_1p2_80420174 = 1.2f;
-static const f32 float_0p9_80420178 = 0.9f;
-static const f32 float_2_8042017c = 2.0f;
-static const f32 float_0p07_80420180 = 0.07f;
-static const f32 float_0p2_80420184 = 0.2f;
-static const f32 float_0p5_80420188 = 0.5f;
-static const f32 float_0p4_8042018c = 0.4f;
-static const f32 float_0p3_80420190 = 0.3f;
-static const f32 float_1_80420194 = 1.0f;
-static const f32 float_6p2832_80420198 = 6.2831855f;
-static const f32 float_10_8042019c = 10.0f;
-static const f32 float_12_804201a0 = 12.0f;
-static const f32 float_360_804201a4 = 360.0f;
-static const f32 float_0p1_804201a8 = 0.1f;
-
 //data (matches the original unit's .data layout)
 u32 negone_one_data[16] = {
 	0xBF800000, 0x3F800000, 0xBF800000, 0x3F800000, 0x3F800000, 0xBF800000, 0x3F800000, 0xBF800000,

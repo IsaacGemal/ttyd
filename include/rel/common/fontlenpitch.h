@@ -3,7 +3,7 @@
 #include "driver/msgdrv.h"
 #include "manager/fontmgr.h"
 
-static s32 fontlenpitch(const s8* msg, s32 pitch) {
+static s32 fontlenpitch(const char* msg, s32 pitch) {
     s32 i;
     s32 len;
 
@@ -21,5 +21,5 @@ static s32 fontlenpitch(const s8* msg, s32 pitch) {
         }
         return len * pitch;
     }
-    return (u16)FontGetMessageWidth((const char*)msg);
+    return (u16)FontGetMessageWidth(msg);
 }

@@ -11,19 +11,6 @@
 #include "math_ext.h"
 #include <stdlib.h>
 
-extern const f32 float_0_8041f890;
-extern const f32 float_100_8041f894;
-extern const f32 float_10_8041f898;
-extern const f32 float_20_8041f89c;
-extern const f32 float_0p03125_8041f8a0;
-extern const f32 float_0p0625_8041f8a8;
-extern const f32 float_0p3_8041f8ac;
-extern const f32 float_0p1_8041f8a4;
-extern const f32 float_24_8041f8b0;
-extern const f32 float_2_8041f8b4;
-extern const f32 float_6p2832_8041f8b8;
-extern const f32 float_360_8041f8bc;
-
 // The compiler's int->float magic double (0x4330000080000000) is intentionally not
 // defined here: defining it duplicates the pool. Left out, the single pooled entry is
 // emitted at the original's .rodata+0x10 offset and resolves to the original address.
@@ -143,8 +130,8 @@ EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 	data->colorR = 0x2F;
 	data->colorG = 0x7F;
 	data->colorB = 0xFF;
-	data->field_0x30 = float_0_8041f890;
-	data->field_0x34 = float_0_8041f890;
+	data->field_0x30 = 0.0f;
+	data->field_0x34 = 0.0f;
 	data->bubbleTimer[0] = -1;
 	data->bubbleTimer[1] = -5;
 	data->bubbleTimer[2] = -9;
@@ -186,8 +173,8 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 
 	if (data->lifetime < 0) {
 		if (type == 1) {
-			effWaterDamageN64Entry(0, 30, data->x, float_24_8041f8b0 + data->y, data->z, float_2_8041f8b4);
-			effWaterDamageN64Entry(1, 30, data->x, float_24_8041f8b0 + data->y, data->z, float_2_8041f8b4);
+			effWaterDamageN64Entry(0, 30, data->x, 24.0f + data->y, data->z, 2.0f);
+			effWaterDamageN64Entry(1, 30, data->x, 24.0f + data->y, data->z, 2.0f);
 		}
 		effDelete(effect);
 		return;
@@ -212,13 +199,13 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 	}
 
 	// Written as `f14*6 + f14` so it compiles to mulli 6; add instead of a single *7.
-	s = (f32)sin(float_6p2832_8041f8b8 * (f32)(f14 * 6 + f14) / float_360_8041f8bc);
+	s = (f32)sin(6.2831855f * (f32)(f14 * 6 + f14) / 360.0f);
 	data->colorG = (u8)(s32)(32.0f * s + 127.0f);
 	t = 0.01f * (f32)f14;
-	a1 = float_6p2832_8041f8b8 * t / float_360_8041f8bc;
+	a1 = 6.2831855f * t / 360.0f;
 	sin1 = (f32)sin(a1);
-	sin2 = (f32)sin(float_6p2832_8041f8b8 * (6.0f * t) / float_360_8041f8bc);
-	cos1 = (f32)cos(float_6p2832_8041f8b8 * (float_2_8041f8b4 * t) / float_360_8041f8bc);
+	sin2 = (f32)sin(6.2831855f * (6.0f * t) / 360.0f);
+	cos1 = (f32)cos(6.2831855f * (2.0f * t) / 360.0f);
 	cos2 = (f32)cos(a1);
 	{
 		f32 sin2s = 32.0f * sin2;
@@ -229,7 +216,7 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 	}
 	data->field_0x34 += 0.2f;
 	if (data->field_0x34 >= 128.0f) {
-		data->field_0x34 = float_0_8041f890;
+		data->field_0x34 = 0.0f;
 	}
 
 	for (i = 0; i < 4; i++) {
@@ -238,7 +225,7 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 			continue;
 		}
 		if (data->bubbleTimer[i] == 0) {
-			data->bubbleX[i] = float_0_8041f890;
+			data->bubbleX[i] = 0.0f;
 			data->bubbleY[i] = 240.0f;
 			data->bubbleVelX[i] = 0.2f * (f32)(rand() % 11 - 5);
 			data->bubbleVelY[i] = (f32)(rand() % 11 + 2);
@@ -247,7 +234,7 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 		data->bubbleX[i] += data->bubbleVelX[i];
 		data->bubbleY[i] += data->bubbleVelY[i];
 		data->bubbleVelX[i] *= 0.97f;
-		data->bubbleVelY[i] += float_0p1_8041f8a4 * (float_10_8041f898 - data->bubbleVelY[i]);
+		data->bubbleVelY[i] += 0.1f * (10.0f - data->bubbleVelY[i]);
 		if (data->bubbleY[i] > 480.0f) {
 			data->bubbleTimer[i] = -(rand() % 11) - 1;
 		}
@@ -297,14 +284,14 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 		px = (f32)(point->x * 10);
 		py = (f32)(point->y * 10);
 		pz = (f32)(point->z * 10);
-		if (float_0_8041f890 != py) {
-			s1 = (f32)sin((f32)(counter + effTblRandN64(1000, (s32)(float_100_8041f894 * pz + (float_10_8041f898 * py + px)))));
-			t2 = float_100_8041f894 * py;
-			s2 = (f32)sin((f32)(counter + effTblRandN64(1000, (s32)(t2 + float_10_8041f898 * px + pz))));
-			s3 = (f32)sin((f32)(counter + effTblRandN64(1000, (s32)(float_10_8041f898 * pz + (float_100_8041f894 * px + py)))));
-			d1 = float_20_8041f89c * s1;
-			d2 = float_20_8041f89c * s2;
-			d3 = float_20_8041f89c * s3;
+		if (0.0f != py) {
+			s1 = (f32)sin((f32)(counter + effTblRandN64(1000, (s32)(100.0f * pz + (10.0f * py + px)))));
+			t2 = 100.0f * py;
+			s2 = (f32)sin((f32)(counter + effTblRandN64(1000, (s32)(t2 + 10.0f * px + pz))));
+			s3 = (f32)sin((f32)(counter + effTblRandN64(1000, (s32)(10.0f * pz + (100.0f * px + py)))));
+			d1 = 20.0f * s1;
+			d2 = 20.0f * s2;
+			d3 = 20.0f * s3;
 			px += d1;
 			py += d2;
 			pz += d3;
@@ -335,14 +322,14 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	PSMTXScale(scale, float_0p03125_8041f8a0, float_0p03125_8041f8a0, float_0_8041f890);
+	PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 	GXSetCullMode(GX_CULL_NONE);
 
 	for (i = 0; i < 4; i++) {
 		if (data->bubbleTimer[i] >= 0) {
-			PSMTXScale(scale, float_0p1_8041f8a4, float_0p1_8041f8a4, float_0p1_8041f8a4);
-			PSMTXTrans(bubble, data->bubbleX[i], data->bubbleY[i], float_0_8041f890);
+			PSMTXScale(scale, 0.1f, 0.1f, 0.1f);
+			PSMTXTrans(bubble, data->bubbleX[i], data->bubbleY[i], 0.0f);
 			PSMTXConcat(scale, bubble, bubble);
 			PSMTXScale(scale, data->bubbleScale[i], data->bubbleScale[i], data->bubbleScale[i]);
 			PSMTXConcat(bubble, scale, bubble);
@@ -372,14 +359,14 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	PSMTXScale(scale, float_0p0625_8041f8a8, float_0p03125_8041f8a0, float_0_8041f890);
+	PSMTXScale(scale, 0.0625f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-	GXSetTevColor(GX_TEVREG0, (GXColor){ data->colorR, data->colorG, data->colorB, (s32)(float_0p3_8041f8ac * (f32)alpha) });
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->colorR, data->colorG, data->colorB, (s32)(0.3f * (f32)alpha) });
 	GXSetCullMode(GX_CULL_FRONT);
 
 	DCFlushRange(vtx, 0x460);
 	GXInvalidateVtxCache();
-	PSMTXScale(scale, float_0p1_8041f8a4, float_0p1_8041f8a4, float_0p1_8041f8a4);
+	PSMTXScale(scale, 0.1f, 0.1f, 0.1f);
 	PSMTXConcat(trans, scale, scale);
 	GXLoadPosMtxImm(scale, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
@@ -403,16 +390,3 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	tri2(5, 10, 11, 0, 5, 11, 9, 0);
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_0_8041f890 = 0.0f;
-const f32 float_100_8041f894 = 100.0f;
-const f32 float_10_8041f898 = 10.0f;
-const f32 float_20_8041f89c = 20.0f;
-const f32 float_0p03125_8041f8a0 = 0.03125f;
-const f32 float_0p1_8041f8a4 = 0.1f;
-const f32 float_0p0625_8041f8a8 = 0.0625f;
-const f32 float_0p3_8041f8ac = 0.3f;
-const f32 float_24_8041f8b0 = 24.0f;
-const f32 float_2_8041f8b4 = 2.0f;
-const f32 float_6p2832_8041f8b8 = 6.2831855f;
-const f32 float_360_8041f8bc = 360.0f;

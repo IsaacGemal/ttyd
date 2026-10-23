@@ -7,9 +7,6 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// .sdata2 constants owned by this unit (named after their original addresses).
-const f32 float_0p0625_8041fb9c;
-const f32 float_0_8041fba0;
 // .data vertex array for effRippleDisp (0x38 bytes).
 u32 size16x16_tex32x32_0_vtx[14] = {
 	0xFFF80000, 0xFFF80000, 0x00000000, 0x00FF0008, 0x0000FFF8, 0x04000000, 0x000000FF,
@@ -32,8 +29,8 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->z = z;
 	data->alpha = 0;
 	data->age = 0;
-	data->rx = float_0_8041fba0;
-	data->rz = float_0_8041fba0;
+	data->rx = 0.0f;
+	data->rz = 0.0f;
 	data->rippleScale = 1.0f;
 	data->camId = 4;
 	switch (type) {
@@ -87,7 +84,7 @@ void effRippleMain(EffectEntry* effect) {
 	}
 
 	if ((type == 1 || type == 2 || type == 3) && timer == 15) {
-		EffectEntry* subEffect = effRippleN64Entry(type * 10, data->x, data->y, data->z, float_0_8041fba0);
+		EffectEntry* subEffect = effRippleN64Entry(type * 10, data->x, data->y, data->z, 0.0f);
 		EffRippleData* subData;
 		f32 rz = data->rz;
 		subData = subEffect->userdata;
@@ -152,7 +149,7 @@ void effRippleDisp(CameraId camId, void* param) {
 	GXSetNumTexGens(2);
 	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
 	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7d);
-	PSMTXScale(scaleMtx, float_0p0625_8041fb9c, float_0p0625_8041fb9c, float_0_8041fba0);
+	PSMTXScale(scaleMtx, 0.0625f, 0.0625f, 0.0f);
 	GXLoadTexMtxImm(scaleMtx, 0x1e, 1);
 	GXLoadTexMtxImm(scaleMtx, 0x21, 1);
 	GXSetNumTevStages(1);
@@ -169,8 +166,8 @@ void effRippleDisp(CameraId camId, void* param) {
 	}
 
 	texScroll = data->scrollV;
-	PSMTXScale(scaleMtx, 0.03125f, 0.03125f, float_0_8041fba0);
-	PSMTXTrans(transMtx, float_0_8041fba0, (f32)texScroll, float_0_8041fba0);
+	PSMTXScale(scaleMtx, 0.03125f, 0.03125f, 0.0f);
+	PSMTXTrans(transMtx, 0.0f, (f32)texScroll, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
 	GXLoadTexMtxImm(transMtx, 0x21, 1);
 
@@ -198,5 +195,3 @@ void effRippleN64SetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
 	data->rz = rz;
 }
 
-const f32 float_0p0625_8041fb9c = 0.0625f;
-const f32 float_0_8041fba0 = 0.0f;

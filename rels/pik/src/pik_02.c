@@ -1,5 +1,4 @@
 #include "pik_02.h"
-#include "matching.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -279,13 +278,6 @@ USER_FUNC(hoshi_r) {
 // Keeping each polynomial in one helper (rather than inlining it twice) is what puts the angle^2
 // scratch in f0 and the wrapped-angle pivot in f1; with the coefficients as helper locals the seed
 // lands in f4/f3/f2 exactly as retail. See evt_sub_get_coin for the same helper structure.
-// MUST_MATCH-only: retail keeps the first-call 0.5 and 50.0 in the constant pool and reads them back
-// instead of folding them into immediates. Naming them keeps those two loads; the MATCH_F32 read
-// also forces the fma's product operand to the front, as retail has it.
-#ifdef MUST_MATCH
-static const f32 c50 = 50.0f;
-static const f32 half_sym = 0.5f;
-#endif
 static inline f32 hoshi_sin_approx(f32 angle) {
     f32 v = 0.00761f;
     f32 b = 0.16605f;
@@ -363,37 +355,29 @@ USER_FUNC(hoshi_jump) {
     effStarStoneData* data = entry->userdata;
     NpcEntry* npc = npcNameToPtr("マジョリン");
     f32 nx = npc->position.x;
-#ifdef MUST_MATCH
-    f32 ny = *(f32*)&c50 + npc->position.y;
-#else
     f32 ny = npc->position.y + 50.0f;
-#endif
     f32 nz = npc->position.z;
     f32 f2, f4, f5;
     f32 t;
     f32 scale;
     f32 d;
 
-#ifdef MUST_MATCH
-    // MUST_MATCH: retail spills the first-call values through 4-byte stack slots and copies them to
-    // event->userdata with lwz/stw; the natural float stores are under #else.
-    scale = MATCH_F32(half_sym);
-#endif
+    scale = 0.5f;
     if (isFirstCall) {
-#ifdef MUST_MATCH
         d = distABf(nx, nz, data->x, data->z) / scale;
         f4 = ny - data->y;
         f2 = 0.1f * d;
-        t = f2 * MATCH_F32(half_sym) + f4 / d;
+        t = f2 / 2.0f + f4 / d;
+#ifdef MUST_MATCH
+        // MUST_MATCH: retail spills the first-call values through 4-byte stack slots and copies them to
+        // event->userdata with lwz/stw; the natural float stores are under #else.
         event->userdata[0] = *(s32*)&d;
         event->userdata[1] = *(s32*)&t;
         event->userdata[2] = *(s32*)&scale;
 #else
-        d = distABf(nx, nz, data->x, data->z) / 0.5f;
-        t = 0.1f * d * 0.5f + (ny - data->y) / d;
         event->userdataf[0] = d;
         event->userdataf[1] = t;
-        event->userdataf[2] = 0.5f;
+        event->userdataf[2] = scale;
 #endif
         event->field_84 = 0;
     }
