@@ -202,162 +202,105 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: type
-static u32 fighterDt[161] = {
-    0x00040000, (u32)"stg3_tou_sensyu_00", (u32)"stg3_tou_sensyu2_00", 0x00000016,
-    (u32)"stg3_tou_400_02", (u32)"stg3_tou_400_03", 0x00FA0000, 0x10010000,
-    (u32)"stg3_tou_sensyu_01", (u32)"stg3_tou_sensyu2_01", 0x00000013, (u32)"stg3_tou_118_00",
-    (u32)"stg3_tou_118_01", 0x00C80000, 0x00010000, (u32)"stg3_tou_sensyu_02",
-    (u32)"stg3_tou_sensyu2_02", 0x00000012, (u32)"stg3_tou_118_02", (u32)"stg3_tou_118_03",
-    0x00B40000, 0x00010000, (u32)"stg3_tou_sensyu_03", (u32)"stg3_tou_sensyu2_03",
-    0x00000011, (u32)"stg3_tou_118_04", (u32)"stg3_tou_118_05", 0x00AA0000,
-    0x00010000, (u32)"stg3_tou_sensyu_04", (u32)"stg3_tou_sensyu2_04", 0x00000010,
-    (u32)"stg3_tou_118_06", (u32)"stg3_tou_118_07", 0x00A00000, 0x00010000,
-    (u32)"stg3_tou_sensyu_05", (u32)"stg3_tou_sensyu2_05", 0x0000000F, (u32)"stg3_tou_118_08",
-    (u32)"stg3_tou_118_09", 0x00960000, 0x00010000, (u32)"stg3_tou_sensyu_06",
-    (u32)"stg3_tou_sensyu2_06", 0x0000000E, (u32)"stg3_tou_118_10", (u32)"stg3_tou_118_11",
-    0x008C0000, 0x00010000, (u32)"stg3_tou_sensyu_07", (u32)"stg3_tou_sensyu2_07",
-    0x0000000D, (u32)"stg3_tou_118_12", (u32)"stg3_tou_118_13", 0x00820000,
-    0x00010000, (u32)"stg3_tou_sensyu_08", (u32)"stg3_tou_sensyu2_08", 0x0000000C,
-    (u32)"stg3_tou_118_14", (u32)"stg3_tou_118_15", 0x00780000, 0x00010000,
-    (u32)"stg3_tou_sensyu_09", (u32)"stg3_tou_sensyu2_09", 0x0000000B, (u32)"stg3_tou_118_16",
-    (u32)"stg3_tou_118_17", 0x006E0000, 0x08010000, (u32)"stg3_tou_sensyu_10",
-    (u32)"stg3_tou_sensyu2_10", 0x0000000A, (u32)"stg3_tou_118_18", (u32)"stg3_tou_118_19",
-    0x00640000, 0x01020000, (u32)"stg3_tou_sensyu_11", (u32)"stg3_tou_sensyu2_11",
-    0x00000009, (u32)"stg3_tou_118_20", (u32)"stg3_tou_118_21", 0x005A0000,
-    0x00020000, (u32)"stg3_tou_sensyu_12", (u32)"stg3_tou_sensyu2_12", 0x00000008,
-    (u32)"stg3_tou_118_22", (u32)"stg3_tou_118_23", 0x00500000, 0x00020000,
-    (u32)"stg3_tou_sensyu_13", (u32)"stg3_tou_sensyu2_13", 0x00000007, (u32)"stg3_tou_118_24",
-    (u32)"stg3_tou_118_25", 0x00460000, 0x00020000, (u32)"stg3_tou_sensyu_14",
-    (u32)"stg3_tou_sensyu2_14", 0x00000006, (u32)"stg3_tou_118_26", (u32)"stg3_tou_118_27",
-    0x003C0000, 0x00020000, (u32)"stg3_tou_sensyu_15", (u32)"stg3_tou_sensyu2_15",
-    0x00000005, (u32)"stg3_tou_118_28", (u32)"stg3_tou_118_29", 0x00320000,
-    0x00020000, (u32)"stg3_tou_sensyu_16", (u32)"stg3_tou_sensyu2_16", 0x00000004,
-    (u32)"stg3_tou_118_30", (u32)"stg3_tou_118_31", 0x00280000, 0x00020000,
-    (u32)"stg3_tou_sensyu_17", (u32)"stg3_tou_sensyu2_17", 0x00000003, (u32)"stg3_tou_118_32",
-    (u32)"stg3_tou_118_33", 0x001E0000, 0x02020000, (u32)"stg3_tou_sensyu_18",
-    (u32)"stg3_tou_sensyu2_18", 0x00000002, (u32)"stg3_tou_118_34", (u32)"stg3_tou_118_35",
-    0x00140000, 0x04020000, (u32)"stg3_tou_sensyu_19", (u32)"stg3_tou_sensyu2_19",
-    0x00000001, (u32)"stg3_tou_118_36", (u32)"stg3_tou_118_36_01", 0x000A0000,
-    0x00080000, (u32)"stg3_tou_sensyu_20", (u32)"stg3_tou_sensyu2_20", 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00020000,
-    (u32)"stg3_tou_sensyu_21", (u32)"stg3_tou_sensyu2_21", 0x00000014, (u32)"stg3_tou_118_36_02",
-    (u32)"stg3_tou_118_36_03", 0x00050000, 0x00020000, (u32)"stg3_tou_sensyu_22",
-    (u32)"stg3_tou_sensyu2_22", 0x00000015, (u32)"stg3_tou_118_36_04", (u32)"stg3_tou_118_36_05",
-    0x00000000,
+static FighterEntry fighterDt[23] = {
+    { 0x4, 0, "stg3_tou_sensyu_00", "stg3_tou_sensyu2_00", 22, "stg3_tou_400_02", "stg3_tou_400_03", 250, 0 },
+    { 0x1001, 0, "stg3_tou_sensyu_01", "stg3_tou_sensyu2_01", 19, "stg3_tou_118_00", "stg3_tou_118_01", 200, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_02", "stg3_tou_sensyu2_02", 18, "stg3_tou_118_02", "stg3_tou_118_03", 180, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_03", "stg3_tou_sensyu2_03", 17, "stg3_tou_118_04", "stg3_tou_118_05", 170, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_04", "stg3_tou_sensyu2_04", 16, "stg3_tou_118_06", "stg3_tou_118_07", 160, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_05", "stg3_tou_sensyu2_05", 15, "stg3_tou_118_08", "stg3_tou_118_09", 150, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_06", "stg3_tou_sensyu2_06", 14, "stg3_tou_118_10", "stg3_tou_118_11", 140, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_07", "stg3_tou_sensyu2_07", 13, "stg3_tou_118_12", "stg3_tou_118_13", 130, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_08", "stg3_tou_sensyu2_08", 12, "stg3_tou_118_14", "stg3_tou_118_15", 120, 0 },
+    { 0x1, 0, "stg3_tou_sensyu_09", "stg3_tou_sensyu2_09", 11, "stg3_tou_118_16", "stg3_tou_118_17", 110, 0 },
+    { 0x801, 0, "stg3_tou_sensyu_10", "stg3_tou_sensyu2_10", 10, "stg3_tou_118_18", "stg3_tou_118_19", 100, 0 },
+    { 0x102, 0, "stg3_tou_sensyu_11", "stg3_tou_sensyu2_11", 9, "stg3_tou_118_20", "stg3_tou_118_21", 90, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_12", "stg3_tou_sensyu2_12", 8, "stg3_tou_118_22", "stg3_tou_118_23", 80, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_13", "stg3_tou_sensyu2_13", 7, "stg3_tou_118_24", "stg3_tou_118_25", 70, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_14", "stg3_tou_sensyu2_14", 6, "stg3_tou_118_26", "stg3_tou_118_27", 60, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_15", "stg3_tou_sensyu2_15", 5, "stg3_tou_118_28", "stg3_tou_118_29", 50, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_16", "stg3_tou_sensyu2_16", 4, "stg3_tou_118_30", "stg3_tou_118_31", 40, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_17", "stg3_tou_sensyu2_17", 3, "stg3_tou_118_32", "stg3_tou_118_33", 30, 0 },
+    { 0x202, 0, "stg3_tou_sensyu_18", "stg3_tou_sensyu2_18", 2, "stg3_tou_118_34", "stg3_tou_118_35", 20, 0 },
+    { 0x402, 0, "stg3_tou_sensyu_19", "stg3_tou_sensyu2_19", 1, "stg3_tou_118_36", "stg3_tou_118_36_01", 10, 0 },
+    { 0x8, 0, "stg3_tou_sensyu_20", "stg3_tou_sensyu2_20", 1, NULL, NULL, 0, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_21", "stg3_tou_sensyu2_21", 20, "stg3_tou_118_36_02", "stg3_tou_118_36_03", 5, 0 },
+    { 0x2, 0, "stg3_tou_sensyu_22", "stg3_tou_sensyu2_22", 21, "stg3_tou_118_36_04", "stg3_tou_118_36_05", 0, 0 },
 };
 
-// TODO: type
-static u32 fighterDt_re[147] = {
-    0x00040000, (u32)"stg3_tou_re_315", (u32)"stg3_tou_re_338", 0x00000016,
-    (u32)"stg3_tou_re_289", (u32)"stg3_tou_re_290", 0x00FA0000, 0x10010000,
-    (u32)"stg3_tou_re_316", (u32)"stg3_tou_re_339", 0x00000013, (u32)"stg3_tou_re_179",
-    (u32)"stg3_tou_re_180", 0x00C80000, 0x00010000, (u32)"stg3_tou_re_317",
-    (u32)"stg3_tou_re_340", 0x00000012, (u32)"stg3_tou_re_181", (u32)"stg3_tou_re_182",
-    0x00B40000, 0x00010000, (u32)"stg3_tou_re_318", (u32)"stg3_tou_re_341",
-    0x00000011, (u32)"stg3_tou_re_183", (u32)"stg3_tou_re_184", 0x00AA0000,
-    0x00010000, (u32)"stg3_tou_re_319", (u32)"stg3_tou_re_342", 0x00000010,
-    (u32)"stg3_tou_re_185", (u32)"stg3_tou_re_186", 0x00A00000, 0x00010000,
-    (u32)"stg3_tou_re_320", (u32)"stg3_tou_re_343", 0x0000000F, (u32)"stg3_tou_re_187",
-    (u32)"stg3_tou_re_188", 0x00960000, 0x00010000, (u32)"stg3_tou_re_321",
-    (u32)"stg3_tou_re_344", 0x0000000E, (u32)"stg3_tou_re_189", (u32)"stg3_tou_re_190",
-    0x008C0000, 0x00010000, (u32)"stg3_tou_re_322", (u32)"stg3_tou_re_345",
-    0x0000000D, (u32)"stg3_tou_re_191", (u32)"stg3_tou_re_192", 0x00820000,
-    0x00010000, (u32)"stg3_tou_re_323", (u32)"stg3_tou_re_346", 0x0000000C,
-    (u32)"stg3_tou_re_193", (u32)"stg3_tou_re_194", 0x00780000, 0x00010000,
-    (u32)"stg3_tou_re_324", (u32)"stg3_tou_re_347", 0x0000000B, (u32)"stg3_tou_re_195",
-    (u32)"stg3_tou_re_196", 0x006E0000, 0x08010000, (u32)"stg3_tou_re_325",
-    (u32)"stg3_tou_re_348", 0x0000000A, (u32)"stg3_tou_re_197", (u32)"stg3_tou_re_198",
-    0x00640000, 0x01020000, (u32)"stg3_tou_re_326", (u32)"stg3_tou_re_349",
-    0x00000009, (u32)"stg3_tou_re_199", (u32)"stg3_tou_re_200", 0x005A0000,
-    0x00020000, (u32)"stg3_tou_re_327", (u32)"stg3_tou_re_350", 0x00000008,
-    (u32)"stg3_tou_re_201", (u32)"stg3_tou_re_202", 0x00500000, 0x00020000,
-    (u32)"stg3_tou_re_328", (u32)"stg3_tou_re_351", 0x00000007, (u32)"stg3_tou_re_203",
-    (u32)"stg3_tou_re_204", 0x00460000, 0x00020000, (u32)"stg3_tou_re_329",
-    (u32)"stg3_tou_re_352", 0x00000006, (u32)"stg3_tou_re_205", (u32)"stg3_tou_re_206",
-    0x003C0000, 0x00020000, (u32)"stg3_tou_re_330", (u32)"stg3_tou_re_353",
-    0x00000005, (u32)"stg3_tou_re_207", (u32)"stg3_tou_re_208", 0x00320000,
-    0x00020000, (u32)"stg3_tou_re_331", (u32)"stg3_tou_re_354", 0x00000004,
-    (u32)"stg3_tou_re_209", (u32)"stg3_tou_re_210", 0x00280000, 0x00020000,
-    (u32)"stg3_tou_re_332", (u32)"stg3_tou_re_355", 0x00000003, (u32)"stg3_tou_re_211",
-    (u32)"stg3_tou_re_212", 0x001E0000, 0x02020000, (u32)"stg3_tou_re_333",
-    (u32)"stg3_tou_re_356", 0x00000002, (u32)"stg3_tou_re_213", (u32)"stg3_tou_re_214",
-    0x00140000, 0x04020000, (u32)"stg3_tou_re_334", (u32)"stg3_tou_re_357",
-    0x00000001, (u32)"stg3_tou_re_215", (u32)"stg3_tou_re_216", 0x000A0000,
-    0x00080000, (u32)"stg3_tou_re_335", (u32)"stg3_tou_re_358", 0x00000001,
-    0x00000000, 0x00000000, 0x00000000,
+static FighterEntry fighterDt_re[21] = {
+    { 0x4, 0, "stg3_tou_re_315", "stg3_tou_re_338", 22, "stg3_tou_re_289", "stg3_tou_re_290", 250, 0 },
+    { 0x1001, 0, "stg3_tou_re_316", "stg3_tou_re_339", 19, "stg3_tou_re_179", "stg3_tou_re_180", 200, 0 },
+    { 0x1, 0, "stg3_tou_re_317", "stg3_tou_re_340", 18, "stg3_tou_re_181", "stg3_tou_re_182", 180, 0 },
+    { 0x1, 0, "stg3_tou_re_318", "stg3_tou_re_341", 17, "stg3_tou_re_183", "stg3_tou_re_184", 170, 0 },
+    { 0x1, 0, "stg3_tou_re_319", "stg3_tou_re_342", 16, "stg3_tou_re_185", "stg3_tou_re_186", 160, 0 },
+    { 0x1, 0, "stg3_tou_re_320", "stg3_tou_re_343", 15, "stg3_tou_re_187", "stg3_tou_re_188", 150, 0 },
+    { 0x1, 0, "stg3_tou_re_321", "stg3_tou_re_344", 14, "stg3_tou_re_189", "stg3_tou_re_190", 140, 0 },
+    { 0x1, 0, "stg3_tou_re_322", "stg3_tou_re_345", 13, "stg3_tou_re_191", "stg3_tou_re_192", 130, 0 },
+    { 0x1, 0, "stg3_tou_re_323", "stg3_tou_re_346", 12, "stg3_tou_re_193", "stg3_tou_re_194", 120, 0 },
+    { 0x1, 0, "stg3_tou_re_324", "stg3_tou_re_347", 11, "stg3_tou_re_195", "stg3_tou_re_196", 110, 0 },
+    { 0x801, 0, "stg3_tou_re_325", "stg3_tou_re_348", 10, "stg3_tou_re_197", "stg3_tou_re_198", 100, 0 },
+    { 0x102, 0, "stg3_tou_re_326", "stg3_tou_re_349", 9, "stg3_tou_re_199", "stg3_tou_re_200", 90, 0 },
+    { 0x2, 0, "stg3_tou_re_327", "stg3_tou_re_350", 8, "stg3_tou_re_201", "stg3_tou_re_202", 80, 0 },
+    { 0x2, 0, "stg3_tou_re_328", "stg3_tou_re_351", 7, "stg3_tou_re_203", "stg3_tou_re_204", 70, 0 },
+    { 0x2, 0, "stg3_tou_re_329", "stg3_tou_re_352", 6, "stg3_tou_re_205", "stg3_tou_re_206", 60, 0 },
+    { 0x2, 0, "stg3_tou_re_330", "stg3_tou_re_353", 5, "stg3_tou_re_207", "stg3_tou_re_208", 50, 0 },
+    { 0x2, 0, "stg3_tou_re_331", "stg3_tou_re_354", 4, "stg3_tou_re_209", "stg3_tou_re_210", 40, 0 },
+    { 0x2, 0, "stg3_tou_re_332", "stg3_tou_re_355", 3, "stg3_tou_re_211", "stg3_tou_re_212", 30, 0 },
+    { 0x202, 0, "stg3_tou_re_333", "stg3_tou_re_356", 2, "stg3_tou_re_213", "stg3_tou_re_214", 20, 0 },
+    { 0x402, 0, "stg3_tou_re_334", "stg3_tou_re_357", 1, "stg3_tou_re_215", "stg3_tou_re_216", 10, 0 },
+    { 0x8, 0, "stg3_tou_re_335", "stg3_tou_re_358", 1, NULL, NULL, 0, 0 },
 };
 
-// TODO: type
-static u32 ruleDt_2bu[50] = {
-    (u32)"stg3_tou_107_01", (u32)"stg3_tou_cp_000", 0x00000012, 0x00000003,
-    0x00000003, (u32)"stg3_tou_107_02", (u32)"stg3_tou_cp_001", 0x00000001,
-    0x00000001, 0x00000001, (u32)"stg3_tou_107_03", (u32)"stg3_tou_cp_002",
-    0x00000003, 0x00000001, 0x00000001, (u32)"stg3_tou_107_04",
-    (u32)"stg3_tou_cp_003", 0x00000030, 0x00000001, 0x00000001,
-    (u32)"stg3_tou_107_05", (u32)"stg3_tou_cp_004", 0x00000005, 0x00000001,
-    0x00000001, (u32)"stg3_tou_107_06", (u32)"stg3_tou_cp_005", 0x0000001A,
-    0x00000001, 0x00000001, (u32)"stg3_tou_107_07", (u32)"stg3_tou_cp_006",
-    0x00000020, 0x00000001, 0x00000001, (u32)"stg3_tou_107_08",
-    (u32)"stg3_tou_cp_007", 0x0000003B, 0x00000005, 0x00000005,
-    (u32)"stg3_tou_107_12", (u32)"stg3_tou_cp_008", 0x00000006, 0x00000001,
-    0x00000001, (u32)"stg3_tou_107_16", (u32)"stg3_tou_cp_009", 0x0000002B,
-    0x00000001, 0x00000001,
+static RuleEntry ruleDt_2bu[10] = {
+    { "stg3_tou_107_01", "stg3_tou_cp_000", 18, 3, 3 },
+    { "stg3_tou_107_02", "stg3_tou_cp_001", 1, 1, 1 },
+    { "stg3_tou_107_03", "stg3_tou_cp_002", 3, 1, 1 },
+    { "stg3_tou_107_04", "stg3_tou_cp_003", 48, 1, 1 },
+    { "stg3_tou_107_05", "stg3_tou_cp_004", 5, 1, 1 },
+    { "stg3_tou_107_06", "stg3_tou_cp_005", 26, 1, 1 },
+    { "stg3_tou_107_07", "stg3_tou_cp_006", 32, 1, 1 },
+    { "stg3_tou_107_08", "stg3_tou_cp_007", 59, 5, 5 },
+    { "stg3_tou_107_12", "stg3_tou_cp_008", 6, 1, 1 },
+    { "stg3_tou_107_16", "stg3_tou_cp_009", 43, 1, 1 },
 };
 
-// TODO: type
-static u32 ruleDt_1bu[70] = {
-    (u32)"stg3_tou_107_01", (u32)"stg3_tou_cp_010", 0x00000012, 0x00000005,
-    0x00000005, (u32)"stg3_tou_107_02", (u32)"stg3_tou_cp_011", 0x00000001,
-    0x00000001, 0x00000001, (u32)"stg3_tou_107_03", (u32)"stg3_tou_cp_012",
-    0x00000003, 0x00000001, 0x00000001, (u32)"stg3_tou_107_04",
-    (u32)"stg3_tou_cp_013", 0x00000030, 0x00000001, 0x00000001,
-    (u32)"stg3_tou_107_05", (u32)"stg3_tou_cp_014", 0x00000005, 0x00000001,
-    0x00000001, (u32)"stg3_tou_107_06", (u32)"stg3_tou_cp_015", 0x0000001A,
-    0x00000001, 0x00000001, (u32)"stg3_tou_107_07", (u32)"stg3_tou_cp_016",
-    0x00000020, 0x00000001, 0x00000001, (u32)"stg3_tou_107_08",
-    (u32)"stg3_tou_cp_017", 0x0000003B, 0x00000005, 0x00000005,
-    (u32)"stg3_tou_107_12", (u32)"stg3_tou_cp_019", 0x00000006, 0x00000001,
-    0x00000001, (u32)"stg3_tou_107_13", (u32)"stg3_tou_cp_020", 0x0000000B,
-    0x00000014, 0x00000014, (u32)"stg3_tou_107_16", (u32)"stg3_tou_cp_021",
-    0x0000002B, 0x00000003, 0x00000003, (u32)"stg3_tou_107_17",
-    (u32)"stg3_tou_cp_022", 0x00000041, 0x00000003, 0x00000003,
-    (u32)"stg3_tou_107_19", (u32)"stg3_tou_cp_023", 0x00000040, 0x000000FF,
-    0x000000FF, (u32)"stg3_tou_107_20", (u32)"stg3_tou_cp_024", 0x0000003F,
-    0x000000FF, 0x000000FF,
+static RuleEntry ruleDt_1bu[14] = {
+    { "stg3_tou_107_01", "stg3_tou_cp_010", 18, 5, 5 },
+    { "stg3_tou_107_02", "stg3_tou_cp_011", 1, 1, 1 },
+    { "stg3_tou_107_03", "stg3_tou_cp_012", 3, 1, 1 },
+    { "stg3_tou_107_04", "stg3_tou_cp_013", 48, 1, 1 },
+    { "stg3_tou_107_05", "stg3_tou_cp_014", 5, 1, 1 },
+    { "stg3_tou_107_06", "stg3_tou_cp_015", 26, 1, 1 },
+    { "stg3_tou_107_07", "stg3_tou_cp_016", 32, 1, 1 },
+    { "stg3_tou_107_08", "stg3_tou_cp_017", 59, 5, 5 },
+    { "stg3_tou_107_12", "stg3_tou_cp_019", 6, 1, 1 },
+    { "stg3_tou_107_13", "stg3_tou_cp_020", 11, 20, 20 },
+    { "stg3_tou_107_16", "stg3_tou_cp_021", 43, 3, 3 },
+    { "stg3_tou_107_17", "stg3_tou_cp_022", 65, 3, 3 },
+    { "stg3_tou_107_19", "stg3_tou_cp_023", 64, 255, 255 },
+    { "stg3_tou_107_20", "stg3_tou_cp_024", 63, 255, 255 },
 };
 
-// TODO: type
-static u32 ruleDt_re[70] = {
-    (u32)"stg3_tou_re_362", (u32)"stg3_tou_cp_040", 0x00000012, 0x00000005,
-    0x00000005, (u32)"stg3_tou_re_363", (u32)"stg3_tou_cp_041", 0x00000001,
-    0x00000001, 0x00000001, (u32)"stg3_tou_re_364", (u32)"stg3_tou_cp_042",
-    0x00000003, 0x00000001, 0x00000001, (u32)"stg3_tou_re_365",
-    (u32)"stg3_tou_cp_043", 0x00000030, 0x00000001, 0x00000001,
-    (u32)"stg3_tou_re_366", (u32)"stg3_tou_cp_044", 0x00000005, 0x00000001,
-    0x00000001, (u32)"stg3_tou_re_367", (u32)"stg3_tou_cp_045", 0x0000001A,
-    0x00000001, 0x00000001, (u32)"stg3_tou_re_368", (u32)"stg3_tou_cp_046",
-    0x00000020, 0x00000001, 0x00000001, (u32)"stg3_tou_re_369",
-    (u32)"stg3_tou_cp_047", 0x0000003B, 0x00000005, 0x00000005,
-    (u32)"stg3_tou_re_371", (u32)"stg3_tou_cp_049", 0x00000006, 0x00000001,
-    0x00000001, (u32)"stg3_tou_re_372", (u32)"stg3_tou_cp_050", 0x0000000B,
-    0x00000014, 0x00000014, (u32)"stg3_tou_re_373", (u32)"stg3_tou_cp_051",
-    0x0000002B, 0x00000003, 0x00000003, (u32)"stg3_tou_re_374",
-    (u32)"stg3_tou_cp_052", 0x00000041, 0x00000003, 0x00000003,
-    (u32)"stg3_tou_re_375", (u32)"stg3_tou_cp_053", 0x00000040, 0x000000FF,
-    0x000000FF, (u32)"stg3_tou_re_376", (u32)"stg3_tou_cp_054", 0x0000003F,
-    0x000000FF, 0x000000FF,
+static RuleEntry ruleDt_re[14] = {
+    { "stg3_tou_re_362", "stg3_tou_cp_040", 18, 5, 5 },
+    { "stg3_tou_re_363", "stg3_tou_cp_041", 1, 1, 1 },
+    { "stg3_tou_re_364", "stg3_tou_cp_042", 3, 1, 1 },
+    { "stg3_tou_re_365", "stg3_tou_cp_043", 48, 1, 1 },
+    { "stg3_tou_re_366", "stg3_tou_cp_044", 5, 1, 1 },
+    { "stg3_tou_re_367", "stg3_tou_cp_045", 26, 1, 1 },
+    { "stg3_tou_re_368", "stg3_tou_cp_046", 32, 1, 1 },
+    { "stg3_tou_re_369", "stg3_tou_cp_047", 59, 5, 5 },
+    { "stg3_tou_re_371", "stg3_tou_cp_049", 6, 1, 1 },
+    { "stg3_tou_re_372", "stg3_tou_cp_050", 11, 20, 20 },
+    { "stg3_tou_re_373", "stg3_tou_cp_051", 43, 3, 3 },
+    { "stg3_tou_re_374", "stg3_tou_cp_052", 65, 3, 3 },
+    { "stg3_tou_re_375", "stg3_tou_cp_053", 64, 255, 255 },
+    { "stg3_tou_re_376", "stg3_tou_cp_054", 63, 255, 255 },
 };
 
-// TODO: type
-static u32 rank_wp[1] = {
-    (u32)&rank_work,
-};
-
-// TODO: type
-static u32 dwp[1] = {
-    (u32)&disp_work,
-};
+static RankWork* rank_wp = &rank_work;
+static DispWork* dwp = &disp_work;
 
 static char* suuji[10] = {
     "０", "１", "２", "３", "４", "５", "６", "７", "８", "９",
@@ -2992,10 +2935,10 @@ static USER_FUNC(evt_tou_print_ranking) {
     s32 c;
 
     if (isFirstCall) {
-        memset((void*)dwp[0], 0, sizeof(DispWork));
+        memset(dwp, 0, sizeof(DispWork));
         c = 0;
-        for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-            u16 f = ((RankWork*)rank_wp[0])->entries[i].flags;
+        for (i = 0; i < rank_wp->count; i++) {
+            u16 f = rank_wp->entries[i].flags;
 
             if (!(f & 2)) {
                 if (f & 4) {
@@ -3004,15 +2947,15 @@ static USER_FUNC(evt_tou_print_ranking) {
                 c++;
             }
         }
-        ((DispWork*)dwp[0])->page = c / 0xb;
+        dwp->page = c / 0xb;
         {
-            f32 v = (f32)(((DispWork*)dwp[0])->page * 0xdc);
+            f32 v = (f32)(dwp->page * 0xdc);
 
-            ((DispWork*)dwp[0])->targetScroll = v;
-            ((DispWork*)dwp[0])->scroll = v;
+            dwp->targetScroll = v;
+            dwp->scroll = v;
         }
         evtGetValue(NULL, GSW(0));
-        for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
+        for (i = 0; i < rank_wp->count; i++) {
         }
         return EVT_RETURN_BLOCK;
     }
@@ -3020,17 +2963,17 @@ static USER_FUNC(evt_tou_print_ranking) {
         psndSFXOn((const char*)0x13);
         return EVT_RETURN_YIELD;
     }
-    if (((DispWork*)dwp[0])->page > 0 && (keyGetButtonTrg(0) & 0x40)) {
+    if (dwp->page > 0 && (keyGetButtonTrg(0) & 0x40)) {
         psndSFXOn((const char*)5);
-        ((DispWork*)dwp[0])->page--;
+        dwp->page--;
     }
-    if (((DispWork*)dwp[0])->page < 1 && (keyGetButtonTrg(0) & 0x20)) {
-        ((DispWork*)dwp[0])->page++;
+    if (dwp->page < 1 && (keyGetButtonTrg(0) & 0x20)) {
+        dwp->page++;
         psndSFXOn((const char*)5);
     }
-    ((DispWork*)dwp[0])->targetScroll = (f32)(((DispWork*)dwp[0])->page * 0xdc);
+    dwp->targetScroll = (f32)(dwp->page * 0xdc);
     {
-        DispWork* w = (DispWork*)dwp[0];
+        DispWork* w = dwp;
         f32 t = w->targetScroll - w->scroll;
 
         w->scroll += t * TOU_F32(float_0p125_tou_0000a888);
@@ -3077,9 +3020,9 @@ static void disp_proc(CameraId cameraId, void* param) {
     char buf[0x100];
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        dt = (FighterEntry*)fighterDt;
+        dt = fighterDt;
     } else {
-        dt = (FighterEntry*)fighterDt_re;
+        dt = fighterDt_re;
     }
     f31 = -TOU_F32(float_250_tou_0000a890) * TOU_F32(float_0p5_tou_0000a868);
     windowDispGX_System(0, 0xff, f31 - TOU_F32(float_30_tou_0000a894), TOU_F32(float_165_tou_0000a898),
@@ -3100,9 +3043,9 @@ static void disp_proc(CameraId cameraId, void* param) {
     rank = 0;
     y = 0;
     i = 0;
-    for (; i < ((RankWork*)rank_wp[0])->count; i++) {
-        f26 = ((DispWork*)dwp[0])->scroll + ((TOU_F32(float_135_tou_0000a8b0) - (f32)y) - TOU_F32(float_40_tou_0000a8c4));
-        if (!(((RankWork*)rank_wp[0])->entries[i].flags & 2)) {
+    for (; i < rank_wp->count; i++) {
+        f26 = dwp->scroll + ((TOU_F32(float_135_tou_0000a8b0) - (f32)y) - TOU_F32(float_40_tou_0000a8c4));
+        if (!(rank_wp->entries[i].flags & 2)) {
             PSMTXScale(scale, TOU_F32(float_0p8_tou_0000a8c8), TOU_F32(float_0p8_tou_0000a8c8), TOU_F32(float_0p8_tou_0000a8c8));
             if (rank != 0) {
                 const char* p1 = (rank / 10) ? suuji[rank / 10] : (const char*)&zero_tou_0000a8cc;
@@ -3119,7 +3062,7 @@ static void disp_proc(CameraId cameraId, void* param) {
                 FontDrawMessageMtx(mtx, buf);
             }
             FontDrawStart();
-            if (((RankWork*)rank_wp[0])->entries[i].flags & 4) {
+            if (rank_wp->entries[i].flags & 4) {
                 GXColor color = *(GXColor*)&dat_tou_0000990c;
 
                 FontDrawColor(&color);
@@ -3130,14 +3073,14 @@ static void disp_proc(CameraId cameraId, void* param) {
             }
             PSMTXTrans(mtx, TOU_F32(float_40_tou_0000a8c4) + f27, f26, 0.0f);
             PSMTXConcat(mtx, scale, mtx);
-            FontDrawMessageMtx(mtx, msgSearch(dt[((RankWork*)rank_wp[0])->entries[i].id].name));
+            FontDrawMessageMtx(mtx, msgSearch(dt[rank_wp->entries[i].id].name));
             rank++;
             y += 0x14;
         }
     }
     GXSetScissor(scX, (u16)(s32)TOU_F32(float_137_tou_0000a8d8), scW, (u16)(s32)TOU_F32(float_228_tou_0000a8dc));
     {
-        f32 yv = TOU_F32(float_95_tou_0000a8e0) + ((DispWork*)dwp[0])->scroll;
+        f32 yv = TOU_F32(float_95_tou_0000a8e0) + dwp->scroll;
         Vec pos = vec3_tou_00009914;
 
         pos.x = TOU_F32(float_15_tou_0000a8e4) + f31;
@@ -3145,7 +3088,7 @@ static void disp_proc(CameraId cameraId, void* param) {
         iconDispGx(TOU_F32(float_0p8_tou_0000a8c8), &pos, 0x10, 0x123);
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
-    if (((DispWork*)dwp[0])->page > 0) {
+    if (dwp->page > 0) {
         Vec pos = vec3_tou_00009920;
 
         pos.x = f31 + TOU_F32(float_250_tou_0000a890);
@@ -3157,7 +3100,7 @@ static void disp_proc(CameraId cameraId, void* param) {
             iconDispGx(0.6f, &pos, 0x10, 0x7e);
         }
     }
-    if (((DispWork*)dwp[0])->page < 1) {
+    if (dwp->page < 1) {
         Vec pos = vec3_tou_00009938;
 
         pos.x = f31 + TOU_F32(float_250_tou_0000a890);
@@ -3175,7 +3118,7 @@ static void printRanking(void) {
     s32 i;
 
     evtGetValue(NULL, GSW(0));
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
+    for (i = 0; i < rank_wp->count; i++) {
     }
 }
 
@@ -3201,17 +3144,17 @@ static USER_FUNC(evt_tou_set_ranking_win_lose) {
     s16 max;
 
     if (a == 0) {
-        for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-            if (((RankWork*)rank_wp[0])->entries[i].id == id) {
-                ((RankWork*)rank_wp[0])->entries[i].flags |= 1;
+        for (i = 0; i < rank_wp->count; i++) {
+            if (rank_wp->entries[i].id == id) {
+                rank_wp->entries[i].flags |= 1;
                 break;
             }
         }
         swSet(0x98a);
     } else {
-        for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-            if (((RankWork*)rank_wp[0])->entries[i].id == id) {
-                ((RankWork*)rank_wp[0])->entries[i].flags &= ~1;
+        for (i = 0; i < rank_wp->count; i++) {
+            if (rank_wp->entries[i].id == id) {
+                rank_wp->entries[i].flags &= ~1;
                 break;
             }
         }
@@ -3219,18 +3162,18 @@ static USER_FUNC(evt_tou_set_ranking_win_lose) {
     }
     min = 0x3e8;
     max = -0x3e8;
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-        if (!(((RankWork*)rank_wp[0])->entries[i].flags & 2)) {
+    for (i = 0; i < rank_wp->count; i++) {
+        if (!(rank_wp->entries[i].flags & 2)) {
             s32 d = 0;
 
             d += rand() % 4;
             d += rand() % 4;
-            ((RankWork*)rank_wp[0])->entries[i].score += d - 3;
-            if (((RankWork*)rank_wp[0])->entries[i].score < min) {
-                min = ((RankWork*)rank_wp[0])->entries[i].score;
+            rank_wp->entries[i].score += d - 3;
+            if (rank_wp->entries[i].score < min) {
+                min = rank_wp->entries[i].score;
             }
-            if (((RankWork*)rank_wp[0])->entries[i].score > max) {
-                max = ((RankWork*)rank_wp[0])->entries[i].score;
+            if (rank_wp->entries[i].score > max) {
+                max = rank_wp->entries[i].score;
             }
         }
     }
@@ -3248,7 +3191,7 @@ USER_FUNC(evt_tou_get_rule_msg2_27_text_182C) {
     s32 i;
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        RankWork* rw = (RankWork*)rank_wp[0];
+        RankWork* rw = rank_wp;
         s32 count = 0;
 
         for (i = 0; i < rw->count; i++) {
@@ -3261,14 +3204,14 @@ USER_FUNC(evt_tou_get_rule_msg2_27_text_182C) {
             }
         }
         if (count > 10) {
-            dt = (RuleEntry*)ruleDt_2bu;
+            dt = ruleDt_2bu;
             n = 10;
         } else {
-            dt = (RuleEntry*)ruleDt_1bu;
+            dt = ruleDt_1bu;
             n = 14;
         }
     } else {
-        dt = (RuleEntry*)ruleDt_re;
+        dt = ruleDt_re;
         n = 14;
     }
 
@@ -3292,7 +3235,7 @@ static USER_FUNC(evt_tou_get_rule_info) {
     s32 i;
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        RankWork* rw = (RankWork*)rank_wp[0];
+        RankWork* rw = rank_wp;
         s32 count = 0;
 
         for (i = 0; i < rw->count; i++) {
@@ -3305,14 +3248,14 @@ static USER_FUNC(evt_tou_get_rule_info) {
             }
         }
         if (count > 10) {
-            dt = (RuleEntry*)ruleDt_2bu;
+            dt = ruleDt_2bu;
             n = 10;
         } else {
-            dt = (RuleEntry*)ruleDt_1bu;
+            dt = ruleDt_1bu;
             n = 14;
         }
     } else {
-        dt = (RuleEntry*)ruleDt_re;
+        dt = ruleDt_re;
         n = 14;
     }
 
@@ -3346,9 +3289,9 @@ static USER_FUNC(evt_tou_get_fighter_battle_msg) {
     FighterEntry* dt;
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        dt = (FighterEntry*)fighterDt;
+        dt = fighterDt;
     } else {
-        dt = (FighterEntry*)fighterDt_re;
+        dt = fighterDt_re;
     }
     evtSetValue(event, args[1], (s32)dt[idx].taunt);
     evtSetValue(event, args[2], (s32)dt[idx].victory);
@@ -3358,7 +3301,7 @@ static USER_FUNC(evt_tou_get_fighter_battle_msg) {
 static USER_FUNC(evt_tou_get_fighter_rank) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    RankWork* rw = (RankWork*)rank_wp[0];
+    RankWork* rw = rank_wp;
     s32 rank = 0;
     s32 i;
 
@@ -3381,9 +3324,9 @@ static USER_FUNC(evt_tou_get_fighter_name2) {
     FighterEntry* dt;
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        dt = (FighterEntry*)fighterDt;
+        dt = fighterDt;
     } else {
-        dt = (FighterEntry*)fighterDt_re;
+        dt = fighterDt_re;
     }
     evtSetValue(event, args[1], (s32)msgSearch(dt[idx].title));
     return EVT_RETURN_DONE;
@@ -3395,12 +3338,12 @@ USER_FUNC(evt_tou_get_fighter_info_27_text_1CB8) {
     FighterEntry* dt;
 
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        dt = (FighterEntry*)fighterDt;
+        dt = fighterDt;
     } else {
-        dt = (FighterEntry*)fighterDt_re;
+        dt = fighterDt_re;
     }
     evtSetValue(event, args[1], (s32)msgSearch(dt[idx].name));
-    evtSetValue(event, args[2], ((FighterEntry*)fighterDt)[idx].setupId);
+    evtSetValue(event, args[2], fighterDt[idx].setupId);
     return EVT_RETURN_DONE;
 }
 
@@ -3412,14 +3355,14 @@ static USER_FUNC(evt_tou_get_next_match) {
     s32 cnt = 0;
     s32 c;
 
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-        if (!(((RankWork*)rank_wp[0])->entries[i].flags & 2)) {
-            list[cnt++] = ((RankWork*)rank_wp[0])->entries[i].id;
+    for (i = 0; i < rank_wp->count; i++) {
+        if (!(rank_wp->entries[i].flags & 2)) {
+            list[cnt++] = rank_wp->entries[i].id;
         }
     }
     c = 0;
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-        u16 f = ((RankWork*)rank_wp[0])->entries[i].flags;
+    for (i = 0; i < rank_wp->count; i++) {
+        u16 f = rank_wp->entries[i].flags;
 
         if (!(f & 2)) {
             if (f & 4) {
@@ -3440,13 +3383,13 @@ static USER_FUNC(evt_tou_get_next_match) {
         evtSetValue(event, args[0], list[1]);
     }
     evtGetValue(NULL, GSW(0));
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
+    for (i = 0; i < rank_wp->count; i++) {
     }
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_tou_get_ranking_27_text_1ED4) {
-    RankWork* rw = (RankWork*)rank_wp[0];
+    RankWork* rw = rank_wp;
     s32* args = event->args;
     s32 count = 0;
     s32 i;
@@ -3487,7 +3430,7 @@ static void rankingControll(void) {
 
     nAbove = 0;
     nBelow = 0;
-    for (k = 0, e = ((RankWork*)rank_wp[0])->entries; k < ((RankWork*)rank_wp[0])->count; k++, e++) {
+    for (k = 0, e = rank_wp->entries; k < rank_wp->count; k++, e++) {
         if (!(e->flags & 4)) {
             if (e->flags & 1) {
                 below[nBelow] = k;
@@ -3502,7 +3445,7 @@ static void rankingControll(void) {
     if (nAbove > 0) {
         for (i = 0; i < nAbove - 1; i++) {
             for (j = i + 1; j < nAbove; j++) {
-                if (((RankWork*)rank_wp[0])->entries[above[i]].score < ((RankWork*)rank_wp[0])->entries[above[j]].score) {
+                if (rank_wp->entries[above[i]].score < rank_wp->entries[above[j]].score) {
                     tmp = above[i];
                     above[i] = above[j];
                     above[j] = tmp;
@@ -3512,8 +3455,8 @@ static void rankingControll(void) {
 
         for (m = 0; m < nAbove - 1; m++) {
             for (n = m + 1; n < nAbove; n++) {
-                FighterEntry* fj = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[n]].id];
-                FighterEntry* fi = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[m]].id];
+                FighterEntry* fj = &fighterDt[rank_wp->entries[above[n]].id];
+                FighterEntry* fi = &fighterDt[rank_wp->entries[above[m]].id];
                 if ((fj->flags & 5) && (fi->flags & 2)) {
                     tmp = above[m];
                     above[m] = above[n];
@@ -3524,7 +3467,7 @@ static void rankingControll(void) {
 
         if (nAbove > 0) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 4) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 4) {
                     break;
                 }
             }
@@ -3535,7 +3478,7 @@ static void rankingControll(void) {
 
         if (nAbove > 1) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x1000) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 0x1000) {
                     break;
                 }
             }
@@ -3546,7 +3489,7 @@ static void rankingControll(void) {
 
         if (nAbove > 10) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x800) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 0x800) {
                     break;
                 }
             }
@@ -3557,7 +3500,7 @@ static void rankingControll(void) {
 
         if (nAbove > 18) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x200) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 0x200) {
                     break;
                 }
             }
@@ -3568,7 +3511,7 @@ static void rankingControll(void) {
 
         if (nAbove > 19) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x400) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 0x400) {
                     break;
                 }
             }
@@ -3579,7 +3522,7 @@ static void rankingControll(void) {
 
         if (nAbove > 16) {
             for (idx = 0; idx < nAbove; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[idx]].id].flags & 0x100) {
+                if (fighterDt[rank_wp->entries[above[idx]].id].flags & 0x100) {
                     break;
                 }
             }
@@ -3603,7 +3546,7 @@ static void rankingControll(void) {
     if (nBelow > 0) {
         for (p = 0; p < nBelow - 1; p++) {
             for (q = p + 1; q < nBelow; q++) {
-                if (((RankWork*)rank_wp[0])->entries[below[p]].score < ((RankWork*)rank_wp[0])->entries[below[q]].score) {
+                if (rank_wp->entries[below[p]].score < rank_wp->entries[below[q]].score) {
                     tmp = below[p];
                     below[p] = below[q];
                     below[q] = tmp;
@@ -3613,8 +3556,8 @@ static void rankingControll(void) {
 
         for (p = 0; p < nBelow - 1; p++) {
             for (q = p + 1; q < nBelow; q++) {
-                FighterEntry* fj = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[q]].id];
-                FighterEntry* fi = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[p]].id];
+                FighterEntry* fj = &fighterDt[rank_wp->entries[below[q]].id];
+                FighterEntry* fi = &fighterDt[rank_wp->entries[below[p]].id];
                 if ((fj->flags & 5) && (fi->flags & 2)) {
                     tmp = below[p];
                     below[p] = below[q];
@@ -3625,7 +3568,7 @@ static void rankingControll(void) {
 
         if (nBelow > 0) {
             for (idx = 0; idx < nBelow; idx++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[idx]].id].flags & 4) {
+                if (fighterDt[rank_wp->entries[below[idx]].id].flags & 4) {
                     break;
                 }
             }
@@ -3636,13 +3579,13 @@ static void rankingControll(void) {
 
         if (nBelow > 0) {
             for (bi = 0; bi < nBelow; bi++) {
-                if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[bi]].id].flags & 0x800) {
+                if (fighterDt[rank_wp->entries[below[bi]].id].flags & 0x800) {
                     break;
                 }
             }
             if (bi < nBelow) {
                 for (bi2 = 0; bi2 < nBelow; bi2++) {
-                    if (((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[bi2]].id].flags & 2) {
+                    if (fighterDt[rank_wp->entries[below[bi2]].id].flags & 2) {
                         break;
                     }
                 }
@@ -3664,24 +3607,24 @@ static void rankingControll(void) {
         }
     }
 
-    entry = __memAlloc(HEAP_DEFAULT, sizeof(RankEntry) * ((RankWork*)rank_wp[0])->count);
+    entry = __memAlloc(HEAP_DEFAULT, sizeof(RankEntry) * rank_wp->count);
     for (i = 0; i < nAbove; i++) {
-        entry[i] = ((RankWork*)rank_wp[0])->entries[above[i]];
+        entry[i] = rank_wp->entries[above[i]];
     }
     entry[nAbove].flags = 4;
     entry[nAbove].id = 0x14;
     entry[nAbove].score = 0;
     for (i = 0; i < nBelow; i++) {
         j = 1 + nAbove + i;
-        entry[j] = ((RankWork*)rank_wp[0])->entries[below[i]];
+        entry[j] = rank_wp->entries[below[i]];
     }
-    memcpy(((RankWork*)rank_wp[0])->entries, entry, sizeof(RankEntry) * ((RankWork*)rank_wp[0])->count);
+    memcpy(rank_wp->entries, entry, sizeof(RankEntry) * rank_wp->count);
     __memFree(HEAP_DEFAULT, entry);
 
     rank = 0;
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
-        if (!(((RankWork*)rank_wp[0])->entries[i].flags & 2)) {
-            if (((RankWork*)rank_wp[0])->entries[i].flags & 4) {
+    for (i = 0; i < rank_wp->count; i++) {
+        if (!(rank_wp->entries[i].flags & 2)) {
+            if (rank_wp->entries[i].flags & 4) {
                 break;
             }
             rank++;
@@ -3713,11 +3656,11 @@ static void insert(s32* arr, s32 unused, s32 from, s32 to) {
 }
 
 USER_FUNC(unk_tou_00002e24) {
-    RankEntry* e = ((RankWork*)rank_wp[0])->entries;
+    RankEntry* e = rank_wp->entries;
     s32 j;
     s32 i;
 
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++, e++) {
+    for (i = 0; i < rank_wp->count; i++, e++) {
         if (e->flags & 1) {
             swSet(e->id + 0x9a1);
         } else {
@@ -3727,7 +3670,7 @@ USER_FUNC(unk_tou_00002e24) {
             swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
-    _mapFree(((RankWork*)rank_wp[0])->entries);
+    _mapFree(rank_wp->entries);
     pouchRemoveItem(ITEM_CHAMPS_BELT);
     {
         s32 k;
@@ -3747,11 +3690,11 @@ USER_FUNC(unk_tou_00002e24) {
 }
 
 static USER_FUNC(evt_rankingReInit) {
-    RankEntry* e = ((RankWork*)rank_wp[0])->entries;
+    RankEntry* e = rank_wp->entries;
     s32 j;
     s32 i;
 
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++, e++) {
+    for (i = 0; i < rank_wp->count; i++, e++) {
         if (e->flags & 1) {
             swSet(e->id + 0x9a1);
         } else {
@@ -3761,7 +3704,7 @@ static USER_FUNC(evt_rankingReInit) {
             swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
-    _mapFree(((RankWork*)rank_wp[0])->entries);
+    _mapFree(rank_wp->entries);
     rankingInit();
     return EVT_RETURN_DONE;
 }
@@ -3769,9 +3712,9 @@ static USER_FUNC(evt_rankingReInit) {
 static void rankingExit(void) {
     s32 i;
     s32 j;
-    RankEntry* e = ((RankWork*)rank_wp[0])->entries;
+    RankEntry* e = rank_wp->entries;
 
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++, e++) {
+    for (i = 0; i < rank_wp->count; i++, e++) {
         if (e->flags & 1) {
             swSet(e->id + 0x9a1);
         } else {
@@ -3781,7 +3724,7 @@ static void rankingExit(void) {
             swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
-    _mapFree(((RankWork*)rank_wp[0])->entries);
+    _mapFree(rank_wp->entries);
 }
 
 static void rankingInit(void) {
@@ -3789,12 +3732,12 @@ static void rankingInit(void) {
     s32 j;
     RankEntry* e;
 
-    memset((RankWork*)rank_wp[0], 0, sizeof(RankWork));
-    ((RankWork*)rank_wp[0])->count = evtGetValue(NULL, GSW(0)) < 0xac ? 0x17 : 0x15;
-    ((RankWork*)rank_wp[0])->entries = _mapAlloc(((RankWork*)rank_wp[0])->count * sizeof(RankEntry));
-    memset(((RankWork*)rank_wp[0])->entries, 0, ((RankWork*)rank_wp[0])->count * sizeof(RankEntry));
-    e = ((RankWork*)rank_wp[0])->entries;
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++, e++) {
+    memset(rank_wp, 0, sizeof(RankWork));
+    rank_wp->count = evtGetValue(NULL, GSW(0)) < 0xac ? 0x17 : 0x15;
+    rank_wp->entries = _mapAlloc(rank_wp->count * sizeof(RankEntry));
+    memset(rank_wp->entries, 0, rank_wp->count * sizeof(RankEntry));
+    e = rank_wp->entries;
+    for (i = 0; i < rank_wp->count; i++, e++) {
         e->flags = 0;
         e->id = i;
         if (swGet(e->id + 0x9a1)) {
@@ -3805,7 +3748,7 @@ static void rankingInit(void) {
                 e->field_0x8[j] = swByteGet(e->id * 2 + 0x207 + j);
             }
         } else {
-            e->score = ((FighterEntry*)fighterDt)[e->id].defaultScore;
+            e->score = fighterDt[e->id].defaultScore;
         }
         if (e->id == 0x14) {
             e->flags |= 4;
@@ -3813,23 +3756,23 @@ static void rankingInit(void) {
     }
     swSet(0x9e1);
     if (evtGetValue(NULL, GSW(0)) < 0xac) {
-        ((RankWork*)rank_wp[0])->entries[0x15].flags |= 2;
-        ((RankWork*)rank_wp[0])->entries[0x16].flags |= 2;
+        rank_wp->entries[0x15].flags |= 2;
+        rank_wp->entries[0x16].flags |= 2;
         if (evtGetValue(NULL, GSWF(0x96C))) {
-            ((RankWork*)rank_wp[0])->entries[0x12].flags |= 2;
+            rank_wp->entries[0x12].flags |= 2;
         }
         if (evtGetValue(NULL, GSWF(0x96D))) {
-            ((RankWork*)rank_wp[0])->entries[0x15].flags &= ~2;
+            rank_wp->entries[0x15].flags &= ~2;
             if (!evtGetValue(NULL, GSWF(0x9E2))) {
-                ((RankWork*)rank_wp[0])->entries[0x15].flags |= 1;
+                rank_wp->entries[0x15].flags |= 1;
             }
             evtSetValue(NULL, GSWF(0x9E2), 1);
         }
         if (evtGetValue(NULL, GSWF(0x975))) {
-            ((RankWork*)rank_wp[0])->entries[0x0b].flags |= 2;
-            ((RankWork*)rank_wp[0])->entries[0x16].flags &= ~2;
+            rank_wp->entries[0x0b].flags |= 2;
+            rank_wp->entries[0x16].flags &= ~2;
             if (!evtGetValue(NULL, GSWF(0x9E3))) {
-                ((RankWork*)rank_wp[0])->entries[0x16].flags |= 1;
+                rank_wp->entries[0x16].flags |= 1;
             }
             evtSetValue(NULL, GSWF(0x9E3), 1);
         }
@@ -3842,11 +3785,11 @@ void _unresolved(void) {
 }
 
 void _epilog(void) {
-    RankEntry* e = ((RankWork*)rank_wp[0])->entries;
+    RankEntry* e = rank_wp->entries;
     s32 j;
     s32 i;
 
-    for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++, e++) {
+    for (i = 0; i < rank_wp->count; i++, e++) {
         if (e->flags & 1) {
             swSet(e->id + 0x9a1);
         } else {
@@ -3856,7 +3799,7 @@ void _epilog(void) {
             swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
         }
     }
-    _mapFree(((RankWork*)rank_wp[0])->entries);
+    _mapFree(rank_wp->entries);
     {
         voidfunctionptr* dtor2;
         for (dtor2 = _dtors; *dtor2 != NULL; dtor2++) {

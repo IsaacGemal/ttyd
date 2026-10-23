@@ -248,17 +248,15 @@ static BattleDataEntry data_table_patapata[3] = {
 
 // Pose-sound table: 8 entries of {const char* poseName; f32 frame; u32 field8; const char* seName; s32 flag}.
 // No matching struct exists; consumed by btlevtcmd_AnimeSetPoseSoundTable.
-static u32 pose_sound_timing_table[40] = {
-    (u32)"PTP_S_1", 0x3C23D70A, 0x00000000, (u32)"SFX_ENM_PATA_WAIT1",
-    0x00000001, (u32)"PTP_W_1", 0x3C23D70A, 0x00000000,
-    (u32)"SFX_ENM_PATA_MOVE1", 0x00000001, (u32)"PTP_R_1", 0x3C23D70A,
-    0x00000000, (u32)"SFX_ENM_PATA_MOVE1", 0x00000001, (u32)"PTP_N_1",
-    0x3C23D70A, 0x00000000, (u32)"SFX_ENM_PATA_WAIT1", 0x00000001,
-    (u32)"PTP_K_1", 0x3C23D70A, 0x00000000, (u32)"SFX_ENM_PATA_WAIT1",
-    0x00000001, (u32)"PTP_A_3", 0x3C23D70A, 0x00000000,
-    (u32)"SFX_ENM_PATA_WAIT1", 0x00000001, (u32)"PTP_X_1", 0x3C23D70A,
-    0x00000000, (u32)"SFX_ENM_PATA_WAIT1", 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000001,
+static BtlUnitPoseSound pose_sound_timing_table[8] = {
+    { "PTP_S_1", 0.01f, NULL, "SFX_ENM_PATA_WAIT1", 0, 1 },
+    { "PTP_W_1", 0.01f, NULL, "SFX_ENM_PATA_MOVE1", 0, 1 },
+    { "PTP_R_1", 0.01f, NULL, "SFX_ENM_PATA_MOVE1", 0, 1 },
+    { "PTP_N_1", 0.01f, NULL, "SFX_ENM_PATA_WAIT1", 0, 1 },
+    { "PTP_K_1", 0.01f, NULL, "SFX_ENM_PATA_WAIT1", 0, 1 },
+    { "PTP_A_3", 0.01f, NULL, "SFX_ENM_PATA_WAIT1", 0, 1 },
+    { "PTP_X_1", 0.01f, NULL, "SFX_ENM_PATA_WAIT1", 0, 1 },
+    { NULL, 0.0f, NULL, NULL, 0, 1 },
 };
 
 static EVT_BEGIN(init_event_patapata)

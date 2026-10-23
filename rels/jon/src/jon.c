@@ -348,420 +348,185 @@ u8 enemy_100[100] = {
     0x30, 0x31, 0x2E, 0x33,
 };
 
-// TODO: type
-u32 npcEnt_kuriboo[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)kuriboo_init_event,
-    (u32)kuriboo_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)kuriboo_find_event,
-    (u32)kuriboo_lost_event, (u32)kuriboo_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_kuriboo[2] = {
+    {"敵", 0x1000000A, 0, kuriboo_init_event, kuriboo_move_event, NULL, enemy_common_dead_event, kuriboo_find_event,
+     kuriboo_lost_event, kuriboo_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_patakuri[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)patakuri_init_event,
-    (u32)patakuri_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)patakuri_find_event,
-    (u32)patakuri_lost_event, (u32)patakuri_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_patakuri[2] = {
+    {"敵", 0x1000000A, 0, patakuri_init_event, patakuri_move_event, NULL, enemy_common_dead_event, patakuri_find_event,
+     patakuri_lost_event, patakuri_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE,
+     {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_hannya[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)hannya_init_event,
-    (u32)hannya_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)hannya_find_event,
-    (u32)hannya_lost_event, (u32)hannya_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_hannya[2] = {
+    {"敵", 0x1000000A, 0, hannya_init_event, hannya_move_event, NULL, enemy_common_dead_event, hannya_find_event,
+     hannya_lost_event, hannya_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_chorobon[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)chorobon_init_event,
-    (u32)chorobon_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)chorobon_find_event,
-    (u32)chorobon_lost_event, (u32)chorobon_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_chorobon[2] = {
+    {"敵", 0x1000000A, 0, chorobon_init_event, chorobon_move_event, NULL, enemy_common_dead_event, chorobon_find_event,
+     chorobon_lost_event, chorobon_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE,
+     {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_sinnosuke[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)sinnosuke_init_event,
-    (u32)sinnosuke_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)sinnosuke_find_event,
-    (u32)sinnosuke_lost_event, (u32)sinnosuke_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_sinnosuke[2] = {
+    {"敵", 0x1000000A, 0, sinnosuke_init_event, sinnosuke_move_event, NULL, enemy_common_dead_event,
+     sinnosuke_find_event, sinnosuke_lost_event, sinnosuke_return_event, enemy_common_blow_event,
+     NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_sinemon[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)sinemon_init_event,
-    (u32)sinemon_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)sinemon_find_event,
-    (u32)sinemon_lost_event, (u32)sinemon_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_sinemon[2] = {
+    {"敵", 0x1000000A, 0, sinemon_init_event, sinemon_move_event, NULL, enemy_common_dead_event, sinemon_find_event,
+     sinemon_lost_event, sinemon_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_nokonoko[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)nokonoko_init_event,
-    (u32)nokonoko_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)nokonoko_find_event,
-    (u32)nokonoko_lost_event, (u32)nokonoko_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_nokonoko[2] = {
+    {"敵", 0x1000000A, 0, nokonoko_init_event, nokonoko_move_event, NULL, enemy_common_dead_event, nokonoko_find_event,
+     nokonoko_lost_event, nokonoko_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE,
+     {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_patapata[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)patapata_init_event,
-    (u32)patapata_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)patapata_find_event,
-    (u32)patapata_lost_event, (u32)patapata_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_patapata[2] = {
+    {"敵", 0x1000000A, 0, patapata_init_event, patapata_move_event, NULL, enemy_common_dead_event, patapata_find_event,
+     patapata_lost_event, patapata_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE,
+     {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_met[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)met_init_event,
-    (u32)met_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)met_find_event,
-    (u32)met_lost_event, (u32)met_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_met[2] = {
+    {"敵", 0x1000000A, 0, met_init_event, met_move_event, NULL, enemy_common_dead_event, met_find_event,
+     met_lost_event, met_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_patamet[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)patamet_init_event,
-    (u32)patamet_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)patamet_find_event,
-    (u32)patamet_lost_event, (u32)patamet_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_patamet[2] = {
+    {"敵", 0x1000000A, 0, patamet_init_event, patamet_move_event, NULL, enemy_common_dead_event, patamet_find_event,
+     patamet_lost_event, patamet_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_sambo[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)sambo_init_event,
-    (u32)sambo_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)sambo_find_event,
-    (u32)sambo_lost_event, (u32)sambo_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_sambo[2] = {
+    {"敵", 0x1000000A, 0, sambo_init_event, sambo_move_event, NULL, enemy_common_dead_event, sambo_find_event,
+     sambo_lost_event, sambo_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_honenoko[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)honenoko2_init_event,
-    (u32)honenoko2_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)honenoko2_find_event,
-    (u32)honenoko2_lost_event, (u32)honenoko2_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_honenoko[2] = {
+    {"敵", 0x1000000A, 0, honenoko2_init_event, honenoko2_move_event, NULL, enemy_common_dead_event,
+     honenoko2_find_event, honenoko2_lost_event, honenoko2_return_event, enemy_common_blow_event,
+     NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_karon[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)karon_init_event,
-    (u32)karon_move_event, 0x00000000, (u32)karon_dead_event, (u32)karon_find_event,
-    (u32)karon_lost_event, (u32)karon_return_event, (u32)karon_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_karon[2] = {
+    {"敵", 0x1000000A, 0, karon_init_event, karon_move_event, NULL, karon_dead_event, karon_find_event,
+     karon_lost_event, karon_return_event, karon_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_dokugassun[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)dokugassun_init_event,
-    (u32)dokugassun_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)dokugassun_find_event,
-    (u32)dokugassun_lost_event, (u32)dokugassun_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_dokugassun[2] = {
+    {"敵", 0x1000000A, 0, dokugassun_init_event, dokugassun_move_event, NULL, enemy_common_dead_event,
+     dokugassun_find_event, dokugassun_lost_event, dokugassun_return_event, enemy_common_blow_event,
+     NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_piders[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)piders_init_event,
-    (u32)piders_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)piders_find_event,
-    0x00000000, 0x00000000, (u32)piders_blow_event, 0x00000002,
-    0x00000000, 0x430C0000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_piders[2] = {
+    {"敵", 0x1000000A, 0, piders_init_event, piders_move_event, NULL, enemy_common_dead_event, piders_find_event, NULL,
+     NULL, piders_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 140.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f,
+     300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_teresa[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)teresa_init_event,
-    (u32)teresa_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)teresa_find_event,
-    (u32)teresa_lost_event, (u32)teresa_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_teresa[2] = {
+    {"敵", 0x1000000A, 0, teresa_init_event, teresa_move_event, NULL, enemy_common_dead_event, teresa_find_event,
+     teresa_lost_event, teresa_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_hbom[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)hbom_init_event,
-    (u32)hbom_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)hbom_find_event,
-    (u32)hbom_lost_event, (u32)hbom_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_hbom[2] = {
+    {"敵", 0x1000000A, 0, hbom_init_event, hbom_move_event, NULL, enemy_common_dead_event, hbom_find_event,
+     hbom_lost_event, hbom_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_bubble[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)bubble_init_event,
-    (u32)bubble_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)bubble_find_event,
-    (u32)bubble_lost_event, (u32)bubble_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_bubble[2] = {
+    {"敵", 0x1000000A, 0, bubble_init_event, bubble_move_event, NULL, enemy_common_dead_event, bubble_find_event,
+     bubble_lost_event, bubble_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_wanwan[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)wanwan_init_event,
-    (u32)wanwan_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)wanwan_find_event,
-    0x00000000, 0x00000000, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_wanwan[2] = {
+    {"敵", 0x1000000A, 0, wanwan_init_event, wanwan_move_event, NULL, enemy_common_dead_event, wanwan_find_event, NULL,
+     NULL, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f,
+     300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_mahoon[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)mahoon_init_event,
-    (u32)mahoon_move_event, 0x00000000, (u32)mahoon_dead_event, (u32)mahoon_find_event,
-    (u32)mahoon_lost_event, (u32)mahoon_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_mahoon[2] = {
+    {"敵", 0x1000000A, 0, mahoon_init_event, mahoon_move_event, NULL, mahoon_dead_event, mahoon_find_event,
+     mahoon_lost_event, mahoon_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_pakkun[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)pakkun_init_event,
-    (u32)pakkun_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)pakkun_find_event,
-    0x00000000, (u32)pakkun_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_pakkun[2] = {
+    {"敵", 0x1000000A, 0, pakkun_init_event, pakkun_move_event, NULL, enemy_common_dead_event, pakkun_find_event, NULL,
+     pakkun_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_togenoko[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)togenoko_init_event,
-    (u32)togenoko_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)togenoko_find_event,
-    (u32)togenoko_lost_event, (u32)togenoko_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_togenoko[2] = {
+    {"敵", 0x1000000A, 0, togenoko_init_event, togenoko_move_event, NULL, enemy_common_dead_event, togenoko_find_event,
+     togenoko_lost_event, togenoko_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE,
+     {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_basabasa2[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)basabasa2_init_event,
-    (u32)basabasa2_move_event, 0x00000000, (u32)basabasa2_dead_event, (u32)basabasa2_find_event,
-    (u32)basabasa2_lost_event, (u32)basabasa2_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_basabasa2[2] = {
+    {"敵", 0x1000000A, 0, basabasa2_init_event, basabasa2_move_event, NULL, basabasa2_dead_event, basabasa2_find_event,
+     basabasa2_lost_event, basabasa2_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE,
+     {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_togedaruma[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)togedaruma_init_event,
-    (u32)togedaruma_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)togedaruma_find_event,
-    (u32)togedaruma_lost_event, (u32)togedaruma_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_togedaruma[2] = {
+    {"敵", 0x1000000A, 0, togedaruma_init_event, togedaruma_move_event, NULL, enemy_common_dead_event,
+     togedaruma_find_event, togedaruma_lost_event, togedaruma_return_event, enemy_common_blow_event,
+     NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_pansy[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, (u32)pansy_init_event,
-    (u32)pansy_move_event, 0x00000000, (u32)enemy_common_dead_event, (u32)pansy_find_event,
-    (u32)pansy_lost_event, (u32)pansy_return_event, (u32)enemy_common_blow_event, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_pansy[2] = {
+    {"敵", 0x1000000A, 0, pansy_init_event, pansy_move_event, NULL, enemy_common_dead_event, pansy_find_event,
+     pansy_lost_event, pansy_return_event, enemy_common_blow_event, NPC_TERRITORY_TYPE_SQUARE, {0.0f, 0.0f, 0.0f},
+     {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 npcEnt_zonbaba[46] = {
-    (u32)"敵", 0x1000000A, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)enemy_common_dead_event, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x43160000,
-    0x42C80000, 0x42C80000, 0x43480000, 0x43960000,
-    0x447A0000, 0x43B40000, 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_zonbaba[2] = {
+    {"敵", 0x1000000A, 0, NULL, NULL, NULL, enemy_common_dead_event, NULL, NULL, NULL, NULL, NPC_TERRITORY_TYPE_SQUARE,
+     {0.0f, 0.0f, 0.0f}, {150.0f, 100.0f, 100.0f}, 200.0f, 300.0f, 1000.0f, 360.0f, 1},
+    {NULL},
 };
 
 EVT_BEGIN(enemy_setup)
@@ -1242,20 +1007,9 @@ EVT_BEGIN(talk_idouya)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 npcEnt_idouya[46] = {
-    (u32)"移動屋", 0x10000600, 0x00000000, 0x00000000,
-    (u32)&move_event, (u32)&talk_idouya, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_idouya[2] = {
+    {"移動屋", 0x10000600, 0, NULL, move_event, talk_idouya},
+    {NULL},
 };
 
 EVT_BEGIN(idouya_setup)
@@ -1350,20 +1104,9 @@ EVT_BEGIN(talk_gyousyou)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 npcEnt_gyousyou[46] = {
-    (u32)"行商人", 0x10000600, 0x00000000, 0x00000000,
-    (u32)&move_event, (u32)&talk_gyousyou, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo npcEnt_gyousyou[2] = {
+    {"行商人", 0x10000600, 0, NULL, move_event, talk_gyousyou},
+    {NULL},
 };
 
 EVT_BEGIN(gyousyou_setup)
@@ -2586,9 +2329,9 @@ s32 wanwan_set_home_pos(EventEntry* event, BOOL isFirstCall) {
     s32 y = evtGetValue(event, args[1]);
     s32 z = evtGetValue(event, args[2]);
 
-    ((NpcSetupInfo*)npcEnt_wanwan)->territoryBase.x = (f32)x;
-    ((NpcSetupInfo*)npcEnt_wanwan)->territoryBase.y = (f32)y;
-    ((NpcSetupInfo*)npcEnt_wanwan)->territoryBase.z = (f32)z;
+    npcEnt_wanwan->territoryBase.x = (f32)x;
+    npcEnt_wanwan->territoryBase.y = (f32)y;
+    npcEnt_wanwan->territoryBase.z = (f32)z;
     return EVT_RETURN_DONE;
 }
 

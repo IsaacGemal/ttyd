@@ -5,7 +5,7 @@
 #include "battle/battle_disp.h"
 
 #pragma force_active on
-extern BattleDispPose pose_table_clauda_stay[];
+extern BattleDispPose pose_table_clauda_stay[25];
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[1];
 static BattleUnitKindPart parts[1];

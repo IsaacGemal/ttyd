@@ -1,5 +1,6 @@
 #pragma once
 
 #include <dolphin/types.h>
+#include "battle/battle_database_common.h"
 
-extern u32 partyWeapon_YoshiNomikomi_Involved[48];
+extern BattleWeapon partyWeapon_YoshiNomikomi_Involved;

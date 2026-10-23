@@ -31,6 +31,8 @@
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
 #include "battle/battle_weapon_power.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_database_common.h"
 extern u32 lbl_80388868[2];
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
@@ -60,10 +62,10 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
 static s32 init_event[68];
 static s32 damage_event[16];
 s32 vivian_hide_event[209];
-u32 partyWeapon_VivianNormalAttack[48];
-u32 partyWeapon_VivianShadowGuard[48];
-u32 partyWeapon_VivianMagicalPowder[48];
-u32 partyWeapon_VivianCharmKissAttack[48];
+BattleWeapon partyWeapon_VivianNormalAttack;
+BattleWeapon partyWeapon_VivianShadowGuard;
+BattleWeapon partyWeapon_VivianMagicalPowder;
+BattleWeapon partyWeapon_VivianCharmKissAttack;
 s32 partyVivianAttack_NormalAttack[581];
 s32 partyVivianAttack_ShadowGuard[430];
 s32 partyVivianAttack_MagicalPowder[442];
@@ -122,60 +124,121 @@ static __declspec(section ".data") u32 one_negone_359[2] = {
     0x3F800000, 0xBF800000,
 };
 
-// TODO: type
-u32 pose_table_vivian_stay[48] = {
-    0x00000009, (u32)"PTR_D_4", 0x00000002, (u32)"PTR_D_4",
-    0x00000003, (u32)"PTR_X_1", 0x00000004, (u32)"PTR_D_2",
-    0x00000005, (u32)"PTR_X_1", 0x00000001, (u32)"PTR_N_1",
-    0x0000001B, (u32)"PTR_D_3", 0x0000001C, (u32)"PTR_S_1",
-    0x00000025, (u32)"PTR_G_2", 0x0000001F, (u32)"PTR_G_1",
-    0x00000027, (u32)"PTR_D_1", 0x00000028, (u32)"PTR_W_1",
-    0x0000002A, (u32)"PTR_R_1", 0x00000039, (u32)"PTR_D_2",
-    0x00000038, (u32)"PTR_D_2", 0x0000003C, (u32)"PTR_D_4",
-    0x0000003D, (u32)"PTR_D_2", 0x00000041, (u32)"PTR_T_1",
-    0x00000034, (u32)"PTR_I_1", 0x00000043, (u32)"PTR_C_1",
-    0x00000040, (u32)"PTR_X_1", 0x00000031, (u32)"PTR_D_1",
-    0x0000002D, (u32)"PTR_G_1", 0x00000045, (u32)"PTR_S_1",
+BattleDispPose pose_table_vivian_stay[24] = {
+    { 0x09, "PTR_D_4" },
+    { 0x02, "PTR_D_4" },
+    { 0x03, "PTR_X_1" },
+    { 0x04, "PTR_D_2" },
+    { 0x05, "PTR_X_1" },
+    { 0x01, "PTR_N_1" },
+    { 0x1B, "PTR_D_3" },
+    { 0x1C, "PTR_S_1" },
+    { 0x25, "PTR_G_2" },
+    { 0x1F, "PTR_G_1" },
+    { 0x27, "PTR_D_1" },
+    { 0x28, "PTR_W_1" },
+    { 0x2A, "PTR_R_1" },
+    { 0x39, "PTR_D_2" },
+    { 0x38, "PTR_D_2" },
+    { 0x3C, "PTR_D_4" },
+    { 0x3D, "PTR_D_2" },
+    { 0x41, "PTR_T_1" },
+    { 0x34, "PTR_I_1" },
+    { 0x43, "PTR_C_1" },
+    { 0x40, "PTR_X_1" },
+    { 0x31, "PTR_D_1" },
+    { 0x2D, "PTR_G_1" },
+    { 0x45, "PTR_S_1" },
 };
 
-// TODO: type
-static u32 data_table[40] = {
-    0x00000003, (u32)&vivian_hide_event, 0x00000005, (u32)&vivian_appeal_event,
-    0x00000006, (u32)&attack_audience_event, 0x00000001, (u32)__makeTechMenuFunc,
-    0x00000019, (u32)&vivian_counter_damage_event, 0x0000001A, (u32)&vivian_counter_damage_event,
-    0x0000001B, (u32)&vivian_counter_damage_event, 0x0000001C, (u32)&vivian_counter_damage_event,
-    0x0000001D, (u32)&vivian_counter_damage_event, 0x0000001E, (u32)&vivian_counter_damage_event,
-    0x0000001F, (u32)&vivian_counter_damage_event, 0x00000020, (u32)&vivian_counter_damage_event,
-    0x00000021, (u32)&vivian_counter_damage_event, 0x00000022, (u32)&vivian_counter_damage_event,
-    0x00000023, (u32)&vivian_counter_damage_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000040, (u32)&party_win_reaction, 0x00000007, (u32)subset_attack_ready_jump_event,
-    0x0000002F, (u32)btldefaultevt_avoid_counter_event, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[20] = {
+    { 0x03, vivian_hide_event },
+    { 0x05, vivian_appeal_event },
+    { 0x06, attack_audience_event },
+    { 0x01, __makeTechMenuFunc },
+    { 0x19, vivian_counter_damage_event },
+    { 0x1A, vivian_counter_damage_event },
+    { 0x1B, vivian_counter_damage_event },
+    { 0x1C, vivian_counter_damage_event },
+    { 0x1D, vivian_counter_damage_event },
+    { 0x1E, vivian_counter_damage_event },
+    { 0x1F, vivian_counter_damage_event },
+    { 0x20, vivian_counter_damage_event },
+    { 0x21, vivian_counter_damage_event },
+    { 0x22, vivian_counter_damage_event },
+    { 0x23, vivian_counter_damage_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x40, party_win_reaction },
+    { 0x07, subset_attack_ready_jump_event },
+    { 0x2F, btldefaultevt_avoid_counter_event },
+    { 0x00, NULL },
 };
 
-// TODO: type
-u32 unitpartsdata_Party_Vivian[19] = {
-    0x00000001, (u32)"btl_un_vivian", (u32)"c_vivian", 0x00000000,
-    0x00000000, 0x00000000, 0x41800000, 0x41C00000,
-    0x40A00000, 0x00000000, 0x41C00000, 0x00000000,
-    0x00140018, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table_vivian_stay,
+BattleUnitKindPart unitpartsdata_Party_Vivian[1] = {
+    {
+        1,                                    // partNum
+        "btl_un_vivian",                      // partName
+        "c_vivian",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x00000009,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_vivian_stay,               // poseTable
+    },
 };
 
-// TODO: type
-u32 unitdata_Party_Vivian[49] = {
-    0x000000E4, (u32)"btl_un_vivian", 0x000A0005, 0x05010100,
-    0x00000064, 0x00090014, 0x0021000E, 0x00240000,
-    0x00000000, 0x41400000, 0x00000000, 0x00000000,
-    0x00000000, 0x42200000, 0x00000000, 0x00000000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41200000,
-    0x00000000, 0x00000000, 0x41200000, 0x41AB999A,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_PARTY_DAMAGE1",
-    (u32)"SFX_MARIO_DAMAGE_FIRE1", (u32)"SFX_MARIO_DAMAGE_ICE1", (u32)"SFX_MARIO_DAMAGE_BIRIBIRI1", 0x02000004,
-    (u32)&regist, 0x01000000, (u32)&unitpartsdata_Party_Vivian, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unitdata_Party_Vivian = {
+    UNIT_VIVIAN,                     // mUnitType
+    "btl_un_vivian",                 // name
+    10,                              // maxHp
+    5,                               // maxFp
+    5,                               // mDangerHP
+    1,                               // mPerilHP
+    1,                               // mLevel
+    0,                               // mBonusExp
+    0,                               // bonusCoinRolls
+    0,                               // bonusCoinRate
+    0,                               // baseCoin
+    100,                             // escapeRate
+    9,                               // field_0x14
+    20,                              // width
+    33,                              // height
+    { 14, 36 },                      // statusIconOffset
+    { 0.0f, 12.0f, 0.0f },           // centerOffset
+    { 0, 0 },                        // hpGaugeOffset
+    { 0.0f, 40.0f, 0.0f },           // talkTogeBaseOffset
+    { 0.0f, 40.0f, 0.0f },           // field_0x3C
+    { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
+    0.0f,                            // field_0x54
+    0.0f,                            // field_0x58
+    { 10.0f, 0.0f, 0.0f },           // bintaHitOffset
+    { 10.0f, 21.45f, 0.0f },         // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },            // cutBaseOffset
+    0.0f,                            // cutWidth
+    0.0f,                            // cutHeight
+    0,                               // turnOrder
+    0,                               // turnOrderVariance
+    -1,                              // swallowRate
+    0,                               // swallowAttribute
+    100,                             // field_0x8C
+    20,                              // itemStealParam
+    { 0.0f, 0.0f, 0.0f },            // starPointDispOffset
+    "SFX_PARTY_DAMAGE1",             // damageSfxName
+    "SFX_MARIO_DAMAGE_FIRE1",        // fireDamageSfxName
+    "SFX_MARIO_DAMAGE_ICE1",         // iceDamageSfxName
+    "SFX_MARIO_DAMAGE_BIRIBIRI1",    // electricDamageSfxName
+    0x02000004,                      // attributeFlags
+    (BattleVulnerableStatus*)regist, // vulnStatus
+    1,                               // numParts
+    unitpartsdata_Party_Vivian,      // mParts
+    init_event,                      // initEvtScript
+    data_table,                      // dataTable
 };
 
 // Matched. `VEC_POS1` is a `const volatile` view of the zero vector and the two userdata stores are
@@ -348,7 +411,7 @@ EVT_BEGIN(vivian_hide_event)
         SWITCH(LW(6))
             CASE_GREATER_OR_EQUAL(2)
             DELETE_EVENT(LW(14))
-            CALL(btlevtcmd_AudienceDeclareAcrobatResult, PTR(partyWeapon_VivianShadowGuard), 1, 0, 0, 0)
+            CALL(btlevtcmd_AudienceDeclareAcrobatResult, PTR(&partyWeapon_VivianShadowGuard), 1, 0, 0, 0)
             CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PTR_Y_1"))
             CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
             CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(2.0f))
@@ -366,68 +429,316 @@ EVT_BEGIN(vivian_hide_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 partyWeapon_VivianNormalAttack[48] = {
-    (u32)"btl_wn_ptr_normal", 0x01500000, 0x00000000, (u32)"msg_ptr_kagenuke",
-    0x64000000, 0x3F800000, 0x01016432, (u32)weaponGetPowerFromPartyAttackLv,
-    0x00000003, 0x00000003, 0x00000004, 0x00000004,
-    0x00000005, 0x00000005, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    (u32)"msg_ac_kagenuke", 0x00030007, 0x00000002, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000064,
-    0x02000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyVivianAttack_NormalAttack, 0x00000064, 0x00020200, 0x00000000,
+BattleWeapon partyWeapon_VivianNormalAttack = {
+    "btl_wn_ptr_normal",                      // name
+    336,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_ptr_kagenuke",                       // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromPartyAttackLv,          // hpDamageFn
+    { 3, 3, 4, 4, 5, 5, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_kagenuke",                        // acHelpMsg
+    0x00030007,                               // special
+    0x00000002,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    100,                                      // burnChance
+    2,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyVivianAttack_NormalAttack,           // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_VivianShadowGuard[48] = {
-    (u32)"btl_wn_ptr_lv1", 0x01510000, 0x00000000, (u32)"msg_ptr_kagegakure",
-    0x64010000, 0x3F800000, 0x02056432, 0x00000000,
-    0x00000000, 0x00000002, 0x00000002, 0x00000003,
-    0x00000003, 0x00000004, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101160, 0x10000002, 0x00000302,
-    (u32)"msg_ac_kagegakure", 0x00020008, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyVivianAttack_ShadowGuard, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon partyWeapon_VivianShadowGuard = {
+    "btl_wn_ptr_lv1",                         // name
+    337,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_ptr_kagegakure",                     // description
+    100,                                      // baseAccuracy
+    1,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    2,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 2, 2, 3, 3, 4, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101160,                               // targetClassFlags
+    0x10000002,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_kagegakure",                      // acHelpMsg
+    0x00020008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyVivianAttack_ShadowGuard,            // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_VivianMagicalPowder[48] = {
-    (u32)"btl_wn_ptr_lv2", 0x01520000, 0x00000000, (u32)"msg_ptr_mahou_no_kona",
-    0x64060000, 0x3F800000, 0x01056432, (u32)weaponGetACOutputParam,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x01000302,
-    (u32)"msg_ac_mahou_no_kona", 0x00020047, 0x000007FF, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000064,
-    0x03000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyVivianAttack_MagicalPowder, 0x00000064, 0x00050500, 0x00000000,
+BattleWeapon partyWeapon_VivianMagicalPowder = {
+    "btl_wn_ptr_lv2",                         // name
+    338,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_ptr_mahou_no_kona",                  // description
+    100,                                      // baseAccuracy
+    6,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetACOutputParam,                   // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    1,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_mahou_no_kona",                   // acHelpMsg
+    0x00020047,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    100,                                      // burnChance
+    3,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyVivianAttack_MagicalPowder,          // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_VivianCharmKissAttack[48] = {
-    (u32)"btl_wn_ptr_lv3", 0x01530000, 0x00000000, (u32)"msg_ptr_meromero_kiss",
-    0x64040000, 0x3F800000, 0x02056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    (u32)"msg_ac_meromero_kiss", 0x00020000, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00640300, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyVivianAttack_CharmKissAttack, 0x00000064, 0x00050500, 0x00000000,
+BattleWeapon partyWeapon_VivianCharmKissAttack = {
+    "btl_wn_ptr_lv3",                         // name
+    339,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_ptr_meromero_kiss",                  // description
+    100,                                      // baseAccuracy
+    4,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    2,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_meromero_kiss",                   // acHelpMsg
+    0x00020000,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    100,                                      // confuseChance
+    3,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyVivianAttack_CharmKissAttack,        // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 EVT_BEGIN(partyVivianAttack_NormalAttack)
@@ -1243,7 +1554,7 @@ USER_FUNC(_vivian_make_extra_work_area) {
 #define TECH_MENU_ENTRY(table)                                                             \
     cmd->mWeaponTable[*count].mIndex = -1;                                                 \
     cmd->mWeaponTable[*count].mItem = 0;                                                   \
-    cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                      \
+    cmd->mWeaponTable[*count].mWeaponParams = (table);                                     \
     cmd->mWeaponTable[*count].field_0x4 = 0;                                               \
     cmd->mWeaponTable[*count].mIcon =                                                      \
         cmd->mWeaponTable[*count].mWeaponParams->icon;                                     \

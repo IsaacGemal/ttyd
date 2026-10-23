@@ -189,16 +189,13 @@ EVT_BEGIN(irai_start_event04)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 irai_start_event[30] = {
-    (u32)&irai_start_event01, (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event04,
-    (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null,
-    (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null,
-    (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null,
-    (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null,
-    (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null,
-    (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null, (u32)&irai_start_event_null,
-    (u32)&irai_start_event_null, (u32)&irai_start_event_null,
+s32* irai_start_event[30] = {
+    irai_start_event01, irai_start_event_null, irai_start_event_null, irai_start_event04, irai_start_event_null,
+    irai_start_event_null, irai_start_event_null, irai_start_event_null, irai_start_event_null, irai_start_event_null,
+    irai_start_event_null, irai_start_event_null, irai_start_event_null, irai_start_event_null, irai_start_event_null,
+    irai_start_event_null, irai_start_event_null, irai_start_event_null, irai_start_event_null, irai_start_event_null,
+    irai_start_event_null, irai_start_event_null, irai_start_event_null, irai_start_event_null, irai_start_event_null,
+    irai_start_event_null, irai_start_event_null, irai_start_event_null, irai_start_event_null, irai_start_event_null,
 };
 
 EVT_BEGIN(irai_end_event_null)
@@ -216,16 +213,13 @@ EVT_BEGIN(irai_end_event04)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 irai_end_event[30] = {
-    (u32)&irai_end_event01, (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event04,
-    (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null,
-    (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null,
-    (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null,
-    (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null,
-    (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null,
-    (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null, (u32)&irai_end_event_null,
-    (u32)&irai_end_event_null, (u32)&irai_end_event_null,
+s32* irai_end_event[30] = {
+    irai_end_event01, irai_end_event_null, irai_end_event_null, irai_end_event04, irai_end_event_null,
+    irai_end_event_null, irai_end_event_null, irai_end_event_null, irai_end_event_null, irai_end_event_null,
+    irai_end_event_null, irai_end_event_null, irai_end_event_null, irai_end_event_null, irai_end_event_null,
+    irai_end_event_null, irai_end_event_null, irai_end_event_null, irai_end_event_null, irai_end_event_null,
+    irai_end_event_null, irai_end_event_null, irai_end_event_null, irai_end_event_null, irai_end_event_null,
+    irai_end_event_null, irai_end_event_null, irai_end_event_null, irai_end_event_null, irai_end_event_null,
 };
 
 EVT_BEGIN(gor_irai_init)

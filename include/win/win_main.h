@@ -156,7 +156,7 @@ typedef struct WindowPartyDt {
     const char* anim;         // 0x14, its idle animation ("W_1", Vivian "PTR_S_1")
     const char* famicomModel; // 0x18, model used when flags & 0x2000 ("d_mario")
     const char* famicomAnim;  // 0x1C, its animation ("R_2", ...)
-    const char* waza;         // 0x20, the partner's four moves (u32 partyWeapon pointers)
+    struct BattleWeapon** waza; // 0x20, the partner's four moves
 } WindowPartyDt;
 
 WindowWork* winGetPtr(void);

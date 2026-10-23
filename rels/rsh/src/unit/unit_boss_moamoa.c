@@ -80,7 +80,7 @@ typedef struct MoamoaPoseArg {
 
 static MoamoaWork* wp;
 
-static u32 group_tbl[22];
+static const char* group_tbl[22];
 
 #pragma force_active on
 extern BattleUnitKind unit_boss_moamoa_mouth;
@@ -1179,13 +1179,9 @@ static EVT_BEGIN(evt_moamoa)
     RETURN
 EVT_END()
 
-static u32 group_tbl[22] = {
-    (u32)"c_n_moa_a", (u32)"S_1", (u32)"c_n_moa_b", (u32)"S_1",
-    (u32)"c_kinodebu", (u32)"G_1", (u32)"c_puku_c", (u32)"U_1",
-    (u32)"c_powan", (u32)"R_2", (u32)"c_smoko", (u32)"G_1",
-    (u32)"c_rose", (u32)"G_1", (u32)"c_papab", (u32)"G_1",
-    (u32)"c_mamab", (u32)"G_1", (u32)"c_konari", (u32)"G_1",
-    (u32)"c_n_moa_a", (u32)"S_2",
+static const char* group_tbl[22] = {
+    "c_n_moa_a", "S_1", "c_n_moa_b", "S_1", "c_kinodebu", "G_1", "c_puku_c", "U_1", "c_powan", "R_2", "c_smoko",
+    "G_1", "c_rose", "G_1", "c_papab", "G_1", "c_mamab", "G_1", "c_konari", "G_1", "c_n_moa_a", "S_2",
 };
 EVT_BEGIN(MOAMOA_SET_BODYSCALE)
     CALL(moamoa_set_bodyScale)
@@ -1200,8 +1196,8 @@ void moamoa_pose(void* poseArg) {
 
     i = 0;
     anim = wp->anims;
-    name = (const char*)group_tbl[pose->type * 2];
-    sub = (const char*)group_tbl[pose->type * 2 + 1];
+    name = group_tbl[pose->type * 2];
+    sub = group_tbl[pose->type * 2 + 1];
     for (; i < wp->countB; i++, anim++) {
         if (strcmp(anim->groupName, name) == 0 && strcmp(anim->animName, sub) == 0) {
             break;
@@ -1227,8 +1223,8 @@ static void ext_moamoa_init(void) {
     for (i = 0; i < wp->countA; i++, extPose++, pose++) {
         extPose->flags |= 5;
         PSMTXIdentity(*extPose->matrix);
-        name = (const char*)group_tbl[pose->type * 2];
-        sub = (const char*)group_tbl[pose->type * 2 + 1];
+        name = group_tbl[pose->type * 2];
+        sub = group_tbl[pose->type * 2 + 1];
         anim = wp->anims;
         for (j = 0; j < wp->countB; j++, anim++) {
             if (strcmp(anim->groupName, name) == 0 && strcmp(anim->animName, sub) == 0) {

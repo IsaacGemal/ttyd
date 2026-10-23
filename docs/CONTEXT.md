@@ -22,6 +22,8 @@ anything worth keeping into a chapter here.
   on the Mac is not kept current; quote the tower's (`scratch/tci.sh`, which ratchets against the baseline accepted
   after each merge). A Mac checkout's own `build/ci/accepted.json` can be days old and then shows false regressions:
   never `--accept` from it.
+- **Data tables typed (2026-10-22, n9-q-datatype):** the raw `u32` tables' pointer words are typed initialisers now
+  (ptr_to_int 1571 -> 32); what's left raw and why is in the chapter "Initialised data tables typed".
 - **tou/tou linked (2026-10-06, Codex GPT-6).** 36/36 functions at 100%; both pools IDENTICAL, original function order, natural compile passes, all 32 build checksums pass. See the dated chapter below and CODEX_ATTEMPTS.md.
 
 - **⚠️ Ledger audit planned (Isaac, Oct 2).** This ledger has drifted: some entries are outdated, and some claims were wrong when written. Later, go through it step by step, check each claim against the repo, the build and the git history, and correct or remove what's wrong. Until then, treat any number or claim here as a lead to verify, not a fact. (This section itself still describes Sep 29.)
@@ -6825,3 +6827,76 @@ ac-decomp, spm-decomp). Isaac approved the recommendations.
   others take ids as integers or enums, and nobody casts a number to `char*`; but SPM's prototype is `const char*` and
   only passes strings, and the only cast-free form here is a new id-taking accessor, a name without outside evidence.
 
+
+## Initialised data tables typed (2026-10-22, Claude Opus 5.5, n9-q-datatype)
+
+The #1129 decision ("typing initialised data tables: yes") applied: the `(u32)&sym` / `(u32)sym` / `(u32)"str"` words
+in raw `u32`/`s32` tables became typed initialisers (structs with pointer members, pointer lists, typed work
+pointers). Symbol names, sections (declspecs kept), sizes and bytes unchanged; build byte-identical, data_check clean
+and the objdiff ratchet flat after every commit. Event scripts stay `s32` words.
+
+- **Method.** tools/struct_render.py (the wave-19 renderer, which reads the original's bytes and relocations from dtk's
+  asm) driven by a one-off script, not kept: tools/ is protected. The driver parsed each struct's layout from the
+  current header instead of struct_render's own LAYOUTS (several of those are stale against the headers), rendered
+  nested structs and long arrays as indented blocks, kept named string objects and `const` string lists by name,
+  turned a `sym + N` relocation into `&sym[k]`, and kept a symbol where dtk had read a flags word as an address
+  (`(u32)lbl_80003500` in partyWeapon_ChuchurinaKiss's targetWeightingFlags: as a plain number objdiff's data score for
+  the whole unit fell from 100% to 5%). Then struct_render's fix_index/fix_refs for `sym` <-> `&sym`, externs in the
+  module's other files (REL symbols only within their module), the readers' casts by hand.
+- **Typed** (about 500 tables): party units, unit_mario and unit_purple_teresa (BattleUnitKind / Part / Weapon /
+  DataEntry / DispPose / BtlUnitPoseSound); the sac, item, audience and break_slot weapons; superActionTable
+  (BattleWeapon*), win_party's `*_waza` (BattleWeapon*; WindowPartyDt.waza is `BattleWeapon**`); npcEnt and the other
+  NPC lists in 30 map files (NpcSetupInfo), the 18-word door tables (DoorEntry), kusa/ueki/tree tables; the audience
+  tables (BattleAudienceKind, `s32*` animation lists over `s32` word lists, BattleAudienceItemKind); the
+  eff_starstone/nozle/toiki display-list lists (`void*`) and eff_ice's Maya tables (its own IceRSTEntry etc.);
+  battle_stage_object's nozzle and fall-object data (BattleStageNozzleData/FallObjectData), `_entry_*` (BattleUnitSetup)
+  and `_object_*_data` (BattleStageObjectData); gor_irai's event lists; rsh's random-npc tables; sys's texture-id
+  lists (`s8`, `s8*`, `s8**`); the inns' kino_dt (KinopioData) and nok's door tables (DoorParam); 23
+  pose_sound_timing_tables (BtlUnitPoseSound); hitDmgRetPoints/dmgRetPoint (HitDamageReturn); _map_attr_data
+  (MapAttrData); the ext npc tables (ExtMakeTextureEntry; rsh_06/yuu as their readers' MoamoaGroupDef/YuunpcPoseArg);
+  tou's fighterDt/ruleDt (the file's FighterEntry/RuleEntry); gor_02's follow (FollowPath), gor_01's uwnobj_list
+  (UnitWinObj), gor_03's yuu_0N_data (BeroEntry); credits_ending_records and R_credits_npc_info.
+- **Typed work pointers** (#1123's leads): tou's `rank_wp`/`dwp` (RankWork*/DispWork*, tou2's form; every cast gone,
+  no load swap), end's `credits_work_ptr` (CreditsWork*; credits_work is a CreditsWork and the WORK cast macro went),
+  tik_05's `broken_wp` (BrokenWork*).
+- **Header changes, with their evidence.** DoorEntry.field_0x2C is `s32*` (door_down_se's evt_door_param 6 spawns
+  it; the typed doors' `(s32)` casts went). KinopioData and DoorParam moved from evt_kinopio.c / evt_door.c to their
+  headers, pointer fields typed from the data (message keys, bed events; DoorParam's 0x14-0x38 map object and hit
+  names, 0x3C/0x40/0x44/0x48 npc/noclip-map/mobj/item lists). BattleStageFallObjectData.field_0x0 is a BattleWeapon
+  (its bytes and relocation are one). FollowPath got a struct tag. New: `RndNpcData` in rels/rsh/include/rsh.h
+  (type from `_get_rnd_npc_data`; `animName` is npcEntry's parameter, `tribeName` evt_npc_set_tribe's, `talkEvt` the
+  NpcEntry field evt_rsh_set_rnd_npc_talk_evt sets) and `RootData` in aji_02.c (from `root_data`; `list`/`count` are
+  hikaru_on_func's locals). yoshi's local PoseSoundEntry was a copy of BtlUnitPoseSound and is gone;
+  `_yoshi_slide_move_sound` and `mario_pinch_pose_sound_callback` take the entry and state BtlUnit_ControlPoseSoundMain
+  passes them.
+- **Natural forms the typing made possible.** With CreditsNpcInfo/CreditsEndingRecord arrays, credits_pose_evt's and
+  credits_record_evt's `((T*)((u8*)tbl + off))->f` became `tbl[idx].f` and the steering `off` local went: the object
+  is identical, so the indexed form is the original's. rsh's `_get_rnd_npc_data` returns `&data[index]`, aji_02's
+  hikaru_on_func reads `root_data[idx].list`.
+- **String lists.** A list a `const char**` field points at became `const char*`, except where a script also passes it
+  with PTR(): MWCC refuses `(s32)` on a `const char**` in an initialiser ("illegal implicit conversion from 'const char
+  **' to 'char **'"), so those keep `char*` and a `(const char**)` cast in the entry (gor_01's door_data_01_npc).
+- **Left, and why:**
+  - defence / defence_attr / regist in the party units, unit_mario and unit_purple_teresa (19+19+9 casts at their
+    BattleUnitKindPart/Kind users): the original objects are 8/8/24 bytes, the structs 5/5/22, and objdiff scores the
+    symbol size (unit_party_clauda 100% -> 99.2% matched data when typed). Fixing it means symbols.txt sizes.
+  - Word tables a script reads with SET_INT_READ_ADDR / READ_INT (event-ABI data with LW/GSW/FLOAT words): kpa_02-06's
+    mobj lists, rsh_04's access_tbl, sharinDt/clankDt, the quiz tables, aji_13's tables, tik_00's name_tbl,
+    batten_leader's light lists.
+  - gor_03's shopper_data: ShopperData is local to evt_shop.c and ends in a flexible array, the other maps spell it as
+    a `char*` list, and its one event pointer would need a cast.
+  - mobjdrv's cube display tables (dead, force_active, no reader to name a struct from); usu's booboo_name ({name,
+    bytes} pairs, no name evidence); the 17 `btl_*_setup_no_tbl` ({name, index}, read by dbGetDefData, whose
+    parameter type is NpcTerritoryInfo: a shared type would need a name).
+  - Lead: eff_ice's local Maya structs duplicate effdrv.c's EffectMayaTrack shape; one header type would also type
+    eff_damage_star's and eff_recovery's tables.
+  - The 1,021 `// TODO: type` markers left are nearly all pointer-free data: display lists, vertex/spline/colour
+    tables, byte lists. ptr_to_int's 32 left: 23 in the script, shop and dead tables above, 9 event-ABI or address
+    arithmetic in code.
+- **Index** (`tools/cleanup_index.py`, d8940c4e -> this branch): 19.879 -> 17.128 per kLOC (13773 -> 11977 weighted);
+  ptr_to_int 1571 -> 32, struct_ptr_cast 1457 -> 1245, prim_ptr_cast 1963 -> 1932, raw_offset 184 -> 177. `// TODO:
+  type` markers 1554 -> 1021. battle_audience_kind_data, eff_starstone, gor_03 and tou left the worst ten.
+- Verified before each commit: `ninja` recreates build/G8MJ01/ok; tools/ci.py PASS (tools/tests stubbed for this
+  machine's environment failures, run under `uv run --with pyelftools`, configure.py rerun with the normal Python
+  after); every changed C file also compiled without MUST_MATCH by hand (ci's natural step looks REL files up by stem);
+  fncast_lint and local_prototypes pass.

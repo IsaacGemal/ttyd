@@ -1247,72 +1247,18 @@ EVT_BEGIN(master_2_talk)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[253] = {
-    (u32)"うらない師", 0x00080600, 0x00000000, (u32)&uranaisi_init,
-    0x00000000, (u32)&uranaisi_direct_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"星マニア",
-    0x00080600, 0x00000000, (u32)&starmaniac_init, 0x00000000,
-    (u32)&starmaniac_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"情報屋ケチ", 0x00080600,
-    0x00000000, (u32)npc_init_evt, 0x00000000, (u32)&johoyaketi_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"クリボー５", 0x00080600, 0x00000000,
-    (u32)&kuribo5_init, 0x00000000, (u32)&kuribo5_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"チューさん４", 0x00080600, 0x00000000, (u32)&chusan4_init,
-    (u32)&chusan4_regl, (u32)&chusan4_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ボロドー３",
-    0x00080600, 0x00000000, (u32)&borodo3_init, (u32)&borodo3_regl,
-    (u32)&borodo3_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"ボロドー４", 0x00080600,
-    0x00000000, (u32)&borodo4_init, 0x00000000, (u32)&borodo4_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"ピンクボム兵", 0x00080600, 0x00000000,
-    (u32)&pinkbom_init, 0x00000000, (u32)&pinkbom_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"マスター２", 0x00080600, 0x00000000, (u32)&master_2_init,
-    0x00000000, (u32)&master_2_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"店員",
-    0x00080600, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static NpcSetupInfo npcEnt[11] = {
+    {"うらない師", 0x00080600, 0, uranaisi_init, NULL, uranaisi_direct_talk},
+    {"星マニア", 0x00080600, 0, starmaniac_init, NULL, starmaniac_talk},
+    {"情報屋ケチ", 0x00080600, 0, npc_init_evt, NULL, johoyaketi_talk},
+    {"クリボー５", 0x00080600, 0, kuribo5_init, NULL, kuribo5_talk},
+    {"チューさん４", 0x00080600, 0, chusan4_init, chusan4_regl, chusan4_talk},
+    {"ボロドー３", 0x00080600, 0, borodo3_init, borodo3_regl, borodo3_talk},
+    {"ボロドー４", 0x00080600, 0, borodo4_init, NULL, borodo4_talk},
+    {"ピンクボム兵", 0x00080600, 0, pinkbom_init, NULL, pinkbom_talk},
+    {"マスター２", 0x00080600, 0, master_2_init, NULL, master_2_talk},
+    {"店員", 0x00080600},
+    {NULL},
 };
 
 static EVT_BEGIN(evt_door_01_00)
@@ -1404,7 +1350,7 @@ EVT_BEGIN(evt_wall_01_02)
     RETURN
 EVT_END()
 
-static char* door_data_01_npc[2] = {
+static const char* door_data_01_npc[2] = {
     "うらない師", NULL,
 };
 
@@ -1447,13 +1393,25 @@ EVT_BEGIN(evt_close_01)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 door_data_01[18] = {
-    0x00000002, 0x00000003, 0x00000001, (u32)"ie_1_door",
-    (u32)"a_door_1_N", (u32)"a_door_1", (u32)"ie_1_soto", 0x00000000,
-    (u32)"ie_1_naka", 0x00000000, (u32)&evt_door_01_00, 0x00000000,
-    (u32)&evt_wall_01, (u32)&door_data_01_npc, 0x00000000, 0x00000000,
-    (u32)&evt_open_01, (u32)&evt_close_01,
+static DoorEntry door_data_01 = {
+    2,                // flags
+    3,                // type
+    1,                // field_0x8
+    "ie_1_door",      // doorMapObj
+    "a_door_1_N",     // closeHit
+    "a_door_1",       // openHit
+    "ie_1_soto",      // outsideMapObj
+    NULL,             // outsideHit
+    "ie_1_naka",      // insideMapObj
+    NULL,             // insideHit
+    evt_door_01_00,   // doorEvt
+    NULL,             // field_0x2C
+    evt_wall_01,      // houseEvt
+    door_data_01_npc, // npcNames
+    NULL,             // mobjNames
+    NULL,             // itemNames
+    evt_open_01,      // openEvt
+    evt_close_01,     // closeEvt
 };
 
 static EVT_BEGIN(evt_door_02_00)
@@ -1580,7 +1538,7 @@ static EVT_BEGIN(evt_wall_02)
     RETURN
 EVT_END()
 
-static char* mise_npc[2] = {
+static const char* mise_npc[2] = {
     "店員", NULL,
 };
 
@@ -1598,13 +1556,25 @@ EVT_BEGIN(evt_close_02)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 door_data_02[18] = {
-    0x00000002, 0x00000003, 0x00000001, (u32)"ie_2_door",
-    (u32)"a_door_2_N", (u32)"a_door_2", (u32)"ie_2_soto", 0x00000000,
-    (u32)"ie_2_naka", 0x00000000, (u32)&evt_door_02_00, 0x00000000,
-    (u32)&evt_wall_02, (u32)&mise_npc, 0x00000000, 0x00000000,
-    (u32)&evt_open_02, (u32)&evt_close_02,
+static DoorEntry door_data_02 = {
+    2,              // flags
+    3,              // type
+    1,              // field_0x8
+    "ie_2_door",    // doorMapObj
+    "a_door_2_N",   // closeHit
+    "a_door_2",     // openHit
+    "ie_2_soto",    // outsideMapObj
+    NULL,           // outsideHit
+    "ie_2_naka",    // insideMapObj
+    NULL,           // insideHit
+    evt_door_02_00, // doorEvt
+    NULL,           // field_0x2C
+    evt_wall_02,    // houseEvt
+    mise_npc,       // npcNames
+    NULL,           // mobjNames
+    NULL,           // itemNames
+    evt_open_02,    // openEvt
+    evt_close_02,   // closeEvt
 };
 
 static EVT_BEGIN(evt_door_03_00)
@@ -1731,7 +1701,7 @@ static EVT_BEGIN(evt_wall_03)
     RETURN
 EVT_END()
 
-static char* door_data_03_npc[5] = {
+static const char* door_data_03_npc[5] = {
     "情報屋ケチ", "ボロドー４", "ピンクボム兵", "マスター２", NULL,
 };
 
@@ -1749,17 +1719,29 @@ EVT_BEGIN(evt_close_03)
     RETURN
 EVT_END()
 
-static char* door_data_03_mobj[2] = {
+static const char* door_data_03_mobj[2] = {
     "kururin1", NULL,
 };
 
-// TODO: type
-static u32 door_data_03[18] = {
-    0x00000002, 0x00000003, 0x00000001, (u32)"ie_3_door",
-    (u32)"a_door_3_N", (u32)"a_door_3", (u32)"ie_3_soto", 0x00000000,
-    (u32)"ie_3_naka", 0x00000000, (u32)&evt_door_03_00, 0x00000000,
-    (u32)&evt_wall_03, (u32)&door_data_03_npc, (u32)&door_data_03_mobj, 0x00000000,
-    (u32)&evt_open_03, (u32)&evt_close_03,
+static DoorEntry door_data_03 = {
+    2,                 // flags
+    3,                 // type
+    1,                 // field_0x8
+    "ie_3_door",       // doorMapObj
+    "a_door_3_N",      // closeHit
+    "a_door_3",        // openHit
+    "ie_3_soto",       // outsideMapObj
+    NULL,              // outsideHit
+    "ie_3_naka",       // insideMapObj
+    NULL,              // insideHit
+    evt_door_03_00,    // doorEvt
+    NULL,              // field_0x2C
+    evt_wall_03,       // houseEvt
+    door_data_03_npc,  // npcNames
+    door_data_03_mobj, // mobjNames
+    NULL,              // itemNames
+    evt_open_03,       // openEvt
+    evt_close_03,      // closeEvt
 };
 
 static EVT_BEGIN(evt_door_04_00)
@@ -1860,13 +1842,25 @@ static EVT_BEGIN(evt_door_04_close)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 door_data_04[18] = {
-    0x00000000, 0x00000003, 0x00000001, (u32)"ie_4door",
-    (u32)"a_door_4_N", (u32)"a_door_4", (u32)"ie_4_soto", 0x00000000,
-    (u32)"ie_4_naka", 0x00000000, (u32)&evt_door_04_00, (u32)&evt_door_04_01,
-    (u32)&evt_wall_04, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&evt_open_04_open, (u32)&evt_door_04_close,
+static DoorEntry door_data_04 = {
+    0,                 // flags
+    3,                 // type
+    1,                 // field_0x8
+    "ie_4door",        // doorMapObj
+    "a_door_4_N",      // closeHit
+    "a_door_4",        // openHit
+    "ie_4_soto",       // outsideMapObj
+    NULL,              // outsideHit
+    "ie_4_naka",       // insideMapObj
+    NULL,              // insideHit
+    evt_door_04_00,    // doorEvt
+    evt_door_04_01,    // field_0x2C
+    evt_wall_04,       // houseEvt
+    NULL,              // npcNames
+    NULL,              // mobjNames
+    NULL,              // itemNames
+    evt_open_04_open,  // openEvt
+    evt_door_04_close, // closeEvt
 };
 
 EVT_BEGIN(evt_door_stg7_open)
@@ -2017,7 +2011,7 @@ EVT_BEGIN(tensou_init_event)
     CALL(evt_party_set_dir, 1, 270, 0)
     CALL(evt_cam_road_reset)
     CALL(evt_seq_wait, 2)
-    SET_VALUE(LW(0), PTR(door_data_04))
+    SET_VALUE(LW(0), PTR(&door_data_04))
     SPAWN_EVENT(evt_door_open_quick)
     CALL_CHILD(tensou_return)
     SWITCH(GSW(0))
@@ -2311,7 +2305,7 @@ static EVT_BEGIN(epilogue_evt)
     WAIT_MS(2000)
     CALL(evt_npc_move_position, STRING("クリスチーヌ"), -345, -25, 0, 60, 0)
     CALL(evt_npc_move_position, STRING("クリスチーヌ"), -345, -5, 0, 60, 0)
-    SET_VALUE(LW(0), PTR(door_data_04))
+    SET_VALUE(LW(0), PTR(&door_data_04))
     SPAWN_EVENT(door_open_se)
     CALL(evt_sub_intpl_msec_init, 5, 0, 180, 500)
     LOOP(0)
@@ -2323,7 +2317,7 @@ static EVT_BEGIN(epilogue_evt)
         END_IF
     END_LOOP
     CALL(evt_npc_move_position, STRING("クリスチーヌ"), -345, -70, 0, 60, 0)
-    SET_VALUE(LW(0), PTR(door_data_04))
+    SET_VALUE(LW(0), PTR(&door_data_04))
     SPAWN_EVENT(door_close_se)
     CALL(evt_sub_intpl_msec_init, 5, 180, 0, 500)
     LOOP(0)
@@ -2370,13 +2364,13 @@ EVT_BEGIN(tik_00_init_evt)
     SET_VALUE(GSWF(6), 0)
     SET_VALUE(GSWF(237), 0)
     CALL(uranaisi_table_clear)
-    SET_VALUE(LW(0), PTR(door_data_01))
+    SET_VALUE(LW(0), PTR(&door_data_01))
     CALL_CHILD(evt_door_entry)
-    SET_VALUE(LW(0), PTR(door_data_02))
+    SET_VALUE(LW(0), PTR(&door_data_02))
     CALL_CHILD(evt_door_entry)
-    SET_VALUE(LW(0), PTR(door_data_03))
+    SET_VALUE(LW(0), PTR(&door_data_03))
     CALL_CHILD(evt_door_entry)
-    SET_VALUE(LW(0), PTR(door_data_04))
+    SET_VALUE(LW(0), PTR(&door_data_04))
     CALL_CHILD(evt_door_04_entry)
     SPAWN_EVENT(tensou_init_event)
     CALL(evt_run_case_evt, 9, 1, STRING("a_sui"), 0, PTR(tensou_sw_event), 0)

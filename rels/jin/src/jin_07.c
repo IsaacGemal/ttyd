@@ -23,6 +23,7 @@
 #include "math_ext.h"
 #include "memory.h"
 #include <stdlib.h>
+#include "driver/extdrv.h"
 
 #pragma pool_data off
 
@@ -137,12 +138,12 @@ static NpcSetupInfo npcEnt[2] = {
     {NULL},
 };
 
-// TODO: type
-static u32 senteresa_ext_entry_data[15] = {
-    (u32)"c_teresa", (u32)"W_1", 0x3F800000, (u32)"c_teresa",
-    (u32)"W_1", 0x40000000, (u32)"c_teresa", (u32)"W_1",
-    0x40400000, (u32)"c_teresa", (u32)"W_1", 0x40800000,
-    0x00000000, 0x00000000, 0x00000000,
+static ExtMakeTextureEntry senteresa_ext_entry_data[5] = {
+    { "c_teresa", "W_1", 1.0f },
+    { "c_teresa", "W_1", 2.0f },
+    { "c_teresa", "W_1", 3.0f },
+    { "c_teresa", "W_1", 4.0f },
+    { NULL, NULL, 0.0f },
 };
 
 // Declared non-const so the Hermite copy becomes an opaque block load (lwzu),

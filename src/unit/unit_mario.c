@@ -17,6 +17,7 @@
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
 #include "battle/battle_attack_audience.h"
+#include "battle/battle_disp.h"
 static s32 _mario_makkuro_set(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 static s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 
@@ -40,7 +41,7 @@ s32 mario_appeal_event[30];
 static s32 attack_audience_event[15];
 s32 btlataudevtMarioJump[237];
 s32 btlataudevtMarioHammer[356];
-static u32 pose_sound_timing_table[10];
+static BtlUnitPoseSound pose_sound_timing_table[2];
 static s32 damage_event[10];
 static s32 attack_event[2];
 static s32 wait_event[6];
@@ -48,34 +49,54 @@ s32 mario_win_reaction[9];
 
 // clang-format off
 
-// TODO: type
-u32 pose_table_mario_stay[68] = {
-    0x00000004, (u32)"M_S_3", 0x00000001, (u32)"M_N_5",
-    0x00000002, (u32)"M_Z_10", 0x00000009, (u32)"M_Z_10",
-    0x00000005, (u32)"M_X_1", 0x00000003, (u32)"M_X_1",
-    0x0000001B, (u32)"M_Z_11", 0x0000001C, (u32)"M_S_1",
-    0x00000023, (u32)"M_V_2", 0x00000025, (u32)"M_B_2",
-    0x00000024, (u32)"M_D_6", 0x0000001F, (u32)"M_B_1",
-    0x00000020, (u32)"M_V_1", 0x00000026, (u32)"M_N_7",
-    0x00000027, (u32)"M_D_1", 0x0000002B, (u32)"M_S_1",
-    0x00000028, (u32)"M_W_1", 0x0000002A, (u32)"M_R_1",
-    0x0000002C, (u32)"M_J_1B", 0x00000034, (u32)"M_I_1",
-    0x00000039, (u32)"M_S_3", 0x00000038, (u32)"M_S_3",
-    0x0000003E, (u32)"M_V_2", 0x0000003F, (u32)"M_V_2",
-    0x0000003A, (u32)"M_A_3B", 0x0000003B, (u32)"M_A_3B",
-    0x0000003C, (u32)"M_D_2", 0x0000003D, (u32)"M_V_1",
-    0x00000043, (u32)"M_C_3", 0x00000042, (u32)"M_N_8",
-    0x00000040, (u32)"M_I_O", 0x00000031, (u32)"M_J_1B",
-    0x0000002D, (u32)"M_B_2", 0x00000045, (u32)"M_S_1",
+BattleDispPose pose_table_mario_stay[34] = {
+    { 0x04, "M_S_3" },
+    { 0x01, "M_N_5" },
+    { 0x02, "M_Z_10" },
+    { 0x09, "M_Z_10" },
+    { 0x05, "M_X_1" },
+    { 0x03, "M_X_1" },
+    { 0x1B, "M_Z_11" },
+    { 0x1C, "M_S_1" },
+    { 0x23, "M_V_2" },
+    { 0x25, "M_B_2" },
+    { 0x24, "M_D_6" },
+    { 0x1F, "M_B_1" },
+    { 0x20, "M_V_1" },
+    { 0x26, "M_N_7" },
+    { 0x27, "M_D_1" },
+    { 0x2B, "M_S_1" },
+    { 0x28, "M_W_1" },
+    { 0x2A, "M_R_1" },
+    { 0x2C, "M_J_1B" },
+    { 0x34, "M_I_1" },
+    { 0x39, "M_S_3" },
+    { 0x38, "M_S_3" },
+    { 0x3E, "M_V_2" },
+    { 0x3F, "M_V_2" },
+    { 0x3A, "M_A_3B" },
+    { 0x3B, "M_A_3B" },
+    { 0x3C, "M_D_2" },
+    { 0x3D, "M_V_1" },
+    { 0x43, "M_C_3" },
+    { 0x42, "M_N_8" },
+    { 0x40, "M_I_O" },
+    { 0x31, "M_J_1B" },
+    { 0x2D, "M_B_2" },
+    { 0x45, "M_S_1" },
 };
 
-// TODO: type
-u32 data_table_mario[20] = {
-    0x00000005, (u32)&mario_appeal_event, 0x00000006, (u32)&attack_audience_event,
-    0x00000030, (u32)btldefaultevt_Dummy, 0x00000033, (u32)&mario_emergency_revival_event,
-    0x00000031, (u32)&mario_dead_event, 0x00000040, (u32)&mario_win_reaction,
-    0x00000007, (u32)subset_attack_ready_jump_event, 0x00000041, (u32)&mario_ride_btl_entry_event,
-    0x0000002F, (u32)btldefaultevt_avoid_counter_event, 0x00000000, 0x00000000,
+BattleDataEntry data_table_mario[10] = {
+    { 0x05, mario_appeal_event },
+    { 0x06, attack_audience_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x33, mario_emergency_revival_event },
+    { 0x31, mario_dead_event },
+    { 0x40, mario_win_reaction },
+    { 0x07, subset_attack_ready_jump_event },
+    { 0x41, mario_ride_btl_entry_event },
+    { 0x2F, btldefaultevt_avoid_counter_event },
+    { 0x00, NULL },
 };
 
 // TODO: type
@@ -94,46 +115,109 @@ static u32 regist[6] = {
     0x64646464, 0x64640000,
 };
 
-// TODO: type
-u32 pose_table_object[6] = {
-    0x0000001C, (u32)"KRN_H_1", 0x00000027, (u32)"KRN_H_1",
-    0x00000045, (u32)"KRN_H_1",
+BattleDispPose pose_table_object[3] = {
+    { 0x1C, "KRN_H_1" },
+    { 0x27, "KRN_H_1" },
+    { 0x45, "KRN_H_1" },
 };
 
-// TODO: type
-u32 unitpartsdata_Mario[57] = {
-    0x00000001, (u32)"btl_un_mario", (u32)"b_mario", 0x00000000,
-    0x00000000, 0x00000000, 0x41800000, 0x42100000,
-    0x40A00000, 0x00000000, 0x42200000, 0x00000000,
-    0x00140024, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table_mario_stay, 0x00000002,
-    (u32)"btl_un_mario", (u32)"b_mario", 0x00000000, 0x00000000,
-    0x00000000, 0x41800000, 0x42100000, 0x40A00000,
-    0x00000000, 0x42200000, 0x00000000, 0x00140024,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x13010000,
-    0x00000000, (u32)&pose_table_object, 0x00000003, (u32)"btl_un_mario",
-    (u32)"b_mario", 0x00000000, 0x00000000, 0x00000000,
-    0x41800000, 0x42100000, 0x40A00000, 0x00000000,
-    0x42200000, 0x00000000, 0x00140024, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x13010000, 0x00000000,
-    (u32)&pose_table_object,
+BattleUnitKindPart unitpartsdata_Mario[3] = {
+    {
+        1,                                    // partNum
+        "btl_un_mario",                       // partName
+        "b_mario",                            // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 36.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 40.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        36,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x00000009,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_mario_stay,                // poseTable
+    },
+    {
+        2,                                    // partNum
+        "btl_un_mario",                       // partName
+        "b_mario",                            // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 36.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 40.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        36,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x13010000,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_object,                    // poseTable
+    },
+    {
+        3,                                    // partNum
+        "btl_un_mario",                       // partName
+        "b_mario",                            // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 36.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 40.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        36,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x13010000,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_object,                    // poseTable
+    },
 };
 
-// TODO: type
-u32 unitdata_Mario[49] = {
-    0x000000DE, (u32)"btl_un_mario", 0x000A0005, 0x05010100,
-    0x00000064, 0x00090016, 0x0024000B, 0x00240000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x42200000, 0x00000000, 0x00000000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41300000,
-    0x00000000, 0x00000000, 0x41300000, 0x41BB3333,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_MARIO_DAMAGE1",
-    (u32)"SFX_MARIO_DAMAGE_FIRE1", (u32)"SFX_MARIO_DAMAGE_ICE1", (u32)"SFX_MARIO_DAMAGE_BIRIBIRI1", 0x02040000,
-    (u32)&regist, 0x03000000, (u32)&unitpartsdata_Mario, (u32)&init_event,
-    (u32)&data_table_mario,
+BattleUnitKind unitdata_Mario = {
+    UNIT_MARIO,                      // mUnitType
+    "btl_un_mario",                  // name
+    10,                              // maxHp
+    5,                               // maxFp
+    5,                               // mDangerHP
+    1,                               // mPerilHP
+    1,                               // mLevel
+    0,                               // mBonusExp
+    0,                               // bonusCoinRolls
+    0,                               // bonusCoinRate
+    0,                               // baseCoin
+    100,                             // escapeRate
+    9,                               // field_0x14
+    22,                              // width
+    36,                              // height
+    { 11, 36 },                      // statusIconOffset
+    { 0.0f, 0.0f, 0.0f },            // centerOffset
+    { 0, 0 },                        // hpGaugeOffset
+    { 0.0f, 40.0f, 0.0f },           // talkTogeBaseOffset
+    { 0.0f, 40.0f, 0.0f },           // field_0x3C
+    { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
+    0.0f,                            // field_0x54
+    0.0f,                            // field_0x58
+    { 11.0f, 0.0f, 0.0f },           // bintaHitOffset
+    { 11.0f, 23.4f, 0.0f },          // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },            // cutBaseOffset
+    0.0f,                            // cutWidth
+    0.0f,                            // cutHeight
+    0,                               // turnOrder
+    0,                               // turnOrderVariance
+    -1,                              // swallowRate
+    0,                               // swallowAttribute
+    100,                             // field_0x8C
+    20,                              // itemStealParam
+    { 0.0f, 0.0f, 0.0f },            // starPointDispOffset
+    "SFX_MARIO_DAMAGE1",             // damageSfxName
+    "SFX_MARIO_DAMAGE_FIRE1",        // fireDamageSfxName
+    "SFX_MARIO_DAMAGE_ICE1",         // iceDamageSfxName
+    "SFX_MARIO_DAMAGE_BIRIBIRI1",    // electricDamageSfxName
+    0x02040000,                      // attributeFlags
+    (BattleVulnerableStatus*)regist, // vulnStatus
+    3,                               // numParts
+    unitpartsdata_Mario,             // mParts
+    init_event,                      // initEvtScript
+    data_table_mario,                // dataTable
 };
 
 static EVT_BEGIN(battle_entry_event)
@@ -170,7 +254,7 @@ s32 _get_local_frame(EventEntry* event, BOOL isFirstCall) {
 }
 
 
-s32 mario_pinch_pose_sound_callback(BattleUnit* unit) {
+s32 mario_pinch_pose_sound_callback(BattleUnit* unit, BtlUnitPoseSound* entry, void* ps) {
     s32 result;
     if (unit->work[8] & 1) {
         result = BtlUnit_snd_se(unit, "SFX_VOICE_MARIO_RELIEF2", 0xF1194D80, 0);
@@ -583,11 +667,9 @@ EVT_BEGIN(btlataudevtMarioHammer)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 pose_sound_timing_table[10] = {
-    (u32)"M_S_3", 0x3E800000, (u32)mario_pinch_pose_sound_callback, 0x00000000,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000001,
+static BtlUnitPoseSound pose_sound_timing_table[2] = {
+    { "M_S_3", 0.25f, mario_pinch_pose_sound_callback, NULL, 0, 1 },
+    { NULL, 0.0f, NULL, NULL, 0, 1 },
 };
 
 static EVT_BEGIN(damage_event)

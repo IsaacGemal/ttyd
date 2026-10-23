@@ -13,7 +13,7 @@
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
-extern BattleDispPose pose_table_yoshi_stay[];
+extern BattleDispPose pose_table_yoshi_stay[25];
 static BattleVulnerableStatus regist_yoshi;
 static BattleDataEntry data_table_yoshi[2];
 static BattleUnitKindPart parts_yoshi;

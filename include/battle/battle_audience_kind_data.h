@@ -42,4 +42,4 @@ typedef struct BattleAudienceKind {
     f32 scaleY;                        // 0x1C, times the texture height for the drawn scale.y
 } BattleAudienceKind;
 
-extern BattleAudienceKind audience_kind[];
+extern BattleAudienceKind audience_kind[13];

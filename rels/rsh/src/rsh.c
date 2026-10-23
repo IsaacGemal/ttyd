@@ -560,74 +560,71 @@ EVT_BEGIN(evt_rsh_window)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 rsh_01_rnd_npc_1[15] = {
-    (u32)"c_kinopiko_v", (u32)"キノピオ女紫", (u32)&evt_rsh_rnd_npc_2_1_talk, (u32)"c_kinopio_b",
-    (u32)"キノピオ青", (u32)&evt_rsh_rnd_npc_2_2_talk, (u32)"c_kinopio_g", (u32)"キノピオ緑",
-    (u32)&evt_rsh_rnd_npc_2_3_talk, (u32)"c_nokonoko", (u32)"ノコノコ", (u32)&evt_rsh_rnd_npc_2_4_talk,
-    (u32)"c_kuribo_n", (u32)"NPCクリボー", (u32)&evt_rsh_rnd_npc_2_5_talk,
+RndNpcData rsh_01_rnd_npc_1[5] = {
+    { "c_kinopiko_v", "キノピオ女紫", evt_rsh_rnd_npc_2_1_talk },
+    { "c_kinopio_b", "キノピオ青", evt_rsh_rnd_npc_2_2_talk },
+    { "c_kinopio_g", "キノピオ緑", evt_rsh_rnd_npc_2_3_talk },
+    { "c_nokonoko", "ノコノコ", evt_rsh_rnd_npc_2_4_talk },
+    { "c_kuribo_n", "NPCクリボー", evt_rsh_rnd_npc_2_5_talk },
 };
 
-// TODO: type
-u32 rsh_01_rnd_npc_2[9] = {
-    (u32)"c_kinopiko_p", (u32)"キノピオ女桃", (u32)&evt_rsh_rnd_npc_2_6_talk, (u32)"c_kinopio_b",
-    (u32)"キノピオ青", (u32)&evt_rsh_rnd_npc_2_8_talk, (u32)"c_kinopiko", (u32)"キノピオ女",
-    (u32)&evt_rsh_rnd_npc_2_9_talk,
+RndNpcData rsh_01_rnd_npc_2[3] = {
+    { "c_kinopiko_p", "キノピオ女桃", evt_rsh_rnd_npc_2_6_talk },
+    { "c_kinopio_b", "キノピオ青", evt_rsh_rnd_npc_2_8_talk },
+    { "c_kinopiko", "キノピオ女", evt_rsh_rnd_npc_2_9_talk },
 };
 
-// TODO: type
-u32 rsh_01_rnd_npc_3[6] = {
-    (u32)"c_kokinopio_y", (u32)"キノピオ子黄緑", (u32)&evt_rsh_rnd_npc_2_7_talk, (u32)"c_kokinopio_b",
-    (u32)"キノピオ子青", (u32)&evt_rsh_rnd_npc_2_10_talk,
+RndNpcData rsh_01_rnd_npc_3[2] = {
+    { "c_kokinopio_y", "キノピオ子黄緑", evt_rsh_rnd_npc_2_7_talk },
+    { "c_kokinopio_b", "キノピオ子青", evt_rsh_rnd_npc_2_10_talk },
 };
 
-// TODO: type
-u32 rsh_03_rnd_npc_1[39] = {
-    (u32)"c_kinopio", (u32)"キノピオ", (u32)&evt_rsh_rnd_npc_3_1_talk, (u32)"c_kinopiko_p",
-    (u32)"キノピオ女桃", (u32)&evt_rsh_rnd_npc_3_2_talk, (u32)"c_kinopiko_v", (u32)"キノピオ女紫",
-    (u32)&evt_rsh_rnd_npc_3_3_talk, (u32)"c_kinopio_b", (u32)"キノピオ青", (u32)&evt_rsh_rnd_npc_3_4_talk,
-    (u32)"c_kinopiko_p", (u32)"キノピオ女桃", (u32)&evt_rsh_rnd_npc_3_5_talk, (u32)"c_kinopiko_v",
-    (u32)"キノピオ女紫", (u32)&evt_rsh_rnd_npc_3_7_talk, (u32)"c_nokonoko", (u32)"ノコノコ",
-    (u32)&evt_rsh_rnd_npc_3_8_talk, (u32)"c_yoshi", (u32)"ヨッシー大", (u32)&evt_rsh_rnd_npc_3_9_talk,
-    (u32)"c_nokonoko", (u32)"ノコノコ", (u32)&evt_rsh_rnd_npc_4_1_talk, (u32)"c_yoshi",
-    (u32)"ヨッシー大", (u32)&evt_rsh_rnd_npc_4_2_talk, (u32)"c_jugem_n", (u32)"ＮＰＣジュゲム",
-    (u32)&evt_rsh_rnd_npc_4_3_talk, (u32)"c_kinopio_b", (u32)"キノピオ青", (u32)&evt_rsh_rnd_npc_4_4_talk,
-    (u32)"c_nokonoko", (u32)"ノコノコ", (u32)&evt_rsh_rnd_npc_4_5_talk,
+RndNpcData rsh_03_rnd_npc_1[13] = {
+    { "c_kinopio", "キノピオ", evt_rsh_rnd_npc_3_1_talk },
+    { "c_kinopiko_p", "キノピオ女桃", evt_rsh_rnd_npc_3_2_talk },
+    { "c_kinopiko_v", "キノピオ女紫", evt_rsh_rnd_npc_3_3_talk },
+    { "c_kinopio_b", "キノピオ青", evt_rsh_rnd_npc_3_4_talk },
+    { "c_kinopiko_p", "キノピオ女桃", evt_rsh_rnd_npc_3_5_talk },
+    { "c_kinopiko_v", "キノピオ女紫", evt_rsh_rnd_npc_3_7_talk },
+    { "c_nokonoko", "ノコノコ", evt_rsh_rnd_npc_3_8_talk },
+    { "c_yoshi", "ヨッシー大", evt_rsh_rnd_npc_3_9_talk },
+    { "c_nokonoko", "ノコノコ", evt_rsh_rnd_npc_4_1_talk },
+    { "c_yoshi", "ヨッシー大", evt_rsh_rnd_npc_4_2_talk },
+    { "c_jugem_n", "ＮＰＣジュゲム", evt_rsh_rnd_npc_4_3_talk },
+    { "c_kinopio_b", "キノピオ青", evt_rsh_rnd_npc_4_4_talk },
+    { "c_nokonoko", "ノコノコ", evt_rsh_rnd_npc_4_5_talk },
 };
 
-// TODO: type
-u32 rsh_03_rnd_npc_2[21] = {
-    (u32)"c_kokinopio_g", (u32)"キノピオ子緑", (u32)&evt_rsh_rnd_npc_3_6_talk, (u32)"c_kokinopio_y",
-    (u32)"キノピオ子黄緑", (u32)&evt_rsh_rnd_npc_3_10_talk, (u32)"c_kinopio", (u32)"キノピオ",
-    (u32)&evt_rsh_rnd_npc_4_6_talk, (u32)"c_kokinopio_g", (u32)"キノピオ子緑", (u32)&evt_rsh_rnd_npc_4_7_talk,
-    (u32)"c_kuribo_n", (u32)"NPCクリボー", (u32)&evt_rsh_rnd_npc_4_8_talk, (u32)"c_kinopio_g",
-    (u32)"キノピオ緑", (u32)&evt_rsh_rnd_npc_4_9_talk, (u32)"c_nokonoko", (u32)"ノコノコ",
-    (u32)&evt_rsh_rnd_npc_4_10_talk,
+RndNpcData rsh_03_rnd_npc_2[7] = {
+    { "c_kokinopio_g", "キノピオ子緑", evt_rsh_rnd_npc_3_6_talk },
+    { "c_kokinopio_y", "キノピオ子黄緑", evt_rsh_rnd_npc_3_10_talk },
+    { "c_kinopio", "キノピオ", evt_rsh_rnd_npc_4_6_talk },
+    { "c_kokinopio_g", "キノピオ子緑", evt_rsh_rnd_npc_4_7_talk },
+    { "c_kuribo_n", "NPCクリボー", evt_rsh_rnd_npc_4_8_talk },
+    { "c_kinopio_g", "キノピオ緑", evt_rsh_rnd_npc_4_9_talk },
+    { "c_nokonoko", "ノコノコ", evt_rsh_rnd_npc_4_10_talk },
 };
 
-// TODO: type
-u32 rsh_04_rnd_npc_1[6] = {
-    (u32)"c_kinopio_g", (u32)"キノピオ緑", (u32)&evt_rsh_rnd_npc_5_2_talk, (u32)"c_kinopio_b",
-    (u32)"キノピオ青", (u32)&evt_rsh_rnd_npc_5_10_talk,
+RndNpcData rsh_04_rnd_npc_1[2] = {
+    { "c_kinopio_g", "キノピオ緑", evt_rsh_rnd_npc_5_2_talk },
+    { "c_kinopio_b", "キノピオ青", evt_rsh_rnd_npc_5_10_talk },
 };
 
-// TODO: type
-u32 rsh_04_rnd_npc_2[6] = {
-    (u32)"c_nokonoko", (u32)"ノコノコ", (u32)&evt_rsh_rnd_npc_5_8_talk, (u32)"c_kinopio",
-    (u32)"キノピオ", (u32)&evt_rsh_rnd_npc_5_9_talk,
+RndNpcData rsh_04_rnd_npc_2[2] = {
+    { "c_nokonoko", "ノコノコ", evt_rsh_rnd_npc_5_8_talk },
+    { "c_kinopio", "キノピオ", evt_rsh_rnd_npc_5_9_talk },
 };
 
-// TODO: type
-u32 rsh_04_rnd_npc_3[6] = {
-    (u32)"c_kokinopio_g", (u32)"キノピオ子緑", (u32)&evt_rsh_rnd_npc_5_5_talk, (u32)"c_kokinopio",
-    (u32)"キノピオ子", (u32)&evt_rsh_rnd_npc_5_6_talk,
+RndNpcData rsh_04_rnd_npc_3[2] = {
+    { "c_kokinopio_g", "キノピオ子緑", evt_rsh_rnd_npc_5_5_talk },
+    { "c_kokinopio", "キノピオ子", evt_rsh_rnd_npc_5_6_talk },
 };
 
-// TODO: type
-u32 rsh_04_rnd_npc_4[12] = {
-    (u32)"c_kokinopio_b", (u32)"キノピオ子青", (u32)&evt_rsh_rnd_npc_5_1_talk, (u32)"c_kokinopio_y",
-    (u32)"キノピオ子黄緑", (u32)&evt_rsh_rnd_npc_5_3_talk, (u32)"c_kokinopio_b", (u32)"キノピオ子青",
-    (u32)&evt_rsh_rnd_npc_5_4_talk, (u32)"c_kinopiko", (u32)"キノピオ女", (u32)&evt_rsh_rnd_npc_5_7_talk,
+RndNpcData rsh_04_rnd_npc_4[4] = {
+    { "c_kokinopio_b", "キノピオ子青", evt_rsh_rnd_npc_5_1_talk },
+    { "c_kokinopio_y", "キノピオ子黄緑", evt_rsh_rnd_npc_5_3_talk },
+    { "c_kokinopio_b", "キノピオ子青", evt_rsh_rnd_npc_5_4_talk },
+    { "c_kinopiko", "キノピオ女", evt_rsh_rnd_npc_5_7_talk },
 };
 
 EVT_BEGIN(evt_rsh_rnd_npc_2_1_talk)
@@ -991,20 +988,10 @@ EVT_BEGIN(evt_rsh_01_rnd_npc_entry)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 rsh_03_rnd_npc_2_ent[46] = {
-    (u32)"乗客２", 0x00000000, 0x00000000, (u32)npc_urouro_init_event,
-    (u32)npc_urouro_move_event, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)npc_urouro_return_event, 0x00000000, 0x00000001,
-    0xC3B40000, 0x00000000, 0xC1200000, 0x42480000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo rsh_03_rnd_npc_2_ent[2] = {
+    {"乗客２", 0, 0, npc_urouro_init_event, npc_urouro_move_event, NULL, NULL, NULL, NULL, npc_urouro_return_event, NULL,
+     NPC_TERRITORY_TYPE_CIRCLE, {-360.0f, 0.0f, -10.0f}, {50.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, -1},
+    {NULL},
 };
 
 EVT_BEGIN(evt_rsh_03_rnd_npc_entry)
@@ -1030,20 +1017,10 @@ EVT_BEGIN(evt_rsh_03_rnd_npc_entry)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 rsh_04_rnd_npc_3_ent[46] = {
-    (u32)"乗客３", 0x00000000, 0x00000000, (u32)npc_urouro_init_event,
-    (u32)npc_urouro_move_event, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)npc_urouro_return_event, 0x00000000, 0x00000001,
-    0xC3340000, 0x00000000, 0xC3110000, 0x42480000,
-    0x00000000, 0x42480000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+NpcSetupInfo rsh_04_rnd_npc_3_ent[2] = {
+    {"乗客３", 0, 0, npc_urouro_init_event, npc_urouro_move_event, NULL, NULL, NULL, NULL, npc_urouro_return_event, NULL,
+     NPC_TERRITORY_TYPE_CIRCLE, {-180.0f, 0.0f, -145.0f}, {50.0f, 0.0f, 50.0f}, 0.0f, 0.0f, 0.0f, 0.0f, -1},
+    {NULL},
 };
 
 EVT_BEGIN(evt_rsh_04_rnd_npc_entry)
@@ -1412,8 +1389,8 @@ USER_FUNC(evt_rsh_set_rnd_npc) {
     return EVT_RETURN_DONE;
 }
 
-void* _get_rnd_npc_data(s32 type, s32 group, s32 index) {
-    u32* data = NULL;
+RndNpcData* _get_rnd_npc_data(s32 type, s32 group, s32 index) {
+    RndNpcData* data = NULL;
 
     switch (type) {
         case 0:
@@ -1460,17 +1437,17 @@ void* _get_rnd_npc_data(s32 type, s32 group, s32 index) {
         data = rsh_01_rnd_npc_1;
         index = 0;
     }
-    return &data[index * 3];
+    return &data[index];
 }
 USER_FUNC(evt_rsh_get_rnd_npc_data) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     s32 index = evtGetValue(event, args[1]);
     s32 npc = evtGetValue(event, args[2]);
-    s32* data = _get_rnd_npc_data(type, index, npc);
+    RndNpcData* data = _get_rnd_npc_data(type, index, npc);
 
-    evtSetValue(event, args[3], data[0]);
-    evtSetValue(event, args[4], data[1]);
+    evtSetValue(event, args[3], (s32)data->animName);
+    evtSetValue(event, args[4], (s32)data->tribeName);
     return EVT_RETURN_DONE;
 }
 
@@ -1479,9 +1456,9 @@ USER_FUNC(evt_rsh_get_rnd_npc_talk_evt) {
     s32 type = evtGetValue(event, args[0]);
     s32 index = evtGetValue(event, args[1]);
     s32 npc = evtGetValue(event, args[2]);
-    s32* data = _get_rnd_npc_data(type, index, npc);
+    RndNpcData* data = _get_rnd_npc_data(type, index, npc);
 
-    evtSetValue(event, args[3], data[2]);
+    evtSetValue(event, args[3], (s32)data->talkEvt);
     return EVT_RETURN_DONE;
 }
 

@@ -386,13 +386,11 @@ static EVT_BEGIN(rabbit_move)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 pose_sound_timing_table[20] = {
-    (u32)"CBN_S_1", 0x3F155555, 0x00000000, (u32)"SFX_ENM_CHORO1_MOVE1",
-    0x00000001, (u32)"CBN_S_1", 0x3F555555, 0x00000000,
-    (u32)"SFX_ENM_CHORO1_WAIT2", 0x00000001, (u32)"CBN_S_1", 0x3FCAAAAB,
-    0x00000000, (u32)"SFX_ENM_CHORO1_WAIT1", 0x00000001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000001,
+static BtlUnitPoseSound pose_sound_timing_table[4] = {
+    { "CBN_S_1", 0.5833333f, NULL, "SFX_ENM_CHORO1_MOVE1", 0, 1 },
+    { "CBN_S_1", 0.8333333f, NULL, "SFX_ENM_CHORO1_WAIT2", 0, 1 },
+    { "CBN_S_1", 1.5833334f, NULL, "SFX_ENM_CHORO1_WAIT1", 0, 1 },
+    { NULL, 0.0f, NULL, NULL, 0, 1 },
 };
 
 static EVT_BEGIN(init_event)

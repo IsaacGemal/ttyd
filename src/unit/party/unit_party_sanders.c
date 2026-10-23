@@ -24,19 +24,21 @@
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
 #include "battle/battle_weapon_power.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
 
 extern s32 btldefaultevt_avoid_counter_event[];
 extern s32 evt_audience_acrobat_notry[];
 extern s32 subset_attack_ready_jump_event[];
-extern s32 unit_bomzou[];
+extern BattleUnitKind unit_bomzou;
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
 static s32 init_event[63];
 static s32 damage_event[16];
 static s32 wait_event[26];
-u32 partyWeapon_SandersNormalAttack[48];
-u32 partyWeapon_SandersTimeBombSet[48];
-u32 partyWeapon_SandersCounterSet[48];
-u32 partyWeapon_SandersSuperBombAttack[48];
+BattleWeapon partyWeapon_SandersNormalAttack;
+BattleWeapon partyWeapon_SandersTimeBombSet;
+BattleWeapon partyWeapon_SandersCounterSet;
+BattleWeapon partyWeapon_SandersSuperBombAttack;
 s32 partySandersAttack_FirstAttack[321];
 s32 partySandersAttack_NormalAttack[970];
 s32 partySandersAttack_SuperBombAttack[1116];
@@ -50,7 +52,7 @@ static u32 defence[2];
 static u32 defence_attr[2];
 static u32 regist[6];
 static s32 attack_event[2];
-u32 entry_bomzou[12];
+BattleUnitSetup entry_bomzou[1];
 static s32 party_win_reaction[9];
 
 // clang-format off
@@ -58,7 +60,7 @@ static s32 party_win_reaction[9];
 #define TECH_MENU_ENTRY(table)                                                             \
     cmd->mWeaponTable[*count].mIndex = -1;                                                 \
     cmd->mWeaponTable[*count].mItem = 0;                                                   \
-    cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                      \
+    cmd->mWeaponTable[*count].mWeaponParams = (table);                                     \
     cmd->mWeaponTable[*count].field_0x4 = 0;                                               \
     cmd->mWeaponTable[*count].mIcon =                                                      \
         cmd->mWeaponTable[*count].mWeaponParams->icon;                                     \
@@ -81,15 +83,15 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 
-    TECH_MENU_ENTRY(partyWeapon_SandersNormalAttack);
+    TECH_MENU_ENTRY(&partyWeapon_SandersNormalAttack);
     if (techLv >= 0) {
-        TECH_MENU_ENTRY(partyWeapon_SandersTimeBombSet);
+        TECH_MENU_ENTRY(&partyWeapon_SandersTimeBombSet);
     }
     if (techLv >= 1) {
-        TECH_MENU_ENTRY(partyWeapon_SandersCounterSet);
+        TECH_MENU_ENTRY(&partyWeapon_SandersCounterSet);
     }
     if (techLv >= 2) {
-        TECH_MENU_ENTRY(partyWeapon_SandersSuperBombAttack);
+        TECH_MENU_ENTRY(&partyWeapon_SandersSuperBombAttack);
     }
 }
 
@@ -270,70 +272,134 @@ static __declspec(section ".data") u32 one_negone_359[2] = {
     0x3F800000, 0xBF800000,
 };
 
-// TODO: type
-u32 pose_table_sanders_stay[50] = {
-    0x00000009, (u32)"D_4", 0x00000002, (u32)"D_4",
-    0x00000003, (u32)"X_1", 0x00000004, (u32)"D_2",
-    0x00000005, (u32)"X_1", 0x00000001, (u32)"N_1",
-    0x0000001B, (u32)"D_3", 0x0000001C, (u32)"S_1",
-    0x00000025, (u32)"G_2", 0x0000001F, (u32)"G_1",
-    0x00000027, (u32)"D_1", 0x00000028, (u32)"W_1",
-    0x0000002A, (u32)"R_1", 0x00000039, (u32)"D_2",
-    0x00000038, (u32)"D_2", 0x0000003C, (u32)"D_4",
-    0x0000003D, (u32)"D_2", 0x00000041, (u32)"T_1",
-    0x00000034, (u32)"I_1", 0x00000043, (u32)"C_1",
-    0x00000042, (u32)"O_1", 0x00000040, (u32)"R_3",
-    0x00000031, (u32)"J_1A", 0x0000002D, (u32)"G_1",
-    0x00000045, (u32)"S_1",
+BattleDispPose pose_table_sanders_stay[25] = {
+    { 0x09, "D_4" },
+    { 0x02, "D_4" },
+    { 0x03, "X_1" },
+    { 0x04, "D_2" },
+    { 0x05, "X_1" },
+    { 0x01, "N_1" },
+    { 0x1B, "D_3" },
+    { 0x1C, "S_1" },
+    { 0x25, "G_2" },
+    { 0x1F, "G_1" },
+    { 0x27, "D_1" },
+    { 0x28, "W_1" },
+    { 0x2A, "R_1" },
+    { 0x39, "D_2" },
+    { 0x38, "D_2" },
+    { 0x3C, "D_4" },
+    { 0x3D, "D_2" },
+    { 0x41, "T_1" },
+    { 0x34, "I_1" },
+    { 0x43, "C_1" },
+    { 0x42, "O_1" },
+    { 0x40, "R_3" },
+    { 0x31, "J_1A" },
+    { 0x2D, "G_1" },
+    { 0x45, "S_1" },
 };
 
-// TODO: type
-u32 pose_table_counter_sanders[40] = {
-    0x00000001, (u32)"N_2", 0x0000001B, (u32)"D_3",
-    0x0000001C, (u32)"A_3", 0x00000025, (u32)"G_2",
-    0x0000001F, (u32)"G_1", 0x00000027, (u32)"D_1",
-    0x00000028, (u32)"W_1", 0x0000002A, (u32)"R_1",
-    0x00000039, (u32)"D_2", 0x00000038, (u32)"D_2",
-    0x0000003C, (u32)"D_4", 0x0000003D, (u32)"D_2",
-    0x00000041, (u32)"T_1", 0x00000034, (u32)"I_1",
-    0x00000043, (u32)"C_1", 0x00000042, (u32)"O_1",
-    0x00000040, (u32)"R_3", 0x00000031, (u32)"J_1A",
-    0x0000002D, (u32)"G_1", 0x00000045, (u32)"A_3",
+BattleDispPose pose_table_counter_sanders[20] = {
+    { 0x01, "N_2" },
+    { 0x1B, "D_3" },
+    { 0x1C, "A_3" },
+    { 0x25, "G_2" },
+    { 0x1F, "G_1" },
+    { 0x27, "D_1" },
+    { 0x28, "W_1" },
+    { 0x2A, "R_1" },
+    { 0x39, "D_2" },
+    { 0x38, "D_2" },
+    { 0x3C, "D_4" },
+    { 0x3D, "D_2" },
+    { 0x41, "T_1" },
+    { 0x34, "I_1" },
+    { 0x43, "C_1" },
+    { 0x42, "O_1" },
+    { 0x40, "R_3" },
+    { 0x31, "J_1A" },
+    { 0x2D, "G_1" },
+    { 0x45, "A_3" },
 };
 
-// TODO: type
-static u32 data_table[18] = {
-    0x00000005, (u32)&sanders_appeal_event, 0x00000006, (u32)&attack_audience_event,
-    0x00000001, (u32)__makeTechMenuFunc, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000040, (u32)&party_win_reaction, 0x00000007, (u32)subset_attack_ready_jump_event,
-    0x00000042, (u32)&unk_evt_80388830, 0x0000002F, (u32)btldefaultevt_avoid_counter_event,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[9] = {
+    { 0x05, sanders_appeal_event },
+    { 0x06, attack_audience_event },
+    { 0x01, __makeTechMenuFunc },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x40, party_win_reaction },
+    { 0x07, subset_attack_ready_jump_event },
+    { 0x42, unk_evt_80388830 },
+    { 0x2F, btldefaultevt_avoid_counter_event },
+    { 0x00, NULL },
 };
 
-// TODO: type
-u32 unitpartsdata_Party_Sanders[19] = {
-    0x00000001, (u32)"btl_un_sanders", (u32)"c_bomt_n", 0x00000000,
-    0x00000000, 0x00000000, 0x41800000, 0x41C00000,
-    0x40A00000, 0x00000000, 0x41C00000, 0x00000000,
-    0x00140018, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table_sanders_stay,
+BattleUnitKindPart unitpartsdata_Party_Sanders[1] = {
+    {
+        1,                                    // partNum
+        "btl_un_sanders",                     // partName
+        "c_bomt_n",                           // modelName
+        { 0.0f, 0.0f, 0.0f },                 // positionOffset
+        { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
+        { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
+        20,                                   // field_0x30
+        24,                                   // field_0x32
+        255,                                  // baseAlpha
+        (BattleUnitDefense*)defence,          // defense
+        (BattleUnitDefenseAttr*)defence_attr, // defenseAttr
+        0x00000009,                           // attributes
+        0,                                    // counterAttributes
+        pose_table_sanders_stay,              // poseTable
+    },
 };
 
-// TODO: type
-u32 unitdata_Party_Sanders[49] = {
-    0x000000E5, (u32)"btl_un_sanders", 0x000A0005, 0x05010100,
-    0x00000064, 0x00090014, 0x0021000B, 0x001C0000,
-    0x00000000, 0x41800000, 0x00000000, 0x00000000,
-    0x00000000, 0x42200000, 0x00000000, 0x00000000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41200000,
-    0x00000000, 0x00000000, 0x41200000, 0x41AB999A,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_PARTY_DAMAGE1",
-    (u32)"SFX_MARIO_DAMAGE_FIRE1", (u32)"SFX_MARIO_DAMAGE_ICE1", (u32)"SFX_MARIO_DAMAGE_BIRIBIRI1", 0x02000000,
-    (u32)&regist, 0x01000000, (u32)&unitpartsdata_Party_Sanders, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unitdata_Party_Sanders = {
+    UNIT_BOBBERY,                    // mUnitType
+    "btl_un_sanders",                // name
+    10,                              // maxHp
+    5,                               // maxFp
+    5,                               // mDangerHP
+    1,                               // mPerilHP
+    1,                               // mLevel
+    0,                               // mBonusExp
+    0,                               // bonusCoinRolls
+    0,                               // bonusCoinRate
+    0,                               // baseCoin
+    100,                             // escapeRate
+    9,                               // field_0x14
+    20,                              // width
+    33,                              // height
+    { 11, 28 },                      // statusIconOffset
+    { 0.0f, 16.0f, 0.0f },           // centerOffset
+    { 0, 0 },                        // hpGaugeOffset
+    { 0.0f, 40.0f, 0.0f },           // talkTogeBaseOffset
+    { 0.0f, 40.0f, 0.0f },           // field_0x3C
+    { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
+    0.0f,                            // field_0x54
+    0.0f,                            // field_0x58
+    { 10.0f, 0.0f, 0.0f },           // bintaHitOffset
+    { 10.0f, 21.45f, 0.0f },         // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },            // cutBaseOffset
+    0.0f,                            // cutWidth
+    0.0f,                            // cutHeight
+    0,                               // turnOrder
+    0,                               // turnOrderVariance
+    -1,                              // swallowRate
+    0,                               // swallowAttribute
+    100,                             // field_0x8C
+    20,                              // itemStealParam
+    { 0.0f, 0.0f, 0.0f },            // starPointDispOffset
+    "SFX_PARTY_DAMAGE1",             // damageSfxName
+    "SFX_MARIO_DAMAGE_FIRE1",        // fireDamageSfxName
+    "SFX_MARIO_DAMAGE_ICE1",         // iceDamageSfxName
+    "SFX_MARIO_DAMAGE_BIRIBIRI1",    // electricDamageSfxName
+    0x02000000,                      // attributeFlags
+    (BattleVulnerableStatus*)regist, // vulnStatus
+    1,                               // numParts
+    unitpartsdata_Party_Sanders,     // mParts
+    init_event,                      // initEvtScript
+    data_table,                      // dataTable
 };
 
 static EVT_BEGIN(battle_entry_event)
@@ -386,84 +452,394 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 partyWeapon_SandersFirstAttack[48] = {
-    0x00000000, 0x01500000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010132, (u32)weaponGetPowerFromPartyAttackLv,
-    0x00000004, 0x00000004, 0x00000005, 0x00000005,
-    0x00000006, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x03000302,
-    0x00000000, 0x00026087, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partySandersAttack_FirstAttack, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon partyWeapon_SandersFirstAttack = {
+    NULL,                                     // name
+    336,                                      // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromPartyAttackLv,          // hpDamageFn
+    { 4, 4, 5, 5, 6, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    3,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00026087,                               // special
+    0x000007FB,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partySandersAttack_FirstAttack,           // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_SandersNormalAttack[48] = {
-    (u32)"btl_wn_pbm_normal", 0x01500000, 0x00000000, (u32)"msg_pbm_bakuhatsu",
-    0x64000000, 0x3F800000, 0x01016432, (u32)weaponGetPowerFromPartyAttackLv,
-    0x00000001, 0x00000004, 0x00000002, 0x00000005,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x03000302,
-    (u32)"msg_ac_bakuhatsu", 0x00036087, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partySandersAttack_NormalAttack, 0x000A0A64, 0x0A0A0A05, 0x0A000000,
+BattleWeapon partyWeapon_SandersNormalAttack = {
+    "btl_wn_pbm_normal",                            // name
+    336,                                            // icon
+    ITEM_NULL,                                      // item
+    "msg_pbm_bakuhatsu",                            // description
+    100,                                            // baseAccuracy
+    0,                                              // baseFpCost
+    0,                                              // baseSpCost
+    0,                                              // superguardType
+    1.0f,                                           // field_0x14
+    1,                                              // mStylishCommandMultiplier
+    1,                                              // field_0x19
+    100,                                            // mBingoSlotChance
+    50,                                             // field_0x1B
+    weaponGetPowerFromPartyAttackLv,                // hpDamageFn
+    { 1, 4, 2, 5, 3, 6, 0, 0 },                     // hpDamageWork
+    NULL,                                           // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                     // fpDamageWork
+    0x01101260,                                     // targetClassFlags
+    0x21002000,                                     // targetPropertyFlags
+    3,                                              // element
+    0,                                              // field_0x6D
+    3,                                              // actionLevel
+    2,                                              // field_0x6F
+    "msg_ac_bakuhatsu",                             // acHelpMsg
+    0x00036087,                                     // special
+    0x000007FB,                                     // counterResistanceFlags
+    0x80002004,                                     // targetWeightingFlags
+    0,                                              // sleepChance
+    0,                                              // sleepTime
+    0,                                              // stopChance
+    0,                                              // stopTime
+    0,                                              // dizzyChance
+    0,                                              // dizzyTime
+    0,                                              // poisonChance
+    0,                                              // poisonTime
+    0,                                              // poisonStrength
+    0,                                              // confuseChance
+    0,                                              // confuseTime
+    0,                                              // electricChance
+    0,                                              // electricTime
+    0,                                              // dodgyChance
+    0,                                              // dodgyTime
+    0,                                              // burnChance
+    0,                                              // burnTime
+    0,                                              // freezeChance
+    0,                                              // freezeTime
+    0,                                              // sizeChangeChance
+    0,                                              // sizeChangeTime
+    0,                                              // sizeChangeStrength
+    0,                                              // atkChangeChance
+    0,                                              // atkChangeTime
+    0,                                              // atkChangeStrength
+    0,                                              // defChangeChance
+    0,                                              // defChangeTime
+    0,                                              // defChangeStrength
+    0,                                              // allergicChance
+    0,                                              // allergicTime
+    0,                                              // ohkoChance
+    0,                                              // chargeStrength
+    0,                                              // fastChance
+    0,                                              // fastTime
+    0,                                              // slowChance
+    0,                                              // slowTime
+    0,                                              // frightChance
+    0,                                              // galeForceChance
+    0,                                              // paybackTime
+    0,                                              // holdFastTime
+    0,                                              // invisibleChance
+    0,                                              // invisibleTime
+    0,                                              // hpRegenTime
+    0,                                              // hpRegenStrength
+    0,                                              // fpRegenTime
+    0,                                              // fpRegenStrength
+    partySandersAttack_NormalAttack,                // mAttackEvtScript
+    { 0, 10, 10, 100, 10, 10, 10, 5, 10, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_SandersTimeBombSet[48] = {
-    (u32)"btl_wn_pbm_lv1", 0x01510000, 0x00000000, (u32)"msg_pbm_jigen_bakudan",
-    0x64030000, 0x3F800000, 0x01056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    (u32)"msg_ac_jigen_bakudan", 0x00020000, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partySandersAttack_TimeBombSet, 0x00000000, 0x00000000, 0x00000000,
+BattleWeapon partyWeapon_SandersTimeBombSet = {
+    "btl_wn_pbm_lv1",                       // name
+    337,                                    // icon
+    ITEM_NULL,                              // item
+    "msg_pbm_jigen_bakudan",                // description
+    100,                                    // baseAccuracy
+    3,                                      // baseFpCost
+    0,                                      // baseSpCost
+    0,                                      // superguardType
+    1.0f,                                   // field_0x14
+    1,                                      // mStylishCommandMultiplier
+    5,                                      // field_0x19
+    100,                                    // mBingoSlotChance
+    50,                                     // field_0x1B
+    NULL,                                   // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },             // hpDamageWork
+    NULL,                                   // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },             // fpDamageWork
+    0x02101260,                             // targetClassFlags
+    0x20000000,                             // targetPropertyFlags
+    0,                                      // element
+    0,                                      // field_0x6D
+    3,                                      // actionLevel
+    2,                                      // field_0x6F
+    "msg_ac_jigen_bakudan",                 // acHelpMsg
+    0x00020000,                             // special
+    0x000007FF,                             // counterResistanceFlags
+    0x80002004,                             // targetWeightingFlags
+    0,                                      // sleepChance
+    0,                                      // sleepTime
+    0,                                      // stopChance
+    0,                                      // stopTime
+    0,                                      // dizzyChance
+    0,                                      // dizzyTime
+    0,                                      // poisonChance
+    0,                                      // poisonTime
+    0,                                      // poisonStrength
+    0,                                      // confuseChance
+    0,                                      // confuseTime
+    0,                                      // electricChance
+    0,                                      // electricTime
+    0,                                      // dodgyChance
+    0,                                      // dodgyTime
+    0,                                      // burnChance
+    0,                                      // burnTime
+    0,                                      // freezeChance
+    0,                                      // freezeTime
+    0,                                      // sizeChangeChance
+    0,                                      // sizeChangeTime
+    0,                                      // sizeChangeStrength
+    0,                                      // atkChangeChance
+    0,                                      // atkChangeTime
+    0,                                      // atkChangeStrength
+    0,                                      // defChangeChance
+    0,                                      // defChangeTime
+    0,                                      // defChangeStrength
+    0,                                      // allergicChance
+    0,                                      // allergicTime
+    0,                                      // ohkoChance
+    0,                                      // chargeStrength
+    0,                                      // fastChance
+    0,                                      // fastTime
+    0,                                      // slowChance
+    0,                                      // slowTime
+    0,                                      // frightChance
+    0,                                      // galeForceChance
+    0,                                      // paybackTime
+    0,                                      // holdFastTime
+    0,                                      // invisibleChance
+    0,                                      // invisibleTime
+    0,                                      // hpRegenTime
+    0,                                      // hpRegenStrength
+    0,                                      // fpRegenTime
+    0,                                      // fpRegenStrength
+    partySandersAttack_TimeBombSet,         // mAttackEvtScript
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_SandersCounterSet[48] = {
-    (u32)"btl_wn_pbm_lv2", 0x01520000, 0x00000000, (u32)"msg_pbm_counter",
-    0x64040000, 0x3F800000, 0x01056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x10000000, 0x00000302,
-    (u32)"msg_ac_bom_counter", 0x00020108, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000001, 0x00000000, 0x00000000,
-    (u32)&partySandersAttack_CounterSet, 0x00050564, 0x14050505, 0x05050000,
+BattleWeapon partyWeapon_SandersCounterSet = {
+    "btl_wn_pbm_lv2",                          // name
+    338,                                       // icon
+    ITEM_NULL,                                 // item
+    "msg_pbm_counter",                         // description
+    100,                                       // baseAccuracy
+    4,                                         // baseFpCost
+    0,                                         // baseSpCost
+    0,                                         // superguardType
+    1.0f,                                      // field_0x14
+    1,                                         // mStylishCommandMultiplier
+    5,                                         // field_0x19
+    100,                                       // mBingoSlotChance
+    50,                                        // field_0x1B
+    NULL,                                      // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                // hpDamageWork
+    NULL,                                      // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                // fpDamageWork
+    0x01004020,                                // targetClassFlags
+    0x10000000,                                // targetPropertyFlags
+    0,                                         // element
+    0,                                         // field_0x6D
+    3,                                         // actionLevel
+    2,                                         // field_0x6F
+    "msg_ac_bom_counter",                      // acHelpMsg
+    0x00020108,                                // special
+    0x000007FF,                                // counterResistanceFlags
+    0,                                         // targetWeightingFlags
+    0,                                         // sleepChance
+    0,                                         // sleepTime
+    0,                                         // stopChance
+    0,                                         // stopTime
+    0,                                         // dizzyChance
+    0,                                         // dizzyTime
+    0,                                         // poisonChance
+    0,                                         // poisonTime
+    0,                                         // poisonStrength
+    0,                                         // confuseChance
+    0,                                         // confuseTime
+    0,                                         // electricChance
+    0,                                         // electricTime
+    0,                                         // dodgyChance
+    0,                                         // dodgyTime
+    0,                                         // burnChance
+    0,                                         // burnTime
+    0,                                         // freezeChance
+    0,                                         // freezeTime
+    0,                                         // sizeChangeChance
+    0,                                         // sizeChangeTime
+    0,                                         // sizeChangeStrength
+    0,                                         // atkChangeChance
+    0,                                         // atkChangeTime
+    0,                                         // atkChangeStrength
+    0,                                         // defChangeChance
+    0,                                         // defChangeTime
+    0,                                         // defChangeStrength
+    0,                                         // allergicChance
+    0,                                         // allergicTime
+    0,                                         // ohkoChance
+    0,                                         // chargeStrength
+    0,                                         // fastChance
+    0,                                         // fastTime
+    0,                                         // slowChance
+    0,                                         // slowTime
+    0,                                         // frightChance
+    0,                                         // galeForceChance
+    0,                                         // paybackTime
+    1,                                         // holdFastTime
+    0,                                         // invisibleChance
+    0,                                         // invisibleTime
+    0,                                         // hpRegenTime
+    0,                                         // hpRegenStrength
+    0,                                         // fpRegenTime
+    0,                                         // fpRegenStrength
+    partySandersAttack_CounterSet,             // mAttackEvtScript
+    { 0, 5, 5, 100, 20, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_SandersSuperBombAttack[48] = {
-    (u32)"btl_wn_pbm_lv3", 0x01530000, 0x00000000, (u32)"msg_pbm_sungoi_bakuhatsu",
-    0x64090000, 0x3F800000, 0x02056432, (u32)weaponGetACOutputParam,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x03000302,
-    (u32)"msg_ac_super_bakuhatsu", 0x00026087, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partySandersAttack_SuperBombAttack, 0x00323264, 0x1419190A, 0x0A050000,
+BattleWeapon partyWeapon_SandersSuperBombAttack = {
+    "btl_wn_pbm_lv3",                                // name
+    339,                                             // icon
+    ITEM_NULL,                                       // item
+    "msg_pbm_sungoi_bakuhatsu",                      // description
+    100,                                             // baseAccuracy
+    9,                                               // baseFpCost
+    0,                                               // baseSpCost
+    0,                                               // superguardType
+    1.0f,                                            // field_0x14
+    2,                                               // mStylishCommandMultiplier
+    5,                                               // field_0x19
+    100,                                             // mBingoSlotChance
+    50,                                              // field_0x1B
+    weaponGetACOutputParam,                          // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },                      // hpDamageWork
+    NULL,                                            // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                      // fpDamageWork
+    0x02101260,                                      // targetClassFlags
+    0x20000000,                                      // targetPropertyFlags
+    3,                                               // element
+    0,                                               // field_0x6D
+    3,                                               // actionLevel
+    2,                                               // field_0x6F
+    "msg_ac_super_bakuhatsu",                        // acHelpMsg
+    0x00026087,                                      // special
+    0x000007FF,                                      // counterResistanceFlags
+    0x80002004,                                      // targetWeightingFlags
+    0,                                               // sleepChance
+    0,                                               // sleepTime
+    0,                                               // stopChance
+    0,                                               // stopTime
+    0,                                               // dizzyChance
+    0,                                               // dizzyTime
+    0,                                               // poisonChance
+    0,                                               // poisonTime
+    0,                                               // poisonStrength
+    0,                                               // confuseChance
+    0,                                               // confuseTime
+    0,                                               // electricChance
+    0,                                               // electricTime
+    0,                                               // dodgyChance
+    0,                                               // dodgyTime
+    0,                                               // burnChance
+    0,                                               // burnTime
+    0,                                               // freezeChance
+    0,                                               // freezeTime
+    0,                                               // sizeChangeChance
+    0,                                               // sizeChangeTime
+    0,                                               // sizeChangeStrength
+    0,                                               // atkChangeChance
+    0,                                               // atkChangeTime
+    0,                                               // atkChangeStrength
+    0,                                               // defChangeChance
+    0,                                               // defChangeTime
+    0,                                               // defChangeStrength
+    0,                                               // allergicChance
+    0,                                               // allergicTime
+    0,                                               // ohkoChance
+    0,                                               // chargeStrength
+    0,                                               // fastChance
+    0,                                               // fastTime
+    0,                                               // slowChance
+    0,                                               // slowTime
+    0,                                               // frightChance
+    0,                                               // galeForceChance
+    0,                                               // paybackTime
+    0,                                               // holdFastTime
+    0,                                               // invisibleChance
+    0,                                               // invisibleTime
+    0,                                               // hpRegenTime
+    0,                                               // hpRegenStrength
+    0,                                               // fpRegenTime
+    0,                                               // fpRegenStrength
+    partySandersAttack_SuperBombAttack,              // mAttackEvtScript
+    { 0, 50, 50, 100, 20, 25, 25, 10, 10, 5, 0, 0 }, // field_B4
 };
 
 EVT_BEGIN(partySandersAttack_FirstAttack)
@@ -472,7 +848,7 @@ EVT_BEGIN(partySandersAttack_FirstAttack)
     IF_INT_EQUAL(LW(3), -1)
         GOTO(99)
     END_IF
-    SET_VALUE(LW(12), PTR(partyWeapon_SandersFirstAttack))
+    SET_VALUE(LW(12), PTR(&partyWeapon_SandersFirstAttack))
     CALL(evt_btl_camera_set_mode, 0, 11)
     CALL(evt_btl_camera_set_homing_unitparts, 0, -2, 1, LW(3), LW(4))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
@@ -1121,7 +1497,7 @@ EVT_BEGIN(partySandersAttack_CounterSet)
     IF_INT_EQUAL(LW(3), -1)
         GOTO(99)
     END_IF
-    SET_VALUE(LW(12), PTR(partyWeapon_SandersCounterSet))
+    SET_VALUE(LW(12), PTR(&partyWeapon_SandersCounterSet))
     CALL(btlevtcmd_PayWeaponCost, -2, LW(12))
     CALL(btlevtcmd_RunDataEventChild, -2, 7)
     WAIT_FRAMES(20)
@@ -1436,11 +1812,8 @@ static EVT_BEGIN(attack_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 entry_bomzou[12] = {
-    (u32)unit_bomzou, 0x02000000, 0x04000001, 0x447A0000,
-    0x00000000, 0x447A0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleUnitSetup entry_bomzou[1] = {
+    { &unit_bomzou, 2, 67108865, { 1000.0f, 0.0f, 1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 static EVT_BEGIN(party_win_reaction)

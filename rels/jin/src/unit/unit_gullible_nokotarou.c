@@ -302,7 +302,7 @@ static BattleUnitKindPart parts_nokotarou[1] = {
         &defence_attr_nokotarou,                           // defenseAttr
         0x00001009,                                        // attributes
         0,                                                 // counterAttributes
-        (struct BattleDispPose*)pose_table_nokotarou_stay, // poseTable
+        pose_table_nokotarou_stay, // poseTable
     },
 };
 

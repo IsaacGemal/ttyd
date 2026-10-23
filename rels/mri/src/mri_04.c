@@ -104,20 +104,9 @@ static EVT_BEGIN(chibitoge_talk)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[46] = {
-    (u32)"ちびトゲ", 0x00000600, 0x00000000, (u32)&chibitoge_init,
-    0x00000000, (u32)&chibitoge_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[2] = {
+    {"ちびトゲ", 0x00000600, 0, chibitoge_init, NULL, chibitoge_talk},
+    {NULL},
 };
 
 USER_FUNC(evt_chuchu_back_loop) {
@@ -411,13 +400,12 @@ static EVT_BEGIN(evt_ueki_02)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ueki_access_data[20] = {
-    0x00000001, (u32)"A_ueki01", (u32)"S_ueki01", 0x00000000,
-    0x00000001, (u32)"A_ueki02", (u32)"S_ueki02", (u32)&evt_ueki_02,
-    0x00000001, (u32)"A_ueki04", (u32)"S_ueki04", 0x00000000,
-    0x00000001, (u32)"A_ueki05", (u32)"S_ueki05", 0x00000000,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry ueki_access_data[5] = {
+    { 1, "A_ueki01", "S_ueki01", NULL },
+    { 1, "A_ueki02", "S_ueki02", evt_ueki_02 },
+    { 1, "A_ueki04", "S_ueki04", NULL },
+    { 1, "A_ueki05", "S_ueki05", NULL },
+    { 4, NULL, NULL, NULL },
 };
 
 EVT_BEGIN(item_mri_04)

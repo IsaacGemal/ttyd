@@ -9,11 +9,18 @@ typedef void (*voidfunctionptr)(void);
 extern voidfunctionptr _ctors[];
 extern voidfunctionptr _dtors[];
 
+// One npc of the rsh_0N_rnd_npc_N tables, as _get_rnd_npc_data hands it out
+typedef struct RndNpcData {
+    const char* animName;  // 0x0, evt_npc_entry's model
+    const char* tribeName; // 0x4, evt_npc_set_tribe's tribe
+    s32* talkEvt;          // 0x8, set as the npc's talk event (evt_rsh_set_rnd_npc_talk_evt)
+} RndNpcData;
+
 USER_FUNC(debug_print_func);
 USER_FUNC(evt_rsh_set_rnd_npc_talk_evt);
 USER_FUNC(evt_rsh_get_rnd_npc_talk_evt);
 USER_FUNC(evt_rsh_get_rnd_npc_data);
-void* _get_rnd_npc_data(s32 type, s32 group, s32 index);
+RndNpcData* _get_rnd_npc_data(s32 type, s32 group, s32 index);
 USER_FUNC(evt_rsh_set_rnd_npc);
 USER_FUNC(evt_rsh_get_rnd_npc);
 void rsh_window_tev(MapTevCallback* param, s32 arg1);

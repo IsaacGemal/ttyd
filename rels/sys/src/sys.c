@@ -401,113 +401,90 @@ void display_func(CameraId cameraId, void* param) {
 
 
 
-// TODO: type
-u32 prologue_jp_tbl[2] = {
-    0x10111106, 0x12FF0000,
+s8 prologue_jp_tbl[8] = {
+    16, 17, 17, 6, 18, -1, 0, 0,
 };
 
-// TODO: type
-u32 stage1_jp_tbl[2] = {
-    0x04050607, 0x08FF0000,
+s8 stage1_jp_tbl[8] = {
+    4, 5, 6, 7, 8, -1, 0, 0,
 };
 
-// TODO: type
-u32 stage2_jp_tbl[2] = {
-    0x04050607, 0x09FF0000,
+s8 stage2_jp_tbl[8] = {
+    4, 5, 6, 7, 9, -1, 0, 0,
 };
 
-// TODO: type
-u32 stage3_jp_tbl[2] = {
-    0x04050607, 0x0AFF0000,
+s8 stage3_jp_tbl[8] = {
+    4, 5, 6, 7, 10, -1, 0, 0,
 };
 
-// TODO: type
-u32 stage4_jp_tbl[2] = {
-    0x04050607, 0x0BFF0000,
+s8 stage4_jp_tbl[8] = {
+    4, 5, 6, 7, 11, -1, 0, 0,
 };
 
-// TODO: type
-u32 stage5_jp_tbl[2] = {
-    0x04050607, 0x0CFF0000,
+s8 stage5_jp_tbl[8] = {
+    4, 5, 6, 7, 12, -1, 0, 0,
 };
 
-// TODO: type
-u32 stage6_jp_tbl[2] = {
-    0x04050607, 0x0DFF0000,
+s8 stage6_jp_tbl[8] = {
+    4, 5, 6, 7, 13, -1, 0, 0,
 };
 
-// TODO: type
-u32 stage7_jp_tbl[2] = {
-    0x04050607, 0x0EFF0000,
+s8 stage7_jp_tbl[8] = {
+    4, 5, 6, 7, 14, -1, 0, 0,
 };
 
-// TODO: type
-u32 stage8_jp_tbl[2] = {
-    0x04050607, 0x0FFF0000,
+s8 stage8_jp_tbl[8] = {
+    4, 5, 6, 7, 15, -1, 0, 0,
 };
 
-// TODO: type
-u32 texid_jp_tbl[9] = {
-    (u32)&prologue_jp_tbl, (u32)&stage1_jp_tbl, (u32)&stage2_jp_tbl, (u32)&stage3_jp_tbl,
-    (u32)&stage4_jp_tbl, (u32)&stage5_jp_tbl, (u32)&stage6_jp_tbl, (u32)&stage7_jp_tbl,
-    (u32)&stage8_jp_tbl,
+s8* texid_jp_tbl[9] = {
+    prologue_jp_tbl, stage1_jp_tbl, stage2_jp_tbl, stage3_jp_tbl, stage4_jp_tbl, stage5_jp_tbl, stage6_jp_tbl,
+    stage7_jp_tbl, stage8_jp_tbl,
 };
 
-// TODO: type
-u32 prologue_us_tbl[3] = {
-    0x11121314, 0x13071508, 0xFF000000,
+s8 prologue_us_tbl[12] = {
+    17, 18, 19, 20, 19, 7, 21, 8, -1, 0, 0, 0,
 };
 
-// TODO: type
-u32 stage1_us_tbl[2] = {
-    0x04050607, 0x0809FF00,
+s8 stage1_us_tbl[8] = {
+    4, 5, 6, 7, 8, 9, -1, 0,
 };
 
-// TODO: type
-u32 stage2_us_tbl[2] = {
-    0x04050607, 0x080AFF00,
+s8 stage2_us_tbl[8] = {
+    4, 5, 6, 7, 8, 10, -1, 0,
 };
 
-// TODO: type
-u32 stage3_us_tbl[2] = {
-    0x04050607, 0x080BFF00,
+s8 stage3_us_tbl[8] = {
+    4, 5, 6, 7, 8, 11, -1, 0,
 };
 
-// TODO: type
-u32 stage4_us_tbl[2] = {
-    0x04050607, 0x080CFF00,
+s8 stage4_us_tbl[8] = {
+    4, 5, 6, 7, 8, 12, -1, 0,
 };
 
-// TODO: type
-u32 stage5_us_tbl[2] = {
-    0x04050607, 0x080DFF00,
+s8 stage5_us_tbl[8] = {
+    4, 5, 6, 7, 8, 13, -1, 0,
 };
 
-// TODO: type
-u32 stage6_us_tbl[2] = {
-    0x04050607, 0x080EFF00,
+s8 stage6_us_tbl[8] = {
+    4, 5, 6, 7, 8, 14, -1, 0,
 };
 
-// TODO: type
-u32 stage7_us_tbl[2] = {
-    0x04050607, 0x080FFF00,
+s8 stage7_us_tbl[8] = {
+    4, 5, 6, 7, 8, 15, -1, 0,
 };
 
-// TODO: type
-u32 stage8_us_tbl[2] = {
-    0x04050607, 0x0810FF00,
+s8 stage8_us_tbl[8] = {
+    4, 5, 6, 7, 8, 16, -1, 0,
 };
 
-// TODO: type
-u32 texid_us_tbl[9] = {
-    (u32)&prologue_us_tbl, (u32)&stage1_us_tbl, (u32)&stage2_us_tbl, (u32)&stage3_us_tbl,
-    (u32)&stage4_us_tbl, (u32)&stage5_us_tbl, (u32)&stage6_us_tbl, (u32)&stage7_us_tbl,
-    (u32)&stage8_us_tbl,
+s8* texid_us_tbl[9] = {
+    prologue_us_tbl, stage1_us_tbl, stage2_us_tbl, stage3_us_tbl, stage4_us_tbl, stage5_us_tbl, stage6_us_tbl,
+    stage7_us_tbl, stage8_us_tbl,
 };
 
-// TODO: type
-u32 lang_tbl[2] = {
-    (u32)&texid_jp_tbl, (u32)&texid_us_tbl,
+s8** lang_tbl[2] = {
+    texid_jp_tbl, texid_us_tbl,
 };
 
 char* lang_prefix[2] = {
@@ -648,7 +625,7 @@ EVT_END()
 // expression written out, MWCC keeps the lang_tbl base in r4 (target r5) and its count temp in r5/r7
 // (target r4), which also swaps r6/r7 in the entry loop. Through the inline helper both loops match.
 static inline s8* sysLangTbl(s32 v) {
-    return (s8*)((u32*)lang_tbl[gp->language])[v];
+    return lang_tbl[gp->language][v];
 }
 
 USER_FUNC(display) {

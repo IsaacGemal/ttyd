@@ -163,20 +163,9 @@ static EVT_BEGIN(kurihakase_talk)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[46] = {
-    (u32)"クリハカセ", 0x00000600, 0x00000000, (u32)&kurihakase_init,
-    0x00000000, (u32)&kurihakase_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[2] = {
+    {"クリハカセ", 0x00000600, 0, kurihakase_init, NULL, kurihakase_talk},
+    {NULL},
 };
 
 const u32 zero_tik_00009b58 = 0x00000000;
@@ -418,10 +407,7 @@ EVT_BEGIN(disp_treasure_map)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 broken_wp[1] = {
-    (u32)&broken_work,
-};
+BrokenWork* broken_wp = &broken_work;
 
 f32 param_tbl[5] = {
     90.0f, 23.0f, 0.98f, 19.4f,
@@ -2315,16 +2301,16 @@ void tiz_broken_draw(CameraId camId, void* param) {
     s32 i;
     BrokenEntry* entry;
 
-    if (((BrokenWork*)broken_wp[0])->texCopied == 0) {
+    if (broken_wp->texCopied == 0) {
         GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
         GXSetTexCopyDst(0x130, 0xF0, 5, 1);
-        GXCopyTex(((BrokenWork*)broken_wp[0])->texBuffer->address, 0);
+        GXCopyTex(broken_wp->texBuffer->address, 0);
         GXPixModeSync();
-        ((BrokenWork*)broken_wp[0])->texCopied = 1;
+        broken_wp->texCopied = 1;
     }
 
     GXSetNumChans(0);
-    GXInitTexObj(&texObj, ((BrokenWork*)broken_wp[0])->texBuffer->address, 0x130, 0xF0, 5, 0, 0, 0);
+    GXInitTexObj(&texObj, broken_wp->texBuffer->address, 0x130, 0xF0, 5, 0, 0, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
@@ -2344,7 +2330,7 @@ void tiz_broken_draw(CameraId camId, void* param) {
     GXSetCurrentMtx(0);
     PSMTXIdentity(mtx);
 
-    entry = ((BrokenWork*)broken_wp[0])->entryBuffer->address;
+    entry = broken_wp->entryBuffer->address;
     for (i = 0; i < 0x1E; i++, entry++) {
         y = 232.0f - (f32)(i * 0x10);
         for (j = 0; j < 0x26; j++, entry++) {
@@ -2485,12 +2471,12 @@ USER_FUNC(tiz_broken) {
     f32 k;
 
     if (isFirstCall) {
-        memset((void*)broken_wp[0], 0, 0xC);
-        ((BrokenWork*)broken_wp[0])->texBuffer = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, 5, 0, 0), 1);
-        ((BrokenWork*)broken_wp[0])->entryBuffer = smartAlloc(0xF594, 1);
-        ((BrokenWork*)broken_wp[0])->texCopied = 0;
+        memset(broken_wp, 0, 0xC);
+        broken_wp->texBuffer = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, 5, 0, 0), 1);
+        broken_wp->entryBuffer = smartAlloc(0xF594, 1);
+        broken_wp->texCopied = 0;
 
-        entry = ((BrokenWork*)broken_wp[0])->entryBuffer->address;
+        entry = broken_wp->entryBuffer->address;
         for (i = 0; i < 0x1E; i++) {
             for (j = 0; j < 0x26; j++) {
                 f3 = (f32)j / 37.0f - 0.5f;
@@ -2539,7 +2525,7 @@ USER_FUNC(tiz_broken) {
         }
     }
 
-    entry2 = ((BrokenWork*)broken_wp[0])->entryBuffer->address;
+    entry2 = broken_wp->entryBuffer->address;
     for (i2 = 0; i2 < 0x1E; i2++) {
         for (j = 0; j < 0x26; j++) {
             switch (entry2->state) {
@@ -2572,8 +2558,8 @@ USER_FUNC(tiz_broken) {
     }
 
     if (active >= 0x474) {
-        smartFree(((BrokenWork*)broken_wp[0])->texBuffer);
-        smartFree(((BrokenWork*)broken_wp[0])->entryBuffer);
+        smartFree(broken_wp->texBuffer);
+        smartFree(broken_wp->entryBuffer);
         return EVT_RETURN_DONE;
     }
     dispEntry(8, 0.0f, 0, tiz_broken_draw, NULL);

@@ -38,6 +38,7 @@
 #include <dolphin/os.h>
 #include <stdlib.h>
 #include <string.h>
+#include "driver/extdrv.h"
 
 // marcoship work, private to this unit (layout read from the original's asm).
 typedef struct MarcoShip {
@@ -919,24 +920,28 @@ EVT_BEGIN(elmos_a_shuku)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ext_entry_data[63] = {
-    (u32)"c_elmos", (u32)"S_1", 0x00000000, (u32)"c_elmos",
-    (u32)"S_1", 0x3F800000, (u32)"c_elmos", (u32)"S_1",
-    0x40000000, (u32)"c_elmos", (u32)"S_1", 0x40400000,
-    (u32)"c_elmos", (u32)"S_1", 0x40800000, (u32)"c_elmos",
-    (u32)"S_1", 0x40A00000, (u32)"c_elmos", (u32)"S_1",
-    0x40C00000, (u32)"c_elmos", (u32)"S_1", 0x40E00000,
-    (u32)"c_elmos", (u32)"S_1", 0x41000000, (u32)"c_elmos",
-    (u32)"S_1", 0x41100000, (u32)"c_elmos", (u32)"S_1",
-    0x41200000, (u32)"c_elmos", (u32)"S_1", 0x41300000,
-    (u32)"c_elmos", (u32)"S_1", 0x41400000, (u32)"c_elmos",
-    (u32)"S_1", 0x41500000, (u32)"c_elmos", (u32)"S_1",
-    0x41600000, (u32)"c_elmos", (u32)"S_1", 0x41700000,
-    (u32)"c_elmos", (u32)"S_1", 0x41800000, (u32)"c_elmos",
-    (u32)"S_1", 0x41880000, (u32)"c_elmos", (u32)"S_1",
-    0x41900000, (u32)"c_elmos", (u32)"S_1", 0x41980000,
-    0x00000000, 0x00000000, 0x00000000,
+static ExtMakeTextureEntry ext_entry_data[21] = {
+    { "c_elmos", "S_1", 0.0f },
+    { "c_elmos", "S_1", 1.0f },
+    { "c_elmos", "S_1", 2.0f },
+    { "c_elmos", "S_1", 3.0f },
+    { "c_elmos", "S_1", 4.0f },
+    { "c_elmos", "S_1", 5.0f },
+    { "c_elmos", "S_1", 6.0f },
+    { "c_elmos", "S_1", 7.0f },
+    { "c_elmos", "S_1", 8.0f },
+    { "c_elmos", "S_1", 9.0f },
+    { "c_elmos", "S_1", 10.0f },
+    { "c_elmos", "S_1", 11.0f },
+    { "c_elmos", "S_1", 12.0f },
+    { "c_elmos", "S_1", 13.0f },
+    { "c_elmos", "S_1", 14.0f },
+    { "c_elmos", "S_1", 15.0f },
+    { "c_elmos", "S_1", 16.0f },
+    { "c_elmos", "S_1", 17.0f },
+    { "c_elmos", "S_1", 18.0f },
+    { "c_elmos", "S_1", 19.0f },
+    { NULL, NULL, 0.0f },
 };
 
 // TODO: type

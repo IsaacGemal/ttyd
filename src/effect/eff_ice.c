@@ -59,24 +59,24 @@ typedef struct IceData {
 
 
 
-u32 ice_effFaceDt_pPlane1[1];
-u32 ice_effFaceDt_pPlane2[1];
-u32 ice_effFaceDt_pPlane3[1];
-u32 ice_effFaceDt_pPlane4[1];
-u32 ice_effFaceDt_pPlane5[1];
-u32 ice_effFaceDt_pPlane6[1];
-u32 ice_effFaceDt_pPlane7[1];
-u32 ice_effFaceDt_pPlane8[1];
-u32 ice_effFaceDt_pPlane9[1];
-u32 ice_effFaceDt_pPlane10[1];
-u32 ice_effFaceDt_pPlane11[1];
-u32 ice_effFaceDt_pPlane12[1];
-u32 ice_effFaceDt_pPlane13[1];
-u32 ice_effFaceDt_pPlane14[1];
-u32 ice_effFaceDt_pPlane15[1];
-u32 ice_effFaceDt_pPlane16[1];
-u32 ice_effFaceDt_pPlane17[1];
-u32 ice_effAnimDt[3];
+void* ice_effFaceDt_pPlane1[1];
+void* ice_effFaceDt_pPlane2[1];
+void* ice_effFaceDt_pPlane3[1];
+void* ice_effFaceDt_pPlane4[1];
+void* ice_effFaceDt_pPlane5[1];
+void* ice_effFaceDt_pPlane6[1];
+void* ice_effFaceDt_pPlane7[1];
+void* ice_effFaceDt_pPlane8[1];
+void* ice_effFaceDt_pPlane9[1];
+void* ice_effFaceDt_pPlane10[1];
+void* ice_effFaceDt_pPlane11[1];
+void* ice_effFaceDt_pPlane12[1];
+void* ice_effFaceDt_pPlane13[1];
+void* ice_effFaceDt_pPlane14[1];
+void* ice_effFaceDt_pPlane15[1];
+void* ice_effFaceDt_pPlane16[1];
+void* ice_effFaceDt_pPlane17[1];
+IceAnimData ice_effAnimDt;
 
 
 // effIceMain is local to this file in the original object (.fn effIceMain, local).
@@ -112,7 +112,7 @@ EffectEntry* effIceEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
 	}
 	data->frame = 0;
 	data->state = 0;
-	data->anim = effMayaAnimAlloc(ice_effAnimDt);
+	data->anim = effMayaAnimAlloc(&ice_effAnimDt);
 	effPlayMayaAnim(data->anim);
 	return effect;
 }
@@ -996,26 +996,25 @@ u32 ice_effHermit_17[134] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 ice_effAnimRST[72] = {
-    0x00000008, (u32)&ice_effHermit_0, 0x00000000, 0x00000000,
-    0x00000003, (u32)&ice_effHermit_1, 0x00000001, (u32)&ice_effFaceDt_pPlane1,
-    0x00000003, (u32)&ice_effHermit_2, 0x00000001, (u32)&ice_effFaceDt_pPlane2,
-    0x00000003, (u32)&ice_effHermit_3, 0x00000001, (u32)&ice_effFaceDt_pPlane3,
-    0x00000003, (u32)&ice_effHermit_4, 0x00000001, (u32)&ice_effFaceDt_pPlane4,
-    0x00000003, (u32)&ice_effHermit_5, 0x00000001, (u32)&ice_effFaceDt_pPlane5,
-    0x00000003, (u32)&ice_effHermit_6, 0x00000001, (u32)&ice_effFaceDt_pPlane6,
-    0x00000003, (u32)&ice_effHermit_7, 0x00000001, (u32)&ice_effFaceDt_pPlane7,
-    0x00000003, (u32)&ice_effHermit_8, 0x00000001, (u32)&ice_effFaceDt_pPlane8,
-    0x00000003, (u32)&ice_effHermit_9, 0x00000001, (u32)&ice_effFaceDt_pPlane9,
-    0x00000003, (u32)&ice_effHermit_10, 0x00000001, (u32)&ice_effFaceDt_pPlane10,
-    0x00000003, (u32)&ice_effHermit_11, 0x00000001, (u32)&ice_effFaceDt_pPlane11,
-    0x00000003, (u32)&ice_effHermit_12, 0x00000001, (u32)&ice_effFaceDt_pPlane12,
-    0x00000003, (u32)&ice_effHermit_13, 0x00000001, (u32)&ice_effFaceDt_pPlane13,
-    0x00000003, (u32)&ice_effHermit_14, 0x00000001, (u32)&ice_effFaceDt_pPlane14,
-    0x00000003, (u32)&ice_effHermit_15, 0x00000001, (u32)&ice_effFaceDt_pPlane15,
-    0x00000003, (u32)&ice_effHermit_16, 0x00000001, (u32)&ice_effFaceDt_pPlane16,
-    0x00000003, (u32)&ice_effHermit_17, 0x00000001, (u32)&ice_effFaceDt_pPlane17,
+IceRSTEntry ice_effAnimRST[18] = {
+    { 8, ice_effHermit_0, 0, NULL },
+    { 3, ice_effHermit_1, 1, ice_effFaceDt_pPlane1 },
+    { 3, ice_effHermit_2, 1, ice_effFaceDt_pPlane2 },
+    { 3, ice_effHermit_3, 1, ice_effFaceDt_pPlane3 },
+    { 3, ice_effHermit_4, 1, ice_effFaceDt_pPlane4 },
+    { 3, ice_effHermit_5, 1, ice_effFaceDt_pPlane5 },
+    { 3, ice_effHermit_6, 1, ice_effFaceDt_pPlane6 },
+    { 3, ice_effHermit_7, 1, ice_effFaceDt_pPlane7 },
+    { 3, ice_effHermit_8, 1, ice_effFaceDt_pPlane8 },
+    { 3, ice_effHermit_9, 1, ice_effFaceDt_pPlane9 },
+    { 3, ice_effHermit_10, 1, ice_effFaceDt_pPlane10 },
+    { 3, ice_effHermit_11, 1, ice_effFaceDt_pPlane11 },
+    { 3, ice_effHermit_12, 1, ice_effFaceDt_pPlane12 },
+    { 3, ice_effHermit_13, 1, ice_effFaceDt_pPlane13 },
+    { 3, ice_effHermit_14, 1, ice_effFaceDt_pPlane14 },
+    { 3, ice_effHermit_15, 1, ice_effFaceDt_pPlane15 },
+    { 3, ice_effHermit_16, 1, ice_effFaceDt_pPlane16 },
+    { 3, ice_effHermit_17, 1, ice_effFaceDt_pPlane17 },
 };
 
 // TODO: type
@@ -1024,9 +1023,8 @@ u32 ice_effFace_pPlane1_0[8] = {
     0x00000080, 0x00800000, 0x05000000, 0x01000000,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane1[1] = {
-    (u32)&ice_effFace_pPlane1_0,
+void* ice_effFaceDt_pPlane1[1] = {
+    ice_effFace_pPlane1_0,
 };
 
 // TODO: type
@@ -1035,9 +1033,8 @@ u32 ice_effFace_pPlane2_0[8] = {
     0x00000080, 0x0080FB00, 0x05000000, 0x00000000,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane2[1] = {
-    (u32)&ice_effFace_pPlane2_0,
+void* ice_effFaceDt_pPlane2[1] = {
+    ice_effFace_pPlane2_0,
 };
 
 // TODO: type
@@ -1046,9 +1043,8 @@ u32 ice_effFace_pPlane3_0[8] = {
     0x00000100, 0x0100FD80, 0x02800000, 0x00800080,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane3[1] = {
-    (u32)&ice_effFace_pPlane3_0,
+void* ice_effFaceDt_pPlane3[1] = {
+    ice_effFace_pPlane3_0,
 };
 
 // TODO: type
@@ -1057,9 +1053,8 @@ u32 ice_effFace_pPlane4_0[8] = {
     0x00000080, 0x00800000, 0x00000000, 0x01000100,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane4[1] = {
-    (u32)&ice_effFace_pPlane4_0,
+void* ice_effFaceDt_pPlane4[1] = {
+    ice_effFace_pPlane4_0,
 };
 
 // TODO: type
@@ -1068,9 +1063,8 @@ u32 ice_effFace_pPlane5_0[8] = {
     0x00000180, 0x00800500, 0x05000000, 0x02000000,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane5[1] = {
-    (u32)&ice_effFace_pPlane5_0,
+void* ice_effFaceDt_pPlane5[1] = {
+    ice_effFace_pPlane5_0,
 };
 
 // TODO: type
@@ -1079,9 +1073,8 @@ u32 ice_effFace_pPlane6_0[8] = {
     0x00000180, 0x00800000, 0x05000000, 0x01000000,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane6[1] = {
-    (u32)&ice_effFace_pPlane6_0,
+void* ice_effFaceDt_pPlane6[1] = {
+    ice_effFace_pPlane6_0,
 };
 
 // TODO: type
@@ -1090,9 +1083,8 @@ u32 ice_effFace_pPlane7_0[8] = {
     0x00000200, 0x01000280, 0x02800000, 0x01800080,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane7[1] = {
-    (u32)&ice_effFace_pPlane7_0,
+void* ice_effFaceDt_pPlane7[1] = {
+    ice_effFace_pPlane7_0,
 };
 
 // TODO: type
@@ -1101,9 +1093,8 @@ u32 ice_effFace_pPlane8_0[8] = {
     0x00000200, 0x01000500, 0x05000000, 0x02000000,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane8[1] = {
-    (u32)&ice_effFace_pPlane8_0,
+void* ice_effFaceDt_pPlane8[1] = {
+    ice_effFace_pPlane8_0,
 };
 
 // TODO: type
@@ -1112,9 +1103,8 @@ u32 ice_effFace_pPlane9_0[8] = {
     0x00000100, 0x0100FB00, 0x00000000, 0x00000100,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane9[1] = {
-    (u32)&ice_effFace_pPlane9_0,
+void* ice_effFaceDt_pPlane9[1] = {
+    ice_effFace_pPlane9_0,
 };
 
 // TODO: type
@@ -1123,9 +1113,8 @@ u32 ice_effFace_pPlane10_0[8] = {
     0x00000080, 0x0180FB00, 0x00000000, 0x00000100,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane10[1] = {
-    (u32)&ice_effFace_pPlane10_0,
+void* ice_effFaceDt_pPlane10[1] = {
+    ice_effFace_pPlane10_0,
 };
 
 // TODO: type
@@ -1134,9 +1123,8 @@ u32 ice_effFace_pPlane11_0[8] = {
     0x00000100, 0x0200FD80, 0xFD800000, 0x00800180,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane11[1] = {
-    (u32)&ice_effFace_pPlane11_0,
+void* ice_effFaceDt_pPlane11[1] = {
+    ice_effFace_pPlane11_0,
 };
 
 // TODO: type
@@ -1145,9 +1133,8 @@ u32 ice_effFace_pPlane12_0[8] = {
     0x00000100, 0x02000000, 0x00000000, 0x01000100,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane12[1] = {
-    (u32)&ice_effFace_pPlane12_0,
+void* ice_effFaceDt_pPlane12[1] = {
+    ice_effFace_pPlane12_0,
 };
 
 // TODO: type
@@ -1156,9 +1143,8 @@ u32 ice_effFace_pPlane13_0[8] = {
     0x00000180, 0x01800500, 0x00000000, 0x02000100,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane13[1] = {
-    (u32)&ice_effFace_pPlane13_0,
+void* ice_effFaceDt_pPlane13[1] = {
+    ice_effFace_pPlane13_0,
 };
 
 // TODO: type
@@ -1167,9 +1153,8 @@ u32 ice_effFace_pPlane14_0[8] = {
     0x00000180, 0x01800000, 0x00000000, 0x01000100,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane14[1] = {
-    (u32)&ice_effFace_pPlane14_0,
+void* ice_effFaceDt_pPlane14[1] = {
+    ice_effFace_pPlane14_0,
 };
 
 // TODO: type
@@ -1178,9 +1163,8 @@ u32 ice_effFace_pPlane15_0[8] = {
     0x00000200, 0x02000280, 0xFD800000, 0x01800180,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane15[1] = {
-    (u32)&ice_effFace_pPlane15_0,
+void* ice_effFaceDt_pPlane15[1] = {
+    ice_effFace_pPlane15_0,
 };
 
 // TODO: type
@@ -1189,9 +1173,8 @@ u32 ice_effFace_pPlane16_0[8] = {
     0x00000180, 0x01800500, 0xFB000000, 0x02000200,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane16[1] = {
-    (u32)&ice_effFace_pPlane16_0,
+void* ice_effFaceDt_pPlane16[1] = {
+    ice_effFace_pPlane16_0,
 };
 
 // TODO: type
@@ -1201,20 +1184,13 @@ u32 ice_effFace_pPlane17_0[11] = {
     0xFB000500, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 ice_effFaceDt_pPlane17[1] = {
-    (u32)&ice_effFace_pPlane17_0,
+void* ice_effFaceDt_pPlane17[1] = {
+    ice_effFace_pPlane17_0,
 };
 
-// TODO: type
-u32 ice_effAnimRSTDt[2] = {
-    0x00000012, (u32)&ice_effAnimRST,
-};
+IceAnimRSTData ice_effAnimRSTDt = { 18, ice_effAnimRST };
 
-// TODO: type
-u32 ice_effAnimDt[3] = {
-    0x00000000, 0x42EE0000, (u32)&ice_effAnimRSTDt,
-};
+IceAnimData ice_effAnimDt = { 0, 119.0f, &ice_effAnimRSTDt };
 #pragma force_active off
 // clang-format on
 

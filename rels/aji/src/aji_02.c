@@ -72,25 +72,28 @@ static BeroEntry bero_entry_data[2] = {
     {NULL},
 };
 
-// byte list of hikaru group ids; no matching struct in include/
-u32 root_0[3] = {
-    0x0A090807, 0x06050403, 0x02010000,
+u8 root_0[12] = {
+    10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0,
 };
 
-// byte list of hikaru group ids; no matching struct in include/
-u32 root_1[4] = {
-    0x15080706, 0x14131211, 0x100F0E0D, 0x0C0B0000,
+u8 root_1[16] = {
+    21, 8, 7, 6, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 0, 0,
 };
 
-// byte list of hikaru group ids; no matching struct in include/
-u32 root_2[4] = {
-    0x1E1D1C1B, 0x1A111213, 0x14060519, 0x18171600,
+u8 root_2[16] = {
+    30, 29, 28, 27, 26, 17, 18, 19, 20, 6, 5, 25, 24, 23, 22, 0,
 };
 
-// {u8* list, s32 count} pairs; no matching struct in include/
-u32 root_data[6] = {
-    (u32)&root_0, 0x0000000A, (u32)&root_1, 0x0000000E,
-    (u32)&root_2, 0x0000000F,
+// root_data's entries: a byte list of hikaru group ids and its length (hikaru_on_func)
+typedef struct RootData {
+    u8* list;  // 0x0
+    s32 count; // 0x4
+} RootData;
+
+RootData root_data[3] = {
+    { root_0, 10 },
+    { root_1, 14 },
+    { root_2, 15 },
 };
 
 
@@ -259,8 +262,8 @@ USER_FUNC(hikaru_off_func) {
 USER_FUNC(hikaru_on_func) {
     char buf[0x40];
     s32 idx = evtGetValue(event, GW(10));
-    u8* list = (u8*)root_data[idx * 2];
-    s32 count = root_data[idx * 2 + 1];
+    u8* list = root_data[idx].list;
+    s32 count = root_data[idx].count;
     s32 i;
     s32 j;
 

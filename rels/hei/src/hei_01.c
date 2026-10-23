@@ -23,6 +23,7 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/hitdrv.h"
 
 #pragma pool_data off
 
@@ -86,15 +87,14 @@ static EVT_BEGIN(evt_kusa_7)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 kusa_data[28] = {
-    0x00000000, (u32)"a_kusa_2", (u32)"kusa_2", (u32)&evt_kusa_2,
-    0x00000000, (u32)"a_kusa_3", (u32)"kusa_7", 0x00000000,
-    0x00000000, (u32)"a_kusa_4", (u32)"kusa_4", (u32)&evt_kusa_4,
-    0x00000000, (u32)"a_kusa_6", (u32)"kusa_6", 0x00000000,
-    0x00000000, (u32)"a_kusa_7", (u32)"kusa_9", (u32)&evt_kusa_7,
-    0x00000000, (u32)"a_kusa_8", (u32)"kusa_pPlane371_q00274", 0x00000000,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry kusa_data[7] = {
+    { 0, "a_kusa_2", "kusa_2", evt_kusa_2 },
+    { 0, "a_kusa_3", "kusa_7", NULL },
+    { 0, "a_kusa_4", "kusa_4", evt_kusa_4 },
+    { 0, "a_kusa_6", "kusa_6", NULL },
+    { 0, "a_kusa_7", "kusa_9", evt_kusa_7 },
+    { 0, "a_kusa_8", "kusa_pPlane371_q00274", NULL },
+    { 4, NULL, NULL, NULL },
 };
 
 EVT_BEGIN(kusa_dokan)
@@ -613,33 +613,17 @@ EVT_BEGIN(evt_nokorin)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[69] = {
-    (u32)"ノコタロウ", 0x00000000, 0x00000000, (u32)&nokotarou_init,
-    (u32)&nokotarou_reg, (u32)&nokotarou_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x3F800000, 0x3F800000,
-    0x3F800000, 0x3F800000, 0xFFFFFFFF, (u32)"ノコリン",
-    0x40000620, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static NpcSetupInfo npcEnt[3] = {
+    {"ノコタロウ", 0, 0, nokotarou_init, nokotarou_reg, nokotarou_talk, NULL, NULL, NULL, NULL, NULL,
+     NPC_TERRITORY_TYPE_NOTHING, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 1.0f, 1.0f, 1.0f, 1.0f, -1},
+    {"ノコリン", 0x40000620},
+    {NULL},
 };
 
-// TODO: type
-static u32 hitDmgRetPoints[12] = {
-    (u32)"mod_00", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_01", 0x00000000, 0xC47A0000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn hitDmgRetPoints[3] = {
+    { "mod_00", { 0.0f, -1000.0f, 0.0f } },
+    { "mod_01", { 0.0f, -1000.0f, 0.0f } },
+    { NULL, { 0.0f, 0.0f, 0.0f } },
 };
 
 static EVT_BEGIN(peach_mail)

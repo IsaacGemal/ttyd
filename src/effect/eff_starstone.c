@@ -17,19 +17,19 @@ extern u32 diamond_1_vertex_tbl[];
 extern u32 diamond_1_normal_tbl[];
 extern u32 diamond_1_texcoord0_tbl[];
 extern u8 diamond_1_color0_tbl[];
-extern u32 diamond_1_dl_0_tbl[];
-extern u32 diamond_1_dl_1_tbl[];
+extern void* diamond_1_dl_0_tbl[34];
+extern void* diamond_1_dl_1_tbl[34];
 extern u32 diamond_7_vertex_tbl[];
 extern u32 diamond_7_normal_tbl[];
 extern u32 diamond_7_texcoord0_tbl[];
 extern u8 diamond_7_color0_tbl[];
-extern u32 diamond_7_dl_0_tbl[];
-extern u32 diamond_7_dl_1_tbl[];
+extern void* diamond_7_dl_0_tbl[34];
+extern void* diamond_7_dl_1_tbl[33];
 extern u32 diamond_2_2_vertex_tbl[];
 extern u32 diamond_2_2_normal_tbl[];
 extern u32 diamond_2_2_texcoord0_tbl[];
-extern u32 diamond_2_2_dl_0_tbl[];
-extern u32 diamond_2_2_dl_1_tbl[];
+extern void* diamond_2_2_dl_0_tbl[19];
+extern void* diamond_2_2_dl_1_tbl[19];
 extern u8 diamond_1_dl_0_size_tbl[36];
 extern u8 diamond_1_dl_1_size_tbl[36];
 extern u8 diamond_2_2_dl_0_size_tbl[20];
@@ -481,9 +481,9 @@ void effStarStoneMain(EffectEntry* effect) {
 #define STARSTONE_DL_LOOP(tbl, sztbl, n) \
 	{ \
 		u8* sz; \
-		u32* dl; \
+		void** dl; \
 		for (dl = (tbl), i = 0, sz = (sztbl); i < (n); i++, sz++, dl++) { \
-			GXCallDisplayList((void*)*dl, *sz << 5); \
+			GXCallDisplayList(*dl, *sz << 5); \
 		} \
 	}
 
@@ -624,11 +624,11 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 // MUST_MATCH: starStoneDLLoop has no outside evidence. Written as an inline (its parameters become the
 // induction variables), MWCC colours the first loop's counter r26 and its size induction r23; the loop
 // written directly in the caller swaps the two.
-static inline void starStoneDLLoop(u32* tbl, effStarStoneData* data, u8* sztbl, u32 n) {
+static inline void starStoneDLLoop(void** tbl, effStarStoneData* data, u8* sztbl, u32 n) {
 	s32 ctr;
 	for (ctr = 0; ctr < n; ctr++) {
 		if ((data->flags & 1) || ctr != 0) {
-			GXCallDisplayList((void*)tbl[ctr], sztbl[ctr] << 5);
+			GXCallDisplayList(tbl[ctr], sztbl[ctr] << 5);
 		}
 	}
 }
@@ -696,7 +696,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 		s32 i;
 		for (i = 0; i < 0x13; i++) {
 			if ((data->flags & 1) || i != 0) {
-				GXCallDisplayList((void*)diamond_2_2_dl_0_tbl[i], diamond_2_2_dl_0_size_tbl[i] << 5);
+				GXCallDisplayList(diamond_2_2_dl_0_tbl[i], diamond_2_2_dl_0_size_tbl[i] << 5);
 			}
 		}
 	}
@@ -733,7 +733,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 		s32 i;
 		for (i = 0; i < 0x13; i++) {
 			if ((data->flags & 1) || i != 0) {
-				GXCallDisplayList((void*)diamond_2_2_dl_1_tbl[i], diamond_2_2_dl_1_size_tbl[i] << 5);
+				GXCallDisplayList(diamond_2_2_dl_1_tbl[i], diamond_2_2_dl_1_size_tbl[i] << 5);
 			}
 		}
 	}
@@ -799,7 +799,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 		s32 i;
 		for (i = 0; i < 0x13; i++) {
 			if ((data->flags & 1) || i != 0) {
-				GXCallDisplayList((void*)diamond_2_2_dl_0_tbl[i], diamond_2_2_dl_0_size_tbl[i] << 5);
+				GXCallDisplayList(diamond_2_2_dl_0_tbl[i], diamond_2_2_dl_0_size_tbl[i] << 5);
 			}
 		}
 	}
@@ -836,7 +836,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 		s32 i;
 		for (i = 0; i < 0x13; i++) {
 			if ((data->flags & 1) || i != 0) {
-				GXCallDisplayList((void*)diamond_2_2_dl_1_tbl[i], diamond_2_2_dl_1_size_tbl[i] << 5);
+				GXCallDisplayList(diamond_2_2_dl_1_tbl[i], diamond_2_2_dl_1_size_tbl[i] << 5);
 			}
 		}
 	}
@@ -944,30 +944,22 @@ u32 diamond_1_texcoord0_tbl[40] = {
 // TODO: type
 u8 diamond_1_color0_tbl[68] = { 0xD7, 0xE0, 0xC2, 0xFF, 0xBD, 0xC2, 0xA6, 0xFF, 0xF0, 0xF0, 0xE4, 0xFF, 0xAB, 0xAC, 0x8F, 0xFF, 0xF5, 0xFF, 0xD9, 0xFF, 0xEE, 0xF5, 0xCF, 0x00, 0xE8, 0xEE, 0xC4, 0x4C, 0xEB, 0xF2, 0xCA, 0x00, 0xE7, 0xED, 0xC5, 0x4C, 0xEA, 0xEF, 0xC9, 0x00, 0xF9, 0xFF, 0xE0, 0x4C, 0xDB, 0xDE, 0xB5, 0x4C, 0xE0, 0xE4, 0xBA, 0x4C, 0xE0, 0xE5, 0xB9, 0x00, 0xD4, 0xD9, 0xA8, 0x4C, 0xC9, 0xCC, 0x9B, 0x4C, 0xDC, 0xE2, 0xB3, 0x4C };
 
-// TODO: type
-u32 diamond_1_dl_0_tbl[34] = {
-    (u32)&diamond_1_dl_0_0, (u32)&diamond_1_dl_0_1, (u32)&diamond_1_dl_0_2, (u32)&diamond_1_dl_0_3,
-    (u32)&diamond_1_dl_0_4, (u32)&diamond_1_dl_0_5, (u32)&diamond_1_dl_0_6, (u32)&diamond_1_dl_0_7,
-    (u32)&diamond_1_dl_0_8, (u32)&diamond_1_dl_0_9, (u32)&diamond_1_dl_0_10, (u32)&diamond_1_dl_0_11,
-    (u32)&diamond_1_dl_0_12, (u32)&diamond_1_dl_0_13, (u32)&diamond_1_dl_0_14, (u32)&diamond_1_dl_0_15,
-    (u32)&diamond_1_dl_0_16, (u32)&diamond_1_dl_0_17, (u32)&diamond_1_dl_0_18, (u32)&diamond_1_dl_0_19,
-    (u32)&diamond_1_dl_0_20, (u32)&diamond_1_dl_0_21, (u32)&diamond_1_dl_0_22, (u32)&diamond_1_dl_0_23,
-    (u32)&diamond_1_dl_0_24, (u32)&diamond_1_dl_0_25, (u32)&diamond_1_dl_0_26, (u32)&diamond_1_dl_0_27,
-    (u32)&diamond_1_dl_0_28, (u32)&diamond_1_dl_0_29, (u32)&diamond_1_dl_0_30, (u32)&diamond_1_dl_0_31,
-    (u32)&diamond_1_dl_0_32, (u32)&diamond_1_dl_0_33,
+void* diamond_1_dl_0_tbl[34] = {
+    diamond_1_dl_0_0, diamond_1_dl_0_1, diamond_1_dl_0_2, diamond_1_dl_0_3, diamond_1_dl_0_4, diamond_1_dl_0_5,
+    diamond_1_dl_0_6, diamond_1_dl_0_7, diamond_1_dl_0_8, diamond_1_dl_0_9, diamond_1_dl_0_10, diamond_1_dl_0_11,
+    diamond_1_dl_0_12, diamond_1_dl_0_13, diamond_1_dl_0_14, diamond_1_dl_0_15, diamond_1_dl_0_16, diamond_1_dl_0_17,
+    diamond_1_dl_0_18, diamond_1_dl_0_19, diamond_1_dl_0_20, diamond_1_dl_0_21, diamond_1_dl_0_22, diamond_1_dl_0_23,
+    diamond_1_dl_0_24, diamond_1_dl_0_25, diamond_1_dl_0_26, diamond_1_dl_0_27, diamond_1_dl_0_28, diamond_1_dl_0_29,
+    diamond_1_dl_0_30, diamond_1_dl_0_31, diamond_1_dl_0_32, diamond_1_dl_0_33,
 };
 
-// TODO: type
-u32 diamond_1_dl_1_tbl[34] = {
-    (u32)&diamond_1_dl_1_0, (u32)&diamond_1_dl_1_1, (u32)&diamond_1_dl_1_2, (u32)&diamond_1_dl_1_3,
-    (u32)&diamond_1_dl_1_4, (u32)&diamond_1_dl_1_5, (u32)&diamond_1_dl_1_6, (u32)&diamond_1_dl_1_7,
-    (u32)&diamond_1_dl_1_8, (u32)&diamond_1_dl_1_9, (u32)&diamond_1_dl_1_10, (u32)&diamond_1_dl_1_11,
-    (u32)&diamond_1_dl_1_12, (u32)&diamond_1_dl_1_13, (u32)&diamond_1_dl_1_14, (u32)&diamond_1_dl_1_15,
-    (u32)&diamond_1_dl_1_16, (u32)&diamond_1_dl_1_17, (u32)&diamond_1_dl_1_18, (u32)&diamond_1_dl_1_19,
-    (u32)&diamond_1_dl_1_20, (u32)&diamond_1_dl_1_21, (u32)&diamond_1_dl_1_22, (u32)&diamond_1_dl_1_23,
-    (u32)&diamond_1_dl_1_24, (u32)&diamond_1_dl_1_25, (u32)&diamond_1_dl_1_26, (u32)&diamond_1_dl_1_27,
-    (u32)&diamond_1_dl_1_28, (u32)&diamond_1_dl_1_29, (u32)&diamond_1_dl_1_30, (u32)&diamond_1_dl_1_31,
-    (u32)&diamond_1_dl_1_32, (u32)&diamond_1_dl_1_33,
+void* diamond_1_dl_1_tbl[34] = {
+    diamond_1_dl_1_0, diamond_1_dl_1_1, diamond_1_dl_1_2, diamond_1_dl_1_3, diamond_1_dl_1_4, diamond_1_dl_1_5,
+    diamond_1_dl_1_6, diamond_1_dl_1_7, diamond_1_dl_1_8, diamond_1_dl_1_9, diamond_1_dl_1_10, diamond_1_dl_1_11,
+    diamond_1_dl_1_12, diamond_1_dl_1_13, diamond_1_dl_1_14, diamond_1_dl_1_15, diamond_1_dl_1_16, diamond_1_dl_1_17,
+    diamond_1_dl_1_18, diamond_1_dl_1_19, diamond_1_dl_1_20, diamond_1_dl_1_21, diamond_1_dl_1_22, diamond_1_dl_1_23,
+    diamond_1_dl_1_24, diamond_1_dl_1_25, diamond_1_dl_1_26, diamond_1_dl_1_27, diamond_1_dl_1_28, diamond_1_dl_1_29,
+    diamond_1_dl_1_30, diamond_1_dl_1_31, diamond_1_dl_1_32, diamond_1_dl_1_33,
 };
 
 // TODO: type
@@ -1011,22 +1003,18 @@ u32 diamond_2_2_texcoord0_tbl[28] = {
     0x4541078B, 0xF80D2563, 0x1D2036B8, 0xFABF3874,
 };
 
-// TODO: type
-u32 diamond_2_2_dl_0_tbl[19] = {
-    (u32)&diamond_2_2_dl_0_0, (u32)&diamond_2_2_dl_0_1, (u32)&diamond_2_2_dl_0_2, (u32)&diamond_2_2_dl_0_3,
-    (u32)&diamond_2_2_dl_0_4, (u32)&diamond_2_2_dl_0_5, (u32)&diamond_2_2_dl_0_6, (u32)&diamond_2_2_dl_0_7,
-    (u32)&diamond_2_2_dl_0_8, (u32)&diamond_2_2_dl_0_9, (u32)&diamond_2_2_dl_0_10, (u32)&diamond_2_2_dl_0_11,
-    (u32)&diamond_2_2_dl_0_12, (u32)&diamond_2_2_dl_0_13, (u32)&diamond_2_2_dl_0_14, (u32)&diamond_2_2_dl_0_15,
-    (u32)&diamond_2_2_dl_0_16, (u32)&diamond_2_2_dl_0_17, (u32)&diamond_2_2_dl_0_18,
+void* diamond_2_2_dl_0_tbl[19] = {
+    diamond_2_2_dl_0_0, diamond_2_2_dl_0_1, diamond_2_2_dl_0_2, diamond_2_2_dl_0_3, diamond_2_2_dl_0_4,
+    diamond_2_2_dl_0_5, diamond_2_2_dl_0_6, diamond_2_2_dl_0_7, diamond_2_2_dl_0_8, diamond_2_2_dl_0_9,
+    diamond_2_2_dl_0_10, diamond_2_2_dl_0_11, diamond_2_2_dl_0_12, diamond_2_2_dl_0_13, diamond_2_2_dl_0_14,
+    diamond_2_2_dl_0_15, diamond_2_2_dl_0_16, diamond_2_2_dl_0_17, diamond_2_2_dl_0_18,
 };
 
-// TODO: type
-u32 diamond_2_2_dl_1_tbl[19] = {
-    (u32)&diamond_2_2_dl_1_0, (u32)&diamond_2_2_dl_1_1, (u32)&diamond_2_2_dl_1_2, (u32)&diamond_2_2_dl_1_3,
-    (u32)&diamond_2_2_dl_1_4, (u32)&diamond_2_2_dl_1_5, (u32)&diamond_2_2_dl_1_6, (u32)&diamond_2_2_dl_1_7,
-    (u32)&diamond_2_2_dl_1_8, (u32)&diamond_2_2_dl_1_9, (u32)&diamond_2_2_dl_1_10, (u32)&diamond_2_2_dl_1_11,
-    (u32)&diamond_2_2_dl_1_12, (u32)&diamond_2_2_dl_1_13, (u32)&diamond_2_2_dl_1_14, (u32)&diamond_2_2_dl_1_15,
-    (u32)&diamond_2_2_dl_1_16, (u32)&diamond_2_2_dl_1_17, (u32)&diamond_2_2_dl_1_18,
+void* diamond_2_2_dl_1_tbl[19] = {
+    diamond_2_2_dl_1_0, diamond_2_2_dl_1_1, diamond_2_2_dl_1_2, diamond_2_2_dl_1_3, diamond_2_2_dl_1_4,
+    diamond_2_2_dl_1_5, diamond_2_2_dl_1_6, diamond_2_2_dl_1_7, diamond_2_2_dl_1_8, diamond_2_2_dl_1_9,
+    diamond_2_2_dl_1_10, diamond_2_2_dl_1_11, diamond_2_2_dl_1_12, diamond_2_2_dl_1_13, diamond_2_2_dl_1_14,
+    diamond_2_2_dl_1_15, diamond_2_2_dl_1_16, diamond_2_2_dl_1_17, diamond_2_2_dl_1_18,
 };
 
 // TODO: type
@@ -1086,30 +1074,22 @@ u32 diamond_7_texcoord0_tbl[72] = {
 // TODO: type
 u8 diamond_7_color0_tbl[76] = { 0xCA, 0xDA, 0xEB, 0xFF, 0xB4, 0xD0, 0xE4, 0xFF, 0xD9, 0xEC, 0xF5, 0xFF, 0x8B, 0xA5, 0xBF, 0xFF, 0xE2, 0xF6, 0xFF, 0xFF, 0xD2, 0xE6, 0xF3, 0x66, 0xCA, 0xE0, 0xEF, 0x66, 0xCE, 0xE3, 0xF1, 0x66, 0xCB, 0xE3, 0xF1, 0x66, 0xC1, 0xD6, 0xE6, 0x66, 0xC2, 0xD8, 0xE6, 0x66, 0xA0, 0xBA, 0xD2, 0x66, 0xBD, 0xD2, 0xE4, 0x66, 0xAD, 0xC5, 0xDA, 0x66, 0xBB, 0xD3, 0xE6, 0x66, 0xD2, 0xE7, 0xF3, 0x66, 0xCF, 0xE3, 0xF1, 0x66, 0xC1, 0xD7, 0xE7, 0x66, 0xBE, 0xD3, 0xE5, 0x66 };
 
-// TODO: type
-u32 diamond_7_dl_0_tbl[34] = {
-    (u32)&diamond_7_dl_0_0, (u32)&diamond_7_dl_0_1, (u32)&diamond_7_dl_0_2, (u32)&diamond_7_dl_0_3,
-    (u32)&diamond_7_dl_0_4, (u32)&diamond_7_dl_0_5, (u32)&diamond_7_dl_0_6, (u32)&diamond_7_dl_0_7,
-    (u32)&diamond_7_dl_0_8, (u32)&diamond_7_dl_0_9, (u32)&diamond_7_dl_0_10, (u32)&diamond_7_dl_0_11,
-    (u32)&diamond_7_dl_0_12, (u32)&diamond_7_dl_0_13, (u32)&diamond_7_dl_0_14, (u32)&diamond_7_dl_0_15,
-    (u32)&diamond_7_dl_0_16, (u32)&diamond_7_dl_0_17, (u32)&diamond_7_dl_0_18, (u32)&diamond_7_dl_0_19,
-    (u32)&diamond_7_dl_0_20, (u32)&diamond_7_dl_0_21, (u32)&diamond_7_dl_0_22, (u32)&diamond_7_dl_0_23,
-    (u32)&diamond_7_dl_0_24, (u32)&diamond_7_dl_0_25, (u32)&diamond_7_dl_0_26, (u32)&diamond_7_dl_0_27,
-    (u32)&diamond_7_dl_0_28, (u32)&diamond_7_dl_0_29, (u32)&diamond_7_dl_0_30, (u32)&diamond_7_dl_0_31,
-    (u32)&diamond_7_dl_0_32, (u32)&diamond_7_dl_0_33,
+void* diamond_7_dl_0_tbl[34] = {
+    diamond_7_dl_0_0, diamond_7_dl_0_1, diamond_7_dl_0_2, diamond_7_dl_0_3, diamond_7_dl_0_4, diamond_7_dl_0_5,
+    diamond_7_dl_0_6, diamond_7_dl_0_7, diamond_7_dl_0_8, diamond_7_dl_0_9, diamond_7_dl_0_10, diamond_7_dl_0_11,
+    diamond_7_dl_0_12, diamond_7_dl_0_13, diamond_7_dl_0_14, diamond_7_dl_0_15, diamond_7_dl_0_16, diamond_7_dl_0_17,
+    diamond_7_dl_0_18, diamond_7_dl_0_19, diamond_7_dl_0_20, diamond_7_dl_0_21, diamond_7_dl_0_22, diamond_7_dl_0_23,
+    diamond_7_dl_0_24, diamond_7_dl_0_25, diamond_7_dl_0_26, diamond_7_dl_0_27, diamond_7_dl_0_28, diamond_7_dl_0_29,
+    diamond_7_dl_0_30, diamond_7_dl_0_31, diamond_7_dl_0_32, diamond_7_dl_0_33,
 };
 
-// TODO: type
-u32 diamond_7_dl_1_tbl[33] = {
-    (u32)&diamond_7_dl_1_0, (u32)&diamond_7_dl_1_1, (u32)&diamond_7_dl_1_2, (u32)&diamond_7_dl_1_3,
-    (u32)&diamond_7_dl_1_4, (u32)&diamond_7_dl_1_5, (u32)&diamond_7_dl_1_6, (u32)&diamond_7_dl_1_7,
-    (u32)&diamond_7_dl_1_8, (u32)&diamond_7_dl_1_9, (u32)&diamond_7_dl_1_10, (u32)&diamond_7_dl_1_11,
-    (u32)&diamond_7_dl_1_12, (u32)&diamond_7_dl_1_13, (u32)&diamond_7_dl_1_14, (u32)&diamond_7_dl_1_15,
-    (u32)&diamond_7_dl_1_16, (u32)&diamond_7_dl_1_17, (u32)&diamond_7_dl_1_18, (u32)&diamond_7_dl_1_19,
-    (u32)&diamond_7_dl_1_20, (u32)&diamond_7_dl_1_21, (u32)&diamond_7_dl_1_22, (u32)&diamond_7_dl_1_23,
-    (u32)&diamond_7_dl_1_24, (u32)&diamond_7_dl_1_25, (u32)&diamond_7_dl_1_26, (u32)&diamond_7_dl_1_27,
-    (u32)&diamond_7_dl_1_28, (u32)&diamond_7_dl_1_29, (u32)&diamond_7_dl_1_30, (u32)&diamond_7_dl_1_31,
-    (u32)&diamond_7_dl_1_32,
+void* diamond_7_dl_1_tbl[33] = {
+    diamond_7_dl_1_0, diamond_7_dl_1_1, diamond_7_dl_1_2, diamond_7_dl_1_3, diamond_7_dl_1_4, diamond_7_dl_1_5,
+    diamond_7_dl_1_6, diamond_7_dl_1_7, diamond_7_dl_1_8, diamond_7_dl_1_9, diamond_7_dl_1_10, diamond_7_dl_1_11,
+    diamond_7_dl_1_12, diamond_7_dl_1_13, diamond_7_dl_1_14, diamond_7_dl_1_15, diamond_7_dl_1_16, diamond_7_dl_1_17,
+    diamond_7_dl_1_18, diamond_7_dl_1_19, diamond_7_dl_1_20, diamond_7_dl_1_21, diamond_7_dl_1_22, diamond_7_dl_1_23,
+    diamond_7_dl_1_24, diamond_7_dl_1_25, diamond_7_dl_1_26, diamond_7_dl_1_27, diamond_7_dl_1_28, diamond_7_dl_1_29,
+    diamond_7_dl_1_30, diamond_7_dl_1_31, diamond_7_dl_1_32,
 };
 
 // TODO: type

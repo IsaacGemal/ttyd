@@ -1238,7 +1238,7 @@ EVT_END()
 
 EVT_BEGIN(subsetevt_swallow_shot_damage)
     CALL(btlevtcmd_AnimeChangePoseType, LW(10), LW(11), LW(14))
-    SET_VALUE(LW(12), PTR(partyWeapon_YoshiNomikomi_Involved))
+    SET_VALUE(LW(12), PTR(&partyWeapon_YoshiNomikomi_Involved))
     CALL(btlevtcmd_GetFriendBelong, LW(10), LW(0))
     CALL(btlevtcmd_SamplingEnemy, LW(10), LW(0), LW(12))
     CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
