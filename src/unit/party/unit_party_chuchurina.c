@@ -1200,7 +1200,8 @@ BattleWeapon partyWeapon_ChuchurinaKiss = {
     "msg_ac_chuchurina_kiss",                 // acHelpMsg
     0x00020008,                               // special
     0x000007FF,                               // counterResistanceFlags
-    (u32)lbl_80003500,                        // targetWeightingFlags
+    (u32)lbl_80003500,                        // targetWeightingFlags: the flags 0x80003500, which dtk reads as
+                                              // this .init label; as a number the unit's data score drops
     0,                                        // sleepChance
     0,                                        // sleepTime
     0,                                        // stopChance
