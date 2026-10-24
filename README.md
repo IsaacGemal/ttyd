@@ -49,6 +49,39 @@ Cleanup is tracked with `tools/cleanup_index.py`, which counts the same categori
 casts covering unknown types, `MUST_MATCH` regions, pragmas, `goto`s, and so on. `python tools/cleanup_index.py --top 20`
 lists the files with the most left to clean.
 
+Cleanup
+=======
+
+Matching proves the code is right, not that it's readable. After the game reached 100% on 2026-10-18, the work
+switched to cleanup, under one constraint: every change keeps the build byte-identical.
+
+What that covered:
+- **Naming and typing.** Raw byte offsets became struct fields, `void*` work pointers got their real types, and
+  data tables stored as raw words became structs with pointer members. Names only where there's evidence; otherwise
+  `field_0xNN`.
+- **Hacks fenced off.** Compiler-steering tricks moved under `MUST_MATCH` with a plain `#else`, and many were
+  replaced outright by natural code that happens to compile to the same bytes. Whole-file `#pragma`s became per-file
+  compiler flags, as Wind Waker, Twilight Princess and Animal Crossing do.
+- **Scripts and data.** Every event script is written with the EVT macros instead of hex words, and named pool
+  constants that existed only to pin data order became plain literals.
+
+The cleanup index (Melee's categories, weighted per thousand lines of code) since it was adopted on 2026-10-22:
+
+| Category | 2026-10-22 | Now |
+|---|---|---|
+| Index (weighted, per kLOC) | 28.9 | 17.0 |
+| Pointer-to-int casts | 2,694 | 32 |
+| Struct pointer casts | 2,708 | 1,245 |
+| Pointer type puns (`*(T*)&x`) | 1,180 | 489 |
+| Address-named symbols | 2,632 | 1,077 |
+| `MUST_MATCH` regions | 834 | 703 |
+| Optimisation pragmas | 606 | 325 |
+| `goto` | 106 | 102 |
+
+What's left is mostly naming (4,624 `field_0xNN` members whose meaning nobody has proven yet) and casts that the
+game's own APIs require, such as event-script arguments, which are always integers. The full history, with what
+each pass did and why, is in [`docs/CONTEXT.md`](docs/CONTEXT.md).
+
 Documentation
 =============
 
