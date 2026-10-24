@@ -104,6 +104,14 @@ identity), every changed file must compile without `MUST_MATCH`, initialised dat
 (`tools/data_check.py`), and lints for new pragmas, unguarded function-pointer casts and prototypes in `.c` files.
 It also prints the cleanup index and warns if a change raises it.
 
+Other tools used throughout (all in `tools/`):
+- `obj_equiv.py`: compares one object file against the original, for a fast check without a full build.
+- `rename_symbol.py`: renames a symbol everywhere, including `symbols.txt`.
+- `offset_to_field.py` and `addr_literals.py`: turn raw offsets into field accesses and address-named constants into
+  literals, checked against the build.
+- `fn_order.py`: checks a file's function order against the original's.
+- `ttydasm`: disassembles TTYD's event scripts into the EVT macros.
+
 Dependencies
 ============
 
