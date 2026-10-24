@@ -105,11 +105,12 @@ identity), every changed file must compile without `MUST_MATCH`, initialised dat
 It also prints the cleanup index and warns if a change raises it.
 
 Other tools used throughout (all in `tools/`):
-- `obj_equiv.py`: compares one object file against the original, for a fast check without a full build.
+- `obj_equiv.py`: checks whether two builds of an object (say, before and after an edit) are interchangeable at link
+  time, for a fast check without a full build.
 - `rename_symbol.py`: renames a symbol everywhere, including `symbols.txt`.
-- `offset_to_field.py` and `addr_literals.py`: turn raw offsets into field accesses and address-named constants into
-  literals, checked against the build.
-- `fn_order.py`: checks a file's function order against the original's.
+- `offset_to_field.py`: rewrites raw offset casts that land on an existing struct field into field accesses.
+- `addr_literals.py`: turns address-named constants (`float_0p5_80420df8`) back into literals where no byte changes.
+- `fn_order.py`: puts a file's functions in the source order that reproduces the original's code order.
 - `ttydasm`: disassembles TTYD's event scripts into the EVT macros.
 
 Dependencies
