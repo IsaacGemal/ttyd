@@ -1,11 +1,10 @@
 #pragma once
 
 #include <dolphin/types.h>
+#include <dolphin/mtx.h>
 #include "driver/effdrv.h"
 typedef struct effSnowData {
-	f32 x;          // 0x00
-	f32 y;          // 0x04
-	f32 z;          // 0x08
+	Vec position;   // 0x00
 	f32 velX;       // 0x0C
 	f32 velY;       // 0x10
 	f32 velZ;       // 0x14

@@ -7,9 +7,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param);
 EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale);
 typedef struct effOpukuJetwrainData {
 	s32 type;                // 0x00
-	f32 x;                   // 0x04
-	f32 y;                   // 0x08
-	f32 z;                   // 0x0C
+	Vec position;            // 0x04
 	s32 lifetime;            // 0x10
 	s32 counter;             // 0x14
 	f32 scale;               // 0x18
@@ -20,7 +18,7 @@ typedef struct effOpukuJetwrainData {
 	u8 color2R;             // 0x20
 	u8 color2G;             // 0x21
 	u8 color2B;             // 0x22
-	u8 height[19][13];      // 0x23
+	s8 height[19][13];      // 0x23
 	s16 velocity[19][13];   // 0x11A
 } effOpukuJetwrainData;
 void effOpukuJetwrainMain(EffectEntry* effect);

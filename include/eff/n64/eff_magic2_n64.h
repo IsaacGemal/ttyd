@@ -6,12 +6,8 @@
 
 typedef struct effMagic2Data {
     s32 type;        // 0x00
-    f32 vx;          // 0x04
-    f32 vy;          // 0x08
-    f32 vz;          // 0x0C
-    f32 x;           // 0x10
-    f32 y;           // 0x14
-    f32 z;           // 0x18
+    Vec worldPos;    // 0x04, Main projects it through CAMERA_3D's view and projection into position
+    Vec position;    // 0x10, screen position (304 * x, 240 * y of the projection); Disp's translation
     f32 scale;       // 0x1C
     f32 scaleMul;    // 0x20
     s32 alpha;       // 0x24

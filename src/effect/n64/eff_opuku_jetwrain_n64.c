@@ -45,9 +45,9 @@ EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 		data->lifetime = duration;
 	}
 	data->alpha = 0;
-	data->x = x;
-	data->y = y;
-	data->z = z;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
 	data->scale = scale;
 	data->color1R = 10;
 	data->color1G = 0x6e;
@@ -80,7 +80,7 @@ static inline Vec initializeVec(Vec* input) {
 void effOpukuJetwrainMain(EffectEntry* effect) {
 	s32 lifetime;
 	effOpukuJetwrainData* data = effect->userdata;
-	Vec position = initializeVec((Vec*)&data->x);
+	Vec position = initializeVec(&data->position);
 	s32 alpha;
 	f32 scale;
 	s32 i;
@@ -122,17 +122,17 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	// Relax each height into the velocity field (weighted neighbour sum minus the centre), damped by 0.98.
 	for (j = 1; j < 18; j++) {
 		for (i = 1; i < 12; i++) {
-			f32 center = (f32)(s8)data->height[j][i];
+			f32 center = (f32)data->height[j][i];
 			f32 fourCenter = 4.0f * center;
-			f32 corners = (f32)(s8)data->height[j + 1][i + 1] + (f32)(s8)data->height[j - 1][i + 1] + (f32)(s8)data->height[j + 1][i - 1] + (f32)(s8)data->height[j - 1][i - 1];
-			f32 edges = (f32)(s8)data->height[j + 1][i] + (f32)(s8)data->height[j - 1][i] + (f32)(s8)data->height[j][i + 1] + (f32)(s8)data->height[j][i - 1];
+			f32 corners = (f32)data->height[j + 1][i + 1] + (f32)data->height[j - 1][i + 1] + (f32)data->height[j + 1][i - 1] + (f32)data->height[j - 1][i - 1];
+			f32 edges = (f32)data->height[j + 1][i] + (f32)data->height[j - 1][i] + (f32)data->height[j][i + 1] + (f32)data->height[j][i - 1];
 			f32 v = (f32)data->velocity[j][i];
 			f32 halfCorners = 0.5f * corners;
 			f32 t = halfCorners + (edges - fourCenter) - 0.7f * fourCenter;
 			data->velocity[j][i] = (s16)(v + t);
 			data->velocity[j][i] *= 0.98f;
 			if (lifetime < 0x20) {
-				data->height[j][i] = (s8)((f32)(s8)data->height[j][i] * scale);
+				data->height[j][i] = (s8)((f32)data->height[j][i] * scale);
 			}
 		}
 	}
@@ -142,7 +142,7 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 		// `12 > i` (not `i < 12`): the reversed comparison makes mwcc hoist the loop's constants out
 		// of the j loop and drop the entry guard, matching the original's code; see the report.
 		for (i = 1; 12 > i; i++) {
-			data->height[j][i] = (s8)((f32)(s8)data->height[j][i] + 0.02f * (f32)data->velocity[j][i]);
+			data->height[j][i] = (s8)((f32)data->height[j][i] + 0.02f * (f32)data->velocity[j][i]);
 		}
 	}
 
@@ -272,13 +272,13 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 
 			vtx = (effOpukuJetwrainVtx*)opuku_jetwrain_vtx;
 			vtx[base + 0].x = x << 2;
-			vtx[base + 0].y = (s8)data->height[j][i] + fieldBase;
+			vtx[base + 0].y = data->height[j][i] + fieldBase;
 			vtx[base + 1].x = (jPos + x2 + 0x10) << 2;
-			vtx[base + 1].y = (s8)data->height[j + 1][i] + fieldBase;
+			vtx[base + 1].y = data->height[j + 1][i] + fieldBase;
 			vtx[base + 2].x = x << 2;
-			vtx[base + 2].y = (s8)data->height[j][i + 1] + fieldEnd;
+			vtx[base + 2].y = data->height[j][i + 1] + fieldEnd;
 			vtx[base + 3].x = (jPos + x2 + 0x10) << 2;
-			vtx[base + 3].y = (s8)data->height[j + 1][i + 1] + fieldEnd;
+			vtx[base + 3].y = data->height[j + 1][i + 1] + fieldEnd;
 			DCFlushRange(opuku_jetwrain_vtx, 0xE0);
 			GXInvalidateVtxCache();
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);

@@ -86,9 +86,9 @@ EffectEntry* effMagic2N64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2) {
 	data->life = a1;
 	data->timer = 0;
 	data->alpha = 0;
-	data->x = x;
-	data->y = y;
-	data->z = z;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
 	data->rotSpeed = 0;
 	data->rot = 0;
 	data->rot2Speed = 0;
@@ -97,9 +97,9 @@ EffectEntry* effMagic2N64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2) {
 	data->uOffset = 0;
 	data->vSpeed = 0;
 	data->vOffset = 0;
-	data->vx = x;
-	data->vy = y;
-	data->vz = z;
+	data->worldPos.x = x;
+	data->worldPos.y = y;
+	data->worldPos.z = z;
 	data->scale = 10.0f;
 	data->scale3 = (f32)(rand() % 360);
 	data->scale3Speed = 4.0f;
@@ -124,7 +124,7 @@ void effMagic2Main(EffectEntry* effect) {
 	s32 i;
 	f32 s;
 
-	pos = initializeVec((Vec*)&data->x);
+	pos = initializeVec(&data->position);
 	data->life--;
 	data->timer++;
 	life = data->life;
@@ -148,12 +148,12 @@ void effMagic2Main(EffectEntry* effect) {
 		s = (f32)sin(6.2831855f * (life * 10) / 360.0f);
 		data->scale += 0.3f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
 	}
-	v = initializeVec2((Vec*)&data->vx);
+	v = initializeVec2(&data->worldPos);
 	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &v, &v);
 	PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &v, &v);
-	data->x = 304.0f * v.x;
-	data->y = 240.0f * v.y;
-	data->z = 0.0f;
+	data->position.x = 304.0f * v.x;
+	data->position.y = 240.0f * v.y;
+	data->position.z = 0.0f;
 	for (i = 0; i < effect->count; i++, data++) {
 		data->scale3 += data->scale3Speed;
 		data->scale2 += data->scale2Speed;
@@ -200,7 +200,7 @@ void effMagic2Disp(CameraId camId, void* param) {
 	type = data->type;
 	GXGetProjectionv(proj);
 	GXGetViewportv(viewport);
-	PSMTX44Trans(mtxA, data->x, data->y, data->z);
+	PSMTX44Trans(mtxA, data->position.x, data->position.y, data->position.z);
 	PSMTX44Scale(mtxB, data->scale, data->scale, 1.0f);
 	PSMTX44Concat(mtxA, mtxB, mtxA);
 	C_MTXPerspective(mtxC, (f32)(type == 1 ? 130 : 30), 1.2666667f, 1.0f, 32768.0f);

@@ -4,9 +4,7 @@
 #include "driver/camdrv.h"
 typedef struct effMagic3Data {
 	s32 type;  // 0x00
-	f32 x;     // 0x04
-	f32 y;     // 0x08
-	f32 z;     // 0x0C
+	Vec position; // 0x04
 	f32 vx;    // 0x10
 	f32 vy;    // 0x14
 	f32 vz;    // 0x18

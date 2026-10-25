@@ -1,13 +1,12 @@
 #pragma once
+#include <dolphin/mtx.h>
 #include "driver/effdrv.h"
 
 typedef struct effBreathFireData {
 	s32 kind;          // 0x00: 0 = plain flame (alpha fades near the end), 1 = rising (rise accumulates), 2 = eases scale to endScale
 	s32 childrenLeft;  // 0x04: child flames still to spawn (the child gets childrenLeft - 1)
 	s32 seed;          // 0x08: random-table seed for the curve bend; a child spawns on the frame after it
-	f32 posX;          // 0x0C
-	f32 posY;          // 0x10
-	f32 posZ;          // 0x14
+	Vec pos;           // 0x0C
 	f32 startX;        // 0x18: position at spawn; the curve runs from here to endX/Y/Z
 	f32 startY;        // 0x1C
 	f32 startZ;        // 0x20
