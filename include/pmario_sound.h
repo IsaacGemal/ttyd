@@ -193,7 +193,7 @@ typedef struct BGMListEntry {
     u32 flags;              // 0x4
     const char* streamName; // 0x8
     union {
-        u32 params; // 0xC, packed volume/pan/reverb/scope bytes, as the table spells them
+        u32 params; // 0xC, packed volume/pan/group/scope bytes, as the table spells them
         struct {
             u8 volume;  // 0xC, PaperSoundBGM.volume
             u8 pan;     // 0xD, PaperSoundBGM.pan

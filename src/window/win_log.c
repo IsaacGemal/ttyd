@@ -191,7 +191,7 @@ extern const u8 enemy_monoshiri_sort_table[];
             (w)->rows[k_].curX = 0.0f;                                    \
             (w)->rows[k_].targetX = 0.0f;                                 \
             {                                                                         \
-                f32 a_ = 45.0f * winLogI2F((w)->count, base, &e7cScratch);   \
+                f32 a_ = 45.0f * winLogI2F((w)->count, base, &i2fScratch);   \
                 f32 b_ = 45.0f * winLogI2F(k_, base, &macScratch);           \
                 f32 y_ = a_ / 2.0f - b_;                                 \
                 (w)->rows[k_].curY = y_;                                              \
@@ -255,7 +255,7 @@ void winLogInit(WindowWork* work) {
     const char* area;
     s32 i;
     s32 k_;
-    f64 e7cScratch;
+    f64 i2fScratch;
     f64 macScratch;
 
     ((LogWin*)work)->state = 0;
@@ -387,9 +387,9 @@ void winLogInit(WindowWork* work) {
     }
     w->stoneSel = 0;
     {
-        f32 e7c = 51.42857f * winLogI2F(w->stoneSel, base, &e7cScratch);
-        w->stoneTargetAngle = e7c;
-        w->stoneAngle = e7c;
+        f32 angle = 51.42857f * winLogI2F(w->stoneSel, base, &i2fScratch);
+        w->stoneTargetAngle = angle;
+        w->stoneAngle = angle;
     }
     w->stoneX = 0.0f;
     w->stoneTargetX = 0.0f;

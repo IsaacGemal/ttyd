@@ -2784,16 +2784,53 @@ void winMailDisp(WindowWork* work) {
     s32 i;
 
     if (work->mailX < 320.0f && work->mailY > -240.0f) {
-    winMailGX(work, work->mailX, work->mailY);
+        winMailGX(work, work->mailX, work->mailY);
 
-    if (work->itemState != 0xCA) {
-        for (i = 0; i < work->mailCount; i++) {
-            s32 id = work->mailList[1 + i * 2];
-            s32 num = work->mailList[i * 2];
-            WinMailEntry* mail = mailGetPtr(id);
-            GXColor color;
+        if (work->itemState != 0xCA) {
+            for (i = 0; i < work->mailCount; i++) {
+                s32 id = work->mailList[1 + i * 2];
+                s32 num = work->mailList[i * 2];
+                WinMailEntry* mail = mailGetPtr(id);
+                GXColor color;
+                GXColor black = {0x00, 0x00, 0x00, 0xFF};
+                GXColor white;
+
+                if (mail->flags & 1) {
+                    color = (GXColor){0xD7, 0xAC, 0xBC, 0xFF};
+                } else if (mail->flags & 2) {
+                    color = (GXColor){0xD3, 0xD7, 0xAC, 0xFF};
+                } else if (mail->flags & 4) {
+                    color = (GXColor){0xAC, 0xC2, 0xD7, 0xFF};
+                } else {
+                    color = (GXColor){0xE1, 0xE1, 0xE1, 0xFF};
+                }
+                winTexInit(WIN_MAIL_TEX(work));
+                winTexSet(0x77,
+                          (Vec){4.0f + (208.0f + work->mailX), work->mailPagePos + ((work->mailY - 56.0f) - (f32)(i * 40)), 0.0f},
+                          (Vec){1.0f, 1.0f, 1.0f}, color);
+                white = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+                winTexSet(pouchCheckMail(id) == 2 ? WIN_TEX_MAIL_READ : WIN_TEX_MAIL_UNREAD,
+                          (Vec){72.0f + work->mailX, work->mailPagePos + (((work->mailY - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+                          (Vec){1.0f, 1.0f, 1.0f}, white);
+                winTexSet((num + 1) / 10 + 0x65,
+                          (Vec){2.0f + (88.0f + work->mailX), work->mailPagePos + (((work->mailY - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+                          (Vec){1.0f, 1.0f, 1.0f}, white);
+                winTexSet((num + 1) % 10 + 0x65,
+                          (Vec){2.0f + (104.0f + work->mailX), work->mailPagePos + (((work->mailY - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+                          (Vec){1.0f, 1.0f, 1.0f}, white);
+                winFontInit();
+                winFontSetLabel((Vec){120.0f + work->mailX, work->mailPagePos + (8.0f + ((work->mailY - 56.0f) - (f32)(i * 40))), 0.0f},
+                                (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
+            }
+            GXSetScissor(0, 0, 0x260, 0x1E0);
+        } else {
+            s32 sel = work->mailSel;
+            s32 num = work->mailList[sel * 2];
+            GXColor white = {0xFF, 0xFF, 0xFF, 0xFF};
             GXColor black = {0x00, 0x00, 0x00, 0xFF};
-            GXColor white;
+            WinMailEntry* mail = mailGetPtr(work->mailList[1 + sel * 2]);
+            GXColor color;
+            u32 top;
 
             if (mail->flags & 1) {
                 color = (GXColor){0xD7, 0xAC, 0xBC, 0xFF};
@@ -2804,109 +2841,73 @@ void winMailDisp(WindowWork* work) {
             } else {
                 color = (GXColor){0xE1, 0xE1, 0xE1, 0xFF};
             }
+
+            // the header: envelope, opened mark, number and title
             winTexInit(WIN_MAIL_TEX(work));
             winTexSet(0x77,
-                      (Vec){4.0f + (208.0f + work->mailX), work->mailPagePos + ((work->mailY - 56.0f) - (f32)(i * 40)), 0.0f},
+                      (Vec){4.0f + (208.0f + work->mailX), work->mailY - 56.0f, 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, color);
-            white = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-            winTexSet(pouchCheckMail(id) == 2 ? WIN_TEX_MAIL_READ : WIN_TEX_MAIL_UNREAD,
-                      (Vec){72.0f + work->mailX, work->mailPagePos + (((work->mailY - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+            winTexSet(0x5E,
+                      (Vec){72.0f + work->mailX, work->mailY - 56.0f, 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winTexSet((num + 1) / 10 + 0x65,
-                      (Vec){2.0f + (88.0f + work->mailX), work->mailPagePos + (((work->mailY - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+                      (Vec){2.0f + (88.0f + work->mailX), (work->mailY - 56.0f) - 3.0f, 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winTexSet((num + 1) % 10 + 0x65,
-                      (Vec){2.0f + (104.0f + work->mailX), work->mailPagePos + (((work->mailY - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+                      (Vec){2.0f + (104.0f + work->mailX), (work->mailY - 56.0f) - 3.0f, 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winFontInit();
-            winFontSetLabel((Vec){120.0f + work->mailX, work->mailPagePos + (8.0f + ((work->mailY - 56.0f) - (f32)(i * 40))), 0.0f},
+            winFontSetLabel((Vec){120.0f + work->mailX, 8.0f + (work->mailY - 56.0f), 0.0f},
                             (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
-        }
-        GXSetScissor(0, 0, 0x260, 0x1E0);
-    } else {
-        s32 sel = work->mailSel;
-        s32 num = work->mailList[sel * 2];
-        GXColor white = {0xFF, 0xFF, 0xFF, 0xFF};
-        GXColor black = {0x00, 0x00, 0x00, 0xFF};
-        WinMailEntry* mail = mailGetPtr(work->mailList[1 + sel * 2]);
-        GXColor color;
-        u32 top;
 
-        if (mail->flags & 1) {
-            color = (GXColor){0xD7, 0xAC, 0xBC, 0xFF};
-        } else if (mail->flags & 2) {
-            color = (GXColor){0xD3, 0xD7, 0xAC, 0xFF};
-        } else if (mail->flags & 4) {
-            color = (GXColor){0xAC, 0xC2, 0xD7, 0xFF};
-        } else {
-            color = (GXColor){0xE1, 0xE1, 0xE1, 0xFF};
-        }
+            // the body, clipped to the page and scrolled by whole lines
+            top = 72.0f + (240.0f - work->mailY);
+            GXSetScissor(32.0f + (304.0f + work->mailX), top, 0x158, 0xB1);
+            winTexInit(WIN_MAIL_TEX(work));
+            winTexSet(0x77,
+                      (Vec){4.0f + (208.0f + work->mailX), (work->mailY - 56.0f) - 80.0f, 0.0f},
+                      (Vec){1.0f, 7.5f, 1.0f}, color);
+            winFontInit();
+            winFontSetLabel((Vec){80.0f + work->mailX, (work->mailY - 80.0f) + (f32)(work->mailScroll * 21), 0.0f},
+                            (Vec){0.75f, 0.75f, 0.75f}, (GXColor){0x00, 0x00, 0x00, 0xFF}, mail->body);
+            if (mail->flags & 0x1000) {
+                winTexInit(*work->mailTpl->data);
+                winTexSet(mail->picture,
+                          (Vec){210.0f + work->mailX, 7.0f + ((work->mailY - (f32)((work->mailLines - 1) * 21))
+                                                       + (f32)(work->mailScroll * 21)), 0.0f},
+                          (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+            }
+            GXSetScissor(0, 0, 0x260, 0x1E0);
 
-        // the header: envelope, opened mark, number and title
-        winTexInit(WIN_MAIL_TEX(work));
-        winTexSet(0x77,
-                  (Vec){4.0f + (208.0f + work->mailX), work->mailY - 56.0f, 0.0f},
-                  (Vec){1.0f, 1.0f, 1.0f}, color);
-        winTexSet(0x5E,
-                  (Vec){72.0f + work->mailX, work->mailY - 56.0f, 0.0f},
-                  (Vec){1.0f, 1.0f, 1.0f}, white);
-        winTexSet((num + 1) / 10 + 0x65,
-                  (Vec){2.0f + (88.0f + work->mailX), (work->mailY - 56.0f) - 3.0f, 0.0f},
-                  (Vec){1.0f, 1.0f, 1.0f}, white);
-        winTexSet((num + 1) % 10 + 0x65,
-                  (Vec){2.0f + (104.0f + work->mailX), (work->mailY - 56.0f) - 3.0f, 0.0f},
-                  (Vec){1.0f, 1.0f, 1.0f}, white);
-        winFontInit();
-        winFontSetLabel((Vec){120.0f + work->mailX, 8.0f + (work->mailY - 56.0f), 0.0f},
-                        (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
-
-        // the body, clipped to the page and scrolled by whole lines
-        top = 72.0f + (240.0f - work->mailY);
-        GXSetScissor(32.0f + (304.0f + work->mailX), top, 0x158, 0xB1);
-        winTexInit(WIN_MAIL_TEX(work));
-        winTexSet(0x77,
-                  (Vec){4.0f + (208.0f + work->mailX), (work->mailY - 56.0f) - 80.0f, 0.0f},
-                  (Vec){1.0f, 7.5f, 1.0f}, color);
-        winFontInit();
-        winFontSetLabel((Vec){80.0f + work->mailX, (work->mailY - 80.0f) + (f32)(work->mailScroll * 21), 0.0f},
-                        (Vec){0.75f, 0.75f, 0.75f}, (GXColor){0x00, 0x00, 0x00, 0xFF}, mail->body);
-        if (mail->flags & 0x1000) {
-            winTexInit(*work->mailTpl->data);
-            winTexSet(mail->picture,
-                      (Vec){210.0f + work->mailX, 7.0f + ((work->mailY - (f32)((work->mailLines - 1) * 21))
-                                                   + (f32)(work->mailScroll * 21)), 0.0f},
-                      (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-        }
-        GXSetScissor(0, 0, 0x260, 0x1E0);
-
-        // scroll arrows (blinking) and the scroll bar, when the body is longer than a page
-        if (work->mailLines > 8) {
-            winIconInit();
-            if (work->mailScroll == 0) {
-                if ((gp->retraceCount & 0x1F) < 20) {
+            // scroll arrows (blinking) and the scroll bar, when the body is longer than a page
+            if (work->mailLines > 8) {
+                winIconInit();
+                if (work->mailScroll == 0) {
+                    if ((gp->retraceCount & 0x1F) < 20) {
+                        winIconSet(0x1B6,
+                                   (Vec){360.0f + work->mailX, (20.0f + (work->mailY - 230.0f)) - 24.0f, 0.0f},
+                                   (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                    }
+                } else if (work->mailScroll + 6 == work->mailLines) {
+                    if ((gp->retraceCount & 0x1F) < 20) {
+                        winIconSet(0x1B5,
+                                   (Vec){360.0f + work->mailX, 24.0f + (20.0f + (work->mailY - 230.0f)), 0.0f},
+                                   (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                    }
+                } else if ((gp->retraceCount & 0x1F) < 20) {
+                    winIconSet(0x1B5,
+                               (Vec){360.0f + work->mailX, 24.0f + (20.0f + (work->mailY - 230.0f)), 0.0f},
+                               (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                     winIconSet(0x1B6,
                                (Vec){360.0f + work->mailX, (20.0f + (work->mailY - 230.0f)) - 24.0f, 0.0f},
                                (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
-            } else if (work->mailScroll + 6 == work->mailLines) {
-                if ((gp->retraceCount & 0x1F) < 20) {
-                    winIconSet(0x1B5,
-                               (Vec){360.0f + work->mailX, 24.0f + (20.0f + (work->mailY - 230.0f)), 0.0f},
-                               (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-                }
-            } else if ((gp->retraceCount & 0x1F) < 20) {
-                winIconSet(0x1B5,
-                           (Vec){360.0f + work->mailX, 24.0f + (20.0f + (work->mailY - 230.0f)), 0.0f},
-                           (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-                winIconSet(0x1B6,
-                           (Vec){360.0f + work->mailX, (20.0f + (work->mailY - 230.0f)) - 24.0f, 0.0f},
+                winIconSet(0x70,
+                           (Vec){360.0f + work->mailX, 20.0f + (work->mailY - 230.0f), 0.0f},
                            (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
             }
-            winIconSet(0x70,
-                       (Vec){360.0f + work->mailX, 20.0f + (work->mailY - 230.0f), 0.0f},
-                       (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         }
-    }    }
+    }
 }
 
 void winRootFbCopy(s32 unused, WindowWork* work) {
