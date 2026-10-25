@@ -292,11 +292,7 @@ void mot_dokan(void) {
         }
         break;
     case 0x67:
-<<<<<<< HEAD
         mario->fallReturnPos = mario->position;
-=======
-        mario->fallReturnPos = mario->position;
->>>>>>> 95daa1a14 (Event and Mario fields: name urouro, one-message, badge shop and MarioWork words from their readers)
         mario->scale = (Vec){ 1.0f, 1.0f, 1.0f };
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;
@@ -351,11 +347,7 @@ void mot_dokan(void) {
         }
         break;
     case 0x71:
-<<<<<<< HEAD
         mario->fallReturnPos = mario->position;
-=======
-        mario->fallReturnPos = mario->position;
->>>>>>> 95daa1a14 (Event and Mario fields: name urouro, one-message, badge shop and MarioWork words from their readers)
         mario->scale = (Vec){ 1.0f, 1.0f, 1.0f };
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;
