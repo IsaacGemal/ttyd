@@ -71,7 +71,7 @@ BattleUnitKind unit_boss_gesso = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     120,                        // width
     120,                        // height
     { 46, -75 },                // statusIconOffset

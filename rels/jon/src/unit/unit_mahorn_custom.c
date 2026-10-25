@@ -94,7 +94,7 @@ BattleUnitKind unit_mahorn_custom = {
     70,                         // bonusCoinRate
     2,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     48,                         // width
     44,                         // height
     { 0, 44 },                  // statusIconOffset
@@ -142,7 +142,7 @@ BattleUnitKind unit_mahorn_custom_bunsin = {
     60,                            // bonusCoinRate
     0,                             // baseCoin
     50,                            // escapeRate
-    9999,                          // field_0x14
+    9999,                          // renzokuSoftCap
     48,                            // width
     44,                            // height
     { 0, 44 },                     // statusIconOffset

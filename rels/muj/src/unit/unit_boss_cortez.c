@@ -112,7 +112,7 @@ BattleUnitKind unit_boss_cortez = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    6,                          // field_0x14
+    6,                          // renzokuSoftCap
     250,                        // width
     170,                        // height
     { -10, 90 },                // statusIconOffset

@@ -361,7 +361,7 @@ BattleUnitKind unitdata_Party_Christine = {
     0,                               // bonusCoinRate
     0,                               // baseCoin
     100,                             // escapeRate
-    9,                               // field_0x14
+    9,                               // renzokuSoftCap
     20,                              // width
     20,                              // height
     { 10, 24 },                      // statusIconOffset

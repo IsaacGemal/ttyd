@@ -331,7 +331,7 @@ BattleUnitKind unitdata_Party_Nokotarou = {
     0,                             // bonusCoinRate
     0,                             // baseCoin
     100,                           // escapeRate
-    9,                             // field_0x14
+    9,                             // renzokuSoftCap
     20,                            // width
     33,                            // height
     { 14, 36 },                    // statusIconOffset

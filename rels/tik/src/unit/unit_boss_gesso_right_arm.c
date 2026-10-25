@@ -62,7 +62,7 @@ BattleUnitKind unit_boss_gesso_right_arm = {
     100,                         // bonusCoinRate
     0,                           // baseCoin
     50,                          // escapeRate
-    9,                           // field_0x14
+    9,                           // renzokuSoftCap
     60,                          // width
     110,                         // height
     { -68, -100 },               // statusIconOffset

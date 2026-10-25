@@ -64,7 +64,7 @@ BattleUnitKind unit_boss_bunbaba = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    6,                          // field_0x14
+    6,                          // renzokuSoftCap
     230,                        // width
     170,                        // height
     { -210, 45 },               // statusIconOffset

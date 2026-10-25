@@ -55,7 +55,7 @@ BattleUnitKind unit_yami_kuriboo = {
     70,                         // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     23,                         // width
     25,                         // height
     { 5, 25 },                  // statusIconOffset

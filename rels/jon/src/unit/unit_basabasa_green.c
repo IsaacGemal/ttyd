@@ -55,7 +55,7 @@ BattleUnitKind unit_basabasa_green = {
     70,                         // bonusCoinRate
     2,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     32,                         // width
     32,                         // height
     { 6, 32 },                  // statusIconOffset

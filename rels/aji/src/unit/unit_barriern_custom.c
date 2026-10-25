@@ -95,7 +95,7 @@ BattleUnitKind unit_barriern_custom = {
     70,                         // bonusCoinRate
     5,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     50,                         // width
     50,                         // height
     { 0, 25 },                  // statusIconOffset

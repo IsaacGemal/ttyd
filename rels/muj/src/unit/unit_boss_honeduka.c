@@ -46,7 +46,7 @@ BattleUnitKind unit_boss_honeduka = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     100,                        // width
     100,                        // height
     { 0, 0 },                   // statusIconOffset

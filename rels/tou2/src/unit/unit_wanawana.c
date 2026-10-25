@@ -62,7 +62,7 @@ BattleUnitKind unit_wanawana = {
     0,                          // bonusCoinRate
     0,                          // baseCoin
     100,                        // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     24,                         // width
     24,                         // height
     { 24, 24 },                 // statusIconOffset

@@ -70,7 +70,7 @@ BattleUnitKind unit_poison_pakkun = {
     70,                         // bonusCoinRate
     0,                          // baseCoin
     60,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     40,                         // width
     48,                         // height
     { 4, 48 },                  // statusIconOffset

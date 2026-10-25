@@ -65,7 +65,7 @@ BattleUnitKind unit_togenoko = {
     70,                          // bonusCoinRate
     2,                           // baseCoin
     50,                          // escapeRate
-    9999,                        // field_0x14
+    9999,                        // renzokuSoftCap
     36,                          // width
     50,                          // height
     { -4, 50 },                  // statusIconOffset

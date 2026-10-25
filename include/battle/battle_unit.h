@@ -759,7 +759,9 @@ typedef struct BattleUnitKind {
     u8 bonusCoinRate;                  // 0x11, ...each adding a coin with this chance (%)
     u8 baseCoin;                       // 0x12
     u8 escapeRate;                     // 0x13
-    u16 field_0x14;                    // 0x14, read (lhz) by mario_get_renzoku_count_max
+    u16 renzokuSoftCap;                // 0x14, mario_get_renzoku_count_max: Power Bounce and Multibonk on this kind
+                                       //       always go on below this count, then go on with a 33% chance per
+                                       //       hit until twice it
     s16 width;                         // 0x16
     s16 height;                        // 0x18
     s16 statusIconOffset[2];           // 0x1A

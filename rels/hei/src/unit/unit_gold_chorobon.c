@@ -65,7 +65,7 @@ BattleUnitKind unit_gold_chorobon = {
     100,                         // bonusCoinRate
     0,                           // baseCoin
     50,                          // escapeRate
-    5,                           // field_0x14
+    5,                           // renzokuSoftCap
     28,                          // width
     32,                          // height
     { 5, 32 },                   // statusIconOffset

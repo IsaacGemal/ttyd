@@ -53,7 +53,7 @@ BattleUnitKind unit_sinnosuke = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     70,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     26,                         // width
     28,                         // height
     { 4, 28 },                  // statusIconOffset

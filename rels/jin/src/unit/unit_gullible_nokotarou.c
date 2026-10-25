@@ -59,7 +59,7 @@ BattleUnitKind unit_gullible_nokotarou = {
     100,                         // bonusCoinRate
     0,                           // baseCoin
     50,                          // escapeRate
-    9,                           // field_0x14
+    9,                           // renzokuSoftCap
     28,                          // width
     40,                          // height
     { 10, 30 },                  // statusIconOffset

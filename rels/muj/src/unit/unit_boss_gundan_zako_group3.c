@@ -65,7 +65,7 @@ BattleUnitKind unit_boss_gundan_zako_group3 = {
     100,                           // bonusCoinRate
     0,                             // baseCoin
     50,                            // escapeRate
-    9999,                          // field_0x14
+    9999,                          // renzokuSoftCap
     260,                           // width
     52,                            // height
     { 0, 52 },                     // statusIconOffset

@@ -107,7 +107,7 @@ BattleUnitKind unit_purple_teresa_22_data_E620 = {
     70,                              // bonusCoinRate
     0,                               // baseCoin
     50,                              // escapeRate
-    9999,                            // field_0x14
+    9999,                            // renzokuSoftCap
     34,                              // width
     32,                              // height
     { 0, 32 },                       // statusIconOffset
@@ -154,7 +154,7 @@ BattleUnitKind unit_purple_teresa_15_data_493B8 = {
     70,                              // bonusCoinRate
     0,                               // baseCoin
     50,                              // escapeRate
-    9999,                            // field_0x14
+    9999,                            // renzokuSoftCap
     34,                              // width
     32,                              // height
     { 0, 32 },                       // statusIconOffset

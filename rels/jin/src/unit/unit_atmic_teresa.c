@@ -95,7 +95,7 @@ BattleUnitKind unit_atmic_teresa = {
     100,                         // bonusCoinRate
     0,                           // baseCoin
     50,                          // escapeRate
-    9999,                        // field_0x14
+    9999,                        // renzokuSoftCap
     120,                         // width
     110,                         // height
     { 30, 105 },                 // statusIconOffset

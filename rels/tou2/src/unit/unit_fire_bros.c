@@ -62,7 +62,7 @@ BattleUnitKind unit_fire_bros = {
     70,                         // bonusCoinRate
     2,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     36,                         // width
     44,                         // height
     { 3, 44 },                  // statusIconOffset

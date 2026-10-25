@@ -76,7 +76,7 @@ BattleUnitKind unit_chorobon_gundan = {
     100,                            // bonusCoinRate
     0,                              // baseCoin
     50,                             // escapeRate
-    5,                              // field_0x14
+    5,                              // renzokuSoftCap
     260,                            // width
     50,                             // height
     { 0, 50 },                      // statusIconOffset

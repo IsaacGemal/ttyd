@@ -324,7 +324,7 @@ BattleUnitKind unit_boss_gonbaba = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     230,                        // width
     170,                        // height
     { -210, 45 },               // statusIconOffset

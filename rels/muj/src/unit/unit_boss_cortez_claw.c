@@ -57,7 +57,7 @@ BattleUnitKind unit_boss_cortez_claw = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    20,                         // field_0x14
+    20,                         // renzokuSoftCap
     65,                         // width
     40,                         // height
     { 0, 30 },                  // statusIconOffset

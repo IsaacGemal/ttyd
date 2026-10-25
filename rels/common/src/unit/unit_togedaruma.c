@@ -56,7 +56,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     70,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     46,                         // width
     40,                         // height
     { 5, 40 },                  // statusIconOffset

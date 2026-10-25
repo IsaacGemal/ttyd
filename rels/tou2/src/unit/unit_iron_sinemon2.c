@@ -63,7 +63,7 @@ BattleUnitKind unit_iron_sinemon2 = {
     100,                        // bonusCoinRate
     1,                          // baseCoin
     70,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     52,                         // width
     54,                         // height
     { 4, 54 },                  // statusIconOffset

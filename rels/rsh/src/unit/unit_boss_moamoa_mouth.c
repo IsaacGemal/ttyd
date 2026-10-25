@@ -56,7 +56,7 @@ BattleUnitKind unit_boss_moamoa_mouth = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    10,                         // field_0x14
+    10,                         // renzokuSoftCap
     200,                        // width
     120,                        // height
     { 40, 100 },                // statusIconOffset

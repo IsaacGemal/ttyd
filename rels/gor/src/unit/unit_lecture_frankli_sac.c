@@ -65,7 +65,7 @@ BattleUnitKind unit_lecture_frankli_sac = {
     0,                          // bonusCoinRate
     0,                          // baseCoin
     100,                        // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     28,                         // width
     24,                         // height
     { 5, 25 },                  // statusIconOffset

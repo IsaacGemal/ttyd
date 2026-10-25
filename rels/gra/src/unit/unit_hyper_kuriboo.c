@@ -56,7 +56,7 @@ BattleUnitKind unit_hyper_kuriboo = {
     70,                         // bonusCoinRate
     1,                          // baseCoin
     70,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     23,                         // width
     25,                         // height
     { 5, 25 },                  // statusIconOffset

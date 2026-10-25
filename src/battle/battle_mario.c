@@ -291,7 +291,7 @@ USER_FUNC(mario_get_renzoku_count_max) {
         evtSetValue(event, dest, 0);
         return EVT_RETURN_DONE;
     }
-    max = unit->mKindParams->field_0x14;
+    max = unit->mKindParams->renzokuSoftCap;
     if (val1 < max) {
         evtSetValue(event, dest, max);
         return EVT_RETURN_DONE;

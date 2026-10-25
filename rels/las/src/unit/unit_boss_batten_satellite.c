@@ -137,7 +137,7 @@ BattleUnitKind unit_boss_batten_satellite = {
     100,                           // bonusCoinRate
     0,                             // baseCoin
     50,                            // escapeRate
-    9,                             // field_0x14
+    9,                             // renzokuSoftCap
     16,                            // width
     16,                            // height
     { 0, 8 },                      // statusIconOffset

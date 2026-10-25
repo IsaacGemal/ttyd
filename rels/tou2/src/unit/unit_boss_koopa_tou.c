@@ -77,7 +77,7 @@ BattleUnitKind unit_boss_koopa_tou = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     86,                         // width
     80,                         // height
     { 0, 70 },                  // statusIconOffset

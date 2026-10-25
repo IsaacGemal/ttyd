@@ -61,7 +61,7 @@ BattleUnitKind unit_monban = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     100,                        // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     31,                         // width
     46,                         // height
     { 0, 46 },                  // statusIconOffset

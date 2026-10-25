@@ -82,7 +82,7 @@ BattleUnitKind unit_boss_macho_gance = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    6,                          // field_0x14
+    6,                          // renzokuSoftCap
     116,                        // width
     124,                        // height
     { 30, 100 },                // statusIconOffset

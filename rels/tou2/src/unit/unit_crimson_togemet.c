@@ -61,7 +61,7 @@ BattleUnitKind unit_crimson_togemet = {
     70,                         // bonusCoinRate
     1,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     28,                         // width
     26,                         // height
     { 5, 20 },                  // statusIconOffset

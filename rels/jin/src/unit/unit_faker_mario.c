@@ -76,7 +76,7 @@ BattleUnitKind unit_faker_mario = {
     100,                           // bonusCoinRate
     0,                             // baseCoin
     70,                            // escapeRate
-    7,                             // field_0x14
+    7,                             // renzokuSoftCap
     24,                            // width
     40,                            // height
     { 12, 40 },                    // statusIconOffset

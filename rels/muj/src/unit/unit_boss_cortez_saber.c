@@ -59,7 +59,7 @@ BattleUnitKind unit_boss_cortez_saber = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    20,                         // field_0x14
+    20,                         // renzokuSoftCap
     120,                        // width
     50,                         // height
     { 0, 30 },                  // statusIconOffset

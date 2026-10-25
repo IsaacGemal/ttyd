@@ -116,7 +116,7 @@ BattleUnitKind unit_boss_magnum_battender_mkII = {
     100,                            // bonusCoinRate
     0,                              // baseCoin
     50,                             // escapeRate
-    6,                              // field_0x14
+    6,                              // renzokuSoftCap
     120,                            // width
     160,                            // height
     { 30, 100 },                    // statusIconOffset
@@ -1461,7 +1461,7 @@ BattleUnitKind unit_boss_rocket_punch_mkII = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    10,                         // field_0x14
+    10,                         // renzokuSoftCap
     50,                         // width
     34,                         // height
     { 0, 15 },                  // statusIconOffset

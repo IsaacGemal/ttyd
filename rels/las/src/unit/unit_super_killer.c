@@ -53,7 +53,7 @@ BattleUnitKind unit_super_killer = {
     70,                         // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     32,                         // width
     26,                         // height
     { 3, 26 },                  // statusIconOffset

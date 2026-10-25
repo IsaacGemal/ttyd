@@ -78,7 +78,7 @@ BattleUnitKind unit_mahorn = {
     70,                         // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     48,                         // width
     44,                         // height
     { 0, 44 },                  // statusIconOffset

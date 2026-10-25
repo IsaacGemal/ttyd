@@ -70,7 +70,7 @@ BattleUnitKind unit_yami_togekuri = {
     70,                          // bonusCoinRate
     0,                           // baseCoin
     50,                          // escapeRate
-    9999,                        // field_0x14
+    9999,                        // renzokuSoftCap
     23,                          // width
     30,                          // height
     { 5, 30 },                   // statusIconOffset

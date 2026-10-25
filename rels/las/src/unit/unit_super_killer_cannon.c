@@ -60,7 +60,7 @@ BattleUnitKind unit_super_killer_cannon = {
     70,                              // bonusCoinRate
     3,                               // baseCoin
     50,                              // escapeRate
-    9999,                            // field_0x14
+    9999,                            // renzokuSoftCap
     52,                              // width
     38,                              // height
     { 5, 38 },                       // statusIconOffset

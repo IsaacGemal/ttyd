@@ -55,7 +55,7 @@ BattleUnitKind unit_gullible_yoshi = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     24,                         // width
     28,                         // height
     { 4, 24 },                  // statusIconOffset

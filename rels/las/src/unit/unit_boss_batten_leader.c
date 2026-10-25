@@ -587,7 +587,7 @@ BattleUnitKind unit_boss_batten_leader = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    6,                          // field_0x14
+    6,                          // renzokuSoftCap
     68,                         // width
     66,                         // height
     { 7, 70 },                  // statusIconOffset

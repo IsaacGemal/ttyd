@@ -67,7 +67,7 @@ BattleUnitKind unit_badge_borodo = {
     70,                         // bonusCoinRate
     2,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     26,                         // width
     34,                         // height
     { 0, 34 },                  // statusIconOffset

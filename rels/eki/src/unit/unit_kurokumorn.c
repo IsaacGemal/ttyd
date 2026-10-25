@@ -60,7 +60,7 @@ BattleUnitKind unit_kurokumorn = {
     70,                         // bonusCoinRate
     2,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     35,                         // width
     30,                         // height
     { 4, 30 },                  // statusIconOffset

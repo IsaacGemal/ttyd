@@ -64,7 +64,7 @@ BattleUnitKind unit_boss_marilyn = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     40,                         // width
     54,                         // height
     { 0, 54 },                  // statusIconOffset

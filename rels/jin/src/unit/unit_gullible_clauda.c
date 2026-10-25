@@ -54,7 +54,7 @@ BattleUnitKind unit_gullible_clauda = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     42,                         // width
     46,                         // height
     { 12, 40 },                 // statusIconOffset

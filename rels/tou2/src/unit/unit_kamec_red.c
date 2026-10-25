@@ -93,7 +93,7 @@ BattleUnitKind unit_kamec_red = {
     70,                         // bonusCoinRate
     2,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     42,                         // width
     42,                         // height
     { 0, 42 },                  // statusIconOffset
@@ -141,7 +141,7 @@ BattleUnitKind unit_kamec_red_bunsin = {
     70,                         // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     42,                         // width
     42,                         // height
     { 0, 42 },                  // statusIconOffset

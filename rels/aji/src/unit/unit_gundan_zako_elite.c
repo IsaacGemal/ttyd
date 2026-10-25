@@ -55,7 +55,7 @@ BattleUnitKind unit_gundan_zako_elite = {
     70,                         // bonusCoinRate
     2,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     30,                         // width
     36,                         // height
     { 0, 36 },                  // statusIconOffset

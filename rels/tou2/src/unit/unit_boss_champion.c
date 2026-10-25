@@ -76,7 +76,7 @@ BattleUnitKind unit_boss_champion = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    8,                          // field_0x14
+    8,                          // renzokuSoftCap
     50,                         // width
     64,                         // height
     { 3, 64 },                  // statusIconOffset

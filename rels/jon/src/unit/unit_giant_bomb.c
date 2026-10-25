@@ -61,7 +61,7 @@ BattleUnitKind unit_giant_bomb = {
     70,                         // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     54,                         // width
     70,                         // height
     { 7, 70 },                  // statusIconOffset

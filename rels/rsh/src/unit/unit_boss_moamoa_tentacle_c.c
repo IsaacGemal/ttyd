@@ -57,7 +57,7 @@ BattleUnitKind unit_boss_moamoa_tentacle_c = {
     100,                          // bonusCoinRate
     0,                            // baseCoin
     50,                           // escapeRate
-    10,                           // field_0x14
+    10,                           // renzokuSoftCap
     110,                          // width
     70,                           // height
     { -50, 70 },                  // statusIconOffset

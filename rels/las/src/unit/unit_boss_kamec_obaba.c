@@ -546,7 +546,7 @@ BattleUnitKind unit_boss_kamec_obaba = {
     100,                          // bonusCoinRate
     0,                            // baseCoin
     50,                           // escapeRate
-    6,                            // field_0x14
+    6,                            // renzokuSoftCap
     42,                           // width
     42,                           // height
     { 7, 42 },                    // statusIconOffset

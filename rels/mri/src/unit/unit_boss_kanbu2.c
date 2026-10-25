@@ -56,7 +56,7 @@ BattleUnitKind unit_boss_kanbu2 = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     100,                        // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     56,                         // width
     59,                         // height
     { 56, 59 },                 // statusIconOffset

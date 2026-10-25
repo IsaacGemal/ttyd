@@ -44,7 +44,7 @@ BattleUnitKind unit_system = {
     0,                                                          // bonusCoinRate
     0,                                                          // baseCoin
     0,                                                          // escapeRate
-    9,                                                          // field_0x14
+    9,                                                          // renzokuSoftCap
     24,                                                         // width
     24,                                                         // height
     { 0, 20 },                                                  // statusIconOffset

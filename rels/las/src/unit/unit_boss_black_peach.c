@@ -168,7 +168,7 @@ BattleUnitKind unit_boss_black_peach = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    6,                          // field_0x14
+    6,                          // renzokuSoftCap
     40,                         // width
     54,                         // height
     { 5, 54 },                  // statusIconOffset
@@ -1322,7 +1322,7 @@ BattleUnitKind unit_boss_shadow_queen = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    6,                          // field_0x14
+    6,                          // renzokuSoftCap
     40,                         // width
     54,                         // height
     { 0, 54 },                  // statusIconOffset
@@ -1723,7 +1723,7 @@ BattleUnitKind unit_boss_shadow_hand_1 = {
     100,                               // bonusCoinRate
     0,                                 // baseCoin
     50,                                // escapeRate
-    7,                                 // field_0x14
+    7,                                 // renzokuSoftCap
     90,                                // width
     110,                               // height
     { 0, 54 },                         // statusIconOffset
@@ -1835,7 +1835,7 @@ BattleUnitKind unit_boss_shadow_hand_2 = {
     100,                               // bonusCoinRate
     0,                                 // baseCoin
     50,                                // escapeRate
-    7,                                 // field_0x14
+    7,                                 // renzokuSoftCap
     90,                                // width
     110,                               // height
     { 0, 54 },                         // statusIconOffset
@@ -1947,7 +1947,7 @@ BattleUnitKind unit_boss_shadow_hand_small = {
     100,                          // bonusCoinRate
     0,                            // baseCoin
     50,                           // escapeRate
-    7,                            // field_0x14
+    7,                            // renzokuSoftCap
     220,                          // width
     45,                           // height
     { 0, 54 },                    // statusIconOffset

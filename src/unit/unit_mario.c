@@ -185,7 +185,7 @@ BattleUnitKind unitdata_Mario = {
     0,                               // bonusCoinRate
     0,                               // baseCoin
     100,                             // escapeRate
-    9,                               // field_0x14
+    9,                               // renzokuSoftCap
     22,                              // width
     36,                              // height
     { 11, 36 },                      // statusIconOffset

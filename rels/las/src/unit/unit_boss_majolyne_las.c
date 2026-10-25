@@ -66,7 +66,7 @@ BattleUnitKind unit_boss_majolyne_las = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    7,                          // field_0x14
+    7,                          // renzokuSoftCap
     26,                         // width
     34,                         // height
     { 0, 34 },                  // statusIconOffset
