@@ -310,11 +310,11 @@ static USER_FUNC(effitemget_busaiku) {
 
 static USER_FUNC(lect_mobj_hit_nasi) {
     s32* args = event->args;
-    s32 name = evtGetValue(event, args[0]);
+    const char* name = (const char*)evtGetValue(event, args[0]);
     MapObjectEntry* mobj;
     s32 i;
-    if (strcmp((char*)name, "me") != 0) {
-        mobj = mobjNameToPtr((char*)name);
+    if (strcmp(name, "me") != 0) {
+        mobj = mobjNameToPtr(name);
     } else {
         mobj = event->thisMapObj;
     }
