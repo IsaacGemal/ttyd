@@ -38,8 +38,14 @@ typedef struct MoamoaWorkPose {
     s32 animPose;      // 0x28, pose id
     s32 type;          // 0x2C
     s32* ownerIdPtr;   // 0x30, mainUnitId or the unit work word holding the owning part's unit id; -1 once it is gone
-    Vec field_0x34;    // 0x34
-    Vec field_0x40;    // 0x40
+    union {
+        Vec spinPos;   // 0x34, moamoa_guruguru: position the spin starts from, rotated about center by spinAngle
+        Vec bombVel;   // 0x34, moamoa_bomb: per-frame velocity of the scattered pose, y falling by 1 a frame
+    };
+    union {
+        Vec spinAxis;  // 0x40, moamoa_guruguru: rotation axis (PSMTXRotAxisRad), the y axis tilted per pose
+        Vec bombPos;   // 0x40, moamoa_bomb: position of the scattered pose, copied into its matrix
+    };
     u8 pad_0x4C[4];
 } MoamoaWorkPose; // 0x50
 
@@ -835,12 +841,12 @@ USER_FUNC(moamoa_guruguru) {
     angle = 0.0f;
     for (i = 0; i < wp->countA; i++, extPose++, pose++) {
         if (pose->flags & 1) {
-            pose->field_0x34.x = (*extPose->matrix)[0][3];
-            pose->field_0x34.y = (*extPose->matrix)[1][3];
-            pose->field_0x34.z = (*extPose->matrix)[2][3];
-            pose->field_0x40 = (Vec){ 0.0f, 1.0f, 0.0f };
+            pose->spinPos.x = (*extPose->matrix)[0][3];
+            pose->spinPos.y = (*extPose->matrix)[1][3];
+            pose->spinPos.z = (*extPose->matrix)[2][3];
+            pose->spinAxis = (Vec){ 0.0f, 1.0f, 0.0f };
             PSMTXRotRad(mtx, 'Z', angle * 0.017453292f);
-            PSMTXMultVec(mtx, &pose->field_0x40, &pose->field_0x40);
+            PSMTXMultVec(mtx, &pose->spinAxis, &pose->spinAxis);
             angle += 22.4375f;
             if (angle >= 360.0f) {
                 angle -= 360.0f;
@@ -884,12 +890,12 @@ USER_FUNC(moamoa_bomb) {
                 if (!(pose2->flags & 1)) {
                     pose2->flags |= 1;
                     if (pose2->flags & 1) {
-                        pose2->field_0x34.x = randf(0.0f, 60.0f) - 30.0f;
-                        pose2->field_0x34.y = randf(0.0f, 35.0f);
-                        pose2->field_0x34.z = randf(0.0f, 30.0f) + 60.0f;
-                        pose2->field_0x40.x = (*extPose->matrix)[0][3];
-                        pose2->field_0x40.y = (*extPose->matrix)[1][3];
-                        pose2->field_0x40.z = (*extPose->matrix)[2][3];
+                        pose2->bombVel.x = randf(0.0f, 60.0f) - 30.0f;
+                        pose2->bombVel.y = randf(0.0f, 35.0f);
+                        pose2->bombVel.z = randf(0.0f, 30.0f) + 60.0f;
+                        pose2->bombPos.x = (*extPose->matrix)[0][3];
+                        pose2->bombPos.y = (*extPose->matrix)[1][3];
+                        pose2->bombPos.z = (*extPose->matrix)[2][3];
                         count++;
                     }
                 }
@@ -904,15 +910,15 @@ USER_FUNC(moamoa_bomb) {
     pose = wp->poses;
     for (i = 0; i < wp->countA; i++, extPose++, pose++) {
         if (pose->flags & 1) {
-            if (pose->field_0x40.y >= -500.0f) {
-                pose->field_0x40.x += pose->field_0x34.x;
-                pose->field_0x40.y += pose->field_0x34.y;
-                pose->field_0x40.z += pose->field_0x34.z;
-                pose->field_0x34.y -= 1.0f;
+            if (pose->bombPos.y >= -500.0f) {
+                pose->bombPos.x += pose->bombVel.x;
+                pose->bombPos.y += pose->bombVel.y;
+                pose->bombPos.z += pose->bombVel.z;
+                pose->bombVel.y -= 1.0f;
             }
-            (*extPose->matrix)[0][3] = pose->field_0x40.x;
-            (*extPose->matrix)[1][3] = pose->field_0x40.y;
-            (*extPose->matrix)[2][3] = pose->field_0x40.z;
+            (*extPose->matrix)[0][3] = pose->bombPos.x;
+            (*extPose->matrix)[1][3] = pose->bombPos.y;
+            (*extPose->matrix)[2][3] = pose->bombPos.z;
         }
     }
 
@@ -1361,8 +1367,8 @@ static void ext_moamoa_main(void) {
         pose = wp->poses;
         for (i = 0; i < wp->countA; i++, extPose++, pose++) {
             if (pose->flags & 1) {
-                PSVECSubtract(&pose->field_0x34, &wp->center, &offsetR);
-                PSMTXRotAxisRad(mtx, &pose->field_0x40, 0.017453292f * wp->spinAngle);
+                PSVECSubtract(&pose->spinPos, &wp->center, &offsetR);
+                PSMTXRotAxisRad(mtx, &pose->spinAxis, 0.017453292f * wp->spinAngle);
                 PSMTXMultVec(mtx, &offsetR, &offsetR);
                 PSVECScale(&offsetR, &offsetR, wp->spinScale);
                 PSVECAdd(&offsetR, &wp->center, &offsetR);

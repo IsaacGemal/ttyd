@@ -15,7 +15,7 @@ typedef struct MoamoaData {
 typedef struct MoamoaPose {
     char name1[16]; //0x0
     char name2[8];  //0x10
-    s16 field_0x18; //0x18
+    s16 loop;       //0x18, moamoa_pose_main restarts the pose at its end when set (0 for "J..." poses)
     s16 field_0x1A; //0x1A
     f32 duration;   //0x1C
     s32 startFrame; //0x20
@@ -30,7 +30,7 @@ typedef struct MoamoaEntry {
     u16 field_0x6;  //0x6
     Vec position;   //0x8
     f32 angle;      //0x14
-    s16 field_0x18; //0x18
+    s16 poseIndex;  //0x18, index into MoamoaWork.poses (set by moamoa_pose_change)
     s16 field_0x1A; //0x1A
     s32 field_0x1C; //0x1C
     OSTime time;    //0x20

@@ -1674,10 +1674,10 @@ void fan_disp(void) {
 //    `fmadds rf, 90, ...` operand order directly (the hand-written `min + r * span` comes out with
 //    the constant first). `randf` inlines to the same `rand`-then-scale sequence.
 //  - `ang = (ang + breath) / 2.0f` folds to the retail `* 0.5` fused-multiply-add colouring; the
-//    literal `* 0.5f` picks different FPRs (same story as the `field_0x38` line below). Case 2
+//    literal `* 0.5f` picks different FPRs (same story as the `hopVelY` line below). Case 2
 //    computes it before copying `vec3_tou_0000d064` into `target`, and that template is a non-const
 //    `.rodata` object, so the copy is scheduled after the `state` store as in retail.
-//  - `fan->field_0x40 = scale * -c;` (negating the operand, not `-scale * c`) is what retail's
+//  - `fan->driftAccelZ = scale * -c;` (negating the operand, not `-scale * c`) is what retail's
 //    fused form wants; `-(scale * c)` / `-scale * c` colour the FPRs differently.
 //  - the case-1 random angle goes through the `fanAngle` inline above: inlining `r * span + min`
 //    through parameters emits the retail `fmadds f, rf, 90, 135` operand order (the direct
@@ -1838,17 +1838,17 @@ void ext_fan_main(void) {
                     v.z = vz;
                     fp->target = v;
                 }
-                fp->field_0x3C = randf(4.0f, 6.0f);
-                fp->field_0x40 = randf(0.1f, 0.2f);
+                fp->hopSpeed = randf(4.0f, 6.0f);
+                fp->hopGravity = randf(0.1f, 0.2f);
                 {
                     f32 dy = fp->target.y - fp->position.y;
                     f32 dxy = distABf(fp->position.x, fp->position.z, fp->target.x, fp->target.z);
                     f32 ang = angleABf(fp->position.x, fp->position.z, fp->target.x, fp->target.z);
 
-                    fp->timer = (s16)(dxy / fp->field_0x3C);
+                    fp->timer = (s16)(dxy / fp->hopSpeed);
                     // /2.0f makes MWCC fold to the retail `* 0.5` fused-multiply-add colouring;
                     // the natural `* 0.5f` picks different FPRs.
-                    fp->field_0x38 = fp->field_0x40 * (f32)fp->timer / 2.0f + dy / (f32)fp->timer;
+                    fp->hopVelY = fp->hopGravity * (f32)fp->timer / 2.0f + dy / (f32)fp->timer;
                     (void)ang;
                 }
                 psndSFXOn_3D(FAN_SFX("SFX_STG3_AUDIENCE_FAN_FLY1"), &fp->position);
@@ -1868,10 +1868,10 @@ void ext_fan_main(void) {
                     f32 c;
                     f32 a = TWO_PI * ang / 360.0f;
                     s = fanSinf(a);
-                    fp->field_0x38 = scale * s;
-                    fp->field_0x3C = randf(0.03f, 0.06f);
+                    fp->driftAccelX = scale * s;
+                    fp->driftAccelY = randf(0.03f, 0.06f);
                     c = fanCosf(a);
-                    fp->field_0x40 = scale * -c;
+                    fp->driftAccelZ = scale * -c;
                     fp->timer = 120;
                 }
                 psndSFXOn_3D(FAN_SFX("SFX_STG3_AUDIENCE_FAN_FLY1"), &fp->position);
@@ -1922,17 +1922,17 @@ void ext_fan_main(void) {
         }
             break;
         case 10:
-            fan->position.y += fan->field_0x38;
-            fan->field_0x38 -= fan->field_0x40;
+            fan->position.y += fan->hopVelY;
+            fan->hopVelY -= fan->hopGravity;
             {
                 f32 ang = angleABf(fan->position.x, fan->position.z, fan->target.x, fan->target.z);
                 f32 a = TWO_PI * ang / 360.0f;
                 f32 s = fanSinf(a);
                 f32 c;
 
-                fan->position.x += fan->field_0x3C * s;
+                fan->position.x += fan->hopSpeed * s;
                 c = fanCosf(a);
-                fan->position.z += fan->field_0x3C * -c;
+                fan->position.z += fan->hopSpeed * -c;
             }
             {
                 s16 v = fan->timer;
@@ -1949,9 +1949,9 @@ void ext_fan_main(void) {
 
                 fan->timer = --v;
                 if (v > 0) {
-                    fan->target.x += fan->field_0x38;
-                    fan->target.y += fan->field_0x3C;
-                    fan->target.z += fan->field_0x40;
+                    fan->target.x += fan->driftAccelX;
+                    fan->target.y += fan->driftAccelY;
+                    fan->target.z += fan->driftAccelZ;
                     fan->position.x += fan->target.x;
                     fan->position.y += fan->target.y;
                     fan->position.z += fan->target.z;

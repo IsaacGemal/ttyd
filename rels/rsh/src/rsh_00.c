@@ -174,7 +174,7 @@ static void moamoa_pose_init(void) {
         wp->poses[wp->poseCount].startFrame = first;
         wp->poses[wp->poseCount].frameCount = i - first + 1;
         wp->poses[wp->poseCount].duration = data->frame;
-        wp->poses[wp->poseCount].field_0x18 = 1;
+        wp->poses[wp->poseCount].loop = 1;
 #ifdef MUST_MATCH
         // The target's pooled "J" object is 4 bytes (the compiler pads the last string);
         // the trailing NULs keep the object the same size. strncmp only reads one byte.
@@ -182,7 +182,7 @@ static void moamoa_pose_init(void) {
 #else
         if (strncmp(name2, "J", 1) == 0) {
 #endif
-            wp->poses[wp->poseCount].field_0x18 = 0;
+            wp->poses[wp->poseCount].loop = 0;
         }
         data++;
         i++;
@@ -197,11 +197,11 @@ static void moamoa_pose_main(void) {
     MoamoaEntry* entry = wp->entries;
 
     for (i = 0; i < wp->poseNum; i++, entry++, pose++) {
-        MoamoaPose* seq = &wp->poses[entry->field_0x18];
+        MoamoaPose* seq = &wp->poses[entry->poseIndex];
         f32 f = (f32)((u64)(gp->renderTime - entry->time) / (OS_TIMER_CLOCK / 1000)) * 60.0f / 1000.0f / seq->duration;
 
         if (f >= 1.0f) {
-            if (seq->field_0x18 != 0) {
+            if (seq->loop != 0) {
                 entry->time = gp->renderTime;
                 f = 0.0f;
             } else {
@@ -225,8 +225,8 @@ static void moamoa_pose_change(MoamoaEntry* entry, const char* name1, const char
             break;
         }
     }
-    if (i < wp->poseCount && entry->field_0x18 != i) {
-        entry->field_0x18 = i;
+    if (i < wp->poseCount && entry->poseIndex != i) {
+        entry->poseIndex = i;
         entry->time = gp->renderTime;
     }
 }
