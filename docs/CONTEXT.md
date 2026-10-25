@@ -8477,7 +8477,7 @@ function-pointer casts, seven sound ids passed as names and the four const point
 
 Task (Isaac): what the fsrcmisc and funk chapters left in the party structs and their neighbours: PartyEntry
 (include/party.h: 43 `field_N`, `field_110`, `field_144`), src/party/** (with a deep clean of party_yoshi, a top-10
-file), party_cloud.h, party_move.h, DoorParam and KinopioData (their headers; the rels data labels stay as they were),
+file), party_cloud.h, party_move.h, DoorParam and KinopioData (their headers, and the rels tables' comment labels),
 InformantWork/InformantInfo, FieldBattleData (`fbat->field_14/1C/44`), GlobalWork `unk8`/`field_C`, seq_e3.h. Each
 was named under CLEANUP_GUIDE section 3, or respelled `field_0xNN` (`pad_0xNN` for bytes nothing touches). Parallel
 branches: n2worst (evt_mobj, evt_npc, evt_sub), n2battle (src/battle), n2rels (rels). Their files changed only where
@@ -8500,6 +8500,8 @@ seven InformantWork reads.
   comments included: `field_N` 964 -> 0, `unkNN` 51 -> 0, `field_0xNN` 26 -> 85. Index restricted to the set:
   469 -> 527 weighted (field_0x 25 -> 83). Tree-wide, code only: `field_N` 1091 -> 31 (what is left is camdrv.h/.c
   and mapdrv.h, outside this set), `unkNN` 414 -> 348.
+  Rebased onto f9720ae0 (#1145, #1146): index **11.622 -> 11.710** per kLOC (8118 -> 8179 weighted), the same
+  +61 field_0x and nothing else.
 
 **Names, per struct** (field -> name: the consumer that proves it).
 - **PartyEntry** (party.h).
@@ -8589,11 +8591,11 @@ seven InformantWork reads.
   - 0x3C/0x44/0x48 `npcNames`/`mobjNames`/`itemNames` (npc_dark/npc_light; DoorEntry's names).
   - 0x40 `noclipMaps` (get_noclip_map's list; house_in clears MAPOBJ_FLAG_CLIP on each).
   - 0x18/0x20 (animation's LW(1)/LW(3), which no script reads) are `field_0x18`/`field_0x20`.
-  - The nok_00/nok_01 `// field_NN` labels are unchanged, as the task asked.
+  - The nok_00/nok_01 tables' `// field_NN` comment labels carry the new names.
 - **KinopioData** (evt_kinopio.h): 0x0-0xC `breakfastItem`, `breakfastX`/`Y`/`Z`: the item type and position that
   `breakfast` passes to itemEntry for the item it names with the binary's "breakfast" string. The 2026-10-20 note
   passed on these as "module names only", but the reader is itemEntry's type and position arguments. The six rels
-  tables keep their `// field_N` labels.
+  tables' `// field_N` comment labels carry the new names.
 - **InformantInfo/InformantWork** (evt_johoya.h):
   - InformantInfo 0xA `price`: 5 from johoya_data_make; the newjoho window prints it with `%3d`;
     johoya_keti_newjoho_makelabel returns it as tik_00's LW(5), which the script checks against the coin count and
@@ -8637,9 +8639,8 @@ seven InformantWork reads.
   - ten_pool_helper is a pool-order placeholder. unk_800b474c and unk_800b45e0 have no outside name.
 
 **Left, and why.** The respelled fields above (written only, unread, or one read with no setter). PartyData 0x18-0x20
-(NULL in every row). The trigFlags bits listed above. The rels `// field_N` data labels for DoorParam and KinopioData
-(kept on purpose). camdrv's and mapdrv's `field_N` (outside this set). party_cloud's and party_yoshi's
-`((eff*Data*)...->userdata)` casts: retail reloads the chain for each store.
+(NULL in every row). The trigFlags bits listed above. camdrv's and mapdrv's `field_N` (outside this set).
+party_cloud's and party_yoshi's `((eff*Data*)...->userdata)` casts: retail reloads the chain for each store.
 
 **For a reviewer.** An independent Claude Opus 5.5 agent, given the diff and not these notes, checked every new name
 against its readers. It found none wrong and confirmed 68 of 69 outright. It doubted only evtUseMsec's comment, which

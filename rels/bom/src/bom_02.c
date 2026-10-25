@@ -1376,10 +1376,10 @@ static EVT_BEGIN(minnnanokoe_evt)
 EVT_END()
 
 static KinopioData kino_dt = {
-    198,     // field_0
-    -425.0f, // field_4
-    50.0f,   // field_8
-    -200.0f, // field_C
+    198,     // breakfastItem
+    -425.0f, // breakfastX
+    50.0f,   // breakfastY
+    -200.0f, // breakfastZ
     15,      // ryoukin
     -285.0f, // bedX
     46.0f,   // bedY

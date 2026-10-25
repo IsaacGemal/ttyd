@@ -2917,10 +2917,10 @@ EVT_BEGIN(gor_01_shop_setup)
 EVT_END()
 
 static KinopioData kino_dt = {
-    0,       // field_0
-    0.0f,    // field_4
-    0.0f,    // field_8
-    0.0f,    // field_C
+    0,       // breakfastItem
+    0.0f,    // breakfastX
+    0.0f,    // breakfastY
+    0.0f,    // breakfastZ
     5,       // ryoukin
     368.0f,  // bedX
     170.0f,  // bedY

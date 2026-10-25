@@ -1039,10 +1039,10 @@ static char* shopper_data[38] = {
 };
 
 static KinopioData kino_dt = {
-    0,       // field_0
-    0.0f,    // field_4
-    0.0f,    // field_8
-    0.0f,    // field_C
+    0,       // breakfastItem
+    0.0f,    // breakfastX
+    0.0f,    // breakfastY
+    0.0f,    // breakfastZ
     10,      // ryoukin
     403.0f,  // bedX
     17.0f,   // bedY

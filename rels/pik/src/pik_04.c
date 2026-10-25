@@ -679,10 +679,10 @@ EVT_BEGIN(evt_kinopio_from_bed)
 EVT_END()
 
 static KinopioData kino_dt = {
-    221,                  // field_0
-    360.0f,               // field_4
-    33.0f,                // field_8
-    -235.0f,              // field_C
+    221,                  // breakfastItem
+    360.0f,               // breakfastX
+    33.0f,                // breakfastY
+    -235.0f,              // breakfastZ
     30,                   // ryoukin
     290.0f,               // bedX
     1345.0f,              // bedY
