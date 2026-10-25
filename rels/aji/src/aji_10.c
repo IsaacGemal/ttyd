@@ -105,7 +105,7 @@ static EVT_BEGIN(bero_peach_evt)
 EVT_END()
 
 static BeroEntry bero_peach_data[2] = {
-    {"e_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, (s32*)bero_peach_evt, "aji_11", "w_bero", 5, 5,
+    {"e_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, bero_peach_evt, "aji_11", "w_bero", 5, 5,
      e_door_close, e_door_open},
     {NULL},
 };

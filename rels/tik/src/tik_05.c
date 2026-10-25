@@ -173,8 +173,8 @@ const u32 zero_tik_00009b58 = 0x00000000;
 
 EVT_BEGIN(mahojin_alpha)
     CALL(evt_map_set_tevcallback, 1, PTR(alpha_tev))
-    CALL(evt_mapobj_flag_onoff, 0, 1, STRING("hosi_2"), 16777216)
-    CALL(evt_mapobj_flag_onoff, 0, 0, STRING("hosi_2"), 256)
+    CALL(evt_mapobj_flag_onoff, 0, 1, STRING("hosi_2"), 0x01000000)
+    CALL(evt_mapobj_flag_onoff, 0, 0, STRING("hosi_2"), MAPOBJ_FLAG_DISPLAY_LIST)
     SET_FLOAT_VALUE(GW(1), FLOAT(0.0f))
     SET_FLOAT_VALUE(LW(0), FLOAT(0.0f))
     LOOP(0)
@@ -193,8 +193,8 @@ EVT_BEGIN(mahojin_alpha)
     END_LOOP
     BEGIN_INLINE_EVENT
         WAIT_MS(1000)
-        CALL(evt_mapobj_flag_onoff, 0, 0, STRING("hosi_2"), 251658240)
-        CALL(evt_mapobj_flag_onoff, 0, 1, STRING("hosi_2"), 256)
+        CALL(evt_mapobj_flag_onoff, 0, 0, STRING("hosi_2"), MAPOBJ_TEV_CALLBACK_MASK)
+        CALL(evt_mapobj_flag_onoff, 0, 1, STRING("hosi_2"), MAPOBJ_FLAG_DISPLAY_LIST)
     END_INLINE_EVENT
     RETURN
 EVT_END()
@@ -409,6 +409,8 @@ EVT_END()
 
 BrokenWork* broken_wp = &broken_work;
 
+// tiz_broken's tuning, named by name_tbl: delay (frames per unit of distance from the centre), v0 (the
+// starting impulse), vscale (its per-frame decay), pow (the constant velocity), vr (the spin acceleration).
 f32 param_tbl[5] = {
     90.0f, 23.0f, 0.98f, 19.4f,
     2.0f,
@@ -543,17 +545,17 @@ EVT_BEGIN(evt_mapwrite)
         END_INLINE_EVENT
         BEGIN_INLINE_EVENT
             WAIT_MS(2000)
-            CALL(evt_mapobj_flag_onoff, 1, 1, STRING("door"), 1)
-            CALL(evt_mapobj_flag_onoff, 1, 1, STRING("n_yuka1"), 1)
+            CALL(evt_mapobj_flag_onoff, 1, 1, STRING("door"), MAPOBJ_FLAG_HIDDEN)
+            CALL(evt_mapobj_flag_onoff, 1, 1, STRING("n_yuka1"), MAPOBJ_FLAG_HIDDEN)
             WAIT_MS(3250)
-            CALL(evt_mapobj_flag_onoff, 1, 0, STRING("door"), 1)
-            CALL(evt_mapobj_flag_onoff, 1, 0, STRING("n_yuka1"), 1)
+            CALL(evt_mapobj_flag_onoff, 1, 0, STRING("door"), MAPOBJ_FLAG_HIDDEN)
+            CALL(evt_mapobj_flag_onoff, 1, 0, STRING("n_yuka1"), MAPOBJ_FLAG_HIDDEN)
             WAIT_MS(3500)
-            CALL(evt_mapobj_flag_onoff, 1, 1, STRING("door"), 1)
-            CALL(evt_mapobj_flag_onoff, 1, 1, STRING("n_yuka1"), 1)
+            CALL(evt_mapobj_flag_onoff, 1, 1, STRING("door"), MAPOBJ_FLAG_HIDDEN)
+            CALL(evt_mapobj_flag_onoff, 1, 1, STRING("n_yuka1"), MAPOBJ_FLAG_HIDDEN)
             WAIT_MS(2700)
-            CALL(evt_mapobj_flag_onoff, 1, 0, STRING("door"), 1)
-            CALL(evt_mapobj_flag_onoff, 1, 0, STRING("n_yuka1"), 1)
+            CALL(evt_mapobj_flag_onoff, 1, 0, STRING("door"), MAPOBJ_FLAG_HIDDEN)
+            CALL(evt_mapobj_flag_onoff, 1, 0, STRING("n_yuka1"), MAPOBJ_FLAG_HIDDEN)
         END_INLINE_EVENT
     END_IF
     CALL(evt_sub_intpl_msec_init, 11, 0, 255, 4000)
@@ -1457,17 +1459,17 @@ EVT_BEGIN(mahojin_event7)
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT
         WAIT_MS(2000)
-        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("door"), 1)
-        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("n_yuka1"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("door"), MAPOBJ_FLAG_HIDDEN)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("n_yuka1"), MAPOBJ_FLAG_HIDDEN)
         WAIT_MS(3250)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("door"), 1)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("n_yuka1"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("door"), MAPOBJ_FLAG_HIDDEN)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("n_yuka1"), MAPOBJ_FLAG_HIDDEN)
         WAIT_MS(3500)
-        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("door"), 1)
-        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("n_yuka1"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("door"), MAPOBJ_FLAG_HIDDEN)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("n_yuka1"), MAPOBJ_FLAG_HIDDEN)
         WAIT_MS(2700)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("door"), 1)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("n_yuka1"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("door"), MAPOBJ_FLAG_HIDDEN)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("n_yuka1"), MAPOBJ_FLAG_HIDDEN)
     END_INLINE_EVENT
     WAIT_MS(14000)
     CALL(evt_mario_dispflag_onoff, 0, 4)
@@ -1812,7 +1814,7 @@ EVT_BEGIN(tik_05_init_evt)
     SPAWN_EVENT(mahojin_alpha)
     CALL(evt_run_case_evt, 0, 1, STRING("a_dai"), 0, PTR(mahojin_alpha_up), 0)
     CALL(evt_run_case_evt, 1, 1, STRING("a_dai"), 0, PTR(mahojin_alpha_down), 0)
-    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_doa_l"), 2)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_doa_l"), MAPOBJ_FLAG_CLIP)
     SWITCH(GSW(0))
         CASE_BETWEEN(15, 17)
         SPAWN_EVENT(kaidan_event)
@@ -1856,7 +1858,7 @@ EVT_BEGIN(tik_05_init_evt)
     CALL(evt_mobj_jumpstand_blue, 0, STRING("mobj_jump01"), 250, -550, 80, -125, 0, 0)
     CALL(evt_mobj_save_blk, STRING("mobj_save"), -350, 60, 175, 0, 0)
     CALL(evt_mobj_kururing_floor, STRING("kururin1"), 0, 0, 400, STRING("jimen"), 125, GSWF(5592))
-    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("hasira"), 2)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("hasira"), MAPOBJ_FLAG_CLIP)
     CALL(evt_sub_animgroup_async, STRING("MOBJ_EFF_las_mon"))
     CALL(evt_sub_animgroup_async, STRING("EFF_treasure_map"))
     CALL(evt_sub_animgroup_async, STRING("MOBJ_EFF_mahojin"))
@@ -2027,12 +2029,12 @@ static USER_FUNC(cam_kaiten_init) {
     f32 dz;
     f32 dist;
 
-    ckp0 = _mapAlloc(0x20);
-    memset(ckp0, 0, 0x20);
-    ckp1 = _mapAlloc(0x20);
-    memset(ckp1, 0, 0x20);
-    ckpw = _mapAlloc(0x20);
-    memset(ckp1, 0, 0x20);
+    ckp0 = _mapAlloc(sizeof(CamKaiten));
+    memset(ckp0, 0, sizeof(CamKaiten));
+    ckp1 = _mapAlloc(sizeof(CamKaiten));
+    memset(ckp1, 0, sizeof(CamKaiten));
+    ckpw = _mapAlloc(sizeof(CamKaiten));
+    memset(ckp1, 0, sizeof(CamKaiten));
 
     ckp0->pos.x = evtGetFloat(event, args[0]);
     ckp0->pos.y = evtGetFloat(event, args[1]);
@@ -2273,17 +2275,17 @@ USER_FUNC(tiz_stone) {
 
     entry = effNameToPtr("tiz_dust");
     if (entry != NULL) {
-        effStardustN64SetDrawCam(entry, 7);
+        effStardustN64SetDrawCam(entry, CAMERA_3D_EFFECTB);
     }
     entry = effNameToPtr("tiz_stone");
     if (entry != NULL) {
-        ((effStarStoneData*)entry->userdata)->camId = 7;
+        ((effStarStoneData*)entry->userdata)->camId = CAMERA_3D_EFFECTB;
         ((effStarStoneData*)entry->userdata)->tevReg0A = (u8)(255.0f * t);
         ((effStarStoneData*)entry->userdata)->rotY = 5.0f * (360.0f * t);
     }
     entry = effNameToPtr("tiz_dust2");
     if (entry != NULL) {
-        effStardust2N64SetDrawCam(entry, 7);
+        effStardust2N64SetDrawCam(entry, CAMERA_3D_EFFECTB);
     }
     return EVT_RETURN_DONE;
 }
@@ -2303,31 +2305,31 @@ void tiz_broken_draw(CameraId camId, void* param) {
 
     if (broken_wp->texCopied == 0) {
         GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
-        GXSetTexCopyDst(0x130, 0xF0, 5, 1);
-        GXCopyTex(broken_wp->texBuffer->address, 0);
+        GXSetTexCopyDst(0x130, 0xF0, GX_TF_RGB5A3, GX_TRUE);
+        GXCopyTex(broken_wp->texBuffer->address, GX_FALSE);
         GXPixModeSync();
         broken_wp->texCopied = 1;
     }
 
     GXSetNumChans(0);
-    GXInitTexObj(&texObj, broken_wp->texBuffer->address, 0x130, 0xF0, 5, 0, 0, 0);
-    GXLoadTexObj(&texObj, 0);
+    GXInitTexObj(&texObj, broken_wp->texBuffer->address, 0x130, 0xF0, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 0xFF);
-    GXSetTevOp(0, 3);
-    GXSetBlendMode(0, 1, 0, 7);
-    GXSetZCompLoc(1);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetZMode(0, 3, 0);
-    GXSetCullMode(0);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+    GXSetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_OR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(13, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxAttrFmt(0, 13, 1, 4, 0);
-    GXSetCurrentMtx(0);
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GXSetCurrentMtx(GX_PNMTX0);
     PSMTXIdentity(mtx);
 
     entry = broken_wp->entryBuffer->address;
@@ -2338,7 +2340,7 @@ void tiz_broken_draw(CameraId camId, void* param) {
                 PSMTXScale(m0, 0.026315789f, 0.033333335f, 1.0f);
                 PSMTXTrans(m1, (f32)j, (f32)i, 0.0f);
                 PSMTXConcat(m0, m1, m1);
-                GXLoadTexMtxImm(m1, 0x1E, 1);
+                GXLoadTexMtxImm(m1, GX_TEXMTX0, GX_MTX2x4);
                 PSMTXTrans(m1, -296.0f + (f32)(j * 0x10), y, 0.0f);
                 switch (entry->quadrant) {
                 case 0:
@@ -2363,8 +2365,8 @@ void tiz_broken_draw(CameraId camId, void* param) {
                 PSMTXRotRad(m2, 'z', 0.017453292f * -angle);
                 PSMTXConcat(m1, m2, m1);
                 PSMTXConcat(cam->view, m1, m1);
-                GXLoadPosMtxImm(m1, 0);
-                GXBegin(0x80, 0, 4);
+                GXLoadPosMtxImm(m1, GX_PNMTX0);
+                GXBegin(GX_QUADS, GX_VTXFMT0, 4);
                 GXPosition3f32(-8.0f, 8.0f, 0.0f);
                 GXTexCoord2f32(0.0f, 0.0f);
                 GXPosition3f32(8.0f, 8.0f, 0.0f);
@@ -2453,8 +2455,8 @@ static inline f32 tikCosf(f32 rad) {
 
 // Matches retail. The polynomial seed/coefficient hoisting needs `opt_propagation off`;
 // `opt_lifetimes off` keeps the two seed loads (0.00761/0.03705) inside the init loop. The
-// zero test is written as truthiness (`f3 || f4`) because that is the only form MWCC emits
-// with the value first in `fcmpu` (`fcmpu f3, f27`), which retail uses.
+// zero test is written as truthiness (`dx || dy`) because that is the only form MWCC emits
+// with the value first in `fcmpu` (`fcmpu f3, f27`, f3 holding dx), which retail uses.
 #pragma opt_propagation off // keeps the polynomial coefficients hoisted like the target
 #pragma opt_lifetimes off // keeps the two seed loads inside the loop like the target
 USER_FUNC(tiz_broken) {
@@ -2465,56 +2467,56 @@ USER_FUNC(tiz_broken) {
     s32 i2;
     BrokenEntry* entry;
     BrokenEntry* entry2;
-    f32 f0, f1, f2, f3, f4, f5, f6, f7;
+    f32 dirX, dirY, dx, dy, len, dist;
     f32 angle;
     f32 rad;
     f32 k;
 
     if (isFirstCall) {
-        memset(broken_wp, 0, 0xC);
-        broken_wp->texBuffer = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, 5, 0, 0), 1);
+        memset(broken_wp, 0, sizeof(BrokenWork));
+        broken_wp->texBuffer = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, GX_TF_RGB5A3, GX_FALSE, 0), 1);
         broken_wp->entryBuffer = smartAlloc(0xF594, 1);
         broken_wp->texCopied = 0;
 
         entry = broken_wp->entryBuffer->address;
         for (i = 0; i < 0x1E; i++) {
             for (j = 0; j < 0x26; j++) {
-                f3 = (f32)j / 37.0f - 0.5f;
-                f4 = 0.5f + (f32)(-i) / 29.0f;
-                if (f4 > 0.0f) {
-                    if (f3 < 0.0f) {
+                dx = (f32)j / 37.0f - 0.5f;
+                dy = 0.5f + (f32)(-i) / 29.0f;
+                if (dy > 0.0f) {
+                    if (dx < 0.0f) {
                         entry->quadrant = 0;
                     } else {
                         entry->quadrant = 1;
                     }
                 } else {
-                    if (f3 < 0.0f) {
+                    if (dx < 0.0f) {
                         entry->quadrant = 2;
                     } else {
                         entry->quadrant = 3;
                     }
                 }
-                if (f3 || f4) {
-                    f6 = sqrtf(f3 * f3 + f4 * f4);
-                    f0 = f3 / f6;
-                    f2 = f4 / f6;
-                    f7 = f6;
+                if (dx || dy) {
+                    len = sqrtf(dx * dx + dy * dy);
+                    dirX = dx / len;
+                    dirY = dy / len;
+                    dist = len;
                 } else {
-                    f7 = 0.0f;
-                    f0 = 0.0f;
-                    f2 = 0.0f;
+                    dist = 0.0f;
+                    dirX = 0.0f;
+                    dirY = 0.0f;
                 }
                 entry->state = 0;
-                entry->timer = (s32)(param_tbl[0] * f7);
+                entry->timer = (s32)(param_tbl[0] * dist);
                 entry->x = 0.0f;
                 entry->y = 0.0f;
                 entry->z = 0.0f;
                 entry->spinSpeed = 0.0f;
                 entry->spinAngle = 0.0f;
-                entry->impulseX = -f0 * param_tbl[1];
-                entry->impulseY = -f2 * param_tbl[1];
+                entry->impulseX = -dirX * param_tbl[1];
+                entry->impulseY = -dirY * param_tbl[1];
                 entry->impulseZ = 10.0f;
-                angle = angleABf(0.0f, 0.0f, f3, f4);
+                angle = angleABf(0.0f, 0.0f, dx, dy);
                 rad = 6.2831855f * angle / 360.0f;
                 k = param_tbl[3];
                 entry->velX = k * tikSinf(rad);
@@ -2562,7 +2564,7 @@ USER_FUNC(tiz_broken) {
         smartFree(broken_wp->entryBuffer);
         return EVT_RETURN_DONE;
     }
-    dispEntry(8, 0.0f, 0, tiz_broken_draw, NULL);
+    dispEntry(CAMERA_2D, 0.0f, 0, tiz_broken_draw, NULL);
     return EVT_RETURN_BLOCK;
 }
 
@@ -2787,8 +2789,8 @@ USER_FUNC(stardust_setting) {
     EffectEntry* e1 = effNameToPtr((char*)name1);
     EffectEntry* e2 = effNameToPtr((char*)name2);
 
-    effStardustN64SetDrawCam(e1, 5);
-    effStardustN64SetDrawCam(e2, 5);
+    effStardustN64SetDrawCam(e1, CAMERA_3D_EFFECTA);
+    effStardustN64SetDrawCam(e2, CAMERA_3D_EFFECTA);
     return EVT_RETURN_DONE;
 }
 

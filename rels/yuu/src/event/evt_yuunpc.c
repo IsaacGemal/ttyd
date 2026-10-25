@@ -661,10 +661,10 @@ f32 yuunpc_pose_sub(ExtPose* pose, YuunpcEntry* entry) {
             s32 idx = (s32)angle;
             f32 c = tbl[idx + 90];
             f32 s = tbl[idx];
-            ((MtxPtr)pose->matrix)[0][0] = c;
-            ((MtxPtr)pose->matrix)[2][2] = c;
-            ((MtxPtr)pose->matrix)[0][2] = s;
-            ((MtxPtr)pose->matrix)[2][0] = -s;
+            (*pose->matrix)[0][0] = c;
+            (*pose->matrix)[2][2] = c;
+            (*pose->matrix)[0][2] = s;
+            (*pose->matrix)[2][0] = -s;
         }
     }
     if (entry->flags & 4) {
@@ -731,13 +731,13 @@ void ext_yuunpc_minigame1_init(void) {
         entry->index = i;
         entry->flags |= 1;
         pose->flags |= 7;
-        PSMTXIdentity((MtxPtr)pose->matrix);
+        PSMTXIdentity(*pose->matrix);
 
         t = 60.0f * (f32)(i % 5) + -560.0f;
         y = 30.0f + t;
-        ((MtxPtr)pose->matrix)[0][3] = 16.666666f * (f32)q - 500.0f;
-        ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -560.0f) / 60.0f)];
-        ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
+        (*pose->matrix)[0][3] = 16.666666f * (f32)q - 500.0f;
+        (*pose->matrix)[1][3] = arr1[(s32)((y - -560.0f) / 60.0f)];
+        (*pose->matrix)[2][3] = y + arr2[q % 8];
 
         pose->heading = (f32)(irand(2) * 180 + 90);
         entry->cycleScale = 1.0f;
@@ -795,13 +795,13 @@ void yuunpc_pose_minigame1_main(void) {
     f31 = 500.0f + camX;
     for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
         if (entry->flags & 1) {
-            f29 = ((MtxPtr)pose->matrix)[0][3];
+            f29 = (*pose->matrix)[0][3];
             if (f29 > camX) {
                 f32 step = 1000.0f;
                 for (;;) {
                     if (!(f29 > f31)) break;
                     f29 -= step;
-                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                    (*pose->matrix)[0][3] = f29;
                 }
             } else {
                 f32 low = camX - 500.0f;
@@ -809,10 +809,10 @@ void yuunpc_pose_minigame1_main(void) {
                 for (;;) {
                     if (!(f29 < low)) break;
                     f29 += step;
-                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                    (*pose->matrix)[0][3] = f29;
                 }
             }
-            mtx = (MtxPtr)pose->matrix;
+            mtx = *pose->matrix;
             f28 = mtx[2][3];
             if (f28 < -260.0f) {
                 f1 = mtx[1][3];
@@ -891,13 +891,13 @@ void ext_yuunpc_minigame2_init(void) {
         entry->index = i;
         entry->flags |= 1;
         pose->flags |= 7;
-        PSMTXIdentity((MtxPtr)pose->matrix);
+        PSMTXIdentity(*pose->matrix);
 
         t = 60.0f * (f32)(i % 4) + -655.0f;
         y = 30.0f + t;
-        ((MtxPtr)pose->matrix)[0][3] = 13.333333f * (f32)q - 500.0f;
-        ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -655.0f) / 60.0f)];
-        ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
+        (*pose->matrix)[0][3] = 13.333333f * (f32)q - 500.0f;
+        (*pose->matrix)[1][3] = arr1[(s32)((y - -655.0f) / 60.0f)];
+        (*pose->matrix)[2][3] = y + arr2[q % 8];
 
         pose->heading = (f32)(irand(2) * 180 + 90);
         entry->cycleScale = 1.0f;
@@ -954,13 +954,13 @@ void yuunpc_pose_minigame2_main(void) {
     f31 = 500.0f + camX;
     for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
         if (entry->flags & 1) {
-            f29 = ((MtxPtr)pose->matrix)[0][3];
+            f29 = (*pose->matrix)[0][3];
             if (f29 > camX) {
                 f32 step = 1000.0f;
                 for (;;) {
                     if (!(f29 > f31)) break;
                     f29 -= step;
-                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                    (*pose->matrix)[0][3] = f29;
                 }
             } else {
                 f32 low = camX - 500.0f;
@@ -968,10 +968,10 @@ void yuunpc_pose_minigame2_main(void) {
                 for (;;) {
                     if (!(f29 < low)) break;
                     f29 += step;
-                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                    (*pose->matrix)[0][3] = f29;
                 }
             }
-            mtx = (MtxPtr)pose->matrix;
+            mtx = *pose->matrix;
             f28 = mtx[2][3];
             if (f28 < -415.0f) {
                 f1 = mtx[1][3];
@@ -1034,13 +1034,13 @@ void ext_yuunpc_minigame3_init(void) {
         entry->index = i;
         entry->flags |= 1;
         pose->flags |= 7;
-        PSMTXIdentity((MtxPtr)pose->matrix);
+        PSMTXIdentity(*pose->matrix);
 
         t = 60.0f * (f32)(i % 4) + -750.0f;
         y = 30.0f + t;
-        ((MtxPtr)pose->matrix)[0][3] = 13.333333f * (f32)q - 600.0f;
-        ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -750.0f) / 60.0f)];
-        ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
+        (*pose->matrix)[0][3] = 13.333333f * (f32)q - 600.0f;
+        (*pose->matrix)[1][3] = arr1[(s32)((y - -750.0f) / 60.0f)];
+        (*pose->matrix)[2][3] = y + arr2[q % 8];
 
         pose->heading = (f32)(irand(2) * 180 + 90);
         entry->cycleScale = 1.0f;
@@ -1097,13 +1097,13 @@ void yuunpc_pose_minigame3_main(void) {
     f31 = 600.0f + camX;
     for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
         if (entry->flags & 1) {
-            f29 = ((MtxPtr)pose->matrix)[0][3];
+            f29 = (*pose->matrix)[0][3];
             if (f29 > camX) {
                 f32 step = 1200.0f;
                 for (;;) {
                     if (!(f29 > f31)) break;
                     f29 -= step;
-                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                    (*pose->matrix)[0][3] = f29;
                 }
             } else {
                 f32 low = camX - 600.0f;
@@ -1111,10 +1111,10 @@ void yuunpc_pose_minigame3_main(void) {
                 for (;;) {
                     if (!(f29 < low)) break;
                     f29 += step;
-                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                    (*pose->matrix)[0][3] = f29;
                 }
             }
-            mtx = (MtxPtr)pose->matrix;
+            mtx = *pose->matrix;
             f28 = mtx[2][3];
             if (f28 < -570.0f) {
                 f1 = mtx[1][3];
@@ -1458,12 +1458,12 @@ void ext_yuunpc_minigame4_init_sub(void) {
             q = i / 4;
             entry->flags |= 1;
             pose->flags |= 7;
-            PSMTXIdentity((MtxPtr)pose->matrix);
+            PSMTXIdentity(*pose->matrix);
             t = 60.0f * (f32)(i % 4) + -750.0f;
             y = 30.0f + t;
-            ((MtxPtr)pose->matrix)[0][3] = 20.0f * (f32)q - 500.0f;
-            ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -750.0f) / 60.0f)];
-            ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
+            (*pose->matrix)[0][3] = 20.0f * (f32)q - 500.0f;
+            (*pose->matrix)[1][3] = arr1[(s32)((y - -750.0f) / 60.0f)];
+            (*pose->matrix)[2][3] = y + arr2[q % 8];
             pose->heading = (f32)(irand(2) * 180 + 90);
             entry->cycleScale = 1.0f;
             switch (irand(1000) % 4) {
@@ -1536,24 +1536,24 @@ void ext_yuunpc_minigame4_init_sub(void) {
                     pose->flags |= 5;
                     break;
             }
-            PSMTXIdentity((MtxPtr)pose->matrix);
+            PSMTXIdentity(*pose->matrix);
             half = 0.5f;
             hp = (240.0f / (f32)(r24 - 1)) * half;
-            ((MtxPtr)pose->matrix)[0][3] = ((-(f32)r25 * (240.0f / (f32)(r24 - 1))) + -1520.0f) - (hp * (f32)(r23 & 1));
-            ((MtxPtr)pose->matrix)[1][3] = 0.0f;
-            ((MtxPtr)pose->matrix)[2][3] = 10.0f * (((f32)((entry->index % 101) - 50)) / 50.0f) + ((((f32)r23 * (240.0f / (f32)(r24 - 1))) - 120.0f) + arr2[r25 % 8]);
+            (*pose->matrix)[0][3] = ((-(f32)r25 * (240.0f / (f32)(r24 - 1))) + -1520.0f) - (hp * (f32)(r23 & 1));
+            (*pose->matrix)[1][3] = 0.0f;
+            (*pose->matrix)[2][3] = 10.0f * (((f32)((entry->index % 101) - 50)) / 50.0f) + ((((f32)r23 * (240.0f / (f32)(r24 - 1))) - 120.0f) + arr2[r25 % 8]);
             v = (Vec){ 0.0f, 0.0f, 0.0f };
-            v.x = 3300.0f + ((MtxPtr)pose->matrix)[0][3];
-            v.y = ((MtxPtr)pose->matrix)[1][3];
-            v.z = ((MtxPtr)pose->matrix)[2][3];
+            v.x = 3300.0f + (*pose->matrix)[0][3];
+            v.y = (*pose->matrix)[1][3];
+            v.z = (*pose->matrix)[2][3];
             entry->target = v;
             entry->goal = entry->target;
             pose->heading = 270.0f;
             entry->cycleScale = 1.0f;
             v2 = (Vec){ 0.0f, 0.0f, 0.0f };
-            v2.x = ((MtxPtr)pose->matrix)[0][3];
-            v2.y = ((MtxPtr)pose->matrix)[1][3];
-            v2.z = ((MtxPtr)pose->matrix)[2][3];
+            v2.x = (*pose->matrix)[0][3];
+            v2.y = (*pose->matrix)[1][3];
+            v2.z = (*pose->matrix)[2][3];
             entry->position = v2;
             switch (entry->flags & 0x300) {
                 case 0x100:
@@ -1689,14 +1689,14 @@ void yuunpc_pose_minigame4_main(void) {
     f29 = camY + 500.0f;
     for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
         if (entry->flags & 1) {
-            x = ((MtxPtr)pose->matrix)[0][3];
+            x = (*pose->matrix)[0][3];
             if (x > camY) {
                 for (;;) {
                     if (!(x > f29)) {
                         break;
                     }
                     x -= 1000.0f;
-                    ((MtxPtr)pose->matrix)[0][3] = x;
+                    (*pose->matrix)[0][3] = x;
                 }
             } else {
                 f32 lim = camY - 500.0f;
@@ -1705,23 +1705,23 @@ void yuunpc_pose_minigame4_main(void) {
                         break;
                     }
                     x += 1000.0f;
-                    ((MtxPtr)pose->matrix)[0][3] = x;
+                    (*pose->matrix)[0][3] = x;
                 }
             }
-            z = ((MtxPtr)pose->matrix)[2][3];
+            z = (*pose->matrix)[2][3];
             if (z < -570.0f) {
-                y = ((MtxPtr)pose->matrix)[1][3];
+                y = (*pose->matrix)[1][3];
                 if ((x >= -1700.0f && x <= -1600.0f) ||
                     (x >= -50.0f && x <= 50.0f) ||
                     (x >= 1600.0f && x <= 1700.0f)) {
                     if (y > -500.0f) {
                         y += -1000.0f;
-                        ((MtxPtr)pose->matrix)[1][3] = y;
+                        (*pose->matrix)[1][3] = y;
                     }
                 } else {
                     if (y < -500.0f) {
                         y -= -1000.0f;
-                        ((MtxPtr)pose->matrix)[1][3] = y;
+                        (*pose->matrix)[1][3] = y;
                     }
                 }
             }
@@ -2611,9 +2611,9 @@ void yuunpc_pose_minigame4_main(void) {
                 }
                 break;
             }
-            ((MtxPtr)pose->matrix)[0][3] = entry->position.x;
-            ((MtxPtr)pose->matrix)[1][3] = entry->position.y;
-            ((MtxPtr)pose->matrix)[2][3] = entry->position.z;
+            (*pose->matrix)[0][3] = entry->position.x;
+            (*pose->matrix)[1][3] = entry->position.y;
+            (*pose->matrix)[2][3] = entry->position.z;
         }
         yuunpc_pose_sub(pose, entry);
     }

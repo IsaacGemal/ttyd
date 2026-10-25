@@ -2338,7 +2338,7 @@ void ext_init_minnnanokoe(void) {
         data->states[i].gravity = 0.0f;
         data->states[i].state = 5;
         pose->flags |= 3;
-        PSMTXIdentity((MtxPtr)pose->matrix);
+        PSMTXIdentity(*pose->matrix);
         rx = (i % 14) * 30 - 205 + rand() % 10;
         rz = 190 - (i / 14) * 20 + rand() % 20;
         pose->matrix[0][0][3] = (f32)rx;
@@ -2395,7 +2395,7 @@ void ext_disp_minnnanokoe(CameraId cameraId, void* param) {
         pyami->texMap = 1;
         pyami->texCoord = 1;
         pyami->numIndStage = 0;
-        pyami->mtx = (MtxPtr)pose->matrix;
+        pyami->mtx = *pose->matrix;
         envSetYami(pyami);
         GXSetNumTexGens(pyami->texCoord);
         GXSetNumTevStages(pyami->tevStage);

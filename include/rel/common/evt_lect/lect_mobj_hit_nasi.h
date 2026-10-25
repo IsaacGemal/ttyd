@@ -9,12 +9,12 @@ static USER_FUNC(lect_mobj_hit_nasi) {
     s32* args = event->args;
     MapObjectEntry* obj;
     const char* hit;
-    s32 name;
+    const char* name;
     s32 i;
 
-    name = evtGetValue(event, args[0]);
-    if (strcmp((const char*)name, "me") != 0) {
-        obj = mobjNameToPtr((const char*)name);
+    name = (const char*)evtGetValue(event, args[0]);
+    if (strcmp(name, "me") != 0) {
+        obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
     }

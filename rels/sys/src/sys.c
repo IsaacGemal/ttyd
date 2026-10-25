@@ -164,7 +164,10 @@ void display_func(CameraId cameraId, void* param) {
     s32 frame;
     const char* msg;
     s32 revealed;
-    u16 cbuf[2];
+    union {
+        u16 code[2];
+        char str[4];
+    } cbuf; // one two-byte character of msg and its terminator, drawn as a string
     s32 i;
     s32 lightColor;
     s32 alpha;
@@ -187,7 +190,7 @@ void display_func(CameraId cameraId, void* param) {
         Vec lpos = { 0.0f, 0.0f, 300.0f };
         pos = lpos;
     }
-    PSMTXMultVec((MtxPtr)&cam->view, &pos, &pos);
+    PSMTXMultVec(cam->view, &pos, &pos);
     GXInitLightPos(&light, pos.x, pos.y, pos.z);
     {
         GXColor white = { 0xFF, 0xFF, 0xFF, 0xFF };
@@ -230,7 +233,7 @@ void display_func(CameraId cameraId, void* param) {
     PSMTXTrans(mtx, 0.0f, -40.0f, 0.0f);
     PSMTXRotRad(mtx3, 'y', 0.017453292f * (90.0f + work->spinAngle));
     PSMTXConcat(mtx, mtx3, mtx);
-    PSMTXConcat((MtxPtr)&cam->view, mtx, mtx);
+    PSMTXConcat(cam->view, mtx, mtx);
     GXLoadPosMtxImm(mtx, GX_PNMTX0);
     PSMTXInvXpose(mtx, mtx);
     GXLoadNrmMtxImm(mtx, GX_PNMTX0);
@@ -265,8 +268,8 @@ void display_func(CameraId cameraId, void* param) {
             break;
         }
 
-        cbuf[0] = *msg16;
-        *(u8*)&cbuf[1] = 0;
+        cbuf.code[0] = *msg16;
+        cbuf.str[2] = 0;
         PSMTXTrans(mtx, 0.0f, -40.0f, 0.0f);
         PSMTXRotRad(mtx3, 'z',
                     0.017453292f *
@@ -278,10 +281,10 @@ void display_func(CameraId cameraId, void* param) {
         PSMTXConcat(mtx, mtx2, mtx);
         if (j / 2 < revealed) {
             FontDrawStart_alpha(0xFF);
-            FontDrawStringMtx(mtx, (const char*)cbuf);
+            FontDrawStringMtx(mtx, cbuf.str);
         } else {
             FontDrawStart_alpha(alpha);
-            FontDrawStringMtx(mtx, (const char*)cbuf);
+            FontDrawStringMtx(mtx, cbuf.str);
             break;
         }
     }
@@ -356,7 +359,7 @@ void display_func(CameraId cameraId, void* param) {
         PSMTXRotRad(mtx3, 'y', 0.017453292f * entry->angle);
         PSMTXConcat(mtx2, mtx, mtx);
         PSMTXConcat(mtx, mtx3, mtx);
-        PSMTXConcat((MtxPtr)&cam->view, mtx, mtx);
+        PSMTXConcat(cam->view, mtx, mtx);
         GXLoadPosMtxImm(mtx, GX_PNMTX0);
         PSMTXInvXpose(mtx, mtx);
         GXLoadNrmMtxImm(mtx, GX_PNMTX0);

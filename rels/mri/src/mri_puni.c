@@ -5128,7 +5128,7 @@ void puni_puni_disp(CameraId cameraId, void* param) {
             pyami->texMap = 1;
             pyami->texCoord = 1;
             pyami->numIndStage = 0;
-            pyami->mtx = (MtxPtr)pose->matrix;
+            pyami->mtx = *pose->matrix;
             envSetYami(pyami);
             GXSetNumTexGens(pyami->texCoord);
             GXSetNumTevStages(pyami->tevStage);
@@ -5194,7 +5194,7 @@ void puni_puni_shadow_disp(CameraId camId, void* param) {
         GXSetArray(9, shadow_vtx, 0xC);
         GXSetArray(0xD, shadow_coord, 8);
         GXSetCullMode(0);
-        PSMTXConcat(cam->view, (MtxPtr)pose->matrix, mtx);
+        PSMTXConcat(cam->view, *pose->matrix, mtx);
         PSMTXConcat(mtx, shadow_mt, mtx);
         if (pose->flags & PUNI_POSE_SHADOW_Y) {
             PSMTXTransApply(mtx, mtx, 0.0f,
@@ -5230,7 +5230,7 @@ void puni_puni_init(void) {
         pose->flags = 1;
         pose->flags |= PUNI_POSE_EASE_TURN;
         pose->facing = 0.0f;
-        PSMTXIdentity((MtxPtr)pose->matrix);
+        PSMTXIdentity(*pose->matrix);
         (*pose->matrix)[0][3] = 0.0f;
         (*pose->matrix)[1][3] = -1000.0f;
         (*pose->matrix)[2][3] = 0.0f;

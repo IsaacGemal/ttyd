@@ -73,9 +73,9 @@ static void alpha_tev(MapTevCallback* param);
 static s32 sanders_talk[8];
 static u8* _ap;
 static s32* itemsel_table_ram;
-static f32* ckp0;
-static f32* ckp1;
-static f32* ckpw;
+static CamKaiten* ckp0;
+static CamKaiten* ckp1;
+static CamKaiten* ckpw;
 u32 inemuri_sfx_id;
 char* unk_gor_bss00000000[1];
 s32 tentyou_talk[14];
@@ -5272,66 +5272,66 @@ static USER_FUNC(cam_kaiten_init) {
     f32 dx;
     f32 dz;
 
-    ckp0 = _mapAlloc(0x20);
-    memset(ckp0, 0, 0x20);
-    ckp1 = _mapAlloc(0x20);
-    memset(ckp1, 0, 0x20);
-    ckpw = _mapAlloc(0x20);
-    memset(ckp1, 0, 0x20);
+    ckp0 = _mapAlloc(sizeof(CamKaiten));
+    memset(ckp0, 0, sizeof(CamKaiten));
+    ckp1 = _mapAlloc(sizeof(CamKaiten));
+    memset(ckp1, 0, sizeof(CamKaiten));
+    ckpw = _mapAlloc(sizeof(CamKaiten));
+    memset(ckp1, 0, sizeof(CamKaiten));
 
-    ckp0[0] = evtGetFloat(event, args[0]);
-    ckp0[1] = evtGetFloat(event, args[1]);
-    ckp0[2] = evtGetFloat(event, args[2]);
-    ckp0[3] = evtGetFloat(event, args[3]);
-    ckp0[4] = evtGetFloat(event, args[4]);
-    ckp0[5] = evtGetFloat(event, args[5]);
-    ckp1[0] = evtGetFloat(event, args[6]);
-    ckp1[1] = evtGetFloat(event, args[7]);
-    ckp1[2] = evtGetFloat(event, args[8]);
-    ckp1[3] = evtGetFloat(event, args[9]);
-    ckp1[4] = evtGetFloat(event, args[10]);
-    ckp1[5] = evtGetFloat(event, args[11]);
+    ckp0->pos.x = evtGetFloat(event, args[0]);
+    ckp0->pos.y = evtGetFloat(event, args[1]);
+    ckp0->pos.z = evtGetFloat(event, args[2]);
+    ckp0->at.x = evtGetFloat(event, args[3]);
+    ckp0->at.y = evtGetFloat(event, args[4]);
+    ckp0->at.z = evtGetFloat(event, args[5]);
+    ckp1->pos.x = evtGetFloat(event, args[6]);
+    ckp1->pos.y = evtGetFloat(event, args[7]);
+    ckp1->pos.z = evtGetFloat(event, args[8]);
+    ckp1->at.x = evtGetFloat(event, args[9]);
+    ckp1->at.y = evtGetFloat(event, args[10]);
+    ckp1->at.z = evtGetFloat(event, args[11]);
 
-    p = *(Vec*)&ckp0[0];
-    a = *(Vec*)&ckp0[3];
+    p = ckp0->pos;
+    a = ckp0->at;
     a.y = 0.0f;
     p.y = 0.0f;
     dist = PSVECDistance(&p, &a);
     dx = a.x - p.x;
     dz = a.z - p.z;
     angle = 57.29579f * (f32)atan2(-dx, dz);
-    ckp0[6] = angle;
-    ckp0[7] = dist;
+    ckp0->angle = angle;
+    ckp0->dist = dist;
 
-    p = *(Vec*)&ckp1[0];
-    a = *(Vec*)&ckp1[3];
+    p = ckp1->pos;
+    a = ckp1->at;
     a.y = 0.0f;
     p.y = 0.0f;
     dist = PSVECDistance(&p, &a);
     dx = a.x - p.x;
     dz = a.z - p.z;
     angle = 57.29579f * (f32)atan2(-dx, dz);
-    ckp1[6] = angle;
-    ckp1[7] = dist;
+    ckp1->angle = angle;
+    ckp1->dist = dist;
 
-    *(Vec*)&ckpw[0] = *(Vec*)&ckp0[0];
-    *(Vec*)&ckpw[3] = *(Vec*)&ckp0[3];
-    ckpw[6] = ckp0[6];
-    ckpw[7] = ckp0[7];
+    ckpw->pos = ckp0->pos;
+    ckpw->at = ckp0->at;
+    ckpw->angle = ckp0->angle;
+    ckpw->dist = ckp0->dist;
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(cam_kaiten_set_direct) {
-    CameraEntry* cam = camGetPtr(4);
-    f32 s = sin(6.2831855f * ckpw[6] / 360.0f);
-    f32 c = cos(6.2831855f * ckpw[6] / 360.0f);
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    f32 s = sin(6.2831855f * ckpw->angle / 360.0f);
+    f32 c = cos(6.2831855f * ckpw->angle / 360.0f);
 
-    ckpw[0] = ckpw[7] * s + ckpw[3];
-    ckpw[2] = ckpw[5] - ckpw[7] * c;
+    ckpw->pos.x = ckpw->dist * s + ckpw->at.x;
+    ckpw->pos.z = ckpw->at.z - ckpw->dist * c;
     cam->presetPos = cam->cameraPos;
     cam->presetAt = cam->cameraAt;
-    cam->storedPos = *(Vec*)ckpw;
-    cam->storedAt = *(Vec*)&ckpw[3];
+    cam->storedPos = ckpw->pos;
+    cam->storedAt = ckpw->at;
     cam->startTimeA = gp->renderTime;
     cam->durationA = 0;
     cam->stateA = 3;
@@ -5342,7 +5342,7 @@ static USER_FUNC(cam_kaiten_set_direct) {
 static USER_FUNC(cam_kaiten_get_para) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
-    f32* p;
+    CamKaiten* p;
 
     switch (index) {
     case 0:
@@ -5356,21 +5356,21 @@ static USER_FUNC(cam_kaiten_get_para) {
         p = ckpw;
         break;
     }
-    evtSetFloat(event, args[1], p[0]);
-    evtSetFloat(event, args[2], p[1]);
-    evtSetFloat(event, args[3], p[2]);
-    evtSetFloat(event, args[4], p[3]);
-    evtSetFloat(event, args[5], p[4]);
-    evtSetFloat(event, args[6], p[5]);
-    evtSetFloat(event, args[7], p[6]);
-    evtSetFloat(event, args[8], p[7]);
+    evtSetFloat(event, args[1], p->pos.x);
+    evtSetFloat(event, args[2], p->pos.y);
+    evtSetFloat(event, args[3], p->pos.z);
+    evtSetFloat(event, args[4], p->at.x);
+    evtSetFloat(event, args[5], p->at.y);
+    evtSetFloat(event, args[6], p->at.z);
+    evtSetFloat(event, args[7], p->angle);
+    evtSetFloat(event, args[8], p->dist);
     return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(cam_kaiten_set_para) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
-    f32* p;
+    CamKaiten* p;
 
     switch (index) {
     case 0:
@@ -5384,14 +5384,14 @@ static USER_FUNC(cam_kaiten_set_para) {
         p = ckpw;
         break;
     }
-    p[0] = evtGetFloat(event, args[1]);
-    p[1] = evtGetFloat(event, args[2]);
-    p[2] = evtGetFloat(event, args[3]);
-    p[3] = evtGetFloat(event, args[4]);
-    p[4] = evtGetFloat(event, args[5]);
-    p[5] = evtGetFloat(event, args[6]);
-    p[6] = evtGetFloat(event, args[7]);
-    p[7] = evtGetFloat(event, args[8]);
+    p->pos.x = evtGetFloat(event, args[1]);
+    p->pos.y = evtGetFloat(event, args[2]);
+    p->pos.z = evtGetFloat(event, args[3]);
+    p->at.x = evtGetFloat(event, args[4]);
+    p->at.y = evtGetFloat(event, args[5]);
+    p->at.z = evtGetFloat(event, args[6]);
+    p->angle = evtGetFloat(event, args[7]);
+    p->dist = evtGetFloat(event, args[8]);
     return EVT_RETURN_DONE;
 }
 

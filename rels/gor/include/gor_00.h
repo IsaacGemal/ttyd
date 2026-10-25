@@ -9,6 +9,13 @@
 
 typedef struct NanNpcEntry NanNpcEntry;
 
+typedef struct CamKaiten {
+    Vec pos;   // 0x00
+    Vec at;    // 0x0C
+    f32 angle; // 0x18
+    f32 dist;  // 0x1C
+} CamKaiten;
+
 typedef struct NanNpcWork {
     NanNpcEntry* entries;   // 0x0
     u8 pad_0x04[0x0C - 0x04]; // 0x4

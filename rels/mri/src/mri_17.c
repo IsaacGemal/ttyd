@@ -89,7 +89,7 @@ static BeroEntry bero_entry_data[] = {
         "dokan2",
         2, 0, 2, 0x186A0,
         0, 0, -1,
-        (s32*)&bero_02_into_event, 0xA, NULL,
+        bero_02_into_event, 0xA, NULL,
         NULL, "dokan1",
         1, 1, 0, 0,
     },

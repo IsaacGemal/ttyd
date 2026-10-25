@@ -737,14 +737,17 @@ USER_FUNC(name_check) {
 }
 
 USER_FUNC(setYoshiColor) {
-    u8 saved[8];
+    union {
+        u8 bytes[8];
+        s64 time;
+    } saved;
     s32 i;
     s32 color;
 
     for (i = 0; i < 8; i++) {
-        saved[i] = swByteGet(0x1FC + i);
+        saved.bytes[i] = swByteGet(0x1FC + i);
     }
-    color = (s32)((gp->retraceLocalTime - *(s64*)saved) / (OS_BUS_CLOCK / 4));
+    color = (s32)((gp->retraceLocalTime - saved.time) / (OS_BUS_CLOCK / 4));
     color /= 60;
     color %= 20;
     if (color <= 5) {

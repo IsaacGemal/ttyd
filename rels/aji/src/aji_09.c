@@ -80,7 +80,7 @@ EVT_BEGIN(peach_evt_bero_out1)
 EVT_END()
 
 BeroEntry bero_data_peach1[] = {
-    {"s_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, (s32*)peach_evt_bero_out1, "aji_01",
+    {"s_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, peach_evt_bero_out1, "aji_01",
      "n_bero_4", 5, 5, s_door_close, s_door_open},
     {NULL},
 };
@@ -98,7 +98,7 @@ EVT_BEGIN(peach_evt_bero_out2)
 EVT_END()
 
 BeroEntry bero_data_peach2[] = {
-    {"s_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, (s32*)peach_evt_bero_out2, "aji_17",
+    {"s_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, peach_evt_bero_out2, "aji_17",
      "w_bero", 5, 5, s_door_close, s_door_open},
     {NULL},
 };

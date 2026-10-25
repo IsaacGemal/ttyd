@@ -482,7 +482,7 @@ s32 credits_pose_evt(EventEntry* event, BOOL isFirstCall) {
                 u32 type;
 
                 EXIGetType(0, 2, &type);
-                if (type != 0x05070000) {
+                if (type != EXI_IS_VIEWER) {
                     entry->poseId = animPoseEntry(npc[idx].name, inBattle);
                     animPoseSetAnim(entry->poseId, R_credits_npc_info[idx].anim, 1);
                 } else {

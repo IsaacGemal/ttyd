@@ -59,7 +59,7 @@ DigestWork* wp = &work;
 typedef struct AnimTblUnknown {
     const char* npcName; // 0x0, evtNpcNameToPtr_NoAssert / npcGetTribe
     s32 animMask;        // 0x4, bits 0-5: the animations evt_action_sub picks one from
-    s32 field_0x8;       // 0x8
+    s32 actionEvent;     // 0x8, evt_action SPAWN_EVENTs it for animMask bit 5 (0: the NPC is deleted instead)
 } AnimTblUnknown;
 AnimTblUnknown anim_tbl[] = {
     { "ダイジェストマリオ", 7, 0 },
@@ -448,7 +448,7 @@ USER_FUNC(evt_action_sub) {
 
     name = anim_tbl[index].npcName;
     EXIGetType(0, 2, &type);
-    if (type != 0x05070000) {
+    if (type != EXI_IS_VIEWER) {
         NpcTribeInfo* tribe = npcGetTribe(name);
         evtSetValue(event, *args++, (s32)tribe->modelName);
         evtSetValue(event, *args++, (s32)name);
@@ -457,7 +457,7 @@ USER_FUNC(evt_action_sub) {
         evtSetValue(event, *args++, (s32)"にせマリオ２");
     }
     evtSetValue(event, *args++, mask);
-    evtSetValue(event, *args++, anim_tbl[index].field_0x8);
+    evtSetValue(event, *args++, anim_tbl[index].actionEvent);
 
     return EVT_RETURN_DONE;
 }
