@@ -58,17 +58,33 @@ typedef struct MapObjectEntry {
     Vec scale2;                  // 0x184
     Vec translation;             // 0x190
     s32 offscreenId;             // 0x19C
-    s32 unk1A0[2];               // 0x1A0, per-type: [0] item id (item-list pointer if bit 31 set); [1] coin count, part count, or switch anim index | state bits
+    union {
+        s32 itemId;              // 0x1A0, the item a block releases (itemEntry) or the key a lock takes (pouchCheckItem,
+                                 //        pouchRemoveItem)
+        s32* itemList;           // 0x1A0, the lock's -1-terminated key list, used when itemId has bit 31 set (an address)
+    };
+    union {
+        s32 field_0x1A4;         // 0x1A4, mobj_switch_float_blk: an anim index | 0x40000000/0x80000000 bits; only stored
+        s32 coinCost;            // 0x1A4, recovery block: coins pouchAddCoin takes (0 for the plain block, which is free)
+        s32 delay;               // 0x1A4, power-up block: frames counted down before the second item is given
+        s32 npcCount;            // 0x1A4, koopa fire bar: the c_fireber NPCs it turns
+    };
     s32 msgWindowId;             // 0x1A8
-    f32 unk1AC;                  // 0x1AC, jump stand: launch height for marioChgJumpStandMotion; fire bar: Z rotation in degrees
+    union {
+        f32 jumpHeight;          // 0x1AC, jump stand: marioChgJumpStandMotion's height
+        f32 rotSpeed;            // 0x1AC, koopa fire bar: degrees its NPCs are turned about Z each frame
+    };
     s32 timer;                   // 0x1B0, countdown decremented each frame by the timed object types
-    s32 unk1B4;                  // 0x1B4, sound handle or reload value, depending on the type
+    union {
+        s32 timerLength;         // 0x1B4, timer switch: the value timer counts down from
+        s32 sfxId;               // 0x1B4, koopa fire bar: its sound (psndSFXOn_3D result, -1 when none)
+    };
     char childName[0x10];        // 0x1B8, name of the child object this one spawns (strcpy'd in evt_mobj)
     EffectEntry* effect;         // 0x1C8
     s32 eventId;                 // 0x1CC
     s32 (*update)(struct MapObjectEntry*); // 0x1D0, per-type update callback
     s32* eventCode;              // 0x1D4, event script run by mobjRunEvent
-    s32* unk1D8;                 // 0x1D8, event script
+    s32* eventCode2;             // 0x1D8, a second event script for mobjRunEvent, run at a type-specific step
     s32 state;                   // 0x1DC, per-type step: 0 idle, 0x63 done (mobjCheckItemboxOpen tests 99)
     s32 triggerFlag;             // 0x1E0, the MOBJ_FLAG_TRIGGER_* (or other hit-test) bit that last fired
     s32 flagVar;                 // 0x1E4, script variable/flag: set when activated, read by evtGetValue

@@ -99,8 +99,8 @@ extern s32 evt_lock_sound[];
 // ---------------------------------------------------------------------------
 typedef struct PoleWork {
     char str[4];    // 0x0
-    u8 unk4;        // 0x4, string NULL terminator
-    u8 unk5[3];     // 0x5
+    u8 terminator;  // 0x4, set to 0 after the digits are written
+    u8 pad_0x5[3];  // 0x5
     f32 x;          // 0x8
     f32 y;          // 0xC
     f32 z;          // 0x10
@@ -868,7 +868,7 @@ s32 mobj_timerswitch(MapObjectEntry* obj) {
             animPoseSetAnim(obj->poseId, "A_2", 1);
             animPoseSetAnim(child->poseId, "A_2", 1);
             obj->state++;
-            obj->timer = obj->unk1B4;
+            obj->timer = obj->timerLength;
             obj->flags &= ~MOBJ_FLAG_TRIGGERED;
             break;
         case 2:
@@ -923,7 +923,7 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
     f32 ys[2];
     f32 zs[2];
     MapObjectEntry* obj[2];
-    s32 unk1B4;
+    s32 timerLength;
     s32* eventCode;
     s32 flagVar;
     BOOL inBattle = gp->inBattle != 0;
@@ -942,7 +942,7 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
     xs[1] = evtGetFloat(event, args[6]);
     ys[1] = evtGetFloat(event, args[7]);
     zs[1] = evtGetFloat(event, args[8]);
-    unk1B4 = evtGetValue(event, args[9]);
+    timerLength = evtGetValue(event, args[9]);
     eventCode = (s32*)evtGetValue(event, args[10]);
     flagVar = args[11];
     if (type == 0 && evtGetValue(event, flagVar) != 0) {
@@ -962,7 +962,7 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
         obj[i]->flags |= MOBJ_FLAG_TRIGGER_STAND_ON | MOBJ_FLAG_TRIGGER_PARTY | 0x10000;
         obj[i]->flagVar = flagVar;
         obj[i]->state = 0;
-        obj[i]->unk1B4 = unk1B4;
+        obj[i]->timerLength = timerLength;
         if (evtGetValue(event, flagVar) != 0) {
             obj[i]->state = 0x63;
         }
@@ -1020,7 +1020,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
                     obj->state = 3;
                     animPoseSetAnim(obj->poseId, "A_2", 1);
                     psndSFXOn_3D((const char*)0x1d4, &obj->position);
-                    mobjRunEvent(obj, obj->unk1D8);
+                    mobjRunEvent(obj, obj->eventCode2);
                 } else {
                     obj->flags &= ~MOBJ_FLAG_TRIGGERED;
                 }
@@ -1066,7 +1066,7 @@ s32 evt_mobj_rideswitch_a(EventEntry* event, BOOL isFirstCall) {
     f32 y;
     f32 z;
     s32* eventCode;
-    s32* unk1D8;
+    s32* eventCode2;
     s32 flagVar;
     MapObjectEntry* obj;
 
@@ -1075,7 +1075,7 @@ s32 evt_mobj_rideswitch_a(EventEntry* event, BOOL isFirstCall) {
     y = evtGetFloat(event, args[2]);
     z = evtGetFloat(event, args[3]);
     eventCode = (s32*)evtGetValue(event, args[4]);
-    unk1D8 = (s32*)evtGetValue(event, args[5]);
+    eventCode2 = (s32*)evtGetValue(event, args[5]);
     flagVar = args[6];
     asyncName = "MOBJ_RideSwitchA";
     if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
@@ -1086,7 +1086,7 @@ s32 evt_mobj_rideswitch_a(EventEntry* event, BOOL isFirstCall) {
     mobjSetPosition(name, x, y, z);
     obj->update = mobj_rideswitch_lightblue;
     obj->eventCode = eventCode;
-    obj->unk1D8 = unk1D8;
+    obj->eventCode2 = eventCode2;
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     obj->flags |= MOBJ_FLAG_TRIGGER_STAND_ON;
     obj->flagVar = flagVar;
@@ -1108,7 +1108,7 @@ s32 evt_mobj_rideswitch_b(EventEntry* event, BOOL isFirstCall) {
     f32 y;
     f32 z;
     s32* eventCode;
-    s32* unk1D8;
+    s32* eventCode2;
     s32 flagVar;
     MapObjectEntry* obj;
 
@@ -1117,7 +1117,7 @@ s32 evt_mobj_rideswitch_b(EventEntry* event, BOOL isFirstCall) {
     y = evtGetFloat(event, args[2]);
     z = evtGetFloat(event, args[3]);
     eventCode = (s32*)evtGetValue(event, args[4]);
-    unk1D8 = (s32*)evtGetValue(event, args[5]);
+    eventCode2 = (s32*)evtGetValue(event, args[5]);
     flagVar = args[6];
     asyncName = "MOBJ_RideSwitchB";
     if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
@@ -1128,7 +1128,7 @@ s32 evt_mobj_rideswitch_b(EventEntry* event, BOOL isFirstCall) {
     mobjSetPosition(name, x, y, z);
     obj->update = mobj_rideswitch_lightblue;
     obj->eventCode = eventCode;
-    obj->unk1D8 = unk1D8;
+    obj->eventCode2 = eventCode2;
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     obj->flags |= MOBJ_FLAG_TRIGGER_STAND_ON;
     obj->flagVar = flagVar;
@@ -1146,20 +1146,20 @@ s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     s32 flagVar;
     const char* name;
     MapObjectEntry* obj;
-    f32 f31;
-    f32 f30;
-    f32 f29;
+    f32 x;
+    f32 y;
+    f32 z;
     s32* eventCode;
-    s32* unk1D8;
+    s32* eventCode2;
     const char* asyncName;
     BOOL inBattle;
 
     name = (const char*)evtGetValue(event, args[0]);
-    f31 = evtGetFloat(event, args[1]);
-    f30 = evtGetFloat(event, args[2]);
-    f29 = evtGetFloat(event, args[3]);
+    x = evtGetFloat(event, args[1]);
+    y = evtGetFloat(event, args[2]);
+    z = evtGetFloat(event, args[3]);
     eventCode = (s32*)evtGetValue(event, args[4]);
-    unk1D8 = (s32*)evtGetValue(event, args[5]);
+    eventCode2 = (s32*)evtGetValue(event, args[5]);
     inBattle = gp->inBattle != 0;
     asyncName = "MOBJ_RideSwitchC";
     flagVar = args[6];
@@ -1170,10 +1170,10 @@ s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     obj = mobjNameToPtr(name);
     obj->scale2.x *= 0.8f;
     obj->scale2.z *= 0.8f;
-    mobjSetPosition(name, f31, f30, f29);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_rideswitch_lightblue;
     obj->eventCode = eventCode;
-    obj->unk1D8 = unk1D8;
+    obj->eventCode2 = eventCode2;
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     obj->flags |= MOBJ_FLAG_TRIGGER_STAND_ON;
     obj->flagVar = flagVar;
@@ -1277,9 +1277,9 @@ s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
-    f32 f31 = evtGetFloat(event, args[2]);
-    f32 f30 = evtGetFloat(event, args[3]);
-    f32 f29 = evtGetFloat(event, args[4]);
+    f32 x = evtGetFloat(event, args[2]);
+    f32 y = evtGetFloat(event, args[3]);
+    f32 z = evtGetFloat(event, args[4]);
     s32* eventCode = (s32*)evtGetValue(event, args[5]);
     s32 flagVar = args[6];
     s32 inBattle;
@@ -1298,7 +1298,7 @@ s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f31, f30, f29);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_jumpstand_red;
     obj->eventCode = eventCode;
     obj->flags |= MOBJ_FLAG_RECALC_MTX | MOBJ_FLAG_GRAVITY;
@@ -1318,7 +1318,7 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
                 gp->systemLevelFlags |= 0x10;
                 mobjRunEvent(obj, obj->eventCode);
                 if (obj->triggerFlag == MOBJ_FLAG_TRIGGER_STAND_ON) {
-                    marioChgJumpStandMotion(obj->unk1AC);
+                    marioChgJumpStandMotion(obj->jumpHeight);
                 }
                 if (mario->characterId != 2) {
                     if (strcmp(obj->animName, "MOBJ_BlueJumpStand") == 0) {
@@ -1380,10 +1380,10 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
-    f32 f31 = evtGetFloat(event, args[2]);
-    f32 f30 = evtGetFloat(event, args[3]);
-    f32 f29 = evtGetFloat(event, args[4]);
-    f32 f28 = evtGetFloat(event, args[5]);
+    f32 jumpHeight = evtGetFloat(event, args[2]);
+    f32 x = evtGetFloat(event, args[3]);
+    f32 y = evtGetFloat(event, args[4]);
+    f32 z = evtGetFloat(event, args[5]);
     s32* eventCode = (s32*)evtGetValue(event, args[6]);
     s32 flagVar = args[7];
     s32 inBattle;
@@ -1402,14 +1402,14 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f30, f29, f28);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_jumpstand_blue;
     obj->eventCode = eventCode;
     obj->flags |= MOBJ_FLAG_RECALC_MTX | MOBJ_FLAG_GRAVITY;
     obj->flags |= MOBJ_FLAG_TRIGGER_STAND_ON;
     obj->flagVar = flagVar;
     obj->state = 0;
-    obj->unk1AC = f31;
+    obj->jumpHeight = jumpHeight;
     mobjCalcMtx(obj);
     return 2;
 }
@@ -1569,7 +1569,7 @@ s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     obj->position = pos;
     obj->update = mobj_lv_blk_evt;
     obj->eventCode = eventCode;
-    obj->unk1D8 = NULL;
+    obj->eventCode2 = NULL;
     obj->flags |= 0x10000;
     obj->flagVar = flagVar;
     obj->state = 0;
@@ -1620,9 +1620,9 @@ s32 mobj_float_blk(MapObjectEntry* obj) {
 s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f31 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f29 = evtGetFloat(event, args[3]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
     s32 type = args[4];
     s32 sub = args[5];
     s32 flagVar;
@@ -1679,7 +1679,7 @@ s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f31, f30, f29);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_float_blk;
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     obj->flagVar = flagVar;
@@ -1746,7 +1746,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 break;
             }
 #ifdef MUST_MATCH
-            obj->unk1A0[1] = (obj->unk1A0[1] & 0x40000000) | mobjSwitchAnimIndex(obj);
+            obj->field_0x1A4 = (obj->field_0x1A4 & 0x40000000) | mobjSwitchAnimIndex(obj);
 #else
             {
                 const char** p;
@@ -1762,7 +1762,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                         break;
                     }
                 }
-                obj->unk1A0[1] = (obj->unk1A0[1] & 0x40000000) | idx;
+                obj->field_0x1A4 = (obj->field_0x1A4 & 0x40000000) | idx;
             }
 #endif
             if (obj->childName[0] != 0) {
@@ -1798,7 +1798,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                             }
                         }
                     } else {
-                        obj->unk1A0[1] |= 0x80000000;
+                        obj->field_0x1A4 |= 0x80000000;
                         animId = 0;
                     }
                 } else {
@@ -1810,7 +1810,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                             if (c == 'A' && n[2] >= '1' && n[2] <= '2') {
                                 animId = 0;
                             } else if (c == 'A' && n[2] == '3') {
-                                obj->unk1A0[1] |= 0x40000000;
+                                obj->field_0x1A4 |= 0x40000000;
                                 animId = 0;
                             } else if (c == 'A' && n[2] >= '4' && n[2] <= '5') {
                                 animId = 3;
@@ -1819,7 +1819,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                             }
                         }
                     } else {
-                        obj->unk1A0[1] |= 0x80000000;
+                        obj->field_0x1A4 |= 0x80000000;
                         animId = 3;
                     }
                 }
@@ -1839,7 +1839,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                         animId = 0;
                     }
                 }
-                obj->unk1A0[1] |= 0x80000000;
+                obj->field_0x1A4 |= 0x80000000;
             }
             mobjRunEvent(obj, obj->eventCode);
             if (obj->triggerFlag == MOBJ_FLAG_TRIGGER_STAND_ON) {
@@ -1909,7 +1909,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 break;
             }
             obj->state = 0;
-            obj->unk1A0[1] = 0;
+            obj->field_0x1A4 = 0;
             break;
         case 0xa:
             if (obj->flags & MOBJ_FLAG_TRIGGERED) {
@@ -1988,9 +1988,9 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
 s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f31 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f29 = evtGetFloat(event, args[3]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
     const char* childName = (const char*)evtGetValue(event, args[4]);
     s32 type = args[5];
     s32* eventCode = (s32*)evtGetValue(event, args[6]);
@@ -2021,7 +2021,7 @@ s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f31, f30, f29);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_switch_float_blk;
     obj->eventCode = eventCode;
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
@@ -2104,14 +2104,14 @@ s32 mobj_lock(MapObjectEntry* obj) {
         case 2: {
             s32 item;
 
-            if (obj->unk1A0[0] & 0x80000000) {
+            if (obj->itemId & 0x80000000) {
                 s32 i;
                 s32 check;
 
                 item = 0;
                 i = 0;
                 while (1) {
-                    check = ((s32*)obj->unk1A0[0])[i];
+                    check = obj->itemList[i];
                     if (check == -1) {
                         break;
                     }
@@ -2123,9 +2123,9 @@ s32 mobj_lock(MapObjectEntry* obj) {
                     i++;
                 }
             } else {
-                s32 check = pouchCheckItem(obj->unk1A0[0]);
+                s32 check = pouchCheckItem(obj->itemId);
 
-                item = (check != 0) ? obj->unk1A0[0] : 0;
+                item = (check != 0) ? obj->itemId : 0;
             }
             if (item != 0) {
                 pouchRemoveItem(item);
@@ -2154,7 +2154,7 @@ s32 mobj_lock(MapObjectEntry* obj) {
             obj->gravity = 0.5f;
             obj->bounce = 0.0f;
             evtSetValue(NULL, obj->flagVar, 1);
-            mobjRunEvent(obj, obj->unk1D8);
+            mobjRunEvent(obj, obj->eventCode2);
             obj->state++;
             break;
         case 5: {
@@ -2216,13 +2216,13 @@ s32 mobj_lock(MapObjectEntry* obj) {
 s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    s32 unk1A0 = evtGetValue(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f29 = evtGetFloat(event, args[3]);
-    f32 f28 = evtGetFloat(event, args[4]);
+    s32 itemId = evtGetValue(event, args[1]);
+    f32 x = evtGetFloat(event, args[2]);
+    f32 y = evtGetFloat(event, args[3]);
+    f32 z = evtGetFloat(event, args[4]);
     f32 f31 = evtGetFloat(event, args[5]);
     s32* eventCode = (s32*)evtGetValue(event, args[6]);
-    s32* unk1D8 = (s32*)evtGetValue(event, args[7]);
+    s32* eventCode2 = (s32*)evtGetValue(event, args[7]);
     s32 flagVar = args[8];
     BOOL inBattle = gp->inBattle != 0;
     MapObjectEntry* obj;
@@ -2237,12 +2237,12 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     mobjHitEntry(obj, 2);
-    obj->unk1A0[0] = unk1A0;
-    mobjSetPosition(name, f30, f29, f28);
+    obj->itemId = itemId;
+    mobjSetPosition(name, x, y, z);
     obj->rotation.y = f31;
     obj->update = mobj_lock;
     obj->eventCode = eventCode;
-    obj->unk1D8 = unk1D8;
+    obj->eventCode2 = eventCode2;
     obj->flags |= MOBJ_FLAG_RECALC_MTX | 0x22;
     obj->flags |= 0x40000;
     obj->flagVar = flagVar;
@@ -2305,7 +2305,7 @@ s32 mobj_itembox(MapObjectEntry* obj) {
             }
             animPoseSetAnim(obj->poseId, "A_1", 1);
             obj->eventId = 0;
-            mobjRunEvent(obj, obj->unk1D8);
+            mobjRunEvent(obj, obj->eventCode2);
             obj->state++;
             break;
         }
@@ -2367,12 +2367,12 @@ s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
 
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f31 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f29 = evtGetFloat(event, args[3]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
     s32 type = evtGetValue(event, args[4]);
     s32* eventCode = (s32*)evtGetValue(event, args[5]);
-    s32* unk1D8 = (s32*)evtGetValue(event, args[6]);
+    s32* eventCode2 = (s32*)evtGetValue(event, args[6]);
     s32 flagVar = args[7];
     BOOL inBattle = gp->inBattle != 0;
     const char* modelName;
@@ -2402,10 +2402,10 @@ s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, modelName);
     obj = mobjNameToPtr(name);
     mobjHitEntry(obj, 2);
-    mobjSetPosition(name, f31, f30, f29);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_itembox;
     obj->eventCode = eventCode;
-    obj->unk1D8 = unk1D8;
+    obj->eventCode2 = eventCode2;
     obj->flags |= MOBJ_FLAG_RECALC_MTX | MOBJ_FLAG_GRAVITY | 0x20;
     obj->flags |= 0x40000;
     obj->flagVar = flagVar;
@@ -2487,18 +2487,18 @@ s32 evt_mobj_signboard(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
     MapObjectEntry* obj;
-    f32 f1;
-    f32 f2;
-    f32 f3;
+    f32 x;
+    f32 y;
+    f32 z;
     s32* eventCode;
     s32 flagVar;
     const char* asyncName;
     BOOL inBattle;
 
     name = (const char*)evtGetValue(event, args[0]);
-    f1 = evtGetFloat(event, args[1]);
-    f2 = evtGetFloat(event, args[2]);
-    f3 = evtGetFloat(event, args[3]);
+    x = evtGetFloat(event, args[1]);
+    y = evtGetFloat(event, args[2]);
+    z = evtGetFloat(event, args[3]);
     eventCode = (s32*)evtGetValue(event, args[4]);
     inBattle = !!gp->inBattle;
     asyncName = "MOBJ_Signboard";
@@ -2508,7 +2508,7 @@ s32 evt_mobj_signboard(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f1, f2, f3);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_signboard;
     obj->eventCode = eventCode;
     obj->flags |= MOBJ_FLAG_RECALC_MTX | 0x20;
@@ -2555,7 +2555,7 @@ s32 evt_mobj_arrow(EventEntry* event, BOOL isFirstCall) {
 }
 #endif
 
-// Recovery block (heart / coin-taken). The coins it needs are obj->unk1A0[1] (0x1A4); msgWindowId, timer and effect are
+// Recovery block (heart / coin-taken). The coins it takes are obj->coinCost; msgWindowId, timer and effect are
 // named fields.
 s32 mobj_recovery_blk(MapObjectEntry* obj) {
     s32 i;
@@ -2563,7 +2563,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
     switch (obj->state) {
         case -1:
             obj->effect = effCoinFukidashiEntry(0, obj->position.x, obj->position.y + 25.0f, obj->position.z - 10.0f,
-                                                obj->unk1A0[1], 0);
+                                                obj->coinCost, 0);
             obj->state++;
             break;
         case 0:
@@ -2584,7 +2584,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             obj->state++;
             // fallthrough
         case 2:
-            if (pouchGetCoin() < obj->unk1A0[1]) {
+            if (pouchGetCoin() < obj->coinCost) {
                 obj->state = 0xA;
                 break;
             }
@@ -2594,7 +2594,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             }
             psndSFXOn_3D((const char*)0x1DA, &obj->position);
             animPoseSetAnim(obj->poseId, "A_2", 1);
-            if (obj->unk1A0[1] == 0) {
+            if (obj->coinCost == 0) {
                 obj->state = 3;
             } else {
                 obj->state = 4;
@@ -2640,7 +2640,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
                 psndSFXOn_3D((const char*)0x1DB, &obj->position);
             }
             if (obj->timer == 100) {
-                s32 coin = obj->unk1A0[1];
+                s32 coin = obj->coinCost;
                 MarioWork* mario = marioGetPtr();
                 PouchData* pouch = pouchGetPtr();
                 PouchPartyData* party = pouch->partyData;
@@ -2677,7 +2677,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
         case 6:
             if (obj->effect == NULL) {
                 obj->effect = effCoinFukidashiEntry(0, obj->position.x, obj->position.y + 25.0f, obj->position.z - 10.0f,
-                                                    obj->unk1A0[1], 0);
+                                                    obj->coinCost, 0);
             }
             if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
@@ -2717,10 +2717,10 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
 s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    s32 type = evtGetValue(event, args[1]);
-    f32 f31 = evtGetFloat(event, args[2]);
-    f32 f30 = evtGetFloat(event, args[3]);
-    f32 f29 = evtGetFloat(event, args[4]);
+    s32 coinCost = evtGetValue(event, args[1]);
+    f32 x = evtGetFloat(event, args[2]);
+    f32 y = evtGetFloat(event, args[3]);
+    f32 z = evtGetFloat(event, args[4]);
     s32 flagVar;
     BOOL inBattle;
     const char* asyncName;
@@ -2729,22 +2729,22 @@ s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     evtGetValue(event, args[5]);
     flagVar = args[6];
     inBattle = gp->inBattle != 0;
-    asyncName = (type == 0) ? "MOBJ_RecoveryBlock" : "MOBJ_CoinTakenRecoveryBlock";
+    asyncName = (coinCost == 0) ? "MOBJ_RecoveryBlock" : "MOBJ_CoinTakenRecoveryBlock";
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    obj->unk1A0[1] = type;
-    mobjSetPosition(name, f31, f30, f29);
+    obj->coinCost = coinCost;
+    mobjSetPosition(name, x, y, z);
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     obj->update = mobj_recovery_blk;
     obj->eventCode = NULL;
-    obj->unk1D8 = NULL;
+    obj->eventCode2 = NULL;
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     obj->flags |= MOBJ_FLAG_TRIGGER_HEAD;
     obj->flagVar = flagVar;
-    if (type == 0) {
+    if (coinCost == 0) {
         obj->state = 0;
     } else {
         obj->state = -1;
@@ -2785,7 +2785,7 @@ s32 mobj_save_blk(MapObjectEntry* obj) {
             }
             break;
         case 3:
-            mobjRunEvent(obj, obj->unk1D8);
+            mobjRunEvent(obj, obj->eventCode2);
             obj->state++;
             break;
         case 4:
@@ -2804,9 +2804,9 @@ s32 mobj_save_blk(MapObjectEntry* obj) {
 s32 evt_mobj_save_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f31 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f29 = evtGetFloat(event, args[3]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
     s32* eventCode = (s32*)evtGetValue(event, args[4]);
     s32 flagVar = args[5];
     const char* asyncName = "MOBJ_SaveBlock";
@@ -2821,10 +2821,10 @@ s32 evt_mobj_save_blk(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f31, f30, f29);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_save_blk;
     obj->eventCode = eventCode;
-    obj->unk1D8 = mobj_save_blk_sysevt;
+    obj->eventCode2 = mobj_save_blk_sysevt;
     obj->flags |= MOBJ_FLAG_RECALC_MTX | MOBJ_FLAG_NO_CULL;
     obj->flags |= MOBJ_FLAG_TRIGGER_HEAD;
     obj->flagVar = flagVar;
@@ -2853,10 +2853,10 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
                 animPoseSetAnim(obj->poseId, "A_1", 1);
                 if (obj->eventCode != NULL) {
                     mobjRunEvent(obj, obj->eventCode);
-                } else if (obj->unk1A0[0] != 0x79) {
+                } else if (obj->itemId != 0x79) {
                     ItemEntry* item;
                     f32 y = 40.0f + obj->position.y;
-                    itemEntry(obj->name, (ItemType)obj->unk1A0[0], 4,
+                    itemEntry(obj->name, (ItemType)obj->itemId, 4,
                         obj->position.x, y, obj->position.z, obj->flagVar, 0);
                     item = itemNameToPtr(obj->name);
                     itemFlagOn(item, 0x10);
@@ -2916,10 +2916,10 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
 s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f31 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f29 = evtGetFloat(event, args[3]);
-    s32 unk1A0 = evtGetValue(event, args[4]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    s32 itemId = evtGetValue(event, args[4]);
     s32* eventCode = (s32*)evtGetValue(event, args[5]);
     s32 flagVar = args[6];
     s32 var = args[7];
@@ -2934,14 +2934,14 @@ s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f31, f30, f29);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_badgeblk;
     obj->eventCode = eventCode;
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     obj->flags |= MOBJ_FLAG_TRIGGER_HEAD | MOBJ_FLAG_TRIGGER_PARTY | 0x10000;
     obj->flagVar = flagVar;
     obj->state = 0;
-    obj->unk1A0[0] = unk1A0;
+    obj->itemId = itemId;
     mobjCalcMtx(obj);
     animPoseSetAnim(obj->poseId, "S_1", 1);
     if (evtGetValue(event, flagVar) != 0) {
@@ -2988,12 +2988,12 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
             }
             animPoseSetAnim(obj->poseId, "A_2", 1);
             obj->flags &= ~MOBJ_FLAG_TRIGGERED;
-            obj->unk1A0[1] = 1;
+            obj->delay = 1;
             obj->state++;
             break;
         case 2:
-            if (obj->unk1A0[1] != 0) {
-                obj->unk1A0[1]--;
+            if (obj->delay != 0) {
+                obj->delay--;
             } else {
                 itemForceGet(itemEntry(PB_BLK2, (ItemType)0x57, 0x11,
                     obj->position.x, 40.0f + obj->position.y, obj->position.z, -1, 0));
@@ -3025,9 +3025,9 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
 s32 evt_mobj_powerupblk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f30 = evtGetFloat(event, args[1]);
-    f32 f29 = evtGetFloat(event, args[2]);
-    f32 f28 = evtGetFloat(event, args[3]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
     s32* eventCode = (s32*)evtGetValue(event, args[4]);
     s32 flagVar = args[5];
     f32 f31 = evtGetFloat(event, args[6]);
@@ -3039,7 +3039,7 @@ s32 evt_mobj_powerupblk(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f30, f29, f28);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_powerupblk;
     obj->eventCode = eventCode;
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
@@ -3234,7 +3234,7 @@ s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
     f32 x = evtGetFloat(event, args[1]);
     f32 y = evtGetFloat(event, args[2]);
     f32 z = evtGetFloat(event, args[3]);
-    s32 unk1A0 = evtGetValue(event, args[4]);
+    s32 itemId = evtGetValue(event, args[4]);
     s32 type = args[5];
     s32* eventCode = (s32*)evtGetValue(event, args[6]);
     s32 evtId = args[7];
@@ -3303,7 +3303,7 @@ s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= MOBJ_FLAG_TRIGGER_HEAD | MOBJ_FLAG_TRIGGER_PARTY | 0x10000;
     obj->flagVar = evtId;
     obj->state = 0;
-    obj->unk1A0[0] = unk1A0;
+    obj->itemId = itemId;
     mobjCalcMtx(obj);
     if (type < 0xa) {
         animPoseSetAnim(obj->poseId, "S_1", 1);
@@ -3896,7 +3896,7 @@ s32 evt_mobj_koopa_ojama_blk(EventEntry* event, BOOL isFirstCall) {
     obj->position = pos;
     obj->update = mobj_koopa_ojama_blk_evt;
     obj->eventCode = eventCode;
-    obj->unk1D8 = NULL;
+    obj->eventCode2 = NULL;
     obj->flags |= MOBJ_FLAG_TRIGGER_KPA_HEAD | MOBJ_FLAG_TRIGGER_KPA_LV3 | MOBJ_FLAG_TRIGGER_KPA_HIP | MOBJ_FLAG_TRIGGER_KPA_FLAME;
     obj->flagVar = flagVar;
     obj->state = 0;
@@ -3935,7 +3935,7 @@ s32 evt_mobj_koopa_stone_blk(EventEntry* event, BOOL isFirstCall) {
     obj->position = pos;
     obj->update = mobj_koopa_stone_blk_evt;
     obj->eventCode = eventCode;
-    obj->unk1D8 = NULL;
+    obj->eventCode2 = NULL;
     obj->flagVar = flagVar;
     obj->state = 0x63;
     return 2;
@@ -4035,10 +4035,10 @@ s32 mobj_koopa_brickblk(MapObjectEntry* obj) {
 s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f31 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f29 = evtGetFloat(event, args[3]);
-    s32 unk1A0 = evtGetValue(event, args[4]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    s32 itemId = evtGetValue(event, args[4]);
     s32 type = args[5];
     s32* eventCode = (s32*)evtGetValue(event, args[6]);
     s32 flagVar = args[7];
@@ -4066,14 +4066,14 @@ s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f31, f30, f29);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_koopa_brickblk;
     obj->eventCode = eventCode;
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     obj->flags |= MOBJ_FLAG_TRIGGER_KPA_HEAD | MOBJ_FLAG_TRIGGER_KPA_LV3 | MOBJ_FLAG_TRIGGER_KPA_HIP | MOBJ_FLAG_TRIGGER_KPA_FLAME;
     obj->flagVar = flagVar;
     obj->state = 0;
-    obj->unk1A0[0] = unk1A0;
+    obj->itemId = itemId;
     mobjCalcMtx(obj);
     animPoseSetAnim(obj->poseId, "S_1", 1);
     if (evtGetValue(event, flagVar) != 0) {
@@ -4101,9 +4101,9 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                     if (obj->eventCode != NULL) {
                         mobjRunEvent(obj, obj->eventCode);
                     } else {
-                        if (obj->unk1A0[0] == 0x59) {
+                        if (obj->itemId == 0x59) {
                             ItemEntry* item;
-                            itemEntry(obj->name, (ItemType)obj->unk1A0[0], 4,
+                            itemEntry(obj->name, (ItemType)obj->itemId, 4,
                                 obj->position.x, 12.5f + obj->position.y, obj->position.z, -1, (s32)kpa_powerup_evt);
                             item = itemNameToPtr(obj->name);
                             itemStatusOn(item, 0x10);
@@ -4182,10 +4182,10 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
 s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f31 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f29 = evtGetFloat(event, args[3]);
-    s32 unk1A0 = evtGetValue(event, args[4]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    s32 itemId = evtGetValue(event, args[4]);
     s32* eventCode = (s32*)evtGetValue(event, args[5]);
     s32 flagVar = args[6];
     BOOL inBattle = gp->inBattle != 0;
@@ -4197,14 +4197,14 @@ s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f31, f30, f29);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_koopa_badgeblk;
     obj->eventCode = eventCode;
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     obj->flags |= MOBJ_FLAG_TRIGGER_KPA_HEAD | MOBJ_FLAG_TRIGGER_KPA_LV3 | MOBJ_FLAG_TRIGGER_KPA_HIP | MOBJ_FLAG_TRIGGER_KPA_FLAME;
     obj->flagVar = flagVar;
     obj->state = 0;
-    obj->unk1A0[0] = unk1A0;
+    obj->itemId = itemId;
     mobjCalcMtx(obj);
     animPoseSetAnim(obj->poseId, "S_1", 1);
     if (evtGetValue(event, flagVar) != 0) {
@@ -4220,10 +4220,10 @@ s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
 s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f31 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f29 = evtGetFloat(event, args[3]);
-    s32 unk1A0 = evtGetValue(event, args[4]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    s32 itemId = evtGetValue(event, args[4]);
     s32* eventCode = (s32*)evtGetValue(event, args[6]);
     s32 flagVar = args[7];
     BOOL inBattle = gp->inBattle != 0;
@@ -4235,7 +4235,7 @@ s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f31, f30, f29);
+    mobjSetPosition(name, x, y, z);
     obj->flags |= 0x800;
     mobjHitEntry(obj, 1);
     obj->update = mobj_koopa_badgeblk;
@@ -4244,7 +4244,7 @@ s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= MOBJ_FLAG_TRIGGER_KPA_HEAD | MOBJ_FLAG_TRIGGER_KPA_LV3 | MOBJ_FLAG_TRIGGER_KPA_HIP | MOBJ_FLAG_TRIGGER_KPA_FLAME;
     obj->flagVar = flagVar;
     obj->state = 0;
-    obj->unk1A0[0] = unk1A0;
+    obj->itemId = itemId;
     mobjCalcMtx(obj);
     animPoseSetAnim(obj->poseId, "S_1", 1);
     if (evtGetValue(event, flagVar) != 0) {
@@ -4300,9 +4300,9 @@ s32 mobj_koopa_blk(MapObjectEntry* obj) {
 s32 evt_mobj_koopa_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f31 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f29 = evtGetFloat(event, args[3]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
     s32* eventCode = (s32*)evtGetValue(event, args[5]);
     s32 flagVar = args[6];
     MapObjectEntry* obj;
@@ -4312,7 +4312,7 @@ s32 evt_mobj_koopa_blk(EventEntry* event, BOOL isFirstCall) {
     }
     mobjEntry(name, "MOBJ_Block");
     obj = mobjNameToPtr(name);
-    mobjSetPosition(name, f31, f30, f29);
+    mobjSetPosition(name, x, y, z);
     obj->update = mobj_koopa_blk;
     obj->eventCode = eventCode;
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
@@ -4422,7 +4422,7 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
     obj->position = pos;
     obj->update = mobj_koopa_dokan_evt;
     obj->eventCode = eventCode;
-    obj->unk1D8 = NULL;
+    obj->eventCode2 = NULL;
     mobjCalcMtx(obj);
     animPoseSetAnim(obj->poseId, "S_1", 1);
     obj->flags |= MOBJ_FLAG_TRIGGER_KPA_HEAD | MOBJ_FLAG_TRIGGER_KPA_LV3 | MOBJ_FLAG_TRIGGER_KPA_HIP | MOBJ_FLAG_TRIGGER_KPA_FLAME;
@@ -4441,30 +4441,30 @@ s32 fire_func(EventEntry* event, BOOL isFirstCall) {
     f32 f29 = evtGetFloat(event, args[2]);
     s32 v = evtGetValue(event, args[3]);
     EffectEntry* eff;
-    f32 unk7C;
-    f32 unk80;
+    f32 scaleX;
+    f32 scaleY;
 
     if (isFirstCall) {
         event->userdata[0] =
             (s32)effFireEntry(5, v, f31, f30, f29, 0.8f + (f32)irand(10) / 10.0f);
     }
-    unk7C = event->userdataf[1];
-    unk80 = event->userdataf[2];
+    scaleX = event->userdataf[1];
+    scaleY = event->userdataf[2];
     eff = (EffectEntry*)event->userdata[0];
     {
         f32 k = 0.125f;
-        unk7C = (1.0f - unk7C) * k + unk7C;
-        unk80 = (1.0f - unk80) * k + unk80;
+        scaleX = (1.0f - scaleX) * k + scaleX;
+        scaleY = (1.0f - scaleY) * k + scaleY;
     }
-    ((effFireData*)eff->userdata)->scaleX = unk7C;
-    ((effFireData*)eff->userdata)->scaleY = unk80;
-    if (unk7C >= 0.99f) {
+    ((effFireData*)eff->userdata)->scaleX = scaleX;
+    ((effFireData*)eff->userdata)->scaleY = scaleY;
+    if (scaleX >= 0.99f) {
         ((effFireData*)eff->userdata)->scaleX = 1.0f;
         ((effFireData*)eff->userdata)->scaleY = 1.0f;
         return 2;
     }
-    event->userdataf[1] = unk7C;
-    event->userdataf[2] = unk80;
+    event->userdataf[1] = scaleX;
+    event->userdataf[2] = scaleY;
     return 0;
 }
 
@@ -4569,7 +4569,7 @@ s32 evt_mobj_koopa_sango(EventEntry* event, BOOL isFirstCall) {
     obj->position = pos;
     obj->update = mobj_koopa_sango_evt;
     obj->eventCode = eventCode;
-    obj->unk1D8 = NULL;
+    obj->eventCode2 = NULL;
     obj->flags |= MOBJ_FLAG_TRIGGER_KPA_HEAD | MOBJ_FLAG_TRIGGER_KPA_LV3 | MOBJ_FLAG_TRIGGER_KPA_HIP | MOBJ_FLAG_TRIGGER_KPA_FLAME;
     obj->flagVar = flagVar;
     obj->state = 0;
@@ -4592,19 +4592,19 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
 
     if (obj->state < 0xa) {
         if (distABf(mario->position.x, mario->position.y, obj->position.x, obj->position.y) < 150.0f) {
-            if (psndSFXChk(obj->unk1B4) != 0) {
-                obj->unk1B4 = psndSFXOn_3D((const char*)0x1cd, &obj->position);
+            if (psndSFXChk(obj->sfxId) != 0) {
+                obj->sfxId = psndSFXOn_3D((const char*)0x1cd, &obj->position);
             }
-        } else if (psndSFXChk(obj->unk1B4) == 0) {
-            psndSFXOff(obj->unk1B4);
-            obj->unk1B4 = -1;
+        } else if (psndSFXChk(obj->sfxId) == 0) {
+            psndSFXOff(obj->sfxId);
+            obj->sfxId = -1;
         }
         PSMTXIdentity(mtx);
         PSMTXTransApply(mtx, mtx, -obj->position.x, -obj->position.y, -obj->position.z);
-        PSMTXRotRad(rotMtx, 'Z', 0.017453292f * obj->unk1AC);
+        PSMTXRotRad(rotMtx, 'Z', 0.017453292f * obj->rotSpeed);
         PSMTXConcat(rotMtx, mtx, mtx);
         PSMTXTransApply(mtx, mtx, obj->position.x, obj->position.y, obj->position.z);
-        for (i = 0; i < obj->unk1A0[1]; i++) {
+        for (i = 0; i < obj->npcCount; i++) {
             sprintf(buf, "%s%2x", obj->name, i);
             npc = npcNameToPtr(buf);
             PSMTXMultVec(mtx, &npc->position, &npc->position);
@@ -4646,7 +4646,7 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
             break;
         case 0xb:
             obj->position.y = -1000.0f;
-            for (i = 0; i < obj->unk1A0[1]; i++) {
+            for (i = 0; i < obj->npcCount; i++) {
                 sprintf(buf, "%s%2x", obj->name, i);
                 npc = npcNameToPtr(buf);
                 npc->moveElapsed = 0;
@@ -4657,14 +4657,14 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
                 npc->moveTime = 2.0f;
                 npc->jumpFlags |= 4;
             }
-            if (psndSFXChk(obj->unk1B4) == 0) {
-                psndSFXOff(obj->unk1B4);
-                obj->unk1B4 = -1;
+            if (psndSFXChk(obj->sfxId) == 0) {
+                psndSFXOff(obj->sfxId);
+                obj->sfxId = -1;
             }
             obj->state++;
             break;
         case 0xc:
-            for (i = 0; i < obj->unk1A0[1]; i++) {
+            for (i = 0; i < obj->npcCount; i++) {
                 sprintf(buf, "%s%2x", obj->name, i);
                 npc = npcNameToPtr(buf);
                 npc->moveOffset.x = npc->moveOffset.x + npc->jumpTargetPos.x;
@@ -4686,7 +4686,7 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
             }
             break;
         case 0x63:
-            for (j = 0; j < obj->unk1A0[1]; j++) {
+            for (j = 0; j < obj->npcCount; j++) {
                 sprintf(buf2, "%s%2x", obj->name, j);
                 npcDelete(npcNameToPtr(buf2));
             }
@@ -4731,7 +4731,7 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     obj->position = pos;
     obj->update = mobj_koopa_fireber_dodai_evt;
     obj->eventCode = eventCode;
-    obj->unk1D8 = NULL;
+    obj->eventCode2 = NULL;
     obj->flags |= MOBJ_FLAG_TRIGGER_KPA_HEAD | MOBJ_FLAG_TRIGGER_KPA_LV3 | MOBJ_FLAG_TRIGGER_KPA_HIP | MOBJ_FLAG_TRIGGER_KPA_FLAME;
     obj->flagVar = flagVar;
     obj->state = 0;
@@ -4741,9 +4741,9 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     if (f27 == 0.0f) {
         f27 = 1.0f;
     }
-    obj->unk1A0[1] = count;
-    obj->unk1AC = (sign != 0) ? __fabsf(f27) : -__fabsf(f27);
-    obj->unk1B4 = 0;
+    obj->npcCount = count;
+    obj->rotSpeed = (sign != 0) ? __fabsf(f27) : -__fabsf(f27);
+    obj->sfxId = 0;
     y = 25.0f + y;
     z = 175.0f + z;
     for (i = 0; i < count; i++) {
@@ -4818,7 +4818,7 @@ s32 kpa_score_to_str(EventEntry* event, BOOL isFirstCall) {
             len++;
         }
     }
-    psw->unk4 = 0;
+    psw->terminator = 0;
     return 2;
 }
 
@@ -5000,7 +5000,7 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
             obj->state++;
             break;
         case 0x5c:
-            mobjRunEvent(obj, obj->unk1D8);
+            mobjRunEvent(obj, obj->eventCode2);
             obj->state++;
             break;
         case 0x5d:
@@ -5028,7 +5028,7 @@ s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
     f32 y = evtGetFloat(event, args[2]);
     f32 z = evtGetFloat(event, args[3]);
     s32* eventCode = (s32*)evtGetValue(event, args[4]);
-    s32* unk1D8 = (s32*)evtGetValue(event, args[5]);
+    s32* eventCode2 = (s32*)evtGetValue(event, args[5]);
     s32 flagVar = args[6];
     BOOL inBattle = gp->inBattle != 0;
     MapObjectEntry* obj;
@@ -5052,7 +5052,7 @@ s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
     obj->position = pos;
     obj->update = mobj_koopa_pole_evt;
     obj->eventCode = eventCode;
-    obj->unk1D8 = unk1D8;
+    obj->eventCode2 = eventCode2;
     obj->flags |= MOBJ_FLAG_TRIGGER_STAND_ON | MOBJ_FLAG_TRIGGER_KPA_HEAD | MOBJ_FLAG_TRIGGER_KPA_LV3 | MOBJ_FLAG_TRIGGER_KPA_HIP | 0x80000;
     obj->flagVar = flagVar;
     obj->state = 0;
@@ -5070,7 +5070,7 @@ s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
     child->position = pos2;
     child->update = NULL;
     child->eventCode = NULL;
-    child->unk1D8 = NULL;
+    child->eventCode2 = NULL;
     child->flagVar = 0;
     child->state = 0;
     strcpy(child->childName, name);
