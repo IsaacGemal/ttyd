@@ -7936,6 +7936,6 @@ fmotion (src/motion, src/manager; not touched).
   8953 -> 8099 (the 800 BattleUnitKind labels in rels/ and src/unit). Biggest per-file drops (weighted): sac_bakugame
   58 -> 48, ac_power_gauge_lv2 20 -> 8, battle_item_data 22 -> 14, battle_audience 56 -> 51.
 - **For a reviewer.** `renzokuSoftCap`, `kagenukeOffsetX/Z` and `shotDamageRate` each rest on one reader (the only
-  one there is); `shotDamageRate`'s comment names only the roll, not BattleCheckDamage's other two conditions on those
-  patterns (attribute 0x4000, flag 0x20000). `AUDIENCE_KIND_TWO_SEATS` is a new enum constant named from its readers;
+  one there is); `shotDamageRate`'s comment names BattleCheckDamage's other two conditions on those patterns too
+  (attribute 0x4000, flag 0x20000), so the roll is not the whole gate. `AUDIENCE_KIND_TWO_SEATS` is a new enum constant named from its readers;
   the data tables keep their literal 0/1.

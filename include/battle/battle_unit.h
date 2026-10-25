@@ -783,9 +783,10 @@ typedef struct BattleUnitKind {
     s8 turnOrderVariance;              // 0x89
     s8 swallowRate;                    // 0x8A
     s8 swallowAttribute;               // 0x8B
-    u8 shotDamageRate;                 // 0x8C, BattleCheckDamage: chance (%) that damage patterns 0xE/0x10 apply
+    u8 shotDamageRate;                 // 0x8C, BattleCheckDamage: chance (%) rolled for damage patterns 0xE/0x10
                                        //       (subsetevt_shot_damage: the kaiten/ultra hammer shoots the target
-                                       //       into the others); else the hit uses pattern 0
+                                       //       into the others); a failed roll drops the hit to pattern 0, as do
+                                       //       attribute 0x4000 and a call without flag 0x20000
     u8 itemStealParam;                 // 0x8D, _get_itemsteal_param
     Vec starPointDispOffset;           // 0x90
     const char* damageSfxName;         // 0x9C, BattleDamageDirect
