@@ -23,9 +23,9 @@ typedef struct effWangFlushData {
 	f32 rotSpeed;     // 0x14
 	f32 scale;        // 0x18
 	f32 scaleSpeed;   // 0x1C
-	f32 alphaScale;   // 0x20
+	f32 pulseScale;   // 0x20, type 0: scale of the colour-cycling back quad, pulses with duration
 	s32 alpha;        // 0x24
-	s32 field_0x28;   // 0x28
+	s32 pulseAlpha;   // 0x28, type 0: GX_TEVREG1 alpha of the colour-cycling back quad
 	s32 duration;     // 0x2C
 	s32 frame;        // 0x30
 } effWangFlushData;
@@ -55,8 +55,8 @@ EffectEntry* effWangFlushN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) {
 	}
 	data->scale = float_0_8042011c;
 	data->scaleSpeed = 0.8f;
-	data->field_0x28 = 0;
-	data->alphaScale = float_0_8042011c;
+	data->pulseAlpha = 0;
+	data->pulseScale = float_0_8042011c;
 	return effect;
 }
 
@@ -95,8 +95,8 @@ void effWangFlushMain(EffectEntry* effect) {
 	data->scaleSpeed += float_0p29_80420128;
 	data->rot += data->rotSpeed;
 	data->rotSpeed *= float_0p93_8042012c;
-	data->alphaScale = float_0p5_80420120 * (f32)sin(float_6p2832_80420130 * (f32)(duration * 50) / float_360_80420134) + 0.9f;
-	data->field_0x28 = 64.0f * (f32)sin(float_6p2832_80420130 * (f32)(duration * 40) / float_360_80420134) + 144.0f;
+	data->pulseScale = float_0p5_80420120 * (f32)sin(float_6p2832_80420130 * (f32)(duration * 50) / float_360_80420134) + 0.9f;
+	data->pulseAlpha = 64.0f * (f32)sin(float_6p2832_80420130 * (f32)(duration * 40) / float_360_80420134) + 144.0f;
 
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effWangFlushDisp, effect);
 }
@@ -117,7 +117,7 @@ void effWangFlushDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 idx;
 	s32 alpha;
-	s32 field28;
+	s32 pulseAlpha;
 	s32 type;
 	effWangFlushData* data;
 	CameraEntry* cam;
@@ -135,7 +135,7 @@ void effWangFlushDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtxA, mtxB, mtxC);
 	PSMTXConcat(cam->view, mtxC, mtxC);
 	idx = data->frame * 3;
-	field28 = data->field_0x28;
+	pulseAlpha = data->pulseAlpha;
 
 	GXSetNumChans(0);
 	GXSetNumTevStages(1);
@@ -154,13 +154,13 @@ void effWangFlushDisp(CameraId camId, void* param) {
 	effSetVtxDescN64(size16x16_tex64x64_vtx);
 
 	if (type == 0) {
-		PSMTXScale(mtxD, data->alphaScale, data->alphaScale, data->alphaScale);
+		PSMTXScale(mtxD, data->pulseScale, data->pulseScale, data->pulseScale);
 		PSMTXConcat(mtxC, mtxD, mtxD);
 		GXLoadPosMtxImm(mtxD, 0);
 		GXSetCurrentMtx(0);
 		idx %= 24;
 		GXSetTevColor(1, (GXColor){ color_rotation_data[idx], color_rotation_data[idx + 1],
-		                            color_rotation_data[idx + 2], field28 });
+		                            color_rotation_data[idx + 2], pulseAlpha });
 		GXBegin(0x90, 0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}

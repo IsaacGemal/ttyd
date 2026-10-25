@@ -124,7 +124,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 	case 4:
 	case 5:
 	case 6:
-		data->field_0x44 = index << 2;
+		data->delay = index << 2;
 		data->position.x = 0.0f;
 		data->position.y = 0.0f;
 		data->position.z = 0.0f;
@@ -135,7 +135,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		data->alpha = 0xFF;
 		break;
 	case 7:
-		data->field_0x44 = index << 3;
+		data->delay = index << 3;
 		data->position.x = 0.0f;
 		data->position.y = 0.0f;
 		data->position.z = 0.0f;
@@ -161,7 +161,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 			f7 = f7 * speedScale;
 		}
 		f6 = (6.2831855f * angle) / 360.0f;
-		data->field_0x44 = index;
+		data->delay = index;
 		data->position.x = 0.0f;
 		data->position.y = 0.0f;
 		data->position.z = 0.0f;
@@ -260,7 +260,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		// one-expression form computes it in f1 and copies.
 		speed = (f32)(irand(50) + 10) / 10.0f;
 		speed *= 1.5f;
-		data->field_0x44 = irand(100);
+		data->delay = irand(100);
 		rad = 6.2831855f * angle;
 		f6 = rad / 360.0f;
 		zero = 0.0f;
@@ -466,8 +466,8 @@ void effGonbabaBreathMain(EffectEntry* effect) {
 	i = 1;
 	data++;
 	for (; i < effect->count; i++, data++) {
-		if (data->field_0x44 != 0) {
-			data->field_0x44--;
+		if (data->delay != 0) {
+			data->delay--;
 			continue;
 		}
 		switch (data->type) {
@@ -659,7 +659,7 @@ void effGonbabaBreathDisp(CameraId camId, void* param) {
 	colorIdx = type % 10;
 	negSize = -size;
 	for (i = 1, data = data + 1; i < effect->count; i++, data++) {
-		if (data->field_0x44 != 0) {
+		if (data->delay != 0) {
 			continue;
 		}
 		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
