@@ -1427,7 +1427,7 @@ void BattleAudienceSettingAudience(void) {
 		break;
 	case 6:
 		for (i = 0; i < 12; i++) {
-			if (audience_kind[i].field_0x0 & 1) {
+			if (audience_kind[i].flags & AUDIENCE_KIND_TWO_SEATS) {
 				weights[i] = 2;
 			}
 			else {
@@ -1470,7 +1470,7 @@ void BattleAudienceSettingAudience(void) {
 			else {
 				if (((s8*)setupBase)[4 + kind] != 0) {
 					weights[kind] = ((s8*)setupBase)[4 + kind] * (irand(10) + 1);
-					if (audience_kind[kind].field_0x0 & 1) {
+					if (audience_kind[kind].flags & AUDIENCE_KIND_TWO_SEATS) {
 						weights[kind] *= 2;
 					}
 					target++;
@@ -1552,7 +1552,7 @@ void BattleAudienceSettingAudience(void) {
 
 	for (i = 0; i < 12; i++) {
 		counts[i] = targetNum * weights[i] / sum;
-		if (audience_kind[i].field_0x0 & 1) {
+		if (audience_kind[i].flags & AUDIENCE_KIND_TWO_SEATS) {
 			counts[i] /= 2;
 			total += counts[i] * 2;
 		}
@@ -1580,7 +1580,7 @@ void BattleAudienceSettingAudience(void) {
 		if (weights[kind] <= 0) {
 			continue;
 		}
-		if (audience_kind[kind].field_0x0 & 1) {
+		if (audience_kind[kind].flags & AUDIENCE_KIND_TWO_SEATS) {
 			if (total <= targetNum - 2) {
 				counts[kind]++;
 				total += 2;
@@ -2987,7 +2987,7 @@ BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 	BattleAudienceBaseGetPtr();
 	BattleStageGetPtr();
 	member = BattleAudienceGetPtr(index);
-	if ((audience_kind[type].field_0x0 & 1) == 0) {
+	if ((audience_kind[type].flags & AUDIENCE_KIND_TWO_SEATS) == 0) {
 		if (member->flags & 1) {
 			return FALSE;
 		}
