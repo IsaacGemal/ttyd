@@ -32,7 +32,7 @@ extend_data(25,
      f32, one, 1.0f)
 
 // The fade factor is a real local, not folded into its use: with copy propagation off it keeps its own
-// (low) variable number, so MWCC colours the `field_10 * (1 - t)` product first (f0) and the fade gets f1, as
+// (low) variable number, so MWCC colours the `fromX * (1 - t)` product first (f0) and the fade gets f1, as
 // in the original. Each lerp is written `to * t + from * (1 - t)`, so fp_contract fuses the `t` product
 // into the fmadds as retail does.
 void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
@@ -50,10 +50,10 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
         }
         alphaF = (f32)wp->alpha;
         t = alphaF / 255.0f;
-        wp->field_08 = wp->field_18 * t + wp->field_10 * (1.0f - t);
+        wp->x = wp->toX * t + wp->fromX * (1.0f - t);
         fade = 0.8f * t + 0.2f;
         scale *= fade;
-        wp->field_0c = wp->field_1c * t + wp->field_14 * (1.0f - t);
+        wp->y = wp->toY * t + wp->fromY * (1.0f - t);
     }
     // MWCC folds `/ 2.0f` into `* 0.5f` but keeps the product's operand order.
     halfWidth = scale * (f32)FontGetMessageWidth(wp->msg) / 2.0f;
@@ -61,7 +61,7 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     FontDrawScale(scale);
     FontDrawEdge();
     FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, wp->alpha });
-    FontDrawString(wp->field_08 - halfWidth, wp->field_0c, wp->msg);
+    FontDrawString(wp->x - halfWidth, wp->y, wp->msg);
     FontDrawEdgeOff();
 }
 
@@ -89,15 +89,15 @@ USER_FUNC(evt_yuutitle_alloc) {
 
     memset(wp, 0, 0x28);
     _wp = wp;
-    wp->field_18 = evtGetFloat(event, args[0]);
-    wp->field_1c = evtGetFloat(event, args[1]);
+    wp->toX = evtGetFloat(event, args[0]);
+    wp->toY = evtGetFloat(event, args[1]);
     wp->msg = msgSearch((const char*)evtGetValue(event, args[2]));
-    temp = 200.0f + wp->field_18;
-    wp->field_08 = temp;
-    wp->field_10 = temp;
-    temp = 200.0f + wp->field_1c;
-    wp->field_0c = temp;
-    wp->field_14 = temp;
+    temp = 200.0f + wp->toX;
+    wp->x = temp;
+    wp->fromX = temp;
+    temp = 200.0f + wp->toY;
+    wp->y = temp;
+    wp->fromY = temp;
     wp->alpha = 0;
     wp->entry = evtEntry(main_evt, 0, 0);
     wp->entry->lwData[0] = (s32)wp;
