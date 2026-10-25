@@ -4602,7 +4602,7 @@ void puniModeHagure(PuniData* puni) {
 
     switch (puni->state) {
         case 0:
-            // The fukidashi reads its target as a MarioWork, whose position (0x8C) lands on field_0x2AC.
+            // The fukidashi reads its target as a MarioWork, whose position (0x8C) lands on fukidashiPos.
             puni->effect = effFukidashiEntry(4, 0, (s32)((u8*)puni + 0x220), -1, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
             puni->animIdx = 6;
             puni->flags |= 0x100000;
@@ -4612,22 +4612,22 @@ void puniModeHagure(PuniData* puni) {
             puni->subState = rand() % 21 + 30;
             puni->counter = rand() % 6 + 5;
             puni->timer = puni->subState;
-            puni->field_0x1E8 = puni->counter;
+            puni->turnsLeft = puni->counter;
             puni->state = 10;
-            puni->field_0x2AC.x = 0.0f;
-            puni->field_0x2AC.y = -1000.0f;
-            puni->field_0x2AC.z = 0.0f;
+            puni->fukidashiPos.x = 0.0f;
+            puni->fukidashiPos.y = -1000.0f;
+            puni->fukidashiPos.z = 0.0f;
             /* fallthrough */
         case 10:
             if ((puni->timer)-- != 0) {
                 break;
             }
-            if (puni->field_0x1E8 & 1) {
+            if (puni->turnsLeft & 1) {
                 puni->direction = 90.0f;
             } else {
                 puni->direction = 270.0f;
             }
-            if ((puni->field_0x1E8)-- == 0) {
+            if ((puni->turnsLeft)-- == 0) {
                 puni->state = 20;
                 break;
             }
@@ -4644,9 +4644,9 @@ void puniModeHagure(PuniData* puni) {
             break;
         case 30:
             if (rand() % 2) {
-                puni->field_0x2AC.x = puni->pos.x;
-                puni->field_0x2AC.y = 10.0f + puni->pos.y;
-                puni->field_0x2AC.z = puni->pos.z;
+                puni->fukidashiPos.x = puni->pos.x;
+                puni->fukidashiPos.y = 10.0f + puni->pos.y;
+                puni->fukidashiPos.z = puni->pos.z;
                 fuki = puni->effect->userdata;
                 fuki->animFrame = 0;
             }
@@ -7743,7 +7743,7 @@ USER_FUNC(evt_puni_winddisable_onoff) {
 }
 
 USER_FUNC(evt_puni_force_se_off) {
-    u32 se = Punigp->field_0x458;
+    u32 se = Punigp->sfx;
 
     if (se != 0) {
         psndSFXOff(se);

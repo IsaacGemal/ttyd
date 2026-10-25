@@ -94,7 +94,7 @@ typedef struct PuniWork {
     s32 puniCounterAlpha;               // 0x44C
     s32 randSeedA;                      // 0x450, puni_rnd / puniQrnd state
     s32 randSeedB;                      // 0x454
-    u32 field_0x458;                    // 0x458
+    u32 sfx;                            // 0x458, an SFX handle evt_puni_force_se_off stops; nothing in mri sets it
     s32 soundNum;                       // 0x45C, puniSound's count
     s32 soundLevel;                     // 0x460, 0..6 bucket of soundNum
     u8 unk464[0x468 - 0x464];           // 0x464
@@ -168,7 +168,7 @@ typedef struct PuniData {
     struct PuniData* target;            // 0x1DC, fight opponent, or Punigp->marioPuni while blown
     s32 subState;                       // 0x1E0
     s32 counter;                        // 0x1E4, per-mode scratch: Mass push frames (to 30), Awayjump's second-animation latch, Hagure's random 5..10 repeat count
-    s32 field_0x1E8;                    // 0x1E8
+    s32 turnsLeft;                      // 0x1E8, puniModeHagure: turns left (from counter); odd faces 90, even 270
     f32 height;                         // 0x1EC
     f32 vertVel;                        // 0x1F0
     f32 jumpVelStart;                   // 0x1F4
@@ -178,7 +178,7 @@ typedef struct PuniData {
     struct HitEntry* hitDir;            // 0x214, HitEntry from puniMoveAtari's second check, from the start point
     struct EffectEntry* effect;         // 0x218
     u8 unk21C[0x2AC - 0x21C];           // 0x21C
-    Vec field_0x2AC;                    // 0x2AC, puniModeHagure's fukidashi reads it as the position of a MarioWork at 0x220
+    Vec fukidashiPos;                   // 0x2AC, puniModeHagure's fukidashi reads it as the position of a MarioWork at 0x220 (y -1000 hides it)
     u8 unk2B8[0x560 - 0x2B8];           // 0x2B8
     Vec hitNormal;                      // 0x560, surface normal of the last puniMoveAtari hit
     void (*modeFunc)(struct PuniData*); // 0x56C, PUNI_MODE_CUSTOM handler (puniModeCustom), set by the map RELs

@@ -1237,7 +1237,7 @@ static USER_FUNC(arm_init) {
 
     for (i = 0; i < 2; i++) {
         work[i] = BattleAlloc(0x24);
-        work[i]->field_0x00 = work[i]->field_0x0C = (Vec){0.0f, 0.0f, 0.0f};
+        work[i]->prevPos = work[i]->pos = (Vec){0.0f, 0.0f, 0.0f};
     }
     return EVT_RETURN_DONE;
 }
@@ -1324,23 +1324,23 @@ static USER_FUNC(arm_main) {
     id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(wp, id);
     BtlUnit_GetPos(unit, &x, &y, &z);
-    w->field_0x00 = w->field_0x0C;
+    w->prevPos = w->pos;
     pos = (Vec){0.0f, 0.0f, 0.0f};
     pos.x = x;
     pos.y = y;
     pos.z = z;
-    w->field_0x0C = pos;
+    w->pos = pos;
     if (evtCheckID(unit->waitEventId) != 1) {
-        f32 dx = w->field_0x0C.x - w->field_0x00.x;
-        f32 dy = w->field_0x0C.y - w->field_0x00.y;
+        f32 dx = w->pos.x - w->prevPos.x;
+        f32 dy = w->pos.y - w->prevPos.y;
 
         if (dx != 0.0f) {
-            w->field_0x1C = 360.0f * (f32)atan(dy / dx) / 6.283184f;
-            w->field_0x18 = w->field_0x18 + (w->field_0x1C - w->field_0x18) / 3.0f;
+            w->targetRotZ = 360.0f * (f32)atan(dy / dx) / 6.283184f;
+            w->rotZ = w->rotZ + (w->targetRotZ - w->rotZ) / 3.0f;
             BtlUnit_GetRotate(unit, &rx, &ry, &rz);
-            BtlUnit_SetRotate(unit, rx, ry, w->field_0x18);
+            BtlUnit_SetRotate(unit, rx, ry, w->rotZ);
         } else {
-            w->field_0x1C = 0.0f;
+            w->targetRotZ = 0.0f;
         }
     }
     BtlUnit_GetBaseRotate(unit, &bx, &by, &bz);
@@ -1358,9 +1358,9 @@ static USER_FUNC(arm_main) {
     PSMTXCopy(mtx1, data->matrix);
     offset = (Vec){0.0f, -18.0f, 0.0f};
     PSMTXMultVec(mtx1, &offset, &offset);
-    data->position.x = w->field_0x0C.x + offset.x;
-    data->position.y = w->field_0x0C.y + offset.y;
-    data->position.z = w->field_0x0C.z + offset.z;
+    data->position.x = w->pos.x + offset.x;
+    data->position.y = w->pos.y + offset.y;
+    data->position.z = w->pos.z + offset.z;
     return EVT_RETURN_DONE;
 }
 
