@@ -1590,7 +1590,7 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
     if (BtlUnit_CheckStatus(attacker, 3)) {
         rate = rate * 0x32 / 100;
     }
-    if (wp->field_180C0.field_0x1E0 != NULL) {
+    if (wp->field_180C0.fogEffect != NULL) {
         rate = (s32)((f32)rate / 2.0f);
     }
     if (irand(100) >= rate) {

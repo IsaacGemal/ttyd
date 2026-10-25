@@ -46,17 +46,17 @@ USER_FUNC(_chuchu_make_extra_work_area) {
 }
 
 #define TECH_MENU_ENTRY(table)                                                        \
-    cmd->mWeaponTable[*count].mIndex = -1;                                            \
-    cmd->mWeaponTable[*count].mItem = 0;                                              \
-    cmd->mWeaponTable[*count].mWeaponParams = (table);                                \
-    cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
-    cmd->mWeaponTable[*count].mIcon =                                                 \
-        cmd->mWeaponTable[*count].mWeaponParams->icon;                                \
-    cmd->mWeaponTable[*count].mName =                                                 \
-        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                      \
+    cmd->weaponTable[*count].mIndex = -1;                                            \
+    cmd->weaponTable[*count].mItem = 0;                                              \
+    cmd->weaponTable[*count].mWeaponParams = (table);                                \
+    cmd->weaponTable[*count].mEnabled = 0;                                          \
+    cmd->weaponTable[*count].mIcon =                                                 \
+        cmd->weaponTable[*count].mWeaponParams->icon;                                \
+    cmd->weaponTable[*count].mName =                                                 \
+        msgSearch(cmd->weaponTable[*count].mWeaponParams->name);                      \
     (*count)++;
 
-static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
+static void __makeTechMenuFunc(BattleCommand* cmd, s32* count) {
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 

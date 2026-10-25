@@ -38,7 +38,7 @@ extern u32 lbl_80379A00[2];
 #pragma force_active on
 extern s32 negone_one[];
 extern s32 one_negone[];
-static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
+static void __makeTechMenuFunc(BattleCommand* cmd, s32* count);
 static s32 init_event[54];
 static s32 damage_event[16];
 BattleWeapon partyWeapon_YoshiNormalAttack;
@@ -60,14 +60,14 @@ static s32 wait_event[6];
 
 
 #define TECH_MENU_ENTRY(table)                                                        \
-    cmd->mWeaponTable[*count].mIndex = -1;                                            \
-    cmd->mWeaponTable[*count].mItem = 0;                                              \
-    cmd->mWeaponTable[*count].mWeaponParams = (table);                                \
-    cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
-    cmd->mWeaponTable[*count].mIcon =                                                 \
-        cmd->mWeaponTable[*count].mWeaponParams->icon;                                \
-    cmd->mWeaponTable[*count].mName =                                                 \
-        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                      \
+    cmd->weaponTable[*count].mIndex = -1;                                            \
+    cmd->weaponTable[*count].mItem = 0;                                              \
+    cmd->weaponTable[*count].mWeaponParams = (table);                                \
+    cmd->weaponTable[*count].mEnabled = 0;                                          \
+    cmd->weaponTable[*count].mIcon =                                                 \
+        cmd->weaponTable[*count].mWeaponParams->icon;                                \
+    cmd->weaponTable[*count].mName =                                                 \
+        msgSearch(cmd->weaponTable[*count].mWeaponParams->name);                      \
     (*count)++;
 
 __declspec(section ".data") u32 lbl_80379A00[2] = {
@@ -2355,7 +2355,7 @@ USER_FUNC(yoshi_original_color_anim_set) {
 // symbol) rather than the `0.0f` extern; that flips the FP load/compare registers to
 // the target's. The remaining `4503601774854144.0` relocation names are objdiff-normalised.
 
-static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
+static void __makeTechMenuFunc(BattleCommand* cmd, s32* count) {
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 

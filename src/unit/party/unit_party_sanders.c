@@ -31,7 +31,7 @@ extern s32 btldefaultevt_avoid_counter_event[];
 extern s32 evt_audience_acrobat_notry[];
 extern s32 subset_attack_ready_jump_event[];
 extern BattleUnitKind unit_bomzou;
-static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
+static void __makeTechMenuFunc(BattleCommand* cmd, s32* count);
 static s32 init_event[63];
 static s32 damage_event[16];
 static s32 wait_event[26];
@@ -58,14 +58,14 @@ static s32 party_win_reaction[9];
 // clang-format off
 
 #define TECH_MENU_ENTRY(table)                                                             \
-    cmd->mWeaponTable[*count].mIndex = -1;                                                 \
-    cmd->mWeaponTable[*count].mItem = 0;                                                   \
-    cmd->mWeaponTable[*count].mWeaponParams = (table);                                     \
-    cmd->mWeaponTable[*count].field_0x4 = 0;                                               \
-    cmd->mWeaponTable[*count].mIcon =                                                      \
-        cmd->mWeaponTable[*count].mWeaponParams->icon;                                     \
-    cmd->mWeaponTable[*count].mName =                                                      \
-        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                          \
+    cmd->weaponTable[*count].mIndex = -1;                                                 \
+    cmd->weaponTable[*count].mItem = 0;                                                   \
+    cmd->weaponTable[*count].mWeaponParams = (table);                                     \
+    cmd->weaponTable[*count].mEnabled = 0;                                               \
+    cmd->weaponTable[*count].mIcon =                                                      \
+        cmd->weaponTable[*count].mWeaponParams->icon;                                     \
+    cmd->weaponTable[*count].mName =                                                      \
+        msgSearch(cmd->weaponTable[*count].mWeaponParams->name);                          \
     (*count)++;
 
 USER_FUNC(_sanders_make_extra_work_area) {
@@ -79,7 +79,7 @@ USER_FUNC(_sanders_make_extra_work_area) {
     return EVT_RETURN_DONE;
 }
 
-static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
+static void __makeTechMenuFunc(BattleCommand* cmd, s32* count) {
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 

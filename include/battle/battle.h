@@ -18,15 +18,7 @@
 #include "mario/mario_pouch.h"
 
 typedef struct BattleWork BattleWork;
-typedef struct BattleWorkCommand BattleWorkCommand;
 typedef struct BattleAlliance BattleAlliance;
-typedef struct BattleWorkCommandAction BattleWorkCommandAction;
-typedef struct BattleWorkCommandWeapon BattleWorkCommandWeapon;
-typedef struct BattleWorkCommandOperation BattleWorkCommandOperation;
-typedef struct BattleWorkCommandParty BattleWorkCommandParty;
-typedef struct BattleWorkCommandMultiItem BattleWorkCommandMultiItem;
-typedef struct BattleWorkCommandCursor BattleWorkCommandCursor;
-typedef struct BattleWorkCommandWindow BattleWorkCommandWindow;
 
 typedef enum BattleFlags {
     BATTLE_ESCAPED = 0x10,      // set by btlevtcmd_InterruptStop(0), the end of btldefaultevt_Escape
@@ -91,88 +83,6 @@ typedef enum BattleSeqEndStep {
     SEQ_END_RETURN = 0x0700001F,           // hand Mario and the party back to the field, free seqEndWork
 } BattleSeqEndStep;
 
-// deprecated ------------------------------------------------------------
-struct BattleWorkCommandAction {
-    u32 mType;      // 0x0
-    BOOL mEnabled;  // 0x4
-    const char* mName; // 0x8
-    u16 mIcon;      // 0xC
-    u8 pad_0xE[2];  // 0xE
-    u32 field_0x10; // 0x10, mDisabled?
-};
-
-struct BattleWorkCommandWeapon {
-    BattleWeapon* mWeaponParams; // 0x0
-    u32 field_0x4;               // 0x4
-    const char* mName;           // 0x8
-    u16 mIcon;                   // 0xC
-    u8 pad_0xE[2];               // 0xE
-    u32 mIndex;                  // 0x10
-    ItemType mItem;              // 0x14
-    u32 field_0x18;              // 0x18
-};
-
-struct BattleWorkCommandOperation {
-    u32 mType;          // 0x0
-    BOOL mEnabled;      // 0x4
-    u32 field_0x8;      // 0x8, mDisabled?
-    const char* mName;  // 0xC
-    u16 mIcon;          // 0x10
-    u8 pad_0x12[2];     // 0x12
-    char* mDescription; // 0x14
-    u32 mWeaponCost;    // 0x18
-};
-
-struct BattleWorkCommandParty {
-    BattleUnitType mPartyId; // 0x0
-    BOOL mEnabled;           // 0x4
-    const char* mName;       // 0x8
-    u16 mIcon;               // 0xC
-    u8 pad_0xE[2];           // 0xE
-    char* mDescription;      // 0x10
-    s16 mCurrentHP;          // 0x14
-    s16 mMaxHP;              // 0x16
-};
-
-struct BattleWorkCommandMultiItem {
-    BOOL mEnabled;      // 0x0
-    const char* mName;  // 0x4
-    char* mDescription; // 0x8
-    u16 mIcon;          // 0xC
-    u8 pad_0xE[2];      // 0xE
-    u32 mWeaponCost;    // 0x10
-    u32 field_0x14;     // 0x14, mDisabled?
-};
-
-struct BattleWorkCommandCursor {
-    u32 mAbsolutePos; // 0x0
-    u32 mRelativePos; // 0x4
-    u32 mNumOptions;  // 0x8
-};
-
-struct BattleWorkCommandWindow {
-    u8 field_0x0[0x124 - 0]; // 0x0
-};
-
-// TODO: modularize for more actions/party members?
-struct BattleWorkCommand {
-    u32 mCurrentState;                             // 0x0
-    u32 mCurrentMenu;                              // 0x4
-    BattleWorkCommandAction mActionTable[6];       // 0x8
-    BattleWorkCommandWeapon mWeaponTable[21];      // 0x80
-    BattleWorkCommandOperation mOperationTable[7]; // 0x2CC
-    BattleWorkCommandParty mPartyTable[8];         // 0x390
-    BattleWorkCommandMultiItem mMultiItemTable[3]; // 0x450
-    BattleWorkCommandCursor mCursors[14];          // 0x498
-    u8 field_0x540[0x55C - 0x540];                 // 0x540
-    BattleWorkCommandWindow* mWindowWork;          // 0x55C
-    u8 field_0x560[0x574 - 0x560];                 // 0x560
-};
-// end deprecated ----------------------------------------------------
-
-typedef struct BattleWorkActRecord {
-    u8 field_0x0[0x24 - 0x0]; // 0x0
-} BattleWorkActRecord;
 
 struct BattleAlliance {
     u16 allianceId;     // 0x0
@@ -189,20 +99,20 @@ typedef struct BattleWorkPartyInfo {
 } BattleWorkPartyInfo;
 
 // One rank's block of battle_stage_nozzle_data (four 0x310-byte blocks, one per stage rank; BattleStageObjectInit
-// points BattleWorkField180C0.field_0x34 at the current rank's).
+// points BattleWorkField180C0.nozzleData at the current rank's).
 typedef struct BattleStageNozzleData {
-    u8 field_0x0[3][4];            // 0x0, per nozzle, the weight of each direction (_Nozzle_Change_Check)
-    u8 field_0xC[4];               // 0xC, weight of each nozzle type (_nozzle_type_init)
-    BattleWeapon field_0x10[4];    // 0x10, the weapon of each nozzle type (_nozzle_work_attack_set)
+    u8 dirWeight[3][4];            // 0x0, per nozzle, the weight of each direction (_Nozzle_Change_Check)
+    u8 typeWeight[4];              // 0xC, weight of each nozzle type (_nozzle_type_init)
+    BattleWeapon typeWeapon[4];    // 0x10, the weapon of each nozzle type (_nozzle_work_attack_set)
 } BattleStageNozzleData;
 
 // One rank's block of battle_stage_fall_object_data (four 0x78C-byte blocks, one per stage rank; BattleStageObjectInit
-// points BattleWorkField180C0.field_0x38 at the current rank's).
+// points BattleWorkField180C0.fallObjectData at the current rank's).
 typedef struct BattleStageFallObjectData {
     BattleWeapon field_0x0;        // 0x0, no reader
-    u8 field_0xC0[9];              // 0xC0, weight of each fall-object type (_object_fall_wait)
+    u8 typeWeight[9];              // 0xC0, weight of each fall-object type (_object_fall_wait)
     u8 pad_0xC9[3];                // 0xC9
-    BattleWeapon field_0xCC[9];    // 0xCC, the weapon of each fall-object type
+    BattleWeapon typeWeapon[9];    // 0xCC, the weapon of each fall-object type (_object_fall_wait)
 } BattleStageFallObjectData;
 
 // BattleWork.field_180C0: the stage-object work of battle_stage_object.c (layer events, nozzles, fog, falling
@@ -211,42 +121,40 @@ typedef struct BattleStageFallObjectData {
 // for each access, where a BattleWorkField180C0 pointer gives the original's single addis.
 typedef struct BattleWorkField180C0 {
     u8 field_0x0[0x4 - 0x0];       // 0x0 (BattleWork 0x180C0)
-    Vec field_0x4;                 // 0x4, rotation of the layer 2 objects (_set_mobj_rotate_x sets x)
-    Vec field_0x10;                // 0x10, field_0x4 as last applied by BattleStageObjectMain
+    Vec layer2Rotation;            // 0x4, mapObjRotate's angles for the layer 2 objects (_set_mobj_rotate_x sets x)
+    Vec layer2RotationApplied;     // 0x10, layer2Rotation as last applied by BattleStageObjectMain
     u8 stageFlags;                 // 0x1C, bits 0x2/0x4/0x8 set by the layer switches, 0x10 by
                                    // BattleStage_WallCloseCheck, 0x20 by BattleStage_IronFrameFallCheck, init_ceil
                                    // and _disable_enemy_unit_disp (read by ceil_exist); BattleStage_IronFrameFallCheck
                                    // does nothing while 0x20 or 0x40 is set
-    u8 field_0x1D[0x20 - 0x1D];    // 0x1D
-    s32 field_0x20;                // 0x20, event id of the object turn event (BattleStage_DestroyA1/B)
-    s32 field_0x24;                // 0x24, event ids of the stage's layerEvents[0]-[3] (BattleStageObjectInit)
-    s32 field_0x28;                // 0x28
-    s32 field_0x2C;                // 0x2C
-    s32 field_0x30;                // 0x30
-    BattleStageNozzleData* field_0x34; // 0x34, this rank's block of battle_stage_nozzle_data, NULL at rank 0
-    BattleStageFallObjectData* field_0x38; // 0x38, this rank's block of battle_stage_fall_object_data
-    BattleWeapon* weaponAddr[2];   // 0x3C, _nozzle_work_get_weapon_address; points into field_0x44
-    BattleWeapon field_0x44[2];    // 0x44, nozzle weapons combined by _nozzle_work_attack_set
-    u8 field_0x1C4[3];             // 0x1C4, direction of each nozzle (0-3)
-    u8 field_0x1C7[3];             // 0x1C7, direction each nozzle is turning to
-    s8 field_0x1CA;                // 0x1CA, nozzle type (-1 until _nozzle_type_init picks one)
-    u8 field_0x1CB;                // 0x1CB
-    s32 field_0x1CC[3];            // 0x1CC, event id of each nozzle's _nozzle_turn_event
-    s32 field_0x1D8;               // 0x1D8, event id of the nozzle work event (BattleStage_NozzleWorkCheck)
-    s32 field_0x1DC;               // 0x1DC, fog frames left (BattleFogEndCheck)
-    EffectEntry* field_0x1E0;      // 0x1E0, the fog effect (effNozleEntry), deleted when the fog ends
-    s32 field_0x1E4;               // 0x1E4, event id of _close_wall_event (BattleStage_WallCloseCheck)
-    s32 field_0x1E8;               // 0x1E8, event id of _fall_frame_event (BattleStage_IronFrameFallCheck)
-    s32 field_0x1EC;               // 0x1EC, event id of _object_fall_event (BattleStage_ObjectFallCheck)
+    u8 pad_0x1D[0x20 - 0x1D];      // 0x1D
+    s32 objectTurnEventId;         // 0x20, event id of the object turn event (BattleStage_DestroyA1/B)
+    s32 layerEventId[4];           // 0x24, event ids of the stage's layerEvents[0]-[3] (BattleStageObjectInit)
+    BattleStageNozzleData* nozzleData; // 0x34, this rank's block of battle_stage_nozzle_data, NULL at rank 0
+    BattleStageFallObjectData* fallObjectData; // 0x38, this rank's block of battle_stage_fall_object_data
+    BattleWeapon* weaponAddr[2];   // 0x3C, _nozzle_work_get_weapon_address; points into nozzleWeapon
+    BattleWeapon nozzleWeapon[2];  // 0x44, nozzle weapons combined by _nozzle_work_attack_set
+    u8 nozzleDir[3];               // 0x1C4, direction of each nozzle (0-3)
+    u8 nozzleTargetDir[3];         // 0x1C7, direction each nozzle is turning to
+    s8 nozzleType;                 // 0x1CA, nozzle type (-1 until _nozzle_type_init picks one)
+    u8 pad_0x1CB;                  // 0x1CB
+    s32 nozzleTurnEventId[3];      // 0x1CC, event id of each nozzle's _nozzle_turn_event
+    s32 nozzleWorkEventId;         // 0x1D8, event id of the nozzle work event (BattleStage_NozzleWorkCheck)
+    s32 fogTurns;                  // 0x1DC, turns the fog has left; BattleFogEndCheck (once per turn, btlseqTurn)
+                                   // counts it down and deletes fogEffect at 0
+    EffectEntry* fogEffect;        // 0x1E0, the fog effect (effNozleEntry), deleted when the fog ends
+    s32 closeWallEventId;          // 0x1E4, event id of _close_wall_event (BattleStage_WallCloseCheck)
+    s32 fallFrameEventId;          // 0x1E8, event id of _fall_frame_event (BattleStage_IronFrameFallCheck)
+    s32 objectFallEventId;         // 0x1EC, event id of _object_fall_event (BattleStage_ObjectFallCheck)
 } BattleWorkField180C0;
 
 // BattleWork.announce: the battle announce message (battle_message.c). btlevtcmd_AnnounceSetParam indexes it from
 // 0x18C70, and the original reaches all of it through one pointer.
 typedef struct BattleWorkField18C70 {
-    s16 field_0x0;                 // 0x0 (BattleWork 0x18C70), btlevtcmd_AnnounceMessage's x
-    s16 field_0x2;                 // 0x2, and y
+    s16 x;                         // 0x0 (BattleWork 0x18C70), btlevtcmd_AnnounceMessage's x
+    s16 y;                         // 0x2, and y
     s32 param[4];                  // 0x4, btlevtcmd_AnnounceSetParam; [0] is the item index of message kind 1
-    char field_0x14[0x118 - 0x14]; // 0x14, the formatted message
+    char message[0x118 - 0x14];    // 0x14, the formatted message (FontDrawMessage)
 } BattleWorkField18C70;
 
 // BattleWork.field_19068: forced random outcomes. Nothing in the game writes forceFlags; each bit forces a random

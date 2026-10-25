@@ -544,7 +544,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		break;
 
 	case 0x2000009: {
-		s32* p = &wp->field_180C0.field_0x1E4;
+		s32* p = &wp->field_180C0.closeWallEventId;
 		if (*p) {
 			if (!evtCheckID(*p)) {
 				*p = 0;
@@ -2625,35 +2625,35 @@ BOOL BattleWaitAllActiveEvtEnd(BattleWork* wp) { //1:1
 	if (!ret) {
 		return ret;
 	}
-	if (p->field_0x1D8) {
-		if (evtCheckID(p->field_0x1D8)) {
+	if (p->nozzleWorkEventId) {
+		if (evtCheckID(p->nozzleWorkEventId)) {
 			return FALSE;
 		}
-		p->field_0x1D8 = 0;
+		p->nozzleWorkEventId = 0;
 	}
-	if (p->field_0x1E8) {
-		if (evtCheckID(p->field_0x1E8)) {
+	if (p->fallFrameEventId) {
+		if (evtCheckID(p->fallFrameEventId)) {
 			return FALSE;
 		}
-		p->field_0x1E8 = 0;
+		p->fallFrameEventId = 0;
 	}
-	if (p->field_0x20) {
-		if (evtCheckID(p->field_0x20)) {
+	if (p->objectTurnEventId) {
+		if (evtCheckID(p->objectTurnEventId)) {
 			return FALSE;
 		}
-		p->field_0x20 = 0;
+		p->objectTurnEventId = 0;
 	}
-	if (p->field_0x1EC) {
-		if (evtCheckID(p->field_0x1EC)) {
+	if (p->objectFallEventId) {
+		if (evtCheckID(p->objectFallEventId)) {
 			return FALSE;
 		}
-		p->field_0x1EC = 0;
+		p->objectFallEventId = 0;
 	}
-	if (p->field_0x1E4) {
-		if (evtCheckID(p->field_0x1E4)) {
+	if (p->closeWallEventId) {
+		if (evtCheckID(p->closeWallEventId)) {
 			return FALSE;
 		}
-		p->field_0x1E4 = 0;
+		p->closeWallEventId = 0;
 	}
 	return TRUE;
 }
