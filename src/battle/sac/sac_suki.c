@@ -52,7 +52,7 @@ extern BattleWork* _battleWorkPointer;
 
 typedef struct SukiButton {
     s32 state;     // 0x0
-    s32 field_0x4; // 0x4
+    u8 pad_0x4[4]; // 0x4
     s32 button;    // 0x8
     Vec pos;       // 0xC
 } SukiButton;

@@ -1545,16 +1545,16 @@ void btlseqTurn(BattleWork* wp) {
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
 			} else {
-				wp->field_0x2 = 0;
+				wp->burnEffectStep = 0;
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
 			}
 			break;
 
 		case 0x3000009:
-			switch (wp->field_0x2) {
+			switch (wp->burnEffectStep) {
 				case 0:
-					(wp->field_0x2)++;
+					(wp->burnEffectStep)++;
 					for (i = 0; i < 64; i++) {
 						unit = BattleGetUnitPtr(wp, i);
 						if (unit != NULL && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) &&
@@ -1575,7 +1575,7 @@ void btlseqTurn(BattleWork* wp) {
 						}
 					}
 					if (done) {
-						(wp->field_0x2)++;
+						(wp->burnEffectStep)++;
 					}
 					break;
 				}

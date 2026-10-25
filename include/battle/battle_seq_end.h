@@ -50,8 +50,7 @@ typedef struct BattleSeqEndWork {
     s32 lvupSelect;          // 0x10, highlighted level-up choice: 0 HP, 1 FP, 2 BP
     s32 field_0x14;          // 0x14, zeroed when the level-up starts, never read
     s32 lvupCount;           // 0x18, number of level-up choices (3)
-    s32 field_0x1C;          // 0x1C
-    s32 field_0x20;          // 0x20
+    u8 pad_0x1C[0x24 - 0x1C]; // 0x1C
     s32 confirmSel;          // 0x24, yes (0) / no (1) on the level-up confirm prompt
     s32 field_0x28;          // 0x28, zeroed when the confirm prompt opens, never read
     s32 confirmCount;        // 0x2C, choices on the confirm prompt (2)

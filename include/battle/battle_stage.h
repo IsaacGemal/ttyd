@@ -107,7 +107,7 @@ typedef struct BattleStageLight {
 	s32 upFrames;              //0xD8
 	s32 upFramesTotal;         //0xDC
 	s8 upEase;                 //0xE0
-	u8 pad_E1[3];              //0xE1
+	u8 pad_0xE1[3];            //0xE1
 	BattleStageLightSpline* spline; //0xE4
 } BattleStageLight;
 
