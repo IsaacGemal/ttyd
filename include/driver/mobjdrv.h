@@ -46,7 +46,7 @@ typedef struct MapObjectEntry {
     u8 camId;                    // 0x4
     char name[16];               // 0x5
     char animName[16];           // 0x15
-    u8 unk4[0x38 - 0x25];        // 0x25
+    u8 pad_0x25[0x38 - 0x25];     // 0x25
     Vec position;                // 0x38
     Vec scale;                   // 0x44
     Vec rotation;                // 0x50

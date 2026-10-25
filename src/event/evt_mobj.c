@@ -1540,9 +1540,9 @@ s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
 s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f29 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f31 = evtGetFloat(event, args[3]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
     s32* eventCode = (s32*)evtGetValue(event, args[4]);
     s32 flagVar = args[5];
     const char* asyncName = (const char*)evtGetValue(event, args[6]);
@@ -1563,9 +1563,9 @@ s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     obj = mobjNameToPtr(name);
     obj->flags |= MOBJ_FLAG_RECALC_MTX | MOBJ_FLAG_GRAVITY;
     pos = mobj_vec3_802c3ef4_template[0];
-    pos.x = f29;
-    pos.y = f30;
-    pos.z = f31;
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
     obj->position = pos;
     obj->update = mobj_lv_blk_evt;
     obj->eventCode = eventCode;
@@ -2220,7 +2220,7 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
     f32 x = evtGetFloat(event, args[2]);
     f32 y = evtGetFloat(event, args[3]);
     f32 z = evtGetFloat(event, args[4]);
-    f32 f31 = evtGetFloat(event, args[5]);
+    f32 rotY = evtGetFloat(event, args[5]);
     s32* eventCode = (s32*)evtGetValue(event, args[6]);
     s32* eventCode2 = (s32*)evtGetValue(event, args[7]);
     s32 flagVar = args[8];
@@ -2239,7 +2239,7 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
     mobjHitEntry(obj, 2);
     obj->itemId = itemId;
     mobjSetPosition(name, x, y, z);
-    obj->rotation.y = f31;
+    obj->rotation.y = rotY;
     obj->update = mobj_lock;
     obj->eventCode = eventCode;
     obj->eventCode2 = eventCode2;
@@ -3030,7 +3030,7 @@ s32 evt_mobj_powerupblk(EventEntry* event, BOOL isFirstCall) {
     f32 z = evtGetFloat(event, args[3]);
     s32* eventCode = (s32*)evtGetValue(event, args[4]);
     s32 flagVar = args[5];
-    f32 f31 = evtGetFloat(event, args[6]);
+    f32 rotY = evtGetFloat(event, args[6]);
     const char* asyncName = "MOBJ_PowerUpBlock";
     MapObjectEntry* obj;
 
@@ -3046,7 +3046,7 @@ s32 evt_mobj_powerupblk(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= MOBJ_FLAG_TRIGGER_HEAD | MOBJ_FLAG_TRIGGER_PARTY | 0x10000;
     obj->flagVar = flagVar;
     obj->state = 0;
-    obj->rotation.y = f31;
+    obj->rotation.y = rotY;
     mobjCalcMtx(obj);
     animPoseSetAnim(obj->poseId, "S_1", 1);
     if (evtGetValue(event, flagVar) != 0) {
@@ -3518,7 +3518,7 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     s32 flag;
-    f32 f31;
+    f32 dist;
     s32 i;
     ItemEntry* item;
     NpcWork* npcWork;
@@ -3531,16 +3531,16 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
             if (!(obj->flags & MOBJ_FLAG_TRIGGERED)) {
                 break;
             }
-            f31 = distABf(mario->position.x, mario->position.z, obj->position.x, obj->position.z);
+            dist = distABf(mario->position.x, mario->position.z, obj->position.x, obj->position.z);
             if (__fabsf(mario->position.y - obj->position.y) > 10.0f) {
-                f31 = 100000.0f;
+                dist = 100000.0f;
             }
             if (obj->triggerFlag == MOBJ_FLAG_TRIGGER_HIP_DROP) {
                 if (pouchGetJumpLv() < 2) {
                     flag = 0;
-                } else if (f31 < 60.0f) {
+                } else if (dist < 60.0f) {
                     flag = 2;
-                } else if (f31 < 100.0f) {
+                } else if (dist < 100.0f) {
                     flag = 1;
                 } else {
                     flag = 0;
@@ -3676,9 +3676,9 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
 s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f29 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f31 = evtGetFloat(event, args[3]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
     const char* r30 = (const char*)evtGetValue(event, args[4]);
     s32 flagVar;
     MapObjectEntry* obj;
@@ -3695,9 +3695,9 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     pos = mobj_vec3_802c4050_template[0];
-    pos.x = f29;
-    pos.y = f30 + 0.1f;
-    pos.z = f31;
+    pos.x = x;
+    pos.y = y + 0.1f;
+    pos.z = z;
     obj->position = pos;
     obj->update = mobj_kururing_floor;
     obj->flagVar = flagVar;
@@ -3874,9 +3874,9 @@ s32 mobj_koopa_ojama_blk_evt(MapObjectEntry* obj) {
 s32 evt_mobj_koopa_ojama_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f29 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f31 = evtGetFloat(event, args[3]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
     s32* eventCode = (s32*)evtGetValue(event, args[4]);
     s32 flagVar = args[5];
     const char* asyncName = (const char*)evtGetValue(event, args[6]);
@@ -3890,9 +3890,9 @@ s32 evt_mobj_koopa_ojama_blk(EventEntry* event, BOOL isFirstCall) {
     obj = mobjNameToPtr(name);
     obj->flags |= MOBJ_FLAG_RECALC_MTX;
     pos = mobj_vec3_802c40a0_template[0];
-    pos.x = f29;
-    pos.y = f30;
-    pos.z = f31;
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
     obj->position = pos;
     obj->update = mobj_koopa_ojama_blk_evt;
     obj->eventCode = eventCode;
@@ -4388,9 +4388,9 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
-    f32 f29 = evtGetFloat(event, args[2]);
-    f32 f30 = evtGetFloat(event, args[3]);
-    f32 f31 = evtGetFloat(event, args[4]);
+    f32 x = evtGetFloat(event, args[2]);
+    f32 y = evtGetFloat(event, args[3]);
+    f32 z = evtGetFloat(event, args[4]);
     s32* eventCode = (s32*)evtGetValue(event, args[5]);
     s32 flagVar = args[6];
     BOOL inBattle = gp->inBattle != 0;
@@ -4416,9 +4416,9 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
     obj = mobjNameToPtr(name);
     obj->flags |= MOBJ_FLAG_RECALC_MTX | 0x2;
     pos = mobj_vec3_802c40b8_template[0];
-    pos.x = f29;
-    pos.y = f30;
-    pos.z = f31;
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
     obj->position = pos;
     obj->update = mobj_koopa_dokan_evt;
     obj->eventCode = eventCode;
@@ -4436,9 +4436,9 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
 
 s32 fire_func(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
-    f32 f31 = evtGetFloat(event, args[0]);
-    f32 f30 = evtGetFloat(event, args[1]);
-    f32 f29 = evtGetFloat(event, args[2]);
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
     s32 v = evtGetValue(event, args[3]);
     EffectEntry* eff;
     f32 scaleX;
@@ -4446,7 +4446,7 @@ s32 fire_func(EventEntry* event, BOOL isFirstCall) {
 
     if (isFirstCall) {
         event->userdata[0] =
-            (s32)effFireEntry(5, v, f31, f30, f29, 0.8f + (f32)irand(10) / 10.0f);
+            (s32)effFireEntry(5, v, x, y, z, 0.8f + (f32)irand(10) / 10.0f);
     }
     scaleX = event->userdataf[1];
     scaleY = event->userdataf[2];
@@ -4548,9 +4548,9 @@ s32 mobj_koopa_sango_evt(MapObjectEntry* obj) {
 s32 evt_mobj_koopa_sango(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 f29 = evtGetFloat(event, args[1]);
-    f32 f30 = evtGetFloat(event, args[2]);
-    f32 f31 = evtGetFloat(event, args[3]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
     s32* eventCode = (s32*)evtGetValue(event, args[4]);
     s32 flagVar = args[5];
     MapObjectEntry* obj;
@@ -4563,9 +4563,9 @@ s32 evt_mobj_koopa_sango(EventEntry* event, BOOL isFirstCall) {
     obj = mobjNameToPtr(name);
     obj->flags |= MOBJ_FLAG_RECALC_MTX | MOBJ_FLAG_NO_CULL;
     pos = mobj_vec3_802c40c4_template[0];
-    pos.x = f29;
-    pos.y = f30;
-    pos.z = f31;
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
     obj->position = pos;
     obj->update = mobj_koopa_sango_evt;
     obj->eventCode = eventCode;
@@ -4706,7 +4706,7 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     f32 y = evtGetFloat(event, args[3]);
     f32 z = evtGetFloat(event, args[4]);
     s32 count = evtGetValue(event, args[5]);
-    f32 f27 = evtGetFloat(event, args[6]);
+    f32 rotSpeed = evtGetFloat(event, args[6]);
     s32* eventCode = (s32*)evtGetValue(event, args[7]);
     s32 flagVar = args[8];
     BOOL inBattle = gp->inBattle != 0;
@@ -4738,11 +4738,11 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     if (evtGetValue(event, flagVar) != 0) {
         obj->state = 0x63;
     }
-    if (f27 == 0.0f) {
-        f27 = 1.0f;
+    if (rotSpeed == 0.0f) {
+        rotSpeed = 1.0f;
     }
     obj->npcCount = count;
-    obj->rotSpeed = (sign != 0) ? __fabsf(f27) : -__fabsf(f27);
+    obj->rotSpeed = (sign != 0) ? __fabsf(rotSpeed) : -__fabsf(rotSpeed);
     obj->sfxId = 0;
     y = 25.0f + y;
     z = 175.0f + z;
@@ -4838,19 +4838,19 @@ void kpa_disp_pole_score(CameraId camera, void* param) {
 
 s32 kpa_disp_pole_score_main(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
-    f32 f29;
-    f32 f30;
-    f32 f31;
+    f32 x;
+    f32 y;
+    f32 z;
     f32 f1;
 
-    f29 = evtGetFloat(event, args[0]);
-    f30 = evtGetFloat(event, args[1]);
-    f31 = evtGetFloat(event, args[2]);
+    x = evtGetFloat(event, args[0]);
+    y = evtGetFloat(event, args[1]);
+    z = evtGetFloat(event, args[2]);
     f1 = evtGetFloat(event, args[3]);
     if (isFirstCall) {
-        psw->x = f29;
-        psw->y = f30;
-        psw->z = f31;
+        psw->x = x;
+        psw->y = y;
+        psw->z = z;
     }
     if (psw->y < 230.0f) {
         psw->y = psw->y + f1;

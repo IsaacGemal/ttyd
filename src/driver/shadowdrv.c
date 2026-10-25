@@ -1224,10 +1224,10 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
     CameraEntry* cam;
     Mtx mtx2;
     Mtx mtx;
-    f32 f31;
-    f32 f30;
-    f32 f29;
-    f32 f4;
+    f32 range;
+    f32 farZ;
+    f32 nearZ;
+    f32 scale;
     s32 sizeFmt;
     s32 fmt;
     u16 size;
@@ -1271,35 +1271,35 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
             PSMTXConcat(mtx, work->lookAt, work->projTexMtx);
         }
         if (&work->depthMtx != NULL) {
-            f29 = config2->nearZ;
-            f30 = config2->farZ;
-            f31 = f30 - f29;
+            nearZ = config2->nearZ;
+            farZ = config2->farZ;
+            range = farZ - nearZ;
             PSMTXScale(mtx2, float_0_804198f4, float_0_804198f4, float_0_804198f4);
             if (flag) {
-                f4 = float_256_804198fc;
+                scale = float_256_804198fc;
             }
             else {
-                f4 = float_16_80419900;
+                scale = float_16_80419900;
             }
             if (config2->isOrtho == 0) {
-                f32 d = f30 / f31;
-                f32 n = f30 * f29 / f31;
+                f32 d = farZ / range;
+                f32 n = farZ * nearZ / range;
 
                 mtx2[0][2] = d;
                 mtx2[0][3] = n;
-                mtx2[1][2] = d * f4;
-                mtx2[1][3] = n * f4;
+                mtx2[1][2] = d * scale;
+                mtx2[1][3] = n * scale;
                 mtx2[2][2] = float_1_80419904;
                 mtx2[2][3] = config2->depthBias;
             }
             else {
-                f32 d = float_neg1_80419908 / f31;
-                f32 n = -f29 / f31;
+                f32 d = float_neg1_80419908 / range;
+                f32 n = -nearZ / range;
 
                 mtx2[0][2] = d;
                 mtx2[0][3] = n;
-                mtx2[1][2] = d * f4;
-                mtx2[1][3] = n * f4;
+                mtx2[1][2] = d * scale;
+                mtx2[1][3] = n * scale;
                 mtx2[2][3] = float_1_80419904 + config2->depthBias;
             }
             PSMTXConcat(mtx2, work->lookAt, work->depthMtx);

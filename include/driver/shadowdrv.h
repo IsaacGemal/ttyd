@@ -32,7 +32,7 @@ typedef struct ProjShadowWork {
     Mtx lookAt; //0xC
     Mtx44 projection; //0x3C
     Mtx projTexMtx; //0x7C
-    u8 padAC[0xDC - 0xAC];
+    u8 pad_0xAC[0xDC - 0xAC]; //0xAC
     GXTexObj texObj; //0xDC
     smartEntry* texBuffer; //0xFC
     GXColor color; //0x100
@@ -53,7 +53,7 @@ typedef struct ShadowEntry {
     f32 decayY;              // 0x20
     f32 decayZ;              // 0x24
     u8 mode;                 // 0x28, TEV alpha of the cylinder colour
-    u8 pad29[3];             // 0x29
+    u8 pad_0x29[3];          // 0x29
     Mtx matrix;              // 0x2C
 } ShadowEntry;
 
@@ -64,7 +64,7 @@ typedef struct CharShadowWork {
     Mtx lookAt; //0xC
     Mtx44 projection; //0x3C
     Mtx projTexMtx; //0x7C
-    u8 padAC[0xDC - 0xAC];
+    u8 pad_0xAC[0xDC - 0xAC]; //0xAC
     GXTexObj texObj; //0xDC
     smartEntry* texBuffer; //0xFC
     GXColor color; //0x100

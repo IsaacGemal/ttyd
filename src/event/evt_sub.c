@@ -261,18 +261,18 @@ USER_FUNC(evt_sub_spline_init) {
 USER_FUNC(evt_sub_spline_get_value) {
 	s32* args = event->args;
 	SplineWork* work = (SplineWork*)event->lwData[15];
-	f32 f1;
-	f32 f31;
+	f32 t;
+	f32 elapsed;
 	f32 out[3];
 
 	if (work->timeBased == 0) {
-		f1 = intplGetValue(work->mode, work->step, work->steps, 0.0f, 1.0f);
+		t = intplGetValue(work->mode, work->step, work->steps, 0.0f, 1.0f);
 	} else {
 		u64 diff = (u64)event->lifetime - (u64)work->time;
-		f31 = (f32)(diff / (OS_TIMER_CLOCK / 1000));
-		f1 = intplGetValue(work->mode, (s32)f31, work->endTime, 0.0f, 1.0f);
+		elapsed = (f32)(diff / (OS_TIMER_CLOCK / 1000));
+		t = intplGetValue(work->mode, (s32)elapsed, work->endTime, 0.0f, 1.0f);
 	}
-	spline_getvalue(out, work->type, work->points, work->knots, work->tangents, f1);
+	spline_getvalue(out, work->type, work->points, work->knots, work->tangents, t);
 	evtSetValue(event, args[0], (s32)(1024.0f * out[0]) + 0xF24A7A80);
 	evtSetValue(event, args[1], (s32)(1024.0f * out[1]) + 0xF24A7A80);
 	evtSetValue(event, args[2], (s32)(1024.0f * out[2]) + 0xF24A7A80);
@@ -283,7 +283,7 @@ USER_FUNC(evt_sub_spline_get_value) {
 			return EVT_RETURN_DONE;
 		}
 	} else {
-		if (f31 <= (f32)work->endTime) {
+		if (elapsed <= (f32)work->endTime) {
 			evtSetValue(event, args[3], 1);
 			return EVT_RETURN_DONE;
 		}
@@ -419,22 +419,22 @@ USER_FUNC(evt_sub_area_check) {
 
 USER_FUNC(evt_sub_get_dist) {
 	s32* args = event->args;
-	f32 f31 = (f32)evtGetValue(event, args[0]);
-	f32 f30 = (f32)evtGetValue(event, args[1]);
-	f32 f29 = (f32)evtGetValue(event, args[2]);
-	f32 f4 = (f32)evtGetValue(event, args[3]);
-	evtSetFloat(event, args[4], distABf(f31, f30, f29, f4));
+	f32 x1 = (f32)evtGetValue(event, args[0]);
+	f32 y1 = (f32)evtGetValue(event, args[1]);
+	f32 x2 = (f32)evtGetValue(event, args[2]);
+	f32 y2 = (f32)evtGetValue(event, args[3]);
+	evtSetFloat(event, args[4], distABf(x1, y1, x2, y2));
 	return EVT_RETURN_DONE;
 }
 
 
 USER_FUNC(evt_sub_get_dir) {
 	s32* args = event->args;
-	f32 f31 = (f32)evtGetValue(event, args[0]);
-	f32 f30 = (f32)evtGetValue(event, args[1]);
-	f32 f29 = (f32)evtGetValue(event, args[2]);
-	f32 f4 = (f32)evtGetValue(event, args[3]);
-	evtSetFloat(event, args[4], angleABf(f31, f30, f29, f4));
+	f32 x1 = (f32)evtGetValue(event, args[0]);
+	f32 y1 = (f32)evtGetValue(event, args[1]);
+	f32 x2 = (f32)evtGetValue(event, args[2]);
+	f32 y2 = (f32)evtGetValue(event, args[3]);
+	evtSetFloat(event, args[4], angleABf(x1, y1, x2, y2));
 	return EVT_RETURN_DONE;
 }
 
