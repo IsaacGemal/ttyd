@@ -533,8 +533,8 @@ static inline GXColor ryushiColor1(u32 r, u32 g, u32 b, u32 a) {
 // instruction schedule; the plain forms are under #else (see the comments in the body).
 void ryushi_disp(CameraId cameraId, void* param) {
     RyushiEntry* entry = xwp;
-    s32 colorG = xwp->unk30;
-    s32 colorB = xwp->unk34;
+    s32 colorG = xwp->tev0G;
+    s32 colorB = xwp->tev0B;
     Mtx trans;
     Mtx rot;
     Mtx scale;
@@ -552,7 +552,7 @@ void ryushi_disp(CameraId cameraId, void* param) {
     PSMTXConcat(mtx, rot, mtx);
     effGetTexObj(0x1E, &texObj);
     GXLoadTexObj(&texObj, 0);
-    GXSetTevColor(2, ryushiColor0(*(GXColor*)&zero_yuu_00014160, entry->unk38, entry->unk3C, entry->unk40));
+    GXSetTevColor(2, ryushiColor0(*(GXColor*)&zero_yuu_00014160, entry->tev1R, entry->tev1G, entry->tev1B));
     GXSetNumChans(0);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetNumTexGens(1);
@@ -582,7 +582,7 @@ void ryushi_disp(CameraId cameraId, void* param) {
         if (entryScale == zeroScale) {
             continue;
         }
-        GXSetTevColor(1, ryushiColor1((s32)swayAmplitude, colorG, colorB, entry->unk20));
+        GXSetTevColor(1, ryushiColor1((s32)swayAmplitude, colorG, colorB, entry->alpha));
         {
             // The target computes these as reciprocals of powers of two; the divisions schedule the constant
             // loads the way the original does. The result is identical to z*0.125 and 3.14*i*0.25.
@@ -624,19 +624,19 @@ USER_FUNC(evt_ryushi_init) {
     ryuwp = 0xF1;
     wp = _mapAlloc(0x4004);
     xwp = wp;
-    wp->unk04 = 0;
-    wp->unk24 = 0;
-    wp->unk20 = 0;
+    wp->direction = 0;
+    wp->age = 0;
+    wp->alpha = 0;
     wp->x = 0.0f;
     wp->y = 0.0f;
     wp->z = 0.0f;
     wp->scale = 1.0f;
     wp->unk2C = 0xFF;
-    wp->unk30 = 0;
-    wp->unk34 = 0xFF;
-    wp->unk38 = 0xFF;
-    wp->unk3C = 0x80;
-    wp->unk40 = 0xFF;
+    wp->tev0G = 0;
+    wp->tev0B = 0xFF;
+    wp->tev1R = 0xFF;
+    wp->tev1G = 0x80;
+    wp->tev1B = 0xFF;
     wp = &wp[1];
     for (i = 0xF0; i != 0; i--) {
         wp->unk0 = 0;
@@ -652,15 +652,15 @@ USER_FUNC(evt_ryushi_clr) {
     s32 entryCount = ryuwp;
     f32 half = 0.5f;
 
-    entry->unk04 = evtGetValue(event, *args++);
-    entry->unk24 = 0;
-    entry->unk20 = 0;
+    entry->direction = evtGetValue(event, *args++);
+    entry->age = 0;
+    entry->alpha = 0;
     entry->x = 0.0f;
     entry->y = 0.0f;
     entry->z = 0.0f;
-    xwp->unk08 = 50.0f;
-    xwp->unk0C = 50.0f;
-    xwp->unk10 = 100.0f;
+    xwp->spacingX = 50.0f;
+    xwp->spacingY = 50.0f;
+    xwp->spacingZ = 100.0f;
     entry = &entry[1];
     for (i = 1; i < entryCount; i++, entry++) {
         s32 gridX;
@@ -674,22 +674,22 @@ USER_FUNC(evt_ryushi_clr) {
         gridX = (i - 1) % 10;
         gridY = ((i - 1) / 10) % 6;
         gridZ = (i - 1) / 60;
-        entry->unk08 = xwp->unk08 * half * ((gridY + gridZ) & 1) + ((f32)gridX * xwp->unk08 - xwp->unk08 * 4.5f);
-        entry->unk0C = (f32)gridY * xwp->unk0C - xwp->unk0C * 2.5f;
-        entry->unk10 = (f32)gridZ * xwp->unk10 - xwp->unk10 * 1.5f;
-        hi = 0.3f * xwp->unk08;
-        lo = 0.3f * -xwp->unk08;
-        entry->x = entry->unk08 + randf(lo, hi);
-        hi = 0.3f * xwp->unk0C;
-        lo = 0.3f * -xwp->unk0C;
-        entry->y = entry->unk0C + randf(lo, hi);
+        entry->homeX = xwp->spacingX * half * ((gridY + gridZ) & 1) + ((f32)gridX * xwp->spacingX - xwp->spacingX * 4.5f);
+        entry->homeY = (f32)gridY * xwp->spacingY - xwp->spacingY * 2.5f;
+        entry->homeZ = (f32)gridZ * xwp->spacingZ - xwp->spacingZ * 1.5f;
+        hi = 0.3f * xwp->spacingX;
+        lo = 0.3f * -xwp->spacingX;
+        entry->x = entry->homeX + randf(lo, hi);
+        hi = 0.3f * xwp->spacingY;
+        lo = 0.3f * -xwp->spacingY;
+        entry->y = entry->homeY + randf(lo, hi);
         // Folding the negation through `zSpacing` makes MWCC emit both
         // 0.3f products before the rand call (the natural form defers the max product).
-        zSpacing = xwp->unk10;
+        zSpacing = xwp->spacingZ;
         hi = 0.3f * zSpacing;
         zSpacing = -zSpacing;
         lo = 0.3f * zSpacing;
-        entry->z = entry->unk10 + randf(lo, hi);
+        entry->z = entry->homeZ + randf(lo, hi);
         entry->scale = 0.5f;
     }
     return EVT_RETURN_DONE;
@@ -778,16 +778,16 @@ USER_FUNC(evt_ryushi) {
         break;
     }
 
-    emitter->unk24++;
+    emitter->age++;
     {
-        s32 age = emitter->unk24;
+        s32 age = emitter->age;
         if (age <= 0x14) {
-            emitter->unk20 = age * 12;
+            emitter->alpha = age * 12;
         } else {
-            emitter->unk20 = 0xFF;
+            emitter->alpha = 0xFF;
         }
         if (age & 1) {
-            emitter->unk20 /= 2;
+            emitter->alpha /= 2;
         }
     }
     half = 0.5f;
@@ -796,38 +796,38 @@ USER_FUNC(evt_ryushi) {
     {
     entry = &emitter[1];
     for (i = 1; i < ryuwp; i++, entry++) {
-        switch (xwp->unk04) {
+        switch (xwp->direction) {
         case 0:
             entry->z -= zSpeed;
             if (entry->z < -200.0f) {
-                t1 = 0.3f * xwp->unk08;
-                t0 = 0.3f * -xwp->unk08;
-                entry->x = entry->unk08 + randf(t0, t1);
-                t2 = 0.3f * xwp->unk0C;
-                t1 = 0.3f * -xwp->unk0C;
-                entry->y = entry->unk0C + randf(t1, t2);
-                t2 = 0.3f * xwp->unk10;
-                t3 = 0.3f * -xwp->unk10;
+                t1 = 0.3f * xwp->spacingX;
+                t0 = 0.3f * -xwp->spacingX;
+                entry->x = entry->homeX + randf(t0, t1);
+                t2 = 0.3f * xwp->spacingY;
+                t1 = 0.3f * -xwp->spacingY;
+                entry->y = entry->homeY + randf(t1, t2);
+                t2 = 0.3f * xwp->spacingZ;
+                t3 = 0.3f * -xwp->spacingZ;
                 entry->z = 200.0f + randf(t3, t2);
             }
             break;
         case 1:
             entry->z += zSpeed;
             if (entry->z > 200.0f) {
-                t0 = 0.3f * xwp->unk08;
-                t3 = 0.3f * -xwp->unk08;
-                entry->x = entry->unk08 + randf(t3, t0);
-                t0 = 0.3f * xwp->unk0C;
-                t1 = 0.3f * -xwp->unk0C;
-                entry->y = entry->unk0C + randf(t1, t0);
-                t2 = 0.3f * xwp->unk10;
-                t1 = 0.3f * -xwp->unk10;
+                t0 = 0.3f * xwp->spacingX;
+                t3 = 0.3f * -xwp->spacingX;
+                entry->x = entry->homeX + randf(t3, t0);
+                t0 = 0.3f * xwp->spacingY;
+                t1 = 0.3f * -xwp->spacingY;
+                entry->y = entry->homeY + randf(t1, t0);
+                t2 = 0.3f * xwp->spacingZ;
+                t1 = 0.3f * -xwp->spacingZ;
                 entry->z = -200.0f + randf(t1, t2);
             }
             break;
         }
         {
-            f32 step = 10.0f * xwp->unk08;
+            f32 step = 10.0f * xwp->spacingX;
             f32 dx = entry->x;
             f32 cellOffset;
             s32 wrapOffset;
@@ -859,7 +859,7 @@ USER_FUNC(evt_ryushi) {
             } else if (fadeDistance > 100.0f) {
                 fadeDistance = 100.0f;
             }
-            entry->unk20 = (s32)(0.7 * (255.0f * ((100.0f - fadeDistance) / 100.0f) * alphaFactor));
+            entry->alpha = (s32)(0.7 * (255.0f * ((100.0f - fadeDistance) / 100.0f) * alphaFactor));
         }
         entry->scale = entryScale;
     }
@@ -884,19 +884,19 @@ void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
     ryuwp = 0xF1;
     entry = _mapAlloc(0x4004);
     xwp = entry;
-    entry->unk04 = 0;
-    entry->unk24 = 0;
-    entry->unk20 = 0;
+    entry->direction = 0;
+    entry->age = 0;
+    entry->alpha = 0;
     entry->x = 0.0f;
     entry->y = 0.0f;
     entry->z = 0.0f;
     entry->scale = 1.0f;
     entry->unk2C = 0xFF;
-    entry->unk30 = 0;
-    entry->unk34 = 0xFF;
-    entry->unk38 = 0xFF;
-    entry->unk3C = 0x80;
-    entry->unk40 = 0xFF;
+    entry->tev0G = 0;
+    entry->tev0B = 0xFF;
+    entry->tev1R = 0xFF;
+    entry->tev1G = 0x80;
+    entry->tev1B = 0xFF;
     entry = &entry[1];
     for (i = 0xF0; i != 0; i--) {
         entry->unk0 = 0;
