@@ -530,7 +530,7 @@ EVT_BEGIN(minigame01_end)
     CALL(re_fall_rtn)
     CALL(evt_mario_set_pose, STRING("M_S_1"))
     CALL_CHILD(yuu_00_kaijo_init2)
-    CALL(unk_yuu_00004250)
+    CALL(minigame01_cam_reset)
     WAIT_MS(500)
     CALL_CHILD(light_sub_event)
     CALL(evt_snd_sfxon, STRING("SFX_EVT_GAME_AUDIENCE1"), GW(10))
@@ -550,7 +550,7 @@ EVT_END()
 
 // clang-format on
 
-USER_FUNC(unk_yuu_00004250) {
+USER_FUNC(minigame01_cam_reset) {
     camShiftReset();
     return EVT_RETURN_DONE;
 }

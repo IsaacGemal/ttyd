@@ -2,8 +2,8 @@
 
 #include "evt/evt_cmd.h"
 
-USER_FUNC(unk_tou_00006bd8);
-USER_FUNC(unk_tou_00006c00);
+USER_FUNC(tou_snd_on);
+USER_FUNC(tou_snd_off);
 USER_FUNC(mario_recovery);
 USER_FUNC(unk_tou_00006cfc);
 USER_FUNC(unk_tou_00006d34);

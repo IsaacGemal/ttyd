@@ -463,13 +463,13 @@ USER_FUNC(mario_recovery) {
 }
 
 // 0x6C00
-USER_FUNC(unk_tou_00006c00) {
+USER_FUNC(tou_snd_off) {
     psndSetFlag(0x80);
     return EVT_RETURN_DONE;
 }
 
 // 0x6BD8
-USER_FUNC(unk_tou_00006bd8) {
+USER_FUNC(tou_snd_on) {
     psndClearFlag(0x80);
     return EVT_RETURN_DONE;
 }
@@ -537,7 +537,7 @@ EVT_BEGIN(evt_tou_bed)
             WAIT_MS(200)
             CALL(evt_snd_sfxon_3d, STRING("SFX_OFF_MARIO_SLEEP2"), LW(0), LW(1), LW(2), 0)
         END_INLINE_EVENT
-        CALL(unk_tou_00006c00)
+        CALL(tou_snd_off)
         CALL(evt_snd_bgmoff, 1024)
         CALL(evt_snd_bgmon, 1, STRING("BGM_FF_GO_SLEEPING1"))
         CALL(evt_fade_entry, 4, 1000, 0, 0, 0)
@@ -590,7 +590,7 @@ EVT_BEGIN(evt_tou_bed)
         WAIT_FRAMES(1)
         CALL(evt_snd_bgmoff, 513)
         CALL(evt_snd_bgmon, 288, 0)
-        CALL(unk_tou_00006bd8)
+        CALL(tou_snd_on)
         CALL(evt_fade_entry, 9, 1000, 0, 0, 0)
     END_IF
     CALL(evt_party_run, 0)

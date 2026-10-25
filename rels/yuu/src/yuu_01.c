@@ -280,7 +280,7 @@ EVT_BEGIN(minigame02_end)
     CALL(evt_fade_out, 1000)
     CALL(re_fall_rtn)
     CALL_CHILD(yuu_01_kaijo_init2)
-    CALL(unk_yuu_00005268)
+    CALL(minigame02_cam_reset)
     WAIT_MS(500)
     CALL(evt_snd_sfxon, STRING("SFX_EVT_GAME_AUDIENCE1"), GW(10))
     CALL(evt_snd_sfxon, STRING("SFX_EVT_GAME_BOAT_WATER1"), GW(11))
@@ -622,7 +622,7 @@ EVT_END()
 
 // TODO: type
 static u32 yuunpc_wp[1];
-USER_FUNC(unk_yuu_00005268) {
+USER_FUNC(minigame02_cam_reset) {
     camShiftReset();
     return EVT_RETURN_DONE;
 }

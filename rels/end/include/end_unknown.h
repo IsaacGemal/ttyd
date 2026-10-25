@@ -12,7 +12,7 @@ void credits_ext_update(void);
 void credits_ext_init(void);
 f32 credits_rand_range(f32 min, f32 max);
 USER_FUNC(credits_npc_setup);
-USER_FUNC(unk_end_000009a4);
+USER_FUNC(credits_bgm_wait_stop);
 USER_FUNC(credits_font_reset);
 void credits_free(void);
 USER_FUNC(credits_init);

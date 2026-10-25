@@ -21,7 +21,7 @@ USER_FUNC(yuuminigame1_opening_chk);
 USER_FUNC(yuuminigame1_opening_on_off);
 USER_FUNC(yuuminigame1_set_phase);
 USER_FUNC(evt_change_plane);
-USER_FUNC(unk_yuu_00004250);
+USER_FUNC(minigame01_cam_reset);
 EVT_DEF(yuu_00_kaijo_init);
 EVT_DEF(yuu_00_kaijo_init2);
 EVT_DEF(light_sub_event);
