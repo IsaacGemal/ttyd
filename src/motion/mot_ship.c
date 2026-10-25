@@ -48,20 +48,20 @@ EVT_END()
 typedef struct MotionShipData {
     u32 flags;        // 0x00
     f32 unk04;        // 0x04
-    f32 unk08;        // 0x08
-    f32 unk0C;        // 0x0C
-    f32 unk10;        // 0x10
+    f32 bobAngle;     // 0x08, phase of the bob: dispOfs.y = 3 sin(bobAngle) - 13; also picks the stopped wake's strength
+    f32 bobSpeed;     // 0x0C, taken from bobAngle each frame (4.25)
+    f32 wakeSpeed;    // 0x10, the wake effect's speed while the ship is stopped, eased toward 0.3 or 0.6 (shipWakeUpdate)
     f32 velX;         // 0x14
     f32 velY;         // 0x18
-    f32 unk1C;        // 0x1C
-    f32 unk20;        // 0x20
+    f32 turnRate;     // 0x1C, eased turn rate added to dispDir each frame
+    f32 turnTarget;   // 0x20, size of the turn rate turnRate eases toward (signed by flags & 1)
     EffectEntry* eff; // 0x24
-    f32 unk28;        // 0x28
-    f32 unk2C;        // 0x2C
+    f32 swirlDir;     // 0x28, marioSetSwirlPower's direction: shipMove's movePos angle while swirlTimer runs
+    f32 swirlSpeed;   // 0x2C, marioSetSwirlPower's speed: shipMove's movePos distance while swirlTimer runs
     s32 swirlTimer;   // 0x30
     f32 unk34;        // 0x34
     u32 sfxId;        // 0x38
-    Vec unk3C;        // 0x3C
+    Vec harborPos;    // 0x3C, the harbor point checkHarbor/shipHarborTarget find; the landing moves to it
 } MotionShipData;     // size 0x48
 
 // Constants table used by shipMove (defined in this unit's .sdata).
@@ -120,11 +120,11 @@ s32 marioShipChanging(void) {
     }
     return 0;
 }
-void marioSetSwirlPower(s32 msec, f32 a, f32 b) {
+void marioSetSwirlPower(s32 msec, f32 speed, f32 dir) {
     marioGetPtr();
     marioGetPtr()->motionShipData->swirlTimer = sysMsec2Frame(msec);
-    marioGetPtr()->motionShipData->unk2C = a;
-    marioGetPtr()->motionShipData->unk28 = b;
+    marioGetPtr()->motionShipData->swirlSpeed = speed;
+    marioGetPtr()->motionShipData->swirlDir = dir;
 }
 s32 marioChkSwirlPower(void) {
     marioGetPtr();
@@ -159,9 +159,9 @@ void marioReInit_ship(void) {
     MotionShipData* data;
 
     mario->trigFlags &= ~1;
-    data = __memAlloc(HEAP_DEFAULT, 0x48);
+    data = __memAlloc(HEAP_DEFAULT, sizeof(MotionShipData));
     marioGetPtr()->motStruct = data;
-    memset(marioGetPtr()->motStruct, 0, 0x48);
+    memset(marioGetPtr()->motStruct, 0, sizeof(MotionShipData));
     mario->currMotionId = MARIO_MOTION_SHIP;
     mario->dispOfs.y = -15.0f;
     mario->currSubMotionId = 0x32;
@@ -178,10 +178,10 @@ void marioReInit_ship(void) {
     marioGetPtr()->motionShipData->unk04 = 0.0f;
     marioGetPtr()->motionShipData->velX = 0.0f;
     marioGetPtr()->motionShipData->velY = 0.0f;
-    marioGetPtr()->motionShipData->unk1C = 0.0f;
-    marioGetPtr()->motionShipData->unk20 = 0.0f;
-    marioGetPtr()->motionShipData->unk08 = 0.0f;
-    marioGetPtr()->motionShipData->unk0C = 4.25f;
+    marioGetPtr()->motionShipData->turnRate = 0.0f;
+    marioGetPtr()->motionShipData->turnTarget = 0.0f;
+    marioGetPtr()->motionShipData->bobAngle = 0.0f;
+    marioGetPtr()->motionShipData->bobSpeed = 4.25f;
     marioGetPtr()->motionShipData->eff =
         effFunemizuEntry(0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     ((EffFunemizuData*)marioGetPtr()->motionShipData->eff->userdata)->camId = mario->camId;
@@ -221,12 +221,12 @@ static inline void shipWakeUpdate(f32 speed) {
 #ifdef MUST_MATCH
         // The original calls marioGetPtr() and discards the result, then picks the speed through a 0/1 flag.
         marioGetPtr();
-        { s32 b; if (marioGetPtr()->motionShipData->unk08 > 180.0f) b = 0; else b = 1; speed = b ? 0.3f : 0.6f; }
+        { s32 b; if (marioGetPtr()->motionShipData->bobAngle > 180.0f) b = 0; else b = 1; speed = b ? 0.3f : 0.6f; }
 #else
-        speed = (marioGetPtr()->motionShipData->unk08 > 180.0f) ? 0.6f : 0.3f;
+        speed = (marioGetPtr()->motionShipData->bobAngle > 180.0f) ? 0.6f : 0.3f;
 #endif
-        marioGetPtr()->motionShipData->unk10 += 0.1f * (speed - marioGetPtr()->motionShipData->unk10);
-        speed = marioGetPtr()->motionShipData->unk10;
+        marioGetPtr()->motionShipData->wakeSpeed += 0.1f * (speed - marioGetPtr()->motionShipData->wakeSpeed);
+        speed = marioGetPtr()->motionShipData->wakeSpeed;
     }
     ((EffFunemizuData*)marioGetPtr()->motionShipData->eff->userdata)->x = m->position.x;
 #ifdef MUST_MATCH
@@ -260,13 +260,13 @@ void mot_ship(void) {
     if (mario->trigFlags & 1) {
         mario->trigFlags &= ~1;
         mario->flags &= ~0x000F0000;
-        data = __memAlloc(HEAP_DEFAULT, 0x48);
+        data = __memAlloc(HEAP_DEFAULT, sizeof(MotionShipData));
         marioGetPtr()->motStruct = data;
-        memset(marioGetPtr()->motStruct, 0, 0x48);
+        memset(marioGetPtr()->motStruct, 0, sizeof(MotionShipData));
         marioGetPtr()->motionShipData->sfxId = 0xFFFFFFFF;
-        marioGetPtr()->motionShipData->unk20 = 0.0f;
-        marioGetPtr()->motionShipData->unk08 = 0.0f;
-        marioGetPtr()->motionShipData->unk0C = 4.25f;
+        marioGetPtr()->motionShipData->turnTarget = 0.0f;
+        marioGetPtr()->motionShipData->bobAngle = 0.0f;
+        marioGetPtr()->motionShipData->bobSpeed = 4.25f;
         mario->currSubMotionId = 0;
         if (!(mario->trigFlags & 4)) {
             camGetPtr(CAMERA_2D)->flags |= 0x200;
@@ -287,7 +287,7 @@ void mot_ship(void) {
         mario->airTimer = 0;
         mario->airTimerPeak = 0;
         mario->baseSpeed = 0.0f;
-        marioGetPtr()->motionShipData->unk1C = 0.0f;
+        marioGetPtr()->motionShipData->turnRate = 0.0f;
         N_marioSetBottomlessRespawnPosOnBeroEntry(mario->position.x, mario->position.y, mario->position.z);
         dir = shipJumpDir(mario->hitobjJumpFrom);
         marioGetPtr()->motionShipData->flags = dir;
@@ -302,17 +302,17 @@ void mot_ship(void) {
         } else {
             f31 = -30.0f;
         }
-        marioGetPtr()->motionShipData->unk1C += 0.125f * (f31 - marioGetPtr()->motionShipData->unk1C);
+        marioGetPtr()->motionShipData->turnRate += 0.125f * (f31 - marioGetPtr()->motionShipData->turnRate);
         if (marioGetPtr()->motionShipData->flags & 1) {
-            if (marioGetPtr()->motionShipData->unk1C >= 30.0f) {
-                marioGetPtr()->motionShipData->unk1C = 30.0f;
+            if (marioGetPtr()->motionShipData->turnRate >= 30.0f) {
+                marioGetPtr()->motionShipData->turnRate = 30.0f;
             }
         } else {
-            if (marioGetPtr()->motionShipData->unk1C <= -30.0f) {
-                marioGetPtr()->motionShipData->unk1C = -30.0f;
+            if (marioGetPtr()->motionShipData->turnRate <= -30.0f) {
+                marioGetPtr()->motionShipData->turnRate = -30.0f;
             }
         }
-        mario->dispDir += marioGetPtr()->motionShipData->unk1C;
+        mario->dispDir += marioGetPtr()->motionShipData->turnRate;
         wrap = 0;
         if (marioGetPtr()->motionShipData->flags & 1) {
             if (mario->dispDir >= 270.0f) {
@@ -330,7 +330,7 @@ void mot_ship(void) {
             marioChgPaper("PM_H_1A");
             marioChgPose("M_Z_1");
             mario->dispFlags |= 8;
-            marioGetPtr()->motionShipData->unk20 = 15.0f;
+            marioGetPtr()->motionShipData->turnTarget = 15.0f;
             {
                 EventEntry* evt = evtEntry(sound_evt, 0, 0);
                 evt->lwData[0] = (s32)(1024.0f * mario->position.x) - 0x0DB58580;
@@ -347,9 +347,9 @@ void mot_ship(void) {
     case 2: {
         s32 wrap;
 
-        f31 = marioGetPtr()->motionShipData->unk20 * ((marioGetPtr()->motionShipData->flags & 1) ? 1.0f : -1.0f);
-        marioGetPtr()->motionShipData->unk1C += 0.125f * (f31 - marioGetPtr()->motionShipData->unk1C);
-        mario->dispDir += marioGetPtr()->motionShipData->unk1C;
+        f31 = marioGetPtr()->motionShipData->turnTarget * ((marioGetPtr()->motionShipData->flags & 1) ? 1.0f : -1.0f);
+        marioGetPtr()->motionShipData->turnRate += 0.125f * (f31 - marioGetPtr()->motionShipData->turnRate);
+        mario->dispDir += marioGetPtr()->motionShipData->turnRate;
         wrap = 0;
         if (marioGetPtr()->motionShipData->flags & 1) {
             if (mario->dispDir >= 1260.0f) {
@@ -387,12 +387,12 @@ void mot_ship(void) {
     case 4: {
         s32 wrap;
 
-        f31 = marioGetPtr()->motionShipData->unk20 * ((marioGetPtr()->motionShipData->flags & 1) ? 1.0f : -1.0f);
-        marioGetPtr()->motionShipData->unk1C += 0.125f * (f31 - marioGetPtr()->motionShipData->unk1C);
-        mario->dispDir += marioGetPtr()->motionShipData->unk1C;
-        marioGetPtr()->motionShipData->unk20 -= 0.1f;
-        if (marioGetPtr()->motionShipData->unk20 <= 1.0f) {
-            marioGetPtr()->motionShipData->unk20 = 1.0f;
+        f31 = marioGetPtr()->motionShipData->turnTarget * ((marioGetPtr()->motionShipData->flags & 1) ? 1.0f : -1.0f);
+        marioGetPtr()->motionShipData->turnRate += 0.125f * (f31 - marioGetPtr()->motionShipData->turnRate);
+        mario->dispDir += marioGetPtr()->motionShipData->turnRate;
+        marioGetPtr()->motionShipData->turnTarget -= 0.1f;
+        if (marioGetPtr()->motionShipData->turnTarget <= 1.0f) {
+            marioGetPtr()->motionShipData->turnTarget = 1.0f;
         }
         wrap = 0;
         if (marioGetPtr()->motionShipData->flags & 1) {
@@ -416,21 +416,21 @@ void mot_ship(void) {
         mario->dispDir = revise360(mario->dispDir);
         mario->wPlayerCollisionBox.x = 40.0f;
         mario->wPlayerCollisionBox.y = 40.0f;
-        dir = shipHarborTarget(mario->hitobjJumpFrom, &marioGetPtr()->motionShipData->unk3C);
+        dir = shipHarborTarget(mario->hitobjJumpFrom, &marioGetPtr()->motionShipData->harborPos);
         {
-            f30 = 0.1f * distABf(marioGetPtr()->motionShipData->unk3C.x, marioGetPtr()->motionShipData->unk3C.z, mario->position.x, mario->position.z);
+            f30 = 0.1f * distABf(marioGetPtr()->motionShipData->harborPos.x, marioGetPtr()->motionShipData->harborPos.z, mario->position.x, mario->position.z);
             switch (dir) {
             case 1:
-                marioGetPtr()->motionShipData->unk3C.z -= f30;
+                marioGetPtr()->motionShipData->harborPos.z -= f30;
                 break;
             case 2:
-                marioGetPtr()->motionShipData->unk3C.z += f30;
+                marioGetPtr()->motionShipData->harborPos.z += f30;
                 break;
             case 3:
-                marioGetPtr()->motionShipData->unk3C.x -= f30;
+                marioGetPtr()->motionShipData->harborPos.x -= f30;
                 break;
             case 4:
-                marioGetPtr()->motionShipData->unk3C.x += f30;
+                marioGetPtr()->motionShipData->harborPos.x += f30;
                 break;
             default:
                 break;
@@ -438,13 +438,13 @@ void mot_ship(void) {
         }
         {
             f32 dy;
-            mario->baseSpeed = distABf(mario->position.x, mario->position.z, marioGetPtr()->motionShipData->unk3C.x, marioGetPtr()->motionShipData->unk3C.z) / 36.0f;
-            mario->directionView = angleABf(mario->position.x, mario->position.z, marioGetPtr()->motionShipData->unk3C.x, marioGetPtr()->motionShipData->unk3C.z);
+            mario->baseSpeed = distABf(mario->position.x, mario->position.z, marioGetPtr()->motionShipData->harborPos.x, marioGetPtr()->motionShipData->harborPos.z) / 36.0f;
+            mario->directionView = angleABf(mario->position.x, mario->position.z, marioGetPtr()->motionShipData->harborPos.x, marioGetPtr()->motionShipData->harborPos.z);
             mario->moveDir = mario->directionView;
-            f30 = marioGetPtr()->motionShipData->unk3C.y;
+            f30 = marioGetPtr()->motionShipData->harborPos.y;
             marioGetPtr()->motionShipData->unk04 = f30;
             // The distance is doubled as `d + d`, not `2.0f * d`.
-            dy = marioGetPtr()->motionShipData->unk3C.y - mario->position.y;
+            dy = marioGetPtr()->motionShipData->harborPos.y - mario->position.y;
             mario->jumpVelY = 0.0f;
             mario->jumpAccelY = (dy + dy) / 306.0f;
             mario->jumpJerkY = 0.0f;
@@ -490,7 +490,7 @@ void mot_ship(void) {
             mario->jumpJerkY = 0.0f;
             mario->jumpJerkStepY = 0.0f;
             mario->baseSpeed = 0.0f;
-            marioGetPtr()->motionShipData->unk1C = 0.0f;
+            marioGetPtr()->motionShipData->turnRate = 0.0f;
             mario->flags &= ~0x000F0000;
             mario->dispDir = revise360(mario->dispDir);
             mario->dispReqDir = mario->dispDir;
@@ -501,8 +501,8 @@ void mot_ship(void) {
             psndSFXOn_3D((char*)0x18F, &mario->position);
             marioGetPtr()->motionShipData->eff = effFunemizuEntry(0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
             ((EffFunemizuData*)marioGetPtr()->motionShipData->eff->userdata)->camId = mario->camId;
-            marioGetPtr()->motionShipData->unk08 = 0.0f;
-            marioGetPtr()->motionShipData->unk0C = 4.25f;
+            marioGetPtr()->motionShipData->bobAngle = 0.0f;
+            marioGetPtr()->motionShipData->bobSpeed = 4.25f;
             mario->currSubMotionId = 0x32;
             if (!(mario->trigFlags & 4)) {
                 camGetPtr(CAMERA_2D)->flags &= ~0x200;
@@ -539,14 +539,14 @@ void mot_ship(void) {
         camFollowYOff();
         mario->dispFlags &= ~0x1000;
         {
-            marioGetPtr()->motionShipData->unk04 = marioGetPtr()->motionShipData->unk3C.y;
+            marioGetPtr()->motionShipData->unk04 = marioGetPtr()->motionShipData->harborPos.y;
             mario->baseSpeed = 2.8f;
             {
                 // Keeping the rounding factor first in the expression tree pools 10 before 2.
                 s32 n = (s32)((10.0f * ((2.0f * distABf(mario->position.x, mario->position.z,
-                    marioGetPtr()->motionShipData->unk3C.x, marioGetPtr()->motionShipData->unk3C.z)) / mario->baseSpeed) + 0.5f) / 10.0f);
+                    marioGetPtr()->motionShipData->harborPos.x, marioGetPtr()->motionShipData->harborPos.z)) / mario->baseSpeed) + 0.5f) / 10.0f);
                 f32 f6;
-                mario->directionView = angleABf(mario->position.x, mario->position.z, marioGetPtr()->motionShipData->unk3C.x, marioGetPtr()->motionShipData->unk3C.z);
+                mario->directionView = angleABf(mario->position.x, mario->position.z, marioGetPtr()->motionShipData->harborPos.x, marioGetPtr()->motionShipData->harborPos.z);
                 mario->moveDir = mario->directionView;
                 marioGetPtr()->motionShipData->flags = ((mario->trigFlags & 0x200) ? 1 : 0) + 1;
                 f6 = 0.5f * (f32)n;
@@ -576,7 +576,7 @@ void mot_ship(void) {
             marioChgPose("M_Z_1");
             mario->paperAnimeTime = 0x58;
             marioSetPaperAnimeLocalTime(mario->paperAnimeTime);
-            marioGetPtr()->motionShipData->unk1C = 0.0f;
+            marioGetPtr()->motionShipData->turnRate = 0.0f;
             mario->dispFlags |= 0x100;
             marioAdjustMoveDir();
             mario->currSubMotionId = 0x2B;
@@ -598,17 +598,17 @@ void mot_ship(void) {
         marioSetPaperAnimeLocalTime(mario->paperAnimeTime);
         if (--mario->paperAnimeTime >= 0x2C) {
             f30 = (marioGetPtr()->motionShipData->flags & 1) ? 20.0f : -20.0f;
-            marioGetPtr()->motionShipData->unk1C += 0.125f * (f30 - marioGetPtr()->motionShipData->unk1C);
+            marioGetPtr()->motionShipData->turnRate += 0.125f * (f30 - marioGetPtr()->motionShipData->turnRate);
             if (marioGetPtr()->motionShipData->flags & 1) {
-                if (marioGetPtr()->motionShipData->unk1C >= 20.0f) {
-                    marioGetPtr()->motionShipData->unk1C = 20.0f;
+                if (marioGetPtr()->motionShipData->turnRate >= 20.0f) {
+                    marioGetPtr()->motionShipData->turnRate = 20.0f;
                 }
             } else {
-                if (marioGetPtr()->motionShipData->unk1C <= -20.0f) {
-                    marioGetPtr()->motionShipData->unk1C = -20.0f;
+                if (marioGetPtr()->motionShipData->turnRate <= -20.0f) {
+                    marioGetPtr()->motionShipData->turnRate = -20.0f;
                 }
             }
-            mario->dispDir += marioGetPtr()->motionShipData->unk1C;
+            mario->dispDir += marioGetPtr()->motionShipData->turnRate;
             if (mario->paperAnimeTime == 0x2C) {
                 mario->currSubMotionId = 0x2C;
             }
@@ -630,18 +630,18 @@ void mot_ship(void) {
                 mario->dispDir -= 360.0f;
             }
         }
-        mario->dispDir += marioGetPtr()->motionShipData->unk1C;
+        mario->dispDir += marioGetPtr()->motionShipData->turnRate;
         break;
     case 45:
         marioSetPaperAnimeLocalTime(mario->paperAnimeTime);
-        f30 = marioGetPtr()->motionShipData->unk20 * ((marioGetPtr()->motionShipData->flags & 1) ? 1.0f : -1.0f);
+        f30 = marioGetPtr()->motionShipData->turnTarget * ((marioGetPtr()->motionShipData->flags & 1) ? 1.0f : -1.0f);
         {
-            marioGetPtr()->motionShipData->unk1C += 0.05f * (f30 - marioGetPtr()->motionShipData->unk1C);
+            marioGetPtr()->motionShipData->turnRate += 0.05f * (f30 - marioGetPtr()->motionShipData->turnRate);
         }
-        mario->dispDir += marioGetPtr()->motionShipData->unk1C;
-        marioGetPtr()->motionShipData->unk20 += -0.005f;
-        if (marioGetPtr()->motionShipData->unk20 <= 10.0f) {
-            marioGetPtr()->motionShipData->unk20 = 10.0f;
+        mario->dispDir += marioGetPtr()->motionShipData->turnRate;
+        marioGetPtr()->motionShipData->turnTarget += -0.005f;
+        if (marioGetPtr()->motionShipData->turnTarget <= 10.0f) {
+            marioGetPtr()->motionShipData->turnTarget = 10.0f;
         }
         if (--mario->multiTimer > 0) {
             break;
@@ -649,14 +649,14 @@ void mot_ship(void) {
         /* fall through */
     case 46: {
         s32 r27;
-        f30 = marioGetPtr()->motionShipData->unk20 * ((marioGetPtr()->motionShipData->flags & 1) ? 1.0f : -1.0f);
+        f30 = marioGetPtr()->motionShipData->turnTarget * ((marioGetPtr()->motionShipData->flags & 1) ? 1.0f : -1.0f);
         {
-            marioGetPtr()->motionShipData->unk1C += 0.05f * (f30 - marioGetPtr()->motionShipData->unk1C);
+            marioGetPtr()->motionShipData->turnRate += 0.05f * (f30 - marioGetPtr()->motionShipData->turnRate);
         }
-        mario->dispDir += marioGetPtr()->motionShipData->unk1C;
-        marioGetPtr()->motionShipData->unk20 += -0.005f;
-        if (marioGetPtr()->motionShipData->unk20 <= 10.0f) {
-            marioGetPtr()->motionShipData->unk20 = 10.0f;
+        mario->dispDir += marioGetPtr()->motionShipData->turnRate;
+        marioGetPtr()->motionShipData->turnTarget += -0.005f;
+        if (marioGetPtr()->motionShipData->turnTarget <= 10.0f) {
+            marioGetPtr()->motionShipData->turnTarget = 10.0f;
         }
         r27 = 0;
         if (marioGetPtr()->motionShipData->flags & 1) {
@@ -681,7 +681,7 @@ void mot_ship(void) {
         mario->dispFlags &= ~8;
         marioChgPose("M_J_1B");
         mario->currSubMotionId = 0x2F;
-        marioGetPtr()->motionShipData->unk20 = 10.0f;
+        marioGetPtr()->motionShipData->turnTarget = 10.0f;
         /* fall through */
     }
     case 47: {
@@ -690,9 +690,9 @@ void mot_ship(void) {
         marioGetPtr();
         f30 = (marioGetPtr()->motionShipData->flags & 1) ? 4.0f : -4.0f;
         {
-            marioGetPtr()->motionShipData->unk1C += 0.05f * (f30 - marioGetPtr()->motionShipData->unk1C);
+            marioGetPtr()->motionShipData->turnRate += 0.05f * (f30 - marioGetPtr()->motionShipData->turnRate);
         }
-        mario->dispDir += marioGetPtr()->motionShipData->unk1C;
+        mario->dispDir += marioGetPtr()->motionShipData->turnRate;
         if (marioGetPtr()->motionShipData->flags & 1) {
             if (mario->dispDir >= 540.0f) {
                 mario->dispDir = 540.0f;
@@ -739,9 +739,9 @@ void mot_ship(void) {
         /* fall through */
     case 52: {
         if (mario->hitobjStandOn != NULL) {
-            f31 = revise360(marioGetPtr()->motionShipData->unk08 - marioGetPtr()->motionShipData->unk0C);
-            marioGetPtr()->motionShipData->unk08 = f31;
-            mario->dispOfs.y = 3.0f * (f32)sin(3.1415927f * marioGetPtr()->motionShipData->unk08 / 180.0f) + -13.0f;
+            f31 = revise360(marioGetPtr()->motionShipData->bobAngle - marioGetPtr()->motionShipData->bobSpeed);
+            marioGetPtr()->motionShipData->bobAngle = f31;
+            mario->dispOfs.y = 3.0f * (f32)sin(3.1415927f * marioGetPtr()->motionShipData->bobAngle / 180.0f) + -13.0f;
         }
         if (mario->flags & 0x20) {
             shipWakeUpdate(mario->baseSpeed);
@@ -805,7 +805,7 @@ void mot_ship(void) {
         }
         shipWakeUpdate(mario->baseSpeed);
         if ((mario->buttonNew & 0xA00) != 0) {
-            if (checkHarbor(&marioGetPtr()->motionShipData->unk3C)) {
+            if (checkHarbor(&marioGetPtr()->motionShipData->harborPos)) {
                 mario->currSubMotionId = 0x1E;
             }
         }
@@ -864,7 +864,7 @@ void shipMove(void) {
 #endif
     if (marioGetPtr()->motionShipData->swirlTimer != 0) {
         marioGetPtr()->motionShipData->swirlTimer--;
-        movePos(&sp0C, &sp08, marioGetPtr()->motionShipData->unk2C, marioGetPtr()->motionShipData->unk28);
+        movePos(&sp0C, &sp08, marioGetPtr()->motionShipData->swirlSpeed, marioGetPtr()->motionShipData->swirlDir);
         marioGetPtr()->motionShipData->velX += sp0C;
         marioGetPtr()->motionShipData->velY += sp08;
 #ifdef MUST_MATCH

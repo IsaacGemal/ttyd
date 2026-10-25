@@ -438,9 +438,9 @@ void marioReInit_roll(void) {
     MarioWork* mario = marioGetPtr();
     void* mem;
 
-    mem = __memAlloc(HEAP_DEFAULT, 0x14);
+    mem = __memAlloc(HEAP_DEFAULT, sizeof(MotRoll));
     marioGetPtr()->motStruct = mem;
-    memset(marioGetPtr()->motStruct, 0, 0x14);
+    memset(marioGetPtr()->motStruct, 0, sizeof(MotRoll));
     {
         MarioWork* m = marioGetPtr();
         m->motionSfxId1 = -1;
@@ -629,9 +629,9 @@ void mot_roll(void) {
         *(u32*)((u8*)mario + 0x2AC) = 0;
         *(u32*)((u8*)mario + 0x2B0) = 0;
         *(u32*)((u8*)mario + 0x2B4) = 0;
-        md = __memAlloc(HEAP_DEFAULT, 0x14);
+        md = __memAlloc(HEAP_DEFAULT, sizeof(MotRoll));
         marioGetPtr()->motStruct = md;
-        memset(marioGetPtr()->motStruct, 0, 0x14);
+        memset(marioGetPtr()->motStruct, 0, sizeof(MotRoll));
         {
             MarioWork* mm = marioGetPtr();
             mm->motionSfxId1 = -1;

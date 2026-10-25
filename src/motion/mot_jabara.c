@@ -29,14 +29,14 @@
 // Backing struct for `mario->motStruct` while the jabara motion runs; the fields
 // are written by swingMain and read here. Not described by any other header.
 typedef struct JabaraWork {
-    u32 flags;   // 0x0
-    f32 unk4;    // 0x4
-    f32 unk8;    // 0x8
-    f32 unkC;    // 0xC
-    f32 unk10;   // 0x10
-    s32 unk14;   // 0x14
-    f32 unk18;   // 0x18
-    s32 unk1C;   // 0x1C
+    u32 flags;          // 0x0
+    f32 swingAccel;     // 0x4, swingMain: added to jabaraSpeed while jabaraTimer runs (capped at 40)
+    f32 swingDecel;     // 0x8, swingMain: added to jabaraSpeed once jabaraTimer is 0, until the speed reaches 0 (negative)
+    f32 unkC;           // 0xC
+    f32 accelStep;      // 0x10, swingMain: added to or taken from jabaraAccel
+    s32 ofsStepFlips;   // 0x14, times the dispOfs step changed (state 0x32); the 1st, 2nd and 3rd play sounds 0x189-0x18B
+    f32 prevOfsStep;    // 0x18, last frame's dispOfs step (+-0.6), compared to count ofsStepFlips
+    s32 headHitTimer;   // 0x1C, frames A has been released under a ceiling (marioSearchHead); past sysMsec2Frame(5000) the launch goes ahead
 } JabaraWork;
 
 // The original reaches all of the unit's rodata through one base register. Naming
@@ -102,12 +102,12 @@ void swingMain(void) {
     timer = mario->jabaraTimer;
     if (timer > 0) {
         mario->jabaraTimer = timer - 1;
-        mario->jabaraSpeed += marioGetPtr()->jabaraWork->unk4;
+        mario->jabaraSpeed += marioGetPtr()->jabaraWork->swingAccel;
         if (mario->jabaraSpeed >= 40.0f) {
             mario->jabaraSpeed = 40.0f;
         }
     } else if (timer == 0) {
-        mario->jabaraSpeed += marioGetPtr()->jabaraWork->unk8;
+        mario->jabaraSpeed += marioGetPtr()->jabaraWork->swingDecel;
         if (mario->jabaraSpeed <= 0.0f) {
             mario->jabaraSpeed = 0.0f;
             mario->jabaraAccel = 0.1f;
@@ -141,7 +141,7 @@ void swingMain(void) {
         mario->dispRot.x = revise360(mario->dispRot.x + mario->jabaraSpeed);
         if (mario->dispRot.x < 180.0f) {
             mario->jabaraState = 3;
-            mario->jabaraAccel += marioGetPtr()->jabaraWork->unk10;
+            mario->jabaraAccel += marioGetPtr()->jabaraWork->accelStep;
         }
         break;
     case 3:
@@ -149,7 +149,7 @@ void swingMain(void) {
         if (mario->jabaraSpeed <= 0.0f) {
             mario->jabaraSpeed = 0.0f;
             mario->jabaraState = 4;
-            mario->jabaraAccel -= marioGetPtr()->jabaraWork->unk10;
+            mario->jabaraAccel -= marioGetPtr()->jabaraWork->accelStep;
             if (fabsf(mario->dispRot.x) < 0.8f) {
                 mario->jabaraState = 0;
             }
@@ -161,7 +161,7 @@ void swingMain(void) {
         mario->dispRot.x = revise360(mario->dispRot.x + mario->jabaraSpeed);
         if (mario->dispRot.x > 180.0f) {
             mario->jabaraState = 5;
-            mario->jabaraAccel += marioGetPtr()->jabaraWork->unk10;
+            mario->jabaraAccel += marioGetPtr()->jabaraWork->accelStep;
         }
         break;
     case 5:
@@ -169,7 +169,7 @@ void swingMain(void) {
         if (mario->jabaraSpeed >= 0.0f) {
             mario->jabaraSpeed = 0.0f;
             mario->jabaraState = 2;
-            mario->jabaraAccel -= marioGetPtr()->jabaraWork->unk10;
+            mario->jabaraAccel -= marioGetPtr()->jabaraWork->accelStep;
             if (fabsf(mario->dispRot.x) < 0.8f) {
                 mario->jabaraState = 0;
             }
@@ -184,12 +184,12 @@ void swingMain(void) {
         timer = mario->jabaraTimer;
         if (timer > 0) {
             mario->jabaraTimer = timer - 1;
-            mario->jabaraSpeed += marioGetPtr()->jabaraWork->unk4;
+            mario->jabaraSpeed += marioGetPtr()->jabaraWork->swingAccel;
             if (mario->jabaraSpeed >= 40.0f) {
                 mario->jabaraSpeed = 40.0f;
             }
         } else if (timer == 0) {
-            mario->jabaraSpeed += marioGetPtr()->jabaraWork->unk8;
+            mario->jabaraSpeed += marioGetPtr()->jabaraWork->swingDecel;
             if (mario->jabaraSpeed <= 0.0f) {
                 mario->jabaraSpeed = 1.4f;
                 mario->jabaraAccel = 0.1f;
@@ -223,7 +223,7 @@ void swingMain(void) {
         mario->dispRot.x = revise360(mario->dispRot.x - mario->jabaraSpeed);
         if (mario->dispRot.x > 180.0f) {
             mario->jabaraState = 13;
-            mario->jabaraAccel += marioGetPtr()->jabaraWork->unk10;
+            mario->jabaraAccel += marioGetPtr()->jabaraWork->accelStep;
         }
         break;
     case 13:
@@ -231,7 +231,7 @@ void swingMain(void) {
         if (mario->jabaraSpeed <= 0.0f) {
             mario->jabaraSpeed = 0.0f;
             mario->jabaraState = 14;
-            mario->jabaraAccel -= marioGetPtr()->jabaraWork->unk10;
+            mario->jabaraAccel -= marioGetPtr()->jabaraWork->accelStep;
             if (fabsf(mario->dispRot.x) < 0.8f) {
                 mario->jabaraState = 0;
             }
@@ -243,7 +243,7 @@ void swingMain(void) {
         mario->dispRot.x = revise360(mario->dispRot.x - mario->jabaraSpeed);
         if (mario->dispRot.x < 180.0f) {
             mario->jabaraState = 15;
-            mario->jabaraAccel += marioGetPtr()->jabaraWork->unk10;
+            mario->jabaraAccel += marioGetPtr()->jabaraWork->accelStep;
         }
         break;
     case 15:
@@ -251,7 +251,7 @@ void swingMain(void) {
         if (mario->jabaraSpeed >= 0.0f) {
             mario->jabaraSpeed = 0.0f;
             mario->jabaraState = 12;
-            mario->jabaraAccel -= marioGetPtr()->jabaraWork->unk10;
+            mario->jabaraAccel -= marioGetPtr()->jabaraWork->accelStep;
             if (fabsf(mario->dispRot.x) < 0.8f) {
                 mario->jabaraState = 10;
             }
@@ -463,9 +463,9 @@ void mot_jabara(void) {
         }
         mario->flags &= 0xFFF0FFFF;
         mario->currSubMotionId = 0;
-        jw = __memAlloc(HEAP_DEFAULT, 0x20);
+        jw = __memAlloc(HEAP_DEFAULT, sizeof(JabaraWork));
         marioGetPtr()->motStruct = jw;
-        memset(marioGetPtr()->motStruct, 0, 0x20);
+        memset(marioGetPtr()->motStruct, 0, sizeof(JabaraWork));
     }
     mario->hitobjHead = NULL;
 
@@ -572,8 +572,8 @@ void mot_jabara(void) {
         hit = marioSearchHead(&sp74, &sp34, JABARA_F32(float_200_8041ab24));
         if (hit != NULL) {
             if (!(mario->buttonHeld & 0x100)) {
-                marioGetPtr()->jabaraWork->unk1C++;
-                if (marioGetPtr()->jabaraWork->unk1C > sysMsec2Frame(0x1388)) {
+                marioGetPtr()->jabaraWork->headHitTimer++;
+                if (marioGetPtr()->jabaraWork->headHitTimer > sysMsec2Frame(0x1388)) {
                     var_r28 = 1;
                 }
             }
@@ -671,9 +671,9 @@ void mot_jabara(void) {
                 mario2 = marioGetPtr();
                 mario2->jabaraTimer = 4;
                 mario2->jabaraSpeed = JABARA_F32(float_24_8041aae4);
-                marioGetPtr()->jabaraWork->unk4 = JABARA_F32(float_2p4_8041aae8);
-                marioGetPtr()->jabaraWork->unk8 = JABARA_F32(float_neg0p4_8041aaec);
-                marioGetPtr()->jabaraWork->unk10 = JABARA_F32(float_0p18_8041aae0);
+                marioGetPtr()->jabaraWork->swingAccel = JABARA_F32(float_2p4_8041aae8);
+                marioGetPtr()->jabaraWork->swingDecel = JABARA_F32(float_neg0p4_8041aaec);
+                marioGetPtr()->jabaraWork->accelStep = JABARA_F32(float_0p18_8041aae0);
                 if (var_sp40 < 0) {
                     mario2->jabaraState = 0xB;
                 } else {
@@ -781,30 +781,30 @@ void mot_jabara(void) {
                     } else {
                         spd = JABARA_F32(float_neg0p6_8041ab7c);
                     }
-                    if (spd != marioGetPtr()->jabaraWork->unk18) {
-                        marioGetPtr()->jabaraWork->unk14++;
+                    if (spd != marioGetPtr()->jabaraWork->prevOfsStep) {
+                        marioGetPtr()->jabaraWork->ofsStepFlips++;
                         changed = 1;
                     }
-                    marioGetPtr()->jabaraWork->unk18 = spd;
+                    marioGetPtr()->jabaraWork->prevOfsStep = spd;
                 } else {
                     if (mario->dispReqDir == 180.0f) {
                         spd = JABARA_F32(float_neg0p6_8041ab7c);
                     } else {
                         spd = JABARA_F32(float_0p6_8041ab78);
                     }
-                    if (spd != marioGetPtr()->jabaraWork->unk18) {
-                        marioGetPtr()->jabaraWork->unk14++;
+                    if (spd != marioGetPtr()->jabaraWork->prevOfsStep) {
+                        marioGetPtr()->jabaraWork->ofsStepFlips++;
                         changed = 1;
                     }
-                    marioGetPtr()->jabaraWork->unk18 = spd;
+                    marioGetPtr()->jabaraWork->prevOfsStep = spd;
                 }
             }
             if (changed != 0) {
-                if (marioGetPtr()->jabaraWork->unk14 == 1) {
+                if (marioGetPtr()->jabaraWork->ofsStepFlips == 1) {
                     psndSFXOn_3D((const char*)0x189, &mario->position);
-                } else if (marioGetPtr()->jabaraWork->unk14 == 2) {
+                } else if (marioGetPtr()->jabaraWork->ofsStepFlips == 2) {
                     psndSFXOn_3D((const char*)0x18A, &mario->position);
-                } else if (marioGetPtr()->jabaraWork->unk14 == 3) {
+                } else if (marioGetPtr()->jabaraWork->ofsStepFlips == 3) {
                     psndSFXOn_3D((const char*)0x18B, &mario->position);
                 }
             }
@@ -945,9 +945,9 @@ void mot_jabara(void) {
                                 mario2->jabaraState = 1;
                                 mario2->jabaraTimer = 0xA;
                                 mario2->jabaraSpeed = 0.0f;
-                                marioGetPtr()->jabaraWork->unk4 = 0.1f;
-                                marioGetPtr()->jabaraWork->unk8 = JABARA_F32(float_neg0p1_8041aadc);
-                                marioGetPtr()->jabaraWork->unk10 = JABARA_F32(float_0p18_8041aae0);
+                                marioGetPtr()->jabaraWork->swingAccel = 0.1f;
+                                marioGetPtr()->jabaraWork->swingDecel = JABARA_F32(float_neg0p1_8041aadc);
+                                marioGetPtr()->jabaraWork->accelStep = JABARA_F32(float_0p18_8041aae0);
                             }
                             wall = 0;
                             move = JABARA_F32(float_1_8041ab94);

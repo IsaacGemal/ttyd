@@ -356,7 +356,7 @@ typedef struct MarioWork {
         s32 stayAHoldTimer;        // 0x2B8, mot_stay: frames A has been held (0 when released); from 10 the stick no longer walks
         s32 motionSfxId2;          // 0x2B8, sound handle in mot_hammer (-1 when none)
         struct {
-            s16 jabaraTimer;       // 0x2B8, mot_jabara: frames left in the rising swing (swingMain adds unk4 each frame, then unk8 at 0)
+            s16 jabaraTimer;       // 0x2B8, mot_jabara: frames left in the rising swing (swingMain adds swingAccel each frame, then swingDecel at 0)
             s8 jabaraState;        // 0x2BA, mot_jabara: swingMain's state switch (0 idle, up to 15)
             s8 jabaraAnimTime;     // 0x2BB, mot_jabara: local time passed to animPoseSetLocalTime for the paper animation
         };
