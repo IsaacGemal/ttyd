@@ -6,14 +6,14 @@
 
 typedef struct BattleCameraWork {
     s32 flags;              // 0x00
-    s32 unk4;               // 0x04
+    s32 modeFrames;         // 0x04, frames in the current mode (mode 14 waits 10); btl_camera_set_mode clears it
     s32 priLimit;           // 0x08
     s32 mode;               // 0x0C
-    s32 unk10;              // 0x10
-    s32 unk14;              // 0x14
-    s32 unk18;              // 0x18
-    s32 unk1C;              // 0x1C
-    s32 unk20;              // 0x20
+    s32 homingUnitId;       // 0x10, the unit evt_btl_camera_set_homing_unit* set; the homing modes follow it
+    s32 homingUnitId2;      // 0x14, the second unit (their type2/partId2)
+    s32 homingPartId;       // 0x18, homingUnitId's part
+    s32 homingPartId2;      // 0x1C, homingUnitId2's part
+    s32 homingMemberId;     // 0x20, evt_btl_camera_set_homing_unit_audience's member (mode 12)
     f32 zoom;               // 0x24
     s16 moveSpeedLv;        // 0x28
     s16 zoomSpeedLv;        // 0x2A
@@ -22,8 +22,8 @@ typedef struct BattleCameraWork {
     Vec cameraAt;           // 0x44, the camera's cameraAt as battleCameraMain last set it; copied back at its start
     Vec prevCameraAt;       // 0x50, cameraAt at the start of battleCameraMain (restored with prevCameraPos)
     Vec position;           // 0x5C
-    Vec unk68;              // 0x68 (speed / delta)
-    Vec field_0x74;         // 0x74, battleCameraMain's o4-o6 (unk68 gets o1-o3)
+    Vec posVel;             // 0x68, battleCameraMoveTo's per-frame cameraPos step (battleCameraGetPosMoveSpeed)
+    Vec atVel;              // 0x74, and its cameraAt step
     s32 moveToMode;         // 0x80, intplGetValue mode of a btl_camera_set_moveto move (battleCameraMain mode 3 runs it)
     s32 moveToTimer;        // 0x84, frames left of that move
     s32 moveToFrames;       // 0x88, its length in frames
@@ -31,8 +31,8 @@ typedef struct BattleCameraWork {
     Vec moveToPosTo;        // 0x98, the cameraPos it moves to
     Vec moveToAtFrom;       // 0xA4, cameraAt when the move was set
     Vec moveToAtTo;         // 0xB0, the cameraAt it moves to
-    Vec unkBC;              // 0xBC
-    Vec unkC8;              // 0xC8
+    Vec homingPos;          // 0xBC, homingUnitId's position when the homing was set
+    Vec homingPos2;         // 0xC8, homingUnitId2's hit position (or the audience member's) then
     s32 shakeXMode;         // 0xD4, intplGetValue mode of the btl_camera_shake_w offset
     s32 shakeYMode;         // 0xD8, intplGetValue mode of the btl_camera_shake_h offset
     s32 shakeXFrames;       // 0xDC, length of the shake_w shake in frames
