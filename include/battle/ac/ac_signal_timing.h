@@ -6,7 +6,7 @@ typedef struct BattleWork BattleWork;
 
 #include <dolphin/types.h>
 
-// Action-command work area at BattleWork+0x1F4C (ActionCommand::field_0x2BC).
+// Action-command work area at BattleWork+0x1F4C (BattleActions.acWork).
 typedef struct AcSignalTimingWork {
     s32 hits;          // 0x0, correct presses
     s32 misses;        // 0x4, failed presses

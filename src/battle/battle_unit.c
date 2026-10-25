@@ -2196,7 +2196,7 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* po
     return handle;
 }
 
-// The gauge type is compared with `lhz`/`cmpwi`; a `switch` (not an if/else) reproduces the
+// The gauge style is compared with `lhz`/`cmpwi`; a `switch` (not an if/else) reproduces the
 // original's `beq then; b else` dispatch.
 void BtlUnit_HpGaugeInit(BattleUnit* unit) {
     BattleWorkHpGauge* gauge = &unit->hpGauge;
@@ -2204,13 +2204,13 @@ void BtlUnit_HpGaugeInit(BattleUnit* unit) {
 
     gauge->drainTimer = 0;
     gauge->dispTimer = 0;
-    gauge->field_0x0 = 0;
+    gauge->style = 0;
     gauge->fromHp = unit->currentHp;
     gauge->toHp = unit->currentHp;
     ratio = (f32)unit->currentHp / (f32)unit->maxHp;
     gauge->fillRatio = ratio;
     gauge->drainRatio = ratio;
-    switch (gauge->field_0x0) {
+    switch (gauge->style) {
     case 1:
         gauge->drainFrames = 0x28;
         gauge->dispFrames = gauge->drainFrames + 0x1E;
@@ -2236,7 +2236,7 @@ void BtlUnit_HpGaugeMain(BattleUnit* unit) {
             gauge->drainRatio = ratio;
             gauge->fillRatio = ratio;
         } else {
-            switch (gauge->field_0x0) {
+            switch (gauge->style) {
             case 1:
                 gauge->fillRatio = (f32)unit->currentHp / (f32)unit->maxHp;
                 gauge->drainRatio = (f32)(gauge->fromHp - gauge->toHp) *

@@ -996,8 +996,8 @@ void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor
 	MTXCopy(orientation, blur->work[0].orientation);
 	blur->work[0].rotation = rotation;
 	blur->work[0].base = color;
-	*(u32*)&blur->work[0].blurColor[0] = *(u32*)&blur->color[0];
-	*(u32*)&blur->work[0].blurColor[4] = *(u32*)&blur->color[4];
+	blur->work[0].blurColor[0] = blur->color[0];
+	blur->work[0].blurColor[1] = blur->color[1];
 	if (blur->flags & 1 && blur->work[1].flags & 1) {
 		blur->work[0].flags &= ~1;
 	}
@@ -1014,10 +1014,10 @@ void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts) {
 		work = &blur->work[i];
 		color = work->base;
 		if (work->flags & 1) {
-			color.r = color.r * (u8)(work->blurColor[0] * (10 - i) / 10 + work->blurColor[4] * i / 10) / 0xff;
-			color.g = color.g * (u8)(work->blurColor[1] * (10 - i) / 10 + work->blurColor[5] * i / 10) / 0xff;
-			color.b = color.b * (u8)(work->blurColor[2] * (10 - i) / 10 + work->blurColor[6] * i / 10) / 0xff;
-			color.a = color.a * (u8)(work->blurColor[3] * (10 - i) / 10 + work->blurColor[7] * i / 10) / 0xff;
+			color.r = color.r * (u8)(work->blurColor[0].r * (10 - i) / 10 + work->blurColor[1].r * i / 10) / 0xff;
+			color.g = color.g * (u8)(work->blurColor[0].g * (10 - i) / 10 + work->blurColor[1].g * i / 10) / 0xff;
+			color.b = color.b * (u8)(work->blurColor[0].b * (10 - i) / 10 + work->blurColor[1].b * i / 10) / 0xff;
+			color.a = color.a * (u8)(work->blurColor[0].a * (10 - i) / 10 + work->blurColor[1].a * i / 10) / 0xff;
 			if (color.a == 0) continue;
 			animPoseSetMaterialEvtColor(parts->poseId, color);
 			animPoseSetMaterialFlagOn(parts->poseId, 0x40);

@@ -2541,14 +2541,14 @@ USER_FUNC(btlevtcmd_SetPartsBlur) {
     color7 = (u8)evtGetValue(event, args[9]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     part = BtlUnit_GetPartsPtr(unit, partId);
-    part->blurWork.color[0] = color0;
-    part->blurWork.color[1] = color1;
-    part->blurWork.color[2] = color2;
-    part->blurWork.color[3] = color3;
-    part->blurWork.color[4] = color4;
-    part->blurWork.color[5] = color5;
-    part->blurWork.color[6] = color6;
-    part->blurWork.color[7] = color7;
+    part->blurWork.color[0].r = color0;
+    part->blurWork.color[0].g = color1;
+    part->blurWork.color[0].b = color2;
+    part->blurWork.color[0].a = color3;
+    part->blurWork.color[1].r = color4;
+    part->blurWork.color[1].g = color5;
+    part->blurWork.color[1].b = color6;
+    part->blurWork.color[1].a = color7;
     return EVT_RETURN_DONE;
 }
 

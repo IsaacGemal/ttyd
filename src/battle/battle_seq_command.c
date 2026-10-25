@@ -2626,7 +2626,7 @@ void BattleDrawEnemyHPBar(Vec pos, BattleUnit* unit, GXColor color) {
 	GXLoadPosMtxImm(camera->view, 0);
 	pos.x -= 10.0f;
 	btlDispTexPlane(19.0f + pos.x, pos.y - 3.0f, 0.0f, 1.0f, 1.0f, 0xA, color, 0);
-	switch (gauge->field_0x0) {
+	switch (gauge->style) {
 	case 1:
 		if (gauge->drainTimer > 0) {
 			btlDispGXInit2DRasta();

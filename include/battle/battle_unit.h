@@ -356,12 +356,12 @@ typedef struct BattleWorkUnitPartBlurEntry {
     Mtx orientation; // 0x4
     f32 rotation;    // 0x34
     GXColor base;    // 0x38
-    u8 blurColor[8]; // 0x3C, copy of BattleWorkUnitPartBlur.color: RGBA tints from the newest ([0-3]) to the oldest ([4-7]) slot
+    GXColor blurColor[2]; // 0x3C, copy of BattleWorkUnitPartBlur.color: tints of the newest ([0]) and the oldest ([1]) slot
 } BattleWorkUnitPartBlurEntry;
 
 typedef struct BattleWorkUnitPartBlur {
     s32 flags;                            // 0x0
-    s8 color[8];                          // 0x4
+    GXColor color[2];                     // 0x4, the two blur tints btlevtcmd_SetPartsBlur sets
     BattleWorkUnitPartBlurEntry work[10]; // 0xC
 } BattleWorkUnitPartBlur;
 
@@ -529,7 +529,8 @@ typedef struct BattleWorkUnitBadgesEquipped {
 } BattleWorkUnitBadgesEquipped;
 
 typedef struct BattleWorkHpGauge { // TODO: diff header file?
-    u16 field_0x0;                 // 0x0, style; BtlUnit_HpGaugeInit/Main and BattleDrawEnemyHPBar switch on it
+    u16 style;                     // 0x0, BtlUnit_HpGaugeInit/Main and BattleDrawEnemyHPBar switch on it (1, or the
+                                   // default); BtlUnit_HpGaugeInit sets 0 and nothing sets 1
     u16 flags;                     // 0x2, bit 0: BtlUnit_HpGaugeMain hides the gauge (unit flag 1) once dispTimer runs out
     s16 drainTimer;                // 0x4, frames left of the drain from fromHp to toHp (intplGetValue's step)
     s16 drainFrames;               // 0x6, length of that drain (0x14, or 0x28 in style 1); drainTimer restarts from it
