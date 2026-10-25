@@ -9,7 +9,7 @@
 
 typedef struct SoundEnvList {
     u16 nameId;        // 0x0
-    u16 flags;         // 0x2
+    u16 sfxNo;         // 0x2, pssfxlist index the env plays (psndENVMain passes it to __psndSFXOn)
     u8 volume;         // 0x4
     u8 field_0x5;      // 0x5
     u8 mode;           // 0x6
@@ -37,94 +37,94 @@ typedef struct SoundEffectEntry {
     const char* streamName; // 0x8, .stm name
     u8 volume;              // 0xC
     u8 pan;                 // 0xD
-    u8 field_0xE;           // 0xE
+    u8 field_0xE;           // 0xE, 1: __psndSFXOn sets the slot's 0x200 flag (not muted by psnd.flag 0x80)
     u8 reverb;              // 0xF, reverb
-    u8 field_0x10;          // 0x10
-    u8 field_0x11;          // 0x11
+    u8 prio;                // 0x10, PaperSoundEffect.prio
+    u8 delay;               // 0x11, frames added to the slot's start delay
     u16 pitch;              // 0x12
 } SoundEffectEntry;
 
-// A fade record: psnd holds one per env slot (unk0[]) and one for the SFX fade-out (field_0x24), and each BGM slot
-// one (unk20). unk0 is the volume fade's state (1 in, 2 out then stop, 4 out and hold) over unk2 frames, counted by unk4;
-// unk6 is the silent fade's state (8 down to unk7 percent, 0x10 back up) over unk8 frames, counted by unkA.
+// A fade record: psnd holds one per env slot (envFade[]) and one for the SFX fade-out (sfxFade), and each BGM slot
+// one (fade). The volume fade scales by fadeTimer / fadeFrames; the silent fade (psndBGMChkSilent, silent_tbl) by
+// silentTimer / silentFrames.
 typedef struct PaperSoundEnvWork {
-    u8 unk0;  // 0x0
-    u8 unk1;  // 0x1
-    s16 unk2; // 0x2
-    s16 unk4; // 0x4
-    u8 unk6;  // 0x6
-    u8 unk7;  // 0x7
-    s16 unk8; // 0x8
-    s16 unkA; // 0xA
+    u8 fadeState;     // 0x0, 1 fading in, 2 fading out then stopping, 4 fading out and holding
+    u8 pad_0x1;       // 0x1
+    s16 fadeFrames;   // 0x2
+    s16 fadeTimer;    // 0x4, counts up to fadeFrames fading in, down to 0 fading out
+    u8 silentState;   // 0x6, 8 going silent, 0x10 coming back
+    u8 silentLevel;   // 0x7, percent of silentFrames that silentTimer goes down to (silent_tbl)
+    s16 silentFrames; // 0x8
+    s16 silentTimer;  // 0xA
 } PaperSoundEnvWork;
 
 typedef struct PaperSoundBGM {
-    u32 unk0;                // 0x0
-    u32 streamId;            // 0x4, TODO verify re: seq_title
+    u32 bgmNo;               // 0x0, psbgmlist index, -1 when the slot is free
+    u32 streamId;            // 0x4, the SoundSS or SoundSong channel it plays on
     u32 flags;               // 0x8
     u8 unkC;                 // 0xC
-    u8 reverb;               // 0xD
+    u8 group;                // 0xD, BGMListEntry.group
     u8 volume;               // 0xE
     u8 pan;                  // 0xF
-    u8 scopeTimer;           // 0x10, psndBGMScope: 0xFF in scope (level 100), 0 out (follows psnd.unk58), else frames left
+    u8 scopeTimer;           // 0x10, psndBGMScope: 0xFF in scope (level 100), 0 out (follows psnd.bgmLevel), else frames left
     u8 unk11[0x20 - 0x11];   // 0x11
-    PaperSoundEnvWork unk20; // 0x20
+    PaperSoundEnvWork fade;  // 0x20
     u8 pad_0x2C[4];          // 0x2C
     s64 startTime;           // 0x30
 } PaperSoundBGM;
 
 typedef struct PaperSoundEffect {
-    u32 unk0;              // 0x0
-    u16 unk4;              // 0x4
-    u16 unk6;              // 0x6
+    u32 sfxNo;             // 0x0, pssfxlist index (low 13 bits) and __psndSFXOn's flag bits, -1 when the slot is free
+    u16 serial;            // 0x4, psnd.sfxSerial when started; psndSFXChk compares it with the id's bits 8-23
+    u16 flags;             // 0x6, 1 waiting to start (psndSFXMain), 2 positioned (calc3D), 0x40 fading out
     u8 vol;                // 0x8, the caller's volume
     u8 baseVol;            // 0x9, SoundEffectEntry.volume; played volume is vol * baseVol / 127
     u8 pan;                // 0xA
     u8 reverb;             // 0xB
-    u16 unkC;              // 0xC, SoundEffectEntry.field_0x10; compared when a slot is evicted
-    u16 unkE;              // 0xE
-    u16 unk10;             // 0x10
+    u16 prio;              // 0xC, SoundEffectEntry.prio; __psndSFXOn takes over a slot whose prio is higher
+    u16 delay;             // 0xE, frames psndSFXMain waits before starting the effect
+    u16 attenuation;       // 0x10, taken off every volume psndSFXMain sets
     u16 dist;              // 0x12, psndSFX_dist
     s16 pitch;             // 0x14, psndSFX_pit; SoundEfxSetPitch's pitch
     u16 unk16;             // 0x16
-    u32 unk18;             // 0x18
+    u32 channel;           // 0x18, the SoundSS, SoundSong or SoundEfx channel it plays on, -1 for none
     Vec position;          // 0x1C
 } PaperSoundEffect;
 
 typedef struct PaperSoundEnv {
-    u32 unk0;            // 0x0, SoundEnvList.flags
-    u16 unk4;            // 0x4, SoundEnvList.nameId, 0 when the slot is free
-    u8 field_0x6;        // 0x6, SoundEnvList.volume
+    u32 sfxNo;           // 0x0, SoundEnvList.sfxNo
+    u16 envId;           // 0x4, SoundEnvList.nameId, 0 when the slot is free
+    u8 volume;           // 0x6, SoundEnvList.volume; psndENVGetVol scales it
     u8 field_0x7;        // 0x7, SoundEnvList.field_0x5
-    u8 field_0x8;        // 0x8, SoundEnvList.mode
-    u8 field_0x9;        // 0x9, SoundEnvList.intervalRand
-    u8 field_0xA;        // 0xA, SoundEnvList.interval
-    u8 field_0xB;        // 0xB, SoundEnvList.radius
-    u8 field_0xC;        // 0xC, SoundEnvList.radiusRand
-    u8 field_0xD;        // 0xD, psndENVMain's step
-    u16 field_0xE;       // 0xE, frames until the next play (interval * 60 + irand(intervalRand) * 60)
-    u16 field_0x10;      // 0x10, SoundEnvList.span, passed to __psndSFXOn as its flags
+    u8 mode;             // 0x8, SoundEnvList.mode; psndENVMain's switch
+    u8 intervalRand;     // 0x9, SoundEnvList.intervalRand
+    u8 interval;         // 0xA, SoundEnvList.interval
+    u8 radius;           // 0xB, SoundEnvList.radius; mode 0 plays at radius * 10 + irand(radiusRand * 10)
+    u8 radiusRand;       // 0xC, SoundEnvList.radiusRand
+    u8 step;             // 0xD, psndENVMain's step within the mode
+    u16 timer;           // 0xE, frames until the next play (interval * 60 + irand(intervalRand) * 60)
+    u16 span;            // 0x10, SoundEnvList.span, passed to __psndSFXOn as its dist
     u8 pad_0x12[2];      // 0x12
-    u32 field_0x14;      // 0x14, the playing __psndSFXOn id, -1 when none
-    Vec field_0x18;      // 0x18, SoundEnvList.posX/Y/Z; the play position
+    u32 sfxId;           // 0x14, the playing __psndSFXOn id, -1 when none
+    Vec position;        // 0x18, SoundEnvList.posX/Y/Z; the play position
 } PaperSoundEnv;
 
 typedef struct PaperSoundWork {
-    PaperSoundEnvWork unk0[2];    // 0x0, per env slot
-    u16 unk18[2];                 // 0x18, the env id playing in each slot, 0 when none
-    u16 unk1C[2];                 // 0x1C, each slot's LPF, slewed towards unk20
-    u16 unk20[2];                 // 0x20, each slot's target LPF (psndENV_LPF)
-    PaperSoundEnvWork field_0x24; // 0x24, the SFX fade-out (psndSFXMain)
+    PaperSoundEnvWork envFade[2]; // 0x0, per env slot
+    u16 envId[2];                 // 0x18, the env id playing in each slot, 0 when none
+    u16 envLpf[2];                // 0x1C, each slot's LPF, slewed towards envLpfTarget
+    u16 envLpfTarget[2];          // 0x20, each slot's target LPF (psndENV_LPF)
+    PaperSoundEnvWork sfxFade;    // 0x24, the SFX fade-out (psndSFXMain)
     Vec position;                 // 0x30
     f32 direction;                // 0x3C
-    char unk40[0x10];             // 0x40
-    u16 unk50;                    // 0x50
+    char mapName[0x10];           // 0x40, psndMapChange: the reverb is reset when the map's name changes
+    u16 sfxSerial;                // 0x50, counts __psndSFXOn's effects; each id carries it in bits 8-23
     u16 reverb;                   // 0x52, psndSetReverb; added to each effect's reverb
     u16 unk54;                    // 0x54
     u16 flag;                     // 0x56, psndSetFlag/psndClearFlag/psndGetFlag
-    s8 unk58;                     // 0x58
-    s8 unk59;                     // 0x59
-    s8 unk5A;                     // 0x5A
+    s8 bgmLevel;                  // 0x58, percent applied to every BGM volume (psndBGMMain), eases towards 100 or 65
+    s8 sfxLevel;                  // 0x59, percent applied to positioned effects' volumes (psndSFXMain)
+    s8 envLevel;                  // 0x5A, percent applied to env volumes (psndENVGetVol)
     u8 unk5B;                     // 0x5B
     s8 unk5C;                     // 0x5C
     u8 unk5D[0x60 - 0x5D];        // 0x5D
@@ -173,7 +173,7 @@ s32 psndENVOff_f_d(s32 id, u32 value, s32 flag);
 s32 psndENVOn_f_d(s32 id, s32 name, u32 value, s32 flag);
 s32 psndBGMOn_f_d(u32 a, s32 name, u32 c, s32 d, s32 e);
 void psndSFX_pos(u32 id, Vec* position);
-s32 __psndSFXOn(s32, u8, u8, s32, Vec*, u32, s32, s32);
+s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 delay, Vec* position, u32 a6, s32 dist, s32 a8);
 u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span);
 
 
@@ -195,10 +195,10 @@ typedef struct BGMListEntry {
     union {
         u32 params; // 0xC, packed volume/pan/reverb/scope bytes, as the table spells them
         struct {
-            u8 field_0xC; // 0xC, volume (PaperSoundBGM.volume)
-            u8 field_0xD; // 0xD, pan (PaperSoundBGM.pan)
-            u8 field_0xE; // 0xE, reverb (PaperSoundBGM.reverb)
-            u8 field_0xF; // 0xF, 1: the BGM starts in scope (PaperSoundBGM.scopeTimer 0xFF)
+            u8 volume;  // 0xC, PaperSoundBGM.volume
+            u8 pan;     // 0xD, PaperSoundBGM.pan
+            u8 group;   // 0xE, nonzero: psndBGMOn_f_d keeps a playing BGM of the same group instead of restarting it
+            u8 inScope; // 0xF, 1: the BGM starts in scope (PaperSoundBGM.scopeTimer 0xFF)
         };
     };
 } BGMListEntry;
