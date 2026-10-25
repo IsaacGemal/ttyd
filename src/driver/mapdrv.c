@@ -4187,10 +4187,7 @@ static inline void spline_backsub(s32 count, f32* dt, Vec* mat, Vec* tangents) {
 	}
 }
 
-void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
-	Vec* points = (Vec*)a;
-	f32* knots = (f32*)b;
-	Vec* tangents = (Vec*)c;
+void spline_maketable(s32 count, Vec* points, f32* knots, Vec* tangents) {
 	f32* dt = _mapAlloc(count * sizeof(f32));
 	Vec* mat = _mapAlloc(count * sizeof(Vec));
 	s32 i;
@@ -4218,13 +4215,13 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 	tangents[count - 1].y = 0.0f;
 	tangents[count - 1].z = 0.0f;
 	for (i = 0; i < count - 1; i++) {
-		dt[i] = ((f32*)b)[i + 1] - ((f32*)b)[i];
+		dt[i] = knots[i + 1] - knots[i];
 		if (dt[i] == 0.0f) {
 			dt[i] = 0.0001f;
 		}
-		mat[i + 1].x = (((Vec*)a)[i + 1].x - ((Vec*)a)[i].x) / dt[i];
-		mat[i + 1].y = (((Vec*)a)[i + 1].y - ((Vec*)a)[i].y) / dt[i];
-		mat[i + 1].z = (((Vec*)a)[i + 1].z - ((Vec*)a)[i].z) / dt[i];
+		mat[i + 1].x = (points[i + 1].x - points[i].x) / dt[i];
+		mat[i + 1].y = (points[i + 1].y - points[i].y) / dt[i];
+		mat[i + 1].z = (points[i + 1].z - points[i].z) / dt[i];
 	}
 
 	tangents[1].x = mat[2].x - mat[1].x;
@@ -4254,19 +4251,16 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 }
 
 #pragma opt_lifetimes off // 98.78% without: t and h keep their own FPRs
-void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
-	f32* points = (f32*)a;
-	f32* knots = (f32*)b;
-	f32* tangents = (f32*)c;
+void spline_getvalue(f32* out, s32 type, Vec* points, f32* knots, Vec* tangents, f32 t) {
 	s32 lo;
 	s32 hi;
 	s32 mid;
 	f32 h;
 
 	if (type == 2) {
-		out[0] = t * (points[3] - points[0]) + points[0];
-		out[1] = t * (points[4] - points[1]) + points[1];
-		out[2] = t * (points[5] - points[2]) + points[2];
+		out[0] = t * (points[1].x - points[0].x) + points[0].x;
+		out[1] = t * (points[1].y - points[0].y) + points[0].y;
+		out[2] = t * (points[1].z - points[0].z) + points[0].z;
 		return;
 	}
 
@@ -4288,9 +4282,9 @@ void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 	h = knots[lo];
 	t -= h;
 	h = knots[lo + 1] - h;
-	out[0] = t * (t * (3.0f * tangents[lo * 3 + 0] + t * (tangents[lo * 3 + 3] - tangents[lo * 3 + 0]) / h) + ((points[lo * 3 + 3] - points[lo * 3 + 0]) / h - h * (2.0f * tangents[lo * 3 + 0] + tangents[lo * 3 + 3]))) + points[lo * 3 + 0];
-	out[1] = t * (t * (3.0f * tangents[lo * 3 + 1] + t * (tangents[lo * 3 + 4] - tangents[lo * 3 + 1]) / h) + ((points[lo * 3 + 4] - points[lo * 3 + 1]) / h - h * (2.0f * tangents[lo * 3 + 1] + tangents[lo * 3 + 4]))) + points[lo * 3 + 1];
-	out[2] = t * (t * (3.0f * tangents[lo * 3 + 2] + t * (tangents[lo * 3 + 5] - tangents[lo * 3 + 2]) / h) + ((points[lo * 3 + 5] - points[lo * 3 + 2]) / h - h * (2.0f * tangents[lo * 3 + 2] + tangents[lo * 3 + 5]))) + points[lo * 3 + 2];
+	out[0] = t * (t * (3.0f * tangents[lo].x + t * (tangents[lo + 1].x - tangents[lo].x) / h) + ((points[lo + 1].x - points[lo].x) / h - h * (2.0f * tangents[lo].x + tangents[lo + 1].x))) + points[lo].x;
+	out[1] = t * (t * (3.0f * tangents[lo].y + t * (tangents[lo + 1].y - tangents[lo].y) / h) + ((points[lo + 1].y - points[lo].y) / h - h * (2.0f * tangents[lo].y + tangents[lo + 1].y))) + points[lo].y;
+	out[2] = t * (t * (3.0f * tangents[lo].z + t * (tangents[lo + 1].z - tangents[lo].z) / h) + ((points[lo + 1].z - points[lo].z) / h - h * (2.0f * tangents[lo].z + tangents[lo + 1].z))) + points[lo].z;
 }
 #pragma opt_lifetimes reset
 

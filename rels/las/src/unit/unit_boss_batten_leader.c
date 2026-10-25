@@ -3038,10 +3038,10 @@ USER_FUNC(unk_las_0000d538) {
 }
 
 typedef struct BattenSatelliteSpline {
-    s32 field_0x0;
-    u32* field_0x4; // the spline table spline_maketable builds from
-    s32 field_0x8[5];
-    s32 field_0x1C[15];
+    s32 type;        // spline_getvalue's type (the point count, 5)
+    Vec* points;     // the spline table spline_maketable builds from
+    f32 knots[5];
+    Vec tangents[5];
     s32 field_0x58;
 } BattenSatelliteSpline;
 
@@ -3053,10 +3053,10 @@ u8 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, u32* table) {
         return 0;
     }
     unit->work[13 + index] = (s32)data;
-    data->field_0x0 = 5;
-    data->field_0x4 = table;
+    data->type = 5;
+    data->points = (Vec*)table;
     data->field_0x58 = 0;
-    spline_maketable(5, (s32)data->field_0x4, data->field_0x8, data->field_0x1C);
+    spline_maketable(5, data->points, data->knots, data->tangents);
     sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
     BtlUnit_GetPartsPtr(sat, 1)->work[1] = (s32)table;
     return 1;
@@ -3081,7 +3081,7 @@ u8 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
         }
         return 0;
     }
-    spline_getvalue(spline, data->field_0x0, (s32)data->field_0x4, (s32)data->field_0x8, (s32)data->field_0x1C,
+    spline_getvalue(spline, data->type, data->points, data->knots, data->tangents,
                     intplGetValue(4, data->field_0x58, 0x3C, 0.0f, 1.0f));
     sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
     if (sat == NULL) {

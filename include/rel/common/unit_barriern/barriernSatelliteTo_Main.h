@@ -28,7 +28,7 @@ static u8 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
         return 0;
     }
     t = intplGetValue(4, work->field_58, 0x3c, 0.0f, 1.0f);
-    spline_getvalue(out, work->type, (s32)work->field_0x4, (s32)work->points, (s32)work->field_1C, t);
+    spline_getvalue(out, work->type, work->points, work->knots, work->tangents, t);
     satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]);
     if (satellite == NULL) {
         return 0;
