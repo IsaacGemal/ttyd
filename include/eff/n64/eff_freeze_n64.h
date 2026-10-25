@@ -13,8 +13,8 @@ typedef struct effFreezeData {
 	u8 color0[4];          // 0x18
 	u8 color1[4];          // 0x1C
 	f32 scale;             // 0x20
-	u8 field_0x24;         // 0x24
-	u8 field_0x25;         // 0x25
+	s8 frame;              // 0x24 vertex-array frame (0-3) for effSetVtxDescN64
+	s8 frameTimer;         // 0x25 counts down; below 8 sets frame = timer / 2; reloads at 8-67
 	u8 pad_0x26[2];        // 0x26
 	EffectEntry* snowDust; // 0x28
 } effFreezeData;

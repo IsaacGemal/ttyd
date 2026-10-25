@@ -10,7 +10,7 @@ typedef struct MajinaiWork {
     f32 x;          // 0x4
     f32 y;          // 0x8
     f32 z;          // 0xC
-    f32 field_0x10; // 0x10
+    f32 scale;      // 0x10
     s32 alpha;      // 0x14
     s32 state;      // 0x18
     s32 animPose;   // 0x1C

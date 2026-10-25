@@ -10,9 +10,9 @@ typedef struct effLasMonData {
 	Vec position; //0x4
 	f32 scale; //0x10
 	s32 animId; //0x14
-	s32 field_0x18; //0x18
-	u32 field_0x1c; //0x1c
-	s32 field_0x20; //0x20
+	s32 state; //0x18 anim step: 0 = playing A_1, 1 = looping S_1
+	u32 alpha; //0x1c material evt colour alpha
+	s32 life; //0x20 1000 = hold; set to 16 by flag 4, counts down, delete below 0
 } effLasMonData;
 
 EffectEntry* effLasMonEntry(s32 type, f32 x, f32 y, f32 z);

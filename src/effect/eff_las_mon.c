@@ -26,10 +26,10 @@ EffectEntry* effLasMonEntry(s32 type, f32 x, f32 y, f32 z) {
 	data->position.y = y;
 	data->position.z = z;
 	data->scale = 1.0f;
-	data->field_0x18 = 0;
+	data->state = 0;
 	data->animId = -1;
-	data->field_0x1c = 0xff;
-	data->field_0x20 = 1000;
+	data->alpha = 0xff;
+	data->life = 1000;
 	return entry;
 }
 
@@ -50,15 +50,15 @@ void effLasMonMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x20 = 16;
+		data->life = 16;
 	}
-	if (data->field_0x20 < 1000) {
-		data->field_0x20--;
+	if (data->life < 1000) {
+		data->life--;
 	}
-	if (data->field_0x20 < 16) {
-		data->field_0x1c = data->field_0x20 << 4;
+	if (data->life < 16) {
+		data->alpha = data->life << 4;
 	}
-	if (data->field_0x20 < 0) {
+	if (data->life < 0) {
 		if (data->animId != -1) {
 			animPoseRelease(data->animId);
 		}
@@ -71,13 +71,13 @@ void effLasMonMain(EffectEntry* effect) {
 		if (data->animId == -1) {
 			data->animId = animPoseEntry("MOBJ_EFF_las_mon", inBattle);
 			animPoseSetAnim(data->animId, "A_1", TRUE);
-			data->field_0x18 = 0;
+			data->state = 0;
 		}
-		switch (data->field_0x18) {
+		switch (data->state) {
 		case 0:
 			if (animPoseGetLoopTimes(data->animId) >= 1.0f) {
 				animPoseSetAnim(data->animId, "S_1", TRUE);
-				data->field_0x18++;
+				data->state++;
 			}
 			break;
 		case 1:
@@ -101,7 +101,7 @@ void effLasMonDisp(CameraId camId, void* param) {
 	PSMTXScale(mtx2, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx1, mtx2, mtx1);
 	animPoseSetMaterialFlagOn(data->animId, 0x40);
-	animPoseSetMaterialEvtColor(data->animId, (GXColor){ 0xFF, 0xFF, 0xFF, data->field_0x1c });
+	animPoseSetMaterialEvtColor(data->animId, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 	animPoseMain(data->animId);
 	animPoseDrawMtx(data->animId, mtx1, 1, 0.0f, 10.0f);
 	animPoseDrawMtx(data->animId, mtx1, 2, 0.0f, 10.0f);

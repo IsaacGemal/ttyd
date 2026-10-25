@@ -12,9 +12,7 @@
 // Data owned by the bomb effect. The comments give the offsets the original uses.
 typedef struct effBombN64Data {
 	s32 type;          // 0x00
-	f32 x;             // 0x04
-	f32 y;             // 0x08
-	f32 z;             // 0x0C
+	Vec pos;           // 0x04
 	u8 pad_0x10[0x20]; // 0x10
 	s32 life;          // 0x30: frames left before the effect deletes itself
 	s32 counter;       // 0x34: frame counter
@@ -75,9 +73,9 @@ EffectEntry* effBombN64Entry(s32 type, f32 x, f32 y, f32 z) {
 	data = __memAlloc(HEAP_EFFECT, 0xCC);
 	effect->userdata = data;
 	effect->callback = effBombMain;
-	data->x = x;
-	data->y = y;
-	data->z = z;
+	data->pos.x = x;
+	data->pos.y = y;
+	data->pos.z = z;
 	data->counter = 0;
 	data->life = 60;
 	data->type = type;
@@ -120,7 +118,7 @@ inline Vec initializeVec(Vec* input) {
 // multiplier is a local assigned before use rather than a literal in the expression.
 static void effBombMain(EffectEntry* effect) {
 	effBombN64Data* data = effect->userdata;
-	Vec position = initializeVec((Vec*)&data->x);
+	Vec position = initializeVec(&data->pos);
 	s32 type;
 	s32 timer;
 	s32 camId = data->camId;
@@ -137,12 +135,12 @@ static void effBombMain(EffectEntry* effect) {
 
 	if (timer == 7) {
 		if (data->typeHigh == 0) {
-			effKemuri8N64SetCamId(effKemuri8N64Entry(type, data->x, data->y, data->z), camId);
+			effKemuri8N64SetCamId(effKemuri8N64Entry(type, data->pos.x, data->pos.y, data->pos.z), camId);
 		} else {
-			effKemuri8N64SetCamId(effKemuri8N64Entry(type + 3, data->x, data->y, data->z), camId);
+			effKemuri8N64SetCamId(effKemuri8N64Entry(type + 3, data->pos.x, data->pos.y, data->pos.z), camId);
 		}
 	} else if (timer == 1) {
-		effConfettiN64SetCamId(effConfettiN64Entry(type + 4, 50, data->x, data->y, data->z, 1.0f), camId);
+		effConfettiN64SetCamId(effConfettiN64Entry(type + 4, 50, data->pos.x, data->pos.y, data->pos.z, 1.0f), camId);
 	}
 
 	data->scale += data->scaleStep;
@@ -199,7 +197,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	data = effect->userdata;
 	timer = data->counter;
 
-	PSMTXTrans(mtx, data->x, data->y, data->z);
+	PSMTXTrans(mtx, data->pos.x, data->pos.y, data->pos.z);
 	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(mtx, rotMtx, outMtx);
 	PSMTXConcat(camera->view, outMtx, outMtx);
