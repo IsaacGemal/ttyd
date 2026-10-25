@@ -7613,8 +7613,8 @@ file proves a remaining placeholder; remove the casts the new types make unneces
   no ratchet baseline, so `ci.py --init` ran first on the byte-identical first build. At the end all 1,018 game objects
   (every src/ and rels/ unit) compiled under `--non-matching` with no failures, then a normal reconfigure and rebuild to
   `ok`. fncast_lint and local_prototypes clean.
-- **Counts** (`tools/cleanup_index.py`, 5619c3bf -> this branch, same script): index 13.669 -> 13.509 per kLOC (9548 ->
-  9436 weighted); field_0x 2403 -> 2305, raw_offset 150 -> 145, struct_ptr_cast 1245 -> 1243, deref_cast 484 -> 483,
+- **Counts** (`tools/cleanup_index.py`, origin/main 55fec9be -> this branch rebased onto it, same script): index
+  12.666 -> 12.506 per kLOC (8847 -> 8735 weighted); field_0x 1721 -> 1623, raw_offset 150 -> 145, struct_ptr_cast 1226 -> 1224, deref_cast 484 -> 483,
   the rest unchanged. `field_0x` in this task's files (src/motion, src/manager, include/motion, include/mot,
   include/manager): 229 -> 139, of which filemgr.c's 109 are unchanged; outside filemgr: 120 -> 30. Per file:
   mot_plane.c 75 -> 9, mot_plane.h 8 -> 2, mot_damage.c 9 -> 0, mot_stay.c 7 -> 0, mot_dokan.c 3 -> 1, mot_jump.c 2 -> 4
