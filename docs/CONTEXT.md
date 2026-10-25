@@ -8473,3 +8473,178 @@ prim_ptr_cast 201 -> 149, struct_ptr_cast 157 -> 141, weighted 1270 -> 1134; sac
 151 -> 119 weighted (96.5 -> 75.6 per kLOC), still fifth of the worst ten: what is left there is the file's .rodata
 vec3 objects (46 address names, read through 14 deref casts; data definitions, not touched), the five guarded
 function-pointer casts, seven sound ids passed as names and the four const pointers in PTR().
+## PartyEntry, the party structs, DoorParam, KinopioData, InformantWork, FieldBattleData, GlobalWork, seq_e3_work: placeholders named from their consumers (2026-10-25, Claude Opus 5.5, n2party)
+
+Task (Isaac): what the fsrcmisc and funk chapters left in the party structs and their neighbours: PartyEntry
+(include/party.h: 43 `field_N`, `field_110`, `field_144`), src/party/** (with a deep clean of party_yoshi, a top-10
+file), party_cloud.h, party_move.h, DoorParam and KinopioData (their headers; the rels data labels stay as they were),
+InformantWork/InformantInfo, FieldBattleData (`fbat->field_14/1C/44`), GlobalWork `unk8`/`field_C`, seq_e3.h. Each
+was named under CLEANUP_GUIDE section 3, or respelled `field_0xNN` (`pad_0xNN` for bytes nothing touches). Parallel
+branches: n2worst (evt_mobj, evt_npc, evt_sub), n2battle (src/battle), n2rels (rels). Their files changed only where
+a renamed field is read, token for token: evt_npc's three FieldBattleData `field_20` reads, battle_seq_end's
+`field_44`, tou_03's two FieldBattleData stores, the four evt_lect `field_110` stores; winmgr.c (not in any set) had
+seven InformantWork reads.
+
+- **Method.** Untracked harness in build/n2p/ (fsrcmisc's try.py and gate.sh against a snapshot of every object built
+  at bf361fce): a header edit compiled every user of the header (from `ninja -t deps`) and ran obj_equiv on each, then
+  compiled them again without `-DMUST_MATCH`. ren.py renamed `recv->old` only for receivers holding the struct; since
+  every user is compiled, a compile error catches both a missed site and a rename that hit another struct's field.
+  Every commit: build to `ok`; every changed .c and every user of a changed header EQUIV and natural-compile OK;
+  fncast_lint and local_prototypes clean; tools/ci.py PASS (through fsrcmisc's ci_local.py, after `--init` on the
+  byte-identical build, as this worktree had no baseline). At the end, `configure.py --non-matching` built the 867
+  objects from a changed .c or a user of a changed header with no errors, and a normal reconfigure rebuilt to `ok`.
+- **Counts** (bf361fce -> this branch, same script both sides). `tools/cleanup_index.py`: index **11.962 -> 12.049**
+  per kLOC (8355 -> 8416 weighted). The only change is field_0x 1340 -> 1401 (+61): placeholders respelled from
+  spellings the index can't see, so they are now counted (funk's chapter explains why that rise is the point). Every
+  other category is unchanged; no file gained anything but respelled field_0x. In this task's file set, by grep with
+  comments included: `field_N` 964 -> 0, `unkNN` 51 -> 0, `field_0xNN` 26 -> 85. Index restricted to the set:
+  469 -> 527 weighted (field_0x 25 -> 83). Tree-wide, code only: `field_N` 1091 -> 31 (what is left is camdrv.h/.c
+  and mapdrv.h, outside this set), `unkNN` 414 -> 348.
+
+**Names, per struct** (field -> name: the consumer that proves it).
+- **PartyEntry** (party.h).
+  - 0x8 `trigFlags`. One-shot requests, the scheme of MarioWork.trigFlags: partyChgMot, partyChgMoveMode,
+    partyChgRunMode, partyChgPose and partyChgPaper each set a bit, and the routine they start tests and clears it on
+    its first frame (party_motion_*, party_move_mode_*, the run modes' use/move/bye/hello, partyPreDisp). The word
+    also carries party_motion's follow states.
+  - New enum PartyTrigFlags for the bits with one meaning: CHG_PAPER_MOT 0x1 (allPartySlitOn and
+    partyChgMotSlitFloor set it; party_slit and party_roll start on it), CHG_MOT 0x2, CHG_MOVE_MODE 0x4,
+    CHG_RUN_MODE 0x8, CHG_POSE 0x2000, CHG_PAPER 0x4000 (partyPreDisp reloads the pose or paper pose), FOLLOW_CLOSE
+    0x20000 (N_partyFollowCloseOn/Off), SPLASH 0x1000000 (the floor checks set it on attr-0x200 water when
+    splashTimer is 0; party_move consumes it with marioSetSplash). 192 literal sites in party.c and src/party use the
+    names. 0x1000, 0x10000, 0x40000, 0x100000, 0x200000, 0x400000 and 0x800000 stay numbers: the scripts clear
+    0x360000 through unk_800e71bc, nothing in the tree sets 0x200000, and no reader pins the others.
+  - 0x20 `poseTime` (partyPreDisp's animPoseSetLocalTime frame; zeroed at each pose change, copied from Mario's
+    poseTime while he rides Yoshi).
+  - 0x28 `forceMoveFrames` (partySetForceMove's count; partyForceWalk counts it down and returns to prevRunMode at 0).
+    partySetForceMove's parameters became `frames`, `dir`, `speed`.
+  - 0x2C `kemuriCount` (party_kemuri counts walking frames; a dust puff each time it passes 6, as kemuri's `ct` does
+    for Mario).
+  - 0x2D `stepSfxCount` (partyStepSfx counts frames; the footstep sounds play at its lo/hi marks).
+  - 0x2E `dokanType`, typed s8: partyDokanEnd stores Mario's dokanType there (mot_dokan's call), partyDokanMain picks
+    the exit animation and offsets by it. Its four `(s8)` casts go, and the parameter is `dokanType`.
+  - 0x30 `padChan` (partyUpdateKeyData indexes the GlobalWork pad arrays with it; never written, so 0).
+  - 0x32 `isFlyer`: 1 from cloud_init and vivian_init. party_move takes party_motion_homing_fly and
+    party_motion_behind_mario_fly at 1, party_kemuri raises no dust, partyStepSfx plays one sound (0x926) instead of
+    the step pair, and partyGetAppearPos4 keeps the partner above Mario.
+  - 0x33 `partnerType`: the PartyMember of the init_func, which every init stores (kuribo_init's 1 also for every NPC
+    follower). fbatHitCheck tests it for Koops before calling nokonokoGetStatus, and for Bobbery. The stores and
+    those two tests now use PARTY_MEMBER_* constants.
+  - 0x35 `prevRunMode`: partyChgRunMode saves runMode into it unless the mode is 9 or 3; unk_800ba2dc tests it and
+    returns to it.
+  - 0x37 `paperMot` (party_slit runs only at 1, party_roll only at 2; the slit-off paths zero it).
+  - 0x3A `paperMotStep` (party_slit's and party_roll's switch selector; allPartySlitOff moves it on to the 0x28 exit
+    step).
+  - 0x4C `splashTimer` (set to 0x14 at a splash; the floor checks raise SPLASH only at 0).
+  - 0x4D `wallHitCount` (party_motion_homing_walk counts frames pushing into a front wall that isn't a slit; past 8 it
+    re-tests the floor ahead for a jump or a step).
+  - 0x4F `tailFlags` (bit 0 only: L_partyVivianTailStop/Start and vivian_use set and clear it,
+    N_vivianDisplayTailCheck tests it).
+  - 0x51 `followPartner` (1 while partyRecordFootmark records the other partner's positions instead of Mario's;
+    cleared with partyClearFootmark2).
+  - 0xB8 `shadowPos`: partyPreDisp's shadowEntryMode position (y from a floor hit check) and animPoseVivianMain's
+    argument; vivianShadow and vivian_move trail it behind position by up to 22.
+  - 0xE8 `groundGap`: partySearchGround stores -1 when it finds no floor, the gap to a floor below the step-down range,
+    or 0 when it takes a floor. partyMoveMain drops the ground hit while it is nonzero.
+  - 0xEC `frontWallDist` (partySearchFrontWall: distance to the wall it hit, -1 with none; kuribo_use compares it with
+    the distance to Mario).
+  - 0xFC `moveDir`, as MarioWork.moveDir: copied from Mario's at entry, dokan, hello and ride end; the move routines
+    copy dir into it; partyMakeDispDir faces by it relative to playerTargetYaw; L_getStick returns it with the stick
+    idle.
+  - 0x110 `dispReqDir`, as MarioWork.dispReqDir: mostly copied from it. partyMakeDispDir turns dispDir toward it,
+    yoshi_use hands it back to Mario, and set_dir.h, evt_party and the evt_lect files set it.
+  - 0x120 `stepUpY` (partyChkFrontStep's step height; party_motion_upstairs and Yoshi's 0x28 step motion climb to it
+    over 3 frames).
+  - 0x12C `frontWallHit` (partySearchFrontWall's hit; Yoshi's checkWall sets it together with MarioWork.hitobjFront;
+    the move routines test it for attr 0x800, party_slit for 0x2000).
+  - 0x134 `pushWallHit`, retyped from void* to HitEntry*: the same wall, stored only while speed != 0, set together
+    with Mario's hitobjPush/hitobjWall. party_motion_behind_mario stops at it.
+  - 0x16C `evtUseMsec`: evt_party_cloud_breathout's argument, 5000 from evt_party_nokotaro_kick_hold, 0 from
+    ..._kick. cloud's useTimer is sysMsec2Frame of it; nokonoko_use sets its hold bit when it is > 0.
+  - Respelled: 0x10, 0x3D, 0x3E, 0x3F, 0x44, 0xC4 and 0x14C become `field_0xNN`: written only, or (0x3F) compared
+    but never set nonzero. 0xC4 holds partyGroundSlope's tilt angles, with no reader. The tail's bobbery 0x17C,
+    flurrie 0x174 and koops 0x180 are zero or -1 stores. Untouched bytes become `pad_0xNN`: 0x22, 0x3C, 0x48, 0x50,
+    0xA4, 0xD0, bobbery 0x174, vivian 0x178/0x180. 0x13C, 0x144 and 0x148 keep their `field_0x` spelling, for the
+    reasons fsrcmisc gave.
+- **PartyCloud** (party_cloud.h): 0x4 `breathDispDir` is Mario's dispDir when the breath starts. N__cloud_use turns
+  Mario and Flurrie to it; cloudGetBreathDir returns toMovedir of it (cloudGetBreathPower uses the same); getHitBreatheout2 aims its
+  rays by it and flips at 90-270. The 2026-10-20 note said it is computed, not stored, but N__cloud_use stores it.
+  0x0 (set to 100, never read) is `field_0x0`.
+- **Footmark** (party_move.h): 0x0 `flags`, the flags partyRecordFootmark passes in: 0x1 when the leader was jumping
+  (party_motion_homing_walk jumps there), 0x4 when marioChkSlitThrouh was set (it starts the slit-floor motion near
+  it). PartyYoshiUse 0x0 is a pad.
+- **DoorParam** (evt_door.h; the inn/shop door layout that door_entry and its USER_FUNCs read).
+  - 0x00 `type` (door_entry's switch: which side of the outside door's normal the out point sits).
+  - 0x04/0x0C `outsideConditionId`/`insideConditionId` (inout_hit's LW(0)/LW(2): evt_door_setup's evt_run_case_evt
+    conditions for house_in and house_out).
+  - 0x08/0x10 `outsideHit`/`insideHit` (those cases' hit objects; door_entry puts the out and in points in front of
+    them).
+  - 0x14/0x1C `openAnim`/`closeAnim` (animation's LW(0)/LW(2), which in_houseanim and out_houseanim play).
+  - 0x24 `outsideGroup` (outside_group; house_in sets MAPOBJ_FLAG_NO_BLEND on it).
+  - 0x28 `doorGroup` (door_group; the door anims rotate it).
+  - 0x2C/0x30 `insideGroup`/`insideHitGroup` (inside_group's LW(0)/LW(1): HIDDEN cleared, hit objects on in
+    house_in).
+  - 0x34/0x38 `initInsideGroup`/`initInsideHitGroup` (init_inside_group; evt_door_setup hides them and turns them
+    off).
+  - 0x3C/0x44/0x48 `npcNames`/`mobjNames`/`itemNames` (npc_dark/npc_light; DoorEntry's names).
+  - 0x40 `noclipMaps` (get_noclip_map's list; house_in clears MAPOBJ_FLAG_CLIP on each).
+  - 0x18/0x20 (animation's LW(1)/LW(3), which no script reads) are `field_0x18`/`field_0x20`.
+  - The nok_00/nok_01 `// field_NN` labels are unchanged, as the task asked.
+- **KinopioData** (evt_kinopio.h): 0x0-0xC `breakfastItem`, `breakfastX`/`Y`/`Z`: the item type and position that
+  `breakfast` passes to itemEntry for the item it names with the binary's "breakfast" string. The 2026-10-20 note
+  passed on these as "module names only", but the reader is itemEntry's type and position arguments. The six rels
+  tables keep their `// field_N` labels.
+- **InformantInfo/InformantWork** (evt_johoya.h):
+  - InformantInfo 0xA `price`: 5 from johoya_data_make; the newjoho window prints it with `%3d`;
+    johoya_keti_newjoho_makelabel returns it as tik_00's LW(5), which the script checks against the coin count and
+    takes with evt_pouch_add_coin(-LW(5)).
+  - InformantWork 0x10 `curIdx` (the info index the makelabel functions or winmgr's list picked; the setreadflag
+    functions mark it).
+  - InformantWork 0x14 `readFlags` (the three read-flag sets; cardmgr copies it to and from the card's informant
+    block).
+  - 0xE (InformantInfo), 0x27 (saved with the flags, never accessed) and the 0x3F tail are respelled.
+- **FieldBattleData** (npcdrv.h):
+  - 0x14 `firstAttackArg` (seq_battle's BattleInformationSetFirstAttack argument for firstAttackKind 0x10000000;
+    tou_03 sets 0x10).
+  - 0x1C `firstAttackFlags` (bit 0 makes seq_battle pass first attack 0; tou_03 clears it).
+  - 0x20 `info` (the FieldBattleInfo handed to the battle: seq_battle's BattleInformation* calls, evt_npc's result
+    reads).
+  - 0x570 `firstStrikeWaitFrames` (seq_battle holds bmapLoadRank back while a first-strike announcement runs, at
+    most 0xC8 frames).
+  - 0x574 `fireComboCount` (npcCalcScore counts encounter-type-2 kills and multiplies their score by it;
+    npcKoopaAttackCheck clears it whenever kpaFireAttackCheck is false).
+  - 0x578/0x57C `jumpComboCount`/`jumpComboScore` (npcCalcScore's type-1 kills and their score sum;
+    npcKoopaJumpScore awards the sum at 2 or more kills and clears both).
+  - 0x44 is read by battle_seq_end (another turn instead of the end) but set nowhere: `field_0x44`.
+  - Pads: 0x3, 0x18, 0x54E; also NpcBattleInfo 0xC7 and NpcEntry 0x170/0x184.
+- **GlobalWork** (mariost.h): 0xC `debugBattleFlag`. seq_battleInit copies it to the `debug_battle_flag` symbol;
+  while it is set, seq_mapchange and the battle load the debug messages (gon_11, DbgBtlSel's), and the battle ends
+  into SEQ_GAME_OVER, which clears it. 0x8 (nameent takes the A button only while it is 0; nothing sets it) is
+  `field_0x8`.
+- **seq_e3_work** (seq_e3.h): 0x4 `showMenu` (e3Disp draws the Press Start screen at 0 and the scenario menu at 1; the
+  CAMERA_OFFSCREEN2 pass draws the other one). 0x8 `nextShowMenu` (1 on Start or A, 0 on B or the idle timeout;
+  e3DispOffscreen copies it into showMenu under the fade). 0x64 (set to 270, never read) is `field_0x64`.
+- **party_yoshi deep clean.**
+  - L_sweatEntry takes a `HitEntry*` (both stores are HitEntry fields).
+  - The two `use = party->useStruct; use->counter++` steps go; the field increment is identical.
+  - dou10_yoko_yari2's out local is `out`.
+  - Tried and kept, because the object differs: unk_800b45e0's `(u16)t` re-narrowing (the plain
+    `poseTime++; if (poseTime >= 0x34)` re-loads the halfword, 6 lines), and a typed effSweatData local in
+    L_sweatMain (retail reloads the userdata chain for each store, 22 lines).
+  - The rest is out of this run's reach. The `vec` base pointer, the volatile Vec copies, yoshi_exit's goto and the
+    yoshiRideHeight/yoshiSearchHead inlines depend on the data lead the n9-q-mm3/mm4 chapters recorded: the three
+    vec3_802ccc* zero Vecs as compound literals. This run was told not to touch data definitions.
+  - ten_pool_helper is a pool-order placeholder. unk_800b474c and unk_800b45e0 have no outside name.
+
+**Left, and why.** The respelled fields above (written only, unread, or one read with no setter). PartyData 0x18-0x20
+(NULL in every row). The trigFlags bits listed above. The rels `// field_N` data labels for DoorParam and KinopioData
+(kept on purpose). camdrv's and mapdrv's `field_N` (outside this set). party_cloud's and party_yoshi's
+`((eff*Data*)...->userdata)` casts: retail reloads the chain for each store.
+
+**For a reviewer.** An independent Claude Opus 5.5 agent, given the diff and not these notes, checked every new name
+against its readers. It found none wrong and confirmed 68 of 69 outright. It doubted only evtUseMsec's comment, which
+named a function that doesn't exist; that comment and four inexact ones (prevRunMode, paperMot, padChan,
+nextShowMenu) are fixed, as are firstAttackKind's "kinds 1-8" and partySetForceMove's parameter names. Names that
+rest on analogy as well as readers: trigFlags (MarioWork's scheme), moveDir and dispReqDir (copied from and back to
+Mario's fields of those names), frontWallHit/pushWallHit (set together with Mario's hitobjFront/hitobjPush).
+partnerType is not currentMemberId: NPC followers built by kuribo_init carry 1 (PARTY_MEMBER_GOOMBELLA).
