@@ -4257,11 +4257,11 @@ s32 _naniga_okorukana_check(EventEntry* event, BOOL isFirstCall) {
         effSetName((EffectEntry*)event->userdata[0], "effNaniga");
         evtSetValue(event, outIdx, item);
         if (unit->currentKind == UNIT_MARIO) {
-            countA = &wp->field_16F1C[0x25 - 0x1C];
-            countB = &wp->field_16F1C[0x26 - 0x1C];
+            countA = &wp->actRecord[0x25 - 0x1C];
+            countB = &wp->actRecord[0x26 - 0x1C];
         } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
-            countA = &wp->field_16F1C[0x27 - 0x1C];
-            countB = &wp->field_16F1C[0x28 - 0x1C];
+            countA = &wp->actRecord[0x27 - 0x1C];
+            countB = &wp->actRecord[0x28 - 0x1C];
         } else {
             goto done; // neither Mario nor a partner: no counter to bump
         }
