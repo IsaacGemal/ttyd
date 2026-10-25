@@ -46,10 +46,10 @@ typedef struct KaronPoseEntry {
     s8 type;       // 0x0
     u8 field_1;    // 0x1
     u16 area;      // 0x2
-    s32 field_4;   // 0x4
-    f32 field_8;   // 0x8
-    f32 field_C;   // 0xC
-    f32 field_10;  // 0x10
+    s32 timer;     // 0x4, frames left in the current state (drop delay, walk leg, escape run)
+    f32 velX;      // 0x8, added to the pose's x each frame
+    f32 velY;      // 0xC, added to the pose's y each frame, less 0.3f gravity
+    f32 velZ;      // 0x10, added to the pose's z each frame
     u32 flags;     // 0x14
 } KaronPoseEntry;  // 0x18
 
@@ -58,9 +58,9 @@ typedef struct LasWork {
     s32 attackStart;         // 0x0
     s32 escape;              // 0x4
     s32 mesPushing;          // 0x8
-    u32 field_C;             // 0xC
+    u32 frame;               // 0xC, +1 per frame; frame % 20 picks the move_check_list slice checked this frame
     s32 marioPushed;         // 0x10
-    s32 field_14;            // 0x14
+    s32 hammerFrame;         // 0x14, frames into MARIO_MOTION_HAMMER (mod 15); the swing hits at 10
     KaronPoseEntry* entries; // 0x18
 } LasWork;
 
@@ -629,8 +629,8 @@ static void senkaron_ext_init(void) {
         (*pose->matrix)[2][3] = randf(-270.0f, 270.0f);
         pose->heading = 90.0f;
         entries[i].type = 0;
-        entries[i].field_4 = (s32)randf(1.0f, 200.0f);
-        entries[i].field_C = -3.0f;
+        entries[i].timer = (s32)randf(1.0f, 200.0f);
+        entries[i].velY = -3.0f;
         i--;
         pose++;
     }
@@ -783,14 +783,14 @@ static void senkaron_ext_main(void) {
     skwp->marioPushed = 0;
     dir = 0;
     if (mario->currMotionId == MARIO_MOTION_HAMMER) {
-        skwp->field_14 = skwp->field_14 + 1;
-        skwp->field_14 = skwp->field_14 % 0xF;
+        skwp->hammerFrame = skwp->hammerFrame + 1;
+        skwp->hammerFrame = skwp->hammerFrame % 0xF;
     } else {
-        skwp->field_14 = 0;
+        skwp->hammerFrame = 0;
     }
 
     if (mario->currMotionId == MARIO_MOTION_HAMMER) {
-        if (skwp->field_14 == 0xA) {
+        if (skwp->hammerFrame == 0xA) {
             if (mario->dispReqDir == 0.0f) {
                 dir = 1;
             } else if (mario->dispReqDir == 180.0f) {
@@ -803,7 +803,7 @@ static void senkaron_ext_main(void) {
         }
     }
 
-    j = skwp->field_C % 20;
+    j = skwp->frame % 20;
     if (j != 0) {
         start = move_check_list[j - 1] + 1;
     } else {
@@ -822,7 +822,7 @@ static void senkaron_ext_main(void) {
         move_check(pose, j);
     }
 
-    skwp->field_C++;
+    skwp->frame++;
     ep = extGetPosePtr();
 
     for (i = 0; i < 1000; i++, ep++) {
@@ -831,20 +831,20 @@ static void senkaron_ext_main(void) {
         switch (p->type) {
         case 0:
             ep->texId = (gp->retraceCount + i * i) % 0x18;
-            if (p->field_4 > 0) {
+            if (p->timer > 0) {
                 if (skwp->escape != 0) {
                     ep->flags &= ~EXT_POSE_VISIBLE;
                     p->type = 0x63;
                 } else if (skwp->attackStart != 0) {
-                    p->field_4--;
+                    p->timer--;
                 }
             } else {
-                (*ep->matrix)[1][3] += p->field_C;
-                p->field_C -= 0.3f;
+                (*ep->matrix)[1][3] += p->velY;
+                p->velY -= 0.3f;
                 if ((*ep->matrix)[1][3] < 0.0f) {
                     (*ep->matrix)[1][3] = 0.0f;
                     p->type = 1;
-                    p->field_4 = 0;
+                    p->timer = 0;
                     p->flags &= 0xFFFE;
                     if (i % 8 == 0) {
                         Vec v = {0.0f, 0.0f, 0.0f};
@@ -861,22 +861,22 @@ static void senkaron_ext_main(void) {
             ep->texId = (gp->retraceCount + i * i) % 0x18;
             if (skwp->escape != 0) {
                 if ((*ep->matrix)[0][3] == 0.0f && (*ep->matrix)[2][3] == 0.0f) {
-                    p->field_8 = 1.0f;
-                    p->field_10 = 1.0f;
+                    p->velX = 1.0f;
+                    p->velZ = 1.0f;
                 } else {
                     f32 len = (f32)sqrt((*ep->matrix)[0][3] * (*ep->matrix)[0][3] +
                                         (*ep->matrix)[2][3] * (*ep->matrix)[2][3]);
 
-                    p->field_8 = 4.0f * (*ep->matrix)[0][3] / len;
-                    p->field_10 = 4.0f * (*ep->matrix)[2][3] / len;
+                    p->velX = 4.0f * (*ep->matrix)[0][3] / len;
+                    p->velZ = 4.0f * (*ep->matrix)[2][3] / len;
                 }
-                if (p->field_8 < 0.0f) {
+                if (p->velX < 0.0f) {
                     ep->heading = 90.0f;
                 } else {
                     ep->heading = 270.0f;
                 }
                 p->type = 0x62;
-                p->field_4 = 300;
+                p->timer = 300;
                 break;
             }
             hit = 0;
@@ -961,9 +961,9 @@ static void senkaron_ext_main(void) {
             if (hit != 0) {
                 f32 len = sqrtf(f26 * f26 + f25 * f25);
 
-                p->field_8 = f28 + 3.0f * f27 / len;
-                p->field_C = randf(5.0f, 10.0f);
-                p->field_10 = randf(-5.0f, 10.0f);
+                p->velX = f28 + 3.0f * f27 / len;
+                p->velY = randf(5.0f, 10.0f);
+                p->velZ = randf(-5.0f, 10.0f);
                 p->type = 0x61;
                 if (hit == 1) {
                     Vec v = {0.0f, 0.0f, 0.0f};
@@ -990,30 +990,30 @@ static void senkaron_ext_main(void) {
                 }
             }
 
-            if (p->field_4 == 0) {
+            if (p->timer == 0) {
                 f32 dx = (*ep->matrix)[0][3] - mario->position.x;
                 f32 dz = (*ep->matrix)[2][3] - mario->position.z;
                 f32 d = 10.0f * (f32)sqrt(dx * dx + dz * dz);
 
                 hit = rand() % 50;
-                p->field_8 = randf(-0.5f, 0.5f);
-                p->field_10 = randf(-0.5f, 0.5f);
-                p->field_8 -= dx / d;
-                p->field_10 -= dz / d;
+                p->velX = randf(-0.5f, 0.5f);
+                p->velZ = randf(-0.5f, 0.5f);
+                p->velX -= dx / d;
+                p->velZ -= dz / d;
                 if (hit == 1) {
                     p->flags |= 1;
                 } else {
                     p->flags &= 0xFFFE;
                 }
-                p->field_4 = 60;
+                p->timer = 60;
             }
-            p->field_4--;
+            p->timer--;
             if (p->flags & 2) {
-                (*ep->matrix)[0][3] -= p->field_8;
-                (*ep->matrix)[2][3] -= p->field_10;
+                (*ep->matrix)[0][3] -= p->velX;
+                (*ep->matrix)[2][3] -= p->velZ;
             } else {
-                (*ep->matrix)[0][3] += p->field_8;
-                (*ep->matrix)[2][3] += p->field_10;
+                (*ep->matrix)[0][3] += p->velX;
+                (*ep->matrix)[2][3] += p->velZ;
             }
             if ((*ep->matrix)[0][3] > 570.0f) {
                 (*ep->matrix)[0][3] = 570.0f;
@@ -1031,13 +1031,13 @@ static void senkaron_ext_main(void) {
         case 0x61:
             ep->flags |= EXT_POSE_NO_SHADOW;
             if ((*ep->matrix)[1][3] > -100.0f) {
-                (*ep->matrix)[0][3] += p->field_8;
-                (*ep->matrix)[1][3] += p->field_C;
-                (*ep->matrix)[2][3] += p->field_10;
+                (*ep->matrix)[0][3] += p->velX;
+                (*ep->matrix)[1][3] += p->velY;
+                (*ep->matrix)[2][3] += p->velZ;
                 if ((*ep->matrix)[2][3] <= -270.0f) {
                     (*ep->matrix)[2][3] = -270.0f;
                 }
-                p->field_C -= 0.3f;
+                p->velY -= 0.3f;
                 ep->texId = 0x18;
             } else {
                 marioGetPtr();
@@ -1047,17 +1047,17 @@ static void senkaron_ext_main(void) {
                 ep->heading = randf(0.0f, 360.0f);
                 ep->flags &= ~EXT_POSE_NO_SHADOW;
                 p->type = 0;
-                p->field_4 = rand() % 1000 + 1;
-                p->field_C = 0.0f;
+                p->timer = rand() % 1000 + 1;
+                p->velY = 0.0f;
             }
             break;
         case 0x62:
-            if (p->field_4 > 0) {
-                (*ep->matrix)[0][3] += p->field_8;
-                (*ep->matrix)[2][3] += p->field_10;
-                p->field_4--;
-                if (p->field_4 % 10 == 0) {
-                    if (((p->field_4 / 5) & 1) == 0) {
+            if (p->timer > 0) {
+                (*ep->matrix)[0][3] += p->velX;
+                (*ep->matrix)[2][3] += p->velZ;
+                p->timer--;
+                if (p->timer % 10 == 0) {
+                    if (((p->timer / 5) & 1) == 0) {
                         Vec v = {0.0f, 0.0f, 0.0f};
 
                         v.x = (*ep->matrix)[0][3];

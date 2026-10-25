@@ -1911,60 +1911,60 @@ void kpaSen_ext_init(void) {
         PSMTXIdentity(*pose->matrix);
         if (i < 100) {
             pose->heading = 90.0f;
-            kpaSen[i].field_14 = pos.x + 30.0f * (i / 10.0f) - 9.0f;
-            kpaSen[i].field_18 = 0.0f;
-            kpaSen[i].field_1C = pos.z + 50.0f * (i % 10 - 5);
-            kpaSen[i].field_8 = f30;
+            kpaSen[i].end.x = pos.x + 30.0f * (i / 10.0f) - 9.0f;
+            kpaSen[i].end.y = 0.0f;
+            kpaSen[i].end.z = pos.z + 50.0f * (i % 10 - 5);
+            kpaSen[i].start.x = f30;
             (*pose->matrix)[0][3] = f30;
-            kpaSen[i].field_C = 0.0f;
+            kpaSen[i].start.y = 0.0f;
             (*pose->matrix)[1][3] = 0.0f;
             // The original stores the value to both places from one register.
             c = pos.z + 20.0f * (i % 10 - 5);
-            kpaSen[i].field_10 = c;
+            kpaSen[i].start.z = c;
             (*pose->matrix)[2][3] = c;
             kpaSen[i].timer = (i / 10) * 3 + 1;
-            kpaSen[i].field_20 = 0;
-            kpaSen[i].field_21 = 5;
-            kpaSen[i].field_22 = 6;
-            kpaSen[i].field_23 = 8;
+            kpaSen[i].stopTexFirst = 0;
+            kpaSen[i].stopTexLast = 5;
+            kpaSen[i].moveTexFirst = 6;
+            kpaSen[i].moveTexLast = 8;
         }
         else {
             pose->heading = 270.0f;
             // The original multiplies by the -30.0 constant and fuses (`pos.x - 30.0f * ...` gives fnmsubs).
-            kpaSen[i].field_14 = -30.0f * ((i - 100) / 10.0f) + pos.x - 150.0f;
-            kpaSen[i].field_18 = 0.0f;
-            kpaSen[i].field_1C = pos.z + 50.0f * ((i - 100) % 10 - 5);
-            kpaSen[i].field_8 = pos.x - 350.0f;
+            kpaSen[i].end.x = -30.0f * ((i - 100) / 10.0f) + pos.x - 150.0f;
+            kpaSen[i].end.y = 0.0f;
+            kpaSen[i].end.z = pos.z + 50.0f * ((i - 100) % 10 - 5);
+            kpaSen[i].start.x = pos.x - 350.0f;
             (*pose->matrix)[0][3] = pos.x - 350.0f;
-            kpaSen[i].field_C = 0.0f;
+            kpaSen[i].start.y = 0.0f;
             (*pose->matrix)[1][3] = 0.0f;
             c = pos.z + 20.0f * ((i - 100) % 10 - 5);
-            kpaSen[i].field_10 = c;
+            kpaSen[i].start.z = c;
             (*pose->matrix)[2][3] = c;
             kpaSen[i].timer = ((i - 100) / 10) * 3 + 1;
             switch (rand() % 3) {
             case 0:
-                kpaSen[i].field_20 = 9;
-                kpaSen[i].field_21 = 14;
-                kpaSen[i].field_22 = 15;
-                kpaSen[i].field_23 = 17;
+                kpaSen[i].stopTexFirst = 9;
+                kpaSen[i].stopTexLast = 14;
+                kpaSen[i].moveTexFirst = 15;
+                kpaSen[i].moveTexLast = 17;
                 break;
             case 1:
-                kpaSen[i].field_20 = 18;
-                kpaSen[i].field_21 = 23;
-                kpaSen[i].field_22 = 24;
-                kpaSen[i].field_23 = 26;
+                kpaSen[i].stopTexFirst = 18;
+                kpaSen[i].stopTexLast = 23;
+                kpaSen[i].moveTexFirst = 24;
+                kpaSen[i].moveTexLast = 26;
                 break;
             case 2:
-                kpaSen[i].field_20 = 27;
-                kpaSen[i].field_21 = 34;
-                kpaSen[i].field_22 = 35;
-                kpaSen[i].field_23 = 37;
+                kpaSen[i].stopTexFirst = 27;
+                kpaSen[i].stopTexLast = 34;
+                kpaSen[i].moveTexFirst = 35;
+                kpaSen[i].moveTexLast = 37;
                 break;
             }
         }
         kpaSen[i].state = -1;
-        kpaSen[i].field_4 = 0.0f;
+        kpaSen[i].progress = 0.0f;
         if (i == 6) {
             pose->flags &= ~EXT_POSE_VISIBLE;
         }
@@ -1974,12 +1974,12 @@ void kpaSen_ext_init(void) {
     }
 }
 
-s32 calcPose(s32 a, s32 b, s32 c, s32 d) {
-    u32 range = c - b + 1;
-    u32 n = (d != 0) ? 6 : 7;
-    u32 v = gp->retraceCount + a * a;
+s32 calcPose(s32 index, s32 first, s32 last, s32 fast) {
+    u32 range = last - first + 1;
+    u32 n = (fast != 0) ? 6 : 7;
+    u32 v = gp->retraceCount + index * index;
 
-    return b + (v % (range * n)) / n;
+    return first + (v % (range * n)) / n;
 }
 
 // The i<100 state==1 path in the original evaluates an `i % 10` test whose body is empty in the final code.
@@ -2003,7 +2003,7 @@ void kpaSen_ext_main(void) {
             break;
         case 1:
             if (i < 100) {
-                pose->texId = calcPose(i, kpaSen[i].field_22, kpaSen[i].field_23, 1);
+                pose->texId = calcPose(i, kpaSen[i].moveTexFirst, kpaSen[i].moveTexLast, 1);
 #ifdef MUST_MATCH
                 // Match-only: see above; an empty body is removed before register allocation.
                 if (i % 10 == 0) {
@@ -2015,24 +2015,24 @@ void kpaSen_ext_main(void) {
 #endif
             }
             else {
-                pose->texId = calcPose(i - 100, kpaSen[i].field_22, kpaSen[i].field_23, 1);
+                pose->texId = calcPose(i - 100, kpaSen[i].moveTexFirst, kpaSen[i].moveTexLast, 1);
             }
-            (*pose->matrix)[0][3] = kpaSen[i].field_8 * (1.0f - kpaSen[i].field_4) + kpaSen[i].field_14 * kpaSen[i].field_4;
-            (*pose->matrix)[2][3] = kpaSen[i].field_10 * (1.0f - kpaSen[i].field_4) + kpaSen[i].field_1C * kpaSen[i].field_4;
-            kpaSen[i].field_4 += 0.03;
+            (*pose->matrix)[0][3] = kpaSen[i].start.x * (1.0f - kpaSen[i].progress) + kpaSen[i].end.x * kpaSen[i].progress;
+            (*pose->matrix)[2][3] = kpaSen[i].start.z * (1.0f - kpaSen[i].progress) + kpaSen[i].end.z * kpaSen[i].progress;
+            kpaSen[i].progress += 0.03;
             kpaSen[i].timer++;
-            if (kpaSen[i].field_4 >= 1.0f) {
-                (*pose->matrix)[0][3] = kpaSen[i].field_14;
-                (*pose->matrix)[2][3] = kpaSen[i].field_1C;
+            if (kpaSen[i].progress >= 1.0f) {
+                (*pose->matrix)[0][3] = kpaSen[i].end.x;
+                (*pose->matrix)[2][3] = kpaSen[i].end.z;
                 kpaSen[i].state = 0x63;
             }
             break;
         case 0x63:
             if (i < 100) {
-                pose->texId = calcPose(i, kpaSen[i].field_20, kpaSen[i].field_21, 0);
+                pose->texId = calcPose(i, kpaSen[i].stopTexFirst, kpaSen[i].stopTexLast, 0);
             }
             else {
-                pose->texId = calcPose(i - 100, kpaSen[i].field_20, kpaSen[i].field_21, 0);
+                pose->texId = calcPose(i - 100, kpaSen[i].stopTexFirst, kpaSen[i].stopTexLast, 0);
             }
             break;
         }

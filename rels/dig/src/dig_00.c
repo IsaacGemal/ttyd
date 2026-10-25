@@ -57,8 +57,8 @@ DigestWork work;
 DigestWork* wp = &work;
 
 typedef struct AnimTblUnknown {
-    const char* field_0; // 0x0
-    s32 field_4;         // 0x4
+    const char* npcName; // 0x0, evtNpcNameToPtr_NoAssert / npcGetTribe
+    s32 animMask;        // 0x4, bits 0-5: the animations evt_action_sub picks one from
     s32 field_8;         // 0x8
 } AnimTblUnknown;
 AnimTblUnknown anim_tbl[] = {
@@ -424,9 +424,9 @@ USER_FUNC(evt_action_sub) {
 
     do {
         index = rand() % 48u;
-    } while (evtNpcNameToPtr_NoAssert(event, anim_tbl[index].field_0) != NULL);
+    } while (evtNpcNameToPtr_NoAssert(event, anim_tbl[index].npcName) != NULL);
 
-    pFlags = &anim_tbl[index].field_4;
+    pFlags = &anim_tbl[index].animMask;
     flags = *pFlags;
     numAnims = 0;
     for (i = 0; i < 6; i++) {
@@ -446,7 +446,7 @@ USER_FUNC(evt_action_sub) {
     }
     mask = 1 << i;
 
-    name = anim_tbl[index].field_0;
+    name = anim_tbl[index].npcName;
     EXIGetType(0, 2, &type);
     if (type != 0x05070000) {
         NpcTribeInfo* tribe = npcGetTribe(name);

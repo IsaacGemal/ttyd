@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dolphin/mtx.h>
 #include "evt/evt_cmd.h"
 #include "memory.h"
 
@@ -7,17 +8,13 @@ typedef struct KpaSenEntry {
     s8 state;      // 0x0
     u8 pad_1;      // 0x1
     u16 timer;     // 0x2
-    f32 field_4;   // 0x4
-    f32 field_8;   // 0x8
-    f32 field_C;   // 0xC
-    f32 field_10;  // 0x10
-    f32 field_14;  // 0x14
-    f32 field_18;  // 0x18
-    f32 field_1C;  // 0x1C
-    u8 field_20;   // 0x20
-    u8 field_21;   // 0x21
-    u8 field_22;   // 0x22
-    u8 field_23;   // 0x23
+    f32 progress;  // 0x4, state 1 lerps x/z from start to end by it, +0.03 per frame, done at 1.0
+    Vec start;     // 0x8
+    Vec end;       // 0x14
+    u8 stopTexFirst;  // 0x20, calcPose's texId range once the move has ended (state 0x63)
+    u8 stopTexLast;   // 0x21
+    u8 moveTexFirst;  // 0x22, calcPose's texId range while moving (state 1)
+    u8 moveTexLast;   // 0x23
 } KpaSenEntry;
 
 extern KpaSenEntry* kpaSen;
@@ -32,7 +29,7 @@ void kpaSen_ext_dispent(void);  // TODO: real signature
 void kpaSen_ext_shadow_disp(void);  // TODO: real signature
 void kpaSen_ext_disp(void);  // TODO: real signature
 void kpaSen_ext_main(void);  // TODO: real signature
-s32 calcPose(s32 a, s32 b, s32 c, s32 d);
+s32 calcPose(s32 index, s32 first, s32 last, s32 fast);
 void kpaSen_ext_init(void);
 void kpa_stg5_009_7_cb(s32 type, smartEntry* smart);
 USER_FUNC(party_tev);

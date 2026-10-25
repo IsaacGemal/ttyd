@@ -7628,3 +7628,98 @@ file proves a remaining placeholder; remove the casts the new types make unneces
   return-after-a-fall paths, rather than from mot_dokan, its writer), `hammerHitFrame` (the stored value is
   hitEstimate's type, used as a frame count), `firstCopy`/`secondCopy` (0 = main, 1 = backup, the `validSave1/2` order)
   and MotionPlaneData's `hitFrontPos`/`hitRearPos` (front and rear relative to each other along the heading).
+## Map REL placeholder fields named from their consumers: jin, las, mri, tik, hei, bom, muj, usu, dig, aji (2026-10-25, Claude Opus 5.5, n9-q-frels2)
+
+Task (Isaac): name and type the `field_0xNN` members in the map RELs other than gor, rsh, eki, yuu, tou, tou2 and
+common (non-database source and their headers), from consumers in the same REL (CLEANUP_GUIDE section 3); data-table
+labels nothing reads stay; include/ outside include/rel/<those areas> untouched. Parallel branches: frels1, fsrcmisc,
+fmotion, fbtlsrc. Nothing outside rels/ was edited.
+
+- **What there was.** By grep, 4,014 `field_0x` in those RELs, 2,436 of them in the battle databases. Of the
+  1,578 outside the databases, 223 were in code or REL-local declarations; the rest are `// field_0xNN` labels on
+  unit-file initialisers of shared types (BattleUnitKind, BattleWeapon, BattleUnitKindPart, DoorEntry, KinopioData),
+  which stay. The index counted 181 sites (it doesn't scan rels/*/include). kpa, gon, dou, gra, moo, nok, pik and win
+  had no code sites. Along the way the same structs' other placeholder spellings (`field_4`, `unk0`) were named
+  where a consumer proves them.
+- **Method.** Untracked harness in build/frels2/: chk.sh builds named objects and runs obj_equiv against a snapshot of
+  build/G8MJ01/src taken before the branch; ci_local.py/ci.sh run tools/ci.py with the mgba venv's python plus a
+  `--target` pyelftools dir on PYTHONPATH (data_check needs elftools), accepting only the 8 test_wave_launch.PassPipes
+  environment errors. Every commit: CI PASS, `build/G8MJ01/ok` recreated. At the end: `obj_equiv --tree` over every
+  object against the snapshot (all equivalent); the 212 objects of the ten touched RELs built under
+  `configure.py --non-matching` (only the warnings already there: `.rodata` RW objects and "no prototype" on
+  untouched functions), then a normal reconfigure and rebuild to `ok`; fncast_lint and local_prototypes clean.
+- **Per struct** (field -> name: the consumer that proves it).
+  - jin_07 TeresaEntry: 0x0/0x4/0x8 -> `startX/Y/Z` and 0xC/0x10/0x14 -> `endX/Y/Z` (the h00 and h01 terms of
+    computePosHermite and its inlined copy in senteresa_ext_main), 0x18 -> `progress` (the Hermite t; +0.015 per frame,
+    the move ends at 1.0), 0x24 -> `startTangentX` (va.x, the h10 term), 0x28 -> `delay` (state 0 counts it to 0, then
+    the box shows), 0x2C -> `state` (the switch). computePosHermite takes a TeresaEntry* now (it indexed an f32*:
+    p[0]..p[9]). Style follows jin_00's TeresaEntry (`startX`, `endX`).
+  - las_04 FirebarDesc 0x20: a union `startAngle` (type 0: copied to entry->angle) / `targetX` (type 1: firebar_entry's
+    direction test against position.x; copied to entry->targetX, which _firebar_trans compares). The positional
+    initialisers fill the first member; the data bytes are unchanged (CI's data step).
+  - unit_boss_batten_leader: BattenSatelliteSpline 0x58 -> `frame` (intplGetValue(4, frame, 0x3C, ...), freed at
+    0x3C; the same as #1136's BarriernSatelliteTo.frame); BattenEffUserdata 0x38/0x3C -> `posX/posY`
+    (evt_eff_firechange00 reads them as pos, moves pos and writes it back).
+  - mri unit_boss_magnum_battender MagnumBattenderWork: `prevPos`, `pos`, `rotZ`, `targetRotZ`, the names aji's copy
+    (ArmWork) already has; arm_main: prevPos = pos, pos = the unit position, targetRotZ = atan of the movement, rotZ
+    eased toward it and passed to BtlUnit_SetRotate as z, the effect placed at pos plus (0, -18, 0) through the arm
+    matrix.
+  - mri_puni: PuniWork 0x458 -> `sfx` (evt_puni_force_se_off passes it to psndSFXOff; nothing in mri sets it), 0x448
+    `unk448` -> `blinkCount` (puni_disp_info_sub sets it while count != total; puniCountDisp then draws the count
+    only every other 16 frames); PuniData 0x1E8 -> `turnsLeft` (puniModeHagure: copied from counter, parity picks 90
+    or 270, counts down to state 20), 0x2AC -> `fukidashiPos` (the position of the fake MarioWork at 0x220 that
+    effFukidashiEntry reads; y -1000 hides it); MriPuniAnimSet `unk0/unk28/unk3C` -> `anims`, `frameCounts`,
+    `terminators` (puniAnimation: texId = anims[idx][...], count before the terminator, -2 holds the last frame);
+    PuniTexInfo `unk0/4/8` -> `name`, `animName`, `frame` (puniMakeTexture passes them to
+    animPoseDisp_MakeExtTexture; NULL name ends the table). puniMapSetData's and the init userfuncs' `unkN` locals
+    named from the fields they store.
+  - tik_00 UranaiWork: 0x0 -> `savedLw[16]`, 0x40 -> `savedGw[32]` (memcpy'd from and back to lwData/gwData), 0xE4 ->
+    `texValid` (card_tev loads the texture only once uranai_cap sets it), 0xE8 -> `capEvent` (evtEntry/evtDelete of
+    evt_uranai_cap), 0xF4/0xF8 -> `width`/`height` (uranai_cap's viewport, scissor and texture size).
+    aji_10 MonitorWork `field_4` -> `texValid` (the same pattern: monitor_cap_capture sets it, monitor_cap_tev tests it).
+  - hei_10 HeiExtEntry: 0x14 -> `velY`, 0x18 -> `framesLeft`, 0x1C -> `speed`, 0x20 -> `gravity`, 0x24 ->
+    `nextState` (ext_main case 0x64: y += velY, velY -= gravity, x/z += speed * sin/cos toward position, land when
+    framesLeft < 0 and take nextState); chb_jump's parameters named to match. hei_10's ExtEntry and
+    unit_chorobon_gundan's ChorogunExtEntry (`field_0x8`) were copies of extdrv.h's ExtMakeTextureEntry and went.
+  - bom_01: SightWork `field_4[5]` -> `levels` (shifted sound samples drawn as bars), 0x18 -> `rot` (drawBG's rot for
+    the four quarters), `field_20/24` -> `leftCount/rightCount` (drawNum beside the left/right arrow, +1 every 4
+    frames while that arrow blinks); PoseData 0x4 -> `poseCount` (extGetPoseNum, the states loop bound); PoseEntry
+    `field_8/C/10` -> `duration`, `firstTexId`, `texCount` (pose_main: texId = firstTexId + (texCount - 1) * t, t =
+    elapsed frames / duration); PoseState `field_0/1/4/10/14/18/1C/20` -> `state`, `nextState`, `target`, `speed`,
+    `gravity`, `framesLeft`, `velY`, `entryIdx` (the same hop as hei_10 in ext_main case 0x64; entryIdx indexes
+    entries in pose_main). bom_01's ExtTableEntry (whose `type` held "R_1"/"S_2" animation names) is
+    ExtMakeTextureEntry now: both ext_data tables go to evt_ext_entry.
+  - muj_10 NanNpcEntry 0x70: a union `nextState` (muj_00 tobikakari: the state taken when the jump lands) /
+    `field_0x70` (muj_20 elmos1000tai_init stores the entry's index; nothing reads it); CortezWork `field_194/25C`
+    -> `frame`/`step` (per-audience step switch and its frame counter, intplGetValue(0, frame, 30, ...)).
+  - las_05 KaronPoseEntry `field_4/8/C/10` -> `timer`, `velX`, `velY`, `velZ` (added to the pose each frame, velY less
+    0.3 gravity; timer is the drop delay, walk leg and escape run); LasWork `field_C` -> `frame` (frame % 20 picks
+    the move_check_list slice), `field_14` -> `hammerFrame` (frames into MARIO_MOTION_HAMMER mod 15; hits at 10).
+  - usu_00 KpaSenEntry: 0x4 -> `progress`, 0x8/0x14 -> `Vec start`/`Vec end` (state 1 lerps x/z from start to end),
+    0x20-0x23 -> `stopTexFirst/Last`, `moveTexFirst/Last` (calcPose's range after and during the move); calcPose's
+    parameters named. dig_00 anim_tbl `field_0/4` -> `npcName` (evtNpcNameToPtr_NoAssert, npcGetTribe), `animMask`
+    (bits 0-5 evt_action_sub picks from).
+- **Left, and why.** Written but never read: TeresaEntry 0x1C/0x20; FirebarDesc 0x14 -> FirebarEntry 0x20;
+  HeiExtEntry 0x0/0x4 and HeiExtWork 0x0; UranaiWork 0xEC/0xF0 (uranai_bbox writes its first argument to all four
+  and discards the other three; only 0xF4/0xF8 are read); PuniWork 0x47C (2 from mri and mri_puni), PuniData 0x582
+  (10 at init); PuniPose 0x24; ZakogunEntry 0x0; KaronPoseEntry `field_1`, PoseState `field_24`, anim_tbl `field_8`
+  (handed back to the script, whose use wasn't traced), dmo DemoWork 0x0, end CreditsEndingRecord 0x0.
+  BattenEffUserdata 0x8/0xC/0x18-0x30: only the stores in evt_eff_colorchange00/firechange00, which no script in las
+  calls, and the effect isn't identified; 0x18-0x30 look like the N64 effects' TEV colour triplets
+  (eff_akari_charge_n64's reg0R..reg1B) but the rest of that layout doesn't fit, so no names. NanNpcEntry
+  0x16/0x80/0x94 and NanNpcWork 0x8 mirror src/event/evt_nannpc.c's private layout (outside this branch). Shared
+  headers: aji_13's `party->field_0x144` and `field_110` (party.h), borodo's BattleUnit 0x30C, BattleWork
+  `field_180C0`, tik_05's EffMist2Data `unk18`. CloudEntry.mapGrpName stays `s8`: as `char` (dropping three casts)
+  mri_00's .text+0x124 differs. PuniPaternData (mri_puni.c's `pat/num/end` overlay of MriPuniAnimSet) stays: its
+  `u16*` against the set's `s16*` would change loads.
+- **Counts.** `git grep -o field_0x` in those ten RELs (rels/<area>): 2,599 -> 2,439. `tools/cleanup_index.py`
+  (origin/main 55fec9be -> this branch rebased onto it, same script): index **12.666 -> 12.476** per kLOC (8847 ->
+  8714 weighted); field_0x 1721 -> 1588, every other category unchanged. These RELs (rels/<area>, include/rel/<area>):
+  860 -> 727 weighted, field_0x 178 -> 45. Per file (weighted): jin_07 37 -> 2, magnum_battender 25 -> 6, bom_01
+  38 -> 22, hei_10 39 -> 22, tik_00 28 -> 10, mri_puni 51 -> 41, batten_leader 71 -> 59, las_04 23 -> 20, muj_00
+  7 -> 4.
+- **For a reviewer.** `leftCount`/`rightCount` rest on where drawNum puts them (x -220 / 200, beside arrows 2 and 3)
+  and the +1 while the arrow blinks; they start at rand(). `stopTex*`/`moveTex*` rest on the states that read them.
+  `sfx` (PuniWork 0x458) is named from its one consumer, psndSFXOff; nothing in the REL writes it. The FirebarDesc and
+  NanNpcEntry unions follow the guide's one-member-per-use rule; muj_20's member stays `field_0x70`, since
+  nothing reads it.

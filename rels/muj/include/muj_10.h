@@ -32,7 +32,10 @@ struct NanNpcEntry {
     void (*callback)(NanNpcEntry*); // 0x64
     s32 state;                      // 0x68, switch selector of the seq functions
     s32 timer;                      // 0x6C, ms the current state lasts
-    s32 field_0x70;                 // 0x70, state entered after a tobikakari jump, or elmos1000tai's entry number
+    union {
+        s32 nextState;              // 0x70, tobikakari (muj_00): the state entered when the jump lands
+        s32 field_0x70;             // 0x70, elmos1000tai_init (muj_20) stores the entry's index; nothing reads it
+    };
     s32 radius;                     // 0x74, elmos1000tai: distance from the formation centre; also delays its fade-in
     f32 jumpQuad;                   // 0x78, tobikakari jump arc: y = hoseiPosition.y + t * (jumpQuad * t + jumpLinear)
     f32 jumpLinear;                 // 0x7C

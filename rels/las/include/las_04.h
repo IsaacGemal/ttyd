@@ -54,7 +54,10 @@ typedef struct FirebarDesc {
     f32 field_0x14; // 0x14
     f32 speed;      // 0x18
     void (*callback)(FirebarEntry*, s32); // 0x1C
-    f32 field_0x20; // 0x20
+    union {
+        f32 startAngle; // 0x20, type 0: the starting angle (firebar_entry)
+        f32 targetX;    // 0x20, type 1: the x it moves toward (firebar_entry's direction test, _firebar_trans)
+    };
     f32 baseRadius; // 0x24
 } FirebarDesc; // 0x28
 

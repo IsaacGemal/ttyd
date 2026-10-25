@@ -945,7 +945,7 @@ void tobikakari_seq00(NanNpcEntry* entry) {
             entry->facingAngle = 270.0f;
         }
         entry->state = 0x14;
-        entry->field_0x70 = 0x15;
+        entry->nextState = 0x15;
         break;
     }
     case 11:
@@ -956,7 +956,7 @@ void tobikakari_seq00(NanNpcEntry* entry) {
         entry->jumpLinear = entry->homePosition.y - entry->hoseiPosition.y - entry->jumpQuad;
         entry->timer = irand(500) + 400;
         entry->state = 0x14;
-        entry->field_0x70 = 0x16;
+        entry->nextState = 0x16;
         break;
     case 20:
         elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
@@ -969,7 +969,7 @@ void tobikakari_seq00(NanNpcEntry* entry) {
             entry->position = entry->homePosition;
             entry->startTime = (s32)gp->renderTime;
             entry->timer = irand(2000) + 500;
-            entry->state = entry->field_0x70;
+            entry->state = entry->nextState;
         }
         break;
     case 21:

@@ -115,7 +115,7 @@ USER_FUNC(monitor_cap_init) {
 
     monitor_wp = _mapAlloc(0xC);
     monitor_wp->image = _mapAlloc(size);
-    monitor_wp->field_4 = 0;
+    monitor_wp->texValid = 0;
     monitor_wp->kanbuFlag = 0;
     return EVT_RETURN_DONE;
 }
@@ -176,7 +176,7 @@ void monitor_cap_capture(CameraId cameraId, void* param) {
     GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
     GXSetProjectionv(projection);
     GXSetScissor(scissorLeft, scissorTop, scissorWd, scissorHt);
-    monitor_wp->field_4 = 1;
+    monitor_wp->texValid = 1;
 }
 
 USER_FUNC(monitor_cap_evt) {
@@ -189,7 +189,7 @@ static const Vec monitor_up = {0.0f, -1.0f, 0.0f};
 void monitor_cap_tev(void* param) {
     MapTevCallback* tevParam = param;
 
-    if (monitor_wp->field_4 != 0) {
+    if (monitor_wp->texValid != 0) {
         Mtx perspMtx;
         Mtx lookMtx;
         GXTexObj texObj;

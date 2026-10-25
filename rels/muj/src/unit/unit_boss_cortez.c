@@ -30,8 +30,8 @@ typedef struct CortezWork {
     s16 count;                 // 0x2
     s16 audienceId[100];       // 0x4
     s16 timer[100];            // 0xCC
-    s16 field_194[100];        // 0x194
-    s16 field_25C[100];        // 0x25C
+    s16 frame[100];            // 0x194, frames into the current step (intplGetValue's frame for the 30-frame turn)
+    s16 step[100];             // 0x25C, per-audience step of the switch in the audience functions
     EffectEntry* effects[100]; // 0x324
     Vec pos1[100];             // 0x4B4
     Vec pos2[100];             // 0x964
@@ -1347,7 +1347,7 @@ USER_FUNC(_cortez_check_drain_audience) {
         s32 audienceId;
         area->audienceId[i] = -1;
         area->effects[i] = NULL;
-        area->field_25C[i] = 0;
+        area->step[i] = 0;
         audienceId = (i / 10) * 20 + 10 + i % 10;
         if ((u8)BattleAudience_GetExist(audienceId) != 0) {
             area->audienceId[i] = audienceId;
@@ -1407,36 +1407,36 @@ USER_FUNC(_cortez_collect_energy) {
             if (audienceId == -1) {
                 continue;
             }
-            switch (area->field_25C[i]) {
+            switch (area->step[i]) {
             case 0:
                 if (area->timer[i] > 0) {
                     area->timer[i]--;
                     ret = 0;
                     break;
                 }
-                area->field_25C[i]++;
-                area->field_194[i] = 0;
+                area->step[i]++;
+                area->frame[i] = 0;
                 // fallthrough
             case 1:
-                area->field_194[i]++;
+                area->frame[i]++;
                 BattleAudience_GetRotate(audienceId, &x, &y, &z);
-                x = intplGetValue(0, area->field_194[i], 30, 0.0f, -90.0f);
+                x = intplGetValue(0, area->frame[i], 30, 0.0f, -90.0f);
                 BattleAudience_SetRotate(audienceId, x, y, z);
-                if (area->field_194[i] >= 30) {
-                    area->field_25C[i]++;
+                if (area->frame[i] >= 30) {
+                    area->step[i]++;
                 } else {
                     ret = 0;
                     break;
                 }
                 // fallthrough
             case 2:
-                area->field_194[i] = 0;
-                area->field_25C[i]++;
+                area->frame[i] = 0;
+                area->step[i]++;
                 // fallthrough
             case 3:
-                area->field_194[i]++;
-                if (area->field_194[i] >= 60) {
-                    area->field_25C[i]++;
+                area->frame[i]++;
+                if (area->frame[i] >= 60) {
+                    area->step[i]++;
                 }
                 ret = 0;
                 break;
@@ -1498,7 +1498,7 @@ USER_FUNC(_cortez_recovery_audience) {
     case 0:
         for (i = 0; i < 100; i++) {
             if (area->audienceId[i] != -1) {
-                area->field_25C[i] = 0;
+                area->step[i] = 0;
             }
         }
         area->state++;
@@ -1507,13 +1507,13 @@ USER_FUNC(_cortez_recovery_audience) {
         flag = 1;
         for (i = 0; i < 100; i++) {
             if (area->audienceId[i] != -1) {
-                switch (area->field_25C[i]) {
+                switch (area->step[i]) {
                 case 0:
-                    area->field_25C[i]++;
-                    area->field_194[i] = 0;
+                    area->step[i]++;
+                    area->frame[i] = 0;
                     // fallthrough
                 case 1:
-                    area->field_194[i]++;
+                    area->frame[i]++;
                     flag = 1;
                     break;
                 }

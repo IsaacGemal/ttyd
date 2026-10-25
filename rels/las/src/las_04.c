@@ -542,7 +542,7 @@ USER_FUNC(firebar_entry) {
         entry->angle = 0.0f;
         entry->counter = 0;
         entry->desc = desc;
-        entry->targetX = desc->field_0x20;
+        entry->targetX = desc->targetX;
         entry->baseRadius = desc->baseRadius;
         entry->sfxId = 0;
         entry->state = 0;
@@ -550,10 +550,10 @@ USER_FUNC(firebar_entry) {
 
         switch (entry->type) {
         case 0:
-            entry->angle = desc->field_0x20;
+            entry->angle = desc->startAngle;
             break;
         case 1:
-            if (desc->position.x < desc->field_0x20) {
+            if (desc->position.x < desc->targetX) {
                 entry->speed = __fabsf(desc->speed);
             } else {
                 entry->speed = -1.0f * __fabsf(desc->speed);

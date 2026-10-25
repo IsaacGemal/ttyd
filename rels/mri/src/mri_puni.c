@@ -142,19 +142,19 @@ static inline f32 puniRandf(f32 a, f32 b) {
     return (f32)rand() / 32767.0f * (b - a) + a;
 }
 
-static inline void puniMapSetData(f32 unk0, f32 unk4, s32 unk8, s32 unkC, u32* data) {
-    Punimap->yMax = unk0;
-    Punimap->yMin = unk4;
+static inline void puniMapSetData(f32 yMax, f32 yMin, s32 width, s32 height, u32* data) {
+    Punimap->yMax = yMax;
+    Punimap->yMin = yMin;
     if (data == NULL) {
         Punimap->hasData = 0;
         return;
     }
-    Punimap->width = unk8;
-    Punimap->height = unkC;
+    Punimap->width = width;
+    Punimap->height = height;
     Punimap->hasData = 1;
     Punimap->gridSrc = data;
     Punimap->valid = 0;
-    Punimap->dataSize = unk8 * unkC * 4;
+    Punimap->dataSize = width * height * 4;
     Punimap->grid = _mapAlloc(Punimap->dataSize);
     memcpy(Punimap->gridSrc, data, Punimap->dataSize);
 }
@@ -407,11 +407,11 @@ PuniTexInfo* _make_texbuf(PuniTexInfo* texbuf, s32 count, const char* a3, const 
     s32 i;
 
     for (i = 0; i < count; i++) {
-        texbuf->unk0 = _mapAlloc(0xC);
-        texbuf->unk4 = _mapAlloc(0xC);
-        strcpy(texbuf->unk0, a3);
-        strcpy(texbuf->unk4, a4);
-        texbuf->unk8 = a5;
+        texbuf->name = _mapAlloc(0xC);
+        texbuf->animName = _mapAlloc(0xC);
+        strcpy(texbuf->name, a3);
+        strcpy(texbuf->animName, a4);
+        texbuf->frame = a5;
         a5 += 1.0f;
         texbuf++;
     }
@@ -440,9 +440,9 @@ USER_FUNC(evt_make_texbuf) {
         texbuf = _make_texbuf(texbuf, 10, "c_puni", "J_1B", 0.0f);
         texbuf = _make_texbuf(texbuf, 8, "c_puni", "B_1", 0.0f);
     }
-    texbuf->unk0 = 0;
-    texbuf->unk4 = 0;
-    texbuf->unk8 = 0.0f;
+    texbuf->name = 0;
+    texbuf->animName = 0;
+    texbuf->frame = 0.0f;
     return EVT_RETURN_DONE;
 }
 
@@ -503,28 +503,28 @@ void puniAnimationInit(s16** a, s16** b) {
         s16* tbl;
         s16 v;
 
-        set0->unk0[i] = a[i];
-        count = puniAnimCountInline(a, i, &set0->unk3C[i], 0);
-        set0->unk28[i] = count;
+        set0->anims[i] = a[i];
+        count = puniAnimCountInline(a, i, &set0->terminators[i], 0);
+        set0->frameCounts[i] = count;
 
-        set1->unk0[i] = b[i];
+        set1->anims[i] = b[i];
         tbl = b[i];
         count = 0;
         j = 0;
         while (1) {
             v = tbl[j];
             if (v == -1) {
-                set1->unk3C[i] = v;
+                set1->terminators[i] = v;
                 break;
             }
             if (v == -2) {
-                set1->unk3C[i] = v;
+                set1->terminators[i] = v;
                 break;
             }
             count++;
             j++;
         }
-        set1->unk28[i] = count;
+        set1->frameCounts[i] = count;
     }
 }
 
@@ -665,9 +665,9 @@ void puniAnimation(PuniData* dat, PuniPose* pose) {
         if (dat->flags & 0x10) {
             set = &Punigp->animSet[1];
         }
-        anim = set->unk0[dat->animIdx];
-        count = set->unk28[dat->animIdx];
-        term = set->unk3C[dat->animIdx];
+        anim = set->anims[dat->animIdx];
+        count = set->frameCounts[dat->animIdx];
+        term = set->terminators[dat->animIdx];
         frame = (s32)dat->marioDist;
 
         if (dat->flags & 0x01000000) {
@@ -4602,7 +4602,7 @@ void puniModeHagure(PuniData* puni) {
 
     switch (puni->state) {
         case 0:
-            // The fukidashi reads its target as a MarioWork, whose position (0x8C) lands on field_0x2AC.
+            // The fukidashi reads its target as a MarioWork, whose position (0x8C) lands on fukidashiPos.
             puni->effect = effFukidashiEntry(4, 0, (s32)((u8*)puni + 0x220), -1, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
             puni->animIdx = 6;
             puni->flags |= 0x100000;
@@ -4612,22 +4612,22 @@ void puniModeHagure(PuniData* puni) {
             puni->subState = rand() % 21 + 30;
             puni->counter = rand() % 6 + 5;
             puni->timer = puni->subState;
-            puni->field_0x1E8 = puni->counter;
+            puni->turnsLeft = puni->counter;
             puni->state = 10;
-            puni->field_0x2AC.x = 0.0f;
-            puni->field_0x2AC.y = -1000.0f;
-            puni->field_0x2AC.z = 0.0f;
+            puni->fukidashiPos.x = 0.0f;
+            puni->fukidashiPos.y = -1000.0f;
+            puni->fukidashiPos.z = 0.0f;
             /* fallthrough */
         case 10:
             if ((puni->timer)-- != 0) {
                 break;
             }
-            if (puni->field_0x1E8 & 1) {
+            if (puni->turnsLeft & 1) {
                 puni->direction = 90.0f;
             } else {
                 puni->direction = 270.0f;
             }
-            if ((puni->field_0x1E8)-- == 0) {
+            if ((puni->turnsLeft)-- == 0) {
                 puni->state = 20;
                 break;
             }
@@ -4644,9 +4644,9 @@ void puniModeHagure(PuniData* puni) {
             break;
         case 30:
             if (rand() % 2) {
-                puni->field_0x2AC.x = puni->pos.x;
-                puni->field_0x2AC.y = 10.0f + puni->pos.y;
-                puni->field_0x2AC.z = puni->pos.z;
+                puni->fukidashiPos.x = puni->pos.x;
+                puni->fukidashiPos.y = 10.0f + puni->pos.y;
+                puni->fukidashiPos.z = puni->pos.z;
                 fuki = puni->effect->userdata;
                 fuki->animFrame = 0;
             }
@@ -5249,7 +5249,7 @@ void puni_puni_init(void) {
     }
     Punigp->showPuniCounter = 1;
     Punigp->puniCounterAlpha = 0xFF;
-    Punigp->unk448 = 0;
+    Punigp->blinkCount = 0;
     Punimap = _mapAlloc(0x24);
     memset(Punimap, 0, 0x24);
 }
@@ -7123,7 +7123,7 @@ USER_FUNC(evt_puni_exit) {
 USER_FUNC(evt_puni_init_puni) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
-    s32 unkC = evtGetValue(event, args[1]);
+    s32 mode = evtGetValue(event, args[1]);
     PuniData* punidat = &Punidat[type];
     f32 x = evtGetFloat(event, args[2]);
     f32 y = evtGetFloat(event, args[3]);
@@ -7164,7 +7164,7 @@ USER_FUNC(evt_puni_init_puni) {
         punidat->flags |= 0x8;
     }
 
-    punidat->mode = unkC;
+    punidat->mode = mode;
     punidat->state = 0;
     punidat->animIdx = 0;
     punidat->prevAnimIdx = 1000;
@@ -7198,14 +7198,14 @@ USER_FUNC(evt_puni_init_puni) {
 USER_FUNC(evt_puni_init_teki) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
-    s32 unkC = evtGetValue(event, args[1]);
+    s32 mode = evtGetValue(event, args[1]);
     PuniData* punidat = &Punidat[index];
     f32 x = evtGetFloat(event, args[2]);
     f32 y = evtGetFloat(event, args[3]);
     f32 z = evtGetFloat(event, args[4]);
 
     punidat->flags |= 0x10;
-    punidat->mode = unkC;
+    punidat->mode = mode;
     punidat->animIdx = 0;
     punidat->state = 0;
     punidat->prevAnimIdx = 1000;
@@ -7743,7 +7743,7 @@ USER_FUNC(evt_puni_winddisable_onoff) {
 }
 
 USER_FUNC(evt_puni_force_se_off) {
-    u32 se = Punigp->field_0x458;
+    u32 se = Punigp->sfx;
 
     if (se != 0) {
         psndSFXOff(se);
@@ -7917,7 +7917,7 @@ void puniCountDisp(CameraId cameraId, void* param) {
     PSMTXTrans(mtx, -232.0f, -178.0f, 0.0f);
     iconDispGxCol(mtx, 0x10, 0x204, color1);
     PSMTXTrans(mtx, -160.0f, -178.0f, 0.0f);
-    if (Punigp->unk448 != 0) {
+    if (Punigp->blinkCount != 0) {
         if ((gp->retraceCount & 0x10) != 0) {
             iconNumberDispGx(mtx, count, 0, color2);
         }
@@ -7976,21 +7976,21 @@ USER_FUNC(puni_disp_info_sub) {
     if (isKassen != 0) {
         evtSetValue(event, args[0], count);
         evtSetValue(event, args[1], 0);
-        Punigp->unk448 = 0;
+        Punigp->blinkCount = 0;
     } else {
         evtSetValue(event, args[0], count);
         evtSetValue(event, args[1], total - count);
         if (count == total) {
-            Punigp->unk448 = 0;
+            Punigp->blinkCount = 0;
         } else {
-            Punigp->unk448 = 1;
+            Punigp->blinkCount = 1;
         }
     }
 
     if ((Punigp->systemMode & 2) == 0) {
         count = swByteGet(0x29B);
         total = swByteGet(0x29C);
-        Punigp->unk448 = 0;
+        Punigp->blinkCount = 0;
     } else {
         swByteSet(0x29B, (u8)count);
         swByteSet(0x29C, (u8)total);

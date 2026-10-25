@@ -64,7 +64,7 @@ static BeroEntry bero_entry_data[4] = {
     { NULL, 0, 0, 0, 0, 0, 0, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0 },
 };
 
-static ExtEntry ext_data[21] = {
+static ExtMakeTextureEntry ext_data[21] = {
     { "c_chorobon", "CBN_W_1", 0.0f },
     { "c_chorobon", "CBN_W_1", 2.0f },
     { "c_chorobon", "CBN_W_1", 4.0f },
@@ -160,7 +160,7 @@ const Vec vec3_hei_00007a34 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_hei_00007a40 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_hei_00007a4c = {0.0f, 0.0f, 0.0f};
 
-void chb_jump(ExtPose* pose, HeiExtEntry* entry, f32 x, f32 y, f32 z, f32 v1, f32 v2, s16 field24) {
+void chb_jump(ExtPose* pose, HeiExtEntry* entry, f32 x, f32 y, f32 z, f32 speed, f32 gravity, s16 nextState) {
     Vec pos = vec3_hei_00007a34;
     f32 dy;
     f32 dist;
@@ -170,16 +170,16 @@ void chb_jump(ExtPose* pose, HeiExtEntry* entry, f32 x, f32 y, f32 z, f32 v1, f3
     pos.y = y;
     pos.z = z;
     entry->position = pos;
-    entry->field_0x1C = v1;
-    entry->field_0x20 = v2;
+    entry->speed = speed;
+    entry->gravity = gravity;
     dy = entry->position.y - (*pose->matrix)[1][3];
     dist = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
     angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
-    frames = (s32)(dist / entry->field_0x1C);
-    entry->field_0x18 = frames;
-    entry->field_0x14 = entry->field_0x20 * entry->field_0x18 / 2.0f + dy / entry->field_0x18;
+    frames = (s32)(dist / entry->speed);
+    entry->framesLeft = frames;
+    entry->velY = entry->gravity * entry->framesLeft / 2.0f + dy / entry->framesLeft;
     entry->state = 0x64;
-    entry->field_0x24 = field24;
+    entry->nextState = nextState;
 }
 
 static inline void chbJumpRand(ExtPose* pose, HeiExtEntry* entry, f32 x, f32 y, f32 z, f32 a, f32 lo1, f32 hi1, f32 b,
@@ -317,19 +317,19 @@ static void ext_main(void) {
             f32 sinv;
             f32 cosv;
 
-            (*pose->matrix)[1][3] += entry->field_0x14;
-            entry->field_0x14 -= entry->field_0x20;
+            (*pose->matrix)[1][3] += entry->velY;
+            entry->velY -= entry->gravity;
             angle = angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
             rad = 3.1415927f * angle / 180.0f;
             sinv = heiSin2(rad);
-            (*pose->matrix)[0][3] += entry->field_0x1C * sinv;
+            (*pose->matrix)[0][3] += entry->speed * sinv;
             cosv = heiCos2(rad);
-            (*pose->matrix)[2][3] += entry->field_0x1C * -cosv;
-            if (--entry->field_0x18 < 0) {
+            (*pose->matrix)[2][3] += entry->speed * -cosv;
+            if (--entry->framesLeft < 0) {
                 (*pose->matrix)[0][3] = entry->position.x;
                 (*pose->matrix)[1][3] = entry->position.y;
                 (*pose->matrix)[2][3] = entry->position.z;
-                entry->state = entry->field_0x24;
+                entry->state = entry->nextState;
             }
         } break;
         default:
@@ -371,7 +371,7 @@ USER_FUNC(evt_chorobon_escape) {
     entry = wp->entries;
     for (i = 0; i < wp->count; i++) {
         entry->state = 1;
-        entry->field_0x24 = 1;
+        entry->nextState = 1;
         entry++;
     }
     return EVT_RETURN_DONE;
