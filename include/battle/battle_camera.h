@@ -13,7 +13,7 @@ typedef struct BattleCameraWork {
     s32 homingUnitId2;      // 0x14, the second unit (their type2/partId2)
     s32 homingPartId;       // 0x18, homingUnitId's part
     s32 homingPartId2;      // 0x1C, homingUnitId2's part
-    s32 homingMemberId;     // 0x20, evt_btl_camera_set_homing_unit_audience's member (mode 12)
+    s32 homingMemberId;     // 0x20, evt_btl_camera_set_homing_unit_audience's member (mode 12); mode 13 overwrites it with 10
     f32 zoom;               // 0x24
     s16 moveSpeedLv;        // 0x28
     s16 zoomSpeedLv;        // 0x2A
@@ -31,7 +31,8 @@ typedef struct BattleCameraWork {
     Vec moveToPosTo;        // 0x98, the cameraPos it moves to
     Vec moveToAtFrom;       // 0xA4, cameraAt when the move was set
     Vec moveToAtTo;         // 0xB0, the cameraAt it moves to
-    Vec homingPos;          // 0xBC, homingUnitId's position when the homing was set
+    Vec homingPos;          // 0xBC, homingUnitId's home position (BtlUnit_GetHomePos) when the homing was set;
+                            // the _audience setter stores its BtlUnit_GetPos
     Vec homingPos2;         // 0xC8, homingUnitId2's hit position (or the audience member's) then
     s32 shakeXMode;         // 0xD4, intplGetValue mode of the btl_camera_shake_w offset
     s32 shakeYMode;         // 0xD8, intplGetValue mode of the btl_camera_shake_h offset

@@ -8122,3 +8122,140 @@ definitions out of scope. Parallel branches: fsrcmisc (event/party/seq/mario/dri
   `build/G8MJ01/ok` recreated and `obj_equiv --tree` over build/G8MJ01/src equal to a snapshot of d0f4bd7d's objects;
   every changed C file compiled under `configure.py --non-matching`, then a normal reconfigure and rebuild to `ok`.
   fncast_lint and local_prototypes clean. configure.py changed only win_mario's Object line (`--allow-configure`).
+
+## Placeholders spelled field_N / unkNN: named from their consumers or respelled field_0xNN (2026-10-25, Claude Opus 5.5, n9-q-funk)
+
+Task (Isaac): the placeholder spellings `tools/cleanup_index.py` does not see (`field_N`/`field_NNN` in decimal or hex
+without `0x`, `unkNN`, `unk_NN`, `unknownNN`) across src/battle, src/sac*, include/battle, rels and the rest of the tree
+outside src/event, src/party, src/sequence, src/mario, src/driver, include/driver and include/mario (the parallel
+fsrcmisc branch). Each was named from its consumer under CLEANUP_GUIDE section 3, or respelled `field_0xNN` (`pad_0xNN`
+for bytes nothing touches) so the index counts it. Build byte-identical at every commit (`build/G8MJ01/ok`), every
+object whose source or headers changed compiled with `configure.py --non-matching` (found through `ninja -t deps`),
+fncast_lint and local_prototypes clean, `tools/ci.py` PASS before each commit (through `~/ci_notests.py` under
+`uv run --with pyelftools`: tools/tests errors out on this machine's sandboxed-runner tests, and data_check needs
+pyelftools, which mgba-venv lacks; the worktree had no baseline, so `--init` ran on the first, byte-identical, build).
+
+Names, each with the consumer that justifies it:
+
+- **GenkiWork** (sac_genki): 0x4 `state` (main_base's switch; start_game sets 1, wait_game_end waits for 3), 0xC
+  `variant` (main_genki's args[1], LW(15): 0 from marioAttackEvent_Genki0, 1 from Genki1; picks 3/7 weapons, the
+  25/50 kind table, main_star0/1 and Genki1's auto-fire), 0x1C-0x24 `dispScore[3]` (counts toward score[]; the number
+  disp_3D passes to iconNumberDispGx3D), 0x28-0x30 `scoreBlinkTimer[3]` (set to 60 when dispScore moves; `% 12` in
+  0..5 draws the number), 0x34-0x3C `recoveryEff[3]` (effRecoveryEntry, placed under each number), 0x40 `timeLeft`
+  (900 frames; objects spawn while > 0, the stars leave at 0; scissor/zubastar's name), 0x44 `marioState`/0x48
+  `marioTimer` (main_mario's switch and its frame count), 0x4C `spawnTimer` (frames to the next object_entry), 0x50
+  `partyUnitId` (args[0], LW(13) from btlevtcmd_GetUnitId(-4) or -1; `!= -1` gates the partner's number), 0x54
+  `holdTimer` (counts down while the stick is held left; Genki1 fires again at 0), 0x58 `weaponNum` (3/7, main_weapon
+  and weapon_entry's bound), 0x5C `kindTable` (BattleAlloc'd, shuffled object kinds), 0x60 `spawnCount` (indexes
+  kindTable, compared with 25/50), 0x64 `targetState` (main_target's switch; disp_3D draws the sight in 2-3), 0x68
+  `targetRot` (counts up, wrapping at 360; disp_3D turns the sight's two layers by +-6 times it), 0x6C `aimAngle`/0x70 `aimAngleVel` (degrees 0..60,
+  +-1.25: main_weapon's launch angle and disp_3D's sight position). GenkiStar: `state`, `timer` (intplGetValue frame),
+  0xC `pos` (into effStarStoneData x/y/z), 0x18/0x24 `from`/`to` (intplGetValue ends; ZubaStarBomb's names), 0x3C
+  `scale` (x times 1.5 is the star stone's scale), 0x48 `rot` (tipRotY/rotY/tipRotZ), 0x54 `radius`, 0x58 `angle`,
+  0x5C `angleVel` (cos/sin place the star around Mario), 0x60 `eff`. GenkiObject: `state`, `timer` (0..0x78, `% 12`
+  blinks the big icons), 0x8 `kind` (0/1 Mario HP, 2/3 partner HP, 4/5 FP, odd ones +3, 6 stuns Mario: booing and
+  marioState 3), 0xC `pos` (three floats retyped as one Vec; effHitEntry/PSMTXTransApply read them). GenkiWeapon:
+  `state`, 0x4 `delay` (weapon_entry's 7 frames to launch), 0x44 `eff`/0x48 `trailEff[3]` (the star stones at pos[0]
+  and pos[1..3]).
+- **MukiWork** (sac_muki): 0x0 `flags` (bit 1 set by the bad icon: the cursor moves in 0x19 frames instead of 5, M_X_1
+  at 0x1E), 0x8 `timer` (states 3 and 6), 0xC `timeLeft`, 0x14 `atkChange`/0x1C `defChange` (wait_game_end's LW(0)/
+  LW(1), which set_weapon(0/1) stores as the weapon's atkChangeStrength/defChangeStrength), 0x18/0x20
+  `atkChangeDisp`/`defChangeDisp` (eased toward them; disp_2D's bar fraction and number), 0x24/0x28
+  `atkBlinkTimer`/`defBlinkTimer`, 0x2C/0x30 `gaugeX`/`gaugeY` (disp_2D's screen point; slid in from -400 in state 3),
+  0x34 `penaltyTimer` (counts while flags 1 is set, clears it at 0x78), 0x38 `cursorState` (main_cursor's switch),
+  0x3C `cursorTimer`, 0x40 `cursorIndex` (`% 3`, `/ 3` on a 3x3 grid; indexes points[]), 0x44-0x74 `cursorPos`/
+  `cursorFrom`/`cursorTo`/`cursorScale`/`cursorColor` (disp_3D's cursor), 0x3B4/0x3B8 `starState`/`starTimer`. The
+  existing `scale2` was the star stone's tipRotY/rotY/tipRotZ, so it is `rot`. 0x408 is typed `BattleWeapon weapon`,
+  so set_weapon writes atkChangeChance..defChangeStrength by name instead of `weapon[0x96..0x9B]`. MukiEntry 0x4
+  `timer`, 0x24/0x2C `tipRotY`/`tipRotZ` (handed to the star stone; never written, so always 0); MukiPoint 0x4 `timer`,
+  0x14 `scale` (PSMTXScale), 0x20 `entry` (the icon main_point put there).
+- **SukiWork** (sac_suki): `scale1`/`scale2` were the star stone's scale and rotation, now `scale`/`rot`; 0x284 typed
+  `BattleWeapon weapon` (set_weapon writes `ohkoChance`, was `weapon[0x9E]`). sac_deka's file-local
+  DekaStarEffectData was a copy of effStarStoneData (position at 0x8, scale 0x14, rotations 0x18, dustEffect 0x34,
+  tevReg0A 0x5F); main_star and end_deka use effStarStoneData now.
+- **BattleCursor** (battle_seq_command.h): 0x0 `index` (the selected entry: indexes the menu tables, wraps), 0x4
+  `scrollTop` (first row of the 6-row window: DrawMenuCursorAndScrollArrow draws `index - scrollTop`, the arrows test
+  it against 0 and `num - 6`), 0x8 `num` (entry count). BattleCommand 0x55C `menuWork` (the BattleMenuWork
+  battle_menu_disp allocates and frees; BattleEnd frees it too).
+- **BattleWork** (battle.h): 0xEFC `seqWaitFrames` (btlseqFirstAct's and btlseqTurn's wait countdowns), 0xF04
+  `stockExpDisp` (_btlStockExpDisp draws it; BattleStockExpDisp counts it toward stockExp), 0xF08 `stockExpDispFrames`
+  (frames before that count starts), 0x16F1C `actRecord` (the BtlActRec_AddCount/AddPoint/Judge* counters), 0x180C0
+  `stageObjectWork` (battle_stage_object.c's work; the type keeps its BattleWorkField180C0 name, as announce does),
+  0x18FE1 `merleeCurseType` (1 battle_damage's +3 attack, 2 Mario's +3 defence, 3 battle_seq_end's double exp),
+  0x1904C `nanikaLuckEventId` (nanika_luck_event's id, evtCheckID'd in the 0x200000B wait), 0x19060 `curtainSfxId`
+  (psndSFXOn/Off of SFX_OFF_BTL_START_CURTAIN_UP1), 0x19068 `force` (the forceFlags struct; its readers' locals are
+  already `force`), 0x19080 `msgWindowFlags`/0x19084 `msgWindowId` (bit 0 makes the audience-attack command call
+  msgWindow_Continue(msgWindowId); the gor lecture's aud_attack_init sets both). BattleAfterReactionWork 0x4 `dataTag`
+  (BtlUnit_GetData's tag of the event BattleAfterReactionMain starts).
+- **BattleWeapon 0xB4** (battle_database_common.h): `stageEffect`, an unnamed struct read only by
+  btlevtcmd_WeaponAftereffect: `destroyA1A2Weight`/`destroyA1Weight`/`destroyA2Weight`/`destroyNoneWeight` (one
+  weighted irand over the four picks BattleStage_DestroyA1 and A2, A1, A2 or neither), `destroyBChance`,
+  `nozzleDirChangeChance`, `nozzleWorkChance`, `ironFrameFallChance`, `objectFallChance` (irand(100) against each, for
+  BattleStage_DestroyB/NozzleDirChangeCheck/NozzleWorkCheck/IronFrameFallCheck/ObjectFallCheck), 0xBD `field_0xBD`
+  (data sets it, nothing reads it) and 0xBE-0xBF pad (zero in all 781 initialisers). The 781 `// field_B4` labels
+  became `// stageEffect`; data_check shows the 584 touched objects byte-identical.
+- **BattleCameraWork** (battle_camera.h): 0x4 `modeFrames` (mode 14 counts here and moves on at 10;
+  btl_camera_set_mode clears it), 0x10/0x18 `homingUnitId`/`homingPartId` and 0x14/0x1C `homingUnitId2`/
+  `homingPartId2` (evt_btl_camera_set_homing_unit*'s type/partId and type2/partId2, read by the homing modes),
+  0x20 `homingMemberId` (..._audience's member, mode 12; mode 13 writes 10 there), 0xBC/0xC8 `homingPos`/`homingPos2`
+  (the two positions taken when the homing was set: the first unit's home position, its BtlUnit_GetPos for _audience), 0x68/0x74 `posVel`/`atVel` (battleCameraMoveTo's per-frame cameraPos/cameraAt steps;
+  battleCameraGetPosMoveSpeed returns posVel's length).
+- **Effects.** EffMist2Data (entry 0 is the effect, 1.. the puffs): 0x14 `targetScale`, 0x18 `scale` (PSMTXScale;
+  tik_05's kemuri sets entry 0's), 0x1C `range`/0x20 `yOffset` (effMist2Entry's parameters, the respawn radius and
+  type 1's start height), 0x24 `rotZ`/0x28 `rotZVel`, 0x2C `alpha` (GXSetChanMatColor; fades over the last 0x20
+  frames), 0x34 `lifetime` (1000 never counts down), 0x3C `delay`, 0x40 `gravity`/0x44 `velY`. LensflareEntry/Data:
+  0x14 `alpha`, 0x18 `lifetime`, 0x1C `frame` (fade-in over 20 and the flare's spin), 0x20 `angle`, 0x28 `scale` (0
+  skips the entry), 0x2C `radius`/0x30 `radiusVel` (60-80 out along angle). RecoveryData 0x1 `count`
+  (effRecoveryEntry's count, effect->count - 1; effRecoveryDisp2 prints it and the SFX size follows it), 0x40
+  `targetY` (head: the y the hearts close in on in state 5; win_main sets it to -height/2). IceAnimData 0x4 `endFrame`
+  (effIceMain deletes the effect past it). EffUltraHammerData 0x0 `flipX` (effUltraHammerEntry's first argument;
+  effUltraHammerDisp scales x by -1 when set). GarekiData 0x34 `angleZ` (effGarekiDisp's z rotation); the old
+  `angleZ`/`angleVelZ` at 0x30/0x3C feed the y rotation, so they are `angleY`/`angleVelY`.
+- **Others.** BattleBreakSlot 0x14 `apMultiplier` (BattleBreakSlot_Main sets 2 or 3 with breakTurn;
+  BattleAudience_ApRecoveryBuild multiplies the apGauge gain by it while breakTurn lasts). GaugeTableEntry 0x8 `flag`
+  (_GetGaugeDecValue copies it into the decrement's flag). RomFontWork 0x0 `glyphs` (the baked RomFontChar cache
+  romFontFindChar searches). hom_00 sun_tev's two locals take the MapTevCallback field names they copy.
+
+Respelled `field_0xNN` (role seen but one meaning not pinned, write-only, or unread): EventEntry 0x84 (a counter, a
+saved y/z, an effect pointer and a pun target in different user functions; the only change in the other branch's
+files: 17 sites in src/event/evt_sub, evt_cam, evt_item, evt_npc and src/party/party_chuchu, token-only, in its own
+commit 0349de20), BattleWork 0x2, 0x1F9C, 0x18FE2, GenkiWork 0x74/0x80 and GenkiEffect, GenkiStar 0x8 and 0x30 (its
+y is a velocity in state 3 and a phase in state 4), MukiWork 0x10, FallWork's 0x50 vector (texture pan, velocity or
+waypoint by type), BattleSeqEndWork 0x0/0x14/0x1C/0x20/0x28, BattleStage and its two dark blocks' 0x0, YuunpcEntry
+0x4 and YuunpcPoseEntry 0x18 (left by the n9-q-frels1 chapter), the yuu_01/yuu_02 0xC miss counters (two meanings,
+as noted there), yuu_03's RyushiEntry 0x0/0x2C and Yuuminigame4Data 0x20, KpaWork 0xD8/0xE0 and KpaFireNode 0x1C,
+SoundEffect 0xA, SoundWork 0xFC/0x104/0x108 (the aux reverb/chorus slots: written, never read), PaperSound* 0xC/0x16/
+0x5B, MotRoll 0x8/0x10, MotionShipData 0x4/0x34, JabaraWork 0xC, the sac_deka/sac_suki/ac_pendulum words nothing
+reads, IndirectData 0x2C/0x30, IceRSTEntry 0x8, eff_mugi 0x38, LinkDt 0x8/0x12, BattleAudience 0x1A block and
+0x137D8, the badge-count byte 0x3, WindowWork's five byte blocks, RuleEntry 0x10 (tou, tou2), KaronPoseEntry 0x1,
+PoseState 0x24 (bom_01), AnimTblUnknown 0x8 (dig_00), PuniWork/PuniData's byte blocks (PuniData 0x21C is reached as
+`(u8*)puni + 0x220`), KeijibanInfo 0x0, BeroEntry 0x10/0x14, StatusValue. Untouched gaps became `pad_0xNN` (KpaWork,
+KpaFireNode, SoundWork/SoundDVD/SoundStream/SoundEffect, the PaperSound gaps, GenkiWork 0x0/0x8, GenkiObject 0x18,
+MukiWork 0x3E0, SukiWork 0x258/0x344, BattleWork 0x2750/0x16F3E/0x18FF8/0x19065, BattleBreakSlotReel 0x59, ...).
+
+An independent read of the diff (a fresh Claude Opus 5.5 agent given the code, not these notes) found no wrong
+names; its five comment fixes (homingPos is the home position, mode 13 writes homingMemberId, targetRot is a spin
+counter, GenkiObject kind 6, battle_menu_disp's `field0` local) are applied.
+
+Left, and why:
+- **Structs whose consumers are in the fsrcmisc set:** PartyEntry (include/party.h, 43 field_N, read mostly by
+  src/party*; also `party->field_110` in mot_dokan, set_dir.h and four evt_lect files), DoorParam (include/evt/
+  evt_door.h; evt_door.c, plus the `// field_NN` labels of the rels' door tables), KinopioData (evt_kinopio.h; the
+  pik/gor/bom/muj labels), InformantWork/InformantInfo (evt_johoya.h; evt_johoya.c, winmgr, cardmgr), FieldBattleInfo
+  (include/driver/npcdrv.h; `fbat->field_44` in battle_seq_end, `field_14`/`field_1C` in tou_03), GlobalWork's
+  `unk8`/`field_C` (mariost.h; nameent, cardmgr), seq_e3.h, party_cloud.h and party_move.h. Naming them needs their
+  owners' files, so they stay for that branch.
+- **Address names** `unk_8xxxxxxx` (80 in this set: functions such as unk_8009f9c8 and the .sdata colour templates
+  in battle_stage, eff_kiss, eff_funemizu): symbols, renamed only with outside evidence through rename_symbol.py, and
+  the templates are data layout. Not touched.
+- **Lead, not applied:** SoundWork 0x108's two slots hold sndAuxCallbackReverbHI/&revH and sndAuxCallbackChorus/&cho
+  and nothing reads them back; a name would come from the stored values only.
+
+Counts, d0f4bd7d -> this branch (code only, comments stripped as the index does; "all" includes comments), in this
+branch's file set: `field_N` 1508 -> 83 (all 2443 -> 221), `unkNN` 461 -> 22 (467 -> 26), `unknownNN` 2 -> 0,
+`unk_NN` 0 -> 0 (the 80 `unk_8xxxxxxx` address names unchanged). In the fsrcmisc set `field_N` 1027 -> 1008 (the
+EventEntry 0x84 sites). What is left in this set is the list above. `tools/cleanup_index.py` (same script both
+sides): index 11.974 -> 12.449 per kLOC (8364 -> 8696 weighted); field_0x 1252 -> 1582 (+330: the respelled sites are
+now counted), ptr_to_int 32 -> 34 (`(s32)&work->weapon` in sac_muki and sac_suki, where the arrays decayed before),
+every other category unchanged. The rise is the point of the respelling: those placeholders were there before and
+uncounted.

@@ -1084,7 +1084,7 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
     s32 maxCount;
     s32 idx;
     s32 i;
-    s32 field0;
+    s32 index;
     f32 ringX;
     f32 ringY;
     f32 angle;
@@ -1106,11 +1106,11 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
         }
     }
     idx = cursor->scrollTop;
-    field0 = cursor->index;
-    if (field0 <= cursor->scrollTop) {
-        cursor->scrollTop = field0 - 1;
-    } else if (field0 >= cursor->scrollTop + maxCount - 1) {
-        cursor->scrollTop = field0 - maxCount + 2;
+    index = cursor->index;
+    if (index <= cursor->scrollTop) {
+        cursor->scrollTop = index - 1;
+    } else if (index >= cursor->scrollTop + maxCount - 1) {
+        cursor->scrollTop = index - maxCount + 2;
     }
     if (cursor->scrollTop < 0) {
         cursor->scrollTop = 0;

@@ -88,7 +88,7 @@ typedef struct GenkiStar {
 typedef struct GenkiObject {
     s32 state;                  // 0x0, main_object's switch; object_entry sets 1, 2 while falling
     s32 timer;                  // 0x4, counts 0..0x78; % 12 blinks the big icons
-    s32 kind;                   // 0x8, 0/1 Mario HP, 2/3 partner HP, 4/5 FP (odd: +3), 6 the bad one
+    s32 kind;                   // 0x8, 0/1 Mario HP, 2/3 partner HP, 4/5 FP (odd: +3), 6 stuns Mario (marioState 3)
     Vec pos;                    // 0xC
     u8 pad_0x18[0x2C - 0x18];   // 0x18
 } GenkiObject;                  // 0x2C
@@ -127,7 +127,7 @@ typedef struct GenkiWork {
     s32* kindTable;             // 0x5C, BattleAlloc'd, shuffled GenkiObject kinds
     s32 spawnCount;             // 0x60, objects spawned; indexes kindTable
     s32 targetState;            // 0x64, main_target's switch
-    s32 targetRot;              // 0x68, degrees; the sight's btlDispTex4 rotation
+    s32 targetRot;              // 0x68, counts up, wrapping at 360; disp_3D turns the sight's two layers by +-6x it
     f32 aimAngle;               // 0x6C, degrees, 0..60: launch angle and sight position
     f32 aimAngleVel;            // 0x70, +-1.25 per frame
     Vec field_0x74;             // 0x74
