@@ -748,7 +748,7 @@ USER_FUNC(evt_ryushi) {
     work2 = (YuuminigameWork*)event->lwData[0];
     data = work2->data;
     cameraX = camGetPtr(4)->cameraAt.x;
-    switch (data->unk10) {
+    switch (data->state) {
     case 2:
     case 3:
     case 4:
@@ -762,19 +762,19 @@ USER_FUNC(evt_ryushi) {
         alphaFactor = 1.0f;
         break;
     }
-    switch (data->unk10) {
+    switch (data->state) {
     case 1:
     case 5:
-        alphaFactor = (f32)(0x3C - data->unk14) / 60.0f;
+        alphaFactor = (f32)(0x3C - data->stateTimer) / 60.0f;
         entryScale = alphaFactor;
         break;
     case 2:
     case 6:
-        zSpeed = zSpeed * (f32)(0x3C - data->unk14) / 60.0f;
+        zSpeed = zSpeed * (f32)(0x3C - data->stateTimer) / 60.0f;
         break;
     case 4:
     case 8:
-        alphaFactor = (f32)data->unk14 / 48.0f;
+        alphaFactor = (f32)data->stateTimer / 48.0f;
         break;
     }
 
@@ -920,9 +920,9 @@ void yuuminigame_main_4slit(EventEntry* event, BOOL isFirstCall) {
         data->phase++;
         break;
     case 2:
-        data->unk10 = 0;
-        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
-        data->unk0C = 0;
+        data->state = 0;
+        data->stateTimer = (irand(0xF3D) + 100) * 0x3C / 1000;
+        data->mult = 0;
         data->phase = 3;
         /* fallthrough */
     case 3:
@@ -932,16 +932,16 @@ void yuuminigame_main_4slit(EventEntry* event, BOOL isFirstCall) {
         break;
     case 4:
         work->childEvent = evtEntry(minigame04_end, 0, 0);
-        work->childEvent->lwData[0] = data->unk08;
-        switch (data->unk08) {
+        work->childEvent->lwData[0] = data->counterData;
+        switch (data->counterData) {
         case 0x0:
-            data->unk0C = 0x105;
+            data->mult = 0x105;
             break;
         case 0x1:
-            data->unk0C = 0x103;
+            data->mult = 0x103;
             break;
         case 0x2:
-            data->unk0C = 0x101;
+            data->mult = 0x101;
             break;
         case 0x15:
         case 0x41:
@@ -970,33 +970,33 @@ void yuuminigame_main_4slit(EventEntry* event, BOOL isFirstCall) {
         case 0x1E60:
         case 0x22B7:
         case 0x270E:
-            data->unk0C = 0x103;
+            data->mult = 0x103;
             break;
         }
-        work->childEvent->lwData[1] = data->unk0C;
+        work->childEvent->lwData[1] = data->mult;
         data->phase++;
         break;
     }
 
-    mapObjRotate("puro_1", 0.0f, 0.0f, data->unk18);
-    mapObjRotate("puro_2", 0.0f, 0.0f, data->unk18);
-    mapObjRotate("puro_3", 0.0f, 0.0f, data->unk18);
-    mapObjRotate("puro_4", 0.0f, 0.0f, data->unk18);
-    mapObjRotate("puro_5", 0.0f, 0.0f, data->unk18);
-    mapObjRotate("puro_6", 0.0f, 0.0f, data->unk18);
-    mapObjRotate("puro_7", 0.0f, 0.0f, data->unk18);
-    mapObjRotate("puro_8", 0.0f, 0.0f, data->unk18);
-    mapObjRotate("puro_9", 0.0f, 0.0f, data->unk18);
-    mapObjRotate("puro_10", 0.0f, 0.0f, data->unk18);
-    mapObjRotate("pera_1", 0.0f, 0.0f, data->unk1C);
-    mapObjRotate("pera_2", 0.0f, 0.0f, data->unk1C);
-    mapObjRotate("pera_3", 0.0f, 0.0f, data->unk1C);
-    mapObjRotate("pera_4", 0.0f, 0.0f, data->unk1C);
-    mapObjRotate("pera_5", 0.0f, 0.0f, data->unk1C);
-    mapObjRotate("pera_6", 0.0f, 0.0f, data->unk1C);
-    mapObjRotate("pera_7", 0.0f, 0.0f, data->unk1C);
-    mapObjRotate("pera_8", 0.0f, 0.0f, data->unk1C);
-    mapObjRotate("pera_9", 0.0f, 0.0f, data->unk1C);
+    mapObjRotate("puro_1", 0.0f, 0.0f, data->puroAngle);
+    mapObjRotate("puro_2", 0.0f, 0.0f, data->puroAngle);
+    mapObjRotate("puro_3", 0.0f, 0.0f, data->puroAngle);
+    mapObjRotate("puro_4", 0.0f, 0.0f, data->puroAngle);
+    mapObjRotate("puro_5", 0.0f, 0.0f, data->puroAngle);
+    mapObjRotate("puro_6", 0.0f, 0.0f, data->puroAngle);
+    mapObjRotate("puro_7", 0.0f, 0.0f, data->puroAngle);
+    mapObjRotate("puro_8", 0.0f, 0.0f, data->puroAngle);
+    mapObjRotate("puro_9", 0.0f, 0.0f, data->puroAngle);
+    mapObjRotate("puro_10", 0.0f, 0.0f, data->puroAngle);
+    mapObjRotate("pera_1", 0.0f, 0.0f, data->peraAngle);
+    mapObjRotate("pera_2", 0.0f, 0.0f, data->peraAngle);
+    mapObjRotate("pera_3", 0.0f, 0.0f, data->peraAngle);
+    mapObjRotate("pera_4", 0.0f, 0.0f, data->peraAngle);
+    mapObjRotate("pera_5", 0.0f, 0.0f, data->peraAngle);
+    mapObjRotate("pera_6", 0.0f, 0.0f, data->peraAngle);
+    mapObjRotate("pera_7", 0.0f, 0.0f, data->peraAngle);
+    mapObjRotate("pera_8", 0.0f, 0.0f, data->peraAngle);
+    mapObjRotate("pera_9", 0.0f, 0.0f, data->peraAngle);
 }
 
 void yuuminigame_disp_4slit(CameraId cameraId, void* param) {
@@ -1008,121 +1008,121 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
     EventEntry* childEvent;
     f32 riderDeltaZ;
 
-    data->unk14--;
+    data->stateTimer--;
 
-    // Timed state machine: states 1-4 drive unk18, states 5-8 drive unk1C.
-    switch (data->unk10) {
+    // Timed state machine: states 1-4 drive puroAngle, states 5-8 drive peraAngle.
+    switch (data->state) {
     case 0:
-        if (data->unk14 != 0) {
+        if (data->stateTimer != 0) {
             break;
         }
         if (irand(2) != 0) {
-            data->unk10 = 1;
+            data->state = 1;
             childEvent = evtEntryType(ryushi_event, 0, 0, 0);
             childEvent->lwData[0] = (s32)work;
             childEvent->lwData[1] = 1;
         } else {
-            data->unk10 = 5;
+            data->state = 5;
             childEvent = evtEntryType(ryushi_event, 0, 0, 0);
             childEvent->lwData[0] = (s32)work;
             childEvent->lwData[1] = 0;
         }
-        data->unk14 = 0x3C;
+        data->stateTimer = 0x3C;
         break;
     case 1:
-        if (data->unk14 == 0) {
-            data->unk10 = 2;
-            data->unk14 = 0x3C;
+        if (data->stateTimer == 0) {
+            data->state = 2;
+            data->stateTimer = 0x3C;
         }
         /* fallthrough */
     case 2:
-        if (data->unk14 != 0) {
+        if (data->stateTimer != 0) {
             break;
         }
-        data->unk10 = 3;
-        data->unk14 = (irand(0x7D1) + 0xBB8) * 0x3C / 1000;
+        data->state = 3;
+        data->stateTimer = (irand(0x7D1) + 0xBB8) * 0x3C / 1000;
         break;
     case 3:
-        if (data->unk14 != 0) {
+        if (data->stateTimer != 0) {
             break;
         }
-        data->unk10 = 4;
-        data->unk14 = 0x30;
+        data->state = 4;
+        data->stateTimer = 0x30;
         break;
     case 4:
-        if (data->unk14 != 0) {
+        if (data->stateTimer != 0) {
             break;
         }
-        data->unk10 = 0;
-        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
+        data->state = 0;
+        data->stateTimer = (irand(0xF3D) + 100) * 0x3C / 1000;
         evtSetValue(event, GW(0), 1);
         break;
     case 5:
-        if (data->unk14 != 0) {
+        if (data->stateTimer != 0) {
             break;
         }
-        data->unk10 = 6;
-        data->unk14 = 0x3C;
+        data->state = 6;
+        data->stateTimer = 0x3C;
         break;
     case 6:
-        if (data->unk14 != 0) {
+        if (data->stateTimer != 0) {
             break;
         }
-        data->unk10 = 7;
-        data->unk14 = (irand(0x7D1) + 0xBB8) * 0x3C / 1000;
+        data->state = 7;
+        data->stateTimer = (irand(0x7D1) + 0xBB8) * 0x3C / 1000;
         break;
     case 7:
-        if (data->unk14 != 0) {
+        if (data->stateTimer != 0) {
             break;
         }
-        data->unk10 = 8;
-        data->unk14 = 0x30;
+        data->state = 8;
+        data->stateTimer = 0x30;
         break;
     case 8:
-        if (data->unk14 != 0) {
+        if (data->stateTimer != 0) {
             break;
         }
-        data->unk10 = 0;
-        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
+        data->state = 0;
+        data->stateTimer = (irand(0xF3D) + 100) * 0x3C / 1000;
         evtSetValue(event, GW(0), 1);
         break;
     }
 
-    // Spin the active set of map objects (unk18: puro_*, unk1C: pera_*) and wrap the angle to [0, 360).
-    switch (data->unk10) {
+    // Spin the active set of map objects (puroAngle: puro_*, peraAngle: pera_*) and wrap the angle to [0, 360).
+    switch (data->state) {
     case 0:
         break;
     case 1:
     case 2:
-        data->unk18 = data->unk18 + 36.0f * (120.0f - (f32)(data->unk14 - 1)) / 120.0f;
-        data->unk18 = (data->unk18 + 3600.0f) - (f32)((s32)((data->unk18 + 3600.0f) / 360.0f) * 360);
+        data->puroAngle = data->puroAngle + 36.0f * (120.0f - (f32)(data->stateTimer - 1)) / 120.0f;
+        data->puroAngle = (data->puroAngle + 3600.0f) - (f32)((s32)((data->puroAngle + 3600.0f) / 360.0f) * 360);
         break;
     case 3:
-        data->unk18 += 36.0f;
-        data->unk18 = (data->unk18 + 3600.0f) - (f32)((s32)((data->unk18 + 3600.0f) / 360.0f) * 360);
+        data->puroAngle += 36.0f;
+        data->puroAngle = (data->puroAngle + 3600.0f) - (f32)((s32)((data->puroAngle + 3600.0f) / 360.0f) * 360);
         break;
     case 4:
-        data->unk18 = data->unk18 + 36.0f * (f32)(data->unk14 - 1) / 48.0f;
-        data->unk18 = (data->unk18 + 3600.0f) - (f32)((s32)((data->unk18 + 3600.0f) / 360.0f) * 360);
+        data->puroAngle = data->puroAngle + 36.0f * (f32)(data->stateTimer - 1) / 48.0f;
+        data->puroAngle = (data->puroAngle + 3600.0f) - (f32)((s32)((data->puroAngle + 3600.0f) / 360.0f) * 360);
         break;
     case 5:
     case 6:
-        data->unk1C = data->unk1C + 36.0f * (120.0f - (f32)(data->unk14 - 1)) / 120.0f;
-        data->unk1C = (data->unk1C + 3600.0f) - (f32)((s32)((data->unk1C + 3600.0f) / 360.0f) * 360);
+        data->peraAngle = data->peraAngle + 36.0f * (120.0f - (f32)(data->stateTimer - 1)) / 120.0f;
+        data->peraAngle = (data->peraAngle + 3600.0f) - (f32)((s32)((data->peraAngle + 3600.0f) / 360.0f) * 360);
         break;
     case 7:
-        data->unk1C += 36.0f;
-        data->unk1C = (data->unk1C + 3600.0f) - (f32)((s32)((data->unk1C + 3600.0f) / 360.0f) * 360);
+        data->peraAngle += 36.0f;
+        data->peraAngle = (data->peraAngle + 3600.0f) - (f32)((s32)((data->peraAngle + 3600.0f) / 360.0f) * 360);
         break;
     case 8:
-        data->unk1C = data->unk1C + 36.0f * (f32)(data->unk14 - 1) / 48.0f;
-        data->unk1C = (data->unk1C + 3600.0f) - (f32)((s32)((data->unk1C + 3600.0f) / 360.0f) * 360);
+        data->peraAngle = data->peraAngle + 36.0f * (f32)(data->stateTimer - 1) / 48.0f;
+        data->peraAngle = (data->peraAngle + 3600.0f) - (f32)((s32)((data->peraAngle + 3600.0f) / 360.0f) * 360);
         break;
     }
 
     // States 2-4 and 6-8 push Mario along z at the particle stream speed (ramping up in states 2 and 6).
     if (mario->position.x < 1500.0f) {
-        s32 state = data->unk10;
+        s32 state = data->state;
         riderDeltaZ = 0.0f;
         switch (state) {
         case 2:
@@ -1155,7 +1155,7 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
         switch (state) {
         case 2:
         case 6:
-            riderDeltaZ = riderDeltaZ * (f32)(0x3C - data->unk14) / 60.0f;
+            riderDeltaZ = riderDeltaZ * (f32)(0x3C - data->stateTimer) / 60.0f;
             break;
         }
         mario->riderDelta.z += riderDeltaZ;
@@ -1163,13 +1163,13 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
 
     if (mario->position.y <= -100.0f || mario->position.x >= 1500.0f) {
         if (mario->position.y <= -100.0f) {
-            data->unk08 = 0x2BD;
+            data->counterData = 0x2BD;
             yuucounter_flag_on(1);
         } else {
-            data->unk08 = yuucounter_get_data();
+            data->counterData = yuucounter_get_data();
         }
-        data->unk10 = 0;
-        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
+        data->state = 0;
+        data->stateTimer = (irand(0xF3D) + 100) * 0x3C / 1000;
         marioKeyOff();
         partyKeyOff();
         yuucounter_flag_on(2);

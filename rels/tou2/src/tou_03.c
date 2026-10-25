@@ -4469,9 +4469,9 @@ s32 eff_pos(EventEntry* event, BOOL isFirstCall) {
 
 static void callback(MapTevCallback* param) {
     s32 stage = param->tevStage;
-    s32 field_10 = param->texMap;
-    s32 field_14 = param->texCoord;
-    s32 field_18 = param->numIndStage;
+    s32 texMap = param->texMap;
+    s32 texCoord = param->texCoord;
+    s32 numIndStage = param->numIndStage;
     GXColor color = gansColor(gans_alpha);
     GXSetTevColor(GX_TEVREG0, color);
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
@@ -4482,9 +4482,9 @@ static void callback(MapTevCallback* param) {
     GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
     param->tevStage = stage + 1;
-    param->texCoord = field_14;
-    param->numIndStage = field_18;
-    param->texMap = field_10;
+    param->texCoord = texCoord;
+    param->numIndStage = numIndStage;
+    param->texMap = texMap;
 }
 
 s32 gans_white_on(EventEntry* event, BOOL isFirstCall) {

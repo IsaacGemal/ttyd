@@ -7,17 +7,17 @@
 typedef struct Yuuminigame2Data {
     u32 flags;                  // 0x00
     s32 phase;                  // 0x04
-    s32 unk08;                  // 0x08
-    s32 unk0C;                  // 0x0C
-    s32 unk10;                  // 0x10
-    s32 unk14;                  // 0x14
-    f32 unk18;                  // 0x18
-    Vec unk1C;                  // 0x1C
-    s32 unk28;                  // 0x28
-    f32 unk2C;                  // 0x2C
-    f32 unk30;                  // 0x30
-    s32 unk34;                  // 0x34
-    EventEntry* unk38;          // 0x38
+    s32 counterData;            // 0x08, yuucounter_get_data() at the finish, the ranking's result (minigame02_end LW(0))
+    s32 unk0C;                  // 0x0C, decremented each time a dai_uzu or uzu catches Mario; at the end turned into the ranking's mult
+    s32 objIndex;               // 0x10, s_nametbl/turn_tbl/hoko_tbl index of the uzu Mario is in (1-4 S_dai_uzu, 5-12 S_uzu), 0x15 for none
+    s32 step;                   // 0x14, step of the dai_uzu sequence (objIndex 1-4)
+    f32 startDist;              // 0x18, Mario's distance from the dai_uzu when caught, shrunk to 0 as timer runs
+    Vec dir;                    // 0x1C, direction from the dai_uzu to Mario, turned by turn_tbl each frame
+    s32 timer;                  // 0x28, frames left in the current step
+    f32 startY;                 // 0x2C, Mario's y when caught
+    f32 startX;                 // 0x30, Mario's x when step 1 starts
+    s32 monteCount;             // 0x34, chips picked up (fall_rtn), the ranking's bonus (minigame02_end LW(2))
+    EventEntry* viewEvent;      // 0x38, the minigame_view_monte event
 } Yuuminigame2Data;
 
 

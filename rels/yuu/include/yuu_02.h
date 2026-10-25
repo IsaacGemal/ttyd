@@ -34,11 +34,11 @@ typedef struct YuuMinigame3Data {
     u32 flags;                     // 0x00
     s32 phase;                     // 0x04
     s32 counter;                   // 0x08
-    s32 field_0C;                  // 0x0C
+    s32 field_0C;                  // 0x0C, decremented per fall; at the end turned into the ranking's mult
     s32 index;                     // 0x10
     EventEntry* event;             // 0x14
     Vec position;                  // 0x18
-    s32 field_24;                  // 0x24
+    s32 monteCount;                // 0x24, chips picked up (fall_rtn), the ranking's bonus (minigame03_end LW(2))
     EventEntry* viewEvent;         // 0x28
     u8 pad_2C[0x40 - 0x2C];        // 0x2C
 } YuuMinigame3Data;

@@ -7,12 +7,12 @@
 typedef struct Yuuminigame4Data {
     u32 flags;                     // 0x00
     s32 phase;                     // 0x04
-    s32 unk08;                     // 0x08
-    s32 unk0C;                     // 0x0C
-    s32 unk10;                     // 0x10
-    s32 unk14;                     // 0x14
-    f32 unk18;                     // 0x18
-    f32 unk1C;                     // 0x1C
+    s32 counterData;               // 0x08, yuucounter_get_data() at the goal, 0x2BD after a fall; the ranking's result
+    s32 mult;                      // 0x0C, the ranking's mult (0x105/0x103/0x101 by counterData)
+    s32 state;                     // 0x10, yuuminigame4_gamerule's timed state: 1-4 spin puro_*, 5-8 pera_*
+    s32 stateTimer;                // 0x14, frames left in the state
+    f32 puroAngle;                 // 0x18, z rotation of the puro_* map objects
+    f32 peraAngle;                 // 0x1C, z rotation of the pera_* map objects
     s32 unk20;                     // 0x20
     EventEntry* subEvent;          // 0x24
 } Yuuminigame4Data;

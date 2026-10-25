@@ -1952,7 +1952,7 @@ void yuunpc_pose_minigame4_main(void) {
                 entry->field_30.y = 0.0f;
                 PSVECNormalize(&entry->field_30, &entry->field_30);
                 f0 = 150.0f * entry->field_8;
-                switch (data->unk10) {
+                switch (data->state) {
                 default:
                     f31 = 0.0f;
                     break;
@@ -2092,10 +2092,10 @@ void yuunpc_pose_minigame4_main(void) {
                 case 0x10:
                     break;
                 case 0:
-                    if (data->unk10 == 0) {
+                    if (data->state == 0) {
                         n = 1;
                     } else {
-                        switch (data->unk10) {
+                        switch (data->state) {
                         case 1:
                         case 5:
                             if (n >= 0x3c) {
@@ -2106,8 +2106,8 @@ void yuunpc_pose_minigame4_main(void) {
                             break;
                         case 2:
                         case 6:
-                            if (n >= data->unk14) {
-                                n = n + data->unk14;
+                            if (n >= data->stateTimer) {
+                                n = n + data->stateTimer;
                             } else {
                                 n = n + n;
                             }
@@ -2156,9 +2156,9 @@ void yuunpc_pose_minigame4_main(void) {
                         n = 0x1e;
                         r3v = (s32)(f31 / 2.9166667f);
                     }
-                    if (entry->field_C.x != entry->field_24.x && data->unk10 != 0) {
-                        if (data->unk10 == 4 || data->unk10 == 8) {
-                            if (n + r3v < data->unk14) {
+                    if (entry->field_C.x != entry->field_24.x && data->state != 0) {
+                        if (data->state == 4 || data->state == 8) {
+                            if (n + r3v < data->stateTimer) {
                                 break;
                             }
                         } else {
@@ -2232,7 +2232,7 @@ void yuunpc_pose_minigame4_main(void) {
             entry->field_48 = 0.0f;
             if (entry->field_24.x < 1500.0f) {
                 f32 f3 = 0.0f;
-                switch (data->unk10) {
+                switch (data->state) {
                 case 5:
                     break;
                 case 2:
@@ -2268,10 +2268,10 @@ void yuunpc_pose_minigame4_main(void) {
                     }
                     break;
                 }
-                switch (data->unk10) {
+                switch (data->state) {
                 case 2:
                 case 6:
-                    f3 = f3 * (f32)(60 - data->unk14) / 60.0f;
+                    f3 = f3 * (f32)(60 - data->stateTimer) / 60.0f;
                     break;
                 }
                 entry->field_48 = entry->field_48 + f3;
@@ -2407,7 +2407,7 @@ void yuunpc_pose_minigame4_main(void) {
                               s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_24.z + vb2.z - (-150.0f)) / 50.0f)]; }
                             f0 = (f32)s3;
                             if (f28 > entry->field_24.y) {
-                                if (data->unk10 == 0) {
+                                if (data->state == 0) {
                                     entry->field_4C = 4;
                                     yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
                                     entry->field_40 = 6.5f;
@@ -2528,7 +2528,7 @@ void yuunpc_pose_minigame4_main(void) {
                               s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_24.z + wb2.z - (-150.0f)) / 50.0f)]; }
                             f0 = (f32)s3;
                             if ((f28 < entry->field_24.y && f0 == entry->field_24.y) || f27 > entry->field_24.y) {
-                                if (data->unk10 == 0) {
+                                if (data->state == 0) {
                                     entry->field_4C = 4;
                                     yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
                                     entry->field_40 = 6.5f;

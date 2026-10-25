@@ -279,7 +279,7 @@ USER_FUNC(fall_rtn) {
         memset(monte_entries, 0, allocSize);
         monte_entries->count = total;
         monte_entries->work = work;
-        data->field_24 = 0;
+        data->monteCount = 0;
 
         tableIdx = 0;
         pointIdx = 0;
@@ -399,7 +399,7 @@ USER_FUNC(fall_rtn) {
             switch (p->state) {
             case 0:
                 if (get_monte_check(&p->field_0x8.pos, &marioGetPtr()->position) == 1) {
-                    data->field_24++;
+                    data->monteCount++;
                     psndSFXOn_3D(
 #ifdef MUST_MATCH
                         (const char*)(u32)sfx.p,
@@ -526,7 +526,7 @@ void yuuminigame_main_3roll(EventEntry* event, BOOL isFirstCall) {
             data->field_0C += 0x105;
         }
         work->childEvent->lwData[1] = data->field_0C;
-        work->childEvent->lwData[2] = data->field_24;
+        work->childEvent->lwData[2] = data->monteCount;
         data->phase++;
         break;
     default:
