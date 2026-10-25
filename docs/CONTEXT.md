@@ -7934,7 +7934,9 @@ fmotion (src/motion, src/manager; not touched).
   everything else unchanged. Index field_0x sites: src/battle 148 -> 127, include/battle 42 -> 36, src/unit 14 -> 12.
   `field_0x` by grep, comments included: src/battle + include/battle + src/data/battle 921 -> 869, the whole tree
   8953 -> 8099 (the 800 BattleUnitKind labels in rels/ and src/unit). Biggest per-file drops (weighted): sac_bakugame
-  58 -> 48, ac_power_gauge_lv2 20 -> 8, battle_item_data 22 -> 14, battle_audience 56 -> 51.
+  58 -> 48, ac_power_gauge_lv2 20 -> 8, battle_item_data 22 -> 14, battle_audience 56 -> 51. Re-measured after the
+  rebase onto d0f4bd7d (#1133-#1140): **11.974 -> 11.901** (8364 -> 8313 weighted), the same per-category deltas
+  (field_0x -29, raw_offset -11, struct_ptr_cast -1, ptr_to_int +1).
 - **For a reviewer.** `renzokuSoftCap`, `kagenukeOffsetX/Z` and `shotDamageRate` each rest on one reader (the only
   one there is); `shotDamageRate`'s comment names BattleCheckDamage's other two conditions on those patterns too
   (attribute 0x4000, flag 0x20000), so the roll is not the whole gate. `AUDIENCE_KIND_TWO_SEATS` is a new enum constant named from its readers;
