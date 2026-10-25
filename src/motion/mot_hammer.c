@@ -19,9 +19,8 @@
 #include "math_ext.h"
 #include <string.h>
 
-// Raw accessors for MarioWork scratch words this motion reads with a type no union member has.
+// Raw accessor for the MarioWork scratch word at 0x2A4, which mot_hammer2 reads as an s16 (no union member has that type).
 #define M_S16(m, off) (*(s16*)((u8*)(m) + (off)))
-#define M_S32(m, off) (*(s32*)((u8*)(m) + (off)))
 
 // .rodata: vec3_802c5a80, then hitEstimate's Vec literals; the MOBJ names are defined after hitEstimate.
 const Vec vec3_802c5a80 = { 0.0f, 40.0f, 0.0f };
@@ -192,10 +191,10 @@ void mot_hammer(void) {
             // the target; the plain expression swaps the two.
             {
                 s32 t = type;
-                M_S32(mario, 0x2A0) = (t == 7) ? 3 : t;
+                mario->hammerHitFrame = (t == 7) ? 3 : t;
             }
 #else
-            M_S32(mario, 0x2A0) = (type == 7) ? 3 : type;
+            mario->hammerHitFrame = (type == 7) ? 3 : type;
 #endif
             mario->flags |= 0x800;
         } else {
@@ -226,7 +225,7 @@ void mot_hammer(void) {
     rp = 0;
     if (mario->flags & 0x800) {
         s32 b = mario->multiTimer;
-        s32 a = M_S32(mario, 0x2A0);
+        s32 a = mario->hammerHitFrame;
         r27 = (b <= a) ? b : a;
         if (b == a) {
             rp = 1;

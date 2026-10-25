@@ -300,6 +300,8 @@ typedef struct MarioWork {
     union {
         f32 spinSpeed;             // 0x2A0, added to dispDir each frame (mario_motion spin, mot_hip, evt_mario)
         f32 damageRootY;           // 0x2A0, surface height of the damage floor fallen into: splash height, start of the return arc (set_damage_root_ypos, mot_damage)
+        s32 hammerHitFrame;        // 0x2A0, mot_hammer: frame the swing lands on, from hitEstimate's type (7 counts as 3): the pose time
+                                   //        stops there and the impact (quake event) runs when multiTimer reaches it; 10 without flag 0x800
         struct {
             u16 kpaPoseCounter;    // 0x2A0, koopa_motion: frame counter, wraps past 0x50; half of it is the pose time
             u16 field_0x2A2;       // 0x2A2, koopa_motion: cleared beside kpaPoseCounter
@@ -341,6 +343,7 @@ typedef struct MarioWork {
         s32 sleepTimer;            // 0x2B4, mot_stay and peach_stay: frames asleep (cleared when the sleep pose starts, capped at
                                    //        sysMsec2Frame(10000)); marioChkDeepSleep tests the cap; f32 in party_yoshi
         f32 jabaraAccel;           // 0x2B4, mot_jabara: step added to jabaraSpeed each frame
+        f32 field_0x2B4;           // 0x2B4, mot_jump: x of the map object jumped from (its z goes to field_0x2B8); no reader
         s16 hammer2Flags;          // 0x2B4, mot_hammer2: flag word (0x1, 0x10, 0x1000, 0x2000), cleared on entry
         struct {
             s16 slitTurnTimer;     // 0x2B4, mot_slit: set to 6 when a turn starts, counts down in state 0x15
@@ -348,7 +351,7 @@ typedef struct MarioWork {
         };
     };
     union {
-        f32 field_0x2B8;           // 0x2B8
+        f32 field_0x2B8;           // 0x2B8, mot_jump: z of the map object jumped from; mario.c rotates the yoshi motion's display by it about z
         f32 jumpHeight;            // 0x2B8, marioGetJumpHeight/marioChgJumpStandMotion (jump stand)
         s32 stayAHoldTimer;        // 0x2B8, mot_stay: frames A has been held (0 when released); from 10 the stick no longer walks
         s32 motionSfxId2;          // 0x2B8, sound handle in mot_hammer (-1 when none)
