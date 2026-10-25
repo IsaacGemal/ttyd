@@ -449,7 +449,6 @@ s32 partyGoodbye(s32 index) {
 }
 
 s32 partyKill(s32 index) {
-    typedef void (*PartyFunc)(PartyEntry*);
     PartyEntry* party = partyGetPtr(index);
     MarioWork* player;
 
@@ -459,7 +458,7 @@ s32 partyKill(s32 index) {
     player = party->playerPtr;
     party_dp = &partyDataTbl[partyGetPtr(player->currPartySlotId[index])->currentMemberId];
     if (party_dp->exit_func && party->runMode != 0xb) {
-        ((PartyFunc)party_dp->exit_func)(party);
+        party_dp->exit_func(party);
     }
     if (partyGetPtr(player->currPartySlotId[index])) {
         player->prevPartyMemberId[index] = partyGetPtr(player->currPartySlotId[index])->currentMemberId;
@@ -474,7 +473,6 @@ s32 partyKill(s32 index) {
 }
 
 s32 partyKill2(s32 index) {
-    typedef void (*PartyFunc)(PartyEntry*);
     PartyEntry* party = partyGetPtr(index);
     MarioWork* player;
 
@@ -484,7 +482,7 @@ s32 partyKill2(s32 index) {
     player = party->playerPtr;
     party_dp = &partyDataTbl[partyGetPtr(player->currPartySlotId[index])->currentMemberId];
     if (party_dp->exit_func && party->runMode != 0xb) {
-        ((PartyFunc)party_dp->exit_func)(party);
+        party_dp->exit_func(party);
     }
     player->prevPartyMemberId[index] = 0;
     player->currPartySlotId[index] = -1;
@@ -827,10 +825,8 @@ void partyReInit(void) {
 }
 
 void partyUsePost(PartyEntry* party) {
-    typedef void (*PartyFunc)(PartyEntry*);
-
     if (party && party->runMode == 3) {
-        PartyFunc post = (PartyFunc)partyDataTbl[party->currentMemberId].post_func;
+        void (*post)(PartyEntry*) = partyDataTbl[party->currentMemberId].post_func;
 
         if (post) {
             post(party);
@@ -839,7 +835,6 @@ void partyUsePost(PartyEntry* party) {
 }
 
 void N__partyChgRunMode(PartyEntry* party, s32 oldMode, s32 newMode) {
-    typedef void (*PartyFunc)(PartyEntry*);
     s32 index;
     char* pose;
 
@@ -911,7 +906,7 @@ void N__partyChgRunMode(PartyEntry* party, s32 oldMode, s32 newMode) {
             break;
         case 3:
             if (partyDataTbl[party->currentMemberId].post_func) {
-                ((PartyFunc)partyDataTbl[party->currentMemberId].post_func)(party);
+                partyDataTbl[party->currentMemberId].post_func(party);
             }
             break;
         case 1:
@@ -947,7 +942,6 @@ void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk) {
 #pragma dont_inline reset
 
 void unk_800ba2dc(PartyEntry* party) {
-    typedef void (*PartyFunc)(PartyEntry*);
     s32 index;
     char* pose;
 
@@ -982,7 +976,7 @@ void unk_800ba2dc(PartyEntry* party) {
             party->runMode = 1;
             if (party && party->runMode == 3) {
                 if (partyDataTbl[party->currentMemberId].post_func) {
-                    ((PartyFunc)partyDataTbl[party->currentMemberId].post_func)(party);
+                    partyDataTbl[party->currentMemberId].post_func(party);
                 }
             }
             partyChgMot(party, 0);
@@ -1017,7 +1011,7 @@ void unk_800ba2dc(PartyEntry* party) {
             }
             if (party && party->runMode == 3) {
                 if (partyDataTbl[party->currentMemberId].post_func) {
-                    ((PartyFunc)partyDataTbl[party->currentMemberId].post_func)(party);
+                    partyDataTbl[party->currentMemberId].post_func(party);
                 }
             }
             partyChgMot(party, 0);
@@ -1029,7 +1023,7 @@ void unk_800ba2dc(PartyEntry* party) {
             }
             if (party && party->runMode == 3) {
                 if (partyDataTbl[party->currentMemberId].post_func) {
-                    ((PartyFunc)partyDataTbl[party->currentMemberId].post_func)(party);
+                    partyDataTbl[party->currentMemberId].post_func(party);
                 }
             }
             party->runMode = party->field_35;
@@ -1658,7 +1652,7 @@ s32 partyDokanInit(PartyEntry* party) {
         case 2:
         case 3:
             partyPaperOn(party, "p_dokan_y");
-            party->field_0x124 = 30.0f;
+            party->spinSpeed = 30.0f;
             party->motionStep = 0;
             break;
         case 0:
@@ -1666,18 +1660,18 @@ s32 partyDokanInit(PartyEntry* party) {
             // fallthrough
         case 1:
             partyPaperOn(party, "p_dokan_y");
-            party->field_0x124 = 30.0f;
+            party->spinSpeed = 30.0f;
             party->motionStep = 0;
             break;
         case 5:
             partyPaperOn(party, "p_dokan_x");
-            party->field_0x124 = 26.0f;
+            party->spinSpeed = 26.0f;
             party->motionStep = 0xa;
             party->spinPivot.y = 10.0f;
             break;
         case 4:
             partyPaperOn(party, "p_dokan_x");
-            party->field_0x124 = -26.0f;
+            party->spinSpeed = -26.0f;
             party->motionStep = 0xa;
             party->spinPivot.y = 10.0f;
             party->dispRot.x = revise360(180.0f + player->dispRot.x);
@@ -1728,7 +1722,7 @@ s32 partyDokanMain(PartyEntry* party) {
     switch (party->motionStep) {
         case 0:
             party->position = player->position;
-            party->dispDir = revise360(party->dispDir + party->field_0x124);
+            party->dispDir = revise360(party->dispDir + party->spinSpeed);
             party->scale.x += 0.05f;
             if (party->scale.x >= 1.0f) {
                 party->scale.x = 1.0f;
@@ -1737,7 +1731,7 @@ s32 partyDokanMain(PartyEntry* party) {
             party->scale.z = party->scale.x;
             break;
         case 10:
-            party->dispRot.x += party->field_0x124;
+            party->dispRot.x += party->spinSpeed;
             break;
         case 100:
             switch ((s8)party->field_2E) {
@@ -2026,7 +2020,7 @@ void partyRideMain(PartyEntry* party) {
                      ((f32)party->timer * (party->jumpPara3 * (f32)party->timer)) +
                  dy) /
                 (f32)party->timer;
-            party->field_0x124 = 1.0f;
+            party->spinSpeed = 1.0f;
             party->flags2 |= 0x10;
             partyChgPoseId(party, 4);
             party->motionStep = 1;
@@ -2035,12 +2029,12 @@ void partyRideMain(PartyEntry* party) {
             party->jumpPara1 = party->jumpPara1 - party->jumpPara3;
             party->position.y = party->position.y + party->jumpPara1;
             movePos(&party->position.x, &party->position.z, party->speed, party->dir);
-            party->dispDir = revise360(party->dispDir + party->field_0x124);
-            party->field_0x124 += 2.0f;
+            party->dispDir = revise360(party->dispDir + party->spinSpeed);
+            party->spinSpeed += 2.0f;
             {
                 f32 cap = 30.0f;
-                if (party->field_0x124 >= cap) {
-                    party->field_0x124 = cap;
+                if (party->spinSpeed >= cap) {
+                    party->spinSpeed = cap;
                 }
             }
             scale = (f32)party->timer;
@@ -2626,12 +2620,12 @@ PartyEntry* anotherPartyGetPtr(s32 id) {
 BOOL partyPaperOn(PartyEntry* entry, char* anim) {
         BOOL v5, v6;
 
-        if (entry->field_0x14 >= 0) {
-                animPaperPoseRelease(entry->field_0x14);
-                entry->field_0x14 = -1;
+        if (entry->paperPoseId >= 0) {
+                animPaperPoseRelease(entry->paperPoseId);
+                entry->paperPoseId = -1;
         }
         entry->flags2 |= 0x4000000;
-        entry->field_0x14 = animPaperPoseEntry(anim, 2);
+        entry->paperPoseId = animPaperPoseEntry(anim, 2);
         v5 = FALSE;
         if (!strcmp(anim, "p_roll") ||
                 !strcmp(anim, "p_plane") ||
@@ -2643,7 +2637,7 @@ BOOL partyPaperOn(PartyEntry* entry, char* anim) {
         if (!strcmp(anim, "p_slit")) {
                 v6 = entry->currentMemberId == PARTY_FLURRIE;
         }
-        animPoseSetPaperAnimGroup(entry->field_0xC, anim, v6);
+        animPoseSetPaperAnimGroup(entry->paperAnimGroup, anim, v6);
         return TRUE;
 }
 
@@ -2674,9 +2668,9 @@ s32 partyEntry2(s32 memberId) {
         entry = partyPtrTbl[slotId];
         memset(entry, 0, sizeof(PartyEntry));
         entry->camId = marioGetCamId();
-        entry->field_0xC = -1;
-        entry->field_0x10 = -1;
-        entry->field_0x14 = -1;
+        entry->paperAnimGroup = -1;
+        entry->field_10 = -1;
+        entry->paperPoseId = -1;
         entry->flags = 9;
         entry->currentSlotId = (s8)slotId; //TODO: re-type?
         entry->currentMemberId = (PartyMember)memberId;
@@ -2693,10 +2687,10 @@ s32 partyEntry2(s32 memberId) {
         else {
                 animName = partyDataTbl[memberId].name;
         }
-        if (entry->field_0xC >= 0) {
-                animPoseRelease(entry->field_0xC);
+        if (entry->paperAnimGroup >= 0) {
+                animPoseRelease(entry->paperAnimGroup);
         }
-        entry->field_0xC = animPoseEntry(animName, 2);
+        entry->paperAnimGroup = animPoseEntry(animName, 2);
 
 
 
@@ -3008,8 +3002,8 @@ void L_partyClearCont(PartyEntry* party) {
     party->substickY = 0;
     party->triggerLeft = 0;
     party->triggerRight = 0;
-    party->field_0x15E = 0;
-    party->field_0x15F = 0;
+    party->unusedInput[0] = 0;
+    party->unusedInput[1] = 0;
     party->button = 0;
     party->buttonNew = 0;
     party->buttonRepeat = 0;
@@ -3026,8 +3020,8 @@ void partyUpdateKeyData(PartyEntry* party) {
         party->substickY = 0;
         party->triggerLeft = 0;
         party->triggerRight = 0;
-        party->field_0x15E = 0;
-        party->field_0x15F = 0;
+        party->unusedInput[0] = 0;
+        party->unusedInput[1] = 0;
         party->button = 0;
         party->buttonNew = 0;
         party->buttonRepeat = 0;
@@ -3040,8 +3034,8 @@ void partyUpdateKeyData(PartyEntry* party) {
     party->substickY = -gp->substickY[member];
     party->triggerLeft = gp->triggerLeft[member];
     party->triggerRight = gp->triggerRight[member];
-    party->field_0x15E = 0;
-    party->field_0x15F = 0;
+    party->unusedInput[0] = 0;
+    party->unusedInput[1] = 0;
     party->button = gp->button[member];
     party->buttonNew = gp->buttonNew[member];
     party->buttonRepeat = gp->buttonRepeat[member];

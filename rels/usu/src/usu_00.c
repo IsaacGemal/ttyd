@@ -1461,7 +1461,7 @@ EVT_END()
 static DoorEntry door_1 = {
     0,             // flags
     3,             // type
-    2,             // field_0x8
+    2,             // sfxType
     "S_ie1_door",  // doorMapObj
     "A_ie1door_u", // closeHit
     "A_ie1door",   // openHit
@@ -1470,7 +1470,7 @@ static DoorEntry door_1 = {
     "S_ie1_naka",  // insideMapObj
     NULL,          // insideHit
     evt_door_1_1,  // doorEvt
-    NULL,          // field_0x2C
+    NULL,          // downEvt
     evt_wall_1,    // houseEvt
     door_1_npc,    // npcNames
     NULL,          // mobjNames
@@ -1552,7 +1552,7 @@ EVT_END()
 static DoorEntry door_2 = {
     0,                 // flags
     3,                 // type
-    2,                 // field_0x8
+    2,                 // sfxType
     "S__ie2_door",     // doorMapObj
     "A_ie2door_u",     // closeHit
     "A_ie2door",       // openHit
@@ -1561,7 +1561,7 @@ static DoorEntry door_2 = {
     "S_ie2_naka",      // insideMapObj
     NULL,              // insideHit
     evt_door_2_1,      // doorEvt
-    evt_door_2_2,      // field_0x2C
+    evt_door_2_2,      // downEvt
     evt_wall_2,        // houseEvt
     village_chief_npc, // npcNames
     NULL,              // mobjNames
@@ -1610,7 +1610,7 @@ EVT_END()
 static DoorEntry door_3 = {
     0,             // flags
     3,             // type
-    2,             // field_0x8
+    2,             // sfxType
     "S_ie3_door",  // doorMapObj
     "A_ie3door_u", // closeHit
     "A_ie3door",   // openHit
@@ -1619,7 +1619,7 @@ static DoorEntry door_3 = {
     "S_ie3_naka",  // insideMapObj
     NULL,          // insideHit
     evt_door_3_1,  // doorEvt
-    evt_door_3_2,  // field_0x2C
+    evt_door_3_2,  // downEvt
     evt_wall_3,    // houseEvt
     yado_npc,      // npcNames
     yado_mobj,     // mobjNames

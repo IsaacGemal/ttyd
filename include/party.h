@@ -141,7 +141,8 @@ typedef struct PartyEntry {
     f32 jumpPara2;               // 0x118
     f32 jumpPara3;               // 0x11C
     f32 field_120;               // 0x120
-    f32 field_0x124;             // 0x124
+    f32 spinSpeed;               // 0x124, degrees added each frame to dispDir or dispRot.x (partyDokanMain); the ride-on jump
+                                 // spins dispDir by it, raising it by 2 up to 30
     f32 targetDist;              // 0x128, distance to targetPos, set before the fly/jump step count
     struct HitEntry* field_12C;  // 0x12C
     struct HitEntry* frontHit;   // 0x130, check_front result
@@ -162,8 +163,8 @@ typedef struct PartyEntry {
     s8 substickY;                // 0x15B, stored negated
     u8 triggerLeft;              // 0x15C
     u8 triggerRight;             // 0x15D
-    u8 field_0x15E;              // 0x15E
-    u8 field_0x15F;              // 0x15F
+    u8 unusedInput[2];           // 0x15E, cleared with the other input copies (L_partyClearCont, partyUpdateKeyData), never
+                                 // set or read; as MarioWork.unusedInput
     MarioWork* playerPtr;        // 0x160
     s32 camId;                   // 0x164
     s32 yoshiPsndSFXId;          // 0x168
@@ -301,12 +302,12 @@ typedef struct PartyData {
     void (*init_func)(PartyEntry* party);  // 1
     void (*move_func)(PartyEntry* party);  // 2
     void (*use_func)(PartyEntry* party);   // 3
-    void* post_func;  // 4
+    void (*post_func)(PartyEntry* party);  // 4
     void (*bye_func)(PartyEntry* party);   // 5
     void* field_0x18; // 6
     void* field_0x1C; // 7
     void* field_0x20; // 8
-    void* exit_func;  // 9
+    void (*exit_func)(PartyEntry* party);  // 9
 } PartyData;
 void partySetFamicomMode(PartyEntry* party, s32 mode);
 extern s32 partyCtrlNo;

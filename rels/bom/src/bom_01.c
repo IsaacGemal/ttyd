@@ -445,7 +445,7 @@ EVT_END()
 DoorEntry door = {
     0,             // flags
     3,             // type
-    1,             // field_0x8
+    1,             // sfxType
     "s_ie_door",   // doorMapObj
     "A_ie_door_u", // closeHit
     "A_ie_door",   // openHit
@@ -454,7 +454,7 @@ DoorEntry door = {
     "S_ie_naka",   // insideMapObj
     NULL,          // insideHit
     evt_door_1,    // doorEvt
-    evt_door_2,    // field_0x2C
+    evt_door_2,    // downEvt
     evt_wall,      // houseEvt
     door_npc,      // npcNames
     NULL,          // mobjNames

@@ -1395,7 +1395,7 @@ EVT_END()
 static DoorEntry door_data_01 = {
     2,                // flags
     3,                // type
-    1,                // field_0x8
+    1,                // sfxType
     "ie_1_door",      // doorMapObj
     "a_door_1_N",     // closeHit
     "a_door_1",       // openHit
@@ -1404,7 +1404,7 @@ static DoorEntry door_data_01 = {
     "ie_1_naka",      // insideMapObj
     NULL,             // insideHit
     evt_door_01_00,   // doorEvt
-    NULL,             // field_0x2C
+    NULL,             // downEvt
     evt_wall_01,      // houseEvt
     door_data_01_npc, // npcNames
     NULL,             // mobjNames
@@ -1558,7 +1558,7 @@ EVT_END()
 static DoorEntry door_data_02 = {
     2,              // flags
     3,              // type
-    1,              // field_0x8
+    1,              // sfxType
     "ie_2_door",    // doorMapObj
     "a_door_2_N",   // closeHit
     "a_door_2",     // openHit
@@ -1567,7 +1567,7 @@ static DoorEntry door_data_02 = {
     "ie_2_naka",    // insideMapObj
     NULL,           // insideHit
     evt_door_02_00, // doorEvt
-    NULL,           // field_0x2C
+    NULL,           // downEvt
     evt_wall_02,    // houseEvt
     mise_npc,       // npcNames
     NULL,           // mobjNames
@@ -1725,7 +1725,7 @@ static const char* door_data_03_mobj[2] = {
 static DoorEntry door_data_03 = {
     2,                 // flags
     3,                 // type
-    1,                 // field_0x8
+    1,                 // sfxType
     "ie_3_door",       // doorMapObj
     "a_door_3_N",      // closeHit
     "a_door_3",        // openHit
@@ -1734,7 +1734,7 @@ static DoorEntry door_data_03 = {
     "ie_3_naka",       // insideMapObj
     NULL,              // insideHit
     evt_door_03_00,    // doorEvt
-    NULL,              // field_0x2C
+    NULL,              // downEvt
     evt_wall_03,       // houseEvt
     door_data_03_npc,  // npcNames
     door_data_03_mobj, // mobjNames
@@ -1844,7 +1844,7 @@ EVT_END()
 static DoorEntry door_data_04 = {
     0,                 // flags
     3,                 // type
-    1,                 // field_0x8
+    1,                 // sfxType
     "ie_4door",        // doorMapObj
     "a_door_4_N",      // closeHit
     "a_door_4",        // openHit
@@ -1853,7 +1853,7 @@ static DoorEntry door_data_04 = {
     "ie_4_naka",       // insideMapObj
     NULL,              // insideHit
     evt_door_04_00,    // doorEvt
-    evt_door_04_01,    // field_0x2C
+    evt_door_04_01,    // downEvt
     evt_wall_04,       // houseEvt
     NULL,              // npcNames
     NULL,              // mobjNames

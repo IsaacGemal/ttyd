@@ -15,11 +15,7 @@ typedef struct seq_e3_work {
     f32 dstY;          // 0x1C
     OSAlarm alarm;     // 0x20
     OSTime initTime;   // 0x48
-    u32 field_0x50;    // 0x50
-    u32 field_0x54;    // 0x54
-    u32 field_0x58;    // 0x58
-    u32 field_0x5C;    // 0x5C
-    u32 field_0x60;    // 0x60
+    u8 pad_0x50[0x64 - 0x50]; // 0x50
     f32 field_64;      // 0x64
 } seq_e3_work;
 

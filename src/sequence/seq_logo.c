@@ -171,7 +171,7 @@ void seq_logoMain(SequenceWork* work) {
 			if (fadeIsFinish()) {
 				fadeEntry(FADE_IN_BLACK, 500, sFadeColor2);
 				work->state++;
-				wp->field_0x10 = 1;
+				wp->logoIdx = 1;
 			}
 			break;
 
@@ -193,7 +193,7 @@ void seq_logoMain(SequenceWork* work) {
 			if (fadeIsFinish()) {
 				fadeEntry(FADE_IN_BLACK, 500, sFadeColor4);
 				work->state++;
-				wp->field_0x10 = 2;
+				wp->logoIdx = 2;
 			}
 			break;
 
@@ -326,7 +326,7 @@ void logoDisp(CameraId camId, void* param) {
 		GXSetScissor(0, 0, 608, 448);
 		GXSetViewport(0.0f, 0.0f, 608.0f, 448.0f, -1.0f, 1.0f);
 
-		switch (wp->field_0x10) {
+		switch (wp->logoIdx) {
 			case 0:
 				TEXGetGXTexObjFromPalette(*wp->texture->data, &texObj, 0);
 				GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -501,10 +501,10 @@ void progDisp(CameraId camId, void* param) {
 
 	camGetPtr(camId); //unused
 	if (wp->progressive) {
-		switch (wp->field_0x4) {
+		switch (wp->progState) {
 			case 0:
-				wp->field_0x18 = OSGetTime();
-				wp->field_0x4++;
+				wp->lastInputTime = OSGetTime();
+				wp->progState++;
 				break;
 
 			case 1:
@@ -518,10 +518,10 @@ void progDisp(CameraId camId, void* param) {
 					gp->triggerLeft[0] ||
 					gp->triggerRight[0])
 				{
-					wp->field_0x18 = OSGetTime();
+					wp->lastInputTime = OSGetTime();
 				}
 				else {
-					if (OSTicksToSeconds(OSGetTime() - wp->field_0x18) > 10) {
+					if (OSTicksToSeconds(OSGetTime() - wp->lastInputTime) > 10) {
 						button = 0x100;
 					}
 				}
@@ -530,7 +530,7 @@ void progDisp(CameraId camId, void* param) {
 				}
 				else if (button & PAD_BUTTON_A) {
 					time = gp->renderTime;
-					wp->field_0x4++;
+					wp->progState++;
 				}
 
 				msg = romFontGetMessage(0); //Display Progressive Scan?
@@ -563,7 +563,7 @@ void progDisp(CameraId camId, void* param) {
 
 			case 2:
 				if (OSTicksToMilliseconds(gp->renderTime - time) > 2000) {
-					wp->field_0x4++;
+					wp->progState++;
 				}
 				type = 3; //progressive turned on
 				if (wp->toggle) {
@@ -588,7 +588,7 @@ void progDisp(CameraId camId, void* param) {
 					VIWaitForRetrace();
 					VIWaitForRetrace();
 					time = gp->renderTime;
-					wp->field_0x4++;
+					wp->progState++;
 					gp->flags |= 8;
 				}
 				else {

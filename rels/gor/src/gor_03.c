@@ -3040,7 +3040,7 @@ EVT_END()
 DoorEntry door_data_01_0 = {
     0,                   // flags
     3,                   // type
-    1,                   // field_0x8
+    1,                   // sfxType
     "S_i01_doa_m",       // doorMapObj
     "A_ie01_doa_m02",    // closeHit
     "A_ie01_doa_m01",    // openHit
@@ -3049,7 +3049,7 @@ DoorEntry door_data_01_0 = {
     "S_ie_01_naka",      // insideMapObj
     "A_ie_01C",          // insideHit
     evt_door_01_00,      // doorEvt
-    NULL,                // field_0x2C
+    NULL,                // downEvt
     evt_wall_01,         // houseEvt
     door_data_01_npc,    // npcNames
     NULL,                // mobjNames
@@ -3061,7 +3061,7 @@ DoorEntry door_data_01_0 = {
 DoorEntry door_data_01_1 = {
     0,                   // flags
     3,                   // type
-    1,                   // field_0x8
+    1,                   // sfxType
     "S_i01_doa_o",       // doorMapObj
     "A_ie01_doa_o02",    // closeHit
     "A_ie01_doa_o01",    // openHit
@@ -3070,7 +3070,7 @@ DoorEntry door_data_01_1 = {
     "S_ie_01_naka",      // insideMapObj
     "A_ie_01C",          // insideHit
     evt_door_01_10,      // doorEvt
-    NULL,                // field_0x2C
+    NULL,                // downEvt
     evt_wall_01,         // houseEvt
     door_data_01_npc,    // npcNames
     NULL,                // mobjNames
@@ -3163,7 +3163,7 @@ const char* door_data_02_mobj[2] = {
 DoorEntry door_data_02_0l = {
     0,                          // flags
     3,                          // type
-    1,                          // field_0x8
+    1,                          // sfxType
     "S_ie_02_f1_doa01",         // doorMapObj
     "A_ie_02_f1_doa_l02______", // closeHit
     "A_ie_02_f1_doa_l01",       // openHit
@@ -3172,7 +3172,7 @@ DoorEntry door_data_02_0l = {
     "S_i02_f1",                 // insideMapObj
     "A_ie_02C",                 // insideHit
     evt_door_02_00,             // doorEvt
-    NULL,                       // field_0x2C
+    NULL,                       // downEvt
     evt_wall_02_0,              // houseEvt
     door_data_02_0_npc,         // npcNames
     NULL,                       // mobjNames
@@ -3184,7 +3184,7 @@ DoorEntry door_data_02_0l = {
 DoorEntry door_data_02_0r = {
     0,                    // flags
     3,                    // type
-    1,                    // field_0x8
+    1,                    // sfxType
     "S_ie_02_f1_doa02",   // doorMapObj
     "A_ie_02_f1_doa_r02", // closeHit
     "A_ie_02_f1_doa_r01", // openHit
@@ -3193,7 +3193,7 @@ DoorEntry door_data_02_0r = {
     "S_i02_f1",           // insideMapObj
     "A_ie_02C",           // insideHit
     evt_door_02_00,       // doorEvt
-    NULL,                 // field_0x2C
+    NULL,                 // downEvt
     evt_wall_02_0,        // houseEvt
     door_data_02_0_npc,   // npcNames
     door_data_02_mobj,    // mobjNames
@@ -3362,7 +3362,7 @@ EVT_END()
 DoorEntry door_data_02_1 = {
     0,                   // flags
     3,                   // type
-    1,                   // field_0x8
+    1,                   // sfxType
     "S_ie_02_f2_doa",    // doorMapObj
     "A_ie_02_f2_doa02",  // closeHit
     "A_ie_02_f2_doa01",  // openHit
@@ -3371,7 +3371,7 @@ DoorEntry door_data_02_1 = {
     "S_i02_f2",          // insideMapObj
     "A_ie_02C",          // insideHit
     evt_door_02_10,      // doorEvt
-    evt_door_02_11,      // field_0x2C
+    evt_door_02_11,      // downEvt
     evt_wall_02_1,       // houseEvt
     door_data_02_1_npc,  // npcNames
     NULL,                // mobjNames
@@ -3419,7 +3419,7 @@ EVT_END()
 static DoorEntry door_data_03 = {
     0,                  // flags
     3,                  // type
-    1,                  // field_0x8
+    1,                  // sfxType
     "S_ie_03_doa",      // doorMapObj
     "A_ie_03_doa02",    // closeHit
     "A_ie_03_doa01",    // openHit
@@ -3428,7 +3428,7 @@ static DoorEntry door_data_03 = {
     "S_ie_03_naka",     // insideMapObj
     "S_ie_03_C",        // insideHit
     evt_door_03_00,     // doorEvt
-    NULL,               // field_0x2C
+    NULL,               // downEvt
     evt_wall_03,        // houseEvt
     door_data_03_npc,   // npcNames
     NULL,               // mobjNames
@@ -3499,7 +3499,7 @@ EVT_END()
 static DoorEntry door_data_03_roll = {
     0,                 // flags
     3,                 // type
-    1,                 // field_0x8
+    1,                 // sfxType
     "S_ie_03_doa",     // doorMapObj
     NULL,              // closeHit
     "A_ie_03_rol",     // openHit
@@ -3508,7 +3508,7 @@ static DoorEntry door_data_03_roll = {
     "S_ie_03_naka",    // insideMapObj
     "S_ie_03_C",       // insideHit
     evt_door_03_00,    // doorEvt
-    NULL,              // field_0x2C
+    NULL,              // downEvt
     evt_wall_03,       // houseEvt
     door_data_03_npc,  // npcNames
     NULL,              // mobjNames
@@ -3564,7 +3564,7 @@ EVT_END()
 static DoorEntry door_data_04 = {
     0,                     // flags
     3,                     // type
-    1,                     // field_0x8
+    1,                     // sfxType
     "S_ie_04_doa",         // doorMapObj
     "A_ie_04_doa02",       // closeHit
     "A_ie_04_doa01",       // openHit
@@ -3573,7 +3573,7 @@ static DoorEntry door_data_04 = {
     "S_ie_04_naka",        // insideMapObj
     "A_ie_04_C",           // insideHit
     evt_door_04_00,        // doorEvt
-    NULL,                  // field_0x2C
+    NULL,                  // downEvt
     evt_wall_04,           // houseEvt
     door_data_04_npc,      // npcNames
     NULL,                  // mobjNames
@@ -3609,7 +3609,7 @@ EVT_END()
 DoorEntry door_data_04_roll = {
     0,                 // flags
     3,                 // type
-    1,                 // field_0x8
+    1,                 // sfxType
     "S_ie_04_doa",     // doorMapObj
     "A_ie_04_rol",     // closeHit
     NULL,              // openHit
@@ -3618,7 +3618,7 @@ DoorEntry door_data_04_roll = {
     "S_ie_04_naka",    // insideMapObj
     "A_ie_04_C",       // insideHit
     evt_door_04_00,    // doorEvt
-    NULL,              // field_0x2C
+    NULL,              // downEvt
     evt_wall_04,       // houseEvt
     door_data_04_npc,  // npcNames
     NULL,              // mobjNames

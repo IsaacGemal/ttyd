@@ -21,7 +21,7 @@ typedef struct SequenceWork {
 	s32 state; //0x4, 0-7
 	const char* mapName; //0x8
 	const char* beroName; //0xC
-	u32 field_0x10; //0x10
+	s32 frameCount; //0x10, seq_battleMain: counted up while the audience textures load and for 30 frames before leaving
 	u32 field_0x14; //0x14
 	u32 field_0x18; //0x18
 	u32 field_0x1C; //0x1C

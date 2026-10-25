@@ -831,7 +831,7 @@ void kpaFireAttack(void) {
             kpaFireBreath2(m, &pos217);
         }
         if (--KPA(mp)->attackTimer <= 0) {
-            if (!(mp->buttonHeld & 0x200) && KPA(mp)->field_0x144 == 0) {
+            if (!(mp->buttonHeld & 0x200) && KPA(mp)->evtFireHold == 0) {
                 MarioWork* m;
                 kpaChgPose("KPA_A_1D", "KPA2_A_1D");
                 KPA(mp)->attackMode = 0x18;
@@ -911,7 +911,7 @@ void kpaFireAttack(void) {
             kpaFireBreath2(m, &pos22B);
         }
         if (--KPA(mp)->attackTimer <= 0) {
-            if (!(mp->buttonHeld & 0x200) && KPA(mp)->field_0x144 == 0) {
+            if (!(mp->buttonHeld & 0x200) && KPA(mp)->evtFireHold == 0) {
                 MarioWork* m;
                 kpaChgPose("KPA_A_1D", "KPA2_A_1D");
                 KPA(mp)->attackMode = 0x2C;
