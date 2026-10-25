@@ -227,7 +227,7 @@ void partyChkGnd(PartyEntry* party) {
     }
     partyChkFrontStep(party, 11.0f, &a, &b, &c);
     if (a - party->position.y >= 5.0f && party->groundSlope <= 30.0f) {
-        party->field_120 = a;
+        party->stepUpY = a;
         if (party->speed) {
             partyChgMot(party, 6);
         }
@@ -256,9 +256,9 @@ static inline HitEntry* partyGroundHit(PartyEntry* party, HitCheckQuery* query, 
 }
 
 static inline f32 partyGroundSlope(PartyEntry* party, Vec n) {
-    party->field_C4.x = (f32)(s32)(angleABf(0.0f, 0.0f, 100.0f * n.z, 100.0f * n.y) - 180.0f);
-    party->field_C4.y = 0.0f;
-    party->field_C4.z = (f32)(s32)(angleABf(0.0f, 0.0f, 100.0f * n.x, 100.0f * n.y) - 180.0f);
+    party->field_0xC4.x = (f32)(s32)(angleABf(0.0f, 0.0f, 100.0f * n.z, 100.0f * n.y) - 180.0f);
+    party->field_0xC4.y = 0.0f;
+    party->field_0xC4.z = (f32)(s32)(angleABf(0.0f, 0.0f, 100.0f * n.x, 100.0f * n.y) - 180.0f);
     return angleABf(0.0f, 0.0f, sqrtf(n.x * n.x + n.z * n.z), -n.y);
 }
 
@@ -292,7 +292,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     if (party->flags & PARTY_FLAG_FORCE_FALL) {
         return NULL;
     }
-    party->field_C4 = (Vec){0.0f, 0.0f, 0.0f};
+    party->field_0xC4 = (Vec){0.0f, 0.0f, 0.0f};
     party->groundSlope = 0.0f;
     off = __fabsf(up);
     off += 0.1f;
@@ -302,7 +302,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
         h = 0.75f * partyGetHeight(party);
     }
     party->groundY = party->position.y;
-    party->field_E8 = -1.0f;
+    party->groundGap = -1.0f;
     if (party->speed) {
         rad = party->dir;
     } else {
@@ -357,7 +357,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
             party->groundSlope = partyGroundSlope(party, n);
             if (hitY < py && __fabsf(hitY - py) >= 2.0f) {
                 if (__fabsf(hitY - py) > __fabsf(down)) {
-                    party->field_E8 = __fabsf(py - hitY);
+                    party->groundGap = __fabsf(py - hitY);
                 } else {
                     if (hitY > bestY) {
                         bestY = hitY;
@@ -374,7 +374,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     }
     if (best != NULL) {
         party->groundY = bestY;
-        party->field_E8 = 0.0f;
+        party->groundGap = 0.0f;
         return best;
     }
     return NULL;
@@ -418,7 +418,7 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     f32 pz;
 
     a += 0.01f;
-    party->field_C4 = (Vec){0.0f, 0.0f, 0.0f};
+    party->field_0xC4 = (Vec){0.0f, 0.0f, 0.0f};
     party->groundSlope = 0.0f;
     h = partyGetHeight(party);
     *out1 = party->position.y;
@@ -603,7 +603,7 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
         hit = h1;
     }
     if (hit != NULL) {
-        party->field_EC = f31;
+        party->frontWallDist = f31;
         partyWallSlide(pos, n, sin * dist, cos * dist);
         return hit;
     }
@@ -640,12 +640,12 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     }
     if (hit2 != NULL) {
         if (angleABf(0.0f, 0.0f, sqrtf(n.x * n.x + n.z * n.z), -n.y) >= 45.0f) {
-            party->field_EC = f31;
+            party->frontWallDist = f31;
             partyWallSlide(pos, n, sin * dist, cos * dist);
             return hit2;
         }
     }
-    party->field_EC = -1.0f;
+    party->frontWallDist = -1.0f;
     pos->x += dist * sin;
     pos->z += dist * cos;
     return NULL;

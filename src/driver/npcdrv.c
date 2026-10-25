@@ -3009,7 +3009,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
             if (attack) {
                 s32 status;
 
-                if (party == NULL || party->field_33 != 2 || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
+                if (party == NULL || party->partnerType != PARTY_MEMBER_KOOPS || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
                     break;
                 }
                 status = nokonokoGetStatus(party);
@@ -3073,7 +3073,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
             if (!fbatAttackEnabled(npc)) {
                 break;
             }
-            if (!(flags & 1) || party == NULL || party->field_33 != 3
+            if (!(flags & 1) || party == NULL || party->partnerType != PARTY_MEMBER_BOBBERY
                 || gp->fbatData->sandersBombTrigger == 0) {
                 break;
             }

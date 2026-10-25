@@ -88,9 +88,9 @@ USER_FUNC(unk_800e71bc) {
     }
     mask = args[1];
     if (evtGetValue(event, args[2])) {
-        party->field_8 |= mask;
+        party->trigFlags |= mask;
     } else {
-        party->field_8 &= ~mask;
+        party->trigFlags &= ~mask;
     }
     return EVT_RETURN_DONE;
 }
@@ -273,19 +273,19 @@ USER_FUNC(evt_party_set_dir) {
         step = (dest - event->userdataf[1]) * ((f32)event->userdata[2] / (f32)frames);
         next = revise360(event->userdataf[1] + step);
         party->dispDir = next;
-        party->field_110 = party->dispDir;
-        party->dir = toMovedirSimple(party->field_110);
+        party->dispReqDir = party->dispDir;
+        party->dir = toMovedirSimple(party->dispReqDir);
         return ++event->userdata[2] > frames;
     }
     if (frames < 0) {
         next = revise360(270.0f - target);
-        party->field_110 = next;
-        party->dir = toMovedirSimple(party->field_110);
+        party->dispReqDir = next;
+        party->dir = toMovedirSimple(party->dispReqDir);
     } else if (frames == 0) {
         next = revise360(270.0f - target);
         party->dispDir = next;
-        party->field_110 = party->dispDir;
-        party->dir = toMovedirSimple(party->field_110);
+        party->dispReqDir = party->dispDir;
+        party->dir = toMovedirSimple(party->dispReqDir);
     }
     return EVT_RETURN_DONE;
 }
@@ -314,7 +314,7 @@ USER_FUNC(evt_party_set_dir_npc) {
         yaw = camera->viewYaw;
         angle = angleABf(party->position.x, party->position.z, x, z);
         delta = revise360(angle - yaw);
-        party->field_110 = (delta < 180.0f) ? 180.0f : float_0_8041bb1c;
+        party->dispReqDir = (delta < 180.0f) ? 180.0f : float_0_8041bb1c;
         party->dir = delta;
     }
     return EVT_RETURN_DONE;
@@ -337,7 +337,7 @@ USER_FUNC(evt_party_set_dir_pos) {
     yaw = camera->viewYaw;
     angle = angleABf(party->position.x, party->position.z, x, z);
     delta = revise360(angle - yaw);
-    party->field_110 = (delta < 180.0f) ? 180.0f : float_0_8041bb1c;
+    party->dispReqDir = (delta < 180.0f) ? 180.0f : float_0_8041bb1c;
     party->dir = delta;
     return EVT_RETURN_DONE;
 }
@@ -363,8 +363,8 @@ USER_FUNC(evt_party_set_dispdir) {
     if (!party) {
         return EVT_RETURN_DONE;
     }
-    party->field_110 = reviseAngle(evtGetFloat(event, args[1]));
-    party->dispDir = party->field_110;
+    party->dispReqDir = reviseAngle(evtGetFloat(event, args[1]));
+    party->dispDir = party->dispReqDir;
     return EVT_RETURN_DONE;
 }
 
@@ -457,7 +457,7 @@ USER_FUNC(evt_party_move_pos2) {
         speed = speed / (f32)gp->framerate;
         partySetForceMove(party, frames, party->dir, speed);
     }
-    if (party->field_28 == 0) {
+    if (party->forceMoveFrames == 0) {
         return EVT_RETURN_DONE;
     }
     return 0;
@@ -521,7 +521,7 @@ USER_FUNC(evt_party_jump_pos) {
             party->speed = distABf(party->position.x, party->position.z, tx, tz) / frames;
             party->dir = angleABf(party->position.x, party->position.z, tx, tz);
             if (flag == 0) {
-                party->field_FC = party->dir;
+                party->moveDir = party->dir;
             }
             partyChgPoseId(party, 4);
             dy = ty - party->position.y;
@@ -905,7 +905,7 @@ USER_FUNC(evt_party_nokotaro_kick) {
         if (party->flags & PARTY_FLAG_IS_BEING_USED) {
             return EVT_RETURN_DONE;
         }
-        party->unk16C = 0;
+        party->evtUseMsec = 0;
         party->flags |= PARTY_FLAG_IS_EVT_USE;
         party->flags |= PARTY_FLAG_IS_BEING_USED;
         partyChgRunMode(party, 3);
@@ -932,7 +932,7 @@ USER_FUNC(evt_party_nokotaro_kick_hold) {
         if (party->flags & PARTY_FLAG_IS_BEING_USED) {
             return EVT_RETURN_DONE;
         }
-        party->unk16C = 5000;
+        party->evtUseMsec = 5000;
         party->flags |= PARTY_FLAG_IS_EVT_USE;
         party->flags |= PARTY_FLAG_IS_BEING_USED;
         partyChgRunMode(party, 3);
@@ -1015,7 +1015,7 @@ USER_FUNC(evt_party_cloud_breathout) {
         if (party->flags & PARTY_FLAG_IS_BEING_USED) {
             return EVT_RETURN_DONE;
         }
-        party->unk16C = args[1];
+        party->evtUseMsec = args[1];
         party->flags |= PARTY_FLAG_IS_EVT_USE;
         party->flags |= PARTY_FLAG_IS_BEING_USED;
         partyChgRunMode(party, 3);

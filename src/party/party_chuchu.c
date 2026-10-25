@@ -228,9 +228,9 @@ USER_FUNC(set_msg) {
             event->lwData[0] = (s32)"map_exist_far";
             event->lwData[1] = 1;
         }
-        party->field_110 = (direction <= 180.0f) ? 180.0f : 0.0f;
-        party->field_FC = partyToMovedir(party, party->field_110);
-        party->dir = party->field_FC;
+        party->dispReqDir = (direction <= 180.0f) ? 180.0f : 0.0f;
+        party->moveDir = partyToMovedir(party, party->dispReqDir);
+        party->dir = party->moveDir;
     } else {
         event->lwData[0] = (s32)"map_no_exist";
         event->lwData[1] = 0;
@@ -346,8 +346,8 @@ BOOL chuchu_searchObject(void) {
 }
 
 void chuchu_init(PartyEntry* party) {
-    party->field_33 = 7;
-    party->field_32 = 0;
+    party->partnerType = PARTY_MEMBER_MS_MOWZ;
+    party->isFlyer = 0;
     party->height = 20.0f;
     party->radius = 24.0f;
 }
@@ -359,8 +359,8 @@ void chuchu_exit(PartyEntry* party) {
 }
 
 void chuchu_move(PartyEntry* party) {
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
+    if (party->trigFlags & 0x8) {
+        party->trigFlags &= ~0x8;
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
         partyWalkInit(party, 1);
     }
@@ -371,8 +371,8 @@ void chuchu_move(PartyEntry* party) {
 void chuchu_use(PartyEntry* party) {
     MarioWork* player = party->playerPtr;
 
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
+    if (party->trigFlags & 0x8) {
+        party->trigFlags &= ~0x8;
         party->useMotionId = 0;
         marioStSystemLevel(1);
     }
@@ -383,11 +383,11 @@ void chuchu_use(PartyEntry* party) {
         partyGetAppearPos3(party, &appear);
         party->targetPos = appear;
         party->timer = 4;
-        party->field_FC = angleABf(party->position.x, party->position.z,
+        party->moveDir = angleABf(party->position.x, party->position.z,
                                    party->targetPos.x, party->targetPos.z);
-        party->dir = party->field_FC;
+        party->dir = party->moveDir;
         party->dispDir = player->dispDir;
-        party->field_110 = player->dispDir;
+        party->dispReqDir = player->dispDir;
         party->speed = distABf(party->position.x, party->position.z,
                                party->targetPos.x, party->targetPos.z)
                        / (f32)party->timer;
@@ -411,9 +411,9 @@ void chuchu_use(PartyEntry* party) {
         break;
     }
     case 10:
-        party->field_110 = player->dispReqDir;
-        party->field_FC = toMovedir(party->field_110);
-        party->dir = party->field_FC;
+        party->dispReqDir = player->dispReqDir;
+        party->moveDir = toMovedir(party->dispReqDir);
+        party->dir = party->moveDir;
         party->useMotionId = 20;
         party->timer = 25;
         break;

@@ -202,8 +202,8 @@ void cloudBobUpdate(PartyEntry* party) {
 void cloud_move(PartyEntry* party) {
     f32 bob;
 
-    if ((party->field_8 & 0x8) != 0) {
-        party->field_8 &= ~0x8;
+    if ((party->trigFlags & 0x8) != 0) {
+        party->trigFlags &= ~0x8;
         partyMoveFlyInit(party, 1);
         party->tail.flurrie.bobAngle = 0.0f;
         party->tail.flurrie.bobStep = 4.25f;
@@ -216,16 +216,16 @@ void cloud_move(PartyEntry* party) {
     party->dispOffset.y = 3.0f + 3.0f * bob;
 
     if (party->moveMode != 2) {
-        party->field_8 &= ~0x40000;
+        party->trigFlags &= ~0x40000;
     }
 }
 
 void cloud_init(PartyEntry* party) {
-    party->field_33 = 5;
-    party->field_32 = 1;
+    party->partnerType = PARTY_MEMBER_FLURRIE;
+    party->isFlyer = 1;
     party->height = 38.0f;
     party->radius = 24.0f;
-    party->tail.flurrie.field_174 = 0;
+    party->tail.flurrie.field_0x174 = 0;
     party->tail.flurrie.breathFx = NULL;
     *(s32*)&party->tail.flurrie.bobAngle = 0;
     *(s32*)&party->tail.flurrie.bobStep = 0;
@@ -330,8 +330,8 @@ void N__cloud_use(PartyEntry* party) {
     s32 flag;
     s16 seq;
 
-    if ((party->field_8 & 0x8) != 0) {
-        party->field_8 &= ~0x8;
+    if ((party->trigFlags & 0x8) != 0) {
+        party->trigFlags &= ~0x8;
         *(s32*)&party->tail.flurrie.bobAngle = 0;
         *(s32*)&party->tail.flurrie.bobStep = 0;
         marioAdjustMoveDir();
@@ -349,7 +349,7 @@ void N__cloud_use(PartyEntry* party) {
             party->partyCloud->sfxId = 0xFFFFFFFFu;
         }
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) != 0) {
-            party->partyCloud->useTimer = sysMsec2Frame(party->unk16C);
+            party->partyCloud->useTimer = sysMsec2Frame(party->evtUseMsec);
         }
     }
 
@@ -362,7 +362,7 @@ void N__cloud_use(PartyEntry* party) {
     case 1:
         MOVE_TO_MARIO();
         party->dispDir = mario->dispDir;
-        party->field_110 = mario->dispReqDir;
+        party->dispReqDir = mario->dispReqDir;
         party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
         party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
         party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
@@ -419,7 +419,7 @@ void N__cloud_use(PartyEntry* party) {
         mario->dispDir = party->partyCloud->unk4;
         mario->dispReqDir = party->partyCloud->unk4;
         party->dispDir = party->partyCloud->unk4;
-        party->field_110 = party->partyCloud->unk4;
+        party->dispReqDir = party->partyCloud->unk4;
         sx = mario->position.x;
         sz = mario->position.z;
         f31 = mario->dispDir;
@@ -508,13 +508,13 @@ void N__cloud_use(PartyEntry* party) {
             mario->dispFlags &= ~(1 << 8);
             mario->dispFlags &= ~(1 << 2);
             marioAdjustMoveDir();
-            party->field_8 |= 0x40000;
+            party->trigFlags |= 0x40000;
             mario->dispFlags &= ~(1 << 8);
             marioChgMot(0);
         }
         party->flags2 |= 0x10;
         partyChgRunMode(party, 2);
-        party->field_3D = 0;
+        party->field_0x3D = 0;
         partyChgMoveMode(party, 2);
         partyChgMot(party, 1);
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {

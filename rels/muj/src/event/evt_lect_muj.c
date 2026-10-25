@@ -582,7 +582,7 @@ static USER_FUNC(set_dir) {
         f32 rot = 270 - (dir > 180 ? 270 : 90);
 
         party->dispDir = rot;
-        party->field_110 = rot;
+        party->dispReqDir = rot;
     }
     return EVT_RETURN_DONE;
 }

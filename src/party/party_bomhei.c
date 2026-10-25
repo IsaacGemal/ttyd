@@ -54,8 +54,8 @@ typedef struct BomheiWork {
 
 // .text:0x2BE4 | 0x800BFBE8 | size: 0xA4
 void bomhei_bye(PartyEntry* party) {
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
+    if (party->trigFlags & 0x8) {
+        party->trigFlags &= ~0x8;
         partyGoodbyeInit(party);
         party->playerPtr->flags &= ~0x2000;
         if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
@@ -74,12 +74,12 @@ void bomhei_bye(PartyEntry* party) {
 
 // .text:0x2BAC | 0x800BFBB0 | size: 0x38
 void bomhei_init_800BFBB0(PartyEntry* party) {
-    party->field_33 = 3;
-    party->field_32 = 0;
+    party->partnerType = PARTY_MEMBER_BOBBERY;
+    party->isFlyer = 0;
     party->height = 28.0f;
     party->radius = 28.0f;
     party->tail.bobbery.marioMotion = 100;
-    party->tail.bobbery.field_17C = -1;
+    party->tail.bobbery.field_0x17C = -1;
     party->tail.bobbery.countdownSfxId = -1;
     party->tail.bobbery.alarmSfxId = -1;
 }
@@ -175,7 +175,7 @@ void bomhei_use_cancel(void) {
 // Common tail repeated after several states: if one of the three hit objects has the
 // "hit wall" attribute, switch to state 0x3C (or 0x28 for the soft variant).
 static inline void bomhei_checkHit(PartyEntry* party) {
-    if (party->field_12C != NULL && (hitGetAttr(party->field_12C) & 0xC00) != 0) {
+    if (party->frontWallHit != NULL && (hitGetAttr(party->frontWallHit) & 0xC00) != 0) {
         party->useMotionId = 0x3C;
     } else if (party->headHit != NULL && (hitGetAttr(party->headHit) & 0xC00) != 0) {
         party->useMotionId = 0x3C;
@@ -260,7 +260,7 @@ void bomhei_use_post(PartyEntry* party) {
     party->flags &= ~PARTY_FLAG_IS_BEING_USED;
     if (party->runMode != 9) {
         party->moveMode = 0;
-        party->field_8 |= 8;
+        party->trigFlags |= 8;
     }
     party->playerPtr->flags &= ~0x2000;
     if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
@@ -297,7 +297,7 @@ void bomhei_use(PartyEntry* party) {
             if (strcmp(gp->currentMapName, "muj_05") == 0) {
                 if (party->groundHit != NULL && strcmp(hitGetName(party->groundHit), "A_dokuro_bero") == 0) {
                     party->dir = angleABf(party->position.x, party->position.z, 638.0f, 12.5f);
-                    party->field_FC = party->dir;
+                    party->moveDir = party->dir;
                 }
             }
         }
@@ -463,8 +463,8 @@ void bomhei_use_main(PartyEntry* party) {
     f32 sx47, sy47, sz47;
     f32 sx51, sy51, sz51;
 
-    if ((party->field_8 & 0x8) != 0) {
-        party->field_8 &= ~0x8;
+    if ((party->trigFlags & 0x8) != 0) {
+        party->trigFlags &= ~0x8;
         party->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
         party->flags &= ~0x03000000;
         party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
@@ -498,7 +498,7 @@ void bomhei_use_main(PartyEntry* party) {
         movePos(&targetX, &targetZ, -6.0f, toMovedirSimple(mario->dispReqDir));
         party->speed = distABf(party->position.x, party->position.z, targetX, targetZ) / 18.0f;
         party->dir = angleABf(party->position.x, party->position.z, targetX, targetZ);
-        party->field_FC = party->dir;
+        party->moveDir = party->dir;
         party->jumpPara1 = 7.5f;
         // The temp stops -O4,p folding the fneg into the pool word.
         {
@@ -540,7 +540,7 @@ void bomhei_use_main(PartyEntry* party) {
             party->position.z = pm->position.z;
             movePos(&party->position.x, &party->position.z, -6.0f, toMovedirSimple(pm->dispReqDir));
             party->position.z += 2.0f;
-            party->field_110 = pm->dispReqDir;
+            party->dispReqDir = pm->dispReqDir;
             party->dispDir = pm->dispDir;
         }
         bomhei_checkHit(party);
@@ -564,7 +564,7 @@ void bomhei_use_main(PartyEntry* party) {
         movePos(&targetX, &targetZ, 38.0f, toMovedirSimple(mario->dispReqDir));
         party->speed = distABf(party->position.x, party->position.z, targetX, targetZ) / 20.0f;
         party->dir = angleABf(party->position.x, party->position.z, targetX, targetZ);
-        party->field_FC = party->dir;
+        party->moveDir = party->dir;
         party->jumpPara1 = 3.5555556f;
         // The temp stops -O4,p folding the fneg into the pool word.
         {
@@ -615,7 +615,7 @@ void bomhei_use_main(PartyEntry* party) {
 
         partyMoveNoHosei(party);
         if (party->groundHit != NULL) {
-            if (party->field_12C != NULL && (hitGetAttr(party->field_12C) & 0xC00) != 0) {
+            if (party->frontWallHit != NULL && (hitGetAttr(party->frontWallHit) & 0xC00) != 0) {
                 party->useMotionId = 0x3C;
                 found = TRUE;
             } else if (party->headHit != NULL && (hitGetAttr(party->headHit) & 0xC00) != 0) {
@@ -770,7 +770,7 @@ void bomhei_use_main(PartyEntry* party) {
             party->position.z = pm->position.z;
             movePos(&party->position.x, &party->position.z, -6.0f, toMovedirSimple(pm->dispReqDir));
             party->position.z += 2.0f;
-            party->field_110 = pm->dispReqDir;
+            party->dispReqDir = pm->dispReqDir;
             party->dispDir = pm->dispDir;
         }
         if (--party->timer > 0) {

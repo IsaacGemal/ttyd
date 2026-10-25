@@ -74,7 +74,7 @@ void mot_vivian_post(void) {
             party->moveMode = 0;
             partyChgPoseId(party, 1);
             if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-                party->field_4F &= ~1;
+                party->tailFlags &= ~1;
             }
         }
     } else {
@@ -87,13 +87,13 @@ void mot_vivian_post(void) {
 
 // 84 B
 void vivian_init_801809C0(PartyEntry* party) {
-    party->field_33 = 6;
-    party->field_32 = 1;
+    party->partnerType = PARTY_MEMBER_VIVIAN;
+    party->isFlyer = 1;
     party->height = 35.0f;
     party->radius = 24.0f;
     party->tail.vivian.charge = 10.0f;
-    party->field_4F = 0;
-    party->field_B8 = party->position;
+    party->tailFlags = 0;
+    party->shadowPos = party->position;
     party->tail.vivian.ripple = NULL;
     vivian_cancel_req = 0;
 }
@@ -133,14 +133,14 @@ void vivianUnhold(PartyEntry* party) {
 // 28 B
 void L_partyVivianTailStop(PartyEntry* party) {
     if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-        party->field_4F |= 1;
+        party->tailFlags |= 1;
     }
 }
 
 // 28 B
 void L_partyVivianTailStart(PartyEntry* party) {
     if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-        party->field_4F &= ~1;
+        party->tailFlags &= ~1;
     }
 }
 
@@ -149,7 +149,7 @@ s32 N_vivianDisplayTailCheck(PartyEntry* party) {
     if (party->currentMemberId != PARTY_MEMBER_VIVIAN) {
         return 0;
     }
-    if (party->field_4F & 1) {
+    if (party->tailFlags & 1) {
         return 0;
     }
     if (party->flags2 & 0x800000) {
@@ -164,26 +164,26 @@ s32 N_vivianDisplayTailCheck(PartyEntry* party) {
 // 240 B
 void vivianShadow(PartyEntry* party) {
     if (party != NULL && party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-        f32 dx = party->position.x - party->field_B8.x;
-        f32 dy = party->position.y - party->field_B8.y;
-        f32 dz = party->position.z - party->field_B8.z;
+        f32 dx = party->position.x - party->shadowPos.x;
+        f32 dy = party->position.y - party->shadowPos.y;
+        f32 dz = party->position.z - party->shadowPos.z;
         f32 mx = 0.1f * dx;
         f32 my = 0.1f * dy;
         f32 mz = 0.1f * dz;
-        party->field_B8.x += mx;
-        party->field_B8.y += my;
-        party->field_B8.z += mz;
-        if (distABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z) >= 22.0f) {
-            party->field_B8 = party->position;
-            movePos(&party->field_B8.x, &party->field_B8.z, 22.0f, angleABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z));
+        party->shadowPos.x += mx;
+        party->shadowPos.y += my;
+        party->shadowPos.z += mz;
+        if (distABf(party->position.x, party->position.z, party->shadowPos.x, party->shadowPos.z) >= 22.0f) {
+            party->shadowPos = party->position;
+            movePos(&party->shadowPos.x, &party->shadowPos.z, 22.0f, angleABf(party->position.x, party->position.z, party->shadowPos.x, party->shadowPos.z));
         }
     }
 }
 
 // 280 B
 void vivian_move(PartyEntry* party) {
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
+    if (party->trigFlags & 0x8) {
+        party->trigFlags &= ~0x8;
         partyMoveFlyInit(party, 1);
     }
     partyFlyMain(party);
@@ -191,18 +191,18 @@ void vivian_move(PartyEntry* party) {
         // The temps are declared mz, my, mx (reverse use order): that colouring is what puts the
         // target's `my` in f3 and `mz` in f1. Assignments stay in mx, my, mz order.
         f32 dx, dy, dz, mz, my, mx;
-        dx = party->position.x - party->field_B8.x;
-        dy = party->position.y - party->field_B8.y;
-        dz = party->position.z - party->field_B8.z;
+        dx = party->position.x - party->shadowPos.x;
+        dy = party->position.y - party->shadowPos.y;
+        dz = party->position.z - party->shadowPos.z;
         mx = 0.1f * dx;
         my = 0.1f * dy;
         mz = 0.1f * dz;
-        party->field_B8.x += mx;
-        party->field_B8.y += my;
-        party->field_B8.z += mz;
-        if (distABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z) >= 22.0f) {
-            party->field_B8 = party->position;
-            movePos(&party->field_B8.x, &party->field_B8.z, 22.0f, angleABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z));
+        party->shadowPos.x += mx;
+        party->shadowPos.y += my;
+        party->shadowPos.z += mz;
+        if (distABf(party->position.x, party->position.z, party->shadowPos.x, party->shadowPos.z) >= 22.0f) {
+            party->shadowPos = party->position;
+            movePos(&party->shadowPos.x, &party->shadowPos.z, 22.0f, angleABf(party->position.x, party->position.z, party->shadowPos.x, party->shadowPos.z));
         }
     }
 }
@@ -260,11 +260,11 @@ static inline void vivianUseStep(PartyEntry* party) {
 void vivian_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
 
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
+    if (party->trigFlags & 0x8) {
+        party->trigFlags &= ~0x8;
         party->useMotionId = 0;
         party->tail.vivian.charge = 10.0f;
-        party->field_B8 = party->position;
+        party->shadowPos = party->position;
         vivian_cancel_req = 0;
         L_partyForceSlitOff(party);
     }
@@ -278,7 +278,7 @@ void vivian_use(PartyEntry* party) {
         vivianUseStep(party);
         party->dir = angleABf(party->position.x, party->position.z, party->targetPos.x, party->targetPos.z);
         party->dispDir = mario->dispDir;
-        party->field_110 = mario->dispReqDir;
+        party->dispReqDir = mario->dispReqDir;
         party->speed = 0.0f;
         party->jumpPara1 = 0.0f;
         party->useMotionId = 1;
@@ -290,14 +290,14 @@ void vivian_use(PartyEntry* party) {
         party->position.x += (party->targetPos.x - party->position.x) / (f32)party->timer;
         party->position.y += (party->targetPos.y - party->position.y) / (f32)party->timer;
         party->position.z += (party->targetPos.z - party->position.z) / (f32)party->timer;
-        party->field_B8 = party->position;
+        party->shadowPos = party->position;
         if (--party->timer > 0) {
             break;
         }
         party->flags2 |= 0x200000;
-        party->field_110 = mario->dispReqDir;
-        party->field_FC = toMovedirSimple(party->field_110);
-        party->field_B8 = party->position;
+        party->dispReqDir = mario->dispReqDir;
+        party->moveDir = toMovedirSimple(party->dispReqDir);
+        party->shadowPos = party->position;
         mario->dispFlags |= 0x1000;
         partyChgPose(party, "PTR_A2_3");
         partyPaperOn(party, "p_bibi");
@@ -341,7 +341,7 @@ void vivian_use(PartyEntry* party) {
         }
         psndSFXOn_3D((const char*)0x935, &party->position);
         if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-            party->field_4F |= 1;
+            party->tailFlags |= 1;
         }
         party->useMotionId = 5;
         // fallthrough
@@ -371,18 +371,18 @@ void vivian_use(PartyEntry* party) {
     mario->position.y += mario->riderDelta.y;
     if (party->useMotionId >= 2) {
         party->position = party->targetPos;
-        party->field_B8 = mario->position;
+        party->shadowPos = mario->position;
     } else {
-        party->field_B8 = party->position;
+        party->shadowPos = party->position;
     }
     {
         f32 d = mario->position.y - mario->prevPosition.y;
         if (d > 0.0f) {
-            party->field_B8.y += d;
+            party->shadowPos.y += d;
         }
     }
     {
-        Vec v = party->field_B8;
+        Vec v = party->shadowPos;
         if (party->tail.vivian.ripple == NULL) {
             party->tail.vivian.ripple = NULL;
         } else if (party->tail.vivian.ripple->flags == 0) {
@@ -410,16 +410,16 @@ void vivian_use(PartyEntry* party) {
     case 2:
         marioAdjustMoveDir();
         partyChgPose(party, "PTR_A2_4");
-        party->field_20 = 0x18;
+        party->poseTime = 0x18;
         if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-            party->field_4F &= ~1;
+            party->tailFlags &= ~1;
         }
         party->useMotionId = 0x17;
         break;
     case 3:
         vivianUseStep(party);
         animPoseSetLocalTime(party->paperAnimGroup, 24.0f);
-        party->field_20 = 0x18;
+        party->poseTime = 0x18;
         party->useMotionId = 0x18;
         party->timer = 0x18;
         psndSFXOn_3D((const char*)0x937, &party->position);

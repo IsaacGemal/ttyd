@@ -13,7 +13,7 @@ static USER_FUNC(set_dir) {
         f32 value = (f32)(270 - angle);
 
         party->dispDir = value;
-        party->field_110 = value;
+        party->dispReqDir = value;
     }
     return EVT_RETURN_DONE;
 }

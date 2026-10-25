@@ -298,7 +298,7 @@ void kemuri(void) {
 }
 
 void party_kemuri(PartyEntry* party) {
-    if (party->field_32 == 1) {
+    if (party->isFlyer == 1) {
         return;
     }
 
@@ -309,19 +309,19 @@ void party_kemuri(PartyEntry* party) {
 
         if (party->groundHit != NULL) {
             if (party->speed < 2.0f) {
-                party->field_2C = 7;
+                party->kemuriCount = 7;
             } else {
-                count = party->field_2C;
-                party->field_2C = count + 1;
+                count = party->kemuriCount;
+                party->kemuriCount = count + 1;
                 if (count > 6) {
-                    party->field_2C = 0;
+                    party->kemuriCount = 0;
                     sincosf(&sin, &cos, 6.2831855f * reviseAngle(-party->dir) / 360.0f);
                     effKemuri2Entry(0, party->position.x + 0.2f * ((party->radius) * sin), party->position.y + 1.5f,
                                     party->position.z + 0.2f * ((party->radius) * cos), sin, cos);
                 }
             }
         } else {
-            party->field_2C = 4;
+            party->kemuriCount = 4;
         }
     } else if (party->mot == 1) {
         f32 cos;
@@ -330,19 +330,19 @@ void party_kemuri(PartyEntry* party) {
 
         if (party->groundHit != NULL) {
             if (party->speed < 2.0f) {
-                party->field_2C = 7;
+                party->kemuriCount = 7;
             } else {
-                count = party->field_2C;
-                party->field_2C = count + 1;
+                count = party->kemuriCount;
+                party->kemuriCount = count + 1;
                 if (count > 6) {
-                    party->field_2C = 0;
+                    party->kemuriCount = 0;
                     sincosf(&sin, &cos, 6.2831855f * reviseAngle(-party->dir) / 360.0f);
                     effKemuri2Entry(0, party->position.x + 0.2f * ((party->radius) * sin), party->position.y + 1.5f,
                                     party->position.z + 0.2f * ((party->radius) * cos), sin, cos);
                 }
             }
         } else {
-            party->field_2C = 4;
+            party->kemuriCount = 4;
         }
     }
 }
