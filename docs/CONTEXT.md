@@ -8294,10 +8294,6 @@ untouched. Read first: the #1136, #1139, #1140 chapters (rels/common, the two ma
     layout tik_05.h and win_06.h already define: pos, at, angle, dist; cam_kaiten_set_direct copies pos/at into the
     camera's storedPos/storedAt and builds pos from at, dist and angle). Allocations use `sizeof(CamKaiten)`, in
     tik_05 too.
-  - aji_06 `yuka_anim` (`u32[2]`, element 0 cast to MapEntryAnimData* six times) -> `YukaAnim { anim; flags; }`,
-    same size and alignment (.bss, 8 bytes): `anim` is mapSearchAnmObj("yuka")'s result that
-    yuka_anim_reverse_play rewinds; `flags` bit 0 pauses (yuka_anim_reverse_pause/_replay), bit 1 ends
-    (yuka_anim_reverse_end).
   - dig_00 AnimTblUnknown 0x8 -> `actionEvent`: evt_action_sub hands it back in LW(3) and evt_action
     `SPAWN_EVENT(LW(3))`s it for animMask bit 5 (32), deleting the NPC when it is 0 (it is 0 in every entry; the
     type stays s32, data). dig_00 and end_unknown's `0x05070000` is `EXI_IS_VIEWER`.
@@ -8333,7 +8329,8 @@ untouched. Read first: the #1136, #1139, #1140 chapters (rels/common, the two ma
   (party.h; aji_13 and the set_dir/lect writers only write 0x110), FieldBattleInfo 0x14/0x1C (tou_03 only writes),
   GoryuugijoWork.data (4 or 0x78 bytes by mode, SlotData only in the slot game), YuuminigameWork.data, FileEntry.data.
   CloudEntry.mapGrpName (s8, #1139), xmemo (u32[5] .bss used as a char buffer: `s8[20]` would drop its 4-byte
-  alignment), keijiban's infoEnd (a string buffer placed after the info array), gor_03's `(s8*)` signedness,
+  alignment), aji_06 yuka_anim (u32[2] .bss holding a MapEntryAnimData* and flags; retyping data is declined for
+  now), keijiban's infoEnd (a string buffer placed after the info array), gor_03's `(s8*)` signedness,
   mri_puni's `(u8*)puni + 0x220` fake MarioWork and PuniPaternData overlay, tou2/evt_yuuranking/tou_03 match-steering
   offsets, rsh_05/mri prototype casts and mri_puni's evtGetValue callbacks (fn_ptr_cast, guarded or ABI).
 - **Placeholders.** None of the remaining rels field_0x members has a reader that pins one meaning; each was
@@ -8354,11 +8351,11 @@ untouched. Read first: the #1136, #1139, #1140 chapters (rels/common, the two ma
   `uv run --with pyelftools`, tools/tests skipped for the tower's environment errors; this worktree had no baseline,
   so `--init` ran first on the byte-identical build). At the end `obj_equiv --tree` over all 1,230 objects against
   the snapshot: all equivalent.
-- **Counts** (`tools/cleanup_index.py`, bf361fce -> this branch, same script): index **11.962 -> 11.807** per kLOC
-  (8355 -> 8247 weighted); prim_ptr_cast 1873 -> 1798, struct_ptr_cast 1191 -> 1184, deref_cast 486 -> 474,
-  field_0x 1340 -> 1338, every other category unchanged. rels/*/src + include/rel: 1837 -> 1729 weighted;
-  prim_ptr_cast 473 -> 398, struct_ptr_cast 544 -> 537, deref_cast 97 -> 85, field_0x 192 -> 190. Per file
-  (weighted): muj_01 38 -> 9, gor_00 59 -> 39, gor_04 14 -> 0, pik_00 12 -> 0, aji_06 8 -> 1, las_28 8 -> 4, sys 8 ->
+- **Counts** (`tools/cleanup_index.py`, bf361fce -> this branch, same script): index **11.962 -> 11.817** per kLOC
+  (8355 -> 8254 weighted); prim_ptr_cast 1873 -> 1798, struct_ptr_cast 1191 -> 1191, deref_cast 486 -> 474,
+  field_0x 1340 -> 1338, every other category unchanged. rels/*/src + include/rel: 1837 -> 1736 weighted;
+  prim_ptr_cast 473 -> 398, struct_ptr_cast 544 -> 544, deref_cast 97 -> 85, field_0x 192 -> 190. Per file
+  (weighted): muj_01 38 -> 9, gor_00 59 -> 39, gor_04 14 -> 0, pik_00 12 -> 0, las_28 8 -> 4, sys 8 ->
   4, rsh_00 8 -> 5, aji_09 3 -> 1, dig_00 3 -> 1, tou_10 7 -> 5, tik_05 81 -> 81.
 - **Lead, not applied.** Script flag words written in decimal across the rels (evt_mapobj_flag_onoff alone: aji_01
   has 101 calls) could take the MapObjectFlags names as tik_05's now do; outside this task's casts-and-fields scope.
