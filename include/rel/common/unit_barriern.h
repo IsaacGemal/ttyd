@@ -16,18 +16,12 @@ typedef struct BarriernZanzouScale {
     f32 value[5];
 } BarriernZanzouScale;
 
+// A satellite's move along a spline, from barriernSatelliteTo_Init (0x5C bytes, in unit work[10 + satellite]) to
+// barriernSatelliteTo_Main. The array members are spline_maketable's and spline_getvalue's tables.
 typedef struct BarriernSatelliteTo {
     s32 type;         // 0x00, spline_getvalue's type (the point count, 5)
     Vec* points;      // 0x04, the spline table (a splineTableIn*/Out* array of five Vecs) spline_maketable builds from
     f32 knots[5];     // 0x08, spline_maketable's knots
     Vec tangents[5];  // 0x1C, spline_maketable's tangents
-    s32 field_58;     // 0x58
+    s32 frame;        // 0x58, Main's intplGetValue step over 0x3C frames; the move ends at 0x3C
 } BarriernSatelliteTo;
-
-typedef struct BarriernSatelliteToData {
-    s32 field_0; // 0x00
-    f32 x;       // 0x04
-    f32 y;       // 0x08
-    f32 z;       // 0x0C
-    f32 scale;   // 0x10
-} BarriernSatelliteToData;

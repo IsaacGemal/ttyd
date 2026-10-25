@@ -6,6 +6,7 @@
 #include "evt/evt_cmd.h"
 #include "rel/common/unit_barriern.h"
 #include "driver/effdrv.h"
+#include "eff/eff_syuryou.h"
 #include "system.h"
 
 // The args increment is written before the second call so the scheduler emits the addi there,
@@ -126,11 +127,11 @@ static USER_FUNC(_check_satellite) {
         part->attributes |= 0x20000000;
         evtSetValue(event, args[0], 1);
         if (unit->work[3] != 0) {
-            BarriernSatelliteToData* data = ((EffectEntry*)unit->work[3])->userdata;
+            EffSyuryouData* data = ((EffectEntry*)unit->work[3])->userdata;
             BtlUnit_GetPos(unit, &x, &y, &z);
-            data->x = x;
-            data->y = y - 32.0f * unit->mSizeMultiplier;
-            data->z = z + 10.0f;
+            data->position.x = x;
+            data->position.y = y - 32.0f * unit->mSizeMultiplier;
+            data->position.z = z + 10.0f;
             data->scale = 1.8f * unit->mSizeMultiplier;
         }
     }

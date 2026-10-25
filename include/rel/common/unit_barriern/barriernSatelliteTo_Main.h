@@ -20,14 +20,14 @@ static u8 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     if (work == NULL) {
         return 0;
     }
-    if (work->field_58 >= 0x3c) {
+    if (work->frame >= 0x3c) {
         if (work != NULL) {
             __memFree(4, work);
             unit->work[10 + index] = 0;
         }
         return 0;
     }
-    t = intplGetValue(4, work->field_58, 0x3c, 0.0f, 1.0f);
+    t = intplGetValue(4, work->frame, 0x3c, 0.0f, 1.0f);
     spline_getvalue(out, work->type, work->points, work->knots, work->tangents, t);
     satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]);
     if (satellite == NULL) {
@@ -36,6 +36,6 @@ static u8 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
     BtlUnit_SetPos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
     BtlUnit_SetHomePos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
-    work->field_58++;
+    work->frame++;
     return 1;
 }

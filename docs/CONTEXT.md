@@ -7337,3 +7337,52 @@ win_root, winmgr).
   one meaning in both mot_jabara and mot_hammer2, so neither name has a motion prefix. The spline prototypes, mapObjGetPosSub's BOOL and the
   callbacks' CameraId change existing header declarations (the n9-q-o-proto precedent); the barriern tables stay u32
   data, so their stores take a `(Vec*)` cast (barriern v2's struct_ptr_cast 5 -> 17 while its field_0x goes 27 -> 0).
+
+## rels/common placeholder fields: the unit-local structs named, the shared-header labels left (2026-10-24, Claude Opus 5.5, n9-q-fcommon)
+
+Task (Isaac): name and type the `field_0xNN` members used in rels/common/** (about 1,060 by grep) from their consumers in
+the same unit files (CLEANUP_GUIDE section 3), touching include/battle/*.h only where a consumer here proves a field
+#1134 left. Parallel branches: fmap (include/driver, include/mario; not touched), feff (src/effect; not touched).
+
+- **What the 1,008 were** (by grep). 987 are the `// field_0xNN` labels on data-table initialisers in the unit
+  files, naming shared-header members: BattleUnitKind 0x14/0x54/0x58/0x8C (66-67 each), BattleWeapon
+  0x14/0x19/0x1B/0x6F (136 each) and BattleUnitKindPart 0x32 (175). The index ignores comments, so it saw only 74
+  sites in rels/common and include/rel/common together: 73 in the unit-local structs below and borodo's write.
+- **PidersYarnWork** (include/rel/common/unit_piders.h; users: the shared piders_draw_yarn_sub.h (v1, jon's
+  churantalar) and the v2/v3 copies). Six f32 -> two Vecs: 0x0 `top` (piders_draw_yarn: the unit's home x/z with y
+  set to 400.0f), 0xC `bottom` (home x/z with y = unit work 2, which every writer in the four units sets to 0 or eases
+  from 400 to 0 in entry_event), 0x18 `alpha` (piders_draw_yarn's argument; piders_draw_yarn_sub and v2's
+  piders_getMatColor put it in the GXSetChanMatColor alpha). piders_draw_yarn_sub draws the quad between the two ends.
+  The header now includes <dolphin/mtx.h> for Vec.
+- **BarriernSatelliteTo** (include/rel/common/unit_barriern.h; users: barriernSatelliteTo_Init/_Main.h, v1 and v2
+  unit_barriern.c). The map/driver headers branch (#1135) already named and typed 0x4 `Vec* points`, 0x8 `f32 knots[5]`
+  and 0x1C `Vec tangents[5]` from spline_maketable/spline_getvalue; this branch names the last placeholder, 0x58
+  `field_58` -> `frame` (Init clears it, Main passes it to intplGetValue(4, frame, 0x3C, 0, 1), increments it and
+  frees the work at 0x3C).
+- **BarriernSatelliteToData** went: it was a second overlay of the syuryou effect's userdata (effSyuryouEntry's effect,
+  kept in unit work 3), which include/eff/eff_syuryou.h already models as EffSyuryouData (pad 0x0, position 0x4, scale
+  0x10). The three writers (barriern_wawawa_set_target.h, v1, v2) use `data->position.x` etc.; its invented `field_0`
+  placeholder goes with it. barriern_wawawa_set_target.h includes eff/eff_syuryou.h itself now.
+- **unit_hammer_bros.c:** the HammerBrosSamplingEntry/HammerBrosSampling typedefs had no user (the target helpers use
+  battle_detect.h's BattleSampling) and went.
+- **Left, and why.** The shared labels: nothing in rels/common reads those members (the units only initialise them),
+  and the readers elsewhere are the ones #1134 recorded: BattleUnitKind 0x14 (mario_get_renzoku_count_max: the
+  returned max is at least this, 9999 in 66 tables and 9 in red_honenoko; a lead for a `renzoku...` name once the
+  function is understood), 0x54/0x58 (unit_party_vivian only; 0.0f everywhere here), 0x8C (BattleCheckDamage's chance
+  for damage patterns 0xE/0x10; 100 everywhere but super_mahorn's two kinds, 0); BattleWeapon 0x19/0x1B (copied to
+  BattleWork.impendingBonuses, a StarPowerInfo, never read), 0x14 and 0x6F (no reader anywhere in src/ or rels/); BattleUnitKindPart
+  0x32 (copied to part 0x1A4, never read). BattleUnit 0x30C: borodo (and jon's badge_borodo, tou2's borodo_king) only
+  write it. The struct casts off `unit->work[N]` (BarriernSatelliteTo*, EffectEntry*, Vec*) stay: work is BattleUnit's
+  shared s32 array. lecture_button_disp's `(u8*)b + 8` base stays under MUST_MATCH (no field at 0x8 is proven).
+- **Checks.** Each commit: `build/G8MJ01/ok` recreated, `obj_equiv --tree` over every object in build/G8MJ01/src
+  against a snapshot taken before the branch (all equivalent), and `tools/ci.py` PASS with its tools/tests step stubbed
+  (the 9 worktree environment errors recorded above); this worktree had no ratchet baseline, so `ci.py --init` ran
+  first on the byte-identical build. The 15 objects that include the changed headers (piders in jon/mri/tou2,
+  churantalar, the barriern/barriern_z/satellite/custom units in aji/moo/mri, hammer_bros in tik/tou2) built under
+  `configure.py --non-matching` with no errors or warnings, then a normal reconfigure and rebuild to `ok`.
+  fncast_lint and local_prototypes clean.
+- **Counts** (after the rebase onto #1135). `field_0x` by grep: rels/common 1008 -> 988 (987 data labels + borodo's
+  write), include/rel/common 17 -> 0. `tools/cleanup_index.py` (origin/main -> this branch, same script): index
+  13.773 -> 13.669 per kLOC (9621 -> 9548 weighted); field_0x 2476 -> 2403, everything else unchanged.
+  rels/common + include/rel/common: 168 -> 95 weighted, field_0x 74 -> 1.
+- **For a reviewer.** `top`/`bottom` rest on the y values every writer gives (400.0f vs. unit work 2 in 0..400).
