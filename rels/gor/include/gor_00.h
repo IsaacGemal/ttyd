@@ -32,7 +32,7 @@ struct NanNpcEntry {
     s16* animTable;                 // 0x58
     s16 animCount;                  // 0x5C
     s16 animCurrent;                // 0x5E
-    f32 facingAngle;                // 0x60, y rotation (evt_nannpc negates it into pose->field_0x4); 90 or 270 here
+    f32 facingAngle;                // 0x60, y rotation (evt_nannpc negates it into pose->heading); 90 or 270 here
     void (*callback)(NanNpcEntry*); // 0x64
     s32 state;                      // 0x68, switch selector of the seq functions
     s32 timer;                      // 0x6C, wait or move duration in ms, or the step count of a seq00 move
