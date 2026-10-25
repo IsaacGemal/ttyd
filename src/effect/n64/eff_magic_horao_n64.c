@@ -32,9 +32,9 @@ EffectEntry* effMagicHoraoN64Entry(s32 type, s32 colorAlpha, s32 endColorAlpha, 
 	effect->userdata = data;
 	effect->callback = effMagicHoraoMain;
 	data->type = type;
-	data->x = x;
-	data->y = y;
-	data->z = z;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
 	data->scaleRate = scaleRate;
 	data->field_0x14 = scale;
 	data->field_0x1C = colorAlpha;
@@ -56,7 +56,7 @@ void effMagicHoraoMain(EffectEntry* effect) {
 	Vec position;
 
 	data = effect->userdata;
-	position = initializeVec((Vec*)&data->x);
+	position = initializeVec(&data->position);
 	data->life--;
 	data->counter++;
 	if (data->life < 0) {
@@ -90,11 +90,11 @@ void effMagicHoraoMain(EffectEntry* effect) {
 		break;
 	case 3:
 		data->velY -= 1.0f;
-		data->y += data->velY;
-		if (data->y < 0.0f) {
-			data->y = 0.0f;
-			effHokoriN64Entry(2, 30, 5.0f + data->x, data->y, data->z);
-			effHokoriN64Entry(2, 30, data->x - 5.0f, data->y, data->z);
+		data->position.y += data->velY;
+		if (data->position.y < 0.0f) {
+			data->position.y = 0.0f;
+			effHokoriN64Entry(2, 30, 5.0f + data->position.x, data->position.y, data->position.z);
+			effHokoriN64Entry(2, 30, data->position.x - 5.0f, data->position.y, data->position.z);
 			data->state = 4;
 			data->timer = 20;
 		}
@@ -185,7 +185,7 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	counter = data->counter;
 
 	PSMTXScale(mtx2, 0.01f, 0.01f, 0.01f);
-	PSMTXTrans(mtx1, 100.0f * data->x, 100.0f * data->y, 100.0f * data->z);
+	PSMTXTrans(mtx1, 100.0f * data->position.x, 100.0f * data->position.y, 100.0f * data->position.z);
 	PSMTXConcat(mtx2, mtx1, mtx1);
 	PSMTXScale(mtx2, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx1, mtx2, mtx1);

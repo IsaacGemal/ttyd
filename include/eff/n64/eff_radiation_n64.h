@@ -10,14 +10,14 @@ typedef struct EffRadiationData {
 	f32 x;            // 0x10
 	f32 y;            // 0x14
 	f32 z;            // 0x18
-	f32 field_0x1C;   // 0x1C
+	f32 field_0x1C;   // 0x1C, Entry stores its a5 argument here and in 0x20; never read
 	f32 field_0x20;   // 0x20
 	s32 alpha;        // 0x24, 0..255, GX_TEVREG0 alpha (types 0/1 multiply the texture alpha by it); types >= 2
 	                  //       scale the piece by alpha / 255 and take their alpha from the vertices
 	s32 life;         // 0x28, frames left (head: 100 or 10 when flagged)
 	s32 age;          // 0x2C, frames since spawn
 	u8 pad_0x30[0x4]; // 0x30
-	f32 field_0x34;   // 0x34
+	f32 field_0x34;   // 0x34, 0x34-0x40: types >= 2 add 0x48-0x54 each frame and wrap to [0, 256); nothing else reads them
 	f32 field_0x38;   // 0x38
 	f32 field_0x3C;   // 0x3C
 	f32 field_0x40;   // 0x40

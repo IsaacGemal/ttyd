@@ -157,13 +157,13 @@ void effPeachDustMain(EffectEntry* effect) {
 	active = 0;
 	particles++;
 	for (i = 0; i < effect->count - 1; i++, particles++) {
-		particles->field_0x28 = (colorIndex + i + i) & 7;
+		particles->frame = (colorIndex + i + i) & 7;
 		if (particles->life < 0) {
 			active++;
 		}
 		particles->life--;
 		if (particles->life > 30 || particles->life < 0) {
-			particles->field_0x28 = -1;
+			particles->frame = -1;
 		}
 		else {
 			particles->counter++;
@@ -195,7 +195,7 @@ static inline s32 scaleColor(const u8* t, s32 i, f32 k) {
 	return (s32)(c * k);
 }
 
-// Local declaration order is chosen to reproduce mwcc's GPR assignment (camera i colorType
+// Local declaration order is chosen to reproduce mwcc's GPR assignment (camera i frame
 // colorIndex vtx); moving the lines changes which register each loop variable gets.
 void effPeachDustDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -210,7 +210,7 @@ void effPeachDustDisp(CameraId camId, void* param) {
 	s32 b;
 	CameraEntry* camera;
 	s32 i;
-	s32 colorType;
+	s32 frame;
 	s32 colorIndex;
 	u32* vtx;
 	f32 scale;
@@ -238,8 +238,8 @@ void effPeachDustDisp(CameraId camId, void* param) {
 	PSMTXConcat(camera->view, view, view);
 	particles++;
 	for (i = 0; i < effect->count - 1; i++, particles++) {
-		colorType = particles->field_0x28;
-		if (colorType < 0) {
+		frame = particles->frame;
+		if (frame < 0) {
 			continue;
 		}
 		PSMTXTrans(mtx, particles->x, particles->y, particles->z);
@@ -266,7 +266,7 @@ void effPeachDustDisp(CameraId camId, void* param) {
 			b = 0xFF;
 		}
 		GXSetTevColor(1, (GXColor){ r, g, b, 0xFF });
-		switch (colorType & 7) {
+		switch (frame & 7) {
 		case 0:
 			vtx = &size8x8_tex22x22_vtx[3 * 14];
 			break;

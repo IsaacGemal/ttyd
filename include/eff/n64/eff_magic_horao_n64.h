@@ -5,9 +5,7 @@
 #include "driver/effdrv.h"
 typedef struct effMagicHoraoData {
 	s32 type;          // 0x00
-	f32 x;             // 0x04
-	f32 y;             // 0x08
-	f32 z;             // 0x0C
+	Vec position;      // 0x04
 	f32 velY;          // 0x10, vertical velocity in the fall state
 	f32 field_0x14;    // 0x14, unused
 	f32 endScale;      // 0x18, scale eases toward this

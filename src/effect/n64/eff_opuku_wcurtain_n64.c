@@ -48,25 +48,25 @@ EffectEntry* effOpukuWcurtainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 	} else {
 		data->duration = duration;
 	}
-	data->field_0x24 = 0;
-	data->x = x;
-	data->y = y;
-	data->z = z;
+	data->alpha = 0;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
 	data->scale = scale;
-	data->field_0x18 = 20;
-	data->field_0x1C = 120;
-	data->field_0x20 = 255;
+	data->colorR = 20;
+	data->colorG = 120;
+	data->colorB = 255;
 	for (i = 0; i < 12; i++) {
-		data->field_0x2C[i] = 0.0f;
-		data->field_0x5C[i] = (rand() % 11) * 0.01f + -1.0f;
-		data->field_0x5C[i] *= 0.5f;
+		data->bottomY[i] = 0.0f;
+		data->bottomVelY[i] = (rand() % 11) * 0.01f + -1.0f;
+		data->bottomVelY[i] *= 0.5f;
 	}
 
 	return entry;
 }
 void effOpukuWcurtainMain(EffectEntry* effect) {
 	effOpukuWcurtainData* data = effect->userdata;
-	Vec position = initializeVec((Vec*)&data->x);
+	Vec position = initializeVec(&data->position);
 	s32 i;
 	s32 counter;
 
@@ -84,16 +84,16 @@ void effOpukuWcurtainMain(EffectEntry* effect) {
 	}
 	counter = data->counter;
 	if (data->duration < 0x10) {
-		data->field_0x24 = data->duration << 4;
+		data->alpha = data->duration << 4;
 	}
 	if (counter < 0x10) {
-		data->field_0x24 = counter * 0x10 + 0xf;
+		data->alpha = counter * 0x10 + 0xf;
 	}
 	for (i = 0; i < 12; i++) {
-		data->field_0x2C[i] += data->field_0x5C[i];
-		data->field_0x5C[i] += -0.05f;
-		if (data->field_0x5C[i] > 5.0f) {
-			data->field_0x5C[i] = 0.1f * (5.0f - data->field_0x5C[i]) + data->field_0x5C[i];
+		data->bottomY[i] += data->bottomVelY[i];
+		data->bottomVelY[i] += -0.05f;
+		if (data->bottomVelY[i] > 5.0f) {
+			data->bottomVelY[i] = 0.1f * (5.0f - data->bottomVelY[i]) + data->bottomVelY[i];
 		}
 	}
 	dispEntry(4, dispCalcZ(&position), 2, effOpukuWcurtainDisp, effect);
@@ -122,7 +122,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	s32 counter = data->counter;
 
 	scale = 0.1f * data->scale;
-	GXSetTevColor(GX_TEVREG0, (GXColor){ data->field_0x18, data->field_0x1C, data->field_0x20, data->field_0x24 });
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->colorR, data->colorG, data->colorB, data->alpha });
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTevStages(1);
@@ -148,14 +148,14 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 		vtx[0].y = 600;
 		vtx[0].z = 0;
 		vtx[0].s = texS;
-		vtx[0].t = (s32)data->field_0x2C[i] << 5;
+		vtx[0].t = (s32)data->bottomY[i] << 5;
 		vtx[0].r = 0xFF;
 		vtx[0].g = 0xFF;
 		vtx[0].b = 0xFF;
 		alpha = 0xFF - i * 20;
 		vtx[0].a = alpha;
 		vtx[1].x = 10 * (i * 5 - 30);
-		vtx[1].y = (s32)(10.0f * (60.0f + data->field_0x2C[i]));
+		vtx[1].y = (s32)(10.0f * (60.0f + data->bottomY[i]));
 		vtx[1].z = 0;
 		vtx[1].s = texS;
 		vtx[1].t = 0x400;
@@ -166,7 +166,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 		vtx += 2;
 	}
 
-	PSMTXTrans(transMtx, data->x, data->y, data->z);
+	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 	PSMTXScale(scaleMtx, scale, scale, scale);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 

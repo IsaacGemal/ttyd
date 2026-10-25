@@ -1,21 +1,20 @@
 #pragma once
 
 #include <dolphin/types.h>
+#include <dolphin/mtx.h>
 #include "driver/effdrv.h"
 typedef struct effOpukuWcurtainData {
 	s32 type;             // 0x00
-	f32 x;                // 0x04
-	f32 y;                // 0x08
-	f32 z;                // 0x0C
+	Vec position;         // 0x04
 	s32 duration;         // 0x10
 	s32 counter;          // 0x14
-	s32 field_0x18;       // 0x18
-	s32 field_0x1C;       // 0x1C
-	s32 field_0x20;       // 0x20
-	s32 field_0x24;       // 0x24
+	s32 colorR;           // 0x18, TEVREG0 red
+	s32 colorG;           // 0x1C, TEVREG0 green
+	s32 colorB;           // 0x20, TEVREG0 blue
+	s32 alpha;            // 0x24, TEVREG0 alpha, fades in over the first 16 frames and out over the last 16 (the TEV stage takes alpha from TEXA * RASA)
 	f32 scale;            // 0x28
-	f32 field_0x2C[12];   // 0x2C
-	f32 field_0x5C[12];   // 0x5C
+	f32 bottomY[12];      // 0x2C, per column: bottom vertex y = 10 * (60 + bottomY) (top vertex at 600), top vertex t = (s32)bottomY << 5
+	f32 bottomVelY[12];   // 0x5C, per column: added to bottomY each frame; itself drops by 0.05 per frame
 } effOpukuWcurtainData;
 // One N64 effect vertex: s16 position + s16 texture coords + RGBA8 color (14 bytes).
 typedef struct OpukuWcurtainVtx {
