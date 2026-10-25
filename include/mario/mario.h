@@ -128,7 +128,7 @@ struct KpaWork;
 typedef struct MarioWork {
     u32 flags;                     // 0x0
     s32 dispFlags;                 // 0x4
-    u32 field_0x8;                 // 0x8
+    u32 field_0x8;                 // 0x8, mot_roll: 0x10 while a roll runs, 0 when it ends; evt_mario waits for 0 after marioRollCancel
     u32 trigFlags;                 // 0xC
     s32 peachFlags;                // 0x10, PeachFlags (peach.c, mario.c)
     s32 kpaStageFlags;             // 0x14, koopa stage bits from kpaPreInit's map: 1 the 2D stages kpa_02..06 (kpaMain runs
@@ -198,7 +198,8 @@ typedef struct MarioWork {
     Vec prevPosition;              // 0x110, copy of position taken each frame (mario.c, peach.c); party_vivian reads its y
     Vec jumpFromPos;               // 0x11C, position at takeoff (mot_jump, mot_stay, mot_jabara, mot_roll): landings compare y with it,
                                    //       evt_mario and mot_ship measure the jump distance from it, mario_hit clamps to its y
-    f32 field_0x128;               // 0x128, distance from field_0x11C at landing (evt_mario)
+    f32 field_0x128;               // 0x128, x/z distance from jumpFromPos at landing (evt_mario, mot_ship; no reader); party_yoshi
+                                   //        instead sums its rise here and checks it against 0.7 * marioGetJumpHeight()
     f32 peakYpos;                  // 0x12C, marioSetPeakYpos
     f32 rollScaleY;                // 0x130, Y scale of the roll squash/stretch state machine (mot_roll, mario.c PSMTXScale)
     CameraId camId;                // 0x134
@@ -219,7 +220,8 @@ typedef struct MarioWork {
 	f32 baseSpeed;                 // 0x180, same on US
     f32 mBaseWalkSpeed;            // 0x184
     f32 mBaseDashSpeed;            // 0x188, same on US
-    f32 field_0x18C;               // 0x18C
+    f32 field_0x18C;               // 0x18C, a move speed stored by marioMove and the plane, ship, yoshi and koopa motions (mot_plane: baseSpeed);
+                                   //        itemdrv clears it; no reader
 	f32 controlStickSensitivity;   // 0x190
 	f32 controlStickAngle;         // 0x194
     f32 targetYaw;                 // 0x198
