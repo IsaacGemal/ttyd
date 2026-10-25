@@ -521,7 +521,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [1]
                 NULL,                                     // name
@@ -598,7 +598,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [2]
                 NULL,                                     // name
@@ -675,7 +675,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [3]
                 NULL,                                     // name
@@ -752,7 +752,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
         },
     },
@@ -835,7 +835,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [1]
                 NULL,                                     // name
@@ -912,7 +912,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [2]
                 NULL,                                     // name
@@ -989,7 +989,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [3]
                 NULL,                                     // name
@@ -1066,7 +1066,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
         },
     },
@@ -1149,7 +1149,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [1]
                 NULL,                                     // name
@@ -1226,7 +1226,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [2]
                 NULL,                                     // name
@@ -1303,7 +1303,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [3]
                 NULL,                                     // name
@@ -1380,7 +1380,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
         },
     },
@@ -1463,7 +1463,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [1]
                 NULL,                                     // name
@@ -1540,7 +1540,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [2]
                 NULL,                                     // name
@@ -1617,7 +1617,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [3]
                 NULL,                                     // name
@@ -1694,7 +1694,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
         },
     },
@@ -1776,7 +1776,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             0,                                        // fpRegenTime
             0,                                        // fpRegenStrength
             NULL,                                     // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
         },
         { 0, 10, 0, 0, 0, 0, 0, 0, 10 }, // typeWeight
         { 0, 0, 0 },                     // pad_0xC9
@@ -1856,7 +1856,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [1]
                 NULL,                                     // name
@@ -1933,7 +1933,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [2]
                 NULL,                                     // name
@@ -2010,7 +2010,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [3]
                 NULL,                                     // name
@@ -2087,7 +2087,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [4]
                 NULL,                                     // name
@@ -2164,7 +2164,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [5]
                 NULL,                                     // name
@@ -2241,7 +2241,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [6]
                 NULL,                                     // name
@@ -2318,7 +2318,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [7]
                 NULL,                                     // name
@@ -2395,7 +2395,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [8]
                 NULL,                                     // name
@@ -2472,7 +2472,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
         },
     },
@@ -2552,7 +2552,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             0,                                        // fpRegenTime
             0,                                        // fpRegenStrength
             NULL,                                     // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
         },
         { 10, 10, 0, 0, 0, 10, 0, 0, 10 }, // typeWeight
         { 0, 0, 0 },                       // pad_0xC9
@@ -2632,7 +2632,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [1]
                 NULL,                                     // name
@@ -2709,7 +2709,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [2]
                 NULL,                                     // name
@@ -2786,7 +2786,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [3]
                 NULL,                                     // name
@@ -2863,7 +2863,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [4]
                 NULL,                                     // name
@@ -2940,7 +2940,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [5]
                 NULL,                                     // name
@@ -3017,7 +3017,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [6]
                 NULL,                                     // name
@@ -3094,7 +3094,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [7]
                 NULL,                                     // name
@@ -3171,7 +3171,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [8]
                 NULL,                                     // name
@@ -3248,7 +3248,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
         },
     },
@@ -3328,7 +3328,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             0,                                        // fpRegenTime
             0,                                        // fpRegenStrength
             NULL,                                     // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
         },
         { 10, 10, 10, 10, 10, 10, 0, 0, 10 }, // typeWeight
         { 0, 0, 0 },                          // pad_0xC9
@@ -3408,7 +3408,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [1]
                 NULL,                                     // name
@@ -3485,7 +3485,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [2]
                 NULL,                                     // name
@@ -3562,7 +3562,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [3]
                 NULL,                                     // name
@@ -3639,7 +3639,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [4]
                 NULL,                                     // name
@@ -3716,7 +3716,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [5]
                 NULL,                                     // name
@@ -3793,7 +3793,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [6]
                 NULL,                                     // name
@@ -3870,7 +3870,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [7]
                 NULL,                                     // name
@@ -3947,7 +3947,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [8]
                 NULL,                                     // name
@@ -4024,7 +4024,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
         },
     },
@@ -4104,7 +4104,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             0,                                        // fpRegenTime
             0,                                        // fpRegenStrength
             NULL,                                     // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
         },
         { 10, 10, 10, 10, 10, 10, 10, 10, 10 }, // typeWeight
         { 0, 0, 0 },                            // pad_0xC9
@@ -4184,7 +4184,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [1]
                 NULL,                                     // name
@@ -4261,7 +4261,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [2]
                 NULL,                                     // name
@@ -4338,7 +4338,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [3]
                 NULL,                                     // name
@@ -4415,7 +4415,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [4]
                 NULL,                                     // name
@@ -4492,7 +4492,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [5]
                 NULL,                                     // name
@@ -4569,7 +4569,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [6]
                 NULL,                                     // name
@@ -4646,7 +4646,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [7]
                 NULL,                                     // name
@@ -4723,7 +4723,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
             { // [8]
                 NULL,                                     // name
@@ -4800,7 +4800,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0,                                        // fpRegenTime
                 0,                                        // fpRegenStrength
                 NULL,                                     // mAttackEvtScript
-                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+                { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
             },
         },
     },

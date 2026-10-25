@@ -148,7 +148,7 @@ BattleWeapon weapon_bomzou_explosion = {
     0,                                           // fpRegenTime
     0,                                           // fpRegenStrength
     NULL,                                        // mAttackEvtScript
-    { 0, 10, 10, 100, 30, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
+    { 0, 10, 10, 100, 30, 5, 5, 5, 5, 0, 0, 0 }, // stageEffect
 };
 
 static BattleUnitKindPart parts[1] = {

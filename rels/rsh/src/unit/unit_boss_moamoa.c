@@ -337,7 +337,7 @@ BattleWeapon weapon_moamoa_tsunami_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(moamoa_zoom)

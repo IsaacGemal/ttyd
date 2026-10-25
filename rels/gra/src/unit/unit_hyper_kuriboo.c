@@ -242,7 +242,7 @@ static BattleWeapon weapon_kuriboo_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_kuriboo_charge = {
@@ -320,7 +320,7 @@ static BattleWeapon weapon_kuriboo_charge = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static EVT_BEGIN(init_event)

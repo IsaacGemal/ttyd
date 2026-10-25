@@ -297,7 +297,7 @@ BattleWeapon weapon_atmic_teresa_press = {
     0,                                          // fpRegenTime
     0,                                          // fpRegenStrength
     NULL,                                       // mAttackEvtScript
-    { 0, 50, 50, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 50, 50, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_atmic_teresa_bikkuri = {
@@ -375,7 +375,7 @@ BattleWeapon weapon_atmic_teresa_bikkuri = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_atmic_teresa_surprise = {
@@ -453,7 +453,7 @@ BattleWeapon weapon_atmic_teresa_surprise = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_atmic_teresa_breath = {
@@ -531,7 +531,7 @@ BattleWeapon weapon_atmic_teresa_breath = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static EVT_BEGIN(init_event)

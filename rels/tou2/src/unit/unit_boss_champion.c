@@ -282,7 +282,7 @@ BattleWeapon weapon_champion_drop_kick_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_champion_screw_attack = {
@@ -360,7 +360,7 @@ BattleWeapon weapon_champion_screw_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_champion_flying_chop_attack = {
@@ -438,7 +438,7 @@ BattleWeapon weapon_champion_flying_chop_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_champion_foot_stamp_attack = {
@@ -516,7 +516,7 @@ BattleWeapon weapon_champion_foot_stamp_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_champion_healing = {
@@ -594,7 +594,7 @@ BattleWeapon weapon_champion_healing = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_champion_roof_shake_attack = {
@@ -672,7 +672,7 @@ BattleWeapon weapon_champion_roof_shake_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_champion_roof_shake_last_attack = {
@@ -750,7 +750,7 @@ BattleWeapon weapon_champion_roof_shake_last_attack = {
     0,                                          // fpRegenTime
     0,                                          // fpRegenStrength
     NULL,                                       // mAttackEvtScript
-    { 0, 25, 25, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 25, 25, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 __declspec(section ".rodata") Vec vec3_tou2_0000b738 = {0.0f, 250.0f, 0.0f};

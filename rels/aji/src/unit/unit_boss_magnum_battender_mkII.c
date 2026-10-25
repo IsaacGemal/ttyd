@@ -376,7 +376,7 @@ BattleWeapon weapon_batten_drill_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_batten_boomerang_attack = {
@@ -454,7 +454,7 @@ BattleWeapon weapon_batten_boomerang_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_batten_aud_attack = {
@@ -532,7 +532,7 @@ BattleWeapon weapon_batten_aud_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleUnitSetup entry_rocket_punch[1] = {
@@ -1640,7 +1640,7 @@ static BattleWeapon weapon_batten_rocket_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 

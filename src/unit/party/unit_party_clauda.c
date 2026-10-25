@@ -392,7 +392,7 @@ BattleWeapon partyWeapon_ClaudaNormalAttack = {
     0,                                             // fpRegenTime
     0,                                             // fpRegenStrength
     partyClaudaAttack_NormalAttack,                // mAttackEvtScript
-    { 0, 20, 20, 100, 20, 10, 2, 5, 10, 0, 0, 0 }, // field_B4
+    { 0, 20, 20, 100, 20, 10, 2, 5, 10, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ClaudaBreathAttack = {
@@ -470,7 +470,7 @@ BattleWeapon partyWeapon_ClaudaBreathAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyClaudaAttack_BreathAttack,           // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ClaudaPredationAttack = {
@@ -548,7 +548,7 @@ BattleWeapon partyWeapon_ClaudaPredationAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyClaudaAttack_PredationAttack,        // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ClaudaKumogakureAttack = {
@@ -626,7 +626,7 @@ BattleWeapon partyWeapon_ClaudaKumogakureAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyClaudaAttack_KumoGuard,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleDispPose pose_table_clauda_stay[25] = {

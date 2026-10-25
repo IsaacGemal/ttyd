@@ -262,7 +262,7 @@ static BattleWeapon weapon_gundan_zako_magician_fire_bottle = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_gundan_zako_magician_hunyahunya_bottle = {
@@ -340,7 +340,7 @@ static BattleWeapon weapon_gundan_zako_magician_hunyahunya_bottle = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_gundan_zako_magician_yokeyoke_bottle = {
@@ -418,7 +418,7 @@ static BattleWeapon weapon_gundan_zako_magician_yokeyoke_bottle = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_gundan_zako_magician_minimini_bottle = {
@@ -496,7 +496,7 @@ static BattleWeapon weapon_gundan_zako_magician_minimini_bottle = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_gundan_zako_magician_one_recover = {
@@ -574,7 +574,7 @@ static BattleWeapon weapon_gundan_zako_magician_one_recover = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_gundan_zako_magician_all_recover = {
@@ -652,7 +652,7 @@ static BattleWeapon weapon_gundan_zako_magician_all_recover = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_gundan_zako_magician_ziwaziwa_bottle = {
@@ -730,7 +730,7 @@ static BattleWeapon weapon_gundan_zako_magician_ziwaziwa_bottle = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static EVT_BEGIN(init_event)

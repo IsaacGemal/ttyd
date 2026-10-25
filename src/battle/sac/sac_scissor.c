@@ -618,7 +618,7 @@ BattleWeapon weapon_scissor = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_Scissor,                 // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 // .data:0xC0..0x180
@@ -697,7 +697,7 @@ BattleWeapon weapon_scissor_finish = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 s32 star_control(void) {
     ScissorWork* work = GetScissorPtr();

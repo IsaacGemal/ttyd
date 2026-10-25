@@ -507,7 +507,7 @@ BattleWeapon partyWeapon_ChristineNormalAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyChristineAttack_NormalAttack,        // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ChristineMonosiri = {
@@ -585,7 +585,7 @@ BattleWeapon partyWeapon_ChristineMonosiri = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyChristineAttack_Monosiri,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ChristineRenzokuAttack = {
@@ -663,7 +663,7 @@ BattleWeapon partyWeapon_ChristineRenzokuAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyChristineAttack_RenzokuAttack,       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 5, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ChristineKiss = {
@@ -741,7 +741,7 @@ BattleWeapon partyWeapon_ChristineKiss = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyChristineAttack_Kiss,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(partyChristineAttack_NormalAttack)

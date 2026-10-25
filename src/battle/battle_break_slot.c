@@ -259,7 +259,7 @@ __declspec(section ".data") BattleWeapon weapon_doku_kinoko_fp = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 __declspec(section ".data") EVT_BEGIN(doku_kinoko_effect)
     CALL(btlevtcmd_GetUnitId, -3, LW(3))

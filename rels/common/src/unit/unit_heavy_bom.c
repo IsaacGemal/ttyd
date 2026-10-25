@@ -173,7 +173,7 @@ static BattleWeapon weapon_heavy_bomb_super_explosion = {
     0,                                          // fpRegenTime
     0,                                          // fpRegenStrength
     NULL,                                       // mAttackEvtScript
-    { 0, 50, 50, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 50, 50, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_heavy_bomb_guard = {
@@ -251,7 +251,7 @@ static BattleWeapon weapon_heavy_bomb_guard = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_heavy_bomb_guard_2 = {
@@ -329,7 +329,7 @@ static BattleWeapon weapon_heavy_bomb_guard_2 = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_heavy_bomb_guard_3 = {
@@ -407,7 +407,7 @@ static BattleWeapon weapon_heavy_bomb_guard_3 = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleUnitDefense defence = { { 1, 1, 1, 1, 1 } };

@@ -282,7 +282,7 @@ static BattleWeapon weapon_koopa_hip_attack = {
     0,                                          // fpRegenTime
     0,                                          // fpRegenStrength
     NULL,                                       // mAttackEvtScript
-    { 0, 25, 25, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 25, 25, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_koopa_bite_attack = {
@@ -360,7 +360,7 @@ static BattleWeapon weapon_koopa_bite_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_koopa_critical_bite_attack = {
@@ -438,7 +438,7 @@ static BattleWeapon weapon_koopa_critical_bite_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon weapon_koopa_fire_attack = {
@@ -516,7 +516,7 @@ static BattleWeapon weapon_koopa_fire_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static EVT_BEGIN(koopa_zoom)

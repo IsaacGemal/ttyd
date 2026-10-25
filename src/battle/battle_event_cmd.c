@@ -6090,23 +6090,23 @@ USER_FUNC(btlevtcmd_WeaponAftereffect) {
     a2 = 0;
     a1 = 0;
 
-    value = irand(weapon->field_B4[0] + weapon->field_B4[1] + weapon->field_B4[2] + weapon->field_B4[3]);
+    value = irand(weapon->stageEffect.destroyA1A2Weight + weapon->stageEffect.destroyA1Weight + weapon->stageEffect.destroyA2Weight + weapon->stageEffect.destroyNoneWeight);
     if (wp->force.forceFlags & 0x10) {
         a1 = 1;
     }
     if (wp->force.forceFlags & 0x20) {
         a2 = 1;
     }
-    value -= weapon->field_B4[0];
+    value -= weapon->stageEffect.destroyA1A2Weight;
     if (value < 0) {
         a2 = 1;
         a1 = 1;
     } else {
-        value -= weapon->field_B4[1];
+        value -= weapon->stageEffect.destroyA1Weight;
         if (value < 0) {
             a1 = 1;
         } else {
-            value -= weapon->field_B4[2];
+            value -= weapon->stageEffect.destroyA2Weight;
             if (value < 0) {
                 a2 = 1;
             }
@@ -6119,7 +6119,7 @@ USER_FUNC(btlevtcmd_WeaponAftereffect) {
         a1 = 0;
     }
     if ((wp->stageObjectWork.stageFlags & 0x2) && !(wp->stageObjectWork.stageFlags & 0x8)) {
-        if (irand(100) < weapon->field_B4[4] ||
+        if (irand(100) < weapon->stageEffect.destroyBChance ||
             (wp->force.forceFlags & 0x40)) {
             b = 1;
             if (!(wp->stageObjectWork.stageFlags & 0x4)) {
@@ -6136,19 +6136,19 @@ USER_FUNC(btlevtcmd_WeaponAftereffect) {
     if (b) {
         BattleStage_DestroyB();
     }
-    if (irand(100) < weapon->field_B4[5] || (wp->force.forceFlags & 0x200)) {
+    if (irand(100) < weapon->stageEffect.nozzleDirChangeChance || (wp->force.forceFlags & 0x200)) {
         BattleStage_NozzleDirChangeCheck();
     }
-    if (irand(100) < weapon->field_B4[6] || (wp->force.forceFlags & 0x100)) {
+    if (irand(100) < weapon->stageEffect.nozzleWorkChance || (wp->force.forceFlags & 0x100)) {
         BattleStage_NozzleWorkCheck(1);
     }
-    if (irand(100) < weapon->field_B4[7] || (wp->force.forceFlags & 0x80)) {
+    if (irand(100) < weapon->stageEffect.ironFrameFallChance || (wp->force.forceFlags & 0x80)) {
         BattleStage_IronFrameFallCheck();
     }
     if (wp->stageObjectWork.stageFlags & 0x20) {
         if (wp->force.forceFlags & 0x1) {
             BattleStage_ObjectFallCheck();
-        } else if (irand(100) < weapon->field_B4[8]) {
+        } else if (irand(100) < weapon->stageEffect.objectFallChance) {
             BattleStage_ObjectFallCheck();
         }
     }

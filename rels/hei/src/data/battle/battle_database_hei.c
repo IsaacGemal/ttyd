@@ -190,7 +190,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -267,7 +267,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
@@ -355,7 +355,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -432,7 +432,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
@@ -520,7 +520,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -597,7 +597,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
@@ -685,7 +685,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -762,7 +762,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
@@ -850,7 +850,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -927,7 +927,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
@@ -1015,7 +1015,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -1092,7 +1092,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
@@ -1180,7 +1180,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -1257,7 +1257,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
@@ -1345,7 +1345,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -1422,7 +1422,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
@@ -1510,7 +1510,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -1587,7 +1587,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
@@ -1675,7 +1675,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -1752,7 +1752,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1
@@ -1840,7 +1840,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -1917,7 +1917,7 @@ BattleStageData hei_btlstage_data[11] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         NULL,                                       // initEvent
         NULL,                                       // objectTurnEventA1

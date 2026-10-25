@@ -152,7 +152,7 @@ BattleWeapon weapon_gonbaba_fumituke_attack = {
     0,                                         // fpRegenTime
     0,                                         // fpRegenStrength
     NULL,                                      // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 10, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 10, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_gonbaba_firebreath_attack = {
@@ -230,7 +230,7 @@ BattleWeapon weapon_gonbaba_firebreath_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_gonbaba_kamituki_attack = {
@@ -308,7 +308,7 @@ BattleWeapon weapon_gonbaba_kamituki_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleUnitKind unit_boss_gonbaba = {

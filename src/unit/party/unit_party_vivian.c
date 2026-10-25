@@ -504,7 +504,7 @@ BattleWeapon partyWeapon_VivianNormalAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyVivianAttack_NormalAttack,           // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_VivianShadowGuard = {
@@ -582,7 +582,7 @@ BattleWeapon partyWeapon_VivianShadowGuard = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyVivianAttack_ShadowGuard,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_VivianMagicalPowder = {
@@ -660,7 +660,7 @@ BattleWeapon partyWeapon_VivianMagicalPowder = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyVivianAttack_MagicalPowder,          // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_VivianCharmKissAttack = {
@@ -738,7 +738,7 @@ BattleWeapon partyWeapon_VivianCharmKissAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyVivianAttack_CharmKissAttack,        // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(partyVivianAttack_NormalAttack)

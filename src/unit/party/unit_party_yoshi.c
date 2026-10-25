@@ -460,7 +460,7 @@ BattleWeapon partyWeapon_YoshiNormalAttack = {
     0,                                           // fpRegenTime
     0,                                           // fpRegenStrength
     partyYoshiAttack_NormalAttack,               // mAttackEvtScript
-    { 0, 10, 10, 100, 10, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 10, 10, 100, 10, 5, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_YoshiNomikomi_Shot = {
@@ -538,7 +538,7 @@ BattleWeapon partyWeapon_YoshiNomikomi_Shot = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyYoshiAttack_Nomikomi,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_YoshiNomikomi_Spew = {
@@ -616,7 +616,7 @@ BattleWeapon partyWeapon_YoshiNomikomi_Spew = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyYoshiAttack_Nomikomi,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 5, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 5, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_YoshiNomikomi_Dmg0 = {
@@ -694,7 +694,7 @@ BattleWeapon partyWeapon_YoshiNomikomi_Dmg0 = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyYoshiAttack_Nomikomi,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_YoshiNomikomi_Fire = {
@@ -772,7 +772,7 @@ BattleWeapon partyWeapon_YoshiNomikomi_Fire = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyYoshiAttack_Nomikomi,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_YoshiNomikomi_Involved = {
@@ -850,7 +850,7 @@ BattleWeapon partyWeapon_YoshiNomikomi_Involved = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_YoshiEggAttack_Minimini = {
@@ -928,7 +928,7 @@ BattleWeapon partyWeapon_YoshiEggAttack_Minimini = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyYoshiAttack_EggAttack,               // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 3, 3, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 3, 3, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_YoshiCallGuard = {
@@ -1006,7 +1006,7 @@ BattleWeapon partyWeapon_YoshiCallGuard = {
     0,                                             // fpRegenTime
     0,                                             // fpRegenStrength
     partyYoshiAttack_CallGuard,                    // mAttackEvtScript
-    { 0, 20, 20, 100, 20, 20, 5, 5, 20, 5, 0, 0 }, // field_B4
+    { 0, 20, 20, 100, 20, 20, 5, 5, 20, 5, 0, 0 }, // stageEffect
 };
 
 BtlUnitPoseSound posesound_normal_attack[15] = {

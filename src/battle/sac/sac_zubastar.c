@@ -1257,7 +1257,7 @@ BattleWeapon weapon_zubastar = {
     /* fpRegenTime */ 0,
     /* fpRegenStrength */ 0,
     /* mAttackEvtScript */ marioAttackEvent_ZubaStar,
-    /* field_B4 */ { 0, 0, 0, 100 },
+    /* stageEffect */ { 0, 0, 0, 100 },
 };
 
 EVT_BEGIN(marioAttackEvent_ZubaStar)

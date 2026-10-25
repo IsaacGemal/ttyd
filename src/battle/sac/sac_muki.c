@@ -172,7 +172,7 @@ static BattleWeapon weapon = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_Muki,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(nice_event_pow)

@@ -169,7 +169,7 @@ static BattleWeapon enemyWeapon_NokotarouKouraAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleWeapon enemyWeapon_NokotarouShubibinAttack = {
@@ -247,7 +247,7 @@ static BattleWeapon enemyWeapon_NokotarouShubibinAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleUnitDefense defence_nokotarou = { { 1, 1, 1, 1, 1 } };
