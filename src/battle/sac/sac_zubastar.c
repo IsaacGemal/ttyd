@@ -76,7 +76,7 @@ typedef struct ZubaStarStar {
 } ZubaStarStar;
 
 struct ZubaStarWork {
-    u8 field_0x000[0x04];          // 0x000
+    u8 pad_0x000[0x04];            // 0x000
     s32 phase;                     // 0x004
     s32 phaseTimer;                // 0x008
     s32 timeLeft;                  // 0x00C
@@ -110,9 +110,9 @@ struct ZubaStarWork {
     Vec starCur;                   // 0x594
     Vec starStart;                 // 0x5A0
     Vec starEnd;                   // 0x5AC
-    Vec field_0x5B8;               // 0x5B8
-    Vec scale1;                    // 0x5C4
-    Vec scale2;                    // 0x5D0
+    u8 pad_0x5B8[0x5C4 - 0x5B8];   // 0x5B8
+    Vec starScale;                 // 0x5C4, x times 1.5 is the star stone's scale
+    Vec starRot;                   // 0x5D0, the star stone's tipRotY/rotY/tipRotZ
     EffectEntry* effect;           // 0x5DC
 };
 
@@ -161,8 +161,8 @@ static s32 main_star(EventEntry* event, BOOL isFirstCall) {
         work->starEnd = work->starCur;
         work->starEnd.y += 50.0f;
         work->starEnd.z += -1.0f;
-        work->scale1 = (Vec){ 0.0f, 0.0f, 0.0f };
-        work->scale2 = (Vec){ 0.0f, 0.0f, 0.0f };
+        work->starScale = (Vec){ 0.0f, 0.0f, 0.0f };
+        work->starRot = (Vec){ 0.0f, 0.0f, 0.0f };
         // fallthrough
     case 2:
         work->starCounter++;
@@ -171,20 +171,20 @@ static s32 main_star(EventEntry* event, BOOL isFirstCall) {
             work->starCur.y = intplGetValue(0, work->starCounter, 0x64, work->starStart.y, work->starEnd.y);
             work->starCur.z = intplGetValue(0, work->starCounter, 0x64, work->starStart.z, work->starEnd.z);
             scale = intplGetValue(0, work->starCounter, 0x64, 0.0f, 2.0f);
-            work->scale1.z = scale;
-            work->scale1.y = scale;
-            work->scale1.x = scale;
+            work->starScale.z = scale;
+            work->starScale.y = scale;
+            work->starScale.x = scale;
         } else {
             f32 two = 2.0f;
 
             work->starCur.x = work->starEnd.x;
             work->starCur.y = work->starEnd.y;
             work->starCur.z = work->starEnd.z;
-            work->scale1.z = two;
-            work->scale1.y = two;
-            work->scale1.x = two;
+            work->starScale.z = two;
+            work->starScale.y = two;
+            work->starScale.x = two;
         }
-        work->scale2.y = intplGetValue(4, work->starCounter, 0x78, 0.0f, 2160.0f);
+        work->starRot.y = intplGetValue(4, work->starCounter, 0x78, 0.0f, 2160.0f);
         if (work->starCounter >= 0x78) {
             work->starState = 3;
             work->starCounter = 0;
@@ -210,10 +210,10 @@ static s32 main_star(EventEntry* event, BOOL isFirstCall) {
         data->x = work->starCur.x;
         data->y = work->starCur.y;
         data->z = work->starCur.z;
-        data->tipRotY = work->scale2.x;
-        data->rotY = work->scale2.y;
-        data->tipRotZ = work->scale2.z;
-        data->scale = s * work->scale1.x;
+        data->tipRotY = work->starRot.x;
+        data->rotY = work->starRot.y;
+        data->tipRotZ = work->starRot.z;
+        data->scale = s * work->starScale.x;
     }
     dispEntry(4, 0.0f, 2, zubaStarDispStar, NULL);
     return 0;
@@ -990,8 +990,9 @@ s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
 s32 zubastar_end(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 i;
+    effStarStoneData* data = work->effect->userdata;
 
-    effDelete(((effStarStoneData*)work->effect->userdata)->dustEffect);
+    effDelete(data->dustEffect);
     effDelete(work->effect);
     for (i = 0; i < 0xC8; i++) {
         if (work->bombs[i] != NULL) {
@@ -1267,16 +1268,16 @@ EVT_BEGIN(marioAttackEvent_ZubaStar)
     END_SIBLING_EVENT
     CALL_CHILD(sac_start_camera_evt)
     WAIT_MS(500)
-    CALL(btlevtcmd_snd_se, -2, STRING((void*)"SFX_BTL_SAC_START1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     CALL_CHILD(sac_mario_item_on_evt)
     WAIT_MS(500)
-    CALL(btlevtcmd_snd_se, -2, STRING((void*)"SFX_BTL_SAC_START2"), EVTDAT_POINTER_MAX, 0, LW(11))
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START2"), EVTDAT_POINTER_MAX, 0, LW(11))
     CALL(star_stone_appear)
     BEGIN_SIBLING_EVENT
         CALL_CHILD(sac_start_stardust)
     END_SIBLING_EVENT
     WAIT_FRAMES(100)
-    CALL(btlevtcmd_snd_se, -2, STRING((void*)"SFX_BTL_SAC_START3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     CALL(evt_snd_sfxoff, LW(11))
     CALL(evt_btl_camera_set_mode, 0, 0)
     WAIT_FRAMES(40)

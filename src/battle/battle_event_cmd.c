@@ -1888,6 +1888,7 @@ USER_FUNC(btlevtcmd_StartAvoid) {
     s32* args = event->args;
     s32 btlId, damageCode;
     EffectEntry* entry;
+    NiceEffectWork* nice;
     BattleUnit* unit;
     Vec pos;
 
@@ -1904,7 +1905,8 @@ USER_FUNC(btlevtcmd_StartAvoid) {
         }
         pos.x -= 45.0f;
         entry = effNiceEntry(6, pos.x, pos.y, pos.z);
-        ((NiceEffectWork*)entry->userdata)->scale = 0.75f;
+        nice = entry->userdata;
+        nice->scale = 0.75f;
     }
     unit->damagePattern = 0;
     BattleRunHitEvent(unit, damageCode);
@@ -5176,6 +5178,7 @@ USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
     f32 dx, dy, dz;
     Vec pos;
     EffectEntry* entry;
+    NiceEffectWork* nice;
     StarPowerInfo* bonus;
 
     weapon = (BattleWeapon*)evtGetValue(event, args[0]);
@@ -5197,7 +5200,8 @@ USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
             pos.x = 150.0f;
         }
         entry = effNiceEntry(7, pos.x + dx, pos.y + dy, pos.z + dz);
-        ((NiceEffectWork*)entry->userdata)->scale = 0.75f;
+        nice = entry->userdata;
+        nice->scale = 0.75f;
     } else {
         BattleAudience_Case_AcrobatBad();
         psndSFXOn_3D("SFX_BTL_ACROBAT_MISS1", &pos);
@@ -5217,6 +5221,7 @@ USER_FUNC(btlevtcmd_ACSuccessEffect) {
     const char* sfx;
     s32 id;
     EffectEntry* entry;
+    NiceEffectWork* nice;
 
     type = evtGetValue(event, args[0]);
     scale = 0.75f;
@@ -5277,7 +5282,8 @@ USER_FUNC(btlevtcmd_ACSuccessEffect) {
     } else {
         entry = effNiceEntry(id, pos.x - angle, pos.y - 50.f, pos.z);
     }
-    ((NiceEffectWork*)entry->userdata)->scale = scale;
+    nice = entry->userdata;
+    nice->scale = scale;
     psndSFX_pit(psndSFXOn_3D(sfx, &pos), 0);
     return 2;
 }

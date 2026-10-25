@@ -45,7 +45,7 @@ typedef struct MukiEntry {
     Vec pos;              // 0x0C
     Vec scale;            // 0x18
     f32 tipRotY;          // 0x24, the star stone's tipRotY
-    f32 rot;              // 0x28
+    f32 rotY;             // 0x28, the star stone's rotY; disp_3D_alpha turns the icon about y by it
     f32 tipRotZ;          // 0x2C, the star stone's tipRotZ
     EffectEntry* effect;  // 0x30
     u8 alpha;             // 0x34
@@ -694,12 +694,12 @@ void main_icon(s32 index) {
         entry->type = 2;
         entry->timer = 0;
         entry->mode = irand(3);
-        entry->rot = 0.0f;
+        entry->rotY = 0.0f;
         entry->scale = (Vec){0.3f, 0.3f, 0.3f};
         /* fallthrough */
     case 2:
         entry->timer++;
-        entry->rot = intplGetValue(4, entry->timer, 0x1E, 180.0f, 1080.0f);
+        entry->rotY = intplGetValue(4, entry->timer, 0x1E, 180.0f, 1080.0f);
         entry->alpha = (u8)intplGetValue(0, entry->timer, 0x1E, 0.0f, 255.0f);
         if (entry->timer >= 0x1E) {
             entry->type = 7;
@@ -708,11 +708,11 @@ void main_icon(s32 index) {
     case 3:
         entry->type = 4;
         entry->timer = 0;
-        entry->rot = 0.0f;
+        entry->rotY = 0.0f;
         /* fallthrough */
     case 4:
         entry->timer++;
-        entry->rot = intplGetValue(1, entry->timer, 0x1E, 0.0f, 900.0f);
+        entry->rotY = intplGetValue(1, entry->timer, 0x1E, 0.0f, 900.0f);
         entry->alpha = (u8)intplGetValue(0, entry->timer, 0x1E, 255.0f, 0.0f);
         if (entry->timer >= 0x1E) {
             entry->type = 0;
@@ -727,7 +727,7 @@ void main_icon(s32 index) {
     case 7:
         entry->type = 8;
         entry->timer = 0;
-        entry->rot = 0.0f;
+        entry->rotY = 0.0f;
         break;
     case 8:
         entry->timer++;
@@ -752,7 +752,7 @@ void main_icon(s32 index) {
         data->y = entry->pos.y;
         data->z = entry->pos.z;
         data->tipRotY = entry->tipRotY;
-        data->rotY = entry->rot;
+        data->rotY = entry->rotY;
         data->tipRotZ = entry->tipRotZ;
         data->scale = 9.0f * entry->scale.x;
         data->tevReg0A = entry->alpha;
@@ -849,8 +849,9 @@ static void main_star(void) {
 s32 end_muki(EventEntry* event, BOOL isFirstCall) {
     MukiWork* work = get_ptr();
     s32 i;
+    effStarStoneData* data = work->starStone->userdata;
 
-    effDelete(((effStarStoneData*)work->starStone->userdata)->dustEffect);
+    effDelete(data->dustEffect);
     effDelete(work->starStone);
     for (i = 0; i < 9; i++) {
         effDelete(work->entries[i].effect);
@@ -1075,11 +1076,11 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
         if (entry->type >= 1 && entry->type <= 9) {
             switch (entry->mode) {
             case 0:
-                PSMTXRotRad(mtx, 'y', 0.017453292f * entry->rot);
+                PSMTXRotRad(mtx, 'y', 0.017453292f * entry->rotY);
                 PSMTXScaleApply(mtx, mtx, 2.0f * entry->scale.x,
                                 2.0f * entry->scale.y, entry->scale.z);
                 PSMTXTransApply(mtx, mtx, entry->pos.x, entry->pos.y, entry->pos.z);
-                angle0 = 2.0f * entry->rot * pi / 360.0f;
+                angle0 = 2.0f * entry->rotY * pi / 360.0f;
                 fc = (f32)cos(angle0);
                 fs = (f32)sin(angle0);
                 PSMTXTransApply(mtx, mtx, 15.0f * fs,
@@ -1092,11 +1093,11 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 btlDispTexPlane3(mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
                 break;
             case 1:
-                PSMTXRotRad(mtx, 'y', 0.017453292f * entry->rot);
+                PSMTXRotRad(mtx, 'y', 0.017453292f * entry->rotY);
                 PSMTXScaleApply(mtx, mtx, 2.0f * entry->scale.x,
                                 2.0f * entry->scale.y, entry->scale.z);
                 PSMTXTransApply(mtx, mtx, entry->pos.x, entry->pos.y, entry->pos.z);
-                f = 2.0f * entry->rot * pi / 360.0f;
+                f = 2.0f * entry->rotY * pi / 360.0f;
                 fc = (f32)cos(f);
                 fs = (f32)sin(f);
                 PSMTXTransApply(mtx, mtx, 15.0f * fs,
@@ -1107,10 +1108,10 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 btlDispTexPlane3(mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
                 break;
             case 2:
-                PSMTXRotRad(mtx, 'y', 0.017453292f * entry->rot);
+                PSMTXRotRad(mtx, 'y', 0.017453292f * entry->rotY);
                 PSMTXScaleApply(mtx, mtx, entry->scale.x, entry->scale.y, entry->scale.z);
                 PSMTXTransApply(mtx, mtx, entry->pos.x, entry->pos.y, entry->pos.z);
-                f = 2.0f * entry->rot * pi / 360.0f;
+                f = 2.0f * entry->rotY * pi / 360.0f;
                 fc = (f32)cos(f);
                 fs = (f32)sin(f);
                 PSMTXTransApply(mtx, mtx, 15.0f * fs,

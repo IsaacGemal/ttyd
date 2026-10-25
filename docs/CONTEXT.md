@@ -8359,3 +8359,117 @@ untouched. Read first: the #1136, #1139, #1140 chapters (rels/common, the two ma
   4, rsh_00 8 -> 5, aji_09 3 -> 1, dig_00 3 -> 1, tou_10 7 -> 5, tik_05 81 -> 81.
 - **Lead, not applied.** Script flag words written in decimal across the rels (evt_mapobj_flag_onoff alone: aji_01
   has 101 calls) could take the MapObjectFlags names as tik_05's now do; outside this task's casts-and-fields scope.
+## src/battle and include/battle: the placeholders #1144 made visible, named or padded; pointer casts typed away where the object allows (2026-10-25, Claude Opus 5.5, n9-q-n2battle)
+
+Task (Isaac): in src/battle/** and include/battle/**, (1) name the `field_0xNN` placeholders #1144 made visible
+(sac_genki.c was in the top ten; also sac_muki/suki/deka, BattleWork, BattleCommand.menuWork, BattleCursor) from
+their consumers under CLEANUP_GUIDE section 3, and (2) remove pointer casts (prim/struct/deref, raw offsets) by honest
+typing, keeping only casts the match needs. Parallel branches own src/party, src/event, src/manager, src/driver and
+rels/**; none of their files changed here.
+
+Checks, every commit: `build/G8MJ01/ok` recreated; each changed object compared with `tools/obj_equiv.py` against a
+snapshot of build/G8MJ01/src taken before the branch (header commits: `--tree` over all of it); every object that
+compiles a changed file or header (from `ninja -t deps`, 863 objects for the header commit) built under
+`configure.py --non-matching`, then a normal reconfigure and rebuild to `ok`; fncast_lint and local_prototypes clean;
+`tools/ci.py` PASS (as `uv run --with pyelftools python3 ~/ci_notests.py`, its tools/tests step skipped as recorded
+above; `--init` ran first on the byte-identical build, as this worktree had no baseline). BattleBreakSlot, BattleCommand
+and BattleCursor needed nothing: #1144 had already named menuWork and the cursor's index/scrollTop/num.
+
+Names (field -> name -> the consumer that justifies it):
+
+- **GenkiStar 0x30** (sac_genki) -> union `move` { `Vec vel`; struct { `f32 velX`, `f32 phase` } `hover` }, one member
+  per use #1144 recorded: in main_star0/main_star1 state 2 clears the whole Vec and sets vel.y, state 3 does `pos.y += vel.y`,
+  `vel.y += 0.2 - 0.01 idx` (an arc that ends at y 180); in state 4 (hovering) `pos.x += hover.velX` (set to +-3 past
+  x 0 and 200) and
+  `pos.y = 10 sin(hover.phase) + 180`, the phase wrapping at 2 pi. The other GenkiWork placeholders stay: GenkiStar 0x8
+  and the GenkiEffect array 0x80 are only written, GenkiWork 0x74 is only read (into GenkiEffect.pos, which nothing
+  reads).
+- **BattleWork 0x2** -> `burnEffectStep`: btlseqTurn's 0x3000009 switches on it (0 calls
+  BSE_TurnFirstProcessEffectEntry, which starts mBurnDamageFlameState, on every burning unit; 1 waits for
+  BSE_TurnFirstProcessEffectMain on all units; then the end checks), and 0x3000008 zeroes it when a unit is burning.
+  0x18FE2 stays: it is read only to cap its own increment. 0x1F9C stays: the sac works run on into it.
+- **ZubaStarWork** `scale1`/`scale2` -> `starScale`/`starRot`: zubaStarMainStar hands scale2's x/y/z to the star stone's
+  tipRotY/rotY/tipRotZ and 1.5 * scale1.x to its scale (sac_scissor's and sac_bakugame's names for the same fields).
+- **MukiEntry 0x28** `rot` -> `rotY`: main_icon hands it to the star stone's rotY (between tipRotY and tipRotZ) and
+  disp_3D_alpha turns the icon about y by it.
+- **sac_deka** (the existing names disagreed with their consumers):
+  - DekaYukaMesh 0x1830 `normal` -> `vel`: yuka_main adds the spring force to it, adds vel.y to pos.y, subtracts 2
+    (gravity) and zeroes it on the floor; main_enemy_sub pushes the enemy up by 0.5 of it.
+  - DekaWork 0x520 `yukaPos` -> `yukaWaveSpeed` (+-2, added each frame to 0x550; its sign steps yukaIndex), 0x550
+    `yukaScale` -> `yukaWavePos` (the column the floor wave has reached; yuka_main kicks columns until yukaIndex reaches
+    it), 0x568 `yukaUnk` -> `yukaWaveVelY` (added to vel.y of each column the wave passes; sac_deka's main_star sets it
+    from starCounter and the combo table), 0x4F0 `enemyUnk` -> `enemyRotZVel` (main_enemy_sub adds it to mRotation.z; +-20
+    when the rising floor hits the enemy, 0 on landing). `enemyVel` is a Vec instead of an anonymous {x, y, z};
+    `pad069`/`pad420`/`pad428`/`pad51E` respelled `pad_0xNN`.
+- **battle_menu_disp** DrawSubIcon/DrawSubIconSub arguments `a..e` and their four callers' stack-offset arrays
+  (`arr88`, `arr24`, `arr6C`, `arr50`, `arr34`) -> `enabled` (filled from mEnabled; 1 draws the icon in colour 0x10
+  and the black label), `icons`/`iconId` (mIcon, 0x18B when 0), `names`/`name` (mName, FontDrawStringMtx),
+  `fpCosts`/`fpCost` (drawn with "btl_cost_disp_FP"; BtlUnit_GetWeaponCost or mWeaponCost) and `spCosts`/`spCost`
+  (drawn with "btl_cost_disp_AP"; baseSpCost); the digit locals follow (`digitsFp`, `posSp`, ...). The unused
+  BattleMenuDispScratch typedef (named by stack offsets, no user) went.
+- **Comments only:** BattleIcon.index (its icons[] slot, the "_biu_%02x" name and BtlIconGetPtr's key; was "TODO:
+  rename?"), field_0x14 (was "prob X": only the product with 0x18 reaches iconSetScale, both 1.0), BattleUnitPart
+  mHitBaseOffset/mHitCursorBaseOffset (were "guess"; BtlUnit_GetHitPos and _btlSamplingEnemy add them, so the names
+  hold), BattleAudience.mTurnEndPhaseEventChance (was "TODO verify name"; BattleAudience_Case_TurnEnd's irand(100)
+  chance, +3 a turn).
+
+Respelled `pad_0xNN` (nothing reads or writes them by name or offset; only whole-struct memsets reach them):
+BakuGameWork 0x78, 0xAC, 0xB4, 0xE4, 0x1F4, 0x1FC, 0x230, 0x270, 0x278, 0x29C, 0x2A8, 0x2B4 (#1141 left them as
+"untouched word gaps"); ScissorWork 0x04, 0xC4, 0x110, 0x148; ZubaStarWork 0x0, 0x5B8; SukiButton 0x4;
+BattleACDispParams 0x8, 0x1C; BattleAudience 0x1A, 0x137D8, BattleAudienceWindow 0x1, BattleAudienceMember 0xD8/0xE0;
+BattleWorkField180C0 0x0, BattleWorkField19068 0x4; BattleUnit 0x1BC, BattleUnitPart 0xDC (#1134 kept that band as a
+field because it mirrors the unit's hop fields; nothing touches it); BattleIcon 0x5C, 0x61; BattleSeqEndWork 0x1C/0x20;
+BattleStageLight's `pad_E1` -> `pad_0xE1`. This follows the task's rule (pad for untouched) and #1144's practice.
+
+Casts removed (same object each):
+- Effect userdata through a typed local where it is read once: effStarStoneData in end_genki and the six sac end
+  functions, NiceEffectWork in battle_damage (2), battle_seq and battle_event_cmd (3), EffCrystalData in sac_suki.
+  Where the userdata is stored through several times (effStamp tev registers in sac_genki/sac_muki/battle_damage,
+  effVaporN64Data, EffWhirlwindData in battle_mario/battle_event_subset) a local changes the object: the original
+  reloads `eff->userdata` for every store (tried; main_mario 0x14 bytes shorter, _binta_effect 8), so those casts stay.
+- `(char*)`/`(void*)` on string literals inside `STRING()` (battle_seq_end 31, sac_suki 9, sac_zubastar 3) and in
+  ac_lstrckeep_iconname's initialiser: redundant, data bytes identical. Not the `(void*)`/`(char*)` on const objects
+  (`str_80421D3C`, `&float_0_...`, `str_M_V_2`, `zero_80420520`): MWCC rejects `(s32)` of a const pointer in a static
+  initialiser ("illegal implicit conversion from 'const char *' to 'char *'"), so those stay.
+- ac_pendulum_crane_timing: `((u16*)_hp_tbl)[2 * i]` / `[2 * i - 2]` -> `_hp_tbl[i].hp` / `_hp_tbl[i - 1].hp`.
+
+Left, and why:
+- Write-only or unread placeholders: GenkiStar 0x8, GenkiEffect, GenkiWork 0x74; MukiWork 0x10, SukiWork 0x8, DekaWork
+  0x48, DekaTiming 0x4 (each the script's args[0], stored and never read); ZubaStarStar 0x4, ZubaStarWork 0x90/0xA0;
+  ScissorWork 0xA0/0x10C; BakuGameWork 0xC0/0xC8; BattleMenuWork 0x10/0xF8/0x114; PendulumCraneTimingWork 0x20;
+  BattleUnit 0x258/0x264/0x268/0x26E/0x26F/0x30C; BattleWork 0x18FE2; BattleSeqEndWork 0x0/0x14/0x28; BattleStage
+  and its dark blocks' 0x0; BattleAudienceWindow 0x10; BattleIcon 0x14/0x18 (only their product, always 1.0);
+  BadgesEquipped 0x3 (zeroed by battle.c's byte loop); BattleACDispParams 0x4/0x10/0x13/0x24 (as #1141 says).
+- Placeholders in headers other branches own: EventEntry 0x84/0x90 (include/manager/evtmgr.h; about 60 of the
+  field_0x sites left in battle_mario, battle_stage_object and battle_seq_end), FieldBattleInfo 0x1B
+  (include/driver/npcdrv.h; battle_actrecord), BattleGroupSetup's `s32*` drop-param pointers (npcdrv.h; their
+  `(DropMaterialParam*)` casts in battle_information stay with them).
+- Casts that are the API or the data, not typing debt: `evtGetValue` results and `event->args`/`userdata` words
+  turned into pointers (BattleWeapon*, event code, names: most of battle_event_cmd's 60), the AC work area (`(XWork*)&ac->acWork[0]`, ~50,
+  kept a byte array by #1134), sound ids passed as names (`psndSFXOn((char*)0x9D9)`, `psndSFXOn_3D((const char*)0xA64)`:
+  498 such calls tree-wide), `seqSetSeq(..., (char*)1, ...)`, raw data tables read through a struct (N_weapon_lucky_start,
+  _nozzle_at_base_mario, _ac_timing_a_timing_lv_*, the audience tables, `_enemy_can_use_item_table`: retyping them
+  is a data-definition change, out of scope), the `.sdata` colour templates in battle_stage, `_rate_mix`'s
+  `(s8*)` on u8 chance fields (its comparisons are signed), sac_scissor's `f32*`/ScissorPoint views of one buffer,
+  and the 59 sites already under MUST_MATCH.
+- Tried and refused by the object: DrawMenuHelpWin's `(s8*)tag` and `(char*)text[i]` (the buffer as `char` changes
+  the code: `-char unsigned`), battle_damage's `(s8*)&sp9` (locals as s8: 8 bytes shorter), BtlUnit_EnemyItemCanUseCheck's
+  `(s32*)` table (as u32* the compare becomes cmplw), BtlUnit_SetParamToPouch's
+  `*(s16*)((u8*)pouch + party * 0xE + 6)` (as `pouch->partyData[party].currentHP` the +6 folds into the store:
+  `add`+`sth 6(r3)` for `addi`+`sthx`). That raw offset and battle_status_effect's `offsetof` one stay unguarded,
+  as they were: no new MUST_MATCH region in cleanup.
+
+Review: an independent read-only Claude Opus 5.5 agent, given the diff and the naming rules (not these notes), checked
+every new name and comment against all its users and every pad_ respell for hidden accesses. It found no wrong names and no touched pad_ region; its three comment
+wording fixes (the rising star arcs to y 180, hover.velX is set rather than negated at the edges, the wave kicks until
+yukaIndex reaches the wave, not passes it) are applied. It noted that btlevtcmd_ac_timing_flag_onoff writes acWork+4,
+which is ScissorWork's pad_0x04, but only TimingA commands and unit scripts call it, never the scissor SAC; and that
+battle_event_cmd computes `hopY - hopY` (battle_event_cmd.c ~4351/4411), which the matching build shows is the
+original's own offset, so BattleUnit 0x1BC stays untouched.
+
+Counts (`tools/cleanup_index.py`, d3584632 -> this branch, same script): index **11.817 -> 11.622** per kLOC
+(8254 -> 8118 weighted); field_0x 1338 -> 1270, prim_ptr_cast 1798 -> 1746, struct_ptr_cast 1191 -> 1175, every other category unchanged. In src/battle + include/battle: field_0x 278 -> 210,
+prim_ptr_cast 201 -> 149, struct_ptr_cast 157 -> 141, weighted 1270 -> 1134; sac_genki.c
+151 -> 119 weighted (96.5 -> 75.6 per kLOC), still fifth of the worst ten: what is left there is the file's .rodata
+vec3 objects (46 address names, read through 14 deref casts; data definitions, not touched), the five guarded
+function-pointer casts, seven sound ids passed as names and the four const pointers in PTR().

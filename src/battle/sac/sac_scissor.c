@@ -59,7 +59,7 @@ typedef struct ScissorPoint {
 // No header declares this struct yet.
 typedef struct ScissorWork {
     u32 flags;                    // 0x00, bit 0: the capture has a visible bounding box
-    u8 field_0x04[0x08];          // 0x04
+    u8 pad_0x04[0x08];            // 0x04
     s32 comboCount;               // 0x0C, allHit rounds so far (capped at 6 when shown)
     s32 pulse;                    // 0x10, 0..0x3B frame counter for the line colour
     s32 triCount;                 // 0x14, triangles in triBuf
@@ -77,7 +77,7 @@ typedef struct ScissorWork {
     f32 cursorY;                  // 0xB8
     f32 lastPointX;               // 0xBC, last point written to pointBuf
     f32 lastPointY;               // 0xC0
-    u8 field_0xC4[0x10];          // 0xC4
+    u8 pad_0xC4[0x10];            // 0xC4
     f32 cursorVelX;               // 0xD4
     f32 cursorVelY;               // 0xD8
     f32 trailX[4];                // 0xDC, the cursor's last four positions (star_control shifts them in every
@@ -87,7 +87,7 @@ typedef struct ScissorWork {
     s32 timeLeft;                 // 0x104, starts at 0x3BF
     f32 timerPos;                 // 0x108, the timer's position (320 .. 120)
     f32 field_0x10C;              // 0x10C
-    u8 field_0x110[0x04];         // 0x110
+    u8 pad_0x110[0x04];           // 0x110
     void* pointBuf;               // 0x114, 0x1000 bytes of ScissorPoint
     f32 (*triBuf)[6];             // 0x118, 0x3000 bytes of triangles (f32 x3, then y3 per triangle)
     s32 state;                    // 0x11C
@@ -95,7 +95,7 @@ typedef struct ScissorWork {
     Vec starPos;                  // 0x124
     Vec starFrom;                 // 0x130, interpolation start of the star's rise
     Vec starTo;                   // 0x13C, interpolation end of the star's rise
-    u8 field_0x148[0x0C];         // 0x148
+    u8 pad_0x148[0x0C];           // 0x148
     Vec starScale;                // 0x154
     Vec starRot;                  // 0x160
     EffectEntry* starStone;       // 0x16C
@@ -1381,8 +1381,9 @@ s32 scissor_init(void) {
 
 s32 scissor_end(void) {
     ScissorWork* work = GetScissorPtr();
+    effStarStoneData* data = work->starStone->userdata;
 
-    effDelete(((effStarStoneData*)work->starStone->userdata)->dustEffect);
+    effDelete(data->dustEffect);
     effDelete(work->starStone);
     if (work->captureBuf != NULL) {
         smartFree(work->captureBuf);

@@ -442,12 +442,12 @@ typedef struct BattleWorkUnitPart {
     s8 faceDirection;                              // 0xBD
     u8 pad_0xBE[0xC0 - 0xBE];                      // 0xBE
     BtlUnitSeMode seMode;                          // 0xC0, move sound (BtlUnit_LoadSeMode's dst, _MoveSoundControlCore)
-    u8 field_0xDC[0xF8 - 0xDC];                    // 0xDC
+    u8 pad_0xDC[0xF8 - 0xDC];                      // 0xDC
     BtlUnitSeModeSrc seModeSrc;                    // 0xF8, LoadSeMode's source presets
     s32 work[16];                                  // 0x130
-    Vec mHitBaseOffset;                            // 0x170, guess
+    Vec mHitBaseOffset;                            // 0x170, the kind part's hitBaseOffset; BtlUnit_GetHitPos adds it (sized)
     Vec mHitOffset;                                // 0x17C
-    Vec mHitCursorBaseOffset;                      // 0x188, guess
+    Vec mHitCursorBaseOffset;                      // 0x188, the kind part's; _btlSamplingEnemy adds it with mHitCursorOffset
     Vec mHitCursorOffset;                          // 0x194
     s16 detectOffsetX;                             // 0x1A0, x offset added to the part's sampling position, times facing (battle_detect)
     s16 shadowSize;                                // 0x1A2, base size of the part's shadowEntry, times the unit and part
@@ -659,7 +659,7 @@ typedef struct BattleUnit {
     f32 hopAngle;                                // 0x1B0, degrees; sin(hopAngle) scales the hop's vertical speed
     f32 hopAngleStep;                            // 0x1B4, degrees added to hopAngle each frame
     f32 hopY;                                    // 0x1B8, height recorded at the start and after each move step
-    u8 field_0x1BC[0x1C0 - 0x1BC];               // 0x1BC
+    u8 pad_0x1BC[0x1C0 - 0x1BC];                 // 0x1BC
     BtlUnitSeModeSrc seModeSrc;                  // 0x1C0, LoadSeMode's source presets
     BattleWorkHpGauge hpGauge;                   // 0x1F8
     s32 work[16];                                // 0x214

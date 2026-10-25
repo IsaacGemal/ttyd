@@ -76,7 +76,13 @@ typedef struct GenkiStar {
     Vec pos;                    // 0xC, into the star stone effect's x/y/z
     Vec from;                   // 0x18, intplGetValue start
     Vec to;                     // 0x24, intplGetValue end
-    Vec field_0x30;             // 0x30
+    union {
+        Vec vel;                // state 3: pos.y += vel.y, vel.y += gravity (arcs to y 180; x and z unused)
+        struct {
+            f32 velX;           // state 4: pos.x += velX, set to +-3 (+-0.05 idx in main_star0) past x 0 and 200
+            f32 phase;          // state 4: pos.y = 10 sin(phase) + 180
+        } hover;
+    } move;                     // 0x30
     Vec scale;                  // 0x3C, x times 1.5 is the star stone's scale
     Vec rot;                    // 0x48, the star stone's tipRotY/rotY/tipRotZ
     f32 radius;                 // 0x54, distance from Mario while circling
@@ -846,8 +852,8 @@ void main_star0(s32 idx) {
             star->timer = 0;
             star->from = star->pos;
             star->to = (Vec){200.0f * (f32)rand() / 32767.0f, 180.0f, star->from.z};
-            star->field_0x30 = (Vec){0.0f, 0.0f, 0.0f};
-            star->field_0x30.y = (2.0f * (star->to.y - star->from.y) -
+            star->move.vel = (Vec){0.0f, 0.0f, 0.0f};
+            star->move.vel.y = (2.0f * (star->to.y - star->from.y) -
                               (60.0f * (60.0f *
                                (0.2f - 0.01f * (f32)idx)))) /
                              120.0f;
@@ -856,8 +862,8 @@ void main_star0(s32 idx) {
     case 3:
         star->timer++;
         star->pos.x = intplGetValue(4, star->timer, 0x3C, star->from.x, star->to.x);
-        star->pos.y += star->field_0x30.y;
-        star->field_0x30.y += 0.2f - 0.01f * (f32)idx;
+        star->pos.y += star->move.vel.y;
+        star->move.vel.y += 0.2f - 0.01f * (f32)idx;
         star->rot.y = 0.0f;
         star->scale.z = 0.75f;
         star->scale.y = 0.75f;
@@ -866,25 +872,25 @@ void main_star0(s32 idx) {
             star->state = 4;
             star->timer = 0;
             if (irand(2) == 0) {
-                star->field_0x30.x = -2.0f - 0.05f * (f32)idx;
+                star->move.hover.velX = -2.0f - 0.05f * (f32)idx;
             }
-            star->field_0x30.x = 2.0f + 0.05f * (f32)idx;
-            star->field_0x30.y = 0.0f;
+            star->move.hover.velX = 2.0f + 0.05f * (f32)idx;
+            star->move.hover.phase = 0.0f;
         }
         break;
     case 4:
-        star->pos.x += star->field_0x30.x;
+        star->pos.x += star->move.hover.velX;
         if (star->pos.x < 0.0f) {
-            star->field_0x30.x = 3.0f + 0.05f * (f32)idx;
+            star->move.hover.velX = 3.0f + 0.05f * (f32)idx;
         }
         if (star->pos.x > 200.0f) {
-            star->field_0x30.x = -3.0f - 0.05f * (f32)idx;
+            star->move.hover.velX = -3.0f - 0.05f * (f32)idx;
         }
-        star->field_0x30.y += 0.1f + 0.01f * (f32)idx;
-        if (star->field_0x30.y >= 6.283184f) {
-            star->field_0x30.y -= 6.283184f;
+        star->move.hover.phase += 0.1f + 0.01f * (f32)idx;
+        if (star->move.hover.phase >= 6.283184f) {
+            star->move.hover.phase -= 6.283184f;
         }
-        star->pos.y = 10.0f * (f32)sin(star->field_0x30.y) + 180.0f;
+        star->pos.y = 10.0f * (f32)sin(star->move.hover.phase) + 180.0f;
         if (genki->timeLeft <= 0) {
             star->state = 5;
             star->timer = 0;
@@ -958,16 +964,16 @@ void main_star1(void) {
             star->timer = 0;
             star->from = star->pos;
             star->to = (Vec){200.0f * (f32)rand() / 32767.0f, 180.0f, star->from.z};
-            star->field_0x30 = (Vec){0.0f, 0.0f, 0.0f};
-            star->field_0x30.y = (2.0f * (star->to.y - star->from.y) -
+            star->move.vel = (Vec){0.0f, 0.0f, 0.0f};
+            star->move.vel.y = (2.0f * (star->to.y - star->from.y) -
                               720.0f) / 120.0f;
         }
         break;
     case 3:
         star->timer++;
         star->pos.x = intplGetValue(4, star->timer, 0x3C, star->from.x, star->to.x);
-        star->pos.y += star->field_0x30.y;
-        star->field_0x30.y += 0.2f;
+        star->pos.y += star->move.vel.y;
+        star->move.vel.y += 0.2f;
         star->rot.y = 0.0f;
         star->scale.z = 2.0f;
         star->scale.y = 2.0f;
@@ -976,25 +982,25 @@ void main_star1(void) {
             star->state = 4;
             star->timer = 0;
             if (irand(2) == 0) {
-                star->field_0x30.x = -2.0f;
+                star->move.hover.velX = -2.0f;
             }
-            star->field_0x30.x = 2.0f;
-            star->field_0x30.y = 0.0f;
+            star->move.hover.velX = 2.0f;
+            star->move.hover.phase = 0.0f;
         }
         break;
     case 4:
-        star->pos.x += star->field_0x30.x;
+        star->pos.x += star->move.hover.velX;
         if (star->pos.x < 0.0f) {
-            star->field_0x30.x = 3.0f;
+            star->move.hover.velX = 3.0f;
         }
         if (star->pos.x > 200.0f) {
-            star->field_0x30.x = -3.0f;
+            star->move.hover.velX = -3.0f;
         }
-        star->field_0x30.y += 0.1f;
-        if (star->field_0x30.y >= 6.283184f) {
-            star->field_0x30.y -= 6.283184f;
+        star->move.hover.phase += 0.1f;
+        if (star->move.hover.phase >= 6.283184f) {
+            star->move.hover.phase -= 6.283184f;
         }
-        star->pos.y = 10.0f * (f32)sin(star->field_0x30.y) + 180.0f;
+        star->pos.y = 10.0f * (f32)sin(star->move.hover.phase) + 180.0f;
         if (genki->timeLeft <= 0) {
             star->state = 5;
             star->timer = 0;
@@ -1029,17 +1035,23 @@ USER_FUNC(end_genki) {
     for (i = 0; i < 7; i++) {
         star = &genki->stars[i];
         if (star->eff != NULL) {
-            effDelete(((effStarStoneData*)star->eff->userdata)->dustEffect);
+            effStarStoneData* data = star->eff->userdata;
+
+            effDelete(data->dustEffect);
             effDelete(star->eff);
         }
     }
     for (i = 0; i < 7; i++) {
         weapon = &genki->weapon[i];
         if (weapon->eff != NULL) {
-            effDelete(((effStarStoneData*)weapon->eff->userdata)->dustEffect);
+            effStarStoneData* data = weapon->eff->userdata;
+
+            effDelete(data->dustEffect);
             effDelete(weapon->eff);
             for (j = 0; j < 3; j++) {
-                effDelete(((effStarStoneData*)weapon->trailEff[j]->userdata)->dustEffect);
+                effStarStoneData* trail = weapon->trailEff[j]->userdata;
+
+                effDelete(trail->dustEffect);
                 effDelete(weapon->trailEff[j]);
             }
         }

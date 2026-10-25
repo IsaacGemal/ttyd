@@ -16,7 +16,7 @@ typedef void (*BattleACDeleteCallback)(BattleWork* work);
 typedef struct BattleACDispParams {
     s32 dispFrame;              // 0x0, frames the disp functions have run; / 7 & 1 alternates ac_repeatedly's icons
     s32 field_0x4;              // 0x4
-    u8 field_0x8[0xC - 0x8];    // 0x8
+    u8 pad_0x8[0xC - 0x8];      // 0x8
     union {
         s32 rgba;               // stored whole from each AC's constant
         GXColor color;          // BattleAcDrawGauge's flag 1 scales the gauge colour by it
@@ -27,7 +27,7 @@ typedef struct BattleACDispParams {
     u8 field_0x13;              // 0x13
     f32 iconX;                  // 0x14, see actionCommandDisp
     f32 iconY;                  // 0x18, see actionCommandDisp
-    u8 field_0x1C[0x20 - 0x1C]; // 0x1C
+    u8 pad_0x1C[0x20 - 0x1C];   // 0x1C
     s32 counter;                // 0x20, counts down (ac_button_down) or up (ac_air_gauge)
     s32 field_0x24;             // 0x24, third argument of actionCommandDisp (ac_lst_rc_keep, ac_stick_keep_left)
     f32 value;                  // 0x28, ac_air_gauge's gauge value

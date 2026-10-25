@@ -8,9 +8,9 @@
 typedef struct BattleWorkIcon {
 	u16 flags; //0x0
 	u16 iconId; //0x2
-	s32 index; //0x4, TODO: rename?
+	s32 index; //0x4, its slot in BattleWork.icons: the "_biu_%02x" icon name, BtlIconGetPtr's key
 	Vec position; //0x8
-	f32 field_0x14; //0x14, prob X, TODO
+	f32 field_0x14; //0x14, BattleIconMain passes field_0x14 * field_0x18 to iconSetScale (both 1.0 from BtlIcon_Entry)
 	f32 field_0x18; //0x18
 	IconEntry* base; //0x1C
 	Vec moveStartPos; //0x20, btlevtcmd_BtlIconJumpPosition's move state (laid out like BattleUnit's)
@@ -22,9 +22,9 @@ typedef struct BattleWorkIcon {
 	f32 moveSpeedY; //0x50
 	f32 moveAngle; //0x54
 	f32 moveDist; //0x58
-	f32 field_0x5C; //0x5C
+	u8 pad_0x5C[0x60 - 0x5C]; //0x5C
 	s8 moveDirection; //0x60
-	u8 field_0x61[0x9C - 0x61]; //0x61
+	u8 pad_0x61[0x9C - 0x61]; //0x61
 } BattleIcon;
 
 void BattleIconInit(void);

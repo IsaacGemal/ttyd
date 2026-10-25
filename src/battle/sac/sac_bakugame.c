@@ -56,16 +56,16 @@ struct BakuGameWork {
     s32 phase;                        // 0x4, outer switch in bakuGameMain
     s32 phaseTimer;                   // 0x8
     BakuGameWorkEntry entries[3];     // 0xC
-    u8 field_0x78[0x7C - 0x78];       // 0x78
+    u8 pad_0x78[0x7C - 0x78];         // 0x78
     s32 stage;                        // 0x7C, inner switch in bakuGameMain
     s32 counter;                      // 0x80, frames into the current stage
     s32 duration;                     // 0x84, frames the current stage runs for
     Vec position;                     // 0x88
     Vec fromPos;                      // 0x94, Mario's drop start (y is 0x98)
     Vec landPos;                      // 0xA0, Mario's drop end (y is 0xA4)
-    u8 field_0xAC[0xB0 - 0xAC];       // 0xAC
+    u8 pad_0xAC[0xB0 - 0xAC];         // 0xAC
     f32 fallSpeed;                    // 0xB0, drop speed, decays by 0.5 a frame
-    u8 field_0xB4[0xC0 - 0xB4];       // 0xB4
+    u8 pad_0xB4[0xC0 - 0xB4];         // 0xB4
     f32 field_0xC0;                   // 0xC0, set to 90 and 70 by the stage code, never read
     f32 intensity;                    // 0xC4, time-gauge intensity: camera shake and animPoseDrawMtx
     f32 field_0xC8;                   // 0xC8, always written with intensity
@@ -77,7 +77,7 @@ struct BakuGameWork {
     f32 gaugeDecay;                   // 0xD8, -0.3 a frame
     f32 gaugeX;                       // 0xDC, BattleAcDrawGauge's x; slides in from -1000 to 50
     f32 gaugeY;                       // 0xE0, BattleAcDrawGauge's y
-    u8 field_0xE4[0xE8 - 0xE4];       // 0xE4
+    u8 pad_0xE4[0xE8 - 0xE4];         // 0xE4
     f32 gaugeFill;                    // 0xE8, gauge / 100 clamped to 1, the BattleAcDrawGauge ratio
     s32 animPose;                     // 0xEC, c_star_bom pose id, -1 when released
     s32 countdown;                    // 0xF0, frames left in the round
@@ -93,30 +93,30 @@ struct BakuGameWork {
     Vec heihoPos;                     // 0x1D0, y is the bounce height
     Vec heihoFrom;                    // 0x1DC
     Vec heihoTo;                      // 0x1E8
-    f32 field_0x1F4;                  // 0x1F4
+    u8 pad_0x1F4[0x1F8 - 0x1F4];      // 0x1F4
     f32 heihoVelY;                    // 0x1F8
-    u8 field_0x1FC[0x200 - 0x1FC];    // 0x1FC
+    u8 pad_0x1FC[0x200 - 0x1FC];      // 0x1FC
     s32 texIndex;                     // 0x200, texture index passed to TEXGetGXTexObjFromPalette
     s32 state;                        // 0x204, starStone phase in main_star
     s32 frame;                        // 0x208
     Vec starPos;                      // 0x20C
     Vec starFrom;                     // 0x218
     Vec starTo;                       // 0x224
-    u8 field_0x230[0xC];              // 0x230
+    u8 pad_0x230[0xC];                // 0x230
     Vec starScale;                    // 0x23C
     Vec starRot;                      // 0x248
     EffectEntry* starStone;           // 0x254
     Vec marioFrom;                    // 0x258, Mario's surprise start (y 0x25C, z 0x260)
     Vec marioTo;                      // 0x264, Mario's surprise end (y 0x268, z 0x26C)
-    u8 field_0x270[0x274 - 0x270];    // 0x270
+    u8 pad_0x270[0x274 - 0x270];      // 0x270
     f32 marioVelY;                    // 0x274
-    u8 field_0x278[0x298 - 0x278];    // 0x278
+    u8 pad_0x278[0x298 - 0x278];      // 0x278
     f32 partyVelY;                    // 0x298
-    u8 field_0x29C[0x2A4 - 0x29C];    // 0x29C
+    u8 pad_0x29C[0x2A4 - 0x29C];      // 0x29C
     f32 audienceY;                    // 0x2A4, height offset applied to the audience and the throw
-    u8 field_0x2A8[0x2B0 - 0x2A8];    // 0x2A8
+    u8 pad_0x2A8[0x2B0 - 0x2A8];      // 0x2A8
     f32 audienceVelY;                 // 0x2B0
-    u8 field_0x2B4[0x2B8 - 0x2B4];    // 0x2B4
+    u8 pad_0x2B4[0x2B8 - 0x2B4];      // 0x2B4
 };
 
 // The weapon bakuGameDecideWeapon copies into the work (0xC0 bytes, a BattleWeapon): name, message, stats and
@@ -239,7 +239,8 @@ s32 init_bakugame(EventEntry* event, BOOL isFirstCall) {
 
 s32 end_bakugame(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
-    effDelete(((effStarStoneData*)baku->starStone->userdata)->dustEffect);
+    effStarStoneData* data = baku->starStone->userdata;
+    effDelete(data->dustEffect);
     effDelete(baku->starStone);
     return EVT_RETURN_DONE;
 }

@@ -122,7 +122,7 @@ typedef struct BattleStageFallObjectData {
 // and the original reaches the other fields through one pointer to it: wp->stageObjectWork.x recomputes the address
 // for each access, where a BattleWorkField180C0 pointer gives the original's single addis.
 typedef struct BattleWorkField180C0 {
-    u8 field_0x0[0x4 - 0x0];       // 0x0 (BattleWork 0x180C0)
+    u8 pad_0x0[0x4 - 0x0];         // 0x0 (BattleWork 0x180C0)
     Vec layer2Rotation;            // 0x4, mapObjRotate's angles for the layer 2 objects (_set_mobj_rotate_x sets x)
     Vec layer2RotationApplied;     // 0x10, layer2Rotation as last applied by BattleStageObjectMain
     u8 stageFlags;                 // 0x1C, bits 0x2/0x4/0x8 set by the layer switches, 0x10 by
@@ -169,7 +169,7 @@ typedef struct BattleWorkField19068 {
                                    // work, 0x200 nozzle turn, 0x10000 audience count = forceAudienceCount, 0x20000
                                    // frequent audience item throws, 0x40000 the 1-in-20 audience kind swap, 0x80000
                                    // bingo reels stop on forceSlotValue
-    u8 field_0x4[0xC - 0x4];       // 0x4
+    u8 pad_0x4[0xC - 0x4];         // 0x4
     s32 forceAudienceCount;        // 0xC, starting audience (capped at the max) under 0x10000
     s32 forceAudienceKind;         // 0x10, 1-12 fills the audience with one kind; 0 = off
     s32 forceSlotValue;            // 0x14, reel value forced under 0x80000
@@ -184,7 +184,8 @@ typedef struct BattleWorkField18FF0 {
 
 struct BattleWork {
     s16 turnCount;                      // 0x0
-    u16 field_0x2;                      // 0x2, step counter of battle_seq's SEQ_TURN 0x3000009 (burn effects)
+    u16 burnEffectStep;                 // 0x2, btlseqTurn 0x3000009: 0 starts the burn effect on each burning unit
+                                        // (BSE_TurnFirstProcessEffectEntry), 1 waits for them; 0x3000008 zeroes it
     s32 seqUnknownValue;                // 0x4
     BattleAlliance alliances[3];        // 0x8
     BattleUnit* units[64];              // 0x20
