@@ -91,15 +91,15 @@ void SoundInit(void) {
         sndOutputMode(SND_OUTPUTMODE_STEREO);
     }
     sound.callback = AIRegisterDMACallback(SoundAIDMACallback);
-    sound.unk330 = 0;
-    sound.unk15C0 = 0;
+    sound.outputHalf = 0;
+    sound.outputPos = 0;
     sound.fadeIn = 10;
     sound.fadeOut = 500;
     sound.dataId = 0;
     sound.slibId = 0;
     sound.cover = 0;
-    sound.unk224 = 0;
-    sound.unkE8 = 0;
+    sound.cacheCount = 0;
+    sound.nextGroupId = 0;
 
     data = sndMalloc(0x20000);
     sound.filedata = data;
@@ -132,7 +132,7 @@ void SoundInit(void) {
     for (i = 0; i < 40; i++, effects++) {
         effects->flags = 0;
         effects->voiceId = -1;
-        effects->unk2 = 0;
+        effects->prio = 0;
         effects->vol = 0x7F;
         effects->pan = 0x40;
     }
@@ -179,7 +179,7 @@ void SoundInit(void) {
             while (1)
                 ;
         } // infinite loop
-        stream->entries[0].unk28 = ptr;
+        stream->entries[0].buffer = ptr;
 
         ptr = sndMalloc(0x8000);
         if (ptr == 0) {
@@ -201,7 +201,7 @@ void SoundInit(void) {
             while (1)
                 ;
         } // infinite loop
-        stream->entries[1].unk28 = ptr;
+        stream->entries[1].buffer = ptr;
     }
 
     slot = sound.unk108;
@@ -374,14 +374,14 @@ BOOL SoundLoadDVD2PushGroup(u8* groupIds) {
             groupIds++;
         };
     } else {
-        groupIndex = sound.unkE8;
+        groupIndex = sound.nextGroupId;
         while (groupIndex < 0xFF) {
             if (sndPushGroup(sound.projData[sound.dataId], (SND_GROUPID)groupIndex, 0, sound.sdirData[sound.dataId],
                              sound.poolData[sound.dataId]) != TRUE) {
                 break;
             }
             sound.groupCount[sound.dataId]++;
-            sound.unkE8++;
+            sound.nextGroupId++;
             groupIndex++;
         }
     }
@@ -469,7 +469,7 @@ BOOL SoundSLibLoadDVD(const char* path) {
         }
         arrfile = chunkPtr + 8;
         group->flags = 1;
-        group->unk2 = id;
+        group->index = id;
         group->groupId = 0;
         group->songId = 0;
         group->arrfile = arrfile;
@@ -574,12 +574,12 @@ static inline void _ssDropSeq(void) {
     for (i = 0; i < 3; i++) {
         if (sound.streams[i].flags) {
             stream = &sound.streams[i];
-            if (!sound.unk20C) {
+            if (!sound.interruptDepth) {
                 sound.interrupts = OSDisableInterrupts();
             }
-            sound.unk20C++;
+            sound.interruptDepth++;
             if (stream->flags & 0x400) {
-                sound.unk226[stream->unk2] = 0;
+                sound.cacheUsed[stream->cacheSlot] = 0;
             }
             stream->flags = 0;
             DVDMgrClose(stream->entries[0].dvd);
@@ -588,8 +588,8 @@ static inline void _ssDropSeq(void) {
             if (stream->count == 2) {
                 sndStreamFree(stream->entries[1].streamId);
             }
-            if (sound.unk20C) {
-                if (!--sound.unk20C) {
+            if (sound.interruptDepth) {
+                if (!--sound.interruptDepth) {
                     OSRestoreInterrupts(sound.interrupts);
                 }
             }
@@ -656,12 +656,12 @@ BOOL SoundDropData(void) {
     for (i = 0; i < 3; i++) {
         if (sound.streams[i].flags) {
             stream = &sound.streams[i];
-            if (!sound.unk20C) {
+            if (!sound.interruptDepth) {
                 sound.interrupts = OSDisableInterrupts();
             }
-            sound.unk20C++;
+            sound.interruptDepth++;
             if (stream->flags & 0x400) {
-                sound.unk226[stream->unk2] = 0;
+                sound.cacheUsed[stream->cacheSlot] = 0;
             }
             stream->flags = 0;
             DVDMgrClose(stream->entries[0].dvd);
@@ -670,8 +670,8 @@ BOOL SoundDropData(void) {
             if (stream->count == 2) {
                 sndStreamFree(stream->entries[1].streamId);
             }
-            if (sound.unk20C) {
-                if (!--sound.unk20C) {
+            if (sound.interruptDepth) {
+                if (!--sound.interruptDepth) {
                     OSRestoreInterrupts(sound.interrupts);
                 }
             }
@@ -705,7 +705,7 @@ BOOL SoundDropData(void) {
 
     sound.dataId = 0;
     sound.slibId = 0;
-    sound.unkE8 = 0;
+    sound.nextGroupId = 0;
 
     while (1) {
         if (!group) {
@@ -770,7 +770,7 @@ inline SoundGroup* SoundSongGetGroup(u8 id) {
         if (group == 0) {
             return 0;
         }
-        if (group->unk2 == searchId) {
+        if (group->index == searchId) {
             break;
         }
     }
@@ -870,12 +870,12 @@ inline void SoundEfxMuteCh(u32 chan) {
     }
 }
 
-inline s32 SoundEfxStopAll(u8 a1) {
+inline s32 SoundEfxStopAll(u8 prio) {
     SoundEffect* sfx = sound.effects;
     s32 chan = 0;
 
     for (chan = 0; chan < 40; chan++, sfx++) {
-        if (sfx->unk2 <= a1) {
+        if (sfx->prio <= prio) {
             SoundEfxMuteCh(chan);
             break;
         }
@@ -906,7 +906,7 @@ inline u32 SoundEfxCheckPlay(s32 chan) {
 
 // 100%: the free-slot scan for the "stop all" fallback must be written inline (reusing chan/sfx) rather than
 // calling inline SoundEfxStopAll; that is what lets MWCC coalesce them onto r29/r30.
-s32 SoundEfxPlayEx(SND_FXID fid, u8 a2, u8 vol, u8 pan) {
+s32 SoundEfxPlayEx(SND_FXID fid, u8 prio, u8 vol, u8 pan) {
     SoundEffect* sfx;
     s32 chan;
 
@@ -919,7 +919,7 @@ s32 SoundEfxPlayEx(SND_FXID fid, u8 a2, u8 vol, u8 pan) {
     if (chan >= 40u) {
         sfx = sound.effects;
         for (chan = 0; chan < 40; chan++, sfx++) {
-            if (sfx->unk2 <= a2) {
+            if (sfx->prio <= prio) {
                 SoundEfxMuteCh(chan);
                 break;
             }
@@ -929,20 +929,20 @@ s32 SoundEfxPlayEx(SND_FXID fid, u8 a2, u8 vol, u8 pan) {
         }
     }
     sfx->flags = 0;
-    if (!sound.unk20C) {
+    if (!sound.interruptDepth) {
         sound.interrupts = OSDisableInterrupts();
     }
-    ++sound.unk20C;
+    ++sound.interruptDepth;
     sfx->voiceId = sndFXStart(fid, 127, pan);
     sndFXVolume(sfx->voiceId, vol);
-    if (sound.unk20C && !--sound.unk20C) {
+    if (sound.interruptDepth && !--sound.interruptDepth) {
         OSRestoreInterrupts(sound.interrupts);
     }
     if (sfx->voiceId == -1) {
         return -1;
     }
     sfx->flags = 1;
-    sfx->unk2 = a2;
+    sfx->prio = prio;
     sfx->vol = vol;
     sfx->pan = pan;
     sfx->span = 0;
@@ -1137,7 +1137,7 @@ void SoundEfxMain(void) {
     one = 1.0f;
     headingX = 0.0f;
     headingZ = 0.0f;
-    angle = ((TWO_PI * sound.unk1F4) / 360.0f);
+    angle = ((TWO_PI * sound.headingAngle) / 360.0f);
     sound.dir.x = sound.pos.x - sound.prevPos.x;
     sound.dir.y = sound.pos.y - sound.prevPos.y;
     sound.dir.z = sound.pos.z - sound.prevPos.z;
@@ -1204,14 +1204,14 @@ inline void SoundDVDSetPanCh(u32 chan, u8 pan) { // I think this is the correct 
     f32 left, right;
 
     dvd = &sound.dvds[chan];
-    dvd->unk2 = pan;
-    left = dvd->unk8;
+    dvd->pan = pan;
+    left = dvd->curVol;
     right = left;
     if (pan < 64) {
-        right = (((f32)pan * dvd->unk8) / 63.0f);
+        right = (((f32)pan * dvd->curVol) / 63.0f);
     }
     if (!((u32)(pan - 64) >> 31)) {
-        left = (((f32)(127 - pan) * dvd->unk8) / 63.0f);
+        left = (((f32)(127 - pan) * dvd->curVol) / 63.0f);
     }
     AISetStreamVolLeft((u8)left);
     AISetStreamVolRight((u8)right);
@@ -1234,39 +1234,39 @@ void SoundDVDMain(void) {
         dvd = &sound.dvds[i];
         if (!(dvd->flags & 2)) {
             if (dvd->flags & 0x40) {
-                if (dvd->unk8 == 0.0f) {
+                if (dvd->curVol == 0.0f) {
                     dvd->samples = AIGetStreamSampleCount();
                     SoundDVDStopCh(i);
                     dvd->flags |= 0x2;
                     dvd->flags &= ~0x40;
                     continue;
                 }
-                dvd->unk8 -= dvd->unkC;
-                if (dvd->unk8 <= 0.0f) {
-                    dvd->unk8 = 0.0f;
+                dvd->curVol -= dvd->fadeStep;
+                if (dvd->curVol <= 0.0f) {
+                    dvd->curVol = 0.0f;
                 }
-                SoundDVDSetPanCh(i, (u8)dvd->unk2);
+                SoundDVDSetPanCh(i, (u8)dvd->pan);
             }
             if (dvd->flags & 0x20) {
-                if (dvd->unk8 == 0.0f) {
+                if (dvd->curVol == 0.0f) {
                     dvd->flags &= ~0x20;
                     SoundDVDStopCh(i);
                     continue;
                 }
-                dvd->unk8 -= dvd->unkC;
-                if (dvd->unk8 <= 0.0f) {
-                    dvd->unk8 = 0.0f;
+                dvd->curVol -= dvd->fadeStep;
+                if (dvd->curVol <= 0.0f) {
+                    dvd->curVol = 0.0f;
                 }
-                SoundDVDSetPanCh(i, (u8)dvd->unk2);
+                SoundDVDSetPanCh(i, (u8)dvd->pan);
             }
             if (dvd->flags & 0x10) {
-                dvd->unk8 += dvd->unkC;
-                if (dvd->unk8 >= dvd->unk4) {
-                    dvd->unk8 = dvd->unk4;
-                    dvd->unkC = 0.0f;
+                dvd->curVol += dvd->fadeStep;
+                if (dvd->curVol >= dvd->vol) {
+                    dvd->curVol = dvd->vol;
+                    dvd->fadeStep = 0.0f;
                     dvd->flags &= ~0x10;
                 }
-                SoundDVDSetPanCh(i, (u8)dvd->unk2);
+                SoundDVDSetPanCh(i, (u8)dvd->pan);
             }
         }
     }
@@ -1279,10 +1279,10 @@ void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
     s32 i;
     s32 j;
 
-    if (!sound.unk20C) {
+    if (!sound.interruptDepth) {
         sound.interrupts = OSDisableInterrupts();
     }
-    sound.unk20C++;
+    sound.interruptDepth++;
 
     for (i = 0; i < 3; i++) {
         stream = &sound.streams[i];
@@ -1306,11 +1306,11 @@ void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
             goto unlock; // a read error also skips the activation loop below
         }
         entry->bytesLoaded += entry->requestLength;
-        arr = entry->field_0x3C;
-        arr[1 - entry->field_0x4C] = entry->requestLength;
-        entry->field_0x54 = 1;
-        if (entry->bytesLoaded >= entry->field_0x60) {
-            entry->bytesLoaded = entry->field_0x64;
+        arr = entry->bufferLength;
+        arr[1 - entry->curBuffer] = entry->requestLength;
+        entry->nextReady = 1;
+        if (entry->bytesLoaded >= entry->readEnd) {
+            entry->bytesLoaded = entry->readLoop;
             if (stream->flags & 0x200) {
                 if (j == 0) {
                     stream->flags &= ~0x1000;
@@ -1326,10 +1326,10 @@ void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
             stream->flags &= ~0x2000;
         }
         if (stream->count == 2) {
-            if (sound.cover == 2 && stream->entries[0].field_0x54 == 1 && stream->entries[1].field_0x54 == 1) {
+            if (sound.cover == 2 && stream->entries[0].nextReady == 1 && stream->entries[1].nextReady == 1) {
                 sound.cover = 0;
             }
-        } else if (sound.cover == 2 && stream->entries[0].field_0x54 == 1) {
+        } else if (sound.cover == 2 && stream->entries[0].nextReady == 1) {
             sound.cover = 0;
         }
         break;
@@ -1344,22 +1344,22 @@ void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
             continue;
         }
         if (&stream->entries[0].dvd->info == fileInfo) {
-            stream->entries[0].field_0x56 = 1;
+            stream->entries[0].firstReadDone = 1;
         }
         if (&stream->entries[1].dvd->info == fileInfo) {
-            stream->entries[1].field_0x56 = 1;
+            stream->entries[1].firstReadDone = 1;
         }
         if (stream->count == 2) {
-            if (stream->entries[0].field_0x56 == 0 || stream->entries[1].field_0x56 == 0) {
+            if (stream->entries[0].firstReadDone == 0 || stream->entries[1].firstReadDone == 0) {
                 continue;
             }
-        } else if (stream->entries[0].field_0x56 == 0) {
+        } else if (stream->entries[0].firstReadDone == 0) {
             continue;
         }
-        stream->entries[0].field_0x4C = 0;
-        stream->entries[1].field_0x4C = 0;
-        stream->entries[0].field_0x54 = 0;
-        stream->entries[1].field_0x54 = 0;
+        stream->entries[0].curBuffer = 0;
+        stream->entries[1].curBuffer = 0;
+        stream->entries[0].nextReady = 0;
+        stream->entries[1].nextReady = 0;
         sndStreamActivate(stream->entries[0].streamId);
         if (stream->count == 2) {
             sndStreamActivate(stream->entries[1].streamId);
@@ -1369,7 +1369,7 @@ void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
         break;
     }
 unlock:
-    if (sound.unk20C && !--sound.unk20C) {
+    if (sound.interruptDepth && !--sound.interruptDepth) {
         OSRestoreInterrupts(sound.interrupts);
     }
 }
@@ -1389,27 +1389,27 @@ static inline void _ssPlayChRead(SoundStream* stream, SoundStreamEntry* entry, u
     SoundStreamEntry* e = entry;
 
     len = 0x8000;
-    if (e->bytesLoaded + 0x8000 > e->field_0x60) {
-        len = e->field_0x60 - e->bytesLoaded;
+    if (e->bytesLoaded + 0x8000 > e->readEnd) {
+        len = e->readEnd - e->bytesLoaded;
     } else {
         for (n = 2; n < 6; n++) {
-            if (e->bytesLoaded + n * 0x8000 <= e->field_0x60) {
+            if (e->bytesLoaded + n * 0x8000 <= e->readEnd) {
                 continue;
             }
-            len -= (0x8000 - (e->field_0x60 - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
+            len -= (0x8000 - (e->readEnd - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
             len += 0x20 - (len & 0x1F);
             break;
         }
     }
     aligned = (len + 0x1F) & ~0x1F;
     if (!(stream->flags & 0x400)) {
-        DVDMgrReadAsync(e->dvd, e->loadBuffer[1 - e->field_0x4C], aligned,
-                        stream->unk4 + e->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
+        DVDMgrReadAsync(e->dvd, e->loadBuffer[1 - e->curBuffer], aligned,
+                        stream->dataOffset + e->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
     } else {
-        u32 dest = sound.unk21C[stream->unk2] + (offset + (stream->unk4 + (e->bytesLoaded)));
-        DCInvalidateRange(e->loadBuffer[1 - e->field_0x4C], 0x8000);
+        u32 dest = sound.cacheAram[stream->cacheSlot] + (offset + (stream->dataOffset + (e->bytesLoaded)));
+        DCInvalidateRange(e->loadBuffer[1 - e->curBuffer], 0x8000);
         ARQPostRequest(&e->request, (u32)e, 1, 0,
-                       dest, (u32)e->loadBuffer[1 - e->field_0x4C], aligned, cache_flush);
+                       dest, (u32)e->loadBuffer[1 - e->curBuffer], aligned, cache_flush);
     }
     e->requestLength = len;
 }
@@ -1421,19 +1421,19 @@ void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
     u32 len;
 
     length = DVDMgrGetLength(stream->entries[0].dvd);
-    if (stream->entries[0].field_0x38 >= length) {
+    if (stream->entries[0].cachePos >= length) {
         stream->entries[0].bytesLoaded = 0;
-        stream->entries[0].field_0x38 = 0;
+        stream->entries[0].playPos = 0;
         stream->entries[1].bytesLoaded = 0;
-        stream->entries[1].field_0x38 = 0;
-        stream->entries[0].field_0x4C = 1;
+        stream->entries[1].playPos = 0;
+        stream->entries[0].curBuffer = 1;
 
         _ssPlayChRead(stream, &stream->entries[0], 0);
 
         if (stream->count == 2) {
-            stream->entries[1].field_0x4C = 1;
+            stream->entries[1].curBuffer = 1;
             entry = &stream->entries[1];
-            _ssPlayChRead(stream, entry, entry->field_0x60 + (0x20 - (entry->field_0x60 & 0x1F)));
+            _ssPlayChRead(stream, entry, entry->readEnd + (0x20 - (entry->readEnd & 0x1F)));
         }
     } else {
         length = DVDMgrGetLength(stream->entries[0].dvd);
@@ -1471,12 +1471,12 @@ void _ssDVDReadAsync_cache_next(s32 result, DVDFileInfo* fileInfo) {
         }
         entry = &stream->entries[0];
         entry->bytesLoaded += entry->requestLength;
-        aramAddr = entry->field_0x38 + sound.unk21C[stream->unk2];
+        aramAddr = entry->cachePos + sound.cacheAram[stream->cacheSlot];
         DCFlushRange(entry->loadBuffer[0], 0x8000);
         owner = owner_no++;
         ARQPostRequest(&entry->request, (owner << 16) | i, 0, 0, (u32)entry->loadBuffer[0], aramAddr, 0x8000,
                        _ssDVDReadAsync_cache_aram);
-        entry->field_0x38 += entry->requestLength;
+        entry->cachePos += entry->requestLength;
         break;
     }
 }
@@ -1488,71 +1488,71 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
 
     while (count != 0) {
         byte = *in;
-        if (entry->field_0x5C != 0) {
-            if (entry->field_0x5A & 1) {
+        if (entry->dpcmRunLength != 0) {
+            if (entry->dpcmRunPos & 1) {
                 delta = byte & 0xF;
             } else {
                 delta = (byte >> 4) & 0xF;
             }
-            index = entry->field_0x58;
+            index = entry->dpcmScale;
             delta <<= 4;
             delta >>= 4;
-            entry->field_0x5A += 1;
-            if (entry->field_0x5A >= entry->field_0x5C) {
+            entry->dpcmRunPos += 1;
+            if (entry->dpcmRunPos >= entry->dpcmRunLength) {
                 in++;
-                entry->field_0x5C = 0;
-                entry->field_0x44 += 1;
-            } else if ((entry->field_0x5A & 1) == 0) {
+                entry->dpcmRunLength = 0;
+                entry->bufferPos += 1;
+            } else if ((entry->dpcmRunPos & 1) == 0) {
                 in++;
-                entry->field_0x44 += 1;
+                entry->bufferPos += 1;
             }
         } else {
             in++;
-            entry->field_0x44 += 1;
+            entry->bufferPos += 1;
             index = byte & 0xF;
             if (index == 8) {
-                entry->field_0x5C = ((byte >> 4) & 0xF) + 4;
-                entry->field_0x5A = 0;
+                entry->dpcmRunLength = ((byte >> 4) & 0xF) + 4;
+                entry->dpcmRunPos = 0;
                 continue;
             }
             delta = index;
             index = (byte >> 4) & 0xF;
-            entry->field_0x58 = index;
+            entry->dpcmScale = index;
             delta <<= 4;
             delta >>= 4;
         }
 
         {
-            s32 val = entry->field_0x52 + delta * (s32)dtbl[index];
+            s32 val = entry->dpcmSample + delta * (s32)dtbl[index];
             if (val > 0x7fff) {
                 val = 0x7fff;
             }
             if (val < -0x8000) {
                 val = -0x8000;
             }
-            entry->field_0x52 = val;
+            entry->dpcmSample = val;
             *out++ = val;
         }
         count--;
-        stream->field_0x24 += 1;
+        stream->samplesWritten += 1;
 
-        if (entry->field_0x44 >= entry->field_0x3C[entry->field_0x4C]) {
-            if (entry->field_0x54 == 0 && !(stream->flags & 0x4000)) {
-                entry->field_0x38 -= entry->field_0x44;
-                entry->field_0x44 = 0;
-                in = entry->loadBuffer[entry->field_0x4C];
+        if (entry->bufferPos >= entry->bufferLength[entry->curBuffer]) {
+            if (entry->nextReady == 0 && !(stream->flags & 0x4000)) {
+                entry->playPos -= entry->bufferPos;
+                entry->bufferPos = 0;
+                in = entry->loadBuffer[entry->curBuffer];
                 continue;
             } else {
-                entry->field_0x54 = 0;
-                entry->field_0x44 = 0;
-                entry->field_0x4C = 1 - entry->field_0x4C;
-                in = entry->loadBuffer[entry->field_0x4C];
+                entry->nextReady = 0;
+                entry->bufferPos = 0;
+                entry->curBuffer = 1 - entry->curBuffer;
+                in = entry->loadBuffer[entry->curBuffer];
             }
         }
-        entry->field_0x38 += 2;
-        if (entry->field_0x38 >= stream->field_0x1C) {
-            entry->field_0x38 = stream->field_0x20;
-            entry->field_0x52 = entry->field_0x50;
+        entry->playPos += 2;
+        if (entry->playPos >= stream->playEnd) {
+            entry->playPos = stream->playLoop;
+            entry->dpcmSample = entry->dpcmLoopSample;
             if (!(stream->flags & 0x200)) {
                 stream->flags |= 4;
                 break;
@@ -1566,23 +1566,23 @@ static inline u8* ssCopyPCM8(SoundStream* stream, SoundStreamEntry* ep, u8* out,
     while (count != 0) {
         *out++ = *in++;
         count--;
-        ep->field_0x44 += 1;
-        if (ep->field_0x44 >= ep->field_0x3C[ep->field_0x4C]) {
-            if (ep->field_0x54 == 0 && !(stream->flags & 0x4000)) {
-                ep->field_0x38 -= ep->field_0x44;
-                ep->field_0x44 = 0;
-                in = ep->loadBuffer[ep->field_0x4C];
+        ep->bufferPos += 1;
+        if (ep->bufferPos >= ep->bufferLength[ep->curBuffer]) {
+            if (ep->nextReady == 0 && !(stream->flags & 0x4000)) {
+                ep->playPos -= ep->bufferPos;
+                ep->bufferPos = 0;
+                in = ep->loadBuffer[ep->curBuffer];
                 continue;
             } else {
-                ep->field_0x54 = 0;
-                ep->field_0x44 = 0;
-                ep->field_0x4C = 1 - ep->field_0x4C;
-                in = ep->loadBuffer[ep->field_0x4C];
+                ep->nextReady = 0;
+                ep->bufferPos = 0;
+                ep->curBuffer = 1 - ep->curBuffer;
+                in = ep->loadBuffer[ep->curBuffer];
             }
         }
-        ep->field_0x38 += 1;
-        if (ep->field_0x38 >= stream->field_0x1C) {
-            ep->field_0x38 = stream->field_0x20;
+        ep->playPos += 1;
+        if (ep->playPos >= stream->playEnd) {
+            ep->playPos = stream->playLoop;
             if (!(stream->flags & 0x200)) {
                 stream->flags |= 4;
                 break;
@@ -1597,24 +1597,24 @@ static inline u8* ssCopyPCM16(SoundStream* stream, SoundStreamEntry* ep, s16* ou
         *out++ = *(s16*)in;
         in += 2;
         count--;
-        stream->field_0x24 += 1;
-        ep->field_0x44 += 2;
-        if (ep->field_0x44 >= ep->field_0x3C[ep->field_0x4C]) {
-            if (ep->field_0x54 == 0 && !(stream->flags & 0x4000)) {
-                ep->field_0x38 -= ep->field_0x44;
-                ep->field_0x44 = 0;
-                in = ep->loadBuffer[ep->field_0x4C];
+        stream->samplesWritten += 1;
+        ep->bufferPos += 2;
+        if (ep->bufferPos >= ep->bufferLength[ep->curBuffer]) {
+            if (ep->nextReady == 0 && !(stream->flags & 0x4000)) {
+                ep->playPos -= ep->bufferPos;
+                ep->bufferPos = 0;
+                in = ep->loadBuffer[ep->curBuffer];
                 continue;
             } else {
-                ep->field_0x54 = 0;
-                ep->field_0x44 = 0;
-                ep->field_0x4C = 1 - ep->field_0x4C;
-                in = ep->loadBuffer[ep->field_0x4C];
+                ep->nextReady = 0;
+                ep->bufferPos = 0;
+                ep->curBuffer = 1 - ep->curBuffer;
+                in = ep->loadBuffer[ep->curBuffer];
             }
         }
-        ep->field_0x38 += 2;
-        if (ep->field_0x38 >= stream->field_0x1C) {
-            ep->field_0x38 = stream->field_0x20;
+        ep->playPos += 2;
+        if (ep->playPos >= stream->playEnd) {
+            ep->playPos = stream->playLoop;
             if (!(stream->flags & 0x200)) {
                 stream->flags |= 4;
                 break;
@@ -1639,19 +1639,19 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
     out1 = buffer1;
     out2 = buffer2;
 
-    stream->field_0x24 = 0;
+    stream->samplesWritten = 0;
 
     if ((stream->flags & 0x8006) || sound.cover) {
         if (!(stream->flags & 0x100)) {
             for (i = 0; i != len1; i++) {
                 *out1++ = 0;
-                stream->field_0x24 += 1;
+                stream->samplesWritten += 1;
             }
             for (i = 0; i != size2; i++) {
                 *out2++ = 0;
-                stream->field_0x24 += 1;
+                stream->samplesWritten += 1;
             }
-            return stream->field_0x24;
+            return stream->samplesWritten;
         }
         {
             s32 n;
@@ -1674,23 +1674,23 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
     ep = (user & 0x100) ? &stream->entries[1] : &stream->entries[0];
 
     if (stream->flags & 0x80) {
-        in = ep->loadBuffer[ep->field_0x4C];
-        in += ep->field_0x44;
+        in = ep->loadBuffer[ep->curBuffer];
+        in += ep->bufferPos;
         in = ssDecodeDPCM(stream, ep, out1, len1, in);
         ssDecodeDPCM(stream, ep, out2, size2, in);
     } else if (stream->flags & 0x100) {
-        in = ep->loadBuffer[ep->field_0x4C];
-        in += ep->field_0x44;
+        in = ep->loadBuffer[ep->curBuffer];
+        in += ep->bufferPos;
         in = ssCopyPCM8(stream, ep, (u8*)out1, (len1 + 13) / 7 * 4 & ~7, in);
         ssCopyPCM8(stream, ep, (u8*)out2, (size2 + 13) / 7 * 4 & ~7, in);
-        stream->field_0x24 = len1 + size2;
+        stream->samplesWritten = len1 + size2;
     } else {
-        in = ep->loadBuffer[ep->field_0x4C];
-        in += ep->field_0x44 & ~1;
+        in = ep->loadBuffer[ep->curBuffer];
+        in += ep->bufferPos & ~1;
         in = ssCopyPCM16(stream, ep, out1, len1, in);
         ssCopyPCM16(stream, ep, out2, size2, in);
     }
-    return stream->field_0x24;
+    return stream->samplesWritten;
 }
 #pragma opt_propagation reset
 
@@ -1717,40 +1717,40 @@ void SoundSSPlayChEx(s32 chan, const char* name, BOOL useAram) {
     }
 
     if (useAram != 0) {
-        for (i = 0; i < sound.unk224; i++) {
-            if (sound.unk226[i] == 0) {
-                sound.unk226[i] = 1;
-                stream->unk2 = i;
+        for (i = 0; i < sound.cacheCount; i++) {
+            if (sound.cacheUsed[i] == 0) {
+                sound.cacheUsed[i] = 1;
+                stream->cacheSlot = i;
                 break;
             }
         }
-        if (i >= sound.unk224) {
+        if (i >= sound.cacheCount) {
             return;
         }
     }
 
     sound.unk104 = chan;
-    stream->entries[0].field_0x4C = 0;
-    stream->entries[0].field_0x44 = 0;
+    stream->entries[0].curBuffer = 0;
+    stream->entries[0].bufferPos = 0;
     stream->entries[0].bytesLoaded = 0;
-    stream->entries[0].field_0x38 = 0;
-    stream->entries[0].field_0x54 = 0;
-    stream->entries[0].field_0x56 = 0;
-    stream->entries[0].field_0x58 = 0;
-    stream->entries[0].field_0x5A = 0;
-    stream->entries[0].field_0x5C = 0;
-    stream->entries[1].field_0x4C = 0;
-    stream->entries[1].field_0x44 = 0;
+    stream->entries[0].playPos = 0;
+    stream->entries[0].nextReady = 0;
+    stream->entries[0].firstReadDone = 0;
+    stream->entries[0].dpcmScale = 0;
+    stream->entries[0].dpcmRunPos = 0;
+    stream->entries[0].dpcmRunLength = 0;
+    stream->entries[1].curBuffer = 0;
+    stream->entries[1].bufferPos = 0;
     stream->entries[1].bytesLoaded = 0;
-    stream->entries[1].field_0x38 = 0;
-    stream->entries[1].field_0x54 = 0;
-    stream->entries[1].field_0x56 = 0;
-    stream->entries[1].field_0x58 = 0;
-    stream->entries[1].field_0x5A = 0;
-    stream->entries[1].field_0x5C = 0;
+    stream->entries[1].playPos = 0;
+    stream->entries[1].nextReady = 0;
+    stream->entries[1].firstReadDone = 0;
+    stream->entries[1].dpcmScale = 0;
+    stream->entries[1].dpcmRunPos = 0;
+    stream->entries[1].dpcmRunLength = 0;
     stream->pan = 0x40;
     stream->span = 0;
-    stream->unk10 = 0.0f;
+    stream->curVol = 0.0f;
     stream->vol = 127.0f;
     stream->flags = 1;
     if (useAram != 0) {
@@ -1771,7 +1771,7 @@ void SoundSSPlayChEx(s32 chan, const char* name, BOOL useAram) {
         stream->flags = 0;
         return;
     }
-    DVDMgrReadAsync(stream->entries[0].dvd, stream->entries[0].unk28, 0x100, 0, SoundSSPlayChEx_main);
+    DVDMgrReadAsync(stream->entries[0].dvd, stream->entries[0].buffer, 0x100, 0, SoundSSPlayChEx_main);
 }
 
 void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
@@ -1800,99 +1800,99 @@ void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
         }
     }
 
-    hdr = stream->entries[0].unk28;
-    type = hdr->field_0x0;
+    hdr = stream->entries[0].buffer;
+    type = hdr->format;
     stream->freq = hdr->freq;
     stream->count = hdr->count;
-    stream->field_0x1C = hdr->field_0x8;
-    stream->field_0x20 = hdr->field_0xC;
-    stream->entries[0].field_0x60 = hdr->field_0x10;
-    stream->entries[1].field_0x60 = hdr->field_0x14;
-    stream->entries[0].field_0x64 = hdr->field_0x18;
-    stream->entries[1].field_0x64 = hdr->field_0x1C;
-    stream->entries[0].field_0x4E = hdr->field_0x20;
-    stream->entries[1].field_0x4E = hdr->field_0x22;
-    stream->entries[0].field_0x50 = hdr->field_0x24;
-    stream->entries[1].field_0x50 = hdr->field_0x26;
+    stream->playEnd = hdr->playEnd;
+    stream->playLoop = hdr->playLoop;
+    stream->entries[0].readEnd = hdr->readEnd[0];
+    stream->entries[1].readEnd = hdr->readEnd[1];
+    stream->entries[0].readLoop = hdr->readLoop[0];
+    stream->entries[1].readLoop = hdr->readLoop[1];
+    stream->entries[0].dpcmStartSample = hdr->dpcmStartSample[0];
+    stream->entries[1].dpcmStartSample = hdr->dpcmStartSample[1];
+    stream->entries[0].dpcmLoopSample = hdr->dpcmLoopSample[0];
+    stream->entries[1].dpcmLoopSample = hdr->dpcmLoopSample[1];
 
-    if (stream->field_0x20 != 0xFFFFFFFF) {
+    if (stream->playLoop != 0xFFFFFFFF) {
         stream->flags |= 0x200;
     } else {
-        stream->field_0x20 = 0;
+        stream->playLoop = 0;
     }
 
     switch (type) {
     case 0:
-        stream->entries[0].field_0x60 = stream->field_0x1C;
-        stream->entries[1].field_0x60 = stream->field_0x1C;
-        stream->entries[0].field_0x64 = stream->field_0x20;
-        stream->entries[1].field_0x64 = stream->field_0x20;
-        stream->unk4 = 0x40;
+        stream->entries[0].readEnd = stream->playEnd;
+        stream->entries[1].readEnd = stream->playEnd;
+        stream->entries[0].readLoop = stream->playLoop;
+        stream->entries[1].readLoop = stream->playLoop;
+        stream->dataOffset = 0x40;
         break;
     case 1:
         stream->flags |= 0x80;
-        stream->entries[0].field_0x52 = stream->entries[0].field_0x4E;
-        stream->entries[1].field_0x52 = stream->entries[1].field_0x4E;
-        stream->unk4 = 0x40;
+        stream->entries[0].dpcmSample = stream->entries[0].dpcmStartSample;
+        stream->entries[1].dpcmSample = stream->entries[1].dpcmStartSample;
+        stream->dataOffset = 0x40;
         break;
     case 2:
-        src = (u8*)&hdr->field_0x5C;
+        src = (u8*)&hdr->adpcmInfo0;
         dst = (u8*)&stream->entries[0].info;
         stream->flags |= 0x100;
         for (j = 0x20; j != 0; j--) {
             *dst++ = *src++;
         }
         if (stream->count == 2) {
-            src2 = (u8*)&hdr->field_0xBC;
+            src2 = (u8*)&hdr->adpcmInfo1;
             dst2 = (u8*)&stream->entries[1].info;
             for (j = 0x20; j != 0; j--) {
                 *dst2++ = *src2++;
             }
         }
-        stream->unk4 = 0x100;
+        stream->dataOffset = 0x100;
         break;
     }
 
-    stream->entries[0].field_0x4C = 0;
-    stream->entries[0].field_0x44 = 0;
+    stream->entries[0].curBuffer = 0;
+    stream->entries[0].bufferPos = 0;
     stream->entries[0].bytesLoaded = 0;
-    stream->entries[0].field_0x38 = 0;
-    stream->entries[0].field_0x54 = 0;
-    stream->entries[0].field_0x56 = 0;
-    stream->entries[0].field_0x58 = 0;
-    stream->entries[0].field_0x5A = 0;
-    stream->entries[0].field_0x5C = 0;
-    stream->entries[1].field_0x4C = 0;
-    stream->entries[1].field_0x44 = 0;
+    stream->entries[0].playPos = 0;
+    stream->entries[0].nextReady = 0;
+    stream->entries[0].firstReadDone = 0;
+    stream->entries[0].dpcmScale = 0;
+    stream->entries[0].dpcmRunPos = 0;
+    stream->entries[0].dpcmRunLength = 0;
+    stream->entries[1].curBuffer = 0;
+    stream->entries[1].bufferPos = 0;
     stream->entries[1].bytesLoaded = 0;
-    stream->entries[1].field_0x38 = 0;
-    stream->entries[1].field_0x54 = 0;
-    stream->entries[1].field_0x56 = 0;
-    stream->entries[1].field_0x58 = 0;
-    stream->entries[1].field_0x5A = 0;
-    stream->entries[1].field_0x5C = 0;
+    stream->entries[1].playPos = 0;
+    stream->entries[1].nextReady = 0;
+    stream->entries[1].firstReadDone = 0;
+    stream->entries[1].dpcmScale = 0;
+    stream->entries[1].dpcmRunPos = 0;
+    stream->entries[1].dpcmRunLength = 0;
 
     if (!(stream->flags & 0x400)) {
-        stream->entries[0].field_0x4C = 1;
+        stream->entries[0].curBuffer = 1;
         _ssPlayChRead(stream, &stream->entries[0], 0);
         stream->flags |= 0x1000;
         if (stream->count == 2) {
-            stream->entries[1].field_0x4C = 1;
+            stream->entries[1].curBuffer = 1;
             entry1 = &stream->entries[1];
             _ssPlayChRead(
                 stream, entry1,
-                entry1->field_0x60 + (0x20 - (entry1->field_0x60 & 0x1F)));
+                entry1->readEnd + (0x20 - (entry1->readEnd & 0x1F)));
             stream->flags |= 0x2000;
         }
     }
 
     size = sndStreamAllocLength(0xE00, 0);
-    p = stream->entries[0].unk28;
+    p = stream->entries[0].buffer;
     for (j = size; j != 0; j--) {
         *p++ = 0;
     }
     if (stream->count == 2) {
-        p = stream->entries[1].unk28;
+        p = stream->entries[1].buffer;
         for (j = size; j != 0; j--) {
             *p++ = 0;
         }
@@ -1904,26 +1904,26 @@ void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
     }
     if (!(stream->flags & 0x100)) {
         stream->entries[0].streamId =
-            sndStreamAllocEx(0xFF, stream->entries[0].unk28, 0xE00, stream->freq, 0, pan, 0, 0, 0, 0,
+            sndStreamAllocEx(0xFF, stream->entries[0].buffer, 0xE00, stream->freq, 0, pan, 0, 0, 0, 0,
                              0x10000, _sscallback, chan, NULL);
         if (stream->count == 2) {
             stream->entries[1].streamId = sndStreamAllocEx(
-                0xFF, stream->entries[1].unk28, 0xE00, stream->freq, 0, 0x7F, 0, 0, 0, 0, 0x10000,
+                0xFF, stream->entries[1].buffer, 0xE00, stream->freq, 0, 0x7F, 0, 0, 0, 0, 0x10000,
                 _sscallback, chan | 0x100, NULL);
         }
         stream->flags |= 8;
     } else {
         stream->entries[0].streamId = sndStreamAllocEx(
-            0xFF, stream->entries[0].unk28, 0xE00, stream->freq, 0, pan, 0, 0, 0, 0, 0x10001,
+            0xFF, stream->entries[0].buffer, 0xE00, stream->freq, 0, pan, 0, 0, 0, 0, 0x10001,
             _sscallback, chan, &stream->entries[0].info);
         if (stream->count == 2) {
             stream->entries[1].streamId = sndStreamAllocEx(
-                0xFF, stream->entries[1].unk28, 0xE00, stream->freq, 0, 0x7F, 0, 0, 0, 0, 0x10001,
+                0xFF, stream->entries[1].buffer, 0xE00, stream->freq, 0, 0x7F, 0, 0, 0, 0, 0x10001,
                 _sscallback, chan | 0x100, &stream->entries[1].info);
         }
     }
 
-    stream->unk14 = stream->vol;
+    stream->fadeStep = stream->vol;
     stream->flags |= 0x10;
     SoundSSSetPanCh(chan, (u8)stream->pan);
 
@@ -1949,12 +1949,12 @@ void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
     do {                                                      \
         (stream) = &sound.streams[chan];                      \
         if ((stream)->flags) {                                \
-            if (!sound.unk20C) {                              \
+            if (!sound.interruptDepth) {                              \
                 sound.interrupts = OSDisableInterrupts();     \
             }                                                 \
-            sound.unk20C++;                                   \
+            sound.interruptDepth++;                                   \
             if ((stream)->flags & 0x400) {                    \
-                sound.unk226[(stream)->unk2] = 0;             \
+                sound.cacheUsed[(stream)->cacheSlot] = 0;             \
             }                                                 \
             (stream)->flags = 0;                              \
             DVDMgrClose((stream)->entries[0].dvd);            \
@@ -1963,7 +1963,7 @@ void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
             if ((stream)->count == 2) {                       \
                 sndStreamFree((stream)->entries[1].streamId); \
             }                                                 \
-            if (sound.unk20C && !--sound.unk20C) {            \
+            if (sound.interruptDepth && !--sound.interruptDepth) {            \
                 OSRestoreInterrupts(sound.interrupts);        \
             }                                                 \
             sound.unk104 = -1;                                \
@@ -1985,7 +1985,7 @@ void SoundSSFadeoutCh(s32 chan) {
         if (fade < 1.0f) {
             fade = 1.0f;
         }
-        stream->unk14 = stream->unk10 / fade;
+        stream->fadeStep = stream->curVol / fade;
         stream->flags |= 0x20;
     }
 }
@@ -1995,7 +1995,7 @@ void SoundSSContinueCh(s32 chan) {
 
     if (stream->flags) {
         stream->flags &= ~2;
-        stream->unk14 = stream->vol;
+        stream->fadeStep = stream->vol;
         stream->flags |= 0x10;
     }
 }
@@ -2008,10 +2008,10 @@ void SoundSSContinueCh(s32 chan) {
             (stream)->pan = pan;                                                                              \
             if ((stream)->flags & 8) {                                                                        \
                 if ((stream)->count == 1) {                                                                   \
-                    sndStreamMixParameter((stream)->entries[0].streamId, (stream)->unk10, pan,                \
+                    sndStreamMixParameter((stream)->entries[0].streamId, (stream)->curVol, pan,                \
                                           (u8)(stream)->span, 0);                                             \
                 } else {                                                                                      \
-                    f32 left = (stream)->unk10;                                                               \
+                    f32 left = (stream)->curVol;                                                               \
                     f32 right = left;                                                                         \
                                                                                                               \
                     if (pan < 64) {                                                                           \
@@ -2053,7 +2053,7 @@ void SoundSSSetVolCh(s32 chan, u8 vol) {
         return;
     }
     value = (f32)vol;
-    stream->unk10 = value;
+    stream->curVol = value;
     stream->vol = value;
     if (!(stream->flags & 8)) {
         return;
@@ -2095,15 +2095,15 @@ void SoundSSSetPlayFreqCh(s32 chan, u16 freq) {
     if (!(stream->flags & 8)) {
         return;
     }
-    if (!sound.unk20C) {
+    if (!sound.interruptDepth) {
         sound.interrupts = OSDisableInterrupts();
     }
-    sound.unk20C++;
+    sound.interruptDepth++;
     sndStreamFrq(stream->entries[0].streamId, stream->freq);
     if (stream->count == 2) {
         sndStreamFrq(stream->entries[1].streamId, stream->freq);
     }
-    if (sound.unk20C && !--sound.unk20C) {
+    if (sound.interruptDepth && !--sound.interruptDepth) {
         OSRestoreInterrupts(sound.interrupts);
     }
 }
@@ -2149,36 +2149,36 @@ void SoundSSMain(void) {
             continue;
         }
         if (stream->flags & 0x40) {
-            if (stream->unk10 == 0.0f) {
+            if (stream->curVol == 0.0f) {
                 stream->flags |= 2;
                 stream->flags &= ~0x40;
                 continue;
             }
-            stream->unk10 -= stream->unk14;
-            if (stream->unk10 <= 0.0f) {
-                stream->unk10 = 0.0f;
+            stream->curVol -= stream->fadeStep;
+            if (stream->curVol <= 0.0f) {
+                stream->curVol = 0.0f;
             }
             pan = (u8)stream->pan;
             SOUND_SS_SET_PAN_CH(ch, SoundDVDChan(i), pan);
         }
         if (stream->flags & 0x20) {
-            if (stream->unk10 == 0.0f) {
+            if (stream->curVol == 0.0f) {
                 stream->flags &= ~0x20;
                 SOUND_SS_STOP_CH(ch, SoundDVDChan(i));
                 continue;
             }
-            stream->unk10 -= stream->unk14;
-            if (stream->unk10 <= 0.0f) {
-                stream->unk10 = 0.0f;
+            stream->curVol -= stream->fadeStep;
+            if (stream->curVol <= 0.0f) {
+                stream->curVol = 0.0f;
             }
             pan = (u8)stream->pan;
             SOUND_SS_SET_PAN_CH(ch, SoundDVDChan(i), pan);
         }
         if (stream->flags & 0x10) {
-            stream->unk10 += stream->unk14;
-            if (stream->unk10 >= stream->vol) {
-                stream->unk10 = stream->vol;
-                stream->unk14 = 0.0f;
+            stream->curVol += stream->fadeStep;
+            if (stream->curVol >= stream->vol) {
+                stream->curVol = stream->vol;
+                stream->fadeStep = 0.0f;
                 stream->flags &= ~0x10;
             }
             pan = (u8)stream->pan;
@@ -2196,27 +2196,27 @@ static inline void _ssDVDReadAsync_cache_entry_ss(SoundStream* stream, SoundStre
     SoundStreamEntry* e = entry;
 
     len = 0x8000;
-    if (e->bytesLoaded + 0x8000 > e->field_0x60) {
-        len = e->field_0x60 - e->bytesLoaded;
+    if (e->bytesLoaded + 0x8000 > e->readEnd) {
+        len = e->readEnd - e->bytesLoaded;
     } else {
         for (n = 2; n < 6; n++) {
-            if (e->bytesLoaded + n * 0x8000 <= e->field_0x60) {
+            if (e->bytesLoaded + n * 0x8000 <= e->readEnd) {
                 continue;
             }
-            len -= (0x8000 - (e->field_0x60 - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
+            len -= (0x8000 - (e->readEnd - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
             len += 0x20 - (len & 0x1F);
             break;
         }
     }
     aligned = (len + 0x1F) & ~0x1F;
     if (!(stream->flags & 0x400)) {
-        DVDMgrReadAsync(e->dvd, e->loadBuffer[1 - e->field_0x4C], aligned,
-                        stream->unk4 + e->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
+        DVDMgrReadAsync(e->dvd, e->loadBuffer[1 - e->curBuffer], aligned,
+                        stream->dataOffset + e->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
     } else {
-        u32 dest = stream->unk4 + e->bytesLoaded + offset + sound.unk21C[stream->unk2];
-        DCInvalidateRange(e->loadBuffer[1 - e->field_0x4C], 0x8000);
+        u32 dest = stream->dataOffset + e->bytesLoaded + offset + sound.cacheAram[stream->cacheSlot];
+        DCInvalidateRange(e->loadBuffer[1 - e->curBuffer], 0x8000);
         ARQPostRequest(&e->request, (u32)e, 1, 0,
-                       dest, (u32)e->loadBuffer[1 - e->field_0x4C], aligned, cache_flush);
+                       dest, (u32)e->loadBuffer[1 - e->curBuffer], aligned, cache_flush);
     }
     e->requestLength = len;
 }
@@ -2238,30 +2238,30 @@ void SoundSSMainInt(void) {
             continue;
         }
 
-        if (stream->entries[0].field_0x44 && stream->entries[0].field_0x54 == 0 &&
+        if (stream->entries[0].bufferPos && stream->entries[0].nextReady == 0 &&
             !(stream->flags & 0x1000)) {
             _ssDVDReadAsync_cache_entry_ss(stream, &stream->entries[0], 0);
             stream->flags |= 0x1000;
             if (stream->flags & 0x400) {
-                stream->entries[0].field_0x54 = 1;
+                stream->entries[0].nextReady = 1;
             }
         }
 
-        if (stream->count == 2 && stream->entries[1].field_0x44 &&
-            stream->entries[1].field_0x54 == 0 && !(stream->flags & 0x2000)) {
+        if (stream->count == 2 && stream->entries[1].bufferPos &&
+            stream->entries[1].nextReady == 0 && !(stream->flags & 0x2000)) {
             entry = &stream->entries[1];
             _ssDVDReadAsync_cache_entry_ss(stream, entry,
-                                           entry->field_0x60 + (0x20 - (entry->field_0x60 & 0x1F)));
+                                           entry->readEnd + (0x20 - (entry->readEnd & 0x1F)));
             stream->flags |= 0x2000;
             if (stream->flags & 0x400) {
-                stream->entries[1].field_0x54 = 1;
+                stream->entries[1].nextReady = 1;
             }
         }
     }
 }
 
 // The two loops share `length` as their counter; the original keeps the first
-// loop's counter in r3 and reuses r6 for the second, and `src`/`dest` both start at &sound.unk33C.
+// loop's counter in r3 and reuses r6 for the second, and `src`/`dest` both start at &sound.dmaSamples.
 void SoundAIDMACallback(void) {
     s32 length;
     u8* address;
@@ -2275,7 +2275,7 @@ void SoundAIDMACallback(void) {
     address = sound.dmaAddress;
     sound.dmaLength = length;
 
-    src = sound.unk33C;
+    src = sound.dmaSamples;
     dest = src;
     for (; length != 0; length -= 2) {
         *dest = (address[0] << 8) | address[1];
@@ -2283,17 +2283,17 @@ void SoundAIDMACallback(void) {
         address += 2;
     }
 
-    sel = sound.unk330;
-    dest = sound.unk5C0[sel];
-    dest += sound.unk15C0;
+    sel = sound.outputHalf;
+    dest = sound.outputSamples[sel];
+    dest += sound.outputPos;
     for (length = sound.dmaLength >> 1; length != 0; length -= 2) {
         *dest = *src;
         src += 2;
         dest++;
-        if ((u32)++sound.unk15C0 >= 0x400) {
-            sound.unk15C0 = 0;
-            sound.unk330 = 1 - sound.unk330;
-            dest = sound.unk5C0[sound.unk330];
+        if ((u32)++sound.outputPos >= 0x400) {
+            sound.outputPos = 0;
+            sound.outputHalf = 1 - sound.outputHalf;
+            dest = sound.outputSamples[sound.outputHalf];
         }
     }
 }

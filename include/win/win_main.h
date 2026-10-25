@@ -16,18 +16,18 @@ typedef struct WinRootTab {
 
 // win_root's submenu window records (WindowWork.recs).
 typedef struct WinRootRec {
-    s32 a; // 0x0
-    f32 b; // 0x4
-    f32 c; // 0x8
-    s32 d; // 0xC
-    s32 e; // 0x10
+    s32 tabId; // 0x0, the submenu drawn (winRootDisp's switch: 0 Mario ... 4 log), -1 none
+    f32 x;     // 0x4, the window's position, read by each submenu's Disp
+    f32 y;     // 0x8
+    s32 state; // 0xC, win_root's slide state machine (0x64 shown, -1 hidden)
+    s32 step;  // 0x10, the slide's intplGetValue step
 } WinRootRec;
 
 // win_badge's equipped-badge list entry (WindowWork.equipList), built by winMakeEquipList.
 typedef struct WinEquipRec {
-    s32 field_0x0; // 0x0, 1 = equipped (win_badge toggles it)
-    s32 field_0x4; // 0x4, pouch badge index (winMakeEquipList's i)
-    s32 field_0x8; // 0x8, badge item id
+    s32 equipped; // 0x0, 1 = equipped (win_badge toggles it)
+    s32 badgeIdx; // 0x4, pouch badge index (winMakeEquipList's i; pouchEquipBadgeIndex, pouchHaveBadge)
+    s32 badgeId;  // 0x8, badge item id (itemDataTable index in win_badge and win_root's sorts)
 } WinEquipRec;
 
 // The pause menu's work area. Each submenu keeps its state in its own band, laid out one after another
@@ -55,38 +55,38 @@ typedef struct WindowWork {
     s32 tabSel;                 // 0x40, win_root: index of the tab under the cursor
     s32 tabCount;               // 0x44, win_root: tabs in use
     WinRootTab tabs[5];         // 0x48
-    WinRootRec recs[5];         // 0xC0, one per submenu window; b/c are its position (each submenu's Disp reads its own)
+    WinRootRec recs[5];         // 0xC0, one per submenu window
     s32 savedState;             // 0x124, win_badge/win_item/win_log: menu state to return to after help text
-    f32 field_0x128;            // 0x128, win_root: winMsgDisp position (winMsgMain slides it)
-    f32 field_0x12C;            // 0x12C
-    s32 field_0x130;            // 0x130, win_root: winMsgMain state
-    s32 field_0x134;            // 0x134
-    s32 field_0x138;            // 0x138
-    const char* field_0x13C;    // 0x13C, win_root: winMsgEntry's str, the message winMsgDisp shows
-    const char* field_0x140;    // 0x140, winMsgEntry's a3, a second message winMsgDisp draws in a winNameGX box (NULL for none)
-    const char* field_0x144;    // 0x144, the last str winMsgEntry took (it skips a repeat)
-    s32 field_0x148;            // 0x148
-    s32 field_0x14C;            // 0x14C
+    f32 msgX;                   // 0x128, win_root: winMsgDisp's x (winMsgMain slides it in from -800)
+    f32 msgY;                   // 0x12C, winMsgDisp's y
+    s32 msgState;               // 0x130, win_root: winMsgMain state
+    s32 msgStep;                // 0x134, winMsgMain: the slide's intplGetValue step (0..16)
+    s32 msgItemId;              // 0x138, winMsgEntry's a1: > 0 an item whose icon winMsgDisp draws; -2 moves the name box left
+    const char* msgTag;         // 0x13C, win_root: winMsgEntry's str, the message winMsgDisp shows
+    const char* nameTag;        // 0x140, winMsgEntry's a3, a second message winMsgDisp draws in a winNameGX box (NULL for none)
+    const char* lastMsgTag;     // 0x144, the last str winMsgEntry took (it skips a repeat)
+    s32 msgLine;                // 0x148, first line shown; winMsgMain scrolls it two lines at a time
+    s32 msgLines;               // 0x14C, line count from FontGetMessageWidthLine, plus one
     f32 posX;                   // 0x150, cursor position, animates toward targetX (win_root, win_item, win_badge)
     f32 posY;                   // 0x154, animates toward targetY
     f32 targetX;                // 0x158, cursor target, set by every submenu
     f32 targetY;                // 0x15C
     s32 marioLinkIdx;           // 0x160, win_mario: current linkDt entry (the cursor on the Mario page)
-    f32 field_0x164;            // 0x164, win_root's sort menu (winSortMain, winSortGX), to 0x17C
-    f32 field_0x168;            // 0x168
-    f32 field_0x16C;            // 0x16C
-    f32 field_0x170;            // 0x170
-    s32 field_0x174;            // 0x174
-    s32 field_0x178;            // 0x178
+    f32 sortX;                  // 0x164, win_root's sort menu (winSortEntry, winSortMain, winSortGX): its position,
+    f32 sortY;                  // 0x168  easing towards sortTargetX/Y
+    f32 sortTargetX;            // 0x16C
+    f32 sortTargetY;            // 0x170
+    s32 sortSel;                // 0x174, cursor row
+    s32 sortCount;              // 0x178, rows in sort_data[sortKind]
     s32 sortWait;               // 0x17C
     s32 sortReverseNext;        // 0x180, win_root's sorts: 0 = next press uses the ascending comparator, 1 = the _r one (flipped by each press, cleared by winSortEntry)
-    s32 field_0x184;            // 0x184, win_root: sort_data index
+    s32 sortKind;               // 0x184, win_root: sort_data index
     s32 marioPose;              // 0x188, win_mario's Mario pose (mario_change rebuilds it; mapGX reads its anim)
     s32 marioHoldTimer;         // 0x18C, win_mario: frames left before the pose's anim is driven again (30 after a loop)
     s32 marioState;             // 0x190, win_mario: 0 = link cursor, 1 = super action cursor
     s32 superActionSel;         // 0x194, win_mario: cursor among the owned super actions
     s32 superActionCount;       // 0x198, win_mario: star powers owned (bit count of mStarPowersObtained)
-    s32 field_0x19C;            // 0x19C
+    s32 partyChange;            // 0x19C, win_party: 1 when A closed the menu; win_root then returns -2 if partySel moved
     s32 partyPose[7];           // 0x1A0, win_party: pose handle per party slot
     s32 partyId[7];             // 0x1BC, win_party: party member id per slot (PARTNER_* order)
     s32 selPartyDt;             // 0x1D8, win_party: index into winPartyDt for the selected slot
@@ -103,27 +103,27 @@ typedef struct WindowWork {
     s32 itemTab;                // 0x210, win_item: 0 = held items (STR_MOCHI_ITEM), 1 = key items (STR_MOCHI_DAIJI)
     s32 itemSel[2];             // 0x214, win_item: cursor per tab (win_root's sort_1_* and sort_2_* read [0] and [1])
     s32 itemScrollRow[2];       // 0x21C, win_item: first visible row per tab
-    f32 field_0x224[2];         // 0x224, per tab (item_disp reads [itemTab]); 0x224-0x250: win_item's float positions (book and list slide)
-    f32 field_0x22C[2];         // 0x22C, per tab: the value field_0x224 eases towards (winItemMain2)
-    f32 field_0x234;            // 0x234
-    f32 field_0x238;            // 0x238
-    f32 field_0x23C;            // 0x23C
-    f32 field_0x240;            // 0x240
-    f32 field_0x244;            // 0x244
-    f32 field_0x248;            // 0x248
-    f32 field_0x24C;            // 0x24C
-    f32 field_0x250;            // 0x250
+    f32 itemScrollPos[2];       // 0x224, win_item: list scroll per tab (item_disp reads [itemTab])
+    f32 itemScrollTarget[2];    // 0x22C, per tab: 190 * itemScrollRow, which itemScrollPos eases towards (winItemMain2)
+    f32 bookX;                  // 0x234, the Luigi book window's position (winBookGX), easing towards bookTargetX/Y
+    f32 bookTargetX;            // 0x238
+    f32 bookY;                  // 0x23C
+    f32 bookTargetY;            // 0x240
+    f32 mailX;                  // 0x244, the mail window's position (winMailGX), easing towards mailTargetX/Y
+    f32 mailTargetX;            // 0x248
+    f32 mailY;                  // 0x24C
+    f32 mailTargetY;            // 0x250
     s32 mailCount;              // 0x254, received mail (pouchReceiveMailCount)
     s32 mailSel;                // 0x258, mail cursor
     s32 mailPage;               // 0x25C, mailSel / 5
-    f32 field_0x260;            // 0x260, win_item: mail slide position
-    f32 field_0x264;            // 0x264
+    f32 mailPagePos;            // 0x260, win_item: the mail list's scroll, easing towards mailPageTarget
+    f32 mailPageTarget;         // 0x264, mailPage * 200
     s32 mailScroll;             // 0x268, first visible line of the open mail
     u16 mailLines;              // 0x26C, line count of the open mail (FontGetMessageWidthLine, +10 with a picture)
-    u8 field_26E[0x2C8 - 0x26E]; // 0x26E, mail index pairs (sort base)
-    s32 field_0x2C8;            // 0x2C8, win_item/win_root: Luigi book state
-    s32 field_0x2CC;            // 0x2CC
-    s32 field_0x2D0;            // 0x2D0
+    u8 mailList[0x2C8 - 0x26E]; // 0x26E, byte pairs: display number, then mail id (pouch mEmailIds); win_root sorts it
+    s32 bookId;                 // 0x2C8, win_item/win_root: the open Luigi book (luigi_book_list index)
+    s32 bookPages;              // 0x2CC, its page count (two lines a page)
+    s32 bookPage;               // 0x2D0, the page shown
     s32 useItemId;              // 0x2D4, item picked for use (win_item case 300; win_main hands it to the event)
     s32 useItemSlot;            // 0x2D8, its pouch index (pouchRemoveItemIndex)
     s32 useTargetSel;           // 0x2DC, target: 0 = Mario, else index into the joined partners
@@ -142,7 +142,7 @@ typedef struct WindowWork {
     u8 field_D68[0xE1C - 0xD68]; // 0xD68
     s32 mapMarioPose;           // 0xE1C, win_log map's Mario pose (LogWin.pose; mario_change rebuilds it)
     u8 field_E20[0x1050 - 0xE20]; // 0xE20
-    u8 field_0x1050[0x1200 - 0x1050]; // 0x1050, win_log's tattle list (LogWin.chars); win_root's sort_7_2/7_3 sort it
+    u8 logChars[0x1200 - 0x1050]; // 0x1050, win_log's tattle list (LogWin.chars); win_root's sort_7_2/7_3 sort it
     u8 field_1200[0x1208 - 0x1200]; // 0x1200
     s32 useTargetWin[2];        // 0x1208, win_item: winMgr windows opened to pick who an item is used on
 } WindowWork;

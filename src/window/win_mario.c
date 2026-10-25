@@ -576,8 +576,8 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
     loopWhite = winWhiteColor;
     black = winBlackColor;
     loopBlack = winBlackColor;
-    x = work->recs[idx].b;
-    y = work->recs[idx].c;
+    x = work->recs[idx].x;
+    y = work->recs[idx].y;
 
     winBgGX(work, 0, x, y);
     winNameGX(work, 2, x - 265.0f, 154.0f + y, 190.0f, 24.0f);

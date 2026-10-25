@@ -111,7 +111,7 @@ void badgeShop_init(void) {
 
 	bdsw = &badgeshopwork;
 	memset(bdsw->special_table, 0, sizeof(bdsw->special_table));
-	memset(bdsw->field_0x19, 0, sizeof(bdsw->field_0x19));
+	memset(bdsw->throw_table, 0, sizeof(bdsw->throw_table));
 	memset(bdsw->starmaniac_table, 0, sizeof(bdsw->starmaniac_table));
 	memset(bdsw->bottakuru_table, 0, sizeof(bdsw->bottakuru_table));
 	memset(bdsw->bteresa_table, 0, sizeof(bdsw->bteresa_table));
@@ -339,11 +339,11 @@ void badgeShop_bargainGeneration(void) {
 		}
 	}
 	for (i = 0; i < sizeof(bdsw->special_table); i++) {
-		bdsw->field_0x19[i] = bdsw->special_table[i];
+		bdsw->throw_table[i] = bdsw->special_table[i];
 	}
 	for (i = 0; i < 5; i++) {
 		if (bdsw->bargainTable[i]) {
-			badgeShop_add(bdsw->field_0x19, bdsw->bargainTable[i], -1);
+			badgeShop_add(bdsw->throw_table, bdsw->bargainTable[i], -1);
 		}
 	}
 }
@@ -487,7 +487,7 @@ USER_FUNC(evt_badgeShop_throw_inc) {
 	s32 value;
 
 	value = evtGetValue(event, *event->args);
-	badgeShop_add(bdsw->field_0x19, value, 1);
+	badgeShop_add(bdsw->throw_table, value, 1);
 	badgeShop_add(bdsw->special_table, value, 1);
 	return EVT_RETURN_DONE;
 }
@@ -496,7 +496,7 @@ USER_FUNC(evt_badgeShop_throw_dec) {
 	s32 value;
 
 	value = evtGetValue(event, *event->args);
-	badgeShop_add(bdsw->field_0x19, value, -1);
+	badgeShop_add(bdsw->throw_table, value, -1);
 	badgeShop_add(bdsw->special_table, value, -1);
 	return EVT_RETURN_DONE;
 }
@@ -538,7 +538,7 @@ USER_FUNC(evt_badgeShop_throw_get_kind_cnt) {
 	int i;
 
 	for (count = 0, i = 0; i < 99; i++) {
-		badge = badgeShop_get(bdsw->field_0x19, (s16)(i + BADGE_MIN)); //inline
+		badge = badgeShop_get(bdsw->throw_table, (s16)(i + BADGE_MIN)); //inline
 		if (badge > 0) {
 			count++;
 		}

@@ -40,7 +40,7 @@ struct WinMgrEntry {
 	const char* message; //0x34
 	s32 scrollPos; //0x38, help text scroll, 2 rows per step
 	s32 scrollRows; //0x3C, FontGetMessageWidthLine result + 1; scroll arrows show while > 2
-	u8 field_0x40[0x44 - 0x40]; //0x40
+	u8 pad_0x40[0x44 - 0x40]; //0x40
 };
 
 typedef struct WinMgrWork {

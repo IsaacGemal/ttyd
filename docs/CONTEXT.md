@@ -6985,3 +6985,125 @@ only where the object stays identical. Data layout otherwise untouched.
 - **Leads.** evt_win under `-char signed` with its two `((s8*)p)[i]` reads guarded (net: 5 casts for one region).
   eff_pturn and win_main are one literal's first use away from matching. The pool_sweep/lever_search harness could run
   again after other cleanups free more pools; it is in build/pl/tools (untracked).
+
+## Sound and window headers named from their consumers; sound, pmario_sound, win_root, winmgr deep-cleaned (2026-10-24, Claude Opus 5.5, n9-q-fsound)
+
+Task (Isaac): name and type the `field_0xNN` members of include/sound.h, include/pmario_sound.h and include/win/win_main.h
+from their consumers (CLEANUP_GUIDE section 3), update every user, then deep-clean src/sound.c, src/pmario_sound.c,
+src/window/win_root.c and src/manager/winmgr.c as #1110/#1114 did. Parallel branches owned src/battle and
+mapdrv/animdrv/mario; none of their files was touched. Data layout was out of bounds.
+
+- **Method.** Untracked harness in build/fs/: try.py compiles a source, or every user of a header (from `ninja -t deps`),
+  into a temp dir and runs obj_equiv against objects saved before the branch (`--nat` without MUST_MATCH, `--alt` a
+  variant file, `--fn` a function's asm diff); var.py applies OLD/NEW replacements to a copy; sites.py lists the
+  index's sites by line; ci.sh/ci_local.py run tools/ci.py with the mgba venv's python (a uv-run python rewrites
+  build.ninja's `$python` and re-downloads the tools) and accept only the 8 test_wave_launch.PassPipes environment
+  errors. Every commit: each header's users EQUIV, changed files NAT OK, CI PASS, `build/G8MJ01/ok` recreated,
+  fncast_lint and local_prototypes clean. At the end: `obj_equiv --tree` over all 1,830 objects against the
+  pre-branch snapshot, every one equivalent; the twelve changed C files built under `configure.py --non-matching`
+  (their only output is 25 "function has no prototype" warnings, all already present on origin/main: win_root's
+  sort_*_func, some psndSFX_* functions and _sscallback), then reconfigured and rebuilt to `ok`.
+- **Counts** (`tools/cleanup_index.py`, 35dc3b78 -> this branch): index **16.972 -> 15.891** per kLOC (11857 -> 11102
+  weighted). field_0x 4624 -> 3886, raw_offset 177 -> 171, prim_ptr_cast 1902 -> 1897; everything else unchanged.
+  Per file (weighted, per kLOC):
+  - src/sound.c 246 -> 37 (118.783 -> 17.866): field_0x 209 -> 0
+  - src/pmario_sound.c 243 -> 70 (34.685 -> 9.981): field_0x 159 -> 3, raw_offset 7 -> 1, prim_ptr_cast 15 -> 10
+  - src/window/win_root.c 209 -> 18 (79.741 -> 6.868): field_0x 192 -> 1 (animdrv's `clip->field_0x8`, fmap's)
+  - src/manager/winmgr.c 191 -> 190 (85.997 -> 85.547): field_0x 1 -> 0
+  - include/sound.h 30 -> 0, include/pmario_sound.h 21 -> 3, include/win/win_main.h 38 -> 1 (unk_80177008, a symbol)
+  - consumers: win_item 135 -> 49, win_badge 36 -> 28, win_party 12 -> 8, evt_badgeshop 20 -> 13; win_log 51 -> 59
+    and win_log.h 2 -> 8 (below: invented placeholders turned into `field_0xNNNN`).
+  sound.c, pmario_sound.c and win_root.c left the worst ten; winmgr is second (its 157 address names are colour and
+  Vec templates, which stay).
+- **sound.h** (consumers in sound.c unless named).
+  - StreamHeader (the .stm header SoundSSPlayChEx_main copies): 0x0 `format` (its switch: 0 PCM16, 1 sets flags 0x80,
+    which _sscallback decodes with ssDecodeDPCM, 2 sets 0x100 and passes the ADPCM info to sndStreamAllocEx with flag
+    0x10001); 0x8/0xC `playEnd`/`playLoop` (copied to SoundStream's; 0xFFFFFFFF = no loop, else flags 0x200);
+    0x10/0x18/0x20/0x24 pairs as arrays `readEnd[2]`, `readLoop[2]`, `dpcmStartSample[2]`, `dpcmLoopSample[2]` (copied
+    per channel); 0x5C/0xBC `adpcmInfo0/1` (copied to entries[0/1].info: one per channel).
+  - SoundStreamEntry: 0x28 `buffer` (sndStreamAllocEx's buffer argument; the header read's target first); 0x38 a
+    union `playPos` (ssDecodeDPCM/ssCopyPCM8/16 advance it, compare with playEnd, wrap to playLoop) / `cachePos`
+    (_ssDVDReadAsync_cache_next: the ARAM write offset, compared with the file length in cache_aram): two uses, one
+    member each; 0x3C `bufferLength[2]` and 0x44 `bufferPos` (the decoders' end-of-buffer test `bufferPos >=
+    bufferLength[curBuffer]`); 0x4C `curBuffer` (`loadBuffer[curBuffer]`); 0x4E/0x50/0x52 `dpcmStartSample`/
+    `dpcmLoopSample`/`dpcmSample` (case 1 copies 0x4E into 0x52; the decoder adds each delta to 0x52 and resets it from
+    0x50 at the loop); 0x54 `nextReady` (_ssDVDReadAsync_activeChk sets it when the other buffer's read lands; the
+    decoders switch buffers only when it is set; SoundSSMainInt issues the next read while it is clear); 0x56
+    `firstReadDone` (activeChk's second loop activates the stream once every channel has it); 0x58/0x5A/0x5C
+    `dpcmScale`/`dpcmRunPos`/`dpcmRunLength` (ssDecodeDPCM's run escape: index 8 starts a run of `(byte >> 4) + 4`
+    nibbles that reuse the last scale); 0x60/0x64 `readEnd`/`readLoop` (_ssPlayChRead clips reads to readEnd;
+    activeChk restarts bytesLoaded at readLoop).
+  - SoundStream: 0x2 `cacheSlot` (SoundSSPlayChEx's free sound.cacheUsed index; cacheAram[cacheSlot] is the ARQ
+    address); 0x4 `dataOffset` (0x40 or 0x100 by format, added to every file read offset); 0x10/0x14 `curVol`/
+    `fadeStep` (SoundSSMain steps curVol by fadeStep; SoundSSFadeoutCh sets fadeStep = curVol / frames; the mix
+    parameter is curVol); 0x1C/0x20 `playEnd`/`playLoop`; 0x24 `samplesWritten` (_sscallback's count and return value).
+  - SoundDVD: 0x2 `pan` (SoundDVDSetPanCh stores it, SoundDVDMain passes it back); 0x4 `vol` (the fade-in stops
+    there); 0x8 `curVol` (split into AISetStreamVolLeft/Right); 0xC `fadeStep`.
+  - SoundEffect 0x2 `prio` (SoundEfxPlayEx takes over a slot whose prio <= the new one's; its parameter renamed too);
+    SoundGroup 0x2 `index` (SoundSLibLoadDVD's list position, SoundSongGetGroup's key).
+  - SoundWork: 0xE8 `nextGroupId` (SoundLoadDVD2PushGroup), 0x1F4 `headingAngle` (SoundEfxMain's degrees -> heading;
+    nothing writes it), 0x20C `interruptDepth` (the OSDisable/RestoreInterrupts nesting count), 0x21C/0x224/0x226
+    `cacheAram[2]`/`cacheCount`/`cacheUsed[2]`, 0x330/0x33C/0x5C0/0x15C0 `outputHalf`/`dmaSamples`/`outputSamples`/
+    `outputPos` (SoundAIDMACallback copies the DMA buffer big-endian into dmaSamples and every other sample into the
+    two halves of outputSamples; bom_01's cannon sight reads the next one, so its BomSoundView follows).
+  - Left: SoundEffect 0xA (only decremented), SoundWork 0xFC/0x104/0x108 (only stored), SoundTemp's bytes.
+- **pmario_sound.h** (consumers in pmario_sound.c; nothing else reads these structs but seq_title/evt_snd's psbgm
+  streamId).
+  - BGMListEntry's byte view: `volume`, `pan`, `group`, `inScope`. 0xE was called reverb: psndBGMOn_f_d keeps a playing
+    BGM whose entry has the same nonzero byte instead of restarting it (BGM_TITLE1 and BGM_FILE_MENU1 both carry 1,
+    the stage BGMs count up), and nothing passes it to a reverb call; PaperSoundBGM 0xD, where it is copied, was
+    `reverb` too and becomes `group`. 0xF: 1 starts the BGM in scope (scopeTimer 0xFF).
+  - SoundEffectEntry 0x10 `prio` (__psndSFXOn evicts a slot whose prio is higher), 0x11 `delay` (added to the slot's
+    start delay). __psndSFXOn's 4th parameter is a delay in ms (divided by 16.67 into the slot's frame delay; SPM's
+    __spsndSFXOn names its 4th parameter `delay`) and its 7th the dist it stores; parameters renamed, prototype given
+    names. SoundEnvList 0x2 was `flags`: it is the pssfxlist index psndENVMain passes (| 0x0N000000) as __psndSFXOn's
+    name, so `sfxNo`.
+  - PaperSoundEnv: `sfxNo`, `envId` (psndENV_stop's key), `volume` (psndENVGetVol), `mode` (psndENVMain's switch),
+    `intervalRand`/`interval` (the `* 60 + irand(...) * 60` timer), `radius`/`radiusRand` (mode 0's random play
+    distance), `step`, `timer`, `span` (passed as __psndSFXOn's dist), `sfxId` (the id __psndSFXOn returned; -1 none),
+    `position` (__psndSFXOn's position).
+  - PaperSoundEffect: `sfxNo`, `serial` (psndSFXChk compares id bits 8-23), `flags`, `prio`, `delay` (psndSFXMain counts
+    it down before starting), `attenuation` (taken off every volume), `channel` (the SoundSS/Song/Efx channel).
+    PaperSoundBGM 0x0 `bgmNo`, 0x4's comment (a channel), 0x20 `fade`.
+  - PaperSoundEnvWork: `fadeState`/`fadeFrames`/`fadeTimer`, `silentState`/`silentLevel`/`silentFrames`/`silentTimer`
+    (the documented fade record; "silent" from the original psndBGMChkSilent and silent_tbl); 0x1 is never touched:
+    `pad_0x1`.
+  - PaperSoundWork: `envFade[2]`, `envId[2]`, `envLpf[2]`, `envLpfTarget[2]`, `sfxFade`, `mapName` (psndMapChange's
+    strcmp/strcpy), `sfxSerial` (stamped into each id), `repeatDelay` (__psndSFXOn's extra delay for an effect queued
+    again in the same frame), `bgmLevel`/`sfxLevel`/`envLevel` (the percentages psndBGMMain, psndSFXMain and
+    psndENVGetVol apply), `lockTimer` (refuses five effect ids for 6 frames).
+  - Left: SoundEnvList 0x5 and PaperSoundEnv 0x7 (copied, never read), SoundEffectEntry 0xE (1 sets the slot's 0x200
+    flag, which exempts it from psnd.flag 0x80's mute; the meaning of either flag is not proven), PaperSoundBGM 0xC,
+    PaperSoundEffect 0x16 (only stored), PaperSoundWork 0x5B (only stored).
+- **win/win_main.h.** WindowWork: 0x128-0x14C winMsgEntry/winMsgMain/winMsgDisp's message window (`msgX`/`msgY`,
+  `msgState`, `msgStep`, `msgItemId` (> 0 an itemDataTable icon; -2 moves the name box), `msgTag`/`nameTag`/
+  `lastMsgTag` (msgSearch's tag), `msgLine`/`msgLines`); 0x164-0x178 and 0x184 winSortEntry/winSortMain's menu
+  (`sortX/Y`, `sortTargetX/Y`, `sortSel`, `sortCount`, `sortKind` = sort_data index); 0x19C `partyChange` (win_party
+  sets it when A closes the menu; win_root returns -2 if partySel moved); 0x224/0x22C `itemScrollPos/Target[2]`
+  (190 * itemScrollRow); 0x234-0x240 the Luigi book window (winBookGX) and 0x244-0x250 the mail window (winMailGX), each
+  position easing to its target; 0x260/0x264 `mailPagePos/Target` (mailPage * 200); 0x26E `mailList` (the byte pairs
+  win_root sorts); 0x2C8-0x2D0 `bookId`/`bookPages`/`bookPage` (luigi_book_list); 0x1050 `logChars` (LogWin.chars).
+  WinEquipRec `equipped`/`badgeIdx`/`badgeId` (win_badge's toggle and pouchEquipBadgeIndex, the sorts' itemDataTable
+  index). WinRootRec's `a..e` are `tabId` (winRootDisp's switch), `x`/`y` (every submenu Disp), `state`, `step`.
+- **Outside the three headers, same rules.** window/win_log.h LogWin's invented `e28`..`fb0` placeholders: the map,
+  crystal-star ring, card and badge windows' positions and targets (win_log's Disp draws at them, its Main eases them),
+  the ring's alpha and angle (360/7 per stoneSel), the card/badge list scrolls (page * 0xE8; win_root's book pages read
+  them) and picture frames. The tattle window's six floats (0x1028-0x1034, 0x1048/0x104C) are only stored, so they are
+  `field_0xNNNN` now instead of `x1028`-style names (+6 to the index, the honest spelling). evt_badgeshop.h 0x19
+  `throw_table` (evt_badgeShop_throw_inc/dec add to it; the struct's siblings are `special_table` etc.); winmgr.h
+  WinMgrEntry 0x40 is never touched: `pad_0x40`. SoundSongPlayCh's prototype names `(chan, songData)` as defined.
+- **Deep-clean results.** psndSFXMain's `((u8*)&res)[N]` reads of calc3D's packed result are a local anonymous union
+  `res.vol/pan/span` (EQUIV; names from the calls they feed and calc3D's PAN[0..2]). Tried and left: psndENVMain's four
+  volatile reloads as `psndSFX_vol(env->sfxId, vol)` (the #1125 lead; MWCC drops the reload, 0x10 bytes shorter, 594-658
+  lines) with or without the loop-top local; psndENVOff_f_d's `&psnd.envId[id & 0xF]` (20 lines); psndENVOn_f_d's
+  `goto done` as `return 1` (23); psndBGMOn_f_d's gotos written out (39/43); sound.c's `goto unlock` as a duplicated
+  unlock and return (29); SoundDropData's written-out second half as a second _ssDropSeq() (178). winmgr's regions are
+  the ones #1110/#1114/#1125 measured (pool order, 300-894-line by-value diffs); not retried.
+- **For a reviewer.** The two renames of existing names: BGMListEntry/PaperSoundBGM `reverb` -> `group` and
+  SoundEnvList `flags` -> `sfxNo` (evidence above). The playPos/cachePos union: cache_aram's reset of both entries
+  before playback is written as playPos. `msgItemId` carries the -2 sentinel. SoundEfxCheck/SoundEfxCheckPlay keep an
+  unguarded doubled `flags & 0x10` test (an inlined voice lookup); guarding it would add a region.
+- **Leads.** SoundEffectEntry.pitch is read only as `*(s16*)&entry->pitch` and the table holds 0xFAAB-style values:
+  an s16 field with negative initialisers would drop the pun (a data-definition change). win_log.c's local
+  WinLogEntry/WinLogWork overlay is LogWin's rows shifted by 4 bytes (its `field_0x1C` is rows[n+1].type): a duplicate
+  struct to fold into LogRow.
