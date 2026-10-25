@@ -8212,8 +8212,9 @@ Names, each with the consumer that justifies it:
   effUltraHammerDisp scales x by -1 when set). GarekiData 0x34 `angleZ` (effGarekiDisp's z rotation); the old
   `angleZ`/`angleVelZ` at 0x30/0x3C feed the y rotation, so they are `angleY`/`angleVelY`.
 - **Others.** BattleBreakSlot 0x14 `apMultiplier` (BattleBreakSlot_Main sets 2 or 3 with breakTurn;
-  BattleAudience_ApRecoveryBuild multiplies the apGauge gain by it while breakTurn lasts). GaugeTableEntry 0x8 `flag`
-  (_GetGaugeDecValue copies it into the decrement's flag). RomFontWork 0x0 `glyphs` (the baked RomFontChar cache
+  BattleAudience_ApRecoveryBuild multiplies the apGauge gain by it while breakTurn lasts). KpaFireNode
+  (effGonbabaBreath's userdata): 0x0-0x3C take effGonbabaBreathData's names, 0x1C `lifetime` (the fire hit checks
+  skip nodes at 0x10 or less). GaugeTableEntry 0x8 `flag` (_GetGaugeDecValue copies it into the decrement's flag). RomFontWork 0x0 `glyphs` (the baked RomFontChar cache
   romFontFindChar searches). hom_00 sun_tev's two locals take the MapTevCallback field names they copy.
 
 Respelled `field_0xNN` (role seen but one meaning not pinned, write-only, or unread): EventEntry 0x84 (a counter, a
@@ -8223,14 +8224,14 @@ commit 0349de20), BattleWork 0x2, 0x1F9C, 0x18FE2, GenkiWork 0x74/0x80 and Genki
 y is a velocity in state 3 and a phase in state 4), MukiWork 0x10, FallWork's 0x50 vector (texture pan, velocity or
 waypoint by type), BattleSeqEndWork 0x0/0x14/0x1C/0x20/0x28, BattleStage and its two dark blocks' 0x0, YuunpcEntry
 0x4 and YuunpcPoseEntry 0x18 (left by the n9-q-frels1 chapter), the yuu_01/yuu_02 0xC miss counters (two meanings,
-as noted there), yuu_03's RyushiEntry 0x0/0x2C and Yuuminigame4Data 0x20, KpaWork 0xD8/0xE0 and KpaFireNode 0x1C,
+as noted there), yuu_03's RyushiEntry 0x0/0x2C and Yuuminigame4Data 0x20, KpaWork 0xD8/0xE0,
 SoundEffect 0xA, SoundWork 0xFC/0x104/0x108 (the aux reverb/chorus slots: written, never read), PaperSound* 0xC/0x16/
 0x5B, MotRoll 0x8/0x10, MotionShipData 0x4/0x34, JabaraWork 0xC, the sac_deka/sac_suki/ac_pendulum words nothing
 reads, IndirectData 0x2C/0x30, IceRSTEntry 0x8, eff_mugi 0x38, LinkDt 0x8/0x12, BattleAudience 0x1A block and
 0x137D8, the badge-count byte 0x3, WindowWork's five byte blocks, RuleEntry 0x10 (tou, tou2), KaronPoseEntry 0x1,
 PoseState 0x24 (bom_01), AnimTblUnknown 0x8 (dig_00), PuniWork/PuniData's byte blocks (PuniData 0x21C is reached as
-`(u8*)puni + 0x220`), KeijibanInfo 0x0, BeroEntry 0x10/0x14, StatusValue. Untouched gaps became `pad_0xNN` (KpaWork,
-KpaFireNode, SoundWork/SoundDVD/SoundStream/SoundEffect, the PaperSound gaps, GenkiWork 0x0/0x8, GenkiObject 0x18,
+`(u8*)puni + 0x220`), KeijibanInfo 0x0, StatusValue. Untouched gaps became `pad_0xNN` (KpaWork,
+SoundWork/SoundDVD/SoundStream/SoundEffect, the PaperSound gaps, GenkiWork 0x0/0x8, GenkiObject 0x18,
 MukiWork 0x3E0, SukiWork 0x258/0x344, BattleWork 0x2750/0x16F3E/0x18FF8/0x19065, BattleBreakSlotReel 0x59, ...).
 
 An independent read of the diff (a fresh Claude Opus 5.5 agent given the code, not these notes) found no wrong
@@ -8259,3 +8260,8 @@ sides): index 11.974 -> 12.449 per kLOC (8364 -> 8696 weighted); field_0x 1252 -
 now counted), ptr_to_int 32 -> 34 (`(s32)&work->weapon` in sac_muki and sac_suki, where the arrays decayed before),
 every other category unchanged. The rise is the point of the respelling: those placeholders were there before and
 uncounted.
+
+After the rebase onto c987c90a (#1141-#1143), same script both sides: index 11.495 -> 11.962 per kLOC (8029 -> 8355
+weighted), field_0x 1016 -> 1340, ptr_to_int 33 -> 35, every other category unchanged. Tree-wide, code only:
+`field_N` 2534 -> 1091, `unkNN` 853 -> 414; 104 of what is left sits outside the fsrcmisc directories, in the structs listed under
+"Left" (PartyEntry, DoorParam, InformantWork, KinopioData, ...).
