@@ -76,7 +76,7 @@ typedef struct CharShadowWork {
     s32 defaultCollision; //0x118, shadowEntry sets flags 0x1 when set
 } CharShadowWork;
 
-// One shadowConfig block (0x48 bytes), reached as shadowConfig + configIdx * 0x48.
+// One shadowConfig block (0x48 bytes): shadowConfig is two of them, indexed by configIdx.
 // followCamera (0x0): 1 rebuilds the light position from CAMERA_3D each frame (shadowDisp, the char pass).
 // halfWidth/halfHeight (0x28/0x2C): the C_MTXFrustum/C_MTXOrtho extents, also the Projection quad's size.
 // nearZ/farZ (0x30/0x34): clip planes; depthShadowEnd builds the depth matrix from them.
