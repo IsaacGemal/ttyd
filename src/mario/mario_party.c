@@ -47,7 +47,7 @@ s32 marioUseParty(void) {
         wp->trigFlags &= ~MARIO_TRIG_FLAG_USE_PARTNER;
         return 0;
     }
-    if ((wp->dispFlags & (1 << 24)) || party->field_37 == 1) {
+    if ((wp->dispFlags & (1 << 24)) || party->paperMot == 1) {
         return 0;
     }
     party = partyGetPtr(marioGetPartyId());

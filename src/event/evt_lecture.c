@@ -59,16 +59,16 @@ USER_FUNC(lect_cam_save) {
     if (party != NULL) {
         stPpos = party->position;
         stPdir1 = party->dispDir;
-        stPdir2 = party->field_110;
+        stPdir2 = party->dispReqDir;
         stPdir3 = party->dir;
-        stPdir4 = party->field_FC;
+        stPdir4 = party->moveDir;
     }
     if (extraParty != NULL) {
         stXpos = extraParty->position;
         stXdir1 = extraParty->dispDir;
-        stXdir2 = extraParty->field_110;
+        stXdir2 = extraParty->dispReqDir;
         stXdir3 = extraParty->dir;
-        stXdir4 = extraParty->field_FC;
+        stXdir4 = extraParty->moveDir;
     }
     return EVT_RETURN_DONE;
 }
@@ -99,16 +99,16 @@ USER_FUNC(lect_cam_load) {
     if (party != NULL) {
         party->position = stPpos;
         party->dispDir = stPdir1;
-        party->field_110 = stPdir2;
+        party->dispReqDir = stPdir2;
         party->dir = stPdir3;
-        party->field_FC = stPdir4;
+        party->moveDir = stPdir4;
     }
     if (extraParty != NULL) {
         extraParty->position = stXpos;
         extraParty->dispDir = stXdir1;
-        extraParty->field_110 = stXdir2;
+        extraParty->dispReqDir = stXdir2;
         extraParty->dir = stXdir3;
-        extraParty->field_FC = stXdir4;
+        extraParty->moveDir = stXdir4;
     }
     return EVT_RETURN_DONE;
 }

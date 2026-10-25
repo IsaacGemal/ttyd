@@ -1376,10 +1376,10 @@ EVT_BEGIN(chief_pig_event)
 EVT_END()
 
 static KinopioData kino_dt = {
-    176,     // field_0
-    250.0f,  // field_4
-    16.0f,   // field_8
-    -300.0f, // field_C
+    176,     // breakfastItem
+    250.0f,  // breakfastX
+    16.0f,   // breakfastY
+    -300.0f, // breakfastZ
     10,      // ryoukin
     431.0f,  // bedX
     16.0f,   // bedY

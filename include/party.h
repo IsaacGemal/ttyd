@@ -57,6 +57,18 @@ typedef enum PartyFlags {
 } PartyFlags;
 #pragma enumsalwaysint on
 
+// PartyEntry.trigFlags bits that have one known meaning; the others stay numbers at their users.
+typedef enum PartyTrigFlags {
+    PARTY_TRIG_FLAG_CHG_PAPER_MOT = (1 << 0),  // allPartySlitOn/partyChgMotSlitFloor; party_slit/party_roll start on it
+    PARTY_TRIG_FLAG_CHG_MOT = (1 << 1),        // partyChgMot; the party_motion_* routine's first frame
+    PARTY_TRIG_FLAG_CHG_MOVE_MODE = (1 << 2),  // partyChgMoveMode; the party_move_mode_* routine's first frame
+    PARTY_TRIG_FLAG_CHG_RUN_MODE = (1 << 3),   // partyChgRunMode; the run mode's init (use, move, bye, hello)
+    PARTY_TRIG_FLAG_CHG_POSE = (1 << 13),      // partyChgPose; partyPreDisp reloads the pose
+    PARTY_TRIG_FLAG_CHG_PAPER = (1 << 14),     // partyChgPaper; partyPreDisp reloads the paper pose
+    PARTY_TRIG_FLAG_FOLLOW_CLOSE = (1 << 17),  // N_partyFollowCloseOn/Off
+    PARTY_TRIG_FLAG_SPLASH = (1 << 24)         // set on water (attr 0x200) when splashTimer is 0; party_move splashes
+} PartyTrigFlags;
+
 #pragma enumsalwaysint off
 typedef enum PartySlotId {
     PARTY_SLOT_PARTY = 0,    // 0x0
@@ -68,47 +80,59 @@ typedef enum PartySlotId {
 typedef struct PartyEntry {
     u32 flags;                   // 0x0
     u32 flags2;                  // 0x4
-    u32 field_8;                 // 0x8
+    u32 trigFlags;               // 0x8, PartyTrigFlags: one-shot requests, as MarioWork.trigFlags (partyChgMot,
+                                 //      partyChgMoveMode, partyChgRunMode, partyChgPose and partyChgPaper set a bit, the code
+                                 //      they start tests and clears it), and party_motion's follow and splash states
     s32 paperAnimGroup;          // 0xC
-    s32 field_10;                // 0x10
+    s32 field_0x10;              // 0x10
     s32 paperPoseId;             // 0x14
     char* pose;                  // 0x18, partyChgPose
     char* paper;                 // 0x1C, partyChgPaper
-    u16 field_20;                // 0x20
-    u8 field_22[0x24 - 0x22];    // 0x22
+    u16 poseTime;                // 0x20, partyPreDisp's animPoseSetLocalTime frame; zeroed with each pose change, Mario's
+                                 //       poseTime while he rides Yoshi
+    u8 pad_0x22[0x24 - 0x22];    // 0x22
     s32 timer;                   // 0x24, frame countdown: `--timer <= 0` checks, reset to 0x14/0x1E/0x3C/0x41
-    s16 field_28;                // 0x28
+    s16 forceMoveFrames;         // 0x28, partySetForceMove's frame count; partyForceWalk counts it down and restores
+                                 //       the previous run mode at 0; the speed, homing and jump routines test it for nonzero
     s16 mutekiTime;              // 0x2A, marioSetMutekiTime copies Mario's into it
-    s8 field_2C;                 // 0x2C
-    s8 field_2D;                 // 0x2D
-    u8 field_2E;                 // 0x2E
+    s8 kemuriCount;              // 0x2C, party_kemuri: counts walking frames, a dust puff each time it passes 6
+    s8 stepSfxCount;             // 0x2D, partyStepSfx: counts frames, footstep sounds at its lo/hi marks
+    s8 dokanType;                // 0x2E, partyDokanEnd's copy of Mario's dokanType; partyDokanMain picks the exit by it
     s8 currentSlotId;            // 0x2F
-    s8 field_30;                 // 0x30
+    s8 padChan;                  // 0x30, pad index partyUpdateKeyData reads the GlobalWork pad arrays with (never written, so 0)
     s8 currentMemberId;          // 0x31, PartyMembers
-    u8 field_32;                 // 0x32
-    u8 field_33;                 // 0x33
+    u8 isFlyer;                  // 0x32, 1 for Flurrie and Vivian (their init_funcs): party_move and party_motion take the
+                                 //       fly motions (party_motion_homing_fly, _behind_mario_fly), party_kemuri raises no dust,
+                                 //       partyStepSfx plays one sound (0x926) in place of the step pair
+    u8 partnerType;              // 0x33, PartyMember of the init_func that set the entry up (kuribo_init's for Goombella and
+                                 //       every NPC follower); fbatHitCheck tests Koops' before nokonokoGetStatus, and Bobbery's
     u8 runMode;                  // 0x34, partyChgRunMode
-    u8 field_35;                 // 0x35
+    u8 prevRunMode;              // 0x35, runMode before partyChgRunMode, unless that was 9 (forced walk) or 3 (use);
+                                 //       unk_800ba2dc returns to it
     u8 mot;                      // 0x36, partyChgMot
-    u8 field_37;                 // 0x37
+    u8 paperMot;                 // 0x37, paper motion to run: party_slit runs at 1, party_roll at 2 (no setter of 2 in the
+                                 //       tree), 0 none
     u8 motionStep;               // 0x38, switch selector of the party_motion_* routines
     u8 useMotionId;              // 0x39
-    u8 field_3A;                 // 0x3A
+    u8 paperMotStep;             // 0x3A, switch selector of party_slit and party_roll; allPartySlitOff moves it to 0x28
     u8 moveMode;                 // 0x3B, partyChgMoveMode
-    u8 field_3C;                 // 0x3C
-    u8 field_3D;                 // 0x3D, set to the partyMoveBehindMario/BesideMario mode, cleared by party_move and cloud
-    u8 field_3E;                 // 0x3E, zeroed only (party_move)
-    s8 field_3F;                 // 0x3F, compared with 1, 2 and 3 in party_move, then zeroed
+    u8 pad_0x3C;                 // 0x3C
+    u8 field_0x3D;               // 0x3D, set to the partyMoveBehindMario/BesideMario mode, cleared by party_move and cloud
+    u8 field_0x3E;               // 0x3E, zeroed only (party_move)
+    s8 field_0x3F;               // 0x3F, compared with 1, 2 and 3 in party_move, then zeroed
     f32 homingDist;              // 0x40, evt_party_set_homing_dist; distance from Mario at which a standing partner
                                  // starts walking after him (party_motion_stay)
-    u32 field_44;                // 0x44, set to 0x10 beside homingDist (party_move)
-    u8 field_48[0x4C - 0x48];    // 0x48
-    s8 field_4C;                 // 0x4C
-    s8 field_4D;                 // 0x4D, party_motion: zeroed with no ground hit, counted up otherwise; past 8 it re-tests the floor ahead
+    u32 field_0x44;              // 0x44, set to 0x10 beside homingDist (party_move)
+    u8 pad_0x48[0x4C - 0x48];    // 0x48
+    s8 splashTimer;              // 0x4C, frames before water (attr 0x200) can raise another splash: set to 0x14 at the splash,
+                                 //       the floor checks raise trigFlags 0x1000000 only at 0
+    s8 wallHitCount;             // 0x4D, party_motion_homing_walk: frames blocked by a front wall; past 8 it re-tests the floor ahead
     u8 noFloorCount;             // 0x4E, frames the partner walked with no floor under it; party_motion_stay turns it toward Mario past 10
-    s8 field_4F;                 // 0x4F, party_vivian flag byte: bit 0 set and cleared around Vivian's use, zeroed at init
-    u8 field_50;                 // 0x50
-    s8 field_51;                 // 0x51, 1 while party_move follows the other partner's footmarks (set when the trail is reset, cleared with partyClearFootmark2)
+    s8 tailFlags;                // 0x4F, Vivian's tail: bit 0 set by L_partyVivianTailStop, cleared by ..Start, tested by
+                                 //       N_vivianDisplayTailCheck
+    u8 pad_0x50;                 // 0x50
+    s8 followPartner;            // 0x51, 1 while partyRecordFootmark records the other partner's positions instead of Mario's
+                                 //       (set when the trail is reset, cleared with partyClearFootmark2)
     s16 touchCount;              // 0x52, contact counter partyMarioHosei returns: up to 100 while touching Mario, decays after
     f32 moveAngle;               // 0x54, heading passed to movePos
     Vec position;                // 0x58
@@ -118,41 +142,50 @@ typedef struct PartyEntry {
     Vec spinPivot;               // 0x88, pivot of the roll spin (party.c translates by -spinPivot before the z and x rotations, +spinPivot after)
     Vec targetPos;               // 0x94, destination of the appear/jump/fly routines; distABf'd against position
     f32 velX;                    // 0xA0, x of the push velocity (partyMarioHosei sets it, partyGetMoveDirSpd adds it to moveDelta.x)
-    u8 field_A4[0xA8 - 0xA4];    // 0xA4
+    u8 pad_0xA4[0xA8 - 0xA4];    // 0xA4
     f32 velZ;                    // 0xA8, z of the push velocity (partyMarioHosei: f30 * -cos)
     Vec moveDelta;               // 0xAC, per-frame offset added to position: set by evt_party_set_hosei_xyz, mario->riderDelta in yoshi_use, zeroed in driveParty
-    Vec field_B8;                // 0xB8
-    Vec field_C4;                // 0xC4
-    u8 field_D0[0xE0 - 0xD0];    // 0xD0
+    Vec shadowPos;               // 0xB8, partyPreDisp's shadowEntryMode position (y from a floor hit check) and
+                                 //       animPoseVivianMain's; Vivian's trails position by up to 22
+    Vec field_0xC4;              // 0xC4, partyGroundSlope's x/z tilt angles of the floor normal, zeroed by partySearchGround
+    u8 pad_0xD0[0xE0 - 0xD0];    // 0xD0
     f32 groundSlope;             // 0xE0, partyGroundSlope result (party_hit.c), compared with 30.0f
     f32 groundY;                 // 0xE4, floor height saved by partySearchGround
-    f32 field_E8;                // 0xE8, partySearchGround sets it (-1, the floor gap, or 0); party_move tests it against 0
-    f32 field_EC;                // 0xEC
+    f32 groundGap;               // 0xE8, partySearchGround: -1 with no floor found, the gap down to a floor below the step-down
+                                 //       range, 0 when it takes a floor; partyMoveMain leaves the floor while it is nonzero
+    f32 frontWallDist;           // 0xEC, partySearchFrontWall: distance to the wall it hit, -1 with none; kuribo_use
+                                 //       compares it with the distance to Mario
     f32 height;                  // 0xF0, height above position.y (partyGetHeight, Yoshi's head offset)
     f32 radius;                  // 0xF4, collision radius
     f32 playerTargetYaw;         // 0xF8, copied from player->targetYaw in driveParty
-    f32 field_FC;                // 0xFC
+    f32 moveDir;                 // 0xFC, direction of motion, as MarioWork.moveDir (copied from it at entry, dokan and ride
+                                 //       end; the move routines copy dir into it): partyMakeDispDir faces by it, L_getStick
+                                 //       returns it
     f32 dir;                     // 0x100
     f32 speed;                   // 0x104
     f32 speed2;                  // 0x108
     f32 dispDir;                 // 0x10C, evt_party_get_dispdir
-    f32 field_110;               // 0x110
+    f32 dispReqDir;              // 0x110, as MarioWork.dispReqDir (mostly copied from it): partyMakeDispDir turns dispDir
+                                 //        toward it; yoshi_use hands it back to Mario
     f32 jumpPara1;               // 0x114
     f32 jumpPara2;               // 0x118
     f32 jumpPara3;               // 0x11C
-    f32 field_120;               // 0x120
+    f32 stepUpY;                 // 0x120, y of the step ahead (partyChkFrontStep); party_motion_upstairs and Yoshi's step
+                                 //        motion climb to it in 3 frames
     f32 spinSpeed;               // 0x124, degrees added each frame to dispDir or dispRot.x (partyDokanMain); the ride-on jump
                                  // spins dispDir by it, raising it by 2 up to 30
     f32 targetDist;              // 0x128, distance to targetPos, set before the fly/jump step count
-    struct HitEntry* field_12C;  // 0x12C
+    struct HitEntry* frontWallHit; // 0x12C, partySearchFrontWall's hit, as MarioWork.hitobjFront (Yoshi's checkWall sets both);
+                                   //        the move routines test it for attr 0x800, party_slit for 0x2000
     struct HitEntry* frontHit;   // 0x130, check_front result
-    void* field_134;             // 0x134
+    struct HitEntry* pushWallHit; // 0x134, the same wall when the partner was moving into it (speed != 0), as
+                                  //        MarioWork.hitobjPush; party_motion_behind_mario stops at it
     struct HitEntry* groundHit;  // 0x138, partySearchGround result
     struct HitEntry* field_0x13C; // 0x13C, takes the old groundHit (party_yoshi.c, evt_party_jump_pos); party.c clears it
     struct HitEntry* headHit;    // 0x140, partySearchHead result
     void* field_0x144;           // 0x144, aji_13 tests it for NULL before the groundHit group check; party.c clears it
     u32 field_0x148;             // 0x148
-    struct HitEntry* field_14C;  // 0x14C, set to the ground hit when its attribute has bit 0x40000000 (party_motion.c)
+    struct HitEntry* field_0x14C; // 0x14C, set to the ground hit when its attribute has bit 0x40000000 (party_motion.c)
     u16 button;                  // 0x150, held buttons (partyUpdateKeyData)
     u16 buttonNew;               // 0x152, pressed this frame
     u16 buttonRepeat;            // 0x154
@@ -168,7 +201,9 @@ typedef struct PartyEntry {
     MarioWork* playerPtr;        // 0x160
     s32 camId;                   // 0x164
     s32 yoshiPsndSFXId;          // 0x168
-    s32 unk16C;                  // 0x16C
+    s32 evtUseMsec;              // 0x16C, length of an event-started use in ms (evt_party_cloud_breathout's argument, 5000 from
+                                 //        evt_party_nokotaro_kick_hold, 0 from ..._kick): cloud's useTimer is sysMsec2Frame of
+                                 //        it; nokonoko_use holds when it is > 0
     union {
         void* useStruct;                     // 0x170
         struct BomheiWork* bomheiWork;       // 0x170, party_bomhei
@@ -185,16 +220,16 @@ typedef struct PartyEntry {
             f32 jumpAccel;             // 0x178, accumulates jumpPara2 each frame, added to jumpVel
         } yoshi;
         struct {                       // Bobbery (party_bomhei.c)
-            u8 field_174[4];           // 0x174
+            u8 pad_0x174[4];           // 0x174
             s16 motionTimer;           // 0x178, countdown in mario_controll (states 0x28, 0x1F, 0x20, 0x24)
             u8 marioMotion;            // 0x17A, mario_controll state (0xA, 0x14-0x15, 0x1E-0x24, 0x28-0x29, 0x64-0x66)
             u8 syncFrame;              // 0x17B, index into m_w_7_sync and the M_W_7 pose frame (state 0x15)
-            s32 field_17C;             // 0x17C, set to -1 at init, never read
+            s32 field_0x17C;           // 0x17C, set to -1 at init, never read
             s32 countdownSfxId;        // 0x180, sound 0x93C started at the 2500 ms mark, stopped at the splash (0x28)
             s32 alarmSfxId;            // 0x184, sound 0x93D started in state 0x32, stopped at bye
         } bobbery;
         struct {                       // Flurrie (party_cloud.c; cloud_move bobs the body with bobAngle)
-            s32 field_174;             // 0x174, zeroed at init only
+            s32 field_0x174;           // 0x174, zeroed at init only
             struct EffectEntry* breathFx; // 0x178, effKumokumoN64Entry effect while the breath is held, NULL otherwise
             f32 bobAngle;              // 0x17C, degrees, revise360'd by bobStep each frame
             f32 bobStep;               // 0x180, 4.25 per frame
@@ -203,14 +238,14 @@ typedef struct PartyEntry {
             struct ItemEntry* heldItem; // 0x174, item picked up by the shell search, returned by nokonoko_use_post
             f32 slideDecay;            // 0x178, set to 50.0f when a slide starts, -2.2 per frame down to 0
             s16 dashing;               // 0x17C, 1 while running (useMotionId 0x14-0x15): faster speed cap, 0x50 motion
-            s16 moveFlags;             // 0x17E, bit 0x1 set during an event with unk16C > 0, bit 0x2 set by ccfloor
-            s32 field_180;             // 0x180, zeroed only
+            s16 moveFlags;             // 0x17E, bit 0x1 set during an event with evtUseMsec > 0, bit 0x2 set by ccfloor
+            s32 field_0x180;           // 0x180, zeroed only
         } koops;
         struct {                       // Vivian (party_vivian.c)
             f32 charge;                // 0x174, 10.0f at rest, +1 per frame to 20 while held (party.c shadow size)
-            u8 field_178[4];           // 0x178
+            u8 pad_0x178[4];           // 0x178
             f32 moveSpeed;             // 0x17C, movePos speed toward Mario, -13 to 0
-            u8 field_180[2];           // 0x180
+            u8 pad_0x180[2];           // 0x180
             s16 poseTime;              // 0x182, set to 0x18, fed to animPoseSetLocalTime
             struct EffectEntry* ripple; // 0x184, ripple effect (effRippleEntry), NULL when gone
         } vivian;
@@ -230,7 +265,7 @@ void partyCtrlOff(void);
 void partyChgPaper(PartyEntry* party, char* paper);
 void partyCtrlOn(void);
 f32 partyGetHeight(PartyEntry* party);
-void partySetForceMove(PartyEntry* party, s32 frames, f32 x, f32 z);
+void partySetForceMove(PartyEntry* party, s32 frames, f32 dir, f32 speed);
 s32 yoshiSetColor(void);
 s32 partyKill(s32 memberId);
 s32 partyKill2(s32 memberId);
@@ -244,7 +279,7 @@ void partyKeyOff(void);
 void partyMain(void);
 void allPartyForceRideOn(void);
 void allPartyRidePlane(void);
-void partyDokanEnd(s32 index, s32 unk);
+void partyDokanEnd(s32 index, s32 dokanType);
 void allPartyRideShip(void);
 void allPartyRideOff(void);
 void allPartyRideOff2(void);

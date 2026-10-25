@@ -4,10 +4,10 @@
 
 // An inn's setup, handed to evt_kinopio_setup by the map
 typedef struct KinopioData {
-    s32 field_0;        // 0x00
-    f32 field_4;        // 0x04
-    f32 field_8;        // 0x08
-    f32 field_C;        // 0x0C
+    s32 breakfastItem;  // 0x00, breakfast: item type itemEntry gives the "breakfast" item (none for 0)
+    f32 breakfastX;     // 0x04, breakfast: the item's position
+    f32 breakfastY;     // 0x08
+    f32 breakfastZ;     // 0x0C
     s32 ryoukin;        // 0x10
     f32 bedX;           // 0x14
     f32 bedY;           // 0x18

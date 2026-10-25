@@ -276,7 +276,7 @@ void cardCopy2Main(s32 slot) {
     memcpy(fbatGetPointer()->deadInfo, save->data.deadInfo, sizeof(NpcDeadInfo) * 64);
     memcpy(bdsw, &save->data.badgeShop, sizeof(BadgeShopWork));
     memcpy(yuwp, &save->data.parlor, sizeof(PiantaParlorWork));
-    memcpy(&_jdt.unk14, &save->data.informant, sizeof(InformantUnknown));
+    memcpy(&_jdt.readFlags, &save->data.informant, sizeof(InformantUnknown));
     gp->resetType = 0;
     gp->resetButtonDown = 0;
     gp->dvdError = 0;
@@ -287,8 +287,8 @@ void cardCopy2Main(s32 slot) {
     gp->rumbleEnabled = backup5;
     gp->lastFileSlot = backup6;
     gp->mapAlloc = backup2;
-    gp->unk8 = 0;
-    gp->field_C = 0;
+    gp->field_0x8 = 0;
+    gp->debugBattleFlag = 0;
     if (backup3 != 0) {
         gp->flags |= 8;
     }
@@ -371,7 +371,7 @@ void cardWrite(s32 slot) {
         memcpy(save->data.deadInfo, fbatGetPointer()->deadInfo, sizeof(save->data.deadInfo));
         memcpy(&save->data.badgeShop, bdsw, sizeof(BadgeShopWork));
         memcpy(&save->data.parlor, yuwp, sizeof(PiantaParlorWork));
-        memcpy(&save->data.informant, &_jdt.unk14, sizeof(_jdt.unk14));
+        memcpy(&save->data.informant, &_jdt.readFlags, sizeof(_jdt.readFlags));
         save->data.flags &= ~1;
         save->data.flags &= ~2;
         check_sum(save);

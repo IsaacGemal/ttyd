@@ -532,8 +532,8 @@ USER_FUNC(offset) {
 USER_FUNC(breakfast) {
     ItemEntry* item = itemNameToPtr(str_breakfast);
     if (item == NULL || !(item->flags & 1)) {
-        if ((*wp)->field_0 != 0) {
-            itemEntry(str_breakfast, (*wp)->field_0, 0x10, (*wp)->field_4, (*wp)->field_8, (*wp)->field_C, -1, 0);
+        if ((*wp)->breakfastItem != 0) {
+            itemEntry(str_breakfast, (*wp)->breakfastItem, 0x10, (*wp)->breakfastX, (*wp)->breakfastY, (*wp)->breakfastZ, -1, 0);
         }
     }
     return EVT_RETURN_DONE;

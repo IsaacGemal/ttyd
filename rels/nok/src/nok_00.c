@@ -383,25 +383,25 @@ const char* yado_map[2] = {
 };
 
 static DoorParam yado_data = {
-    1,                  // field_00
-    9,                  // field_04
-    "A_yad_doa01",      // field_08
-    9,                  // field_0C
-    "A_yad_in_doa",     // field_10
-    "S_yado_open",      // field_14
-    "S_yado_doa_open",  // field_18
-    "S_yado_close",     // field_1C
-    "S_yado_doa_close", // field_20
-    "S_yad_mae",        // field_24
-    "S_yad_doa01",      // field_28
-    "S_yado_in",        // field_2C
-    "A_yado_in",        // field_30
-    "S_yado_in",        // field_34
-    "A_yado_in",        // field_38
-    yado_npc,           // field_3C
-    yado_map,           // field_40
-    NULL,               // field_44
-    NULL,               // field_48
+    1,                  // type
+    9,                  // outsideConditionId
+    "A_yad_doa01",      // outsideHit
+    9,                  // insideConditionId
+    "A_yad_in_doa",     // insideHit
+    "S_yado_open",      // openAnim
+    "S_yado_doa_open",  // field_0x18
+    "S_yado_close",     // closeAnim
+    "S_yado_doa_close", // field_0x20
+    "S_yad_mae",        // outsideGroup
+    "S_yad_doa01",      // doorGroup
+    "S_yado_in",        // insideGroup
+    "A_yado_in",        // insideHitGroup
+    "S_yado_in",        // initInsideGroup
+    "A_yado_in",        // initInsideHitGroup
+    yado_npc,           // npcNames
+    yado_map,           // noclipMaps
+    NULL,               // mobjNames
+    NULL,               // itemNames
 };
 
 static const char* mise_npc[2] = {
@@ -409,25 +409,25 @@ static const char* mise_npc[2] = {
 };
 
 static DoorParam mise_data = {
-    1,                  // field_00
-    9,                  // field_04
-    "A_mise_doa",       // field_08
-    9,                  // field_0C
-    "A_mise_in_doa",    // field_10
-    "S_mise_open",      // field_14
-    "S_mise_doa_open",  // field_18
-    "S_mise_close",     // field_1C
-    "S_mise_doa_close", // field_20
-    "S_mise_mae",       // field_24
-    "S_mise_doa",       // field_28
-    "S_mise_in",        // field_2C
-    "A_mise_in",        // field_30
-    "S_mise_in",        // field_34
-    "A_mise_in",        // field_38
-    mise_npc,           // field_3C
-    NULL,               // field_40
-    NULL,               // field_44
-    NULL,               // field_48
+    1,                  // type
+    9,                  // outsideConditionId
+    "A_mise_doa",       // outsideHit
+    9,                  // insideConditionId
+    "A_mise_in_doa",    // insideHit
+    "S_mise_open",      // openAnim
+    "S_mise_doa_open",  // field_0x18
+    "S_mise_close",     // closeAnim
+    "S_mise_doa_close", // field_0x20
+    "S_mise_mae",       // outsideGroup
+    "S_mise_doa",       // doorGroup
+    "S_mise_in",        // insideGroup
+    "A_mise_in",        // insideHitGroup
+    "S_mise_in",        // initInsideGroup
+    "A_mise_in",        // initInsideHitGroup
+    mise_npc,           // npcNames
+    NULL,               // noclipMaps
+    NULL,               // mobjNames
+    NULL,               // itemNames
 };
 
 static const char* ie_npc[2] = {
@@ -439,25 +439,25 @@ static const char* ie_map[2] = {
 };
 
 static DoorParam ie_data = {
-    1,                // field_00
-    9,                // field_04
-    "A_ie_doa",       // field_08
-    9,                // field_0C
-    "A_ie_in_doa",    // field_10
-    "S_ie_open",      // field_14
-    "S_ie_doa_open",  // field_18
-    "S_ie_close",     // field_1C
-    "S_ie_doa_close", // field_20
-    "S_ie_mae",       // field_24
-    "S_ie_doa",       // field_28
-    "S_ie_in",        // field_2C
-    "A_ie_in",        // field_30
-    "S_ie_in",        // field_34
-    "A_ie_in",        // field_38
-    ie_npc,           // field_3C
-    ie_map,           // field_40
-    NULL,             // field_44
-    NULL,             // field_48
+    1,                // type
+    9,                // outsideConditionId
+    "A_ie_doa",       // outsideHit
+    9,                // insideConditionId
+    "A_ie_in_doa",    // insideHit
+    "S_ie_open",      // openAnim
+    "S_ie_doa_open",  // field_0x18
+    "S_ie_close",     // closeAnim
+    "S_ie_doa_close", // field_0x20
+    "S_ie_mae",       // outsideGroup
+    "S_ie_doa",       // doorGroup
+    "S_ie_in",        // insideGroup
+    "A_ie_in",        // insideHitGroup
+    "S_ie_in",        // initInsideGroup
+    "A_ie_in",        // initInsideHitGroup
+    ie_npc,           // npcNames
+    ie_map,           // noclipMaps
+    NULL,             // mobjNames
+    NULL,             // itemNames
 };
 
 static char* obj_list[12] = {
@@ -495,12 +495,11 @@ static char* shopper_data[38] = {
     "shop_33", "shop_34",
 };
 
-// Real type is KinopioData (local to src/event/evt_kinopio.c, not in include/).
 static KinopioData kino_dt = {
-    0,       // field_0
-    0.0f,    // field_4
-    0.0f,    // field_8
-    0.0f,    // field_C
+    0,       // breakfastItem
+    0.0f,    // breakfastX
+    0.0f,    // breakfastY
+    0.0f,    // breakfastZ
     5,       // ryoukin
     -269.0f, // bedX
     41.0f,   // bedY

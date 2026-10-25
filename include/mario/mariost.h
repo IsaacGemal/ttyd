@@ -9,8 +9,9 @@
 typedef struct GlobalWork {
 	s32 flags; //0x0
 	s32 framerate; //0x4
-	s32 unk8; //0x8
-	s32 field_C; //0xC
+	s32 field_0x8; //0x8, nameent takes the A button only while it is 0; cardmgr clears it
+	s32 debugBattleFlag; //0xC, seq_battleInit copies it to debug_battle_flag; while set, seq_mapchange and the battle load
+	                     //     the debug messages (gon_11, DbgBtlSel's) and the battle ends into SEQ_GAME_OVER, clearing it
 	BOOL dvdError; //0x10
 	s32 inBattle; //0x14, verified s32
 	u32 systemLevelFlags; //0x18

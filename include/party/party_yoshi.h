@@ -1,6 +1,7 @@
 #pragma once
 
 typedef struct PartyEntry PartyEntry;
+struct HitEntry;
 
 #include <dolphin/types.h>
 s32 marioGetoffYoshi(void);
@@ -23,5 +24,5 @@ void searchGround(PartyEntry* party);
 void L_yoshiFlyMove(PartyEntry* party);
 void unk_800b45e0(PartyEntry* party);
 void L_sweatMain(PartyEntry* party);
-void L_sweatEntry(PartyEntry* party, void* param);
+void L_sweatEntry(PartyEntry* party, struct HitEntry* hit);
 void unk_800b474c(PartyEntry* party);

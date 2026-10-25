@@ -63,8 +63,8 @@ s32 nokonoko_holdItem(void) {
 }
 
 void nokonoko_bye(PartyEntry* party) {
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         partyGoodbyeInit(party);
     }
     if (partyGoodbyeMain(party)) {
@@ -73,8 +73,8 @@ void nokonoko_bye(PartyEntry* party) {
 }
 
 void nokonoko_init(PartyEntry* party) {
-    party->field_33 = 2;
-    party->field_32 = 0;
+    party->partnerType = PARTY_MEMBER_KOOPS;
+    party->isFlyer = 0;
     party->height = 37.0f;
     party->radius = 24.0f;
     nokoSe = 0xFFFFFFFFu;
@@ -82,8 +82,8 @@ void nokonoko_init(PartyEntry* party) {
 
 void nokonoko_move(PartyEntry* party) {
     marioGetPtr();
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         partyWalkInit(party, 1);
     }
     partyStepSpeed(party);
@@ -135,7 +135,7 @@ void unk_800cd9a0(void) {
             party->tail.koops.dashing = 0;
             party->tail.koops.moveFlags = 0;
 #endif
-            party->tail.koops.field_180 = 0;
+            party->tail.koops.field_0x180 = 0;
         }
         if (party->runMode != 8 && party->runMode != 0xD) {
             partyChgRunMode(party, 2);
@@ -169,7 +169,7 @@ void nokonoko_use_post(PartyEntry* party) {
     party->tail.koops.dashing = 0;
     party->tail.koops.moveFlags = 0;
 #endif
-    party->tail.koops.field_180 = 0;
+    party->tail.koops.field_0x180 = 0;
 }
 
 // Koops' overworld use state machine.  Reconstructed from the original asm; the
@@ -201,8 +201,8 @@ void nokonoko_use(PartyEntry* party) {
         }
     }
 
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         party->tail.koops.heldItem = NULL;
 #ifdef MUST_MATCH
         *(s32*)&party->tail.koops.slideDecay = 0;
@@ -212,9 +212,9 @@ void nokonoko_use(PartyEntry* party) {
         party->tail.koops.dashing = 0;
         party->tail.koops.moveFlags = 0;
 #endif
-        party->tail.koops.field_180 = 0;
+        party->tail.koops.field_0x180 = 0;
         if (party->flags & PARTY_FLAG_IS_EVT_USE) {
-            if (party->unk16C > 0) {
+            if (party->evtUseMsec > 0) {
                 party->tail.koops.moveFlags |= 0x1;
             }
         } else {
@@ -270,7 +270,7 @@ void nokonoko_use(PartyEntry* party) {
         }
         party->position = party->targetPos;
         party->speed = 0.0f;
-        party->field_110 = mario->dispReqDir;
+        party->dispReqDir = mario->dispReqDir;
         party->dispDir = mario->dispReqDir;
         party->useMotionId = 2;
         partyChgPose(party, "PNK_A_1");
@@ -906,8 +906,8 @@ void nokonoko_use(PartyEntry* party) {
             party->position.y += 200.0f;
         }
         if (party->groundHit != NULL) {
-            party->field_110 = mario->dispReqDir;
-            party->dispDir = party->field_110;
+            party->dispReqDir = mario->dispReqDir;
+            party->dispDir = party->dispReqDir;
             if (((hitGetAttr(party->groundHit) >> 9) & 1) == 0) {
                 party->useMotionId = 0x72;
                 party->timer = 30;
@@ -992,7 +992,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
     ccfloor(party, flag, 1.0f, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
 
     party->frontHit = NULL;
-    party->field_12C = NULL;
+    party->frontWallHit = NULL;
     y += 1.0f;
 
     x = party->position.x;
@@ -1014,7 +1014,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         if (party->tail.koops.dashing != 0 || flag == 0) {
             party->frontHit = hit;
         }
-        party->field_12C = hit;
+        party->frontWallHit = hit;
         return hit;
     }
 
@@ -1040,7 +1040,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         if (party->tail.koops.dashing != 0 || flag == 0) {
             party->frontHit = hit;
         }
-        party->field_12C = hit;
+        party->frontWallHit = hit;
         party->position.x = hitX;
         return hit;
     }
@@ -1073,7 +1073,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         if (party->tail.koops.dashing != 0 || flag == 0) {
             party->frontHit = hit;
         }
-        party->field_12C = hit;
+        party->frontWallHit = hit;
         party->position.x = hitX;
         return hit;
     }

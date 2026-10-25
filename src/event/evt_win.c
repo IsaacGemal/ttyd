@@ -966,10 +966,10 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
 		if (mode50 == 0x11) {
 			title = msgSearch("msg_window_title_5");
-			prefix = jdt->unk14.perfectNewjohoReadFlag;
+			prefix = jdt->readFlags.perfectNewjohoReadFlag;
 		} else {
 			title = msgSearch("msg_window_title_6");
-			prefix = jdt->unk14.luigiNewjohoReadFlag;
+			prefix = jdt->readFlags.luigiNewjohoReadFlag;
 		}
 		windowDispGX_Waku_col(float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0],
 		                      (f32)(0xdc - listOff), float_20_8041dad8[0], 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
@@ -1003,7 +1003,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				sprintf(buf, "");
 				tcolor = (GXColor){ 0xA0, 0xA0, 0xA0, 0xFF };
 			} else {
-				sprintf(buf, "%3d", info->unkA);
+				sprintf(buf, "%3d", info->price);
 				tcolor = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 			}
 			FontDrawStart();

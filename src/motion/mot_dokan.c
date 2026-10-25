@@ -61,9 +61,9 @@ void _partyEntry(s32 arg) {
                         angle = 120.0f;
                     }
                     party->flags2 &= ~1;
-                    party->field_110 = revise360(mario->dispDir + angle);
+                    party->dispReqDir = revise360(mario->dispDir + angle);
                     party->dispDir = mario->dispDir;
-                    party->field_FC = mario->moveDir;
+                    party->moveDir = mario->moveDir;
                 }
             }
         } else {
@@ -80,9 +80,9 @@ void _partyEntry(s32 arg) {
                 angle = -120.0f;
             }
             party->flags2 &= ~1;
-            party->field_110 = revise360(mario->dispDir + angle);
+            party->dispReqDir = revise360(mario->dispDir + angle);
             party->dispDir = mario->dispDir;
-            party->field_FC = mario->moveDir;
+            party->moveDir = mario->moveDir;
         }
     }
 }

@@ -1854,7 +1854,7 @@ USER_FUNC(evt_npc_battle_start) {
     s32 unused = evtGetValue(event, args[1]);
     FieldBattleData* fbat = fbatGetPointer();
     NpcEntry* npc = evtNpcNameToPtr(event, name);
-    FieldBattleInfo* info = &fbat->field_20;
+    FieldBattleInfo* info = &fbat->info;
     if (isFirstCall) {
         fbat->target = npc;
         marioCtrlOff();
@@ -1870,7 +1870,7 @@ USER_FUNC(evt_npc_battle_start) {
 }
 
 USER_FUNC(evt_npc_wait_battle_end) {
-    FieldBattleInfo* info = &fbatGetPointer()->field_20;
+    FieldBattleInfo* info = &fbatGetPointer()->info;
     if (seqGetSeq() != 2) {
         return EVT_RETURN_BLOCK;
     }
@@ -1888,7 +1888,7 @@ USER_FUNC(evt_npc_wait_battle_end) {
 USER_FUNC(evt_npc_get_battle_result) {
     s32 index = event->args[0];
     FieldBattleData* fbat = fbatGetPointer();
-    evtSetValue(event, index, BattleInformationGetResult(&fbat->field_20));
+    evtSetValue(event, index, BattleInformationGetResult(&fbat->info));
     return EVT_RETURN_DONE;
 }
 
@@ -1902,7 +1902,7 @@ USER_FUNC(evt_npc_check_escape_battle) {
 USER_FUNC(evt_npc_get_battle_rule_keep_result) {
     s32 index = event->args[0];
     FieldBattleData* fbat = fbatGetPointer();
-    evtSetValue(event, index, fbat->field_20.ruleKeepResult);
+    evtSetValue(event, index, fbat->info.ruleKeepResult);
     return EVT_RETURN_DONE;
 }
 

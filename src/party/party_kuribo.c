@@ -212,8 +212,8 @@ USER_FUNC(post_kurio_use) {
 // .sdata2 constants
 
 void kuribo_init_800C23B4(PartyEntry* party) {
-    party->field_33 = 1;
-    party->field_32 = 0;
+    party->partnerType = PARTY_MEMBER_GOOMBELLA;
+    party->isFlyer = 0;
     party->height = 24.0f;
     party->radius = 26.0f;
     msg_ep = 0;
@@ -231,8 +231,8 @@ void kuribo_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     HitEntry* hit;
 
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
 
         if (PSVECDistance(&mario->position, &party->position) > 125.0f) {
             party->useMotionId = 0;
@@ -243,7 +243,7 @@ void kuribo_use(PartyEntry* party) {
                                        angleABf(party->position.x, party->position.z, mario->position.x,
                                                 mario->position.z));
             if (hit != NULL) {
-                if (party->field_EC < distABf(party->position.x, party->position.z, mario->position.x,
+                if (party->frontWallDist < distABf(party->position.x, party->position.z, mario->position.x,
                                                          mario->position.z)) {
                     party->useMotionId = 0;
                 } else {
@@ -266,11 +266,11 @@ void kuribo_use(PartyEntry* party) {
             party->flags |= PARTY_FLAG_FORCE_FALL;
         }
         party->timer = 4;
-        party->field_FC = angleABf(party->position.x, party->position.z, party->targetPos.x,
+        party->moveDir = angleABf(party->position.x, party->position.z, party->targetPos.x,
                                    party->targetPos.z);
-        party->dir = party->field_FC;
+        party->dir = party->moveDir;
         party->dispDir = mario->dispDir;
-        party->field_110 = mario->dispDir;
+        party->dispReqDir = mario->dispDir;
         party->speed = distABf(party->position.x, party->position.z, party->targetPos.x,
                                party->targetPos.z) /
                        (f32)party->timer;
@@ -326,8 +326,8 @@ void kuribo_use(PartyEntry* party) {
 
 
 void kuribo_bye(PartyEntry* party) {
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         partyGoodbyeInit(party);
     }
     if (partyGoodbyeMain(party)) {

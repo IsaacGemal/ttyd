@@ -678,25 +678,25 @@ const char* son_item[] = {
 };
 
 DoorParam son_data = {
-    1,                 // field_00
-    9,                 // field_04
-    "A_son_doa",       // field_08
-    9,                 // field_0C
-    "A_son_in_doa",    // field_10
-    "S_son_open",      // field_14
-    "S_son_doa_open",  // field_18
-    "S_son_close",     // field_1C
-    "S_son_doa_close", // field_20
-    "S_son_mae",       // field_24
-    "S_son_doa1",      // field_28
-    "S_son_in",        // field_2C
-    "A_son_in",        // field_30
-    "S_son_in",        // field_34
-    "A_son_in",        // field_38
-    son_npc,           // field_3C
-    NULL,              // field_40
-    son_mobj,          // field_44
-    son_item,          // field_48
+    1,                 // type
+    9,                 // outsideConditionId
+    "A_son_doa",       // outsideHit
+    9,                 // insideConditionId
+    "A_son_in_doa",    // insideHit
+    "S_son_open",      // openAnim
+    "S_son_doa_open",  // field_0x18
+    "S_son_close",     // closeAnim
+    "S_son_doa_close", // field_0x20
+    "S_son_mae",       // outsideGroup
+    "S_son_doa1",      // doorGroup
+    "S_son_in",        // insideGroup
+    "A_son_in",        // insideHitGroup
+    "S_son_in",        // initInsideGroup
+    "A_son_in",        // initInsideHitGroup
+    son_npc,           // npcNames
+    NULL,              // noclipMaps
+    son_mobj,          // mobjNames
+    son_item,          // itemNames
 };
 
 const char* taro_npc[] = {
@@ -716,25 +716,25 @@ const char* taro_item[] = {
 };
 
 DoorParam taro_data = {
-    1,                  // field_00
-    9,                  // field_04
-    "A_taro_doa",       // field_08
-    9,                  // field_0C
-    "A_taro_in_doa",    // field_10
-    "S_taro_open",      // field_14
-    "S_taro_doa_open",  // field_18
-    "S_taro_close",     // field_1C
-    "S_taro_doa_close", // field_20
-    "S_taro_mae",       // field_24
-    "S_taro_doa",       // field_28
-    "S_taro_in",        // field_2C
-    "A_taro_in",        // field_30
-    "S_taro_in",        // field_34
-    "A_taro_in",        // field_38
-    taro_npc,           // field_3C
-    taro_map,           // field_40
-    taro_mobj,          // field_44
-    taro_item,          // field_48
+    1,                  // type
+    9,                  // outsideConditionId
+    "A_taro_doa",       // outsideHit
+    9,                  // insideConditionId
+    "A_taro_in_doa",    // insideHit
+    "S_taro_open",      // openAnim
+    "S_taro_doa_open",  // field_0x18
+    "S_taro_close",     // closeAnim
+    "S_taro_doa_close", // field_0x20
+    "S_taro_mae",       // outsideGroup
+    "S_taro_doa",       // doorGroup
+    "S_taro_in",        // insideGroup
+    "A_taro_in",        // insideHitGroup
+    "S_taro_in",        // initInsideGroup
+    "A_taro_in",        // initInsideHitGroup
+    taro_npc,           // npcNames
+    taro_map,           // noclipMaps
+    taro_mobj,          // mobjNames
+    taro_item,          // itemNames
 };
 
 static const char* ie_npc[] = {
@@ -746,25 +746,25 @@ static const char* ie_map[] = {
 };
 
 static DoorParam ie_data = {
-    1,                // field_00
-    9,                // field_04
-    "A_ie_doa",       // field_08
-    9,                // field_0C
-    "S_ie_in_doa",    // field_10
-    "S_ie_open",      // field_14
-    "S_ie_doa_open",  // field_18
-    "S_ie_close",     // field_1C
-    "S_ie_doa_close", // field_20
-    "S_ie_mae",       // field_24
-    "S_ie_doa",       // field_28
-    "S_ie_in",        // field_2C
-    "A_ie_in",        // field_30
-    "S_ie_in",        // field_34
-    "A_ie_in",        // field_38
-    ie_npc,           // field_3C
-    ie_map,           // field_40
-    NULL,             // field_44
-    NULL,             // field_48
+    1,                // type
+    9,                // outsideConditionId
+    "A_ie_doa",       // outsideHit
+    9,                // insideConditionId
+    "S_ie_in_doa",    // insideHit
+    "S_ie_open",      // openAnim
+    "S_ie_doa_open",  // field_0x18
+    "S_ie_close",     // closeAnim
+    "S_ie_doa_close", // field_0x20
+    "S_ie_mae",       // outsideGroup
+    "S_ie_doa",       // doorGroup
+    "S_ie_in",        // insideGroup
+    "A_ie_in",        // insideHitGroup
+    "S_ie_in",        // initInsideGroup
+    "A_ie_in",        // initInsideHitGroup
+    ie_npc,           // npcNames
+    ie_map,           // noclipMaps
+    NULL,             // mobjNames
+    NULL,             // itemNames
 };
 
 static HitDamageReturn hitDmgRetPoints[13] = {

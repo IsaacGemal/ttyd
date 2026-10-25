@@ -97,7 +97,7 @@ typedef struct NpcBattleInfo {
     const char* music;                 // 0xC0, copied from BattleSetupData.music
     u8 battleRules[3];                 // 0xC4, set by evt_npc_set_battle_rule (Glitz Pit): rule kind (the _rule_msg_table index),
                                        // its parameter (printed by _rule_disp), a third byte; seq_battle copies them to FieldBattleInfo
-    u8 field_C7[0xC8 - 0xC7];          // 0xC7
+    u8 pad_0xC7[0xC8 - 0xC7];          // 0xC7
 } NpcBattleInfo;
 
 // The 0xC-byte entries of the weighted battle setup list selected by npcSetupBattleInfo.
@@ -168,10 +168,10 @@ typedef struct NpcEntry {
     f32 shadowScale;                // 0x154, multiplies the shadow radius; 1.0 at entry, eased by the evt_npc_majo_disp_* events
     Vec jumpStartPos;               // 0x158
     Vec jumpTargetPos;              // 0x164
-    u8 field_170[0x178 - 0x170];    // 0x170
+    u8 pad_0x170[0x178 - 0x170];    // 0x170
     OSTime airTicks;                // 0x178, ticks under gravity while flags 0x20000 is set; reset on landing
     f32 airTime;                    // 0x180, airTicks in seconds
-    u8 field_184[0x188 - 0x184];    // 0x184
+    u8 pad_0x184[0x188 - 0x184];    // 0x184
     OSTime moveElapsed;             // 0x188, ticks since the current move began; cleared by the move events
     OSTime frameTicks;              // 0x190, ticks since the last update (16 ms if it was over 500 ms)
     OSTime lastUpdateTick;          // 0x198, gp->renderTime at the last update
@@ -270,31 +270,34 @@ typedef struct FieldBattleInfo {
 typedef struct FieldBattleData {
     s16 mode;                    // 0x0
     u8 state;                    // 0x2, step of the talk sequence in npcdrv's field battle state machine
-    u8 field_3[0x4 - 0x3];       // 0x3
+    u8 pad_0x3[0x4 - 0x3];       // 0x3
     NpcEntry* talkNpc;           // 0x4
     NpcEntry* target;            // 0x8
     s32 talkEvtId;               // 0xC, event started for talkNpc, waited on in state 1
     s32 firstAttackKind;         // 0x10, how the field contact was made, written by fbatHitCheck: 0x20000-0x80000
                                  // jumps, 0x100000-0x400000 hammers, 0x800000, 0x1000000; tou_03 forces 0x10000000;
-                                 // seq_battle turns it into BattleInformationSetFirstAttack kinds 1-7
-    u32 field_14;                // 0x14, BattleInformationSetFirstAttack argument for firstAttackKind 0x10000000
+                                 // seq_battle turns it into BattleInformationSetFirstAttack kinds 1-8
+    u32 firstAttackArg;          // 0x14, BattleInformationSetFirstAttack argument for firstAttackKind 0x10000000
                                  // (seq_battle; tou_03 sets 0x10)
-    u8 field_18[0x1C - 0x18];    // 0x18
-    u32 field_1C;                // 0x1C, bit 0: no first attack (seq_battle; tou_03 clears it)
-    FieldBattleInfo field_20;    // 0x20
+    u8 pad_0x18[0x1C - 0x18];    // 0x18
+    u32 firstAttackFlags;        // 0x1C, bit 0: no first attack (seq_battle; tou_03 clears it)
+    FieldBattleInfo info;        // 0x20, handed to the battle (seq_battle's BattleInformation* calls, evt_npc's result reads)
     void* endEvt;                // 0x3C, script started by battle_seq_end case 0x07000003
     s32 endEvtId;                // 0x40, waited on by case 0x07000004
-    s32 field_44;                // 0x44
+    s32 field_0x44;              // 0x44, battle_seq_end starts another turn instead of ending when it is set; nothing sets it
     s32 majinaiEvtId;            // 0x48, event waited on in state 3 (the Merlee curse coin-up effect)
     NpcDeadInfo deadInfo[64];    // 0x4C
     u8 majinaiCoinBonus;         // 0x54C, set when Merlee's coin curse (type 4) fires on a win; npcdrv then triples the coin drop
     u8 sandersBombTrigger;       // 0x54D
-    u8 field_54E[0x550 - 0x54E]; // 0x54E
+    u8 pad_0x54E[0x550 - 0x54E]; // 0x54E
     FirstStrikeInfo firstStrike; // 0x550
-    s32 field_570;               // 0x570
-    s32 field_574;               // 0x574
-    s32 field_578;               // 0x578
-    s32 field_57C;               // 0x57C
+    s32 firstStrikeWaitFrames;   // 0x570, seq_battle: frames bmapLoadRank is held back while a first strike announcement
+                                 //        runs (cleared on entry, gives up at 0xC8)
+    s32 fireComboCount;          // 0x574, npcCalcScore counts encounter-type-2 kills here and multiplies their score by it;
+                                 //        npcKoopaAttackCheck clears it whenever kpaFireAttackCheck is false
+    s32 jumpComboCount;          // 0x578, npcCalcScore counts encounter-type-1 kills; npcKoopaJumpScore (run when kpaJumpChk
+                                 //        is set) awards jumpComboScore if it is 2 or more, then clears both
+    s32 jumpComboScore;          // 0x57C, sum of those kills' scores
 } FieldBattleData;
 
 NpcWork* npcGetWorkPtr(void);

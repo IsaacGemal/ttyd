@@ -454,7 +454,7 @@ void _load(const char* prevMapName, const char* newMapName, const char* beroName
         mapLoad(map->mapName);
     }
     camCtrlOff(4);
-    if (gp->field_C) {
+    if (gp->debugBattleFlag) {
         msgLoad("gon_11", 0);
     } else {
         memset(mapFile, 0, sizeof(mapFile));
