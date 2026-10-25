@@ -144,12 +144,6 @@ typedef struct EventCommand {
     s32 label;
 } EventCommand;
 
-// unknown, TODO: look at evt_msg_toge/_evt_msg_print
-typedef struct EventEntryMsg {
-    f32 field_0x0; // 0x0
-    f32 field_0x4; // 0x4
-} EventEntryMsg;
-
 typedef enum EventEntry_Flags {
     EVENT_ACTIVE = (1 << 0),
     EVENT_STOPPED = (1 << 1),
@@ -209,8 +203,7 @@ struct EventEntry {
     s32 printWindowId;          // 0x178, verified
     s32 selectWindowId;         // 0x17C, verified
     u32 printWindowFlags;       // 0x180, verified, is u32, does use 0x80000000
-    EventEntryMsg unk184;       // 0x184, verified
-    u32 unk18C;                 // 0x18C
+    Vec msgAnchor;              // 0x184, evt_msg_toge's x, y, z; _evt_msg_print copies it to window->anchor for toge types 2 and 3
     u32 msgPriority;            // 0x190
     u32 field_0x194;            // 0x194
     OSTime savedTime;           // 0x198, TODO rename

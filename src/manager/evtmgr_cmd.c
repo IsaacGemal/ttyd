@@ -1533,8 +1533,7 @@ s32 evt_inline_evt(EventEntry* entry) { // 107
     copy->selectWindowId = entry->selectWindowId;
     copy->printWindowId = entry->printWindowId;
     copy->printWindowFlags = entry->printWindowFlags;
-    copy->unk184 = entry->unk184;
-    copy->unk18C = entry->unk18C;
+    copy->msgAnchor = entry->msgAnchor;
     copy->msgPriority = entry->msgPriority;
     for (i = 0; i < 16; i++) {
         copy->lwData[i] = entry->lwData[i];
@@ -1571,8 +1570,7 @@ s32 evt_inline_evt_id(EventEntry* entry) { // 108
     copy->selectWindowId = entry->selectWindowId;
     copy->printWindowId = entry->printWindowId;
     copy->printWindowFlags = entry->printWindowFlags;
-    copy->unk184 = entry->unk184;
-    copy->unk18C = entry->unk18C;
+    copy->msgAnchor = entry->msgAnchor;
     copy->msgPriority = entry->msgPriority;
     for (i = 0; i < 16; i++) {
         copy->lwData[i] = entry->lwData[i];
