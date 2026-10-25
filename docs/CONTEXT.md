@@ -7831,8 +7831,8 @@ were named on the same evidence where a consumer proves them.
   -> 9310 weighted); field_0x 2403 -> 2165, every other category unchanged. These six areas: 958 -> 720 weighted,
   field_0x 302 -> 64 (gor 114 -> 20, rsh 94 -> 3, eki 29 -> 4, yuu 30 -> 30, tou 23 -> 1, tou2 12 -> 6; the index's
   areas include the database files). `field_0x` by grep in the non-database files, code and declarations only (labels
-  excluded): gor 105 -> 23, rsh 92 -> 8, eki 26 -> 4, yuu 38 -> 38, tou 32 -> 7, tou2 15 -> 8 (308 -> 88); with the
-  labels: gor 214 -> 132, rsh 137 -> 53, eki 39 -> 17, yuu 38 -> 38, tou 36 -> 11, tou2 367 -> 360.
+  excluded): gor 105 -> 22, rsh 92 -> 8, eki 26 -> 4, yuu 38 -> 38, tou 32 -> 7, tou2 15 -> 8 (308 -> 87); with the
+  labels: gor 214 -> 131, rsh 137 -> 53, eki 39 -> 17, yuu 38 -> 38, tou 36 -> 11, tou2 367 -> 360.
 - **For a reviewer.** The unions (NanNpcEntry, the four moamoa/fan copies, MoamoaWorkPose, RyushiEntry): each member
   is named by the state that uses it, so check the state ranges cited above. yuu_02's `active` -> `hidden` reverses
   an existing name; the draw tests prove the direction. `cycleScale` replaces the obvious "speed" because it
