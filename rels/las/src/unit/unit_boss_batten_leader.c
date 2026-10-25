@@ -2591,8 +2591,8 @@ typedef struct BattenEffUserdata {
     s32 field_0x2C;
     s32 field_0x30;
     u8 pad_0x34[0x4];
-    f32 field_0x38;
-    f32 field_0x3C;
+    f32 posX;        // evt_eff_firechange00 moves it by its velocity and writes it back
+    f32 posY;
 } BattenEffUserdata;
 
 USER_FUNC(evt_eff_colorchange00) {
@@ -2632,8 +2632,8 @@ USER_FUNC(evt_eff_firechange00) {
     target.x = (f32)evtGetValue(event, args[2]);
     target.y = (f32)evtGetValue(event, args[3]);
     target.z = 0.0f;
-    pos.x = ((BattenEffUserdata*)eff->userdata)->field_0x38;
-    pos.y = ((BattenEffUserdata*)eff->userdata)->field_0x3C;
+    pos.x = ((BattenEffUserdata*)eff->userdata)->posX;
+    pos.y = ((BattenEffUserdata*)eff->userdata)->posY;
     pos.z = 0.0f;
     if (isFirstCall) {
         event->field_84 = 0;
@@ -2686,14 +2686,14 @@ USER_FUNC(evt_eff_firechange00) {
     PSVECScale(&nowv, &v, 15.0f);
     PSVECAdd(&pos, &v, &pos);
     if (pos.y < 10.0f) {
-        if (((BattenEffUserdata*)eff->userdata)->field_0x3C >= 10.0f) {
+        if (((BattenEffUserdata*)eff->userdata)->posY >= 10.0f) {
             nowv.y = -nowv.y;
         } else if (nowv.y < 0.0f) {
             nowv.y = -nowv.y;
         }
     }
-    ((BattenEffUserdata*)eff->userdata)->field_0x38 = pos.x;
-    ((BattenEffUserdata*)eff->userdata)->field_0x3C = pos.y;
+    ((BattenEffUserdata*)eff->userdata)->posX = pos.x;
+    ((BattenEffUserdata*)eff->userdata)->posY = pos.y;
     switch (event->field_84) {
         case 0:
             if (PSVECSquareDistance(&pos, &target) < 225.0f) {
@@ -3042,7 +3042,7 @@ typedef struct BattenSatelliteSpline {
     Vec* points;     // the spline table spline_maketable builds from
     f32 knots[5];
     Vec tangents[5];
-    s32 field_0x58;
+    s32 frame;       // intplGetValue frame (0..0x3C); the work is freed at 0x3C
 } BattenSatelliteSpline;
 
 u8 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, u32* table) {
@@ -3055,7 +3055,7 @@ u8 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, u32* table) {
     unit->work[13 + index] = (s32)data;
     data->type = 5;
     data->points = (Vec*)table;
-    data->field_0x58 = 0;
+    data->frame = 0;
     spline_maketable(5, data->points, data->knots, data->tangents);
     sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
     BtlUnit_GetPartsPtr(sat, 1)->work[1] = (s32)table;
@@ -3074,7 +3074,7 @@ u8 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     if (data == NULL) {
         return 0;
     }
-    if (data->field_0x58 >= 0x3C) {
+    if (data->frame >= 0x3C) {
         if (data != NULL) {
             __memFree(4, data);
             unit->work[13 + index] = 0;
@@ -3082,7 +3082,7 @@ u8 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
         return 0;
     }
     spline_getvalue(spline, data->type, data->points, data->knots, data->tangents,
-                    intplGetValue(4, data->field_0x58, 0x3C, 0.0f, 1.0f));
+                    intplGetValue(4, data->frame, 0x3C, 0.0f, 1.0f));
     sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
     if (sat == NULL) {
         return 0;
@@ -3090,7 +3090,7 @@ u8 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
     BtlUnit_SetPos(sat, spline[0] * (f32)unit->faceDirection + pos[0], 5.0f + (pos[1] + spline[1]), pos[2] + spline[2]);
     BtlUnit_SetHomePos(sat, spline[0] * (f32)unit->faceDirection + pos[0], 5.0f + (pos[1] + spline[1]), pos[2] + spline[2]);
-    data->field_0x58 += 1;
+    data->frame += 1;
     return 1;
 }
 
