@@ -175,7 +175,7 @@ BattleUnitKind unit_boss_black_peach = {
     { 0.0f, 27.0f, 0.0f },      // centerOffset
     { 0, -3 },                  // hpGaugeOffset
     { 0.0f, 40.0f, 0.0f },      // talkTogeBaseOffset
-    { 20.0f, 0.0f, -10.0f },    // field_0x3C
+    { 20.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -266,7 +266,7 @@ BattleUnitKindPart peach_parts[7] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { -2.0f, 44.0f, 0.0f }, // hitBaseOffset
         { -2.0f, 44.0f, 0.0f }, // hitCursorBaseOffset
-        41,                     // field_0x30
+        41,                     // shadowSize
         61,                     // field_0x32
         255,                    // baseAlpha
         &peach_defence,         // defense
@@ -282,7 +282,7 @@ BattleUnitKindPart peach_parts[7] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        41,                    // field_0x30
+        41,                    // shadowSize
         61,                    // field_0x32
         255,                   // baseAlpha
         &peach_defence,        // defense
@@ -298,7 +298,7 @@ BattleUnitKindPart peach_parts[7] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        41,                    // field_0x30
+        41,                    // shadowSize
         61,                    // field_0x32
         255,                   // baseAlpha
         &peach_defence,        // defense
@@ -314,7 +314,7 @@ BattleUnitKindPart peach_parts[7] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        41,                    // field_0x30
+        41,                    // shadowSize
         61,                    // field_0x32
         255,                   // baseAlpha
         &peach_defence,        // defense
@@ -330,7 +330,7 @@ BattleUnitKindPart peach_parts[7] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        41,                    // field_0x30
+        41,                    // shadowSize
         61,                    // field_0x32
         255,                   // baseAlpha
         &peach_defence,        // defense
@@ -346,7 +346,7 @@ BattleUnitKindPart peach_parts[7] = {
         { 15.0f, 0.0f, -50.0f },    // positionOffset
         { 0.0f, 38.0f, 5.0f },      // hitBaseOffset
         { 0.0f, 38.0f, 5.0f },      // hitCursorBaseOffset
-        41,                         // field_0x30
+        41,                         // shadowSize
         61,                         // field_0x32
         255,                        // baseAlpha
         &peach_defence,             // defense
@@ -362,7 +362,7 @@ BattleUnitKindPart peach_parts[7] = {
         { 160.0f, 0.0f, 50.0f },    // positionOffset
         { 0.0f, 38.0f, 5.0f },      // hitBaseOffset
         { 0.0f, 38.0f, 5.0f },      // hitCursorBaseOffset
-        41,                         // field_0x30
+        41,                         // shadowSize
         61,                         // field_0x32
         255,                        // baseAlpha
         &peach_defence,             // defense
@@ -394,7 +394,7 @@ BattleWeapon weapon_peach_black_thunder_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     4,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -472,7 +472,7 @@ BattleWeapon weapon_peach_black_energy_attack = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -550,7 +550,7 @@ BattleWeapon weapon_peach_drain_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -628,7 +628,7 @@ BattleWeapon weapon_peach_dark_drag_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -706,7 +706,7 @@ BattleWeapon weapon_peach_dark_drag_last_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    27,                                       // field_0x6D
+    27,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -784,7 +784,7 @@ BattleWeapon weapon_peach_dark_charge_attack = {
     0x01004020,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -862,7 +862,7 @@ BattleWeapon weapon_peach_black_wave_attack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -940,7 +940,7 @@ BattleWeapon weapon_peach_black_sigh_attack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1018,7 +1018,7 @@ BattleWeapon weapon_peach_black_temptation_attack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1096,7 +1096,7 @@ BattleWeapon weapon_peach_black_poison_attack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1174,7 +1174,7 @@ BattleWeapon weapon_peach_black_press_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1252,7 +1252,7 @@ BattleWeapon weapon_peach_black_1000hand_attack = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1329,7 +1329,7 @@ BattleUnitKind unit_boss_shadow_queen = {
     { 0.0f, 90.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 40.0f, 0.0f },      // talkTogeBaseOffset
-    { 20.0f, 0.0f, -10.0f },    // field_0x3C
+    { 20.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -1403,12 +1403,12 @@ USER_FUNC(shadow_queen_connect) {
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
     BtlUnit_SetPartsPos(part, verts[data->locator2Group * 3], verts[data->locator2Group * 3 + 1], verts[data->locator2Group * 3 + 2]);
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 5);
-    part->field_0x4F8 = 7.0f;
+    part->sortOffsetZ = 7.0f;
     BtlUnit_SetPartsPos(part, verts[data->locator2Group * 3], verts[data->locator2Group * 3 + 1], verts[data->locator2Group * 3 + 2]);
     pose = animPoseGetAnimPosePtr(data->pose3Id);
     verts = pose->groupWorldPos->address;
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 4);
-    part->field_0x4F8 = 1.0f;
+    part->sortOffsetZ = 1.0f;
     BtlUnit_SetPartsPos(part, verts[data->locator3Group * 3], verts[data->locator3Group * 3 + 1], verts[data->locator3Group * 3 + 2]);
     return EVT_RETURN_BLOCK;
 }
@@ -1613,7 +1613,7 @@ BattleUnitKindPart queen_parts[5] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 47.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 47.0f, 0.0f }, // hitCursorBaseOffset
-        41,                    // field_0x30
+        41,                    // shadowSize
         61,                    // field_0x32
         255,                   // baseAlpha
         &queen_defence,        // defense
@@ -1629,7 +1629,7 @@ BattleUnitKindPart queen_parts[5] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        41,                    // field_0x30
+        41,                    // shadowSize
         61,                    // field_0x32
         255,                   // baseAlpha
         &queen_defence,        // defense
@@ -1645,7 +1645,7 @@ BattleUnitKindPart queen_parts[5] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        41,                    // field_0x30
+        41,                    // shadowSize
         61,                    // field_0x32
         255,                   // baseAlpha
         &queen_defence,        // defense
@@ -1661,7 +1661,7 @@ BattleUnitKindPart queen_parts[5] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        41,                    // field_0x30
+        41,                    // shadowSize
         61,                    // field_0x32
         255,                   // baseAlpha
         &queen_defence,        // defense
@@ -1677,7 +1677,7 @@ BattleUnitKindPart queen_parts[5] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        41,                    // field_0x30
+        41,                    // shadowSize
         61,                    // field_0x32
         255,                   // baseAlpha
         &queen_defence,        // defense
@@ -1730,7 +1730,7 @@ BattleUnitKind unit_boss_shadow_hand_1 = {
     { 0.0f, 27.0f, 0.0f },             // centerOffset
     { 0, 0 },                          // hpGaugeOffset
     { 40.0f, 40.0f, 0.0f },            // talkTogeBaseOffset
-    { 45.0f, 0.0f, -10.0f },           // field_0x3C
+    { 45.0f, 0.0f, -10.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },              // burnFlameOffset
     0.0f,                              // field_0x54
     0.0f,                              // field_0x58
@@ -1811,7 +1811,7 @@ BattleUnitKindPart queen_hand_1_parts[1] = {
         { 0.0f, 0.0f, 0.0f },       // positionOffset
         { 16.0f, 47.0f, 30.0f },    // hitBaseOffset
         { 16.0f, 47.0f, 30.0f },    // hitCursorBaseOffset
-        41,                         // field_0x30
+        41,                         // shadowSize
         61,                         // field_0x32
         255,                        // baseAlpha
         &queen_hand_1_defence,      // defense
@@ -1842,7 +1842,7 @@ BattleUnitKind unit_boss_shadow_hand_2 = {
     { 0.0f, 27.0f, 0.0f },             // centerOffset
     { 0, 0 },                          // hpGaugeOffset
     { 40.0f, 40.0f, 0.0f },            // talkTogeBaseOffset
-    { 45.0f, 0.0f, -10.0f },           // field_0x3C
+    { 45.0f, 0.0f, -10.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },              // burnFlameOffset
     0.0f,                              // field_0x54
     0.0f,                              // field_0x58
@@ -1923,7 +1923,7 @@ BattleUnitKindPart queen_hand_2_parts[1] = {
         { 0.0f, 0.0f, 0.0f },       // positionOffset
         { 28.0f, 56.0f, 20.0f },    // hitBaseOffset
         { 28.0f, 56.0f, 20.0f },    // hitCursorBaseOffset
-        41,                         // field_0x30
+        41,                         // shadowSize
         61,                         // field_0x32
         255,                        // baseAlpha
         &queen_hand_2_defence,      // defense
@@ -1954,7 +1954,7 @@ BattleUnitKind unit_boss_shadow_hand_small = {
     { 0.0f, 27.0f, 0.0f },        // centerOffset
     { 0, 0 },                     // hpGaugeOffset
     { 40.0f, 40.0f, 0.0f },       // talkTogeBaseOffset
-    { 110.0f, 0.0f, -10.0f },     // field_0x3C
+    { 110.0f, 0.0f, -10.0f },     // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },         // burnFlameOffset
     0.0f,                         // field_0x54
     0.0f,                         // field_0x58
@@ -2035,7 +2035,7 @@ BattleUnitKindPart queen_hand_small_parts[1] = {
         { 0.0f, 0.0f, 0.0f },           // positionOffset
         { 70.0f, 18.0f, 0.0f },         // hitBaseOffset
         { 70.0f, 18.0f, 0.0f },         // hitCursorBaseOffset
-        188,                            // field_0x30
+        188,                            // shadowSize
         40,                             // field_0x32
         255,                            // baseAlpha
         &queen_hand_small_defence,      // defense

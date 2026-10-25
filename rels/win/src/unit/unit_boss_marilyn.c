@@ -71,7 +71,7 @@ BattleUnitKind unit_boss_marilyn = {
     { 0.0f, 27.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 6.0f, 24.0f, 0.0f },      // talkTogeBaseOffset
-    { 20.0f, 0.0f, -10.0f },    // field_0x3C
+    { 20.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -161,7 +161,7 @@ static BattleUnitKindPart parts = {
     { 0.0f, 0.0f, 0.0f },   // positionOffset
     { 15.0f, 45.0f, 0.0f }, // hitBaseOffset
     { 0.0f, 50.0f, 0.0f },  // hitCursorBaseOffset
-    38,                     // field_0x30
+    38,                     // shadowSize
     56,                     // field_0x32
     255,                    // baseAlpha
     &defence,               // defense
@@ -192,7 +192,7 @@ static BattleWeapon weapon_marilyn_kagenuke_attack1 = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -270,7 +270,7 @@ static BattleWeapon weapon_marilyn_thunder_attack1 = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -348,7 +348,7 @@ static BattleWeapon weapon_marilyn_charge1 = {
     0x01004020,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

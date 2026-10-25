@@ -70,7 +70,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     { 0.0f, 16.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 14.0f, 0.0f, -10.0f },    // field_0x3C
+    { 14.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -135,7 +135,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f },    // positionOffset
         { 0.0f, 25.0f, 0.0f },   // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },   // hitCursorBaseOffset
-        20,                      // field_0x30
+        20,                      // shadowSize
         30,                      // field_0x32
         255,                     // baseAlpha
         &defence,                // defense
@@ -167,7 +167,7 @@ static BattleWeapon weapon_chorobon_drain_attack = {
     0x01101260,                               // targetClassFlags
     0x20001000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -302,9 +302,9 @@ static USER_FUNC(chorobon_copy_status) {
     }
     dst->mSizeChangeTurns = src->mSizeChangeTurns;
     dst->mSizeChangeStrength = src->mSizeChangeStrength;
-    dst->hpGauge.field_0xC = dst->currentHp;
-    dst->hpGauge.field_0x10 = dst->currentHp;
-    dst->hpGauge.field_0x14 = dst->hpGauge.field_0x18 = (f32)dst->currentHp / (f32)dst->maxHp;
+    dst->hpGauge.fromHp = dst->currentHp;
+    dst->hpGauge.toHp = dst->currentHp;
+    dst->hpGauge.fillRatio = dst->hpGauge.drainRatio = (f32)dst->currentHp / (f32)dst->maxHp;
     return EVT_RETURN_DONE;
 }
 
@@ -393,7 +393,7 @@ static BattleWeapon weapon_chorobon_drain_attack_biribiri_counterd = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

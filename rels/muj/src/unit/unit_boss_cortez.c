@@ -119,7 +119,7 @@ BattleUnitKind unit_boss_cortez = {
     { 0.0f, 0.0f, 0.0f },       // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 125.0f, 0.0f, -10.0f },   // field_0x3C
+    { 125.0f, 0.0f, -10.0f },   // heldItemBaseOffset
     { 0.0f, 0.0f, 25.0f },      // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -241,7 +241,7 @@ BattleWeapon weapon_cortez_normal_front_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -319,7 +319,7 @@ BattleWeapon weapon_cortez_normal_rear_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -397,7 +397,7 @@ BattleWeapon weapon_cortez_midaregiri_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -475,7 +475,7 @@ BattleWeapon weapon_cortez_mode2_head_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -553,7 +553,7 @@ BattleWeapon weapon_cortez_mode2_charge = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -631,7 +631,7 @@ BattleWeapon weapon_cortez_mode2_bone_attack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -709,7 +709,7 @@ BattleWeapon weapon_cortez_mode3_kamitsuki_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1006,7 +1006,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f },     // positionOffset
         { 145.0f, 90.0f, 30.0f }, // hitBaseOffset
         { 145.0f, 90.0f, 30.0f }, // hitCursorBaseOffset
-        20,                       // field_0x30
+        20,                       // shadowSize
         30,                       // field_0x32
         255,                      // baseAlpha
         &defence_honeduka,        // defense
@@ -1022,7 +1022,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f },                // positionOffset
         { 60.0f, 110.0f, 20.0f },            // hitBaseOffset
         { 60.0f, 110.0f, 20.0f },            // hitCursorBaseOffset
-        20,                                  // field_0x30
+        20,                                  // shadowSize
         30,                                  // field_0x32
         255,                                 // baseAlpha
         &defence_mode2_upper_rib_close,      // defense
@@ -1038,7 +1038,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1054,7 +1054,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f },    // positionOffset
         { 15.0f, 25.0f, 10.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 10.0f },  // hitCursorBaseOffset
-        45,                      // field_0x30
+        45,                      // shadowSize
         30,                      // field_0x32
         255,                     // baseAlpha
         &defence_mode1,          // defense
@@ -1070,7 +1070,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence_mode1,         // defense
@@ -1086,7 +1086,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1102,7 +1102,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1118,7 +1118,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1134,7 +1134,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1150,7 +1150,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1166,7 +1166,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1182,7 +1182,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1198,7 +1198,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1214,7 +1214,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1230,7 +1230,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1246,7 +1246,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1262,7 +1262,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1278,7 +1278,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense
@@ -1294,7 +1294,7 @@ static BattleUnitKindPart parts[19] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence_mode1,       // defense

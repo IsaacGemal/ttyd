@@ -103,7 +103,7 @@ BattleUnitKind unit_boss_magnum_battender = {
     { 0.0f, 80.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 30.0f, 115.0f, 0.0f },    // talkTogeBaseOffset
-    { 60.0f, 0.0f, -10.0f },    // field_0x3C
+    { 60.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -212,7 +212,7 @@ static BattleUnitKindPart parts[3] = {
         { 0.0f, 0.0f, 0.0f },      // positionOffset
         { 37.0f, 103.0f, 30.0f },  // hitBaseOffset
         { 37.0f, 113.0f, 61.0f },  // hitCursorBaseOffset
-        106,                       // field_0x30
+        106,                       // shadowSize
         174,                       // field_0x32
         255,                       // baseAlpha
         &defence,                  // defense
@@ -228,7 +228,7 @@ static BattleUnitKindPart parts[3] = {
         { 0.0f, 0.0f, 0.0f },      // positionOffset
         { 10.0f, 10.0f, 30.0f },   // hitBaseOffset
         { 10.0f, 20.0f, 61.0f },   // hitCursorBaseOffset
-        106,                       // field_0x30
+        106,                       // shadowSize
         174,                       // field_0x32
         255,                       // baseAlpha
         &defence,                  // defense
@@ -244,7 +244,7 @@ static BattleUnitKindPart parts[3] = {
         { 0.0f, 0.0f, 0.0f },      // positionOffset
         { 0.0f, 0.0f, 0.0f },      // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },      // hitCursorBaseOffset
-        30,                        // field_0x30
+        30,                        // shadowSize
         30,                        // field_0x32
         255,                       // baseAlpha
         &defence,                  // defense
@@ -276,7 +276,7 @@ BattleWeapon weapon_batten_stamp_attack = {
     0x01101260,                               // targetClassFlags
     0x20001000,                               // targetPropertyFlags
     0,                                        // element
-    12,                                       // field_0x6D
+    12,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -354,7 +354,7 @@ BattleWeapon weapon_batten_shake_attack = {
     0x02101260,                               // targetClassFlags
     0x20000008,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1057,7 +1057,7 @@ BattleUnitKind unit_boss_rocket_punch = {
     { 0.0f, 0.0f, 0.0f },       // centerOffset
     { 0, -20 },                 // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 25.0f, 0.0f, -10.0f },    // field_0x3C
+    { 25.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -1143,7 +1143,7 @@ static BattleUnitKindPart parts_r[1] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 10.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 10.0f, 0.0f }, // hitCursorBaseOffset
-        106,                   // field_0x30
+        106,                   // shadowSize
         174,                   // field_0x32
         255,                   // baseAlpha
         &defence_r,            // defense
@@ -1175,7 +1175,7 @@ static BattleWeapon weapon_batten_rocket_attack = {
     0x01101260,                               // targetClassFlags
     0x20001000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

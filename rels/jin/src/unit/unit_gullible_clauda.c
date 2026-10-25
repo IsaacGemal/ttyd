@@ -61,7 +61,7 @@ BattleUnitKind unit_gullible_clauda = {
     { 0.0f, 23.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 40.0f, 0.0f },      // talkTogeBaseOffset
-    { 21.0f, 0.0f, -10.0f },    // field_0x3C
+    { 21.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -110,7 +110,7 @@ static BattleWeapon enemyWeapon_ClaudaNormalAttack = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    10,                                       // field_0x6D
+    10,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -208,7 +208,7 @@ static BattleUnitKindPart parts_clauda = {
     { 0.0f, 0.0f, 0.0f },   // positionOffset
     { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
     { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-    20,                     // field_0x30
+    20,                     // shadowSize
     30,                     // field_0x32
     255,                    // baseAlpha
     &defence_clauda,        // defense

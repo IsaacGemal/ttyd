@@ -1488,11 +1488,11 @@ USER_FUNC(btlevtcmd_SetHp) { //1:1
     }
     unit = BattleGetUnitPtr(wp, id);
     unit->currentHp = (s16)evtGetValue(event, args[1]);
-    unit->hpGauge.field_0xC = unit->currentHp;
-    unit->hpGauge.field_0x10 = unit->currentHp;
+    unit->hpGauge.fromHp = unit->currentHp;
+    unit->hpGauge.toHp = unit->currentHp;
     value = (f32)unit->currentHp / (f32)unit->maxHp;
-    unit->hpGauge.field_0x18 = value;
-    unit->hpGauge.field_0x14 = value;
+    unit->hpGauge.drainRatio = value;
+    unit->hpGauge.fillRatio = value;
     return EVT_RETURN_DONE;
 }
 
@@ -1659,12 +1659,12 @@ USER_FUNC(btlevtcmd_RecoverHp) {
     evtGetValue(event, args[1]); //unused, debug?
     hp = evtGetValue(event, args[2]);
     if (!(unit->mAttributeFlags & kUnk_ImmageToOHKO)) {
-        unit->hpGauge.field_0xC = unit->currentHp;
+        unit->hpGauge.fromHp = unit->currentHp;
         BtlUnit_RecoverHp(unit, hp);
-        unit->hpGauge.field_0x10 = unit->currentHp;
-        unit->hpGauge.field_0x4 = unit->hpGauge.field_0x6;
-        unit->hpGauge.field_0x8 = unit->hpGauge.field_0xA;
-        unit->hpGauge.field_0x2 |= 1;
+        unit->hpGauge.toHp = unit->currentHp;
+        unit->hpGauge.drainTimer = unit->hpGauge.drainFrames;
+        unit->hpGauge.dispTimer = unit->hpGauge.dispFrames;
+        unit->hpGauge.flags |= 1;
     }
     else {
         BtlUnit_RecoverHp(unit, hp);
@@ -4046,7 +4046,7 @@ USER_FUNC(btlevtcmd_SetEventAttack) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
 
     unit->attackEventCode = (void*)args[1];
-    unit->field_0x2A8 = 0;
+    unit->attackEventFlags = 0;
     return EVT_RETURN_DONE;
 }
 

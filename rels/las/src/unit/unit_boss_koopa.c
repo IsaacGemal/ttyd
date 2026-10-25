@@ -90,7 +90,7 @@ BattleUnitKind unit_boss_koopa = {
     { 0.0f, 40.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 40.0f, 40.0f, 0.0f },     // talkTogeBaseOffset
-    { 43.0f, 0.0f, -10.0f },    // field_0x3C
+    { 43.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -208,7 +208,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 34.0f, 62.0f, 0.0f }, // hitBaseOffset
         { 22.0f, 78.0f, 0.0f }, // hitCursorBaseOffset
-        70,                     // field_0x30
+        70,                     // shadowSize
         80,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -240,7 +240,7 @@ static BattleWeapon weapon_koopa_hip_attack = {
     0x01101260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    10,                                       // field_0x6D
+    10,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -318,7 +318,7 @@ static BattleWeapon weapon_koopa_bite_attack = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -396,7 +396,7 @@ static BattleWeapon weapon_koopa_critical_bite_attack = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -474,7 +474,7 @@ static BattleWeapon weapon_koopa_fire_attack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     1,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

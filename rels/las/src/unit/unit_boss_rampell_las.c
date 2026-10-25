@@ -135,7 +135,7 @@ BattleUnitKind unit_boss_rampell_las = {
     { 0.0f, 22.0f, 0.0f },      // centerOffset
     { 0, -3 },                  // hpGaugeOffset
     { 0.0f, 40.0f, 0.0f },      // talkTogeBaseOffset
-    { 25.0f, 0.0f, -10.0f },    // field_0x3C
+    { 25.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -226,7 +226,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -258,7 +258,7 @@ static BattleWeapon weapon_rampell_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -934,7 +934,7 @@ static BattleUnitKindPart parts_fmario[1] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 3.0f, 27.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence_fmario,        // defense
@@ -966,7 +966,7 @@ static BattleWeapon weapon_masao_jump = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1044,7 +1044,7 @@ static BattleWeapon weapon_masao_hammer = {
     0x01001260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1122,7 +1122,7 @@ static BattleWeapon weapon_masao_kururin_jump = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1200,7 +1200,7 @@ static BattleWeapon weapon_masao_kaiten_hammer = {
     0x01001260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1769,7 +1769,7 @@ static BattleWeapon enemyWeapon_ChristineNormalAttack = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1868,7 +1868,7 @@ static BattleUnitKindPart parts_christine[1] = {
         { 0.0f, 0.0f, 0.0f },      // positionOffset
         { 15.0f, 25.0f, 0.0f },    // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },     // hitCursorBaseOffset
-        20,                        // field_0x30
+        20,                        // shadowSize
         30,                        // field_0x32
         255,                       // baseAlpha
         &defence_christine,        // defense
@@ -2174,7 +2174,7 @@ static BattleWeapon enemyWeapon_NokotarouKouraAttack = {
     0x01001260,                               // targetClassFlags
     0x21004004,                               // targetPropertyFlags
     0,                                        // element
-    8,                                        // field_0x6D
+    8,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2252,7 +2252,7 @@ static BattleWeapon enemyWeapon_NokotarouShubibinAttack = {
     0x02101260,                               // targetClassFlags
     0x20004004,                               // targetPropertyFlags
     0,                                        // element
-    8,                                        // field_0x6D
+    8,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2354,7 +2354,7 @@ static BattleUnitKindPart parts_nokotarou[1] = {
         { 0.0f, 0.0f, 0.0f },      // positionOffset
         { 15.0f, 25.0f, 0.0f },    // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },     // hitCursorBaseOffset
-        20,                        // field_0x30
+        20,                        // shadowSize
         30,                        // field_0x32
         255,                       // baseAlpha
         &defence_nokotarou,        // defense
@@ -2779,7 +2779,7 @@ static BattleWeapon enemyWeapon_ClaudaNormalAttack = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    10,                                       // field_0x6D
+    10,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2878,7 +2878,7 @@ static BattleUnitKindPart parts_clauda[1] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence_clauda,        // defense
@@ -3070,7 +3070,7 @@ static BattleWeapon enemyWeapon_YoshiNormalAttack = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3169,7 +3169,7 @@ static BattleUnitKindPart parts_yoshi[1] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence_yoshi,         // defense
@@ -3464,7 +3464,7 @@ BattleUnitKindPart parts_vivian[1] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence_vivian,        // defense
@@ -3496,7 +3496,7 @@ BattleWeapon weapon_vivian_kagenuke_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3739,7 +3739,7 @@ BattleUnitKindPart parts_sanders[1] = {
         { 0.0f, 0.0f, 0.0f },    // positionOffset
         { 16.0f, 24.0f, 5.0f },  // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },   // hitCursorBaseOffset
-        20,                      // field_0x30
+        20,                      // shadowSize
         24,                      // field_0x32
         255,                     // baseAlpha
         &defence_sanders,        // defense
@@ -3771,7 +3771,7 @@ BattleWeapon enemyWeapon_SandersNormalAttack = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     3,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4010,7 +4010,7 @@ BattleUnitKindPart parts_chuchurina[1] = {
         { 0.0f, 0.0f, 0.0f },       // positionOffset
         { 16.0f, 24.0f, 5.0f },     // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },      // hitCursorBaseOffset
-        20,                         // field_0x30
+        20,                         // shadowSize
         24,                         // field_0x32
         255,                        // baseAlpha
         &defence_chuchurina,        // defense
@@ -4042,7 +4042,7 @@ BattleWeapon enemyWeapon_ChuchurinaNormalAttackR = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    22,                                       // field_0x6D
+    22,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4120,7 +4120,7 @@ BattleWeapon enemyWeapon_ChuchurinaNormalAttackL = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    21,                                       // field_0x6D
+    21,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4198,7 +4198,7 @@ BattleWeapon enemyWeapon_ChuchurinaNormalAttackRlast = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    24,                                       // field_0x6D
+    24,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4276,7 +4276,7 @@ BattleWeapon enemyWeapon_ChuchurinaNormalAttackLlast = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    23,                                       // field_0x6D
+    23,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

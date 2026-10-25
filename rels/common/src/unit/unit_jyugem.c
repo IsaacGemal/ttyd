@@ -71,7 +71,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     { 0.0f, 21.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 16.0f, 0.0f, -10.0f },    // field_0x3C
+    { 16.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -182,7 +182,7 @@ static BattleUnitKindPart parts[2] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 35.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 50.0f, 0.0f }, // hitCursorBaseOffset
-        20,                    // field_0x30
+        20,                    // shadowSize
         30,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -198,7 +198,7 @@ static BattleUnitKindPart parts[2] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -230,7 +230,7 @@ static BattleWeapon weapon_jyugem_attack = {
     0x01101260,                               // targetClassFlags
     0x20001000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

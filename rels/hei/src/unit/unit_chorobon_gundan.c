@@ -83,7 +83,7 @@ BattleUnitKind unit_chorobon_gundan = {
     { 0.0f, 0.0f, 0.0f },           // centerOffset
     { 0, 0 },                       // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },           // talkTogeBaseOffset
-    { 130.0f, 0.0f, -10.0f },       // field_0x3C
+    { 130.0f, 0.0f, -10.0f },       // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },           // burnFlameOffset
     0.0f,                           // field_0x54
     0.0f,                           // field_0x58
@@ -171,7 +171,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f },     // positionOffset
         { 0.0f, 25.0f, 0.0f },    // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },    // hitCursorBaseOffset
-        20,                       // field_0x30
+        20,                       // shadowSize
         30,                       // field_0x32
         255,                      // baseAlpha
         &defence,                 // defense
@@ -203,7 +203,7 @@ BattleWeapon weapon_chorobon_gundan_attack = {
     0x01101260,                               // targetClassFlags
     0x20000002,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

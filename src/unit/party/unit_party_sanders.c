@@ -343,7 +343,7 @@ BattleUnitKindPart unitpartsdata_Party_Sanders[1] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -374,7 +374,7 @@ BattleUnitKind unitdata_Party_Sanders = {
     { 0.0f, 16.0f, 0.0f },           // centerOffset
     { 0, 0 },                        // hpGaugeOffset
     { 0.0f, 40.0f, 0.0f },           // talkTogeBaseOffset
-    { 0.0f, 40.0f, 0.0f },           // field_0x3C
+    { 0.0f, 40.0f, 0.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
     0.0f,                            // field_0x54
     0.0f,                            // field_0x58
@@ -473,7 +473,7 @@ BattleWeapon partyWeapon_SandersFirstAttack = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     3,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -551,7 +551,7 @@ BattleWeapon partyWeapon_SandersNormalAttack = {
     0x01101260,                                     // targetClassFlags
     0x21002000,                                     // targetPropertyFlags
     3,                                              // element
-    0,                                              // field_0x6D
+    0,                                              // damagePattern
     3,                                              // actionLevel
     2,                                              // field_0x6F
     "msg_ac_bakuhatsu",                             // acHelpMsg
@@ -629,7 +629,7 @@ BattleWeapon partyWeapon_SandersTimeBombSet = {
     0x02101260,                             // targetClassFlags
     0x20000000,                             // targetPropertyFlags
     0,                                      // element
-    0,                                      // field_0x6D
+    0,                                      // damagePattern
     3,                                      // actionLevel
     2,                                      // field_0x6F
     "msg_ac_jigen_bakudan",                 // acHelpMsg
@@ -707,7 +707,7 @@ BattleWeapon partyWeapon_SandersCounterSet = {
     0x01004020,                                // targetClassFlags
     0x10000000,                                // targetPropertyFlags
     0,                                         // element
-    0,                                         // field_0x6D
+    0,                                         // damagePattern
     3,                                         // actionLevel
     2,                                         // field_0x6F
     "msg_ac_bom_counter",                      // acHelpMsg
@@ -785,7 +785,7 @@ BattleWeapon partyWeapon_SandersSuperBombAttack = {
     0x02101260,                                      // targetClassFlags
     0x20000000,                                      // targetPropertyFlags
     3,                                               // element
-    0,                                               // field_0x6D
+    0,                                               // damagePattern
     3,                                               // actionLevel
     2,                                               // field_0x6F
     "msg_ac_super_bakuhatsu",                        // acHelpMsg

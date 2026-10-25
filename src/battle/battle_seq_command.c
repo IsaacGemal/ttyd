@@ -2285,7 +2285,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 	if (cmd->cancelled) {
 		unit->moveState = 0;
 		unit->attackEventCode = btldefaultevt_Wait;
-		unit->field_0x2A8 = 1;
+		unit->attackEventFlags = 1;
 		return;
 	}
 
@@ -2293,7 +2293,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 	case 5:
 		switch (cmd->operationKind) {
 		case 6:
-			unit->field_0x2A8 = 1;
+			unit->attackEventFlags = 1;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = btldefaultevt_Defend;
 			} else {
@@ -2302,7 +2302,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		case 5:
 			unit->attackEventCode = btldefaultevt_Appeal;
-			unit->field_0x2A8 = 1;
+			unit->attackEventFlags = 1;
 			if (unit->currentKind == 0xDE) {
 				BtlActRec_AddCount(&wp->field_16F1C[0x2D - 0x1C]);
 			} else {
@@ -2311,7 +2311,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		case 7:
 			unit->attackEventCode = btldefaultevt_Wait;
-			unit->field_0x2A8 = 1;
+			unit->attackEventFlags = 1;
 			if (unit->currentKind == 0xDE) {
 				BtlActRec_AddCount(&wp->field_16F1C[0x2D - 0x1C]);
 			} else {
@@ -2320,7 +2320,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		case 3:
 			unit->attackEventCode = btldefaultevt_Escape;
-			unit->field_0x2A8 = 1;
+			unit->attackEventFlags = 1;
 			if (unit->currentKind == 0xDE) {
 				BtlActRec_AddCount(&wp->field_16F1C[0x37 - 0x1C]);
 			} else {
@@ -2328,7 +2328,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			}
 			break;
 		case 1:
-			unit->field_0x2A8 = 0;
+			unit->attackEventFlags = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_Charge.mAttackEvtScript;
 				BtlActRec_AddCount(&wp->field_16F1C[0x33 - 0x1C]);
@@ -2338,7 +2338,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			}
 			break;
 		case 2:
-			unit->field_0x2A8 = 0;
+			unit->attackEventFlags = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_SuperCharge.mAttackEvtScript;
 				BtlActRec_AddCount(&wp->field_16F1C[0x35 - 0x1C]);
@@ -2349,7 +2349,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		case 0:
 			unit->attackEventCode = btldefaultevt_ChangeParty;
-			unit->field_0x2A8 = 1;
+			unit->attackEventFlags = 1;
 			cmd->cursor[1].field_0 = 0;
 			if (wp->badgeEquippedFlags & 1) {
 				unit->moveState = 3;
@@ -2362,15 +2362,15 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		case 4:
 			unit->attackEventCode = btldefaultevt_ProtectPartner;
-			unit->field_0x2A8 = 1;
+			unit->attackEventFlags = 1;
 			break;
 		case 8:
 			unit->attackEventCode = BtlUnit_GetData(unit, 2);
-			unit->field_0x2A8 = 3;
+			unit->attackEventFlags = 3;
 			break;
 		default:
 			unit->attackEventCode = btldefaultevt_Wait;
-			unit->field_0x2A8 = 1;
+			unit->attackEventFlags = 1;
 			break;
 		}
 		break;
@@ -2385,7 +2385,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		_btlcmd_GetCursorPtr(cmd, command, &cursor);
 		weapon = cmd->weaponTable[cursor->field_0].mWeaponParams;
 		unit->attackEventCode = weapon->mAttackEvtScript;
-		unit->field_0x2A8 = 0;
+		unit->attackEventFlags = 0;
 		if (unit->attackEventCode == NULL) {
 			unit->attackEventCode = btldefaultevt_Wait;
 		}
@@ -2438,7 +2438,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 	case 9:
 		unit->moveState = 1;
 		unit->attackEventCode = btldefaultevt_ChangePosition;
-		unit->field_0x2A8 = 7;
+		unit->attackEventFlags = 7;
 		break;
 	case 11:
 		switch (unit->moveState) {
@@ -2456,7 +2456,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		}
 		unit->attackEventCode = btlataudGetAttackEventPtr(unit->unitId);
-		unit->field_0x2A8 = 3;
+		unit->attackEventFlags = 3;
 		if (unit->currentKind == 0xDE) {
 			BtlActRec_AddCount(&wp->field_16F1C[0x2B - 0x1C]);
 		} else {
@@ -2482,15 +2482,15 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			break;
 		}
 		unit->attackEventCode = btlataudGetMoveEventPtr(unit->unitId);
-		unit->field_0x2A8 = 3;
+		unit->attackEventFlags = 3;
 		break;
 	case 13:
 		unit->attackEventCode = btldefaultevt_LectureEnd;
-		unit->field_0x2A8 = 3;
+		unit->attackEventFlags = 3;
 		break;
 	default:
 		unit->attackEventCode = btldefaultevt_Wait;
-		unit->field_0x2A8 = 0;
+		unit->attackEventFlags = 0;
 		break;
 	}
 }
@@ -2597,8 +2597,8 @@ void BattleDrawEnemyHP(CameraId camId, void* param) {
 							position.y += (f32)unit->mHpGaugeOffset[1];
 							btlGetScreenPoint(&position, &screen);
 							if (unit->flags & 1) {
-								if ((unit->hpGauge.field_0x2 & 1) && unit->hpGauge.field_0x8 < 0x14) {
-									color.a = (u8)(s32)intplGetValue(0, unit->hpGauge.field_0x8, 0x14, 0.0f, 255.0f);
+								if ((unit->hpGauge.flags & 1) && unit->hpGauge.dispTimer < 0x14) {
+									color.a = (u8)(s32)intplGetValue(0, unit->hpGauge.dispTimer, 0x14, 0.0f, 255.0f);
 								}
 							}
 							icon = 20;
@@ -2628,19 +2628,19 @@ void BattleDrawEnemyHPBar(Vec pos, BattleUnit* unit, GXColor color) {
 	btlDispTexPlane(19.0f + pos.x, pos.y - 3.0f, 0.0f, 1.0f, 1.0f, 0xA, color, 0);
 	switch (gauge->field_0x0) {
 	case 1:
-		if (gauge->field_0x4 > 0) {
+		if (gauge->drainTimer > 0) {
 			btlDispGXInit2DRasta();
 			GXLoadPosMtxImm(camera->view, 0);
-			btlDispGXQuads2DRasta(1.0f + pos.x, 2.0f + pos.y, 34.0f * gauge->field_0x18 + (1.0f + pos.x),
+			btlDispGXQuads2DRasta(1.0f + pos.x, 2.0f + pos.y, 34.0f * gauge->drainRatio + (1.0f + pos.x),
 			                     (2.0f + pos.y) - 8.0f, 0, 0, 0, color.a);
 			btlDispGXInit2DRasta();
 			GXLoadPosMtxImm(camera->view, 0);
 		}
-		btlDispTexPlane(19.0f + pos.x - 20.0f * (1.0f - gauge->field_0x14), pos.y - 3.0f, 0.0f, gauge->field_0x14, 1.0f,
+		btlDispTexPlane(19.0f + pos.x - 20.0f * (1.0f - gauge->fillRatio), pos.y - 3.0f, 0.0f, gauge->fillRatio, 1.0f,
 		                0xB, color, 0);
 		break;
 	default: {
-		f32 w = gauge->field_0x14;
+		f32 w = gauge->fillRatio;
 		btlDispTexPlane(19.0f + pos.x - 20.0f * (1.0f - w), pos.y - 3.0f, 0.0f, w, 1.0f, 0xB, color, 0);
 		break;
 	}

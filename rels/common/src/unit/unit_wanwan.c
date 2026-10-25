@@ -73,7 +73,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     { 0.0f, 18.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 17.0f, 0.0f, -10.0f },    // field_0x3C
+    { 17.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -178,7 +178,7 @@ static BattleUnitKindPart parts[9] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 5.0f, 30.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 40.0f, 0.0f }, // hitCursorBaseOffset
-        20,                    // field_0x30
+        20,                    // shadowSize
         30,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -194,7 +194,7 @@ static BattleUnitKindPart parts[9] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -210,7 +210,7 @@ static BattleUnitKindPart parts[9] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -226,7 +226,7 @@ static BattleUnitKindPart parts[9] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -242,7 +242,7 @@ static BattleUnitKindPart parts[9] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -258,7 +258,7 @@ static BattleUnitKindPart parts[9] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -274,7 +274,7 @@ static BattleUnitKindPart parts[9] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -290,7 +290,7 @@ static BattleUnitKindPart parts[9] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -306,7 +306,7 @@ static BattleUnitKindPart parts[9] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -338,7 +338,7 @@ static BattleWeapon weapon_wanwan_attack = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

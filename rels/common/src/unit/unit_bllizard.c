@@ -76,7 +76,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     { 0.0f, 15.0f, 0.0f },      // centerOffset
     { 0, -3 },                  // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 18.0f, 0.0f, -10.0f },    // field_0x3C
+    { 18.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -141,7 +141,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f }, // hitCursorBaseOffset
-        30,                    // field_0x30
+        30,                    // shadowSize
         30,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -173,7 +173,7 @@ static BattleWeapon weapon_bllizard_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -251,7 +251,7 @@ static BattleWeapon weapon_bllizard_bllizard_attack = {
     0x02101260,                               // targetClassFlags
     0x20001000,                               // targetPropertyFlags
     2,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

@@ -67,7 +67,7 @@ BattleWeapon weapon_batten_satellite_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -144,7 +144,7 @@ BattleUnitKind unit_boss_batten_satellite = {
     { 0.0f, 0.0f, 0.0f },          // centerOffset
     { -3, -6 },                    // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },          // talkTogeBaseOffset
-    { 8.0f, 0.0f, -10.0f },        // field_0x3C
+    { 8.0f, 0.0f, -10.0f },        // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },          // burnFlameOffset
     0.0f,                          // field_0x54
     0.0f,                          // field_0x58
@@ -304,7 +304,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f },      // positionOffset
         { -4.0f, -2.0f, 0.0f },    // hitBaseOffset
         { -6.0f, 1.0f, 0.0f },     // hitCursorBaseOffset
-        14,                        // field_0x30
+        14,                        // shadowSize
         14,                        // field_0x32
         255,                       // baseAlpha
         &defence,                  // defense

@@ -193,7 +193,7 @@ BattleUnitKindPart unitpartsdata_Party_Yoshi[7] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -209,7 +209,7 @@ BattleUnitKindPart unitpartsdata_Party_Yoshi[7] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -225,7 +225,7 @@ BattleUnitKindPart unitpartsdata_Party_Yoshi[7] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -241,7 +241,7 @@ BattleUnitKindPart unitpartsdata_Party_Yoshi[7] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -257,7 +257,7 @@ BattleUnitKindPart unitpartsdata_Party_Yoshi[7] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -273,7 +273,7 @@ BattleUnitKindPart unitpartsdata_Party_Yoshi[7] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -289,7 +289,7 @@ BattleUnitKindPart unitpartsdata_Party_Yoshi[7] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -320,7 +320,7 @@ BattleUnitKind unitdata_Party_Yoshi = {
     { 0.0f, 12.0f, 0.0f },           // centerOffset
     { 0, 0 },                        // hpGaugeOffset
     { 0.0f, 40.0f, 0.0f },           // talkTogeBaseOffset
-    { 0.0f, 40.0f, 0.0f },           // field_0x3C
+    { 0.0f, 40.0f, 0.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
     0.0f,                            // field_0x54
     0.0f,                            // field_0x58
@@ -406,7 +406,7 @@ BattleWeapon partyWeapon_YoshiNormalAttack = {
     0x01001260,                                  // targetClassFlags
     0x20001004,                                  // targetPropertyFlags
     0,                                           // element
-    0,                                           // field_0x6D
+    0,                                           // damagePattern
     3,                                           // actionLevel
     2,                                           // field_0x6F
     "msg_ac_hip_drop",                           // acHelpMsg
@@ -484,7 +484,7 @@ BattleWeapon partyWeapon_YoshiNomikomi_Shot = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    6,                                        // field_0x6D
+    6,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_nomikomi",                        // acHelpMsg
@@ -562,7 +562,7 @@ BattleWeapon partyWeapon_YoshiNomikomi_Spew = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    5,                                        // field_0x6D
+    5,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_nomikomi",                        // acHelpMsg
@@ -640,7 +640,7 @@ BattleWeapon partyWeapon_YoshiNomikomi_Dmg0 = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_nomikomi",                        // acHelpMsg
@@ -718,7 +718,7 @@ BattleWeapon partyWeapon_YoshiNomikomi_Fire = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     1,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_nomikomi",                        // acHelpMsg
@@ -796,7 +796,7 @@ BattleWeapon partyWeapon_YoshiNomikomi_Involved = {
     0x02100260,                               // targetClassFlags
     0x20102000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -874,7 +874,7 @@ BattleWeapon partyWeapon_YoshiEggAttack_Minimini = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_wonder_egg",                      // acHelpMsg
@@ -952,7 +952,7 @@ BattleWeapon partyWeapon_YoshiCallGuard = {
     0x02101260,                                    // targetClassFlags
     0x20000000,                                    // targetPropertyFlags
     0,                                             // element
-    0,                                             // field_0x6D
+    0,                                             // damagePattern
     3,                                             // actionLevel
     2,                                             // field_0x6F
     "msg_ac_taigun_yoshi",                         // acHelpMsg

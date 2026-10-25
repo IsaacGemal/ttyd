@@ -118,7 +118,7 @@ static BattleWeapon weapon = {
     0x02100070,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_sac_4",                              // acHelpMsg

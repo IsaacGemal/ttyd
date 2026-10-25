@@ -561,7 +561,7 @@ BattleUnitKindPart unitpartsdata_Party_Chuchurina[4] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -577,7 +577,7 @@ BattleUnitKindPart unitpartsdata_Party_Chuchurina[4] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -593,7 +593,7 @@ BattleUnitKindPart unitpartsdata_Party_Chuchurina[4] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -609,7 +609,7 @@ BattleUnitKindPart unitpartsdata_Party_Chuchurina[4] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -640,7 +640,7 @@ BattleUnitKind unitdata_Party_Chuchurina = {
     { 0.0f, 12.0f, 0.0f },           // centerOffset
     { 0, 0 },                        // hpGaugeOffset
     { 0.0f, 30.0f, 0.0f },           // talkTogeBaseOffset
-    { 0.0f, 30.0f, 0.0f },           // field_0x3C
+    { 0.0f, 30.0f, 0.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
     0.0f,                            // field_0x54
     0.0f,                            // field_0x58
@@ -726,7 +726,7 @@ BattleWeapon partyWeapon_ChuchurinaNormalAttackLeft = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    21,                                       // field_0x6D
+    21,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_binta",                           // acHelpMsg
@@ -804,7 +804,7 @@ BattleWeapon partyWeapon_ChuchurinaNormalAttackRight = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    22,                                       // field_0x6D
+    22,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_binta",                           // acHelpMsg
@@ -882,7 +882,7 @@ BattleWeapon partyWeapon_ChuchurinaNormalAttackLeftLast = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    23,                                       // field_0x6D
+    23,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_binta",                           // acHelpMsg
@@ -960,7 +960,7 @@ BattleWeapon partyWeapon_ChuchurinaNormalAttackRightLast = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    24,                                       // field_0x6D
+    24,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_binta",                           // acHelpMsg
@@ -1038,7 +1038,7 @@ BattleWeapon partyWeapon_ChuchurinaMadowaseAttack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_madowaseru",                      // acHelpMsg
@@ -1116,7 +1116,7 @@ BattleWeapon partyWeapon_ChuchurinaItemSteal = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    20,                                       // field_0x6D
+    20,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_heart_catch",                     // acHelpMsg
@@ -1194,7 +1194,7 @@ BattleWeapon partyWeapon_ChuchurinaKiss = {
     0x01101160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_chuchurina_kiss",                 // acHelpMsg

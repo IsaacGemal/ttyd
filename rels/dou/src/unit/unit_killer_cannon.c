@@ -67,7 +67,7 @@ BattleUnitKind unit_killer_cannon = {
     { 0.0f, 19.0f, 0.0f },           // centerOffset
     { 0, 0 },                        // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },            // talkTogeBaseOffset
-    { 26.0f, 0.0f, -10.0f },         // field_0x3C
+    { 26.0f, 0.0f, -10.0f },         // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
     20.0f,                           // field_0x54
     10.0f,                           // field_0x58
@@ -132,7 +132,7 @@ static BattleUnitKindPart parts[3] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 0.0f, 30.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 35.0f, 0.0f },  // hitCursorBaseOffset
-        35,                     // field_0x30
+        35,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -148,7 +148,7 @@ static BattleUnitKindPart parts[3] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 0.0f, 0.0f, 0.0f },   // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },   // hitCursorBaseOffset
-        0,                      // field_0x30
+        0,                      // shadowSize
         0,                      // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -164,7 +164,7 @@ static BattleUnitKindPart parts[3] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 0.0f, 0.0f, 0.0f },   // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },   // hitCursorBaseOffset
-        0,                      // field_0x30
+        0,                      // shadowSize
         0,                      // field_0x32
         255,                    // baseAlpha
         &defence,               // defense

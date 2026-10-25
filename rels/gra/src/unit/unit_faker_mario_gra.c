@@ -67,7 +67,7 @@ BattleUnitKind unit_faker_mario_gra = {
     { 0.0f, 20.0f, 0.0f },             // centerOffset
     { 0, 0 },                          // hpGaugeOffset
     { 0.0f, 40.0f, 0.0f },             // talkTogeBaseOffset
-    { 12.0f, 0.0f, -10.0f },           // field_0x3C
+    { 12.0f, 0.0f, -10.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },              // burnFlameOffset
     0.0f,                              // field_0x54
     0.0f,                              // field_0x58
@@ -155,7 +155,7 @@ static BattleUnitKindPart parts_fmario[1] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 3.0f, 27.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence_fmario,        // defense
@@ -187,7 +187,7 @@ static BattleWeapon weapon_masao_jump = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -265,7 +265,7 @@ static BattleWeapon weapon_masao_hammer = {
     0x01001260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -343,7 +343,7 @@ static BattleWeapon weapon_masao_kururin_jump = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -421,7 +421,7 @@ static BattleWeapon weapon_masao_kaiten_hammer = {
     0x01001260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

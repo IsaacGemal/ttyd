@@ -93,7 +93,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg
@@ -170,7 +170,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg
@@ -260,7 +260,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg
@@ -337,7 +337,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg
@@ -427,7 +427,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg
@@ -504,7 +504,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg
@@ -594,7 +594,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg
@@ -671,7 +671,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg
@@ -761,7 +761,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg
@@ -838,7 +838,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg
@@ -928,7 +928,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg
@@ -1005,7 +1005,7 @@ BattleStageData jin_btlstage_data[6] = {
             0x02100060,                                 // targetClassFlags
             0x20000000,                                 // targetPropertyFlags
             0,                                          // element
-            26,                                         // field_0x6D
+            26,                                         // damagePattern
             3,                                          // actionLevel
             2,                                          // field_0x6F
             NULL,                                       // acHelpMsg

@@ -72,7 +72,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     { 0.0f, 18.0f, 0.0f },         // centerOffset
     { 0, 0 },                      // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },          // talkTogeBaseOffset
-    { 15.0f, 0.0f, -10.0f },       // field_0x3C
+    { 15.0f, 0.0f, -10.0f },       // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },          // burnFlameOffset
     0.0f,                          // field_0x54
     0.0f,                          // field_0x58
@@ -160,7 +160,7 @@ static BattleUnitKindPart parts[2] = {
         { 0.0f, 0.0f, 0.0f },          // positionOffset
         { 0.0f, 28.0f, 0.0f },         // hitBaseOffset
         { 0.0f, 38.0f, 0.0f },         // hitCursorBaseOffset
-        20,                            // field_0x30
+        20,                            // shadowSize
         30,                            // field_0x32
         255,                           // baseAlpha
         &defence,                      // defense
@@ -176,7 +176,7 @@ static BattleUnitKindPart parts[2] = {
         { 0.0f, 0.0f, 0.0f },          // positionOffset
         { 0.0f, 0.0f, 0.0f },          // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },          // hitCursorBaseOffset
-        20,                            // field_0x30
+        20,                            // shadowSize
         30,                            // field_0x32
         255,                           // baseAlpha
         &defence,                      // defense
@@ -208,7 +208,7 @@ static BattleWeapon weapon_gundan_zako_magician_fire_bottle = {
     0x01101260,                               // targetClassFlags
     0x20001000,                               // targetPropertyFlags
     1,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -286,7 +286,7 @@ static BattleWeapon weapon_gundan_zako_magician_hunyahunya_bottle = {
     0x01101260,                               // targetClassFlags
     0x20001000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -364,7 +364,7 @@ static BattleWeapon weapon_gundan_zako_magician_yokeyoke_bottle = {
     0x01004020,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -442,7 +442,7 @@ static BattleWeapon weapon_gundan_zako_magician_minimini_bottle = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -520,7 +520,7 @@ static BattleWeapon weapon_gundan_zako_magician_one_recover = {
     0x01100160,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -598,7 +598,7 @@ static BattleWeapon weapon_gundan_zako_magician_all_recover = {
     0x02100160,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -676,7 +676,7 @@ static BattleWeapon weapon_gundan_zako_magician_ziwaziwa_bottle = {
     0x01100160,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
