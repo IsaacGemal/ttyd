@@ -45,8 +45,7 @@ typedef struct MapObjectEntry {
     s32 flags;                   // 0x0, MapObjectEntryFlags
     u8 camId;                    // 0x4
     char name[16];               // 0x5
-    char animName[16];           // 0x15
-    u8 pad_0x25[0x38 - 0x25];     // 0x25
+    char animName[0x38 - 0x15];  // 0x15, mobjEntry strcpys names up to 27 characters ("MOBJ_CoinTakenRecoveryBlock") here
     Vec position;                // 0x38
     Vec scale;                   // 0x44
     Vec rotation;                // 0x50
@@ -64,7 +63,7 @@ typedef struct MapObjectEntry {
         s32* itemList;           // 0x1A0, the lock's -1-terminated key list, used when itemId has bit 31 set (an address)
     };
     union {
-        s32 field_0x1A4;         // 0x1A4, mobj_switch_float_blk: an anim index | 0x40000000/0x80000000 bits; only stored
+        s32 field_0x1A4;         // 0x1A4, mobj_switch_float_blk: an anim index | 0x40000000/0x80000000 bits; read only to keep 0x40000000
         s32 coinCost;            // 0x1A4, recovery block: coins pouchAddCoin takes (0 for the plain block, which is free)
         s32 delay;               // 0x1A4, power-up block: frames counted down before the second item is given
         s32 npcCount;            // 0x1A4, koopa fire bar: the c_fireber NPCs it turns
@@ -77,7 +76,7 @@ typedef struct MapObjectEntry {
     s32 timer;                   // 0x1B0, countdown decremented each frame by the timed object types
     union {
         s32 timerLength;         // 0x1B4, timer switch: the value timer counts down from
-        s32 sfxId;               // 0x1B4, koopa fire bar: its sound (psndSFXOn_3D result, -1 when none)
+        s32 sfxId;               // 0x1B4, koopa fire bar: its sound (psndSFXOn_3D result; 0 at entry, -1 after psndSFXOff)
     };
     char childName[0x10];        // 0x1B8, name of the child object this one spawns (strcpy'd in evt_mobj)
     EffectEntry* effect;         // 0x1C8

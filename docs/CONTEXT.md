@@ -8649,3 +8649,122 @@ nextShowMenu) are fixed, as are firstAttackKind's "kinds 1-8" and partySetForceM
 rest on analogy as well as readers: trigFlags (MarioWork's scheme), moveDir and dispReqDir (copied from and back to
 Mario's fields of those names), frontWallHit/pushWallHit (set together with Mario's hitobjFront/hitobjPush).
 partnerType is not currentMemberId: NPC followers built by kuribo_init carry 1 (PARTY_MEMBER_GOOMBELLA).
+## The top-ten-worst files, second pass: evt_mobj, evt_npc, evt_sub, winmgr, filemgr, envdrv, shadowdrv (2026-10-25, Claude Opus 5.5, n9-q-n2worst)
+
+Task (Isaac): deep-clean src/event/evt_mobj.c, evt_npc.c, evt_sub.c, src/manager/winmgr.c, filemgr.c,
+src/driver/envdrv.c and shadowdrv.c (and their headers) in every category except evidence-free naming; field
+naming under CLEANUP_GUIDE section 3 was the main job. winmgr's and filemgr's recorded failures (#1110, #1114, #1125,
+#1133, #1138) were not retried, and filemgr's FileType3/7/8/9 views stay. Parallel branches: n2battle, n2party,
+n2rels; none of their files was touched.
+
+- **Review.** A fresh Claude Opus 5.5 agent, given the diff and the consumers rather than these notes, checked every
+  new name: one wrong (the first version called MapObjectEntry 0x25 `pad_0x25`; it is animName's overflow, above),
+  two comment fixes (field_0x1A4's read-back, sfxId's initial 0) and WinMgrSelect's pad as a byte array; all applied.
+- **Method.** Untracked harness in build/n2w/: objects saved before the branch (base/, 1,230); try.py (fsrcmisc's)
+  compiles a .c or every user of a .h and runs obj_equiv, `--nat` without MUST_MATCH, `--fn` for a function's asm
+  diff; var.py tries one OLD/NEW replacement; regions.py tries each MUST_MATCH region's natural arm alone; sites.py
+  lists the index's sites by line; gate.sh (build to `ok`, try.py both ways over every changed .c and every user of
+  a changed .h, fncast_lint, local_prototypes, tools/ci.py through ci_local.py, which accepts only the
+  test_wave_launch.PassPipes environment errors). This worktree had no ratchet baseline, so `ci.py --init` ran first
+  on the byte-identical first build. Every commit: BUILD-OK, all users EQUIV and NAT OK, CI PASS (the envdrv commit
+  with `--allow-pragma`: only the comment on envSetWater's opt_propagation line changed, it named `yami->unk0`). At
+  the end `configure.py --non-matching` and the 867 objects built from a changed .c or a user of a changed header
+  compiled with no errors; a normal reconfigure rebuilt to `ok`.
+- **Counts** (`tools/cleanup_index.py`, bf361fce -> this branch, same script): index **11.962 -> 11.863** per kLOC
+  (8355 -> 8286 weighted): prim_ptr_cast 1873 -> 1805, raw_offset 112 -> 108, struct_ptr_cast 1191 -> 1194, field_0x
+  1340 -> 1344 (honest respellings, below), the rest unchanged. The index doesn't count `unkNN` field names: in the
+  seven files and their seven headers, code only, `unkNN`/`field_N`/`padNN` placeholders went 178 -> 0. Per file
+  (weighted, per kLOC):
+  - src/event/evt_mobj.c 273 -> 281 (54.589 -> 56.189): field_0x 0 -> 9 (MapObjectEntry's only-stored 0x1A4,
+    formerly `unk1A0[1]`), prim_ptr_cast 172 -> 171
+  - src/event/evt_npc.c 150 -> 148 (66.372 -> 65.487): field_0x 2 -> 0
+  - src/event/evt_sub.c 93 -> 25 (50.764 -> 13.646): field_0x 6 -> 0, prim_ptr_cast 66 -> 4
+  - src/manager/winmgr.c 190 -> 190 (85.547 -> 85.547)
+  - src/manager/filemgr.c 124 -> 116 (147.444 -> 137.931): prim_ptr_cast 8 -> 3, struct_ptr_cast 6 -> 3
+  - src/driver/envdrv.c 102 -> 102 (66.277 -> 66.277)
+  - src/driver/shadowdrv.c 86 -> 84 (71.251 -> 69.594): raw_offset 4 -> 0, struct_ptr_cast 12 -> 18 (the offset
+    macro's body is counted now that it is not an offset macro)
+  - headers: envdrv.h 0 -> 1, mobjdrv.h 0 -> 1, evt_johoya.h 0 -> 1 (one `field_0xNN` each, below)
+
+**Names, per struct** (field -> name: the consumer that proves it).
+- MapObjectEntry (include/driver/mobjdrv.h; consumers in evt_mobj.c). 0x1A0 `unk1A0[0]` -> union `itemId` (the item
+  mobj_badgeblk and mobj_koopa_badgeblk pass to itemEntry, compare with 0x79/0x59; the key mobj_lock passes to
+  pouchCheckItem/pouchRemoveItem) / `itemList` (mobj_lock: when bit 31 is set the word is a -1-terminated key list it
+  walks; the `(s32*)` cast goes). 0x1A4 `unk1A0[1]` -> union `coinCost` (mobj_recovery_blk: `pouchGetCoin() <`,
+  `pouchAddCoin(-coin)`, effCoinFukidashiEntry's count; evt_mobj_recovery_blk's args[1], which the maps pass as
+  5/10/20 and 0 for the free block, so its `type` local is `coinCost` too), `delay` (mobj_powerupblk: set to 1,
+  counted down before itemForceGet of the second item), `npcCount` (mobj_koopa_fireber_dodai_evt: the loop bound over
+  the `%s%2x` c_fireber NPCs), and `field_0x1A4` for mobj_switch_float_blk, which stores an anim index and
+  0x40000000/0x80000000 bits there and reads it back only to keep 0x40000000. 0x1AC `unk1AC` -> union `jumpHeight` (mobj_jumpstand_blue passes it to
+  marioChgJumpStandMotion, MarioWork.jumpHeight's setter) / `rotSpeed` (the fire bar rotates its NPCs' positions about
+  Z by it every frame; evt_mobj_koopa_fireber_dodai sets +-|args[6]|). 0x1B4 `unk1B4` -> union `timerLength`
+  (mobj_timerswitch: `timer = timerLength` before the countdown; evt_mobj_timerswitch's args[9]) / `sfxId` (fire bar:
+  psndSFXOn_3D result, tested with psndSFXChk, psndSFXOff, -1 when none). 0x1D8 `unk1D8` -> `eventCode2`: every reader
+  passes it to mobjRunEvent, like eventCode at 0x1D4, at a type-specific step (the save block's mobj_save_blk_sysevt,
+  the item box's open script); a real pair of scripts, not an invented series. `animName[16]` + `unk4[0x13]` ->
+  `char animName[0x23]`: mobjEntry strcpys names up to 27 characters there ("MOBJ_CoinTakenRecoveryBlock" reaches 0x31) and
+  mobj_badgeblk strcmps them back, so the bytes after 0x25 are the name's tail, not padding.
+  PoleWork (evt_mobj.c): 0x4 `terminator` (kpa_score_to_str writes the NUL after the digits), 0x5 `pad_0x5`.
+- EnvironmentWork (include/driver/envdrv.h; consumers in envdrv.c). `EnvironmentUnk88 unk88` ->
+  `EnvironmentDepthOfField depthOfField` (its only reader is envDisp_DepthOfField): 0x0 `flags` (0x1 runs the first
+  blur pass, 0x2 the second), 0x2/0x3 -> `u8 depthThreshold[2]` (each pass sets it as KONST red, and the pass's
+  GX_TEV_COMP_R8_GT stage compares the Z8 depth capture's red against it), 0x4/0x8 -> `f32 blurRadius[2]` (the four
+  taps' MTXTrans offset `r * sin / 100, r * cos / 100`; a pass with 0 is skipped). The arrays index by pass because
+  the two passes read them symmetrically. 0x94 -> `pad_0x94`. `unk98` -> `blur` (envBlurOn, envDisp_Blur,
+  envCapture2), EnvironmentBlur 0x10 `duration` (envBlurOn's value; envDisp_Blur divides the elapsed ms by it, 0 holds
+  alpha at 0xA0), 0x2/0x14 -> pads. The flags word's bits are documented from their tests. EnvironmentGlare 0xC
+  `thresholdSel` (KSel of the GX_TEV_SUB stages, TEXC - KONST into TEVREG1), 0x10 `weightSel` (KSel of the stages that
+  add KONST * C1 into PREV), 0x14 `offsetScale` (multiplies every tap offset); EnvironmentGlareTexCoord `x`/`y`
+  (divided by fbWidth/efbHeight into the tap's texture-matrix translation). EnvironmentYami 0x0 `obj` (MapTevCallback.obj
+  at the same offset; envSetWater reads ->flags and ->center), 0x8 `field_0x8` (no reader here). envGlare's and
+  envCapture's register-named locals take the fields they copy (`x0`, `y0`, `width`, `count`, `thresholdSel`, ...).
+- EventEntry 0x84 (include/manager/evtmgr.h): `field_0x84` stays the member for its other users (evt_cam, evt_item,
+  party_chuchu, the battle and unit files, each its own way); two of this task's users get union members:
+  `savedNpcFlags` (evt_npc_jump_position_nohit stores `npc->flags & 0x80000`, clears the bit for the jump and ORs it back
+  on landing) and `winId` (evt_sub's coin-get function: winMgrEntry's id, passed to winMgrOpen, SetParam,
+  CloseAutoDelete and Action).
+- FieldBattleData 0x20 (include/driver/npcdrv.h) `field_20` -> `fbatInfo`: the FieldBattleInfo seq_battle fills and
+  passes to BattleInit, which stores the pointer as BattleWork.fbatInfo; evt_npc_battle_start clears its result,
+  evt_npc_wait_battle_end and evt_npc_get_battle_result read it. npcdrv.c and seq_battle.c follow.
+- InformantWork (include/evt/evt_johoya.h; consumers in winmgr.c, evt_johoya.c, evt_win.c, cardmgr.c): 0x10 `unk10`
+  -> `selectedIdx` (johoya_keti_*_makelabel and winmgr's kind-17/18 select store the chosen index; the four
+  *_setreadflag functions mark info[selectedIdx]); 0x14 `InformantUnknown unk14` -> `InformantReadFlags readFlags` (the
+  keti/perfect/luigi read-flag bitsets johoya_get/set index by storyId, copied to and from CardData.informant); its
+  0x27 bytes `field_0x27` (copied with the card, no other access); 0x3F `pad_0x3F`. InformantInfo 0xA `unkA` ->
+  `price`: makelabel returns it in args[4], which tik_00's script compares with evt_pouch_get_coin and takes with
+  evt_pouch_add_coin(-LW(5)); winmgr's kind-17 select prints it `%3d` beside unread rumours and returns it in LW(4)
+  (0 once read); johoya_data_make sets 5. 0xE `pad_0xE`.
+- WinMgrSelect 0x2 `u16 pad_2` -> `u8 pad_0x2[2]` (memset with the struct, never read); its allocations use
+  `sizeof(WinMgrSelect)` / `sizeof(WinMgrSelectItem)`. shadowdrv.h's `pad29`/`padAC` spelled `pad_0x29`/`pad_0xAC`.
+- Locals named from what they hold: evt_mobj's `f29..f31` position arguments are `x`/`y`/`z` where they go to
+  mobjSetPosition, a pos Vec, effFireEntry or the pole score, `rotY` where they go to rotation.y, `dist` for
+  mobj_kururing_floor's distABf; evt_sub_get_dist/dir's take distABf/angleABf's parameter names, spline_get_value's
+  `t`/`elapsed`, spline_init's the SplineWork fields they fill; depthShadowEnd's `nearZ`/`farZ`/`range`/`scale`.
+
+**Other cleanups.**
+- filemgr: the TPL pack/unpack walks use FILE_RELOC/FILE_UNRELOC like the rest of the file (EQUIV, six sites).
+  Kept: the AnimTableEntry relocations (`FILE_UNRELOC(elem->data, data)` reloads elem->data, 62 lines; the
+  `off + data` relocation as FILE_RELOC swaps the add's operands, 2 lines).
+- shadowdrv: `shadowConfig + idx * 0x48` is `&((ShadowConfigFields*)shadowConfig)[idx]` (EQUIV; shadowConfig stays
+  the u8[144] data definition, so the cast stays).
+- evt_sub: the 58 `STRING((void*)"...")` script arguments are `STRING("...")` (EQUIV, data included); stone_ry/stone_bg
+  read the item name as a const char* at its evtGetValue.
+
+**Left, and why.**
+- ABI by rule: `(const char*)evtGetValue`, `psndSFXOn*((const char*)0xNN)`, event userdata and lwData words (most of
+  evt_mobj's 171 and evt_npc's 129 prim_ptr_casts). Typed effect-userdata locals reload (evt_sub stone_ry: 7 lines; as
+  #1125 found for fire_func).
+- Data layout: winmgr's 157 and envdrv's/shadowdrv's/evt_mobj's address names (Vec and colour templates), shadowConfig's
+  type, evt_mobj's `*(GXColor*)&dat_8041a130`/kpa_pole_score_color puns, filemgr's FileType views.
+- MUST_MATCH: every region in envdrv, shadowdrv, evt_sub and filemgr re-tried with its natural arm alone (regions.py):
+  all still differ. evt_sub_animgroup_async's one-iteration loop: `if (!x) return 0; return 2;`, the inverted test, a
+  result local set either way or defaulted, and a `while` form all give MWCC's branchless select (8-10 lines).
+  envGlare's 8-byte tap walk as a typed `EnvironmentGlareTexCoord*` (6 lines, as recorded) or `&tap->coords[1]` (+36,
+  wrong) stays `(void*)((u32)tap + 8)`.
+- Not named: KusaAccessEntry 0x0 (only the `== 4` terminator), FileEntry 0x8/0x60 (no access; #1138 kept the names),
+  MapObjectHitEntry's `unk4` (mobjdrv.c's MapFileJoint copy; another file's struct), the other FieldBattleData
+  `field_N` words (their readers are tou_03 and battle_seq_end).
+- **For a reviewer.** `eventCode2` is a numbered name for a real pair (two script pointers, both run by mobjRunEvent);
+  `depthThreshold`/`blurRadius` index by pass number rather than by an interpretation of the passes as near/far.
+  `fbatInfo` takes BattleWork's name for the same object. The consumer edits outside the task's files: npcdrv.c,
+  seq_battle.c (fbatInfo), evt_johoya.c, evt_win.c, cardmgr.c, cardmgr.h (InformantWork), evtmgr.h (union members only).
