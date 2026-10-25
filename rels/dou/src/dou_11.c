@@ -1578,7 +1578,7 @@ USER_FUNC(dou_mario_kaiten_hosei) {
     }
     if (hitIsGroup(mario->hitobjStandOn, hit)) {
         vec = (Vec){ 0.0f, 1.0f, 0.0f };
-        mtxGetRotationElement(hit->mapObj->unkAC, mtx, 'x', 'y');
+        mtxGetRotationElement(hit->mapObj->userMtx, mtx, 'x', 'y');
         PSMTXMultVec(mtx, &vec, &vec);
         angle = angleABf(0.0f, 0.0f, vec.x, vec.y);
         diff = angle - event->userdataf[1];

@@ -686,9 +686,9 @@ static USER_FUNC(mario_chk) {
         hit1 = hitNameToPtr(name_tbl[i]);
         if (hit1 != NULL && hit1->mapObj != NULL) {
             pos = vec3_aji_00014370;
-            pos.x = hit1->mapObj->unkAC[0][3];
-            pos.y = hit1->mapObj->unkAC[1][3];
-            pos.z = hit1->mapObj->unkAC[2][3];
+            pos.x = hit1->mapObj->userMtx[0][3];
+            pos.y = hit1->mapObj->userMtx[1][3];
+            pos.z = hit1->mapObj->userMtx[2][3];
             tmp = pos;
             PSVECSubtract(&tmp, &area[i].prev, &area[i].diff);
             area[i].prev = tmp;
@@ -743,7 +743,7 @@ static USER_FUNC(mario_chk) {
         }
         if (hitIsGroup(mario->hitobjStandOn, hit5) != 0) {
             up = vec3_aji_0001437c;
-            mtxGetRotationElement(hit5->mapObj->unkAC, rot, 0x78, 0x79);
+            mtxGetRotationElement(hit5->mapObj->userMtx, rot, 0x78, 0x79);
             PSMTXMultVec(rot, &up, &up);
             angle = angleABf(0.0f, 0.0f, up.x, up.y);
             diff = angle - event->userdataf[1];

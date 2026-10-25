@@ -243,7 +243,7 @@ void iconEntry(const char* name, u16 iconId) {
         entry->flags = entry->flags | 0x2000;
     }
     entry->flags = entry->flags | 1;
-    if (mapGetWork()->entries[0].flags & 2) {
+    if (mapGetWork()->entries[0].flags & MAPENTRY_FLAG_BLEND) {
         if (!strncmp(gp->currentMapName, "aji", 3) && evtGetValue(0, GSW(0)) == 0x178) {
             entry->flags = entry->flags & ~0x40;
         } else {
@@ -669,7 +669,7 @@ void iconGX(Mtx mtx, IconEntry* entry) {
         GXSetTevColorIn(1, 0xF, 2, 0, 0xF);
         GXSetTevAlphaIn(1, 7, 1, 0, 7);
         if (!(entry->flags & 0x10) && !(entry->flags & 0x40) && !(entry->flags & 0x80) &&
-            (mapGetWork()->entries[0].flags & 2)) {
+            (mapGetWork()->entries[0].flags & MAPENTRY_FLAG_BLEND)) {
             GXColor blend;
 
             mapGetBlend(&blend);

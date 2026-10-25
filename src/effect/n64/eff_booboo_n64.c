@@ -1025,7 +1025,7 @@ BOOL texture_dl(EffectEntry* effect, s32 index, u32 tex) {
 		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
 		break;
 	}
-	if ((mapGetWork()->entries[0].flags & 2) && (data->flags[index] & 8)) {
+	if ((mapGetWork()->entries[0].flags & MAPENTRY_FLAG_BLEND) && (data->flags[index] & 8)) {
 		mapGetBlend(&blend);
 		if (blend.r == 0 && blend.g == 0 && blend.b == 0) {
 			return TRUE;

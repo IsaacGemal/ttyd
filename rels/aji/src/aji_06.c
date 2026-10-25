@@ -448,8 +448,8 @@ USER_FUNC(yuka_anim_reverse_play) {
         yuka_anim[1] = 0;
         ((MapEntryAnimData*)yuka_anim[0])->startTime =
             OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
-        ((MapEntryAnimData*)yuka_anim[0])->flags |= 0x10;
-        ((MapEntryAnimData*)yuka_anim[0])->flags &= ~0x20;
+        ((MapEntryAnimData*)yuka_anim[0])->flags |= MAPANIM_FLAG_PAUSE;
+        ((MapEntryAnimData*)yuka_anim[0])->flags &= ~MAPANIM_FLAG_RESTART;
     }
     if (yuka_anim[1] & 2) {
         return EVT_RETURN_DONE;

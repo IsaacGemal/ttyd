@@ -315,7 +315,7 @@ void hitMain(void) {
             MapAnimTableEntry* list = anim->data;
             MapAnimJointList* childList = list->jointTracks;
 
-            if ((animFlags & 1) && !((animFlags & 2) && (animFlags & 0x1000)) && childList != NULL) {
+            if ((animFlags & MAPANIM_FLAG_ACTIVE) && !((animFlags & MAPANIM_FLAG_DONE) && (animFlags & MAPANIM_FLAG_HIT_UPDATED)) && childList != NULL) {
                 for (k = 0; k < childList->count; k++) {
 #ifdef MUST_MATCH
                     found = hitFindElem(childList->entries[k]);
@@ -327,7 +327,7 @@ void hitMain(void) {
                         anyScale = 1;
                         found->flags |= HIT_FLAG_ANIMATED;
                         found->flags |= HIT_FLAG_MTX_DIRTY;
-                        anim->flags |= 0x1000;
+                        anim->flags |= MAPANIM_FLAG_HIT_UPDATED;
                     }
                 }
             }
@@ -494,7 +494,7 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
             PSMTXConcat(mtx, hit->localMtx, hit->worldMtx);
         }
         if (hit->flags & HIT_FLAG_MAPOBJ) {
-            PSMTXConcat(hit->worldMtx, hit->mapObj->unkAC, hit->worldMtx);
+            PSMTXConcat(hit->worldMtx, hit->mapObj->userMtx, hit->worldMtx);
         }
         PSMTXMultVec(hit->worldMtx, &hit->centerLocal, &hit->centerWorld);
         hitCalcVtxPosition(hit);
