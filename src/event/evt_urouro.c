@@ -22,13 +22,11 @@ typedef struct UrouroWork {
     /* 0x04 */ s32 mode;
     /* 0x08 */ s32 timer;
     /* 0x0C */ s32 rotateCount;
-    /* 0x10 */ s32 field_0x10;
-    /* 0x14 */ s32 field_0x14;
-    /* 0x18 */ s32 field_0x18;
-    /* 0x1C */ f32 field_0x1C;
-    /* 0x20 */ f32 field_0x20;
-    /* 0x24 */ f32 field_0x24;
-    /* 0x28 */ f32 field_0x28;
+    /* 0x10 */ s32 walkTime;   // mode 0: walk for walkTime/2 + rand(walkTime/2)
+    /* 0x14 */ s32 waitTime;   // mode 2: stand for waitTime/2 + rand(waitTime/2)
+    /* 0x18 */ s32 turnTime;   // mode 3: time between the about-turns while standing
+    /* 0x1C */ Vec center;     // x/z: the point the npc walks back to when farther than radius
+    /* 0x28 */ f32 radius;
 } UrouroWork; // 0x2C
 
 USER_FUNC(urouro_init_func) {
@@ -36,18 +34,18 @@ USER_FUNC(urouro_init_func) {
     NpcEntry* npc;
     UrouroWork* work;
     s32 name;
-    f32 a;
-    f32 b;
-    f32 c;
-    f32 d;
+    f32 centerX;
+    f32 centerZ;
+    f32 radius;
+    f32 moveSpeed;
     s32 flags;
 
     name = evtGetValue(event, args[0]);
     npc = evtNpcNameToPtr(event, (const char*)name);
-    a = evtGetFloat(event, args[1]);
-    b = evtGetFloat(event, args[2]);
-    c = evtGetFloat(event, args[3]);
-    d = evtGetFloat(event, args[4]);
+    centerX = evtGetFloat(event, args[1]);
+    centerZ = evtGetFloat(event, args[2]);
+    radius = evtGetFloat(event, args[3]);
+    moveSpeed = evtGetFloat(event, args[4]);
     flags = evtGetValue(event, args[5]);
 
     event->lwData[10] = (s32)_mapAlloc(sizeof(UrouroWork));
@@ -56,14 +54,14 @@ USER_FUNC(urouro_init_func) {
     work->mode = 0;
     work->timer = 0;
     work->rotateCount = 0;
-    work->field_0x10 = sysMsec2Frame(6000);
-    work->field_0x14 = sysMsec2Frame(9000);
-    work->field_0x18 = sysMsec2Frame(1500);
-    work->field_0x1C = a;
-    work->field_0x20 = npc->position.y;
-    work->field_0x24 = b;
-    work->field_0x28 = c;
-    npc->moveSpeed = d;
+    work->walkTime = sysMsec2Frame(6000);
+    work->waitTime = sysMsec2Frame(9000);
+    work->turnTime = sysMsec2Frame(1500);
+    work->center.x = centerX;
+    work->center.y = npc->position.y;
+    work->center.z = centerZ;
+    work->radius = radius;
+    npc->moveSpeed = moveSpeed;
     npc->flags |= 0x400000;
     return EVT_RETURN_DONE;
 }
@@ -86,7 +84,7 @@ USER_FUNC(urouro_main_func) {
 
     switch (work->mode) {
         case 0:
-            work->timer = work->field_0x10 / 2 + irand(work->field_0x10 / 2 + 1);
+            work->timer = work->walkTime / 2 + irand(work->walkTime / 2 + 1);
             work->timer -= work->timer % 20;
             work->rotateCount = 0;
             npc->direction = reviseAngle(npc->direction + (f32)irand(60) - 30.0f);
@@ -94,14 +92,14 @@ USER_FUNC(urouro_main_func) {
             work->mode = 1;
             break;
         case 1:
-            dist = distABf(npc->position.x, npc->position.z, work->field_0x1C, work->field_0x24);
+            dist = distABf(npc->position.x, npc->position.z, work->center.x, work->center.z);
             if (animPoseGetPeraEnd(npc->poseId)) {
-                if (dist > work->field_0x28) {
+                if (dist > work->radius) {
                     if (!(work->flags & 1)) {
                         work->flags |= 3;
                     }
                     if (work->flags & 2) {
-                        npc->direction = reviseAngle(angleABf(npc->position.x, npc->position.z, work->field_0x1C, work->field_0x24));
+                        npc->direction = reviseAngle(angleABf(npc->position.x, npc->position.z, work->center.x, work->center.z));
                         npc->moveDir = npc->direction;
                         work->flags &= ~2;
                     }
@@ -112,13 +110,13 @@ USER_FUNC(urouro_main_func) {
             if (animPoseGetPeraEnd(npc->poseId) && npc == marioGetTouchNpcPtr()
                 && __fabsf(compAngle(npc->moveDir, mario->directionView)) < 90.0f
                 && __fabsf(compAngle(angleABf(npc->position.x, npc->position.z, mario->position.x, mario->position.z), mario->directionView)) < 90.0f
-                && dist < work->field_0x28) {
+                && dist < work->radius) {
                 npc->direction = reviseAngle(npc->moveDir - 180.0f);
                 npc->moveDir = npc->direction;
                 work->flags &= ~3;
             }
             if (animPoseGetPeraEnd(npc->poseId) && npc->wallHit != NULL) {
-                npc->direction = reviseAngle(angleABf(npc->position.x, npc->position.z, work->field_0x1C, work->field_0x24));
+                npc->direction = reviseAngle(angleABf(npc->position.x, npc->position.z, work->center.x, work->center.z));
                 npc->moveDir = npc->direction;
                 work->flags &= ~3;
             }
@@ -160,7 +158,7 @@ USER_FUNC(urouro_main_func) {
             }
             break;
         case 2:
-            work->timer = work->field_0x14 / 2 + irand(work->field_0x14 / 2 + 1);
+            work->timer = work->waitTime / 2 + irand(work->waitTime / 2 + 1);
             npc->direction = reviseAngle(npc->direction + (f32)irand(60) - 30.0f);
             npc->moveDir = npc->direction;
             work->rotateCount = 0;
@@ -172,7 +170,7 @@ USER_FUNC(urouro_main_func) {
         case 3:
             work->timer--;
             if (work->timer == 0) {
-                work->timer = work->field_0x18 / 2 + irand(work->field_0x18 / 2 + 1);
+                work->timer = work->turnTime / 2 + irand(work->turnTime / 2 + 1);
                 if (work->rotateCount == 0) {
                     work->mode = 0;
                 } else {

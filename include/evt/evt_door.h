@@ -36,7 +36,7 @@ typedef struct DoorParam {
 typedef struct DoorEntry {
     s32 flags;                    // 0x00 bit 0: npcNames hidden until the door is entered
     s32 type;                     // 0x04 door_position_sub's mode
-    s32 field_0x8;                // 0x08 door_open_se picks the sound by it
+    s32 sfxType;                  // 0x08 door_open_se/door_close_se pick SFX_DOOR_OPEN_*/SHUT_* by it; door_down_se plays nothing for 0
     const char* doorMapObj;       // 0x0C
     const char* closeHit;         // 0x10
     const char* openHit;          // 0x14
@@ -45,7 +45,7 @@ typedef struct DoorEntry {
     const char* insideMapObj;     // 0x20
     const char* insideHit;        // 0x24
     s32* doorEvt;                 // 0x28
-    s32* field_0x2C;              // 0x2C run with door_down_se
+    s32* downEvt;                 // 0x2C when set, spawned each frame of a 0-180 intpl with door_down_se 500 ms in (the door falls)
     s32* houseEvt;                // 0x30 run with house_open_se/house_close_se
     const char** npcNames;        // 0x34
     const char** mobjNames;       // 0x38

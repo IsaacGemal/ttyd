@@ -421,12 +421,12 @@ typedef struct PouchData {
     s16 badges[MAX_BADGES];            // 0x1FA
     s16 equippedBadges[MAX_BADGES];    // 0x38A
     u8 mEmailIds[100];                 // 0x51A
-    u8 field_0x57E[2];                 // 0x57E, alignment?
+    u8 pad_0x57E[0x580 - 0x57E];       // 0x57E
     u32 mEmailReceivedFlags[4];        // 0x580
     u32 mEmailReadFlags[4];            // 0x590
     u8 field_0x5A0[0x10];              // 0x5A0
     s16 mShopPoints;                   // 0x5B0
-    u8 field_0x5B2[2];                 // 0x5B2
+    u8 pad_0x5B2[0x5B4 - 0x5B2];       // 0x5B2
     u32 shopExchangedMask;             // 0x5B4, bit i set once shopPointList[i] has been given
     u8 mMerleeCurseUsesRemaining;      // 0x5B8
     s8 mTurnsUntilMerleeActivation;    // 0x5B9

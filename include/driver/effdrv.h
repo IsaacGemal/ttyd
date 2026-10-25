@@ -43,7 +43,7 @@ typedef struct EffectMayaAnimData {
 
 typedef struct EffectMayaAnim {
     u16 flags;                      // 0x0
-    u8 field_0x2[0x2];              // 0x2
+    u8 pad_0x2[0x4 - 0x2];          // 0x2
     f32 frame;                      // 0x4, (now - startTime) in frames (effCalcMayaAnim), zeroed by effPlayMayaAnim
     OSTime startTime;               // 0x8
     EffectMayaAnimData* animData;   // 0x10

@@ -39,7 +39,7 @@ typedef struct IconBinary {
 
 typedef struct IconEntry {
     u16 flags;        // 0x0
-    u8 field_0x2;     // 0x2
+    u8 pad_0x2[0x4 - 0x2]; // 0x2
     Vec position;     // 0x4
     f32 scale;        // 0x10
     GXColor color;    // 0x14
@@ -51,7 +51,7 @@ typedef struct IconEntry {
     u16 currIcon;     // 0x30, if animated, currently displayed icon (starts at 0)
     u16 tplId;        // 0x32
     u16 frameDelay;   // 0x34
-    u8 field_0x36[2]; // 0x36, padding?
+    u8 pad_0x36[0x38 - 0x36]; // 0x36
 } IconEntry;
 
 typedef struct IconWork {

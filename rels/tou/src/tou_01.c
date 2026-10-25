@@ -186,7 +186,7 @@ static const char* mise_npc[2] = {
 static DoorEntry door_1 = {
     1,                // flags
     2,                // type
-    4,                // field_0x8
+    4,                // sfxType
     "door_2",         // doorMapObj
     "a_door_1_N",     // closeHit
     "a_door_1",       // openHit
@@ -195,7 +195,7 @@ static DoorEntry door_1 = {
     "mise_naka",      // insideMapObj
     "a_mise_naka",    // insideHit
     evt_door,         // doorEvt
-    evt_door2,        // field_0x2C
+    evt_door2,        // downEvt
     evt_wall,         // houseEvt
     mise_npc,         // npcNames
     NULL,             // mobjNames
@@ -290,7 +290,7 @@ EVT_END()
 static DoorEntry door_2 = {
     3,                // flags
     2,                // type
-    4,                // field_0x8
+    4,                // sfxType
     "door_3",         // doorMapObj
     "a_door_2_N",     // closeHit
     "a_door_2",       // openHit
@@ -299,7 +299,7 @@ static DoorEntry door_2 = {
     "sakaba_naka",    // insideMapObj
     "a_sakaba_naka",  // insideHit
     evt_door_2,       // doorEvt
-    evt_door2_2,      // field_0x2C
+    evt_door2_2,      // downEvt
     evt_wall2,        // houseEvt
     sakaba_npc,       // npcNames
     NULL,             // mobjNames

@@ -17,7 +17,7 @@ typedef struct PartyCloud {
     s32 useTimer; //0x30, frames left in an event-driven use (cloud_use)
     s32 sfxId; //0x34, sound handle, 0xFFFFFFFF when none
     s16 mode; //0x38, cycles 0/1/2 per frame: hit-ray height 8/20/40 above Mario (getHitBreatheout2)
-    u8 field_0x3A[0x48 - 0x3A]; // 0x3A
+    u8 pad_0x3A[0x48 - 0x3A]; // 0x3A
 } PartyCloud;
 
 void cloudGetAt(Vec* position);

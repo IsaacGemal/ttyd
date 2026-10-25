@@ -11,9 +11,9 @@ typedef struct BadgeShopWork {
 	u8 bteresa_table[0x55]; //0xA0, Pianta Parlor
 	u8 align[3];
 	s32 bargainTable[5]; //0xF8, badgeShop_getBargainTable returns it
-	int field_0x10C; //0x10C
+	int bargainCount; //0x10C, bargainTable slots filled by badgeShop_bargainGeneration; badgeShop_ThrowCheck loops to it
 	u32 field_0x110; //0x110
-	u16 field_0x114; //0x114
+	u16 flags; //0x114, 0x1: regenerate the bargain and bottakuru tables on the next entry to gor_01 (seq_mapchange)
 	u16 field_0x116; //0x116
 	u32 field_0x118; //0x118
 	u32 field_0x11C; //0x11C

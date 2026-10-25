@@ -1995,12 +1995,12 @@ USER_FUNC(evt_koopa_fire) {
     switch (event->userdata[0]) {
     case 0:
         if (--event->userdata[2] != 0) {
-            mario->koopaWork->field_0x144 = 1;
+            mario->koopaWork->evtFireHold = 1;
             return EVT_RETURN_BLOCK;
         }
         break;
     }
-    mario->koopaWork->field_0x144 = 0;
+    mario->koopaWork->evtFireHold = 0;
     return EVT_RETURN_YIELD;
 }
 

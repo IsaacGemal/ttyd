@@ -13,9 +13,9 @@ typedef struct BeroEntry {
 	u16 kinddirArg1; //0x4
 	u16 kinddirArg2; //0x6
 	s32 kinddirArg3; //0x8
-	s32 field_0xC; //0xC
-	s32 unknown1; //0x10
-	s32 unknown2; //0x14
+	s32 posX; //0xC, start position for bero_get_position_normal (through lwData[6]); 100000 there takes the hit's position
+	s32 posY; //0x10
+	s32 posZ; //0x14
 	s32 length; //0x18
 	s32* enterEvent; //0x1C;
 	s32 field_0x20; //0x20

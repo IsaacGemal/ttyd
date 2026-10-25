@@ -99,7 +99,7 @@ USER_FUNC(evt_light_bind_mapobj) {
 	if (isFirstCall) {
 		pos = (Vec){0.0f, 0.0f, 0.0f};
 		PSMTXMultVec(mapObj->modelWorldMtx, &pos, &pos);
-		PSVECSubtract(&light->field_0x3C, &pos, &pos);
+		PSVECSubtract(&light->basePosition, &pos, &pos);
 		event->userdataf[0] = pos.x;
 		event->userdataf[1] = pos.y;
 		event->userdataf[2] = pos.z;

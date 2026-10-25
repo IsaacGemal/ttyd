@@ -1106,8 +1106,8 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
 
     switch (type) {
     case 0:
-        PSMTXRotRad(mtx, 'Y', 0.017453292f * wp->field_0x80);
-        PSMTXRotRad(rotA, 'Z', 0.017453292f * -wp->field_0x84);
+        PSMTXRotRad(mtx, 'Y', 0.017453292f * wp->dirYaw);
+        PSMTXRotRad(rotA, 'Z', 0.017453292f * -wp->dirPitch);
         PSMTXConcat(mtx, rotA, mtx);
         PSMTXInvXpose(mtx, mtx);
         PSVECNormalize((Vec*)&mtx[0], (Vec*)&mtx[0]);
@@ -1126,7 +1126,7 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
         PSVECNormalize((Vec*)&mtx[0], (Vec*)&mtx[0]);
         PSVECNormalize((Vec*)&mtx[1], (Vec*)&mtx[1]);
         PSVECNormalize((Vec*)&mtx[2], (Vec*)&mtx[2]);
-        PSMTXScale(scaleB, 0.5f - 0.25f * wp->field_0x7C, 0.5f, 1.0f);
+        PSMTXScale(scaleB, 0.5f - 0.25f * wp->texMtxScale, 0.5f, 1.0f);
         PSMTXConcat(scaleB, mtx, mtx);
         PSMTXTrans(scaleB, 0.5f, 0.5f, 0.0f);
         PSMTXConcat(scaleB, mtx, mtx);
@@ -1134,8 +1134,8 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
         break;
     case 2: {
         f32 tmp;
-        f32 angX = 3.1415927f * wp->field_0x80 / 180.0f;
-        f32 angY = 3.1415927f * wp->field_0x84 / 180.0f;
+        f32 angX = 3.1415927f * wp->dirYaw / 180.0f;
+        f32 angY = 3.1415927f * wp->dirPitch / 180.0f;
         f32 scale;
 #ifdef MUST_MATCH
         // a named temp for cos(angY) makes f0 the multiply accumulator, matching the target's operand order
@@ -1168,7 +1168,7 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
         mtxB[0][1] = vecC.y;
         mtxB[0][2] = vecC.z;
         PSMTXConcat(mtxB, mtx, mtx);
-        scale = 20.0f * wp->field_0x7C;
+        scale = 20.0f * wp->texMtxScale;
         PSMTXScale(mtxB, scale, 1.0f, 1.0f);
         PSMTXConcat(mtxB, mtx, mtx);
         PSMTXTrans(mtxB, 1.0f - scale, 0.0f, 0.0f);
@@ -1177,8 +1177,8 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
         break;
     }
     case 3: {
-        f32 angX = 3.1415927f * wp->field_0x80 / 180.0f;
-        f32 angY = 3.1415927f * wp->field_0x84 / 180.0f;
+        f32 angX = 3.1415927f * wp->dirYaw / 180.0f;
+        f32 angY = 3.1415927f * wp->dirPitch / 180.0f;
         f32 tmp;
 
         vecG = data->vec34;
@@ -1206,7 +1206,7 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
                 PSMTXRotAxisRad(rotC, &vecF, (f32)acos(PSVECDotProduct(&vecG, &vecE)));
             }
             PSMTXConcat(rotC, invC, mtx);
-            angX = 2.0f * wp->field_0x7C;
+            angX = 2.0f * wp->texMtxScale;
             PSMTXScale(rotC, angX, angX, 1.0f);
             PSMTXConcat(rotC, mtx, mtx);
             PSMTXTrans(rotC, 0.5f, 0.5f, 0.0f);
@@ -1330,9 +1330,9 @@ void envAddTev(s32 type, void* param) {
         case 1:
             GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ZERO);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            wp->field_0x80 = 10.0f;
-            wp->field_0x84 = (f32)(gp->retraceCount + 45);
-            wp->field_0x7C = 0.5f;
+            wp->dirYaw = 10.0f;
+            wp->dirPitch = (f32)(gp->retraceCount + 45);
+            wp->texMtxScale = 0.5f;
             envLoadTevTexture(6, texMap, &texObj1, &tlut1);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1343,9 +1343,9 @@ void envAddTev(s32 type, void* param) {
         case 2:
             GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXA);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            wp->field_0x80 = 10.0f;
-            wp->field_0x84 = (f32)(gp->retraceCount + 45);
-            wp->field_0x7C = 0.5f;
+            wp->dirYaw = 10.0f;
+            wp->dirPitch = (f32)(gp->retraceCount + 45);
+            wp->texMtxScale = 0.5f;
             envLoadTevTexture(8, texMap, &texObj2, &tlut2);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1356,7 +1356,7 @@ void envAddTev(s32 type, void* param) {
         case 3:
             GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_TEXC, GX_CC_ZERO);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            wp->field_0x7C = 0.5f;
+            wp->texMtxScale = 0.5f;
             envLoadTevTexture(0, texMap, &texObj3, &tlut3);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(1, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1367,9 +1367,9 @@ void envAddTev(s32 type, void* param) {
         case 4:
             GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            wp->field_0x7C = 0.5f;
-            wp->field_0x80 = 45.0f;
-            wp->field_0x84 = 45.0f;
+            wp->texMtxScale = 0.5f;
+            wp->dirYaw = 45.0f;
+            wp->dirPitch = 45.0f;
             envLoadTevTexture(1, texMap, &texObj4, &tlut4);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(2, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1380,9 +1380,9 @@ void envAddTev(s32 type, void* param) {
         case 5:
             GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            wp->field_0x7C = 0.5f;
-            wp->field_0x80 = 45.0f;
-            wp->field_0x84 = 45.0f;
+            wp->texMtxScale = 0.5f;
+            wp->dirYaw = 45.0f;
+            wp->dirPitch = 45.0f;
             envLoadTevTexture(2, texMap, &texObj5, &tlut5);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(3, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1393,9 +1393,9 @@ void envAddTev(s32 type, void* param) {
         case 6:
             GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            wp->field_0x7C = 0.15f;
-            wp->field_0x80 = 0.0f;
-            wp->field_0x84 = 90.0f;
+            wp->texMtxScale = 0.15f;
+            wp->dirYaw = 0.0f;
+            wp->dirPitch = 90.0f;
             envLoadTevTexture(4, texMap, &texObj6, &tlut6);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(2, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1406,9 +1406,9 @@ void envAddTev(s32 type, void* param) {
         case 7:
             GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            wp->field_0x7C = 0.3f;
-            wp->field_0x80 = 0.0f;
-            wp->field_0x84 = 90.0f;
+            wp->texMtxScale = 0.3f;
+            wp->dirYaw = 0.0f;
+            wp->dirPitch = 90.0f;
             envLoadTevTexture(5, texMap, &texObj7, &tlut7);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(3, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1419,9 +1419,9 @@ void envAddTev(s32 type, void* param) {
         case 8:
             GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ZERO);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            wp->field_0x7C = 0.5f;
-            wp->field_0x80 = 10.0f;
-            wp->field_0x84 = 45.0f;
+            wp->texMtxScale = 0.5f;
+            wp->dirYaw = 10.0f;
+            wp->dirPitch = 45.0f;
             envLoadTevTexture(10, texMap, &texObj8, &tlut8);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);

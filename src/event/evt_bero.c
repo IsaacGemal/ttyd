@@ -433,7 +433,7 @@ USER_FUNC(evt_bero_get_into_info) {
 			}
 		}
 		event->lwData[5] = kind;
-		event->lwData[6] = (s32)&entry->field_0xC;
+		event->lwData[6] = (s32)&entry->posX;
 		// a pointer temp rather than a ternary gives the original's cmplwi/bne layout
 		{
 			s32* ev = entry->enterEvent;
@@ -488,7 +488,7 @@ USER_FUNC(evt_bero_get_into_info) {
 			}
 		}
 		event->lwData[5] = kind;
-		event->lwData[6] = (s32)&entry->field_0xC;
+		event->lwData[6] = (s32)&entry->posX;
 		// a pointer temp rather than a ternary gives the original's cmplwi/bne layout
 		{
 			s32* ev = entry->enterEvent;
@@ -599,7 +599,7 @@ USER_FUNC(evt_bero_get_info_num) {
 	}
 	}
 	event->lwData[5] = kind;
-	event->lwData[6] = (s32)&entry->field_0xC;
+	event->lwData[6] = (s32)&entry->posX;
 	// a pointer temp rather than a ternary gives the original's cmplwi/bne layout
 	{
 		s32* ev = entry->enterEvent;

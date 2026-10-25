@@ -115,7 +115,7 @@ void badgeShop_init(void) {
 	memset(bdsw->starmaniac_table, 0, sizeof(bdsw->starmaniac_table));
 	memset(bdsw->bottakuru_table, 0, sizeof(bdsw->bottakuru_table));
 	memset(bdsw->bteresa_table, 0, sizeof(bdsw->bteresa_table));
-	bdsw->field_0x114 = 1;
+	bdsw->flags = 1;
 
 	for (ptr = badge_special_table; *ptr; ++ptr) {
 		badgeShop_add(bdsw->special_table, *ptr, 1);
@@ -289,7 +289,7 @@ void badgeShop_bargainGeneration(void) {
 	// Copy the special table into a scratch bitmap, then pull up to five distinct
 	// badges out of it into bargainTable (the bargain slots).
 	memset(remaining, 0, sizeof(remaining));
-	bdsw->field_0x110 = bdsw->field_0x10C = bdsw->bargainTable[4] = bdsw->bargainTable[3] =
+	bdsw->field_0x110 = bdsw->bargainCount = bdsw->bargainTable[4] = bdsw->bargainTable[3] =
 		bdsw->bargainTable[2] = bdsw->bargainTable[1] = bdsw->bargainTable[0] = i = 0;
 
 	bit2Count = 0;
@@ -312,8 +312,8 @@ void badgeShop_bargainGeneration(void) {
 		pickTarget = count2; //less than 5 needed
 	}
 	irand(0x100); //unused
-	while ((s32)(bdsw->field_0x10C + bdsw->field_0x110) < pickTarget) {
-		if (bdsw->field_0x10C < 3 || !bit2Count) {
+	while ((s32)(bdsw->bargainCount + bdsw->field_0x110) < pickTarget) {
+		if (bdsw->bargainCount < 3 || !bit2Count) {
 			pickIndex = irand(totalBadges);
 			presentIndex = 0;
 			for (i = 0; i < 99; i++) {
@@ -326,8 +326,8 @@ void badgeShop_bargainGeneration(void) {
 				}
 			}
 			if (i < 99) {
-				bdsw->bargainTable[bdsw->field_0x10C] = i + BADGE_MIN;
-				bdsw->field_0x10C++;
+				bdsw->bargainTable[bdsw->bargainCount] = i + BADGE_MIN;
+				bdsw->bargainCount++;
 				badgeShop_set(remaining, (s16)(i + BADGE_MIN), 0);
 				if (badge & 1) {
 					totalBadges--;
@@ -614,8 +614,8 @@ s32 badgeShop_ThrowCheck(s32 itemId) {
 	int i;
 	s32 count;
 
-	for (count = 0, i = 0; i < bdsw->field_0x10C; i++) {
-		if (itemId == bdsw->bargainTable[i + bdsw->field_0x10C]) {
+	for (count = 0, i = 0; i < bdsw->bargainCount; i++) {
+		if (itemId == bdsw->bargainTable[i + bdsw->bargainCount]) {
 			count++;
 		}
 	}

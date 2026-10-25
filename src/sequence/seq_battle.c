@@ -92,7 +92,7 @@ void seq_battleMain(SequenceWork* work) {
         case 0:
             fadeEntry(0x16, 0x3E8, (GXColor){ 0, 0, 0, 0xFF });
             work->state++;
-            work->field_0x10 = 0;
+            work->frameCount = 0;
             break;
 
         case 1:
@@ -102,7 +102,7 @@ void seq_battleMain(SequenceWork* work) {
             if (fileAsyncf(FILE_TYPE_TPL, 0, "%s/%s", getMarioStDvdRoot(), "battle/audience/audience_luigi.tpl") == 0) {
                 break;
             }
-            work->field_0x10++;
+            work->frameCount++;
             if (!fadeIsFinish()) {
                 break;
             }
@@ -188,7 +188,7 @@ void seq_battleMain(SequenceWork* work) {
                 CameraEntry* camera;
 
                 if (battleSeqEndCheck()) {
-                    work->field_0x10 = 0;
+                    work->frameCount = 0;
                     work->state++;
                     if (gp->field_C != 0) {
                         work->state = 0xB;
@@ -208,7 +208,7 @@ void seq_battleMain(SequenceWork* work) {
             break;
 
         case 6:
-            if ((s32)++work->field_0x10 > 0x1E) {
+            if (++work->frameCount > 0x1E) {
                 if ((gp->flags & 0x1000) && (gp->flags & 0x2000)) {
                     seqSetSeq(SEQ_GAME_OVER, (char*)1, 0);
                 } else {

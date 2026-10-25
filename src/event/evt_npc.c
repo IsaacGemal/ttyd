@@ -549,7 +549,7 @@ USER_FUNC(evt_npc_move_position) {
     step = (20.0f * npc->moveSpeed) / 1000.0f;
 
     if (npc->moveTime) {
-        // timed move: field_0x1a0 is elapsed/progress, advanced externally
+        // timed move: moveElapsedSec is elapsed/progress, advanced externally
         if (npc->moveTime <= npc->moveElapsedSec) {
             npc->moveSpeed = 0.0f;
             return EVT_RETURN_DONE;
@@ -2424,7 +2424,7 @@ USER_FUNC(evt_npc_kamek_move_position) {
     step = (20.0f * npc->moveSpeed) / 1000.0f;
 
     if (npc->moveTime) {
-        // timed move: field_0x1a0 is elapsed/progress, advanced externally
+        // timed move: moveElapsedSec is elapsed/progress, advanced externally
         if (npc->moveTime <= npc->moveElapsedSec) {
             npc->prevPosition = npc->jumpTargetPos;
             npc->position = npc->prevPosition;
