@@ -2212,29 +2212,29 @@ static s32 get_monte_check(Vec* a, Vec* b) {
 
 typedef struct MonteField8 {
     f32 field_0x0;       // 0x0
-    Vec field_0x4;       // 0x4
+    Vec pos;             // 0x4, iconDispGx/psndSFXOn_3D position, tested against Mario's by get_monte_check
     f32 field_0x10;      // 0x10
     u8 pad_0x14[0x24];   // 0x14
 } MonteField8;           // 0x38
 
 typedef struct Monte {
-    u8 field_0x0;        // 0x0
-    u8 field_0x1;        // 0x1
-    s16 field_0x2;       // 0x2
-    s16 field_0x4;       // 0x4
+    u8 hidden;           // 0x0, monte_disp draws the medal only while 0; set when it is picked up or runs out
+    u8 state;            // 0x1, fall_rtn: 0 wait out delay, 1 fall and bounce, 2 lie for lifeTimer, 3 gone
+    s16 delay;           // 0x2, frames state 0 waits before the fall
+    s16 lifeTimer;       // 0x4, 300 on landing, counted down in state 2 (blinks below 60, hidden at 0)
     u8 pad_0x6[0x2];     // 0x6
     MonteField8 field_0x8; // 0x8
-    Vec field_0x40;      // 0x40
-    SlotData* field_0x4C; // 0x4C, set on entry 0 only
+    Vec vel;             // 0x40, added to pos each frame, y pulled down by gravity
+    SlotData* slot;      // 0x4C, set on entry 0 only: the slot game's data; prize is the medal count
 } Monte;
 
 static void monte_disp(CameraId cameraId, void* param) {
     Monte* p = param;
     s32 i;
 
-    for (i = 0; i < p->field_0x4C->prize; i++) {
-        if (p[i].field_0x0 == 0) {
-            iconDispGx(1.0f, &p[i].field_0x8.field_0x4, 0x40, 0x13f);
+    for (i = 0; i < p->slot->prize; i++) {
+        if (p[i].hidden == 0) {
+            iconDispGx(1.0f, &p[i].field_0x8.pos, 0x40, 0x13f);
         }
     }
 }
@@ -2255,18 +2255,18 @@ static USER_FUNC(fall_rtn) {
         SlotData* data = ((GoryuugijoWork*)event->lwData[0])->data;
         monte_p[0] = _mapAlloc(data->prize * 0x50);
         memset(monte_p[0], 0, data->prize * 0x50);
-        monte_p[0]->field_0x4C = data;
+        monte_p[0]->slot = data;
 
-        for (i = 0; i < monte_p[0]->field_0x4C->prize; i++) {
+        for (i = 0; i < monte_p[0]->slot->prize; i++) {
             MonteField8* e = &monte_p[0][i].field_0x8;
             f32 spd;
 
             Vec pos = {-113.0f, 70.0f, 0.0f};
-            pos.z = montemedalzpos[monte_p[0]->field_0x4C->now];
-            e->field_0x4 = pos;
+            pos.z = montemedalzpos[monte_p[0]->slot->now];
+            e->pos = pos;
 
             f23 = (2.0f * (f32)(i & 1) - 1.0f) * ((f32)(rand() % 101) / 10.0f);
-            e->field_0x4.z += f23;
+            e->pos.z += f23;
             e->field_0x10 = 1.0f;
 
             spd = 2.0f + (f32)(rand() % 300) / 100.0f;
@@ -2277,14 +2277,14 @@ static USER_FUNC(fall_rtn) {
                 Vec vel = {0.0f, 10.0f, 0.0f};
                 vel.x = moveX;
                 vel.z = moveZ;
-                monte_p[0][i].field_0x40 = vel;
+                monte_p[0][i].vel = vel;
             }
 
-            monte_p[0][i].field_0x2 = ((rand() % 700) + 100) * 60 / 1000;
+            monte_p[0][i].delay = ((rand() % 700) + 100) * 60 / 1000;
         }
     }
 
-    for (j = 0; j < monte_p[0]->field_0x4C->prize; j++) {
+    for (j = 0; j < monte_p[0]->slot->prize; j++) {
         Monte* e = monte_p[0] + j;
 #ifdef MUST_MATCH
         // match-only: folding each literal through a comma makes MWCC materialise its address
@@ -2298,64 +2298,64 @@ static USER_FUNC(fall_rtn) {
         const char* sfx_count2 = "SFX_EVT_GAME_MONTE_COUNT1";
 #endif
 
-        switch (e->field_0x1) {
+        switch (e->state) {
         case 0:
-            if (e->field_0x2 != 0) {
-                e->field_0x2--;
+            if (e->delay != 0) {
+                e->delay--;
             } else {
-                e->field_0x1++;
+                e->state++;
             }
             break;
         case 1:
-            PSVECAdd(&e->field_0x8.field_0x4, &e->field_0x40, &e->field_0x8.field_0x4);
-            e->field_0x40.y -= 0.81666666f;
-            if (e->field_0x8.field_0x4.y <= 0.0f) {
-                e->field_0x8.field_0x4.y = 0.0f;
-                psndSFXOn_3D(sfx_leap, &e->field_0x8.field_0x4);
-                if (__fabsf(e->field_0x40.y) <= 4.0) {
-                    e->field_0x1++;
-                    e->field_0x4 = 300;
+            PSVECAdd(&e->field_0x8.pos, &e->vel, &e->field_0x8.pos);
+            e->vel.y -= 0.81666666f;
+            if (e->field_0x8.pos.y <= 0.0f) {
+                e->field_0x8.pos.y = 0.0f;
+                psndSFXOn_3D(sfx_leap, &e->field_0x8.pos);
+                if (__fabsf(e->vel.y) <= 4.0) {
+                    e->state++;
+                    e->lifeTimer = 300;
                 } else {
                     f32 scale;
                     scale = 0.5f + (f32)(rand() % 21) / 100.0f;
-                    e->field_0x40.y *= -scale;
-                    e->field_0x40.x = 0.0f;
-                    e->field_0x40.z = 0.0f;
+                    e->vel.y *= -scale;
+                    e->vel.x = 0.0f;
+                    e->vel.z = 0.0f;
                 }
             }
 
-            if (get_monte_check(&e->field_0x8.field_0x4, &marioGetPtr()->position) == 1) {
-                psndSFXOn_3D(sfx_count, &e->field_0x8.field_0x4);
+            if (get_monte_check(&e->field_0x8.pos, &marioGetPtr()->position) == 1) {
+                psndSFXOn_3D(sfx_count, &e->field_0x8.pos);
                 if (yuwp->tokens < 0x1869f) {
                     yuwp->tokens++;
                 }
-                e->field_0x0 = 1;
-                e->field_0x1 = 3;
+                e->hidden = 1;
+                e->state = 3;
             }
             break;
         case 2:
-            e->field_0x4--;
-            if (e->field_0x4 == 0) {
-                e->field_0x0 = 1;
-                e->field_0x1++;
+            e->lifeTimer--;
+            if (e->lifeTimer == 0) {
+                e->hidden = 1;
+                e->state++;
             }
-            if (e->field_0x4 < 0x3c) {
-                if (e->field_0x4 & 2) {
-                    e->field_0x8.field_0x4.y = 0.0f;
+            if (e->lifeTimer < 0x3c) {
+                if (e->lifeTimer & 2) {
+                    e->field_0x8.pos.y = 0.0f;
                 } else {
-                    e->field_0x8.field_0x4.y = -1000.0f;
+                    e->field_0x8.pos.y = -1000.0f;
                 }
             }
 
-            tmp = e->field_0x8.field_0x4;
+            tmp = e->field_0x8.pos;
             tmp.y = 0.0f;
             if (get_monte_check(&tmp, &marioGetPtr()->position) == 1) {
-                psndSFXOn_3D(sfx_count2, &e->field_0x8.field_0x4);
+                psndSFXOn_3D(sfx_count2, &e->field_0x8.pos);
                 if (yuwp->tokens < 0x1869f) {
                     yuwp->tokens++;
                 }
-                e->field_0x0 = 1;
-                e->field_0x1 = 3;
+                e->hidden = 1;
+                e->state = 3;
             }
             break;
         case 3:
@@ -2364,13 +2364,13 @@ static USER_FUNC(fall_rtn) {
         }
     }
 
-    if (alive < monte_p[0]->field_0x4C->prize) {
+    if (alive < monte_p[0]->slot->prize) {
         dispEntry(4, 0.0f, 1, monte_disp, monte_p[0]);
         return 0;
     }
 
-    monte_p[0]->field_0x4C->prize = 0;
-    monte_p[0]->field_0x4C->fallEvt = NULL;
+    monte_p[0]->slot->prize = 0;
+    monte_p[0]->slot->fallEvt = NULL;
     _mapFree(monte_p[0]);
     return 2;
 }
@@ -5468,7 +5468,7 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
     {
         if (data->fallEvt != NULL) {
             Monte* p = monte_p[0];
-            p->field_0x4C->prize = 0;
+            p->slot->prize = 0;
             _mapFree(monte_p[0]);
             evtDeleteID(data->fallEvt->eventId);
             data->fallEvt = NULL;

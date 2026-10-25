@@ -44,11 +44,11 @@ USER_FUNC(evt_goryuugijo_main_func) {
         work->flags |= 2;
         return 2;
     }
-    if (work->field_0x04 != NULL) {
-        if (evtCheckID(work->field_0x04->eventId)) {
+    if (work->waitEvent != NULL) {
+        if (evtCheckID(work->waitEvent->eventId)) {
             goto disp; // a running child event skips main(); a structured form repeats the call or the test
         }
-        work->field_0x04 = NULL;
+        work->waitEvent = NULL;
     }
     work->main(event, isFirstCall);
 disp:
@@ -73,7 +73,7 @@ USER_FUNC(evt_goryuugijo_alloc) {
     work->mode = mode;
     work->entry = evtEntry(main_evt, 0, 0);
     work->entry->lwData[0] = (s32)work;
-    work->field_0x04 = NULL;
+    work->waitEvent = NULL;
     switch (work->mode) {
     case 0:
         work->init = goryuugijo_init_montemedal;

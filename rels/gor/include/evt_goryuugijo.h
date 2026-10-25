@@ -5,7 +5,7 @@
 
 typedef struct GoryuugijoWork {
     EventEntry* entry;      // 0x00
-    EventEntry* field_0x04; // 0x04
+    EventEntry* waitEvent;  // 0x04, evt_goryuugijo_main_func skips main() while this event runs (nothing in gor sets it)
     u16 flags;              // 0x08
     u16 pad_0A;             // 0x0A
     s32 mode;               // 0x0C
