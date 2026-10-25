@@ -1717,7 +1717,7 @@ static s32 barriernSatelliteTo_Init(BattleUnit* unit, s32 index, u32* table) {
     unit->work[10 + index] = (s32)work;
     work->type = 5;
     work->points = (Vec*)table;
-    work->field_58 = 0;
+    work->frame = 0;
     spline_maketable(5, work->points, work->knots, work->tangents);
     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]), 1)->work[2] = (s32)table;
     return 1;
@@ -1737,14 +1737,14 @@ static s32 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     if (work == NULL) {
         return 0;
     }
-    if (work->field_58 >= 0x3c) {
+    if (work->frame >= 0x3c) {
         if (work != NULL) {
             __memFree(4, work);
             unit->work[10 + index] = 0;
         }
         return 0;
     }
-    t = intplGetValue(4, work->field_58, 0x3c, 0.0f, 1.0f);
+    t = intplGetValue(4, work->frame, 0x3c, 0.0f, 1.0f);
     spline_getvalue(out, work->type, work->points, work->knots, work->tangents, t);
     satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]);
     if (satellite == NULL) {
@@ -1753,7 +1753,7 @@ static s32 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
     BtlUnit_SetPos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
     BtlUnit_SetHomePos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
-    work->field_58++;
+    work->frame++;
     return 1;
 }
 
@@ -1772,14 +1772,14 @@ static inline u8 barriernSatelliteTo_MainI(BattleUnit* unit, s32 index) {
     if (work == NULL) {
         return 0;
     }
-    if (work->field_58 >= 0x3c) {
+    if (work->frame >= 0x3c) {
         if (work != NULL) {
             __memFree(4, work);
             unit->work[10 + index] = 0;
         }
         return 0;
     }
-    t = intplGetValue(4, work->field_58, 0x3c, 0.0f, 1.0f);
+    t = intplGetValue(4, work->frame, 0x3c, 0.0f, 1.0f);
     spline_getvalue(out, work->type, work->points, work->knots, work->tangents, t);
     satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]);
     if (satellite == NULL) {
@@ -1788,7 +1788,7 @@ static inline u8 barriernSatelliteTo_MainI(BattleUnit* unit, s32 index) {
     BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
     BtlUnit_SetPos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
     BtlUnit_SetHomePos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
-    work->field_58++;
+    work->frame++;
     return 1;
 }
 
@@ -1819,7 +1819,7 @@ static USER_FUNC(barriernSatelliteToInside) {
                     unit->work[10 + i] = (s32)work;
                     work->type = 5;
                     work->points = (Vec*)splineTableIn1_1;
-                    work->field_58 = 0;
+                    work->frame = 0;
                     spline_maketable(5, work->points, work->knots, work->tangents);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn1_1;
                 }
@@ -1830,7 +1830,7 @@ static USER_FUNC(barriernSatelliteToInside) {
                     unit->work[10 + i] = (s32)work;
                     work->type = 5;
                     work->points = (Vec*)splineTableIn2_1;
-                    work->field_58 = 0;
+                    work->frame = 0;
                     spline_maketable(5, work->points, work->knots, work->tangents);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn2_1;
                 }
@@ -1841,7 +1841,7 @@ static USER_FUNC(barriernSatelliteToInside) {
                     unit->work[10 + i] = (s32)work;
                     work->type = 5;
                     work->points = (Vec*)splineTableIn2_2;
-                    work->field_58 = 0;
+                    work->frame = 0;
                     spline_maketable(5, work->points, work->knots, work->tangents);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn2_2;
                 }
@@ -1852,7 +1852,7 @@ static USER_FUNC(barriernSatelliteToInside) {
                     unit->work[10 + i] = (s32)work;
                     work->type = 5;
                     work->points = (Vec*)splineTableIn3_1;
-                    work->field_58 = 0;
+                    work->frame = 0;
                     spline_maketable(5, work->points, work->knots, work->tangents);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_1;
                 }
@@ -1863,7 +1863,7 @@ static USER_FUNC(barriernSatelliteToInside) {
                     unit->work[10 + i] = (s32)work;
                     work->type = 5;
                     work->points = (Vec*)splineTableIn3_2;
-                    work->field_58 = 0;
+                    work->frame = 0;
                     spline_maketable(5, work->points, work->knots, work->tangents);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_2;
                 }
@@ -1874,7 +1874,7 @@ static USER_FUNC(barriernSatelliteToInside) {
                     unit->work[10 + i] = (s32)work;
                     work->type = 5;
                     work->points = (Vec*)splineTableIn3_3;
-                    work->field_58 = 0;
+                    work->frame = 0;
                     spline_maketable(5, work->points, work->knots, work->tangents);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_3;
                 }
@@ -1885,7 +1885,7 @@ static USER_FUNC(barriernSatelliteToInside) {
                     unit->work[10 + i] = (s32)work;
                     work->type = 5;
                     work->points = (Vec*)splineTableIn4_1;
-                    work->field_58 = 0;
+                    work->frame = 0;
                     spline_maketable(5, work->points, work->knots, work->tangents);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_1;
                 }
@@ -1896,7 +1896,7 @@ static USER_FUNC(barriernSatelliteToInside) {
                     unit->work[10 + i] = (s32)work;
                     work->type = 5;
                     work->points = (Vec*)splineTableIn4_2;
-                    work->field_58 = 0;
+                    work->frame = 0;
                     spline_maketable(5, work->points, work->knots, work->tangents);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_2;
                 }
@@ -1907,7 +1907,7 @@ static USER_FUNC(barriernSatelliteToInside) {
                     unit->work[10 + i] = (s32)work;
                     work->type = 5;
                     work->points = (Vec*)splineTableIn4_3;
-                    work->field_58 = 0;
+                    work->frame = 0;
                     spline_maketable(5, work->points, work->knots, work->tangents);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_3;
                 }
@@ -1918,7 +1918,7 @@ static USER_FUNC(barriernSatelliteToInside) {
                     unit->work[10 + i] = (s32)work;
                     work->type = 5;
                     work->points = (Vec*)splineTableIn4_4;
-                    work->field_58 = 0;
+                    work->frame = 0;
                     spline_maketable(5, work->points, work->knots, work->tangents);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_4;
                 }
@@ -1944,7 +1944,7 @@ static inline u8 barriernSatelliteTo_InitInline(BattleUnit* unit, s32 index, u32
     unit->work[10 + index] = (s32)work;
     work->type = 5;
     work->points = (Vec*)table;
-    work->field_58 = 0;
+    work->frame = 0;
     spline_maketable(5, work->points, work->knots, work->tangents);
     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]), 1)->work[2] = (s32)table;
     return 1;
@@ -1965,14 +1965,14 @@ static inline u8 barriernSatelliteTo_MainInline(BattleUnit* unit, s32 index) {
     if (work == NULL) {
         return 0;
     }
-    if (work->field_58 >= 0x3c) {
+    if (work->frame >= 0x3c) {
         if (work != NULL) {
             __memFree(4, work);
             unit->work[10 + index] = 0;
         }
         return 0;
     }
-    t = intplGetValue(4, work->field_58, 0x3c, 0.0f, 1.0f);
+    t = intplGetValue(4, work->frame, 0x3c, 0.0f, 1.0f);
     spline_getvalue(out, work->type, work->points, work->knots, work->tangents, t);
     satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]);
     if (satellite == NULL) {
@@ -1981,7 +1981,7 @@ static inline u8 barriernSatelliteTo_MainInline(BattleUnit* unit, s32 index) {
     BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
     BtlUnit_SetPos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
     BtlUnit_SetHomePos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
-    work->field_58++;
+    work->frame++;
     return 1;
 }
 
@@ -2181,7 +2181,7 @@ static USER_FUNC(_check_satellite) {
     f32 z;
     s32 i;
     s32 hasSat;
-    BarriernSatelliteToData* data;
+    EffSyuryouData* data;
 
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -2237,9 +2237,9 @@ static USER_FUNC(_check_satellite) {
         if (unit->work[3] != 0) {
             data = ((EffectEntry*)unit->work[3])->userdata;
             BtlUnit_GetPos(unit, &x, &y, &z);
-            data->x = x;
-            data->y = y - 32.0f * unit->mSizeMultiplier * 0.8f;
-            data->z = z + 10.0f;
+            data->position.x = x;
+            data->position.y = y - 32.0f * unit->mSizeMultiplier * 0.8f;
+            data->position.z = z + 10.0f;
             data->scale = 1.8f * (0.8f * unit->mSizeMultiplier);
         }
     }
