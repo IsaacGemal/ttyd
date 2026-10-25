@@ -255,12 +255,12 @@ s32 winRootMain(WindowWork* work) {
         work->recs[0].b = 1000.0f;
         work->recs[0].d = 0;
         work->recs[0].a = work->tabs[work->tabSel].id;
-        work->field_0x130 = 0;
-        work->field_0x12C = 1000.0f;
-        work->field_0x128 = 1000.0f;
-        work->field_0x13C = NULL;
-        work->field_0x140 = NULL;
-        work->field_0x144 = NULL;
+        work->msgState = 0;
+        work->msgY = 1000.0f;
+        work->msgX = 1000.0f;
+        work->msgTag = NULL;
+        work->nameTag = NULL;
+        work->lastMsgTag = NULL;
         winMarioInit(work);
         winPartyInit(work);
         winItemInit(work);
@@ -274,10 +274,10 @@ s32 winRootMain(WindowWork* work) {
         }
         work->posY = 300.0f;
         work->targetY = 185.0f;
-        work->field_0x16C = -1000.0f;
-        work->field_0x164 = -1000.0f;
-        work->field_0x170 = -1000.0f;
-        work->field_0x168 = -1000.0f;
+        work->sortTargetX = -1000.0f;
+        work->sortX = -1000.0f;
+        work->sortTargetY = -1000.0f;
+        work->sortY = -1000.0f;
         str = work->tabs[work->tabSel].str;
         winMsgEntry(work, 0, str, NULL);
         work->rootState = 0xA;
@@ -439,7 +439,7 @@ s32 winRootMain(WindowWork* work) {
         work->recs[2].d = 0xA;
         work->recs[3].d = 0xA;
         work->recs[4].d = 0xA;
-        work->field_0x130 = 0xA;
+        work->msgState = 0xA;
         N_mapDispOn();
         camDispOn(CAMERA_3D);
         work->rootState++;
@@ -457,7 +457,7 @@ s32 winRootMain(WindowWork* work) {
             winItemExit(work);
             winBadgeExit(work);
             winLogExit(work);
-            if (work->field_0x19C != 0 && work->partySel != work->lastPartySel) {
+            if (work->partyChange != 0 && work->partySel != work->lastPartySel) {
                 return -2;
             }
             if (work->useItemId != 0) {
@@ -494,8 +494,8 @@ s32 winRootMain(WindowWork* work) {
     }
     work->posX = (f32)(work->posX +
         __fabs(2.0f * (f32)sin((f32)gp->retraceCount / 8.0f)));
-    work->field_0x164 += (work->field_0x16C - work->field_0x164) / 4.0f;
-    work->field_0x168 += (work->field_0x170 - work->field_0x168) / 4.0f;
+    work->sortX += (work->sortTargetX - work->sortX) / 4.0f;
+    work->sortY += (work->sortTargetY - work->sortY) / 4.0f;
     dispEntry(CAMERA_2D, 1000.0f, 0, (DispCallback)winRootFbDraw, work);
     return 0;
 }
@@ -597,7 +597,7 @@ void winRootDisp(CameraId camId, WindowWork* work) {
     winRootTabDisp(work);
 
     winMailDisp(work);
-    winMsgDisp(work, work->field_0x128, work->field_0x12C);
+    winMsgDisp(work, work->msgX, work->msgY);
     winSortGX(work);
 
     if (!(work->flags & 0x8000)) {
@@ -827,47 +827,47 @@ void winBgGX(WindowWork* work, s32 type, f32 x, f32 y) {
 }
 
 void winMsgMain(WindowWork* work) {
-    switch (work->field_0x130) {
+    switch (work->msgState) {
         case 0:
-            work->field_0x128 = -800.0f;
-            work->field_0x12C = -170.0f;
-            work->field_0x134 = 0;
-            work->field_0x130 = work->field_0x130 + 1;
+            work->msgX = -800.0f;
+            work->msgY = -170.0f;
+            work->msgStep = 0;
+            work->msgState = work->msgState + 1;
             break;
         case 1: {
-            s32 step = work->field_0x134;
-            work->field_0x134 = step + 1;
-            work->field_0x128 = intplGetValue(0xB, step, 0x10, -800.0f, 0.0f);
-            if (work->field_0x134 > 0x10) {
-                work->field_0x130 = work->field_0x130 + 1;
+            s32 step = work->msgStep;
+            work->msgStep = step + 1;
+            work->msgX = intplGetValue(0xB, step, 0x10, -800.0f, 0.0f);
+            if (work->msgStep > 0x10) {
+                work->msgState = work->msgState + 1;
             }
             break;
         }
         case 2:
             if (keyGetDirTrg(0) & 0x100) {
-                work->field_0x148 = work->field_0x148 - 2;
-                if (work->field_0x148 < 0) {
-                    work->field_0x148 = 0;
+                work->msgLine = work->msgLine - 2;
+                if (work->msgLine < 0) {
+                    work->msgLine = 0;
                 } else {
                     psndSFXOn((const char*)0x20006);
                 }
             } else if (keyGetDirTrg(0) & 0x200) {
-                if (work->field_0x148 / 2 < (work->field_0x14C + 1) / 2 - 1) {
-                    work->field_0x148 = work->field_0x148 + 2;
+                if (work->msgLine / 2 < (work->msgLines + 1) / 2 - 1) {
+                    work->msgLine = work->msgLine + 2;
                     psndSFXOn((const char*)0x20006);
                 }
             }
             break;
         case 10:
-            work->field_0x134 = 0;
-            work->field_0x130 = work->field_0x130 + 1;
+            work->msgStep = 0;
+            work->msgState = work->msgState + 1;
             break;
         case 11: {
-            s32 step = work->field_0x134;
-            work->field_0x134 = step + 1;
-            work->field_0x128 = intplGetValue(0xB, step, 0x10, 0.0f, -800.0f);
-            if (work->field_0x134 > 0x10) {
-                work->field_0x130 = work->field_0x130 + 1;
+            s32 step = work->msgStep;
+            work->msgStep = step + 1;
+            work->msgX = intplGetValue(0xB, step, 0x10, 0.0f, -800.0f);
+            if (work->msgStep > 0x10) {
+                work->msgState = work->msgState + 1;
             }
             break;
         }
@@ -908,49 +908,49 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
 
 #ifdef MUST_MATCH
     // The `!= 0` test is implied by `> 0`, but it changes the object.
-    if (work->field_0x138 != 0 && work->field_0x138 > 0) {
+    if (work->msgItemId != 0 && work->msgItemId > 0) {
 #else
-    if (work->field_0x138 > 0) {
+    if (work->msgItemId > 0) {
 #endif
         winTexInit(*work->winTpl->data);
         winTexSet(0x25, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
         winIconInit();
-        winIconSet(itemDataTable[work->field_0x138].icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
+        winIconSet(itemDataTable[work->msgItemId].icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
     }
 
-    if (work->field_0x140 != NULL) {
+    if (work->nameTag != NULL) {
         const char* msg;
         f32 edge;
 
-        edge = (work->field_0x138 == -2) ? -130.0f : 0.0f;
-        msg = msgSearch(work->field_0x140);
+        edge = (work->msgItemId == -2) ? -130.0f : 0.0f;
+        msg = msgSearch(work->nameTag);
         width = FontGetMessageWidth(msg);
         winNameGX(work, 1, (x - 120.0f) + edge, ty = 8.0f + (16.0f + fy), 240.0f, 32.0f);
         winFontInit();
         winFontSetEdge((Vec){ edge + ((240.0f - width) / 2.0f + (x - 120.0f)), ty - 4.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor, msg);
     }
 
-    if (work->field_0x13C != NULL) {
+    if (work->msgTag != NULL) {
         GXSetScissor(0, (u32)(240.0f - (fy -= 14.0f)), 0x260, 0x38);
-        if (strcmp(work->field_0x13C, "msg_lottery_number") == 0) {
-            sprintf(buf, msgSearch(work->field_0x13C), lotteryGetPtr()->mTicketNum);
+        if (strcmp(work->msgTag, "msg_lottery_number") == 0) {
+            sprintf(buf, msgSearch(work->msgTag), lotteryGetPtr()->mTicketNum);
             winFontInit();
-            winFontSet((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(work->field_0x148 * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
+            winFontSet((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(work->msgLine * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
         } else {
             winFontInit();
-            winFontSetLabel((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(work->field_0x148 * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, work->field_0x13C);
+            winFontSetLabel((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(work->msgLine * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, work->msgTag);
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
     }
 
-    if (work->field_0x14C > 2) {
+    if (work->msgLines > 2) {
         s32 i;
 
         winIconInit();
-        i = work->field_0x148;
+        i = work->msgLine;
         if (i == 0) {
             if ((gp->retraceCount & 0x1F) < 0x14) winIconSet(0x1B6, (Vec){ (250.0f + x) - 10.0f, (40.0f + (y - 40.0f)) - 24.0f, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-        } else if (i / 2 == (work->field_0x14C + 1) / 2 - 1) {
+        } else if (i / 2 == (work->msgLines + 1) / 2 - 1) {
             if ((gp->retraceCount & 0x1F) < 0x14) winIconSet(0x1B5, (Vec){ (250.0f + x) - 10.0f, 24.0f + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         } else if ((gp->retraceCount & 0x1F) < 0x14) {
             ix = (250.0f + x) - 10.0f;
@@ -967,19 +967,19 @@ void winMsgEntry(WindowWork* work, s32 a1, const char* str, const char* a3) {
     BOOL changed = FALSE;
 
     if (str != NULL) {
-        if (work->field_0x144 != str) {
+        if (work->lastMsgTag != str) {
             changed = TRUE;
         } else if (strcmp(_tmp, str) != 0) {
             changed = TRUE;
         }
         if (changed) {
-            work->field_0x138 = a1;
-            work->field_0x13C = str;
-            work->field_0x140 = a3;
-            FontGetMessageWidthLine(msgSearch(work->field_0x13C), &width);
-            work->field_0x148 = 0;
-            work->field_0x14C = width + 1;
-            work->field_0x144 = str;
+            work->msgItemId = a1;
+            work->msgTag = str;
+            work->nameTag = a3;
+            FontGetMessageWidthLine(msgSearch(work->msgTag), &width);
+            work->msgLine = 0;
+            work->msgLines = width + 1;
+            work->lastMsgTag = str;
             strncpy(_tmp, str, 0x3C);
         }
     }
@@ -1399,15 +1399,15 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
         winFontInit();
         labelX = 20.0f + x;
         winFontSetLabel((Vec){labelX, y - 14.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0x00, 0x00, 0x00, 0xFF},
-                        luigi_book_list[work->field_0x2C8][work->field_0x2D0 * 2]);
+                        luigi_book_list[work->bookId][work->bookPage * 2]);
         winFontSetLabel((Vec){220.0f + labelX, y - 14.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f},
                         (GXColor){0x00, 0x00, 0x00, 0xFF},
-                        luigi_book_list[work->field_0x2C8][work->field_0x2D0 * 2 + 1]);
+                        luigi_book_list[work->bookId][work->bookPage * 2 + 1]);
 
         // Luigi, reading: the closing pose on the last page
         pose = L_msgGetWork()->poseId;
         anim = animPoseGetAnimDataPtr(pose);
-        if (work->field_0x2D0 < work->field_0x2CC - 1) {
+        if (work->bookPage < work->bookPages - 1) {
             animPoseSetAnim(pose, "HOS_C_1", 0);
         } else {
             animPoseSetAnim(pose, "HOS_E_1", 0);
@@ -1844,8 +1844,8 @@ int N_compare_func4_1(const void* a, const void* b) {
     const WinEquipRec* pb = b;
     char buf_a[128];
     char buf_b[128];
-    s16 id_b = (s16)pb->field_0x8;
-    s16 id_a = (s16)pa->field_0x8;
+    s16 id_b = (s16)pb->badgeId;
+    s16 id_a = (s16)pa->badgeId;
 
     pouchHiraganaToKatakana(msgSearch(itemDataTable[id_a].name), buf_a);
     pouchHiraganaToKatakana(msgSearch(itemDataTable[id_b].name), buf_b);
@@ -1858,8 +1858,8 @@ int N_compare_func4_1_r(const void* a, const void* b) {
     const WinEquipRec* pb = b;
     char buf_a[128];
     char buf_b[128];
-    s16 id_b = (s16)pb->field_0x8;
-    s16 id_a = (s16)pa->field_0x8;
+    s16 id_b = (s16)pb->badgeId;
+    s16 id_a = (s16)pa->badgeId;
 
     pouchHiraganaToKatakana(msgSearch(itemDataTable[id_a].name), buf_a);
     pouchHiraganaToKatakana(msgSearch(itemDataTable[id_b].name), buf_b);
@@ -1869,8 +1869,8 @@ int N_compare_func4_1_r(const void* a, const void* b) {
 int N_compare_func4_2(const void* a, const void* b) {
     const WinEquipRec* pa = a;
     const WinEquipRec* pb = b;
-    s32 id_a = (s16)pa->field_0x8;
-    s32 id_b = (s16)pb->field_0x8;
+    s32 id_a = (s16)pa->badgeId;
+    s32 id_b = (s16)pb->badgeId;
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -1886,8 +1886,8 @@ int N_compare_func4_2(const void* a, const void* b) {
 int N_compare_func4_2_r(const void* a, const void* b) {
     const WinEquipRec* pa = a;
     const WinEquipRec* pb = b;
-    s32 id_a = (s16)pa->field_0x8;
-    s32 id_b = (s16)pb->field_0x8;
+    s32 id_a = (s16)pa->badgeId;
+    s32 id_b = (s16)pb->badgeId;
     s16 va = itemDataTable[id_a].type_sort_order;
     s16 vb = itemDataTable[id_b].type_sort_order;
 
@@ -1939,8 +1939,8 @@ void sort_4_3_func(WindowWork* work) {
         for (i = 0; i < work->equipListCount - 1; i++) {
             j = i + 1;
             while (j < work->equipListCount) {
-                ida = (s16)work->equipList[i].field_0x8;
-                idb = (s16)work->equipList[j].field_0x8;
+                ida = (s16)work->equipList[i].badgeId;
+                idb = (s16)work->equipList[j].badgeId;
                 swap = 0;
 
                 if (itemDataTable[ida].bp_cost > itemDataTable[idb].bp_cost) {
@@ -1966,8 +1966,8 @@ void sort_4_3_func(WindowWork* work) {
         for (i = 0; i < work->equipListCount - 1; i++) {
             j = i + 1;
             while (j < work->equipListCount) {
-                ida = (s16)work->equipList[i].field_0x8;
-                idb = (s16)work->equipList[j].field_0x8;
+                ida = (s16)work->equipList[i].badgeId;
+                idb = (s16)work->equipList[j].badgeId;
                 swap = 0;
 
                 if (itemDataTable[ida].bp_cost < itemDataTable[idb].bp_cost) {
@@ -2327,11 +2327,11 @@ int compare_func2_r(const void* a, const void* b) {
 
 void sort_7_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func1);
-        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func2);
+        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func1);
+        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func2);
     } else {
-        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func1_r);
-        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func2_r);
+        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func1_r);
+        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     LOGWIN(work)->charSel = 0;
@@ -2398,18 +2398,18 @@ int compare_func3_r(const void* a, const void* b) {
 
 void sort_7_3_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func1);
-        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func3);
+        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func1);
+        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func3);
     } else {
-        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func1_r);
-        qqsort(work->field_0x1050, LOGWIN(work)->charCnt, 2, compare_func3_r);
+        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func1_r);
+        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func3_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     LOGWIN(work)->charSel = 0;
     LOGWIN(work)->charPage = LOGWIN(work)->charSel / 16;
 }
 
-// The mail list (work->field_26E) holds byte pairs: display number, then mail id.
+// The mail list (work->mailList) holds byte pairs: display number, then mail id.
 // 1:1 (the `const` parameters reproduce the target's hoisted `lbz r3,0x1(r3)` prologue load).
 int compare_func4(const void* a, const void* b) {
     const u8* pa = a;
@@ -2436,9 +2436,9 @@ int compare_func4_r(const void* a, const void* b) {
 
 void sort_8_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->field_26E, work->mailCount, 2, compare_func4);
+        qqsort(work->mailList, work->mailCount, 2, compare_func4);
     } else {
-        qqsort(work->field_26E, work->mailCount, 2, compare_func4_r);
+        qqsort(work->mailList, work->mailCount, 2, compare_func4_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->mailSel = 0;
@@ -2471,9 +2471,9 @@ int compare_func5_r(const void* a, const void* b) {
 
 void sort_8_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->field_26E, work->mailCount, 2, compare_func5);
+        qqsort(work->mailList, work->mailCount, 2, compare_func5);
     } else {
-        qqsort(work->field_26E, work->mailCount, 2, compare_func5_r);
+        qqsort(work->mailList, work->mailCount, 2, compare_func5_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
     work->mailSel = 0;
@@ -2494,37 +2494,37 @@ void winSortMain(WindowWork* work) {
     if (trg & 0x200) {
         psndSFXOn((const char*)0x20013);
         work->sortWait = 0;
-        work->field_0x16C = -600.0f;
+        work->sortTargetX = -600.0f;
     } else if (rep & 0x1000) {
         psndSFXOn((const char*)0x20005);
-        work->field_0x174 = work->field_0x174 - 1;
-        if (work->field_0x174 < 0) {
-            work->field_0x174 = work->field_0x178 - 1;
+        work->sortSel = work->sortSel - 1;
+        if (work->sortSel < 0) {
+            work->sortSel = work->sortCount - 1;
         }
     } else if (rep & 0x2000) {
         psndSFXOn((const char*)0x20005);
-        work->field_0x174 = work->field_0x174 + 1;
-        if (work->field_0x174 >= work->field_0x178) {
-            work->field_0x174 = 0;
+        work->sortSel = work->sortSel + 1;
+        if (work->sortSel >= work->sortCount) {
+            work->sortSel = 0;
         }
     } else if (trg & 0x100) {
         psndSFXOn((const char*)0x20012);
-        sort_data[work->field_0x184][work->field_0x174].func(work);
+        sort_data[work->sortKind][work->sortSel].func(work);
     } else if (trg & 0x1000) {
         work->sortWait = 0;
-        work->field_0x16C = -600.0f;
+        work->sortTargetX = -600.0f;
     }
 
     if (work->sortWait != 0) {
-        work->targetX = 30.0f + work->field_0x16C;
-        work->targetY = (work->field_0x170 - 40.0f) -
-                              (f32)(work->field_0x174 * 0x28);
-        winMsgEntry(work, 0, sort_data[work->field_0x184][work->field_0x174].name, NULL);
+        work->targetX = 30.0f + work->sortTargetX;
+        work->targetY = (work->sortTargetY - 40.0f) -
+                              (f32)(work->sortSel * 0x28);
+        winMsgEntry(work, 0, sort_data[work->sortKind][work->sortSel].name, NULL);
     }
 
     {
-        work->field_0x164 += (work->field_0x16C - work->field_0x164) / 8.0f;
-        work->field_0x168 += (work->field_0x170 - work->field_0x168) / 8.0f;
+        work->sortX += (work->sortTargetX - work->sortX) / 8.0f;
+        work->sortY += (work->sortTargetY - work->sortY) / 8.0f;
     }
 }
 
@@ -2578,8 +2578,8 @@ SortTable* sort_data[8] = {sort_1, sort_2, sort_3, sort_4, sort_5, sort_6, sort_
 
 
 void winSortGX(WindowWork* work) {
-    f32 x = work->field_0x164;
-    f32 y = work->field_0x168;
+    f32 x = work->sortX;
+    f32 y = work->sortY;
     f32 w = 128.0f;
     f32 w2 = 136.0f;
     s32 i;
@@ -2602,24 +2602,24 @@ void winSortGX(WindowWork* work) {
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
     GXLoadPosMtxImm(camGetPtr(8)->view, 0);
     GXSetCurrentMtx(0);
-    if (work->field_0x184 == 7) {
+    if (work->sortKind == 7) {
         GXSetScissor((u32)(16.0f +
-                           (16.0f + (304.0f + work->field_0x244))),
-                     (u32)(40.0f + (240.0f - work->field_0x24C)), 0x200,
+                           (16.0f + (304.0f + work->mailX))),
+                     (u32)(40.0f + (240.0f - work->mailY)), 0x200,
                      0xC0);
     }
 
     winSortPanel(work, 0xA5, x, y, w, 24.0);
     winSortPanel(work, 0xA3, x + w, y, 24.0f, 24.0);
-    for (i = 0; i < work->field_0x178; i++) {
+    for (i = 0; i < work->sortCount; i++) {
         winSortPanel(work, 0xA6, x + w + 8.0f, y - 24.0f - (f32)(i * 0x28), 16.0f, 40.0);
     }
-    winSortPanel(work, 0xA4, x + w, y - 24.0f - (f32)(work->field_0x178 * 0x28), 24.0f, 24.0);
-    winSortPanel(work, 0xA7, x, y - 24.0f - (f32)(work->field_0x178 * 0x28), w, 24.0);
-    winSortPanel(work, 0xA8, x, y - 24.0f, w2, (f32)(work->field_0x178 * 0x28));
+    winSortPanel(work, 0xA4, x + w, y - 24.0f - (f32)(work->sortCount * 0x28), 24.0f, 24.0);
+    winSortPanel(work, 0xA7, x, y - 24.0f - (f32)(work->sortCount * 0x28), w, 24.0);
+    winSortPanel(work, 0xA8, x, y - 24.0f, w2, (f32)(work->sortCount * 0x28));
 
-    for (i = 0; i < work->field_0x178; i++) {
-        const SortTable* list = sort_data[work->field_0x184];
+    for (i = 0; i < work->sortCount; i++) {
+        const SortTable* list = sort_data[work->sortKind];
         s32 tex = 0xAA;
 
         if (strcmp(list[i].name, "msg_menu_sort_aiueo") == 0) {
@@ -2636,7 +2636,7 @@ void winSortGX(WindowWork* work) {
             tex = 0xAA;
         }
 
-        if (i == work->field_0x174) {
+        if (i == work->sortSel) {
             f32 row;
 
             winTexInit(*work->winTpl->data);
@@ -2653,7 +2653,7 @@ void winSortGX(WindowWork* work) {
         }
     }
 
-    if (work->field_0x184 == 7) {
+    if (work->sortKind == 7) {
         GXSetScissor(0, 0, 0x260, 0x1E0);
     }
 }
@@ -2667,14 +2667,14 @@ void winSortEntry(WindowWork* work, s32 idx, f32 a, f32 b) {
         count++;
     }
 
-    work->field_0x184 = idx;
-    work->field_0x178 = count;
-    work->field_0x174 = 0;
+    work->sortKind = idx;
+    work->sortCount = count;
+    work->sortSel = 0;
     work->sortReverseNext = 0;
-    work->field_0x164 = -1000.0f;
-    work->field_0x16C = a;
-    work->field_0x168 = b;
-    work->field_0x170 = b;
+    work->sortX = -1000.0f;
+    work->sortTargetX = a;
+    work->sortY = b;
+    work->sortTargetY = b;
     work->sortWait = 1;
 }
 
@@ -2783,13 +2783,13 @@ typedef enum {
 void winMailDisp(WindowWork* work) {
     s32 i;
 
-    if (work->field_0x244 < 320.0f && work->field_0x24C > -240.0f) {
-    winMailGX(work, work->field_0x244, work->field_0x24C);
+    if (work->mailX < 320.0f && work->mailY > -240.0f) {
+    winMailGX(work, work->mailX, work->mailY);
 
     if (work->itemState != 0xCA) {
         for (i = 0; i < work->mailCount; i++) {
-            s32 id = work->field_26E[1 + i * 2];
-            s32 num = work->field_26E[i * 2];
+            s32 id = work->mailList[1 + i * 2];
+            s32 num = work->mailList[i * 2];
             WinMailEntry* mail = mailGetPtr(id);
             GXColor color;
             GXColor black = {0x00, 0x00, 0x00, 0xFF};
@@ -2806,29 +2806,29 @@ void winMailDisp(WindowWork* work) {
             }
             winTexInit(WIN_MAIL_TEX(work));
             winTexSet(0x77,
-                      (Vec){4.0f + (208.0f + work->field_0x244), work->field_0x260 + ((work->field_0x24C - 56.0f) - (f32)(i * 40)), 0.0f},
+                      (Vec){4.0f + (208.0f + work->mailX), work->mailPagePos + ((work->mailY - 56.0f) - (f32)(i * 40)), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, color);
             white = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
             winTexSet(pouchCheckMail(id) == 2 ? WIN_TEX_MAIL_READ : WIN_TEX_MAIL_UNREAD,
-                      (Vec){72.0f + work->field_0x244, work->field_0x260 + (((work->field_0x24C - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+                      (Vec){72.0f + work->mailX, work->mailPagePos + (((work->mailY - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winTexSet((num + 1) / 10 + 0x65,
-                      (Vec){2.0f + (88.0f + work->field_0x244), work->field_0x260 + (((work->field_0x24C - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+                      (Vec){2.0f + (88.0f + work->mailX), work->mailPagePos + (((work->mailY - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winTexSet((num + 1) % 10 + 0x65,
-                      (Vec){2.0f + (104.0f + work->field_0x244), work->field_0x260 + (((work->field_0x24C - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
+                      (Vec){2.0f + (104.0f + work->mailX), work->mailPagePos + (((work->mailY - 56.0f) - (f32)(i * 40)) - 3.0f), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winFontInit();
-            winFontSetLabel((Vec){120.0f + work->field_0x244, work->field_0x260 + (8.0f + ((work->field_0x24C - 56.0f) - (f32)(i * 40))), 0.0f},
+            winFontSetLabel((Vec){120.0f + work->mailX, work->mailPagePos + (8.0f + ((work->mailY - 56.0f) - (f32)(i * 40))), 0.0f},
                             (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
     } else {
         s32 sel = work->mailSel;
-        s32 num = work->field_26E[sel * 2];
+        s32 num = work->mailList[sel * 2];
         GXColor white = {0xFF, 0xFF, 0xFF, 0xFF};
         GXColor black = {0x00, 0x00, 0x00, 0xFF};
-        WinMailEntry* mail = mailGetPtr(work->field_26E[1 + sel * 2]);
+        WinMailEntry* mail = mailGetPtr(work->mailList[1 + sel * 2]);
         GXColor color;
         u32 top;
 
@@ -2845,35 +2845,35 @@ void winMailDisp(WindowWork* work) {
         // the header: envelope, opened mark, number and title
         winTexInit(WIN_MAIL_TEX(work));
         winTexSet(0x77,
-                  (Vec){4.0f + (208.0f + work->field_0x244), work->field_0x24C - 56.0f, 0.0f},
+                  (Vec){4.0f + (208.0f + work->mailX), work->mailY - 56.0f, 0.0f},
                   (Vec){1.0f, 1.0f, 1.0f}, color);
         winTexSet(0x5E,
-                  (Vec){72.0f + work->field_0x244, work->field_0x24C - 56.0f, 0.0f},
+                  (Vec){72.0f + work->mailX, work->mailY - 56.0f, 0.0f},
                   (Vec){1.0f, 1.0f, 1.0f}, white);
         winTexSet((num + 1) / 10 + 0x65,
-                  (Vec){2.0f + (88.0f + work->field_0x244), (work->field_0x24C - 56.0f) - 3.0f, 0.0f},
+                  (Vec){2.0f + (88.0f + work->mailX), (work->mailY - 56.0f) - 3.0f, 0.0f},
                   (Vec){1.0f, 1.0f, 1.0f}, white);
         winTexSet((num + 1) % 10 + 0x65,
-                  (Vec){2.0f + (104.0f + work->field_0x244), (work->field_0x24C - 56.0f) - 3.0f, 0.0f},
+                  (Vec){2.0f + (104.0f + work->mailX), (work->mailY - 56.0f) - 3.0f, 0.0f},
                   (Vec){1.0f, 1.0f, 1.0f}, white);
         winFontInit();
-        winFontSetLabel((Vec){120.0f + work->field_0x244, 8.0f + (work->field_0x24C - 56.0f), 0.0f},
+        winFontSetLabel((Vec){120.0f + work->mailX, 8.0f + (work->mailY - 56.0f), 0.0f},
                         (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
 
         // the body, clipped to the page and scrolled by whole lines
-        top = 72.0f + (240.0f - work->field_0x24C);
-        GXSetScissor(32.0f + (304.0f + work->field_0x244), top, 0x158, 0xB1);
+        top = 72.0f + (240.0f - work->mailY);
+        GXSetScissor(32.0f + (304.0f + work->mailX), top, 0x158, 0xB1);
         winTexInit(WIN_MAIL_TEX(work));
         winTexSet(0x77,
-                  (Vec){4.0f + (208.0f + work->field_0x244), (work->field_0x24C - 56.0f) - 80.0f, 0.0f},
+                  (Vec){4.0f + (208.0f + work->mailX), (work->mailY - 56.0f) - 80.0f, 0.0f},
                   (Vec){1.0f, 7.5f, 1.0f}, color);
         winFontInit();
-        winFontSetLabel((Vec){80.0f + work->field_0x244, (work->field_0x24C - 80.0f) + (f32)(work->mailScroll * 21), 0.0f},
+        winFontSetLabel((Vec){80.0f + work->mailX, (work->mailY - 80.0f) + (f32)(work->mailScroll * 21), 0.0f},
                         (Vec){0.75f, 0.75f, 0.75f}, (GXColor){0x00, 0x00, 0x00, 0xFF}, mail->body);
         if (mail->flags & 0x1000) {
             winTexInit(*work->mailTpl->data);
             winTexSet(mail->picture,
-                      (Vec){210.0f + work->field_0x244, 7.0f + ((work->field_0x24C - (f32)((work->mailLines - 1) * 21))
+                      (Vec){210.0f + work->mailX, 7.0f + ((work->mailY - (f32)((work->mailLines - 1) * 21))
                                                    + (f32)(work->mailScroll * 21)), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         }
@@ -2885,25 +2885,25 @@ void winMailDisp(WindowWork* work) {
             if (work->mailScroll == 0) {
                 if ((gp->retraceCount & 0x1F) < 20) {
                     winIconSet(0x1B6,
-                               (Vec){360.0f + work->field_0x244, (20.0f + (work->field_0x24C - 230.0f)) - 24.0f, 0.0f},
+                               (Vec){360.0f + work->mailX, (20.0f + (work->mailY - 230.0f)) - 24.0f, 0.0f},
                                (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
             } else if (work->mailScroll + 6 == work->mailLines) {
                 if ((gp->retraceCount & 0x1F) < 20) {
                     winIconSet(0x1B5,
-                               (Vec){360.0f + work->field_0x244, 24.0f + (20.0f + (work->field_0x24C - 230.0f)), 0.0f},
+                               (Vec){360.0f + work->mailX, 24.0f + (20.0f + (work->mailY - 230.0f)), 0.0f},
                                (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
             } else if ((gp->retraceCount & 0x1F) < 20) {
                 winIconSet(0x1B5,
-                           (Vec){360.0f + work->field_0x244, 24.0f + (20.0f + (work->field_0x24C - 230.0f)), 0.0f},
+                           (Vec){360.0f + work->mailX, 24.0f + (20.0f + (work->mailY - 230.0f)), 0.0f},
                            (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 winIconSet(0x1B6,
-                           (Vec){360.0f + work->field_0x244, (20.0f + (work->field_0x24C - 230.0f)) - 24.0f, 0.0f},
+                           (Vec){360.0f + work->mailX, (20.0f + (work->mailY - 230.0f)) - 24.0f, 0.0f},
                            (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
             }
             winIconSet(0x70,
-                       (Vec){360.0f + work->field_0x244, 20.0f + (work->field_0x24C - 230.0f), 0.0f},
+                       (Vec){360.0f + work->mailX, 20.0f + (work->mailY - 230.0f), 0.0f},
                        (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
         }
     }    }

@@ -28,9 +28,9 @@ void winMakeEquipList(WindowWork* work) {
 
     for (i = 0; i < MAX_BADGES; i++) {
         if (pouch->equippedBadges[i] != 0) {
-            work->equipList[count].field_0x0 = 1;
-            work->equipList[count].field_0x4 = i;
-            work->equipList[count].field_0x8 = pouch->equippedBadges[i];
+            work->equipList[count].equipped = 1;
+            work->equipList[count].badgeIdx = i;
+            work->equipList[count].badgeId = pouch->equippedBadges[i];
             count++;
         }
     }
@@ -223,16 +223,16 @@ s32 winBadgeMain(WindowWork* work) {
                     s32* selPtr = &work->badgeSel[sel];
 #endif
                     s32 entryIdx = selPtr[0];
-                    s32 idx = work->equipList[entryIdx].field_0x4;
-                    if (work->equipList[entryIdx].field_0x0 != 0) {
+                    s32 idx = work->equipList[entryIdx].badgeIdx;
+                    if (work->equipList[entryIdx].equipped != 0) {
                         psndSFXOn((const char*)0x20039);
                         pouchUnEquipBadgeIndex(idx);
-                        work->equipList[selPtr[0]].field_0x0 = 0;
+                        work->equipList[selPtr[0]].equipped = 0;
                     } else {
                         if (pouch->availableBP >= itemDataTable[pouchHaveBadge(idx)].bp_cost) {
                             psndSFXOn((const char*)0x20038);
                             pouchEquipBadgeIndex(idx);
-                            work->equipList[selPtr[0]].field_0x0 = 1;
+                            work->equipList[selPtr[0]].equipped = 1;
                         }
                     }
                     pouchReviseMarioParam();
@@ -296,7 +296,7 @@ s32 winBadgeMain(WindowWork* work) {
                 if (work->badgeTab == 0) {
                     msgId = pouchHaveBadge(work->badgeSel[sel]);
                 } else {
-                    msgId = work->equipList[work->badgeSel[sel]].field_0x8;
+                    msgId = work->equipList[work->badgeSel[sel]].badgeId;
                 }
                 winMsgEntry(work, msgId, itemDataTable[msgId].menu_description, NULL);
             }

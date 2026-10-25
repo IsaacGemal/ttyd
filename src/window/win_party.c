@@ -196,7 +196,7 @@ s32 winPartyMain(WindowWork* work) {
         u32 dir;
 
         if (button & 0x100) {
-            work->field_0x19C = 1;
+            work->partyChange = 1;
             return -2;
         }
         if (button & 0x400) {
@@ -206,11 +206,11 @@ s32 winPartyMain(WindowWork* work) {
         } else {
             if (button & 0x200) {
                 psndSFXOn((const char*)0x20013);
-                work->field_0x19C = 0;
+                work->partyChange = 0;
                 return -1;
             }
             if (button & 0x1000) {
-                work->field_0x19C = 0;
+                work->partyChange = 0;
                 return -2;
             }
 
@@ -285,7 +285,7 @@ s32 winPartyMain(WindowWork* work) {
                 work->partyState = 0;
                 psndSFXOn((const char*)0x20013);
             } else if (button & 0x1000) {
-                work->field_0x19C = 0;
+                work->partyChange = 0;
                 return -2;
             }
         }

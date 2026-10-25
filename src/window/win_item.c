@@ -228,14 +228,14 @@ void winItemInit(WindowWork* work) {
     work->itemScrollRow[0] = 0;
     work->itemSel[1] = 0;
     work->itemScrollRow[1] = 0;
-    work->field_0x238 = 320.f;
-    work->field_0x234 = 320.f;
-    work->field_0x240 = -240.f;
-    work->field_0x23C = -240.f;
-    work->field_0x248 = 320.f;
-    work->field_0x244 = 320.f;
-    work->field_0x250 = -240.f;
-    work->field_0x24C = -240.f;
+    work->bookTargetX = 320.f;
+    work->bookX = 320.f;
+    work->bookTargetY = -240.f;
+    work->bookY = -240.f;
+    work->mailTargetX = 320.f;
+    work->mailX = 320.f;
+    work->mailTargetY = -240.f;
+    work->mailY = -240.f;
 
     if (pouchCheckItem(ITEM_MAILBOX_SP) == 0) {
         pouchGetItem(ITEM_MAILBOX_SP);
@@ -244,15 +244,15 @@ void winItemInit(WindowWork* work) {
 
     work->mailSel = 0;
     work->mailPage = 0;
-    work->field_0x264 = 0.0f;
-    work->field_0x260 = 0.0f;
+    work->mailPageTarget = 0.0f;
+    work->mailPagePos = 0.0f;
 
     {
         for (i = 0; i < work->mailCount; i++) {
             PouchData* pouch;
-            work->field_26E[i * 2] = work->mailCount - i - 1;
+            work->mailList[i * 2] = work->mailCount - i - 1;
             pouch = pouchGetPtr();
-            work->field_26E[i * 2 + 1] = pouch->mEmailIds[work->mailCount - i - 1];
+            work->mailList[i * 2 + 1] = pouch->mEmailIds[work->mailCount - i - 1];
         }
     }
 
@@ -296,25 +296,25 @@ void winItemInit2(WindowWork* work) {
     work->targetY = (f32)(0x7D - work->itemTab * 0x28);
 
     t = 190.f * (f32)work->itemScrollRow[0];
-    work->field_0x22C[0] = t;
-    work->field_0x224[0] = t;
+    work->itemScrollTarget[0] = t;
+    work->itemScrollPos[0] = t;
 
     t = 190.f * (f32)work->itemScrollRow[1];
-    work->field_0x22C[1] = t;
-    work->field_0x224[1] = t;
+    work->itemScrollTarget[1] = t;
+    work->itemScrollPos[1] = t;
 
-    work->field_0x238 = 320.f;
-    work->field_0x234 = 320.f;
-    work->field_0x240 = -240.f;
-    work->field_0x23C = -240.f;
-    work->field_0x248 = 320.f;
-    work->field_0x244 = 320.f;
-    work->field_0x250 = -240.f;
-    work->field_0x24C = -240.f;
+    work->bookTargetX = 320.f;
+    work->bookX = 320.f;
+    work->bookTargetY = -240.f;
+    work->bookY = -240.f;
+    work->mailTargetX = 320.f;
+    work->mailX = 320.f;
+    work->mailTargetY = -240.f;
+    work->mailY = -240.f;
 
     t = (f32)(work->mailSel * 0xC8);
-    work->field_0x264 = t;
-    work->field_0x260 = t;
+    work->mailPageTarget = t;
+    work->mailPagePos = t;
 
     winMsgEntry(work, 0, work->itemTab == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, NULL);
     work->useItemId = 0;
@@ -414,22 +414,22 @@ s32 winItemMain(WindowWork* work) {
                     const char** book;
 
                     work->itemState = 100;
-                    work->field_0x238 = -170.f;
-                    work->field_0x240 = 160.f;
+                    work->bookTargetX = -170.f;
+                    work->bookTargetY = 160.f;
                     work->flags |= 0x8000;
                     book = luigi_book_list[idx2 - ITEM_SUPER_LUIGI1];
-                    work->field_0x2C8 = idx2 - ITEM_SUPER_LUIGI1;
-                    work->field_0x2D0 = 0;
-                    work->field_0x2CC = 0;
-                    while (book[work->field_0x2CC] != 0) {
-                        work->field_0x2CC++;
+                    work->bookId = idx2 - ITEM_SUPER_LUIGI1;
+                    work->bookPage = 0;
+                    work->bookPages = 0;
+                    while (book[work->bookPages] != 0) {
+                        work->bookPages++;
                     }
-                    work->field_0x2CC = (work->field_0x2CC + 1) / 2;
+                    work->bookPages = (work->bookPages + 1) / 2;
                     psndSFXOn((const char*)0x20012);
                 } else if (idx2 == ITEM_MAILBOX_SP && pouchReceiveMailCount() != 0) {
                     work->itemState = 200;
-                    work->field_0x248 = -144.0f;
-                    work->field_0x250 = 180.f;
+                    work->mailTargetX = -144.0f;
+                    work->mailTargetY = 180.f;
                     psndSFXOn((const char*)0x20012);
                 } else if (idx2 == 0x4E) {
                     work->useItemId = idx2;
@@ -513,31 +513,31 @@ s32 winItemMain(WindowWork* work) {
     case 100:
         if (work->buttonTrg & 0x100) {
             psndSFXOn((const char*)0x20012);
-            work->field_0x2D0 += 1;
-            if (work->field_0x2D0 >= work->field_0x2CC) {
-                work->field_0x2D0 = work->field_0x2CC - 1;
+            work->bookPage += 1;
+            if (work->bookPage >= work->bookPages) {
+                work->bookPage = work->bookPages - 1;
                 work->itemState = 10;
-                work->field_0x238 = 320.f;
-                work->field_0x240 = -240.f;
+                work->bookTargetX = 320.f;
+                work->bookTargetY = -240.f;
                 work->flags &= ~0x8000;
                 work->posX = work->targetX;
                 work->posY = work->targetY;
             }
         } else if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
-            work->field_0x2D0 -= 1;
-            if (work->field_0x2D0 < 0) {
-                work->field_0x2D0 = 0;
+            work->bookPage -= 1;
+            if (work->bookPage < 0) {
+                work->bookPage = 0;
                 work->itemState = 10;
-                work->field_0x238 = 320.f;
-                work->field_0x240 = -240.f;
+                work->bookTargetX = 320.f;
+                work->bookTargetY = -240.f;
                 work->flags &= ~0x8000;
                 work->posX = work->targetX;
                 work->posY = work->targetY;
             }
         } else if (work->buttonTrg & 0x1000) {
-            work->field_0x238 = 320.f;
-            work->field_0x240 = -240.f;
+            work->bookTargetX = 320.f;
+            work->bookTargetY = -240.f;
             work->flags &= ~0x8000;
             work->posX = work->targetX;
             work->posY = work->targetY;
@@ -551,13 +551,13 @@ s32 winItemMain(WindowWork* work) {
         if (work->buttonTrg & 0x100) {
             WinMailEntry* mail;
 
-            if (pouchCheckMail(work->field_26E[work->mailSel * 2 + 1]) == 1) {
-                pouchOpenMail(work->field_26E[work->mailSel * 2 + 1]);
+            if (pouchCheckMail(work->mailList[work->mailSel * 2 + 1]) == 1) {
+                pouchOpenMail(work->mailList[work->mailSel * 2 + 1]);
             }
             swSet(0x26);
             psndSFXOn((const char*)0x20036);
             work->itemState = 201;
-            mail = mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
+            mail = mailGetPtr(work->mailList[work->mailSel * 2 + 1]);
             FontGetMessageWidthLine(msgSearch(mail->body), &work->mailLines);
             work->mailLines += 1;
             work->mailScroll = 0;
@@ -567,8 +567,8 @@ s32 winItemMain(WindowWork* work) {
         } else if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
             work->itemState = 10;
-            work->field_0x248 = 320.f;
-            work->field_0x250 = -240.f;
+            work->mailTargetX = 320.f;
+            work->mailTargetY = -240.f;
         } else if (work->dirRep & 0x1000) {
             old = work->mailSel;
             work->mailSel = old - 1;
@@ -614,13 +614,13 @@ s32 winItemMain(WindowWork* work) {
                 psndSFXOn((const char*)0x20036);
             }
         } else if (work->buttonTrg & 0x10) {
-            winSortEntry(work, 7, work->field_0x248, work->field_0x250 - 60.f);
+            winSortEntry(work, 7, work->mailTargetX, work->mailTargetY - 60.f);
             work->savedState = work->itemState;
             psndSFXOn((const char*)0x20012);
             work->itemState = 1000;
         } else if (work->buttonTrg & 0x1000) {
-            work->field_0x248 = 320.f;
-            work->field_0x250 = -240.f;
+            work->mailTargetX = 320.f;
+            work->mailTargetY = -240.f;
             return -2;
         }
         work->targetX = -96.0f;
@@ -630,7 +630,7 @@ s32 winItemMain(WindowWork* work) {
     case 201: {
         WinMailEntry* mail;
 
-        mail = mailGetPtr(work->field_26E[work->mailSel * 2 + 1]);
+        mail = mailGetPtr(work->mailList[work->mailSel * 2 + 1]);
 
         if (mail->flags & 0x1000) {
             work->mailTpl = (FileEntry*)fileAsyncf(FILE_TYPE_TPL, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
@@ -667,8 +667,8 @@ s32 winItemMain(WindowWork* work) {
             if (work->mailTpl != NULL) {
                 fileFree(work->mailTpl);
             }
-            work->field_0x248 = 320.f;
-            work->field_0x250 = -240.f;
+            work->mailTargetX = 320.f;
+            work->mailTargetY = -240.f;
             return -2;
         }
         work->targetX = -96.0f;
@@ -816,18 +816,18 @@ s32 winItemMain(WindowWork* work) {
 }
 
 void winItemMain2(WindowWork* work) {
-    work->field_0x22C[0] = 190.0f * (f32)work->itemScrollRow[0];
-    work->field_0x224[0] += (work->field_0x22C[0] - work->field_0x224[0]) / 4.0f;
-    work->field_0x22C[1] = 190.0f * (f32)work->itemScrollRow[1];
-    work->field_0x224[1] += (work->field_0x22C[1] - work->field_0x224[1]) / 4.0f;
+    work->itemScrollTarget[0] = 190.0f * (f32)work->itemScrollRow[0];
+    work->itemScrollPos[0] += (work->itemScrollTarget[0] - work->itemScrollPos[0]) / 4.0f;
+    work->itemScrollTarget[1] = 190.0f * (f32)work->itemScrollRow[1];
+    work->itemScrollPos[1] += (work->itemScrollTarget[1] - work->itemScrollPos[1]) / 4.0f;
 
-    work->field_0x234 += (work->field_0x238 - work->field_0x234) / 6.0f;
-    work->field_0x23C += (work->field_0x240 - work->field_0x23C) / 6.0f;
-    work->field_0x244 += (work->field_0x248 - work->field_0x244) / 6.0f;
-    work->field_0x24C += (work->field_0x250 - work->field_0x24C) / 6.0f;
+    work->bookX += (work->bookTargetX - work->bookX) / 6.0f;
+    work->bookY += (work->bookTargetY - work->bookY) / 6.0f;
+    work->mailX += (work->mailTargetX - work->mailX) / 6.0f;
+    work->mailY += (work->mailTargetY - work->mailY) / 6.0f;
 
-    work->field_0x264 = (f32)(work->mailPage * 200);
-    work->field_0x260 += (work->field_0x264 - work->field_0x260) / 4.0f;
+    work->mailPageTarget = (f32)(work->mailPage * 200);
+    work->mailPagePos += (work->mailPageTarget - work->mailPagePos) / 4.0f;
 }
 
 
@@ -923,7 +923,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
             item = work->skipList[i];
 #endif
         }
-        scroll = work->field_0x224[work->itemTab];
+        scroll = work->itemScrollPos[work->itemTab];
 
         grayFlag = ((work->itemTab != 0) || (itemDataTable[item].usable_locations & 4)) == 0;
         drawY = scroll + (20.0f + ((rowY = base - (f32)(half * 0x26)) - 10.0f));
@@ -978,8 +978,8 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         winIconSet(0x217, (Vec){sortX - 30.0f, 20.0f + ((y - 100.0f) - 10.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
 
-    if (work->field_0x234 < 320.0f && work->field_0x23C > -240.0f) {
-        winBookGX(work, 0, work->field_0x234, work->field_0x23C);
+    if (work->bookX < 320.0f && work->bookY > -240.0f) {
+        winBookGX(work, 0, work->bookX, work->bookY);
     }
 }
 
