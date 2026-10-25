@@ -1541,7 +1541,7 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 scale = 3.0f;
             }
             PSMTXTrans(m, tx + (f32)tubuDt[w->mapPick].x, ty + (f32)tubuDt[w->mapPick].y, 0.0f);
-            n = (s32)anim->clip->field_0x8;
+            n = (s32)anim->clip->end;
             animPoseSetLocalTime(w->mapMarioPose, (f32)(gp->retraceCount % n));
             animPoseMain(w->mapMarioPose);
             animPoseDrawMtx(w->mapMarioPose, m, 1, 0.0f, scale);
@@ -1892,8 +1892,8 @@ void capture(CameraId camId, void* param) {
     u16 bb;
 
     ad = animPoseGetAnimDataPtr(w->poseId);
-    mn = (Vec){ad->field_0x44, ad->field_0x48, ad->field_0x4C};
-    mx = (Vec){ad->field_0x50, ad->field_0x54, ad->field_0x58};
+    mn = (Vec){ad->bboxMin.x, ad->bboxMin.y, ad->bboxMin.z};
+    mx = (Vec){ad->bboxMax.x, ad->bboxMax.y, ad->bboxMax.z};
     cx = (mx.x + mn.x) / 2.0f;
     cy = (mx.y + mn.y) / 2.0f;
     GXGetViewportv(vp);

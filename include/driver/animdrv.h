@@ -53,9 +53,9 @@ typedef struct AnimPoseShapeDraw {
 
 // all of these fall under "AnimPoseData"
 typedef struct AnimDataClip {
-    s32 field_0x0; // 0x0, tested by animPoseMain to choose between wrapping and clamping the clip time
-    f32 field_0x4; // 0x4
-    f32 field_0x8; // 0x8
+    s32 loop;  // 0x0, animPoseMain wraps the clip time when set and clamps it otherwise
+    f32 start; // 0x4, clip start time (animPoseMain)
+    f32 end;   // 0x8, clip end time (animPoseMain)
 } AnimDataClip;
 
 // A keyframe of an animation: its time and the runs of delta records it applies.
@@ -76,36 +76,36 @@ typedef struct AnimFrame {
 // An event record of an animation (frames2).
 typedef struct AnimFrame2 {
     f32 time;       // 0x0
-    s32 field_0x4;  // 0x4, the pose's evtValue once its time is reached (animPoseMain)
+    s32 value;      // 0x4, the pose's evtValue once its time is reached (animPoseMain)
 } AnimFrame2;
 
-// Per-frame delta records of an animation (animPoseMain and its animPoseAdd*Delta helpers). field_0x0 steps
-// the destination index from the previous record.
+// Per-frame delta records of an animation (animPoseMain and its animPoseAdd*Delta helpers). skip steps the
+// destination index from the previous record's.
 typedef struct AnimPoseVecDelta {
-    u8 field_0x0; // 0x0
-    s8 field_0x1; // 0x1, x, y and z deltas
-    s8 field_0x2; // 0x2
-    s8 field_0x3; // 0x3
+    u8 skip; // 0x0
+    s8 dx;   // 0x1, x, y and z deltas
+    s8 dy;   // 0x2
+    s8 dz;   // 0x3
 } AnimPoseVecDelta;
 
 typedef struct AnimPoseVisDelta {
-    u8 field_0x0; // 0x0
-    u8 field_0x1; // 0x1, added to the group visibility byte
+    u8 skip;  // 0x0
+    u8 delta; // 0x1, added to the group visibility byte
 } AnimPoseVisDelta;
 
 typedef struct AnimPoseNodeDelta {
-    u8 field_0x0; // 0x0
-    s8 field_0x1; // 0x1, value delta
-    u8 field_0x2; // 0x2, tanfTbl indices (signed) of the blend's end tangents
-    u8 field_0x3; // 0x3
+    u8 skip;          // 0x0
+    s8 delta;         // 0x1, value delta, in 1/16ths
+    s8 startTanIdx;   // 0x2, tanfTbl index (+0x59) of the blend's start tangent
+    u8 endTanIdx;     // 0x3, of its end tangent (read as s8); outside -0x58..0x58 the record is skipped
 } AnimPoseNodeDelta;
 
 typedef struct AnimPoseTexDelta {
-    u8 field_0x0;    // 0x0
-    u8 field_0x1;    // 0x1, added to AnimTexMtx.mTexBindIdx
-    u8 pad_0x2[2];   // 0x2
-    f32 field_0x4;   // 0x4, added to AnimTexMtx.mTransS
-    f32 field_0x8;   // 0x8, added to AnimTexMtx.mTransT
+    u8 skip;          // 0x0
+    u8 bindIdxDelta;  // 0x1, added to AnimTexMtx.mTexBindIdx
+    u8 pad_0x2[2];    // 0x2
+    f32 transSDelta;  // 0x4, added to AnimTexMtx.mTransS
+    f32 transTDelta;  // 0x8, added to AnimTexMtx.mTransT
 } AnimPoseTexDelta;
 
 struct AnimData {
@@ -121,12 +121,8 @@ struct AnimData {
     AnimPoseVisDelta* visData; // 0x38
     AnimPoseNodeDelta* nodeData; // 0x3C
     AnimFrame2* frames2;       // 0x40
-    f32 field_0x44;            // 0x44
-    f32 field_0x48;            // 0x48
-    f32 field_0x4C;            // 0x4C
-    f32 field_0x50;            // 0x50
-    f32 field_0x54;            // 0x54
-    f32 field_0x58;            // 0x58
+    Vec bboxMin;               // 0x44, x and y are the paper quad's left and bottom (animPaperPoseDispSub)
+    Vec bboxMax;               // 0x50, x and y are its right and top
 };
 
 struct AnimTableEntry {
@@ -271,7 +267,7 @@ typedef struct AnimationPose {
     GXColor materialColor2;             // 0xF4
     f32 paperScaleX;                    // 0xF8, paper width / 150, times the pose scale
     f32 paperScaleY;                    // 0xFC, paper height / 215, times the pose scale
-    f32 paperOffsetY;                   // 0x100, bottom offset from ANIMDATA_F48
+    f32 paperOffsetY;                   // 0x100, bottom offset from the animation's bboxMin.y
     f32 paperTexTrans[2];               // 0x104, paper texture S/T translation
     f32 paperTexScale[2];               // 0x10C, paper texture S/T scale
     s16 paperLeft;                      // 0x114, screen-space bounds of the paper quad
@@ -319,14 +315,14 @@ typedef struct AnimationWork {
     GXTexObj* mpCurTexObj;            // 0x38
     Mtx paperMtx[3];                  // 0x3C
     Mtx* paperMtxPtr[3];              // 0xCC
-    u32 field_0xD8;                   // 0xD8
-    u32 field_0xDC;                   // 0xDC
+    s32 useTexAlpha[2];               // 0xD8, per paper texture (mpTexObjs): 0 makes renderProc take TEV stage 0's
+                                      //       alpha from the raster when that texture replaces the pose's
     s32 currDispMode;                 // 0xE0
     u8 field_0xE4[0xE8 - 0xE4];       // 0xE4
-    u32 mbUseFloatScratch;            // 0xE8
+    BOOL mbUseFloatScratch;           // 0xE8
     Vec* mpFloatScratch;              // 0xEC
-    u32 mFloatScratchRP;              // 0xF0
-    u32 mFloatScratchWP;              // 0xF4
+    s32 mFloatScratchRP;              // 0xF0
+    s32 mFloatScratchWP;              // 0xF4
     Vec* vtxArrayPos;                 // 0xF8
     Vec* vtxArrayNrm;                 // 0xFC
     FileEntry* mp_ag2tg;              // 0x100
@@ -406,7 +402,7 @@ s32 animPoseGetGroupIdx(s32 poseId, const char* name);
 const char* animPoseGetGroupName(s32 poseId, s32 group);
 
 void animSetPaperTexMtx(Mtx mtx1, Mtx mtx2, Mtx mtx3);
-void animSetPaperTexObj(GXTexObj* a1, GXTexObj* a2, GXTexObj* a3, void* a4, void* a5, void* a6, s32 a7, s32 a8);
+void animSetPaperTexObj(GXTexObj* texObj0, GXTexObj* texObj1, GXTexObj* curTexObj, void* texData0, void* texData1, void* curTexData, s32 useTexAlpha, s32 unused);
 void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluMode);
 
 void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale);

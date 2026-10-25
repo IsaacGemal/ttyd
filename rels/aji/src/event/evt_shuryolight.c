@@ -227,7 +227,7 @@ USER_FUNC(evt_shuryolight_get_anim_time) {
     s32 idx = evtGetValue(event, args[0]);
     NpcEntry** npc = &slhp->entries[idx].npc;
     AnimData* data = animPoseGetAnimDataPtr((*npc)->poseId);
-    f32 time = 1000.0f * (data->clip->field_0x8 - data->clip->field_0x4) / 60.0f;
+    f32 time = 1000.0f * (data->clip->end - data->clip->start) / 60.0f;
 
     evtSetValue(event, args[1], (s32)time);
     return 2;
