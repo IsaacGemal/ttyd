@@ -7001,7 +7001,8 @@ mapdrv/animdrv/mario; none of their files was touched. Data layout was out of bo
   errors. Every commit: each header's users EQUIV, changed files NAT OK, CI PASS, `build/G8MJ01/ok` recreated,
   fncast_lint and local_prototypes clean. At the end: `obj_equiv --tree` over all 1,830 objects against the
   pre-branch snapshot, every one equivalent; the twelve changed C files built under `configure.py --non-matching`
-  (their only output is two existing "function has no prototype" warnings), then reconfigured and rebuilt to `ok`.
+  (their only output is 25 "function has no prototype" warnings, all already present on origin/main: win_root's
+  sort_*_func, some psndSFX_* functions and _sscallback), then reconfigured and rebuilt to `ok`.
 - **Counts** (`tools/cleanup_index.py`, 35dc3b78 -> this branch): index **16.972 -> 15.891** per kLOC (11857 -> 11102
   weighted). field_0x 4624 -> 3886, raw_offset 177 -> 171, prim_ptr_cast 1902 -> 1897; everything else unchanged.
   Per file (weighted, per kLOC):
