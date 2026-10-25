@@ -66,7 +66,7 @@ BattleUnitKind unit_boss_majolyne = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     26,                         // width
     34,                         // height
     { 0, 34 },                  // statusIconOffset
@@ -75,8 +75,8 @@ BattleUnitKind unit_boss_majolyne = {
     { 6.0f, 2.0f, 0.0f },       // talkTogeBaseOffset
     { 13.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 13.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 8.0f, 22.1f, 0.0f },      // kissHitOffset
     { 0.0f, 17.0f, 0.0f },      // cutBaseOffset
@@ -86,7 +86,7 @@ BattleUnitKind unit_boss_majolyne = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_MAJO_DAMAGED1",   // damageSfxName

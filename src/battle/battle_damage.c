@@ -1825,7 +1825,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                 if (unit2->mAttributeFlags & 0x4000) {
                     pattern = 0;
                 }
-                if (irand(100) >= unit2->mKindParams->field_0x8C) {
+                if (irand(100) >= unit2->mKindParams->shotDamageRate) {
                     pattern = 0;
                 }
                 if (!(flags & 0x20000)) {

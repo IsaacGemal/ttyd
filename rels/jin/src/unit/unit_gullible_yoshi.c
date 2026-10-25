@@ -55,7 +55,7 @@ BattleUnitKind unit_gullible_yoshi = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     24,                         // width
     28,                         // height
     { 4, 24 },                  // statusIconOffset
@@ -64,8 +64,8 @@ BattleUnitKind unit_gullible_yoshi = {
     { 0.0f, 40.0f, 0.0f },      // talkTogeBaseOffset
     { 12.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 12.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 12.0f, 18.2f, 0.0f },     // kissHitOffset
     { 0.0f, 14.0f, 0.0f },      // cutBaseOffset
@@ -75,7 +75,7 @@ BattleUnitKind unit_gullible_yoshi = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_PARTY_DAMAGE1",        // damageSfxName

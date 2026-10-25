@@ -94,7 +94,7 @@ BattleUnitKind unit_mahorn_custom = {
     70,                         // bonusCoinRate
     2,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     48,                         // width
     44,                         // height
     { 0, 44 },                  // statusIconOffset
@@ -103,8 +103,8 @@ BattleUnitKind unit_mahorn_custom = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 24.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 24.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 16.0f, 28.6f, 10.0f },    // kissHitOffset
     { 0.0f, 22.0f, 0.0f },      // cutBaseOffset
@@ -114,7 +114,7 @@ BattleUnitKind unit_mahorn_custom = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    0,                          // field_0x8C
+    0,                          // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_ENM_MAHO_DAMAGED1",    // damageSfxName
@@ -142,7 +142,7 @@ BattleUnitKind unit_mahorn_custom_bunsin = {
     60,                            // bonusCoinRate
     0,                             // baseCoin
     50,                            // escapeRate
-    9999,                          // field_0x14
+    9999,                          // renzokuSoftCap
     48,                            // width
     44,                            // height
     { 0, 44 },                     // statusIconOffset
@@ -151,8 +151,8 @@ BattleUnitKind unit_mahorn_custom_bunsin = {
     { 0.0f, 0.0f, 0.0f },          // talkTogeBaseOffset
     { 24.0f, 0.0f, -10.0f },       // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },          // burnFlameOffset
-    0.0f,                          // field_0x54
-    0.0f,                          // field_0x58
+    0.0f,                          // kagenukeOffsetX
+    0.0f,                          // kagenukeOffsetZ
     { 24.0f, 0.0f, 0.0f },         // bintaHitOffset
     { 16.0f, 28.6f, 10.0f },       // kissHitOffset
     { 0.0f, 22.0f, 0.0f },         // cutBaseOffset
@@ -162,7 +162,7 @@ BattleUnitKind unit_mahorn_custom_bunsin = {
     0,                             // turnOrderVariance
     0,                             // swallowRate
     2,                             // swallowAttribute
-    0,                             // field_0x8C
+    0,                             // shotDamageRate
     20,                            // itemStealParam
     { 0.0f, 0.0f, 0.0f },          // starPointDispOffset
     "SFX_ENM_MAHO_DAMAGED1",       // damageSfxName

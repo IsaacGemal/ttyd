@@ -63,7 +63,7 @@ BattleUnitKind unit_boss_zonbaba = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    7,                          // field_0x14
+    7,                          // renzokuSoftCap
     230,                        // width
     170,                        // height
     { -210, 45 },               // statusIconOffset
@@ -72,8 +72,8 @@ BattleUnitKind unit_boss_zonbaba = {
     { 280.0f, 40.0f, 0.0f },    // talkTogeBaseOffset
     { 115.0f, 0.0f, -10.0f },   // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    20.0f,                      // field_0x54
-    0.0f,                       // field_0x58
+    20.0f,                      // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 250.0f, 0.0f, 50.0f },    // bintaHitOffset
     { 380.0f, 110.0f, 50.0f },  // kissHitOffset
     { -290.0f, 85.0f, 0.0f },   // cutBaseOffset
@@ -83,7 +83,7 @@ BattleUnitKind unit_boss_zonbaba = {
     0,                          // turnOrderVariance
     -1,                         // swallowRate
     0,                          // swallowAttribute
-    0,                          // field_0x8C
+    0,                          // shotDamageRate
     0,                          // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_GNB_DAMAGED1",    // damageSfxName

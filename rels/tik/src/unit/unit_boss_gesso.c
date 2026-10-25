@@ -71,7 +71,7 @@ BattleUnitKind unit_boss_gesso = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     120,                        // width
     120,                        // height
     { 46, -75 },                // statusIconOffset
@@ -80,8 +80,8 @@ BattleUnitKind unit_boss_gesso = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 60.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 60.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 60.0f, 78.0f, 0.0f },     // kissHitOffset
     { 0.0f, 120.0f, 0.0f },     // cutBaseOffset
@@ -91,7 +91,7 @@ BattleUnitKind unit_boss_gesso = {
     0,                          // turnOrderVariance
     -1,                         // swallowRate
     0,                          // swallowAttribute
-    0,                          // field_0x8C
+    0,                          // shotDamageRate
     0,                          // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_GESSO_DAMAGED1",  // damageSfxName

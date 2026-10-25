@@ -76,7 +76,7 @@ BattleUnitKind unit_boss_champion = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    8,                          // field_0x14
+    8,                          // renzokuSoftCap
     50,                         // width
     64,                         // height
     { 3, 64 },                  // statusIconOffset
@@ -85,8 +85,8 @@ BattleUnitKind unit_boss_champion = {
     { 8.0f, 36.0f, 0.0f },      // talkTogeBaseOffset
     { 25.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 25.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 10.0f, 48.0f, 10.0f },    // kissHitOffset
     { 0.0f, 32.0f, 0.0f },      // cutBaseOffset
@@ -96,7 +96,7 @@ BattleUnitKind unit_boss_champion = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_BLED_DAMAGED1",   // damageSfxName

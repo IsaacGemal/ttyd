@@ -31,8 +31,15 @@ typedef struct BattleAudienceAnimTable {
     s32* animEatFront;      // 0x48, for Piranha Plants
 } BattleAudienceAnimTable; */
 
+// BattleAudienceKind.flags.
+enum BattleAudienceKindFlags {
+    // The kind takes two neighbouring seats: BattleAudience_Entry seats it only at an even index and marks the next
+    // member taken (flags 0x101), and BattleAudienceSettingAudience counts each one as two members.
+    AUDIENCE_KIND_TWO_SEATS = 0x1,
+};
+
 typedef struct BattleAudienceKind {
-    u8 field_0x0;                      // 0x0, some flag in BattleAudienceSettingAudience
+    u8 flags;                          // 0x0, BattleAudienceKindFlags
     s32** animTable;                   // 0x4
     BattleAudienceItemKind* itemTable; // 0x8
     f32 offsetX;                       // 0xC, added to the member's x for the thrown item's position

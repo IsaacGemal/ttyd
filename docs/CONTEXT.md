@@ -7837,3 +7837,107 @@ were named on the same evidence where a consumer proves them.
   is named by the state that uses it, so check the state ranges cited above. yuu_02's `active` -> `hidden` reverses
   an existing name; the draw tests prove the direction. `cycleScale` replaces the obvious "speed" because it
   multiplies the cycle length.
+## src/battle placeholder fields named from their consumers; the battle headers' missed readers (2026-10-25, Claude Opus 5.5, n9-q-fbtlsrc)
+
+Task (Isaac): name and type the remaining `field_0xNN` in src/battle (the .c files and their local structs) from their
+consumers under CLEANUP_GUIDE section 3, touch the include/battle fields #1134 left only where a reader it missed turns
+up, keep the data-table labels of unread fields, and remove the casts the new types make unnecessary. Parallel branch:
+fmotion (src/motion, src/manager; not touched).
+
+- **What the field_0x were.** By grep (comments included) src/battle + include/battle + src/data/battle held 921, but
+  about 850 of them are data-table labels: BattleWeapon 0x14/0x19/0x1B/0x6F on every weapon initialiser (63 each in
+  battle_item_data.c, 48-56 each in battle_mario.c and battle_stage_object.c), which nothing reads (0x19/0x1B are copied
+  to StarPowerInfo 0x9/0xB, which nothing reads either), so they stay. The index (code only) saw 190 sites; most are
+  local-struct declarations of offsets that are only written (zeroed or set once) or gaps nobody touches.
+- **BattleAudienceKind 0x0** (include/battle/battle_audience_kind_data.h, not in #1134's set) -> `u8 flags`, with
+  `AUDIENCE_KIND_TWO_SEATS = 0x1`: every reader tests `& 1`. BattleAudience_Entry seats a kind with the bit only at an
+  even index and marks the next member taken (flags 0x101); BattleAudienceSettingAudience halves its count, counts it
+  twice toward the target and adds it two at a time. Only the Bulky Bob-omb (heavy_bomb, drawn at 1.5x) sets it.
+- **BattleUnitKind** (battle_unit.h; #1134 recorded the readers of 0x14 and 0x8C as leads; its chapter's "unit_party_vivian's
+  _hammer_star_effect" for 0x54/0x58 is wrong, their one reader is unk_8017d03c):
+  - 0x14 -> `renzokuSoftCap`. mario_get_renzoku_count_max (battle_mario.c, the Power Bounce script; Goombella's
+    Multibonk in unit_party_christine.c) returns it while the count is below it, so the attack always goes on; from
+    there each hit has a 33% chance of one more, and at twice it the attack stops. 9999 in most kinds.
+  - 0x54/0x58 -> `kagenukeOffsetX`/`kagenukeOffsetZ`. Their one reader, unk_8017d03c (unit_party_vivian.c), is called
+    only by partyVivianAttack_NormalAttack (Shade Fist, the attack that runs _make_kagenuke_weapon): it adds 0x54 times
+    the target's facing and x scale to the target's hit x, and 0x58 times its z scale to the hit z, for the place
+    Vivian dives to. The kind's other per-attack offsets are named the same way (bintaHitOffset, kissHitOffset). The
+    function's `k54`/`k58` locals became `offsetX`/`offsetZ`.
+  - 0x8C -> `shotDamageRate`. BattleCheckDamage rolls `irand(100)` against it: a weapon's damage pattern 0xE or 0x10
+    reaches the target only when the roll is under it (else 0). Those two patterns are the ones battle_event_subset
+    sends to subsetevt_shot_damage (0xE: subsetevt_shot_damage_kaiten with marioWeapon_KaitenHammerInvolved, 0x10:
+    _ultra with UltraHammerInvolved: the target is shot into the others). `...Rate` as escapeRate/swallowRate, the
+    kind's other % chances. 100 in most kinds, 0 in super_mahorn's two.
+  - The 200 unit-data labels of each (`// field_0x14` after `// escapeRate`, `// field_0x54/58` after
+    `// burnFlameOffset`, `// field_0x8C` after `// swallowAttribute`) follow; the match was by the label before them,
+    so no BattleWeapon label moved.
+- **BattleStageFallObjectData 0x0** (battle.h, "no reader" in #1134) -> `fallFrameWeapon`. _fall_frame hands the
+  block's address to _fall_frame_event's LW(12), which SamplingEnemy/ResultACDefence/CheckDamage use as the weapon of
+  the falling iron frame ("if_body"); the evtSetValue now takes `&w->fallObjectData->fallFrameWeapon` (same value), and
+  the function's output index local `layer` became `dest`. The four `{ // field_0x0` labels follow.
+- **Local structs.**
+  - sac_bakugame.c BakuGameWork 0xDC/0xE0 -> `gaugeX`/`gaugeY`: BattleAcDrawGauge's x and y (x slides in from -1000 to
+    50 in stage 2). The BakuGameGaugeColor overlay of dispParams.gaugeColor (its 0x4 field never used, its dg/db
+    shadowed by the real ones) goes: `GXColor* color = &disp->gaugeColor.color`, same object.
+  - sac_scissor.c ScissorWork 0xDC -> `f32 trailX[4]; f32 trailY[4]`, the cursor's last four positions star_control
+    shifts in every fourth frame and star_disp2D_sub draws the trailing stars at; StarTrail's `velX`/`velY` were wrong
+    (star_control stores starPos into them, star_disp2D_sub draws the star at them, scissor_control moves them by
+    cursorVel): they are ScissorWork's cursorX/cursorY, renamed so. The StarTrail view itself stays: the original
+    reaches these through a separate work+0x9C pointer (star_control's `addi r29, r31, 0x9c`), and direct work->
+    accesses come out 8 bytes shorter.
+  - Alignment gaps -> `pad_`: BakuGameWork 0xCE, 0x1CD; ScissorWork 0x99; ZubaStarWork 0x7A, 0xA2; BattleMenuWork 0x15
+    (each after a narrower field, before a 4-aligned one, never touched).
+- **Raw offsets onto named fields** (same object each): ac_power_gauge_lv2's `((u8*)ac)[0x29D/0x29E]` ->
+  `disp->gaugeColor.color.g/b` (and the `x = (u8)(x + d)` stores -> `+=`); battle_item_data's Naniga counters
+  `(s8*)((u8*)wp + 0x16f25..28)` and battle_mario's Power Bounce record `(u8*)_battleWorkPointer + 0x16F24` ->
+  `&wp->field_16F1C[0xNN - 0x1C]`, the act-record bytes, written as battle_actrecord indexes them (the counters
+  become u8*, so no cast). This reverses the 2026-10-20 note that the 0x16F24 read "stays raw" because an offset
+  difference is not clearer: battle_seq_command and battle_actrecord already index field_16F1C this way, and the
+  form names the act-record band the byte belongs to.
+- **Labels and comments.** The nozzle/fall-object table labels follow #1134's names (dirWeight, typeWeight, typeWeapon);
+  ac_gauge_timing's comment says `sweep` for its old `field_0x08`; battle_event_subset's comment about BattleUnitKind
+  field_0x10 "read raw" went (the code reads starPointDispOffset).
+- **Left, and why.**
+  - Only written: BattleMenuWork 0x10, 0xF8, 0x114; BakuGameWork 0xC0 (90/70), 0xC8 (set with intensity), 0x1F4 and
+    the untouched word gaps (0x78, 0xAC, 0xB4, 0xE4, 0x1FC, 0x230, 0x270-0x2B4); ScissorWork 0xA0, 0x10C and gaps;
+    ZubaStarWork 0x0, 0x90, 0xA0, 0x5B8, ZubaStarStar 0x4; ScreenWork 0x28 (battle_stage.c); BattleStageObject 0x72;
+    BattleSamplingEntry 0x20; BattleCameraWork 0x74; BattleAudienceWindow 0x10; BattleUnit 0x258/0x264/0x268/0x26E/0x26F
+    (0x26E is read only to be added into 0x268, which nothing reads); BattleUnitKindPart 0x32 / part 0x1A4 (copied).
+  - BattleWeapon 0x14/0x19/0x1B/0x6F and StarPowerInfo 0x9/0xB: no reader (their labels stay).
+  - BattleACDispParams 0x24: ac_lst_rc_keep's actionCommandDisp lights the stage icons up to it, but ac_stick_keep_left's
+    ignores it (`(void)type`, it reads the note itself), so it has one real reader; 0x4 is only incremented
+    (ac_repeatedly), 0x10/0x13 only zeroed.
+  - BattleIcon 0x14/0x18: only their product reaches iconSetScale.
+  - FieldBattleInfo 0x1B (include/driver/npcdrv.h): battle_actrecord's second threshold (between ruleCount's 6 and 1
+    it gives result 2), copied from battleRules[2] by seq_battle (tou_03 sets the rules with evt_npc_set_battle_rule); what result 2 means to the Glitz Pit
+    scripts is the lead.
+  - EventEntry 0x90 (include/manager/evtmgr.h, fmotion's set): a user-function scratch pair (an effect and a sound
+    handle in battle_mario's tornado, nozzle sound handles in battle_stage_object, unit/part ids in vivian), so a
+    scratch name like userdataEx's is the lead, not a per-user one.
+  - sac_genki.c's local structs use another placeholder spelling (`field_N`, about 440 uses); they are the next target
+    in src/battle, as are BattleCursor's `field_0`/`field_4`/`unk8` (in battle_menu_disp they look like the selected index, the
+    first visible row and the entry count; not checked against every user) and BattleCommand.field_55C (the
+    BattleMenuWork that battle_menu_disp allocates).
+- **Checks.** Every commit: `build/G8MJ01/ok` recreated, `obj_equiv --tree` over every object in build/G8MJ01/src
+  against a snapshot taken before the branch (all equivalent), the changed C files compiled under
+  `configure.py --non-matching` (only the files' existing "function has no prototype" warnings) and a normal
+  reconfigure and rebuild to `ok`, fncast_lint and local_prototypes clean, and `tools/ci.py` PASS run as
+  `uv run --with pyelftools python3 ~/ci_notests.py` (its tools/tests step skipped for the 9 worktree environment
+  errors recorded above; its natural step compiled all 189 label-only files too). This worktree had no ratchet
+  baseline, so `ci.py --init` ran first on the byte-identical build.
+- **Review.** A fresh Claude Opus 5.5 read of the diff (read-only) checked every new name and comment against all its
+  readers, all 800 relabelled BattleUnitKind lines by script, and the byte offsets of the rewrites: no wrong names; it
+  raised the field_16F1C reversal and the old 0x54/0x58 attribution, both recorded above.
+- **Counts** (`tools/cleanup_index.py`, 5619c3bf -> this branch, same script): index **13.669 -> 13.602** per kLOC
+  (9548 -> 9501 weighted); field_0x 2403 -> 2374, raw_offset 150 -> 139, struct_ptr_cast 1245 -> 1244, ptr_to_int
+  32 -> 33 (the `(s32)&...fallFrameWeapon` evt store, a pointer-to-int as before; the index counts only the `&` form),
+  everything else unchanged. Index field_0x sites: src/battle 148 -> 127, include/battle 42 -> 36, src/unit 14 -> 12.
+  `field_0x` by grep, comments included: src/battle + include/battle + src/data/battle 921 -> 869, the whole tree
+  8953 -> 8099 (the 800 BattleUnitKind labels in rels/ and src/unit). Biggest per-file drops (weighted): sac_bakugame
+  58 -> 48, ac_power_gauge_lv2 20 -> 8, battle_item_data 22 -> 14, battle_audience 56 -> 51. Re-measured after the
+  rebase onto d0f4bd7d (#1133-#1140): **11.974 -> 11.901** (8364 -> 8313 weighted), the same per-category deltas
+  (field_0x -29, raw_offset -11, struct_ptr_cast -1, ptr_to_int +1).
+- **For a reviewer.** `renzokuSoftCap`, `kagenukeOffsetX/Z` and `shotDamageRate` each rest on one reader (the only
+  one there is); `shotDamageRate`'s comment names BattleCheckDamage's other two conditions on those patterns too
+  (attribute 0x4000, flag 0x20000), so the roll is not the whole gate. `AUDIENCE_KIND_TWO_SEATS` is a new enum constant named from its readers;
+  the data tables keep their literal 0/1.

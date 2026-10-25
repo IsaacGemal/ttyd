@@ -76,7 +76,7 @@ BattleUnitKind unit_chorobon_gundan = {
     100,                            // bonusCoinRate
     0,                              // baseCoin
     50,                             // escapeRate
-    5,                              // field_0x14
+    5,                              // renzokuSoftCap
     260,                            // width
     50,                             // height
     { 0, 50 },                      // statusIconOffset
@@ -85,8 +85,8 @@ BattleUnitKind unit_chorobon_gundan = {
     { 0.0f, 0.0f, 0.0f },           // talkTogeBaseOffset
     { 130.0f, 0.0f, -10.0f },       // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },           // burnFlameOffset
-    0.0f,                           // field_0x54
-    0.0f,                           // field_0x58
+    0.0f,                           // kagenukeOffsetX
+    0.0f,                           // kagenukeOffsetZ
     { 130.0f, 0.0f, 0.0f },         // bintaHitOffset
     { 130.0f, 32.5f, 0.0f },        // kissHitOffset
     { 0.0f, 25.0f, 0.0f },          // cutBaseOffset
@@ -96,7 +96,7 @@ BattleUnitKind unit_chorobon_gundan = {
     0,                              // turnOrderVariance
     -1,                             // swallowRate
     0,                              // swallowAttribute
-    100,                            // field_0x8C
+    100,                            // shotDamageRate
     20,                             // itemStealParam
     { 0.0f, 0.0f, 0.0f },           // starPointDispOffset
     "SFX_BOSS_TEAM_CHORO_DAMAGED1", // damageSfxName

@@ -111,7 +111,7 @@ typedef struct BattleStageNozzleData {
 // One rank's block of battle_stage_fall_object_data (four 0x78C-byte blocks, one per stage rank; BattleStageObjectInit
 // points BattleWorkField180C0.fallObjectData at the current rank's).
 typedef struct BattleStageFallObjectData {
-    BattleWeapon field_0x0;        // 0x0, no reader
+    BattleWeapon fallFrameWeapon;  // 0x0, the falling iron frame's weapon (_fall_frame returns it to _fall_frame_event)
     u8 typeWeight[9];              // 0xC0, weight of each fall-object type (_object_fall_attack)
     u8 pad_0xC9[3];                // 0xC9
     BattleWeapon typeWeapon[9];    // 0xCC, the weapon of each fall-object type (_object_fall_attack)

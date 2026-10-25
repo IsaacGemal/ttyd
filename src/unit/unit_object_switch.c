@@ -65,7 +65,7 @@ BattleUnitKind unit_object_switch = {
     0,                          // bonusCoinRate
     0,                          // baseCoin
     100,                        // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     24,                         // width
     24,                         // height
     { 0, 0 },                   // statusIconOffset
@@ -74,8 +74,8 @@ BattleUnitKind unit_object_switch = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 0.0f, 0.0f, 0.0f },       // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 12.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 12.0f, 15.6f, 0.0f },     // kissHitOffset
     { 0.0f, 0.0f, 0.0f },       // cutBaseOffset
@@ -85,7 +85,7 @@ BattleUnitKind unit_object_switch = {
     0,                          // turnOrderVariance
     -1,                         // swallowRate
     0,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BTL_DAMAGE1",          // damageSfxName

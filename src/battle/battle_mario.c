@@ -258,7 +258,7 @@ USER_FUNC(_record_renzoku_count) {
     u8* record;
 
     count = evtGetValue(event, args[0]);
-    record = (u8*)_battleWorkPointer + 0x16F24;
+    record = &_battleWorkPointer->field_16F1C[0x24 - 0x1C];
     pouch = pouchGetPtr();
     if (count > record[0]) {
         if (count > pouch->mPowerBounceRecord) {
@@ -291,7 +291,7 @@ USER_FUNC(mario_get_renzoku_count_max) {
         evtSetValue(event, dest, 0);
         return EVT_RETURN_DONE;
     }
-    max = unit->mKindParams->field_0x14;
+    max = unit->mKindParams->renzokuSoftCap;
     if (val1 < max) {
         evtSetValue(event, dest, max);
         return EVT_RETURN_DONE;

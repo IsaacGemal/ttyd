@@ -95,7 +95,7 @@ BattleUnitKind unit_barriern_custom = {
     70,                         // bonusCoinRate
     5,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     50,                         // width
     50,                         // height
     { 0, 25 },                  // statusIconOffset
@@ -104,8 +104,8 @@ BattleUnitKind unit_barriern_custom = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 25.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 25.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 10.0f, 10.0f, 0.0f },     // kissHitOffset
     { 0.0f, 0.0f, 0.0f },       // cutBaseOffset
@@ -115,7 +115,7 @@ BattleUnitKind unit_barriern_custom = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_ENM_BARRI_DAMAGED1",   // damageSfxName

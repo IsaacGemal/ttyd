@@ -82,7 +82,7 @@ BattleUnitKind unit_boss_macho_gance = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    6,                          // field_0x14
+    6,                          // renzokuSoftCap
     116,                        // width
     124,                        // height
     { 30, 100 },                // statusIconOffset
@@ -91,8 +91,8 @@ BattleUnitKind unit_boss_macho_gance = {
     { 40.0f, 80.0f, 0.0f },     // talkTogeBaseOffset
     { 58.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 58.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 42.0f, 80.0f, 0.0f },     // kissHitOffset
     { 0.0f, 62.0f, 0.0f },      // cutBaseOffset
@@ -102,7 +102,7 @@ BattleUnitKind unit_boss_macho_gance = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_GANSU_DAMAGED1",  // damageSfxName

@@ -76,7 +76,7 @@ BattleUnitKind unit_act_mario = {
     0,                            // bonusCoinRate
     0,                            // baseCoin
     100,                          // escapeRate
-    9,                            // field_0x14
+    9,                            // renzokuSoftCap
     28,                           // width
     24,                           // height
     { 5, 25 },                    // statusIconOffset
@@ -85,8 +85,8 @@ BattleUnitKind unit_act_mario = {
     { 0.0f, 30.0f, 0.0f },        // talkTogeBaseOffset
     { 14.0f, 0.0f, -10.0f },      // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },         // burnFlameOffset
-    0.0f,                         // field_0x54
-    0.0f,                         // field_0x58
+    0.0f,                         // kagenukeOffsetX
+    0.0f,                         // kagenukeOffsetZ
     { 14.0f, 0.0f, 0.0f },        // bintaHitOffset
     { 14.0f, 15.6f, 0.0f },       // kissHitOffset
     { 0.0f, 0.0f, 0.0f },         // cutBaseOffset
@@ -96,7 +96,7 @@ BattleUnitKind unit_act_mario = {
     0,                            // turnOrderVariance
     -1,                           // swallowRate
     0,                            // swallowAttribute
-    100,                          // field_0x8C
+    100,                          // shotDamageRate
     20,                           // itemStealParam
     { 0.0f, 0.0f, 0.0f },         // starPointDispOffset
     "SFX_BTL_DAMAGE1",            // damageSfxName

@@ -65,7 +65,7 @@ BattleUnitKind unit_boss_kanbu1 = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     56,                         // width
     59,                         // height
     { 0, 56 },                  // statusIconOffset
@@ -74,8 +74,8 @@ BattleUnitKind unit_boss_kanbu1 = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 28.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 28.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 28.0f, 38.35f, 0.0f },    // kissHitOffset
     { 0.0f, 26.0f, 0.0f },      // cutBaseOffset
@@ -85,7 +85,7 @@ BattleUnitKind unit_boss_kanbu1 = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_KANBU_DAMAGED1",  // damageSfxName

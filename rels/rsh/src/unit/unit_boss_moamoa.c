@@ -140,7 +140,7 @@ BattleUnitKind unit_boss_moamoa = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     50,                         // escapeRate
-    6,                          // field_0x14
+    6,                          // renzokuSoftCap
     160,                        // width
     80,                         // height
     { 0, 24 },                  // statusIconOffset
@@ -149,8 +149,8 @@ BattleUnitKind unit_boss_moamoa = {
     { 280.0f, 40.0f, 0.0f },    // talkTogeBaseOffset
     { 80.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    15.0f,                      // field_0x54
-    10.0f,                      // field_0x58
+    15.0f,                      // kagenukeOffsetX
+    10.0f,                      // kagenukeOffsetZ
     { 80.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 10.0f, 80.0f, 20.0f },    // kissHitOffset
     { 0.0f, 70.0f, 0.0f },      // cutBaseOffset
@@ -160,7 +160,7 @@ BattleUnitKind unit_boss_moamoa = {
     0,                          // turnOrderVariance
     -1,                         // swallowRate
     0,                          // swallowAttribute
-    0,                          // field_0x8C
+    0,                          // shotDamageRate
     0,                          // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_MOA_G_DAMAGED1",  // damageSfxName

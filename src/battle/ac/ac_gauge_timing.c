@@ -68,7 +68,7 @@ typedef struct GaugeTimingWork {
 // Local to this file in the original (`.fn actionCommandDisp, local`).
 static void actionCommandDisp(f32 x, f32 y);
 
-// The default-case acParams[4]/100*field_0x08+50 conversion matches r4 (not r0) once the /100
+// The default-case acParams[4]/100*sweep+50 conversion matches r4 (not r0) once the /100
 // constant is read plainly instead of through MATCH_F32's volatile (float_50 stays volatile).
 s32 battleAcMain_GaugeTiming(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;

@@ -206,7 +206,7 @@ BattleUnitKind unitdata_Party_Vivian = {
     0,                               // bonusCoinRate
     0,                               // baseCoin
     100,                             // escapeRate
-    9,                               // field_0x14
+    9,                               // renzokuSoftCap
     20,                              // width
     33,                              // height
     { 14, 36 },                      // statusIconOffset
@@ -215,8 +215,8 @@ BattleUnitKind unitdata_Party_Vivian = {
     { 0.0f, 40.0f, 0.0f },           // talkTogeBaseOffset
     { 0.0f, 40.0f, 0.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
-    0.0f,                            // field_0x54
-    0.0f,                            // field_0x58
+    0.0f,                            // kagenukeOffsetX
+    0.0f,                            // kagenukeOffsetZ
     { 10.0f, 0.0f, 0.0f },           // bintaHitOffset
     { 10.0f, 21.45f, 0.0f },         // kissHitOffset
     { 0.0f, 0.0f, 0.0f },            // cutBaseOffset
@@ -226,7 +226,7 @@ BattleUnitKind unitdata_Party_Vivian = {
     0,                               // turnOrderVariance
     -1,                              // swallowRate
     0,                               // swallowAttribute
-    100,                             // field_0x8C
+    100,                             // shotDamageRate
     20,                              // itemStealParam
     { 0.0f, 0.0f, 0.0f },            // starPointDispOffset
     "SFX_PARTY_DAMAGE1",             // damageSfxName
@@ -1625,8 +1625,8 @@ USER_FUNC(unk_8017d03c) {
     f32 sx;
     f32 sy;
     f32 sz;
-    f32 k54;
-    f32 k58;
+    f32 offsetX;
+    f32 offsetZ;
     f32 d1;
     f32 d2;
     f32 base;
@@ -1653,12 +1653,12 @@ USER_FUNC(unk_8017d03c) {
     unit2 = BattleGetUnitPtr(work, BattleTransID(event, v0));
     BtlUnit_GetScale(unit2, &sx, &sy, &sz);
 
-    k54 = unit2->mKindParams->field_0x54;
-    k58 = unit2->mKindParams->field_0x58;
+    offsetX = unit2->mKindParams->kagenukeOffsetX;
+    offsetZ = unit2->mKindParams->kagenukeOffsetZ;
     d1 = (f32)unit1->faceDirection;
     d2 = (f32)unit2->faceDirection;
-    t = (s32)(d2 * (k54 * sx));
-    u = (s32)(k58 * sz);
+    t = (s32)(d2 * (offsetX * sx));
+    u = (s32)(offsetZ * sz);
     base = -30.f * unit1->mSizeMultiplier;
     outX = (s32)((f32)v1 + (base * d1 + (f32)t));
     outZ = v3 + u;

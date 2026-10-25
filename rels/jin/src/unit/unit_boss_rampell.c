@@ -96,7 +96,7 @@ BattleUnitKind unit_boss_rampell = {
     100,                           // bonusCoinRate
     0,                             // baseCoin
     70,                            // escapeRate
-    7,                             // field_0x14
+    7,                             // renzokuSoftCap
     50,                            // width
     48,                            // height
     { 4, 48 },                     // statusIconOffset
@@ -105,8 +105,8 @@ BattleUnitKind unit_boss_rampell = {
     { 0.0f, 40.0f, 0.0f },         // talkTogeBaseOffset
     { 25.0f, 0.0f, -10.0f },       // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },          // burnFlameOffset
-    0.0f,                          // field_0x54
-    0.0f,                          // field_0x58
+    0.0f,                          // kagenukeOffsetX
+    0.0f,                          // kagenukeOffsetZ
     { 18.0f, 0.0f, 0.0f },         // bintaHitOffset
     { 12.0f, 32.0f, 0.0f },        // kissHitOffset
     { 7.0f, 22.0f, 0.0f },         // cutBaseOffset
@@ -116,7 +116,7 @@ BattleUnitKind unit_boss_rampell = {
     0,                             // turnOrderVariance
     0,                             // swallowRate
     2,                             // swallowAttribute
-    100,                           // field_0x8C
+    100,                           // shotDamageRate
     20,                            // itemStealParam
     { 0.0f, 0.0f, 0.0f },          // starPointDispOffset
     "SFX_BOSS_RNPL_DAMAGED1",      // damageSfxName

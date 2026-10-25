@@ -443,9 +443,9 @@ __declspec(section ".data") u8 _nozzle_at_base_monster[192] = {
 };
 __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = {
     {
-        { { 0, 0, 50, 50 }, { 0, 50, 0, 50 }, { 0, 50, 50, 0 } }, // field_0x0
-        { 100, 0, 0, 0 },                                         // field_0xC
-        { // field_0x10
+        { { 0, 0, 50, 50 }, { 0, 50, 0, 50 }, { 0, 50, 50, 0 } }, // dirWeight
+        { 100, 0, 0, 0 },                                         // typeWeight
+        { // typeWeapon
             { // [0]
                 NULL,                                     // name
                 0,                                        // icon
@@ -757,9 +757,9 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
         },
     },
     {
-        { { 0, 0, 50, 50 }, { 0, 50, 0, 50 }, { 0, 50, 50, 0 } }, // field_0x0
-        { 60, 40, 0, 0 },                                         // field_0xC
-        { // field_0x10
+        { { 0, 0, 50, 50 }, { 0, 50, 0, 50 }, { 0, 50, 50, 0 } }, // dirWeight
+        { 60, 40, 0, 0 },                                         // typeWeight
+        { // typeWeapon
             { // [0]
                 NULL,                                     // name
                 0,                                        // icon
@@ -1071,9 +1071,9 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
         },
     },
     {
-        { { 0, 0, 50, 50 }, { 0, 50, 0, 50 }, { 0, 50, 50, 0 } }, // field_0x0
-        { 40, 30, 30, 0 },                                        // field_0xC
-        { // field_0x10
+        { { 0, 0, 50, 50 }, { 0, 50, 0, 50 }, { 0, 50, 50, 0 } }, // dirWeight
+        { 40, 30, 30, 0 },                                        // typeWeight
+        { // typeWeapon
             { // [0]
                 NULL,                                     // name
                 0,                                        // icon
@@ -1385,9 +1385,9 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
         },
     },
     {
-        { { 0, 0, 50, 50 }, { 0, 50, 0, 50 }, { 0, 50, 50, 0 } }, // field_0x0
-        { 20, 30, 30, 20 },                                       // field_0xC
-        { // field_0x10
+        { { 0, 0, 50, 50 }, { 0, 50, 0, 50 }, { 0, 50, 50, 0 } }, // dirWeight
+        { 20, 30, 30, 20 },                                       // typeWeight
+        { // typeWeapon
             { // [0]
                 NULL,                                     // name
                 0,                                        // icon
@@ -1701,7 +1701,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
 };
 __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_data[4] = {
     {
-        { // field_0x0
+        { // fallFrameWeapon
             NULL,                                     // name
             0,                                        // icon
             ITEM_NULL,                                // item
@@ -1778,9 +1778,9 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             NULL,                                     // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
         },
-        { 0, 10, 0, 0, 0, 0, 0, 0, 10 }, // field_0xC0
+        { 0, 10, 0, 0, 0, 0, 0, 0, 10 }, // typeWeight
         { 0, 0, 0 },                     // pad_0xC9
-        { // field_0xCC
+        { // typeWeapon
             { // [0]
                 NULL,                                     // name
                 0,                                        // icon
@@ -2477,7 +2477,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
         },
     },
     {
-        { // field_0x0
+        { // fallFrameWeapon
             NULL,                                     // name
             0,                                        // icon
             ITEM_NULL,                                // item
@@ -2554,9 +2554,9 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             NULL,                                     // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
         },
-        { 10, 10, 0, 0, 0, 10, 0, 0, 10 }, // field_0xC0
+        { 10, 10, 0, 0, 0, 10, 0, 0, 10 }, // typeWeight
         { 0, 0, 0 },                       // pad_0xC9
-        { // field_0xCC
+        { // typeWeapon
             { // [0]
                 NULL,                                     // name
                 0,                                        // icon
@@ -3253,7 +3253,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
         },
     },
     {
-        { // field_0x0
+        { // fallFrameWeapon
             NULL,                                     // name
             0,                                        // icon
             ITEM_NULL,                                // item
@@ -3330,9 +3330,9 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             NULL,                                     // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
         },
-        { 10, 10, 10, 10, 10, 10, 0, 0, 10 }, // field_0xC0
+        { 10, 10, 10, 10, 10, 10, 0, 0, 10 }, // typeWeight
         { 0, 0, 0 },                          // pad_0xC9
-        { // field_0xCC
+        { // typeWeapon
             { // [0]
                 NULL,                                     // name
                 0,                                        // icon
@@ -4029,7 +4029,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
         },
     },
     {
-        { // field_0x0
+        { // fallFrameWeapon
             NULL,                                     // name
             0,                                        // icon
             ITEM_NULL,                                // item
@@ -4106,9 +4106,9 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             NULL,                                     // mAttackEvtScript
             { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
         },
-        { 10, 10, 10, 10, 10, 10, 10, 10, 10 }, // field_0xC0
+        { 10, 10, 10, 10, 10, 10, 10, 10, 10 }, // typeWeight
         { 0, 0, 0 },                            // pad_0xC9
-        { // field_0xCC
+        { // typeWeapon
             { // [0]
                 NULL,                                     // name
                 0,                                        // icon
@@ -5747,7 +5747,7 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 }
 
 USER_FUNC(_fall_frame) {
-	s32 layer = event->args[0];
+	s32 dest = event->args[0];
 	BattleWork* wp = _battleWorkPointer;
 	BattleWorkField180C0* w = &wp->field_180C0;
 	BattleStageObject* obj = BattleSearchObjectPtr("if_body");
@@ -5762,7 +5762,7 @@ USER_FUNC(_fall_frame) {
 	if (event->userdata[2] < 0x3C) {
 		return EVT_RETURN_BLOCK;
 	}
-	evtSetValue(event, layer, (s32)w->fallObjectData);
+	evtSetValue(event, dest, (s32)&w->fallObjectData->fallFrameWeapon);
 	return EVT_RETURN_DONE;
 }
 

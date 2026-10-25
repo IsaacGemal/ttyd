@@ -68,7 +68,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     70,                         // bonusCoinRate
     1,                          // baseCoin
     50,                         // escapeRate
-    9999,                       // field_0x14
+    9999,                       // renzokuSoftCap
     26,                         // width
     80,                         // height
     { 14, 80 },                 // statusIconOffset
@@ -77,8 +77,8 @@ BattleUnitKind UNIT_DATA_SYM = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 13.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 13.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 10.0f, 52.0f, 0.0f },     // kissHitOffset
     { 0.0f, 40.0f, 0.0f },      // cutBaseOffset
@@ -88,7 +88,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_ENM_SAMBO_DAMAGED1",   // damageSfxName

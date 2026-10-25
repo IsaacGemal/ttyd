@@ -67,7 +67,7 @@ BattleUnitKind unit_boss_gundan_zako_group1 = {
     100,                           // bonusCoinRate
     0,                             // baseCoin
     50,                            // escapeRate
-    9999,                          // field_0x14
+    9999,                          // renzokuSoftCap
     50,                            // width
     50,                            // height
     { 0, 50 },                     // statusIconOffset
@@ -76,8 +76,8 @@ BattleUnitKind unit_boss_gundan_zako_group1 = {
     { 0.0f, 0.0f, 0.0f },          // talkTogeBaseOffset
     { 25.0f, 0.0f, -10.0f },       // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },          // burnFlameOffset
-    0.0f,                          // field_0x54
-    0.0f,                          // field_0x58
+    0.0f,                          // kagenukeOffsetX
+    0.0f,                          // kagenukeOffsetZ
     { 25.0f, 0.0f, 0.0f },         // bintaHitOffset
     { 25.0f, 32.5f, 0.0f },        // kissHitOffset
     { -4.0f, 25.0f, 0.0f },        // cutBaseOffset
@@ -87,7 +87,7 @@ BattleUnitKind unit_boss_gundan_zako_group1 = {
     0,                             // turnOrderVariance
     -1,                            // swallowRate
     0,                             // swallowAttribute
-    100,                           // field_0x8C
+    100,                           // shotDamageRate
     20,                            // itemStealParam
     { 0.0f, 0.0f, 0.0f },          // starPointDispOffset
     "SFX_BOSS_TEAM_3RD_DAMAGED1",  // damageSfxName

@@ -61,7 +61,7 @@ BattleUnitKind unit_monban = {
     100,                        // bonusCoinRate
     0,                          // baseCoin
     100,                        // escapeRate
-    9,                          // field_0x14
+    9,                          // renzokuSoftCap
     31,                         // width
     46,                         // height
     { 0, 46 },                  // statusIconOffset
@@ -70,8 +70,8 @@ BattleUnitKind unit_monban = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 16.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 15.5f, 0.0f, 0.0f },      // bintaHitOffset
     { 15.5f, 29.9f, 0.0f },     // kissHitOffset
     { 0.0f, 20.0f, 0.0f },      // cutBaseOffset
@@ -81,7 +81,7 @@ BattleUnitKind unit_monban = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_ENM_MONBAN_DAMAGED1",  // damageSfxName

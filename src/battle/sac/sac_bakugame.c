@@ -51,18 +51,6 @@ typedef struct BakuGameWorkEntry {
     f32 iconScale;   // 0x20, passed as the icon alpha/scale to iconDispGx
 } BakuGameWorkEntry;
 
-// Flash colour the gauge is tinted with once it is full: actionCommands.dispParams.gaugeColor (BattleWork 0x1F2C).
-// BattleAcDrawGauge reads bytes 0..3 as RGBA; bakuGameDisp2D sweeps g and b between 0x80 and 0xF5.
-typedef struct BakuGameGaugeColor {
-    u8 r;
-    u8 g;
-    u8 b;
-    u8 a;
-    u8 field_0x4;
-    s8 dg;
-    s8 db;
-} BakuGameGaugeColor;
-
 struct BakuGameWork {
     s32 flags;                        // 0x0, bit 0: heiho enabled (bakuGameHeihoReturn), bit 1: audience can throw
     s32 phase;                        // 0x4, outer switch in bakuGameMain
@@ -83,12 +71,12 @@ struct BakuGameWork {
     f32 field_0xC8;                   // 0xC8, always written with intensity
     u8 team;                          // 0xCC, team being surprised (0 Mario, 1 enemy, 2 audience)
     u8 selTeam;                       // 0xCD, team the player picked (copied from entries[i].index)
-    u8 field_0xCE[0xD0 - 0xCE];       // 0xCE
+    u8 pad_0xCE[0xD0 - 0xCE];         // 0xCE
     f32 gauge;                        // 0xD0, 0..110 time gauge; 100 is full
     f32 gaugeBoost;                   // 0xD4, added to gauge each frame, +1.5 on a button press
     f32 gaugeDecay;                   // 0xD8, -0.3 a frame
-    f32 field_0xDC;                   // 0xDC, first BattleAcDrawGauge argument
-    f32 field_0xE0;                   // 0xE0, second BattleAcDrawGauge argument
+    f32 gaugeX;                       // 0xDC, BattleAcDrawGauge's x; slides in from -1000 to 50
+    f32 gaugeY;                       // 0xE0, BattleAcDrawGauge's y
     u8 field_0xE4[0xE8 - 0xE4];       // 0xE4
     f32 gaugeFill;                    // 0xE8, gauge / 100 clamped to 1, the BattleAcDrawGauge ratio
     s32 animPose;                     // 0xEC, c_star_bom pose id, -1 when released
@@ -101,7 +89,7 @@ struct BakuGameWork {
     s32 heihoTimer;                   // 0x1C4
     s32 heihoDuration;                // 0x1C8
     s8 texSet;                        // 0x1CC, -1 or 1; 1 selects the second half of the UVs in bakuGameDisp3D
-    u8 field_0x1CD[0x1D0 - 0x1CD];    // 0x1CD
+    u8 pad_0x1CD[0x1D0 - 0x1CD];      // 0x1CD
     Vec heihoPos;                     // 0x1D0, y is the bounce height
     Vec heihoFrom;                    // 0x1DC
     Vec heihoTo;                      // 0x1E8
@@ -668,7 +656,7 @@ first_done:
     switch (baku->stage) {
         case 0:
             baku->stage = 2;
-            baku->field_0xE0 = 50.0f;
+            baku->gaugeY = 50.0f;
             baku->counter = 0;
             baku->position = (Vec){ 0.0f, -1000.0f, 0.0f };
             baku->countdown = -1;
@@ -677,7 +665,7 @@ first_done:
             baku->field_0xC0 = 90.0f;
             /* fall through */
         case 2:
-            baku->field_0xDC =
+            baku->gaugeX =
                 intplGetValue(4, baku->counter, 0x1E, -1000.0f, 50.0f);
             baku->counter++;
             if (baku->counter > 0x1E) {
@@ -1430,7 +1418,7 @@ static inline BakuGameWorkEntry* bakuGameEntry(BakuGameWork* work, s32 i) {
 void bakuGameDisp2D(void) {
     BakuGameWork* baku = GetBakuGamePtr();
     BattleACDispParams* disp = &_battleWorkPointer->actionCommands.dispParams;
-    BakuGameGaugeColor* color = (BakuGameGaugeColor*)&disp->gaugeColor;
+    GXColor* color = &disp->gaugeColor.color;
     s32 i;
     s32 flag;
 
@@ -1475,7 +1463,7 @@ void bakuGameDisp2D(void) {
             disp->dg = -0x10;
         }
     }
-    BattleAcDrawGauge((s32)baku->field_0xDC, (s32)baku->field_0xE0, baku->gaugeFill, 0xB1, 3, 0x21, 0x42, 0x64, flag);
+    BattleAcDrawGauge((s32)baku->gaugeX, (s32)baku->gaugeY, baku->gaugeFill, 0xB1, 3, 0x21, 0x42, 0x64, flag);
 }
 
 void bakuGameDisp3D(CameraId camId, void* param) {
