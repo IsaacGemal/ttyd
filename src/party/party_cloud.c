@@ -227,8 +227,8 @@ void cloud_init(PartyEntry* party) {
     party->radius = 24.0f;
     party->tail.flurrie.field_174 = 0;
     party->tail.flurrie.breathFx = NULL;
-    *(s32*)((u8*)party + 0x17C) = 0;
-    *(s32*)((u8*)party + 0x180) = 0;
+    *(s32*)&party->tail.flurrie.bobAngle = 0;
+    *(s32*)&party->tail.flurrie.bobStep = 0;
     party->useStruct = NULL;
     party->tail.flurrie.breathFx = NULL;
 }
@@ -332,8 +332,8 @@ void N__cloud_use(PartyEntry* party) {
 
     if ((party->field_8 & 0x8) != 0) {
         party->field_8 &= ~0x8;
-        *(s32*)((u8*)party + 0x17C) = 0;
-        *(s32*)((u8*)party + 0x180) = 0;
+        *(s32*)&party->tail.flurrie.bobAngle = 0;
+        *(s32*)&party->tail.flurrie.bobStep = 0;
         marioAdjustMoveDir();
         party->useMotionId = 0;
         party->useStruct = __memAlloc(HEAP_DEFAULT, 0x48);
