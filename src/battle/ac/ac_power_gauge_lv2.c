@@ -297,17 +297,17 @@ static void actionCommandDisp(f32 x, f32 y) {
         disp->value = ratio;
 
         if (dec->flag != 0) {
-            ((u8*)ac)[0x29D] = (u8)(((u8*)ac)[0x29D] + disp->dg);
-            ((u8*)ac)[0x29E] = (u8)(((u8*)ac)[0x29E] + disp->db);
+            disp->gaugeColor.color.g += disp->dg;
+            disp->gaugeColor.color.b += disp->db;
 
             if (disp->value >= 1.0f) {
                 flags |= 1;
             }
-            if (((u8*)ac)[0x29D] <= 0x80 && disp->dg < 0) {
+            if (disp->gaugeColor.color.g <= 0x80 && disp->dg < 0) {
                 disp->db = 0x10;
                 disp->dg = 0x10;
             }
-            if (((u8*)ac)[0x29D] >= 0xF5 && disp->dg > 0) {
+            if (disp->gaugeColor.color.g >= 0xF5 && disp->dg > 0) {
                 disp->db = -0x10;
                 disp->dg = -0x10;
             }

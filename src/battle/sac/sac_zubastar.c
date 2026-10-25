@@ -90,7 +90,7 @@ struct ZubaStarWork {
     Vec cutEnd;                    // 0x068
     s32 cutFrame;                  // 0x074
     s16 curStar;                   // 0x078
-    u8 field_0x07A[0x02];          // 0x07A
+    u8 pad_0x07A[0x02];            // 0x07A
     s32 gaugePhase;                // 0x07C
     s32 gaugeTimer;                // 0x080
     f32 gauge;                     // 0x084
@@ -100,7 +100,7 @@ struct ZubaStarWork {
     Vec gaugePos;                  // 0x094
     u8 field_0x0A0;                // 0x0A0
     u8 iconFrame;                  // 0x0A1
-    u8 field_0x0A2[0x02];          // 0x0A2
+    u8 pad_0x0A2[0x02];            // 0x0A2
     s32 gaugeSfx;                  // 0x0A4
     ZubaStarBomb* bombs[0xC8];     // 0x0A8
     ZubaStarStar stars[0x10];      // 0x3C8

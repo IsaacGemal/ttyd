@@ -66,21 +66,22 @@ typedef struct ScissorWork {
     s32 hitUnitIds[16];           // 0x18, unit ids
     s32 hitPower[16];             // 0x58, damage each hit unit took
     u8 audienceVol;               // 0x98, audience sound volume, raised 0x14 per damaging move
-    u8 field_0x99[0x03];          // 0x99
+    u8 pad_0x99[0x03];            // 0x99
     s32 pointCount;               // 0x9C, points in pointBuf (the StarTrail view starts here)
     s32 field_0xA0;               // 0xA0
     f32 prevStickX;               // 0xA4
     f32 prevStickY;               // 0xA8
     f32 stickX;                   // 0xAC
     f32 stickY;                   // 0xB0
-    f32 cursorX;                  // 0xB4, the StarTrail velX
-    f32 cursorY;                  // 0xB8, the StarTrail velY
+    f32 cursorX;                  // 0xB4, the star cursor; star_disp2D_sub draws the star here
+    f32 cursorY;                  // 0xB8
     f32 lastPointX;               // 0xBC, last point written to pointBuf
     f32 lastPointY;               // 0xC0
     u8 field_0xC4[0x10];          // 0xC4
     f32 cursorVelX;               // 0xD4
     f32 cursorVelY;               // 0xD8
-    u8 field_0xDC[0x20];          // 0xDC, the StarTrail trailX/trailY arrays
+    f32 trailX[4];                // 0xDC, the cursor's last four positions (star_control shifts them in every
+    f32 trailY[4];                // 0xEC  fourth frame), where star_disp2D_sub draws the trailing stars
     s32 timerPhase;               // 0xFC, scissor_timer_main switch
     s32 timerFrame;               // 0x100
     s32 timeLeft;                 // 0x104, starts at 0x3BF
@@ -101,14 +102,14 @@ typedef struct ScissorWork {
     smartEntry* captureBuf;       // 0x170, texture the scissor area is captured into
 } ScissorWork;
 
-// Star trail area reached through a work+0x9C pointer in the original.
-// No header declares it.
+// ScissorWork from pointCount (0x9C) on, as star_control and star_disp2D_sub reach it: through a work+0x9C pointer
+// in the original.
 typedef struct StarTrail {
     u8 field_0x00[0x18];  // 0x00
-    f32 velX;             // 0x18
-    f32 velY;             // 0x1C
+    f32 cursorX;          // 0x18, ScissorWork.cursorX
+    f32 cursorY;          // 0x1C
     u8 field_0x20[0x20];  // 0x20
-    f32 trailX[4];        // 0x40
+    f32 trailX[4];        // 0x40, ScissorWork.trailX
     f32 trailY[4];        // 0x50
 } StarTrail;
 
@@ -710,8 +711,8 @@ s32 star_control(void) {
             star->trailX[i] = star->trailX[i - 1];
             star->trailY[i] = star->trailY[i - 1];
         }
-        star->trailX[0] = star->velX;
-        star->trailY[0] = star->velY;
+        star->trailX[0] = star->cursorX;
+        star->trailY[0] = star->cursorY;
     }
     switch (work->state) {
     case 1:
@@ -765,8 +766,8 @@ s32 star_control(void) {
                 work->starRot = (Vec){0.0f, 0.0f, 0.0f};
                 work->starFrom.y = work->starPos.y;
                 work->starTo.y = 0.0f;
-                star->velX = work->starPos.x;
-                star->velY = work->starPos.y;
+                star->cursorX = work->starPos.x;
+                star->cursorY = work->starPos.y;
                 for (i = 0; i < 4; i++) {
                     star->trailX[i] = 0.0f;
                     star->trailY[i] = -1000.0f;
@@ -777,8 +778,8 @@ s32 star_control(void) {
     case 4:
         work->stateFrame++;
         work->starPos.y = intplGetValue(4, work->stateFrame, 0x3C, work->starFrom.y, work->starTo.y);
-        star->velX = work->starPos.x;
-        star->velY = work->starPos.y;
+        star->cursorX = work->starPos.x;
+        star->cursorY = work->starPos.y;
         if (work->stateFrame >= 0x3C) {
             work->state = 5;
             work->stateFrame = 0;
@@ -852,8 +853,8 @@ void star_disp2D_sub(s32 index, s32 alpha) {
     }
     color = (GXColor){ 0xFF, 0xFF, 0xFF, alpha };
     if (index == 0) {
-        x = star->velX;
-        y = star->velY;
+        x = star->cursorX;
+        y = star->cursorY;
         z = 0.0f;
     } else {
         x = star->trailX[index - 1];

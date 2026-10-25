@@ -32,7 +32,7 @@ typedef struct BattleMenuWork {
     s32 phase;                // 0xC, ring/scroll state: 0, 1, 2, 0xA, 0x14, 0x1E, 0x28
     s32 field_0x10;           // 0x10
     u8 inputReady;            // 0x14, read by BattleMenuKeyOKInACT
-    u8 field_0x15[0x18 - 0x15];
+    u8 pad_0x15[0x18 - 0x15]; // 0x15
     s32 lastCursorPos;        // 0x18, cursor->field_0 when the ring last turned
     s32 ringMoving;           // 0x1C, set while an icon is still moving; Hukidasi mirrors its bubble on it
     s32 iconFlags[5];         // 0x20, bit 1: draw the icon, bit 2: speech-bubble style
