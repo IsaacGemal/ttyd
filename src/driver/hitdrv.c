@@ -165,7 +165,7 @@ HitEntry* _hitEnt(MapFileJoint* joint, HitEntry* parent, Mtx parentMtx, s32 mapI
                 }
             } else {
                 for (j = 0; j < mesh->displayListCount; j++) {
-                    u8* dl = (u8*)mesh->displayLists.packedLists[j].offset;
+                    u8* dl = mesh->displayLists.packedLists[j].data;
                     dl++;
                     numVectors += *(u16*)dl - 2;
                 }
@@ -537,7 +537,7 @@ static inline void hitSetGQR5(u32 shift) {
 // two. Retail returns numVectors in r3 without an extsh, so the function returns s32. All locals are declared
 // at the top (C89 style) and the loop counters are shared by both branches; the declaration order sets the
 // register colouring. Both branches index `&hit->vectors[numVectors]` and MWCC strength-reduces the byte
-// offsets itself (including the packed branch's per-list copy). The packed list base is the u32 `offset` field,
+// offsets itself (including the packed branch's per-list copy). The packed list base is kept as a u32 (`list`),
 // so `list + 3 + stride * k` adds the list first as retail does, and the triangle count is the raw u16 with
 // the `- 2` in the loop test.
 s32 hitCalcVtxPosition(HitEntry* hit) {
@@ -614,7 +614,7 @@ s32 hitCalcVtxPosition(HitEntry* hit) {
             stride *= 2;
 
             for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
-                list = mesh->displayLists.packedLists[dlIndex].offset;
+                list = (u32)mesh->displayLists.packedLists[dlIndex].data;
                 triCount = *(u16*)(list + 1);
 
                 for (triIndex = 0; triIndex < triCount - 2; triIndex++) {

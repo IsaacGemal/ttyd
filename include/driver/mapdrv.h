@@ -15,7 +15,8 @@ typedef struct DisplayList {
 } DisplayList;
 
 typedef struct PackedDisplayList {
-    u32 offset;      // 0x00 - Offset to packed data
+    u8* data;        // 0x00, the GX display list (relocated from a file offset); its first draw's vertex count is
+                     //       the u16 at data + 1 (hitdrv)
     u32 nbytes;      // 0x04, GXCallDisplayList's nbytes (mapdrv)
 } PackedDisplayList;
 
@@ -44,7 +45,7 @@ typedef struct MapFileMesh {
     struct MapVtxFmt* vcdTableOffset; // 0xC, relocated: the map's "vcd_table" chunk
   union {
     MapVtxList* normalLists[1];        // unpacked: stride 4
-    PackedDisplayList packedLists[1];  // packed:   stride 8, count = *(u16*)((u8*)packedLists[j].offset + 1)
+    PackedDisplayList packedLists[1];  // packed:   stride 8
 } displayLists;  // at 0x10
 } MapFileMesh;
 
@@ -450,7 +451,7 @@ void mapMain(void);
 void mapDisp(void);
 
 void mapSetMaterialLight(s32 flags, Vec position);
-void mapSetMaterial(MapObject* obj, void* material);
+void mapSetMaterial(MapObject* obj, MapMaterial* material);
 void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2);
 void mapSetMaterialFog(void);
 void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx);
@@ -532,7 +533,7 @@ void mapGetBlend2(GXColor* out);
 #include "driver/lightdrv.h"
 s32 mapSetLight(MapObject* obj, LightEntry** entries);
 void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh);
-void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* joint);
+void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, MapAnimData* joint);
 void mapSetTextureMatrix(MapMaterial* material);
 void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force);
 BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b);

@@ -1147,13 +1147,7 @@ void bmapLoad(const char* map1, const char* map2) {
 	}
 }
 
-// in-file layout for the animation key records mapCalcAnimMatrix walks
-// (the joint pointer passed by hitdrv.c points at an array of these)
-
-
-
-void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* jointPtr) {
-	MapAnimData* joint = jointPtr;
+void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, MapAnimData* joint) {
 	MapAnimKey* key;
 	s32 count;
 	s32 i, k;
@@ -3298,14 +3292,13 @@ void mapSetTextureMatrix(MapMaterial* mat) {
 
 // Loads the map object's lights into GX light slots (point, spot and directional), sets the colour channel from
 // the material, loads each of the material's textures by name from the map's TPL, then sets up TEV.
-void mapSetMaterial(MapObject* obj, void* materialPtr) {
+void mapSetMaterial(MapObject* obj, MapMaterial* mat) {
 	LightEntry* light;
 	s32 texMap;
 	MapWork* wp;
 	u32 lightMask;
 	s32 attn;
 	s32 i;
-	MapMaterial* mat;
 	GXLightObj lightObj;
 	Mtx mtxX;
 	Mtx mtxY;
@@ -3318,7 +3311,6 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 	GXColor defaultAmbient;
 	s32 count;
 
-	mat = materialPtr;
 	texMap = 0;
 	attn = 2;
 	defaultAmbient = (GXColor){0, 0, 0, 0xFF};
@@ -3684,7 +3676,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 		}
 
 		for (i = 0; i < mesh->displayListCount; i++) {
-			GXCallDisplayList((void*)mesh->displayLists.packedLists[i].offset, mesh->displayLists.packedLists[i].nbytes);
+			GXCallDisplayList(mesh->displayLists.packedLists[i].data, mesh->displayLists.packedLists[i].nbytes);
 		}
 	}
 }
