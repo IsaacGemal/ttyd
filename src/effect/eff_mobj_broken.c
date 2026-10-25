@@ -134,19 +134,19 @@ EffectEntry* effMObjBrokenEntry(s32 type, f32 x, f32 y, f32 z) {
 		work->posZ = (f32)gridZ * spacing - spacing * float_0p5_80421144;
 		work->scale = spacing;
 		work->field_0x14 = 0xFF;
-		work->field_0x18 = float_0_804210ec;
+		work->rotAngle = float_0_804210ec;
 		work->poseId = -1;
 		{
 			f32 r = (f32)(irand(0xA) + 0xA);
 
-			work->field_0x20 = r * float_0p0625_80421148;
+			work->speed = r * float_0p0625_80421148;
 		}
 		{
 			f32 zero = ZERO0;
-			work->field_0x1C = angleABf(zero, zero, work->posX, work->posZ);
+			work->dir = angleABf(zero, zero, work->posX, work->posZ);
 		}
-		work->field_0x24 = (f32)(irand(3) + 3);
-		work->field_0x28 = (f32)(irand(5) + 2) / float_5_804210fc;
+		work->velY = (f32)(irand(3) + 3);
+		work->gravity = (f32)(irand(5) + 2) / float_5_804210fc;
 	}
 	if (type != 7) {
 		// Retail reads work[-1].posY here; work is one past the last element.
@@ -243,7 +243,7 @@ void effMObjBrokenMain(EffectEntry* effect) {
 		}
 		{
 			f32 sinA = MATCH_F32(float_0p00761_8042110c);
-			f32 angle = kTwoPi * data->field_0x1C / kDeg360;
+			f32 angle = kTwoPi * data->dir / kDeg360;
 
 			if (angle <= kPi) {
 				if (angle <= float_1p5708_80421118) {
@@ -274,10 +274,10 @@ void effMObjBrokenMain(EffectEntry* effect) {
 					sinA = -sinA;
 				}
 			}
-			data->posX = data->field_0x20 * sinA + data->posX;
+			data->posX = data->speed * sinA + data->posX;
 		}
 		{
-			f32 angle = kTwoPi * data->field_0x1C / kDeg360;
+			f32 angle = kTwoPi * data->dir / kDeg360;
 			f32 cosA = MATCH_F32(float_0p03705_80421120);
 
 			if (angle <= kPi) {
@@ -305,17 +305,17 @@ void effMObjBrokenMain(EffectEntry* effect) {
 					cosA = cosA * (angle * angle) + kOne;
 				}
 			}
-			data->posZ = data->field_0x20 * -cosA + data->posZ;
+			data->posZ = data->speed * -cosA + data->posZ;
 		}
-		data->posY = data->posY + data->field_0x24;
-		data->field_0x24 = data->field_0x24 - data->field_0x28;
+		data->posY = data->posY + data->velY;
+		data->velY = data->velY - data->gravity;
 		if (type < 6) {
-			remain = float_20_80421128 - data->field_0x18;
-			data->field_0x18 = remain * float_0p125_8042112c + data->field_0x18;
+			remain = float_20_80421128 - data->rotAngle;
+			data->rotAngle = remain * float_0p125_8042112c + data->rotAngle;
 		}
 		else {
-			remain = float_720_80421130 - data->field_0x18;
-			data->field_0x18 = remain * float_0p03125_80421134 + data->field_0x18;
+			remain = float_720_80421130 - data->rotAngle;
+			data->rotAngle = remain * float_0p03125_80421134 + data->rotAngle;
 		}
 		if (data->posY < kMinY) {
 			done++;
@@ -407,13 +407,13 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 		kDeg360 = float_360_804210f8;
 		kOffset = float_5_804210fc;
 		kDegToRad = float_deg2rad_804210e8;
-		tmpAxis1 = (Vec){ (f32)cos(kTwoPi * data->field_0x1C / kDeg360), 0.0f,
-		                  (f32)sin(kTwoPi * data->field_0x1C / kDeg360) };
+		tmpAxis1 = (Vec){ (f32)cos(kTwoPi * data->dir / kDeg360), 0.0f,
+		                  (f32)sin(kTwoPi * data->dir / kDeg360) };
 		axis1 = tmpAxis1;
 		PSMTXTrans(mtx, kOffset + data->posX, data->posY - kOffset, data->posZ);
 		PSMTXScale(scale, data->scale, data->scale, data->scale);
 		PSMTXConcat(mtx, scale, mtx);
-		PSMTXRotAxisRad(rot, &axis1, kDegToRad * -data->field_0x18);
+		PSMTXRotAxisRad(rot, &axis1, kDegToRad * -data->rotAngle);
 		PSMTXConcat(mtx, rot, mtx);
 		{
 			f32 one = ONE1;
@@ -429,13 +429,13 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 	data = effect->userdata;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		tmpAxis2 = (Vec){ (f32)cos(float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8), 0.0f,
-		                  (f32)sin(float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8) };
+		tmpAxis2 = (Vec){ (f32)cos(float_6p2832_804210f4 * data->dir / float_360_804210f8), 0.0f,
+		                  (f32)sin(float_6p2832_804210f4 * data->dir / float_360_804210f8) };
 		axis2 = tmpAxis2;
 		PSMTXTrans(mtx, data->posX, data->posY, data->posZ);
 		PSMTXScale(scale, data->scale, data->scale, data->scale);
 		PSMTXConcat(mtx, scale, mtx);
-		PSMTXRotAxisRad(rot, &axis2, float_deg2rad_804210e8 * -data->field_0x18);
+		PSMTXRotAxisRad(rot, &axis2, float_deg2rad_804210e8 * -data->rotAngle);
 		PSMTXConcat(mtx, rot, mtx);
 		{
 			f32 one = ONE1;

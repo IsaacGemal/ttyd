@@ -31,7 +31,7 @@ typedef struct effStarStoneData {
 	f32 spreadAZ;    // 0x4C z offset of tip pair A
 	f32 spreadBX;    // 0x50 x offset of tip pair B (opposite swing to A)
 	f32 spreadBZ;    // 0x54 z offset of tip pair B
-	f32 field_0x58;  // 0x58
+	f32 field_0x58;  // 0x58 set to 90 by effStarStoneEntry, never read
 	u8 tevReg0R;     // 0x5C GX_TEVREG0 colour, multiplied into the vertex colours in TEV stage 1
 	u8 tevReg0G;     // 0x5D
 	u8 tevReg0B;     // 0x5E

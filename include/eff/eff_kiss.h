@@ -19,7 +19,7 @@ typedef struct KissEffectWork {
 	s32 life;       // 0x28
 	s32 frame;      // 0x2C
 	s32 alpha;      // 0x30
-	u8 field_0x34[0x38 - 0x34]; // 0x34
+	u8 pad_0x34[0x38 - 0x34]; // 0x34
 } KissEffectWork;
 
 EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle);

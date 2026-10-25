@@ -11,9 +11,9 @@ typedef struct EffPuniBalloonData {
 	f32 velX;       // 0x10
 	f32 velY;       // 0x14
 	f32 velZ;       // 0x18
-	f32 field_0x1c; // 0x1C
+	f32 baseScale;  // 0x1C, base entry: multiplies the drawn scale in balloon_0
 	f32 scale;      // 0x20
-	f32 field_0x24; // 0x24
+	f32 rotZ;       // 0x24, base entry: sway in degrees, balloon_0's z rotation
 	s32 lifetime;   // 0x28
 	s32 counter;    // 0x2C
 } EffPuniBalloonData;

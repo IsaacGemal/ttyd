@@ -35,14 +35,14 @@ EffectEntry* effSleepEntry(s32 a1, s32 duration, f32 x, f32 y, f32 z, f32 scale,
 	data->position.y = y;
 	data->position.z = z;
 	data->scale = scale;
-	data->field_0x14 = 0;
+	data->alpha = 0;
 	if (duration <= 0) {
-		data->field_0x18 = 1000;
+		data->lifetime = 1000;
 	}
 	else {
-		data->field_0x18 = duration;
+		data->lifetime = duration;
 	}
-	data->field_0x1C = 0;
+	data->age = 0;
 
 	radians = (float_6p2832_8042242c * rotation) / 360.0f;
 	work = data + 1;
@@ -52,8 +52,8 @@ EffectEntry* effSleepEntry(s32 a1, s32 duration, f32 x, f32 y, f32 z, f32 scale,
 		work->position.y = radius * (f32)sin(radians);
 		work->position.z = 0.0f;
 		work->scale = (0.2f * (f32)i) + 1.0f;
-		work->field_0x14 = 0;
-		work->field_0x20 = delay;
+		work->alpha = 0;
+		work->delay = delay;
 	}
 	return effect;
 }
@@ -72,36 +72,36 @@ void effSleepMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x18 = 16;
+		data->lifetime = 16;
 	}
 
-	if (data->field_0x18 < 1000) {
-		data->field_0x18--;
+	if (data->lifetime < 1000) {
+		data->lifetime--;
 	}
 
-	if (data->field_0x18 < 32) {
-		data->field_0x14 = data->field_0x18 * 8;
+	if (data->lifetime < 32) {
+		data->alpha = data->lifetime * 8;
 	}
 
-	if (data->field_0x18 < 0) {
+	if (data->lifetime < 0) {
 		effDelete(effect);
 		return;
 	}
 
-	data->field_0x1C++;
-	if (data->field_0x1C < 32) {
-		data->field_0x14 = data->field_0x1C * 8 + 7;
+	data->age++;
+	if (data->age < 32) {
+		data->alpha = data->age * 8 + 7;
 	}
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		if (data->field_0x20 != 0) {
-			data->field_0x20--;
+		if (data->delay != 0) {
+			data->delay--;
 		}
 		else {
-			data->field_0x14 += 8;
-			if (data->field_0x14 > 255) {
-				data->field_0x14 = 255;
+			data->alpha += 8;
+			if (data->alpha > 255) {
+				data->alpha = 255;
 			}
 		}
 	}
@@ -150,7 +150,7 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 	s32 headerAlpha;
 
 	cam = camGetPtr(camId);
-	headerAlpha = data->field_0x14;
+	headerAlpha = data->alpha;
 	PSMTXTrans(mtxBase, data->position.x, data->position.y, data->position.z);
 	PSMTXScale(mtxScale, data->scale, data->scale, data->scale);
 	PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_80422424);
@@ -179,11 +179,11 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 
 	data++;
 	for (i = 1, angle = 50; i < effect->count; angle += 50, i++, data++) {
-		if (data->field_0x20 != 0) {
+		if (data->delay != 0) {
 			continue;
 		}
 
-		GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, (data->field_0x14 * headerAlpha) / 255 });
+		GXSetChanMatColor(4, (GXColor){ 0xFF, 0xFF, 0xFF, (data->alpha * headerAlpha) / 255 });
 
 		PSMTXTrans(mtxBase, data->position.x, data->position.y, data->position.z);
 		PSMTXScale(mtxScale, data->scale, data->scale, data->scale);

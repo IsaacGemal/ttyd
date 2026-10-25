@@ -32,14 +32,14 @@ EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 targetRadius,
 	effect->callback = effBalloonMain;
 	effect->flags |= 2;
 	data->type = type;
-	data->x = x;
-	data->y = y;
-	data->z = z;
-	data->field_0x10 = angleDeg;
-	data->field_0x1C = 100;
-	data->field_0x14 = targetRadius;
-	data->field_0x18 = 0.0f;
-	data->field_0x20 = 0;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
+	data->rotZ = angleDeg;
+	data->life = 100;
+	data->targetRadius = targetRadius;
+	data->radius = 0.0f;
+	data->phase = 0;
 	return effect;
 }
 
@@ -47,8 +47,8 @@ EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 targetRadius,
 void effBalloonMain(EffectEntry* effect) {
 	s32 life;
 	effBalloonN64Data* data = effect->userdata;
-	BalloonSeg* segs = data->field_0x24;
-	Vec position = initializeVec((Vec*)&data->x);
+	BalloonSeg* segs = data->segs;
+	Vec position = initializeVec(&data->position);
 	f32 radius;
 	f32 angle;
 	f32 wave;
@@ -60,23 +60,23 @@ void effBalloonMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x1C = 99;
+		data->life = 99;
 	}
-	if (data->field_0x1C < 100) {
-		data->field_0x1C--;
+	if (data->life < 100) {
+		data->life--;
 	}
-	data->field_0x20++;
-	if (data->field_0x20 > 324000) {
-		data->field_0x20 = 256;
+	data->phase++;
+	if (data->phase > 324000) {
+		data->phase = 256;
 	}
-	life = data->field_0x1C;
+	life = data->life;
 	if (life < 0) {
 		effDelete(effect);
 	} else {
-		phase = data->field_0x20;
-		data->field_0x18 += 0.1f * (data->field_0x14 - data->field_0x18);
-		radius = data->field_0x18 +
-		         0.1f * (data->field_0x18 * (f32)sin(6.2831855f * (f32)(phase * 3) / 360.0f));
+		phase = data->phase;
+		data->radius += 0.1f * (data->targetRadius - data->radius);
+		radius = data->radius +
+		         0.1f * (data->radius * (f32)sin(6.2831855f * (f32)(phase * 3) / 360.0f));
 		for (i = 0; i < 20; i++) {
 			angle = 6.2831855f * (17.0f + 360.0f * (f32)i / 21.0f) / 360.0f;
 			segs->x = radius * (f32)sin(angle);
@@ -96,11 +96,11 @@ void effBalloonMain(EffectEntry* effect) {
 			                                  (f32)phase * (0.1f * wave + 2.0f)) / 360.0f) * 1.5f;
 			segs++;
 		}
-		data->field_0x24[20].x = 0.0f;
+		data->segs[20].x = 0.0f;
 		if (life < 100) {
-			data->field_0x24[20].y += 1.0f;
+			data->segs[20].y += 1.0f;
 		} else {
-			data->field_0x24[20].y = 1.2f * radius;
+			data->segs[20].y = 1.2f * radius;
 		}
 		dispEntry(4, dispCalcZ(&position), 2, effBalloonDisp, effect);
 	}
@@ -189,7 +189,7 @@ void effBalloonDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 	vtx = smartAlloc(0x1C0, 3)->address;
-	life = data->field_0x1C;
+	life = data->life;
 
 	if (life == 0) {
 		effGetTexObjN64(0x5F, &texObj);
@@ -214,19 +214,19 @@ void effBalloonDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
 
-	PSMTXTrans(transMtx, data->x, data->y, data->z);
+	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 	effBalloonSetVtx(vtx, &balloon_vtx[1], transMtx);
 
-	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->field_0x10);
+	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->rotZ);
 	PSMTXConcat(transMtx, rotMtx, concatMtx);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
-	PSMTXTrans(transMtx, data->field_0x24[20].x, data->field_0x24[20].y, 0.0f);
+	PSMTXTrans(transMtx, data->segs[20].x, data->segs[20].y, 0.0f);
 	PSMTXConcat(rotMtx, transMtx, resultMtx);
 	PSMTXConcat(concatMtx, resultMtx, resultMtx);
 	effBalloonSetVtx(vtx + 1, &balloon_vtx[0], resultMtx);
 
 	for (i = 0; i < 20; i++) {
-		PSMTXTrans(transMtx, data->field_0x24[i].x, data->field_0x24[i].y,
+		PSMTXTrans(transMtx, data->segs[i].x, data->segs[i].y,
 		           0.0f);
 		PSMTXConcat(resultMtx, transMtx, transMtx);
 		effBalloonSetVtx(&vtx[i + 2], &balloon_vtx[i + 2], transMtx);

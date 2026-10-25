@@ -22,7 +22,7 @@ static u32 kmr_a_1_v[14] = {
 
 typedef struct effKemuri5Data {
     s32 alive;       // 0x0, 1 while the puff runs (Main clears it at timer 0)
-    s16 field_0x4;   // 0x4
+    u8 pad_0x4[2];   // 0x4
     s16 timer;       // 0x6, frames left (30)
     u8 alpha;        // 0x8, TEVREG0 alpha, falls 16 per frame after timer 15
     u8 pad_9[3];     // 0x9
@@ -55,7 +55,7 @@ static inline Vec initializeVec(Vec* input) {
 
 // One local holds the angle offset and then the radians: converting `i * 45` before the reset stores
 // gives the original's register colouring.
-EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
+EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 angle) {
     EffectEntry* effect;
     effKemuri5Data* data;
     f32 rad;
@@ -87,7 +87,7 @@ EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
         data->accelY = -0.02f;
         data->accelStep = 0.00005f;
         data->driftSpeed = -3.9f;
-        rad = 6.2831855f * reviseAngle(a4 + rad) / 360.0f;
+        rad = 6.2831855f * reviseAngle(angle + rad) / 360.0f;
         data->dirX = sin(rad);
         data->dirZ = cos(rad);
     }

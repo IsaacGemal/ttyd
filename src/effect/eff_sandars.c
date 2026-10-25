@@ -91,7 +91,7 @@ EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 		data->scaleRate = 0.2f * (f32)i;
 		data->scale = zero;
 		data->alpha = (s32)(51.0f * (f32)i);
-		data->field_0x34 = (i - 1) * 5;
+		data->delay = (i - 1) * 5;
 		data->timer = 0;
 		data->rot = zero;
 		data->rotSpeed = zero;
@@ -142,8 +142,8 @@ void effSandarsMain(EffectEntry* effect) {
 		}
 		data = &data[1];
 		for (i = 1; i < effect->count; i++, data++) {
-			if (data->field_0x34 != 0) {
-				data->field_0x34--;
+			if (data->delay != 0) {
+				data->delay--;
 			} else {
 				if ((u32)data->timer < 0xF) {
 					data->scale = (f32)scale_data[data->timer] / 100.0f;

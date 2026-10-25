@@ -18,9 +18,9 @@ typedef struct effFlowerData {
     f32 angleYVel;   // 0x30
     s32 life;        // 0x34
     s32 age;         // 0x38
-    s32 field_0x3C;  // 0x3C
-    s32 field_0x40;  // 0x40
-    s32 field_0x44;  // 0x44
+    s32 field_0x3C;  // 0x3C type 1: the +1/-1 step added to field_0x40 each frame
+    s32 field_0x40;  // 0x40 type 1: bounces between 0 and 20; nothing else reads it
+    s32 field_0x44;  // 0x44 type 1: rand() % 11, written and never read
 } effFlowerData;
 void effFlowerMain(EffectEntry* effect);
 void effFlowerDisp(CameraId camId, void* param);

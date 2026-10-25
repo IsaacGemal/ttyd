@@ -62,13 +62,13 @@ EffectEntry* effHibashiraEntry(s32 type, s32 segmentCount, s32 lifetime, f32 x, 
 	data->position.z = z;
 	data->scale = scale;
 	data->animPose = -1;
-	data->field_0x18 = 0xFF;
+	data->alpha = 0xFF;
 	if (lifetime <= 0) {
-		data->field_0x1C = 1000;
+		data->lifetime = 1000;
 	} else {
-		data->field_0x1C = lifetime;
+		data->lifetime = lifetime;
 	}
-	data->field_0x20 = 0;
+	data->age = 0;
 
 	dx = x2 - x;
 	dy = y2 - y;
@@ -85,10 +85,10 @@ EffectEntry* effHibashiraEntry(s32 type, s32 segmentCount, s32 lifetime, f32 x, 
 			elem->scale = 0.5f + arcScale;
 		}
 		elem->animPose = -1;
-		elem->field_0x18 = 0xFF;
-		elem->field_0x1C = 0;
-		elem->field_0x20 = 0;
-		elem->field_0x24 = (i - 1) * 4;
+		elem->alpha = 0xFF;
+		elem->lifetime = 0;
+		elem->age = 0;
+		elem->delay = (i - 1) * 4;
 	}
 
 	return entry;
@@ -110,7 +110,7 @@ void effHibashiraMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x1C = 16;
+		data->lifetime = 16;
 	}
 
 	switch (type) {
@@ -130,13 +130,13 @@ void effHibashiraMain(EffectEntry* effect) {
 		break;
 	}
 
-	if (data->field_0x1C < 1000) {
-		data->field_0x1C--;
+	if (data->lifetime < 1000) {
+		data->lifetime--;
 	}
-	if (data->field_0x1C < 16) {
-		data->field_0x18 = data->field_0x1C << 4;
+	if (data->lifetime < 16) {
+		data->alpha = data->lifetime << 4;
 	}
-	if (data->field_0x1C < 0) {
+	if (data->lifetime < 0) {
 		elem = data;
 		for (i = 0; i < effect->count; i++) {
 			if (elem->animPose != -1) {
@@ -150,8 +150,8 @@ void effHibashiraMain(EffectEntry* effect) {
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		if (data->field_0x24 != 0) {
-			data->field_0x24--;
+		if (data->delay != 0) {
+			data->delay--;
 		} else {
 			if (data->animPose == -1) {
 				switch (type) {
@@ -172,15 +172,15 @@ void effHibashiraMain(EffectEntry* effect) {
 					break;
 				}
 			}
-			data->field_0x20++;
-			if (data->field_0x20 > 1000) {
-				data->field_0x20 = 1000;
+			data->age++;
+			if (data->age > 1000) {
+				data->age = 1000;
 			}
-			if (data->field_0x20 > 5) {
-				data->field_0x18 -= 10;
+			if (data->age > 5) {
+				data->alpha -= 10;
 			}
-			if (data->field_0x18 < 0) {
-				data->field_0x18 = 0;
+			if (data->alpha < 0) {
+				data->alpha = 0;
 			}
 		}
 	}
@@ -196,7 +196,7 @@ void effHibashiraDisp(CameraId camId, void* param) {
 	Mtx sp40;
 	Mtx sp10;
 	s32 i;
-	s32 alpha = data->field_0x18;
+	s32 alpha = data->alpha;
 
 	PSMTXTrans(spA0, data->position.x, data->position.y, data->position.z);
 	PSMTXScale(sp70, data->scale, data->scale, data->scale);
@@ -214,7 +214,7 @@ void effHibashiraDisp(CameraId camId, void* param) {
 			PSMTXConcat(sp10, spA0, spA0);
 
 			animPoseSetMaterialFlagOn(data->animPose, 0x40);
-			animPoseSetMaterialEvtColor(data->animPose, (GXColor){ 0xFF, 0xFF, 0xFF, (data->field_0x18 * alpha) / 255 });
+			animPoseSetMaterialEvtColor(data->animPose, (GXColor){ 0xFF, 0xFF, 0xFF, (data->alpha * alpha) / 255 });
 			animPoseMain(data->animPose);
 			animPoseDrawMtx(data->animPose, spA0, 1, 0.0f, 10.f);
 			animPoseDrawMtx(data->animPose, spA0, 2, 0.0f, 10.f);

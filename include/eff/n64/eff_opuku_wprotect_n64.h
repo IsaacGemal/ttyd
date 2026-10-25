@@ -5,9 +5,7 @@
 #include "driver/effdrv.h"
 typedef struct effOpukuWprotectData {
 	s32 type;                    // 0x00
-	f32 x;                       // 0x04
-	f32 y;                       // 0x08
-	f32 z;                       // 0x0C
+	Vec position;                // 0x04
 	s32 lifetime;                // 0x10: frames left (1000 when no duration is given); deleted below 0
 	s32 timer;                   // 0x14: frame counter, wraps to 0x100 past 0x4F1A0
 	s32 colorR;                  // 0x18: shell tint red (TEVREG0 in the shell pass)

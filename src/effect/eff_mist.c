@@ -20,7 +20,7 @@ extern const f32 float_0p5_804214ec;
 __declspec(section ".sdata") GXColor gap_10_80423324_sbss2;
 #pragma section ".sdata" ".sbss"
 
-EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
+EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 yaw) {
 	EffectEntry* entry = effEntry();
 	MistWork* work;
 	MistWork* ptr;
@@ -51,7 +51,7 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 	}
 	work->counter = 0;
 	work->alpha = float_255_804214e8;
-	work->field_0x40 = w - camGetPtr(CAMERA_3D)->viewYaw;
+	work->yaw = yaw - camGetPtr(CAMERA_3D)->viewYaw;
 	for (i = 1, ptr = work + 1; i < entry->count; i++, ptr++) {
 		ptr->x = (f32)(irand(0x32) - 0x19);
 		ptr->y = (f32)(irand(0x32) - 0x19);
@@ -63,7 +63,7 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 		ptr->alpha = 0.0f;
 		ptr->life = irand(0x1e) + 0x1e;
 		ptr->counter = 0;
-		ptr->field_0x40 = w - camGetPtr(CAMERA_3D)->viewYaw;
+		ptr->yaw = yaw - camGetPtr(CAMERA_3D)->viewYaw;
 		switch (type) {
 		case 0:
 			ptr->r = 0xff;
@@ -89,14 +89,14 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 			ptr->x = 0.0f;
 			ptr->y = 0.0f;
 			ptr->z = 1.0f;
-			sinYaw = (f32)sin(6.2831855f * ptr->field_0x40 / 360.0f);
+			sinYaw = (f32)sin(6.2831855f * ptr->yaw / 360.0f);
 			ptr->velX = 1.1f * sinYaw;
 			ptr->velY = -2.0f;
-			cosYaw = (f32)cos(6.2831855f * ptr->field_0x40 / 360.0f);
+			cosYaw = (f32)cos(6.2831855f * ptr->yaw / 360.0f);
 			ptr->velZ = 1.1f * -cosYaw;
-			ptr->field_0x28 = 0.95f;
-			ptr->field_0x2C = -0.04f;
-			ptr->field_0x30 = 0.94f;
+			ptr->riseSpeed = 0.95f;
+			ptr->riseAccel = -0.04f;
+			ptr->riseAccelDecay = 0.94f;
 			ptr->r = 0xff;
 			ptr->g = 0xff;
 			ptr->b = 0xff;
@@ -165,9 +165,9 @@ void effMistMain(EffectEntry* effect) {
 			work->velX *= 0.9f;
 			work->velY *= 0.88f;
 			work->velZ *= 0.9f;
-			work->y += work->field_0x28;
-			work->field_0x28 += work->field_0x2C;
-			work->field_0x2C *= work->field_0x30;
+			work->y += work->riseSpeed;
+			work->riseSpeed += work->riseAccel;
+			work->riseAccel *= work->riseAccelDecay;
 			work->scaleX *= 1.02f;
 			work->scaleY *= 1.02f;
 			work->scaleZ *= 1.02f;

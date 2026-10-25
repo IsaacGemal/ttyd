@@ -23,7 +23,7 @@ typedef struct effGonbabaBreathData {
 	s32 targetB;      // 0x38
 	s32 alpha;        // 0x3C
 	f32 scale;        // 0x40
-	s32 field_0x44;   // 0x44
+	s32 delay;        // 0x44, particles: frames before it starts; while nonzero Main counts it down and Disp skips it
 	f32 rotation;     // 0x48
 	EffectEntry* child; // 0x4C
 } effGonbabaBreathData;

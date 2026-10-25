@@ -25,7 +25,7 @@ typedef struct EffWhirlwindData {
 	u8 tevReg0R;          //0x44 particle colour, TEVREG0 red
 	u8 tevReg0G;          //0x45 TEVREG0 green
 	u8 tevReg0B;          //0x46 TEVREG0 blue
-	u8 field_0x47;        //0x47
+	u8 pad_0x47[0x1];     //0x47
 } EffWhirlwindData; //0x48
 
 EffectEntry* effWhirlwindN64Entry(s32 type, s32 mario, s32 life, f32 size);

@@ -19,8 +19,8 @@ typedef struct effSandarsData {
 	s32 bombType;   // 0x24
 	f32 animScale;  // 0x28
 	f32 scaleRate;  // 0x2C
-	f32 field_0x30; // 0x30
-	s32 field_0x34; // 0x34
+	f32 field_0x30; // 0x30 type 5 head: the Entry angle, written and never read
+	s32 delay;      // 0x34 type 5 cones: frames to wait before the cone starts growing and spinning
 	f32 rot;        // 0x38
 	f32 rotSpeed;   // 0x3C
 	s32 camId;      // 0x40

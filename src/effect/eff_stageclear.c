@@ -86,23 +86,23 @@ EffectEntry* effStageClearEntry(s32 type, f32 x, f32 y, f32 z) {
 	entry->userdata = data;
 	entry->callback = effStageClearMain;
 	data->type = type;
-	data->x = x;
-	data->y = y;
-	data->z = z;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
 	data->scale = 1.0f;
 	data->timer = 0;
-	data->field_0x1C = 0;
+	data->age = 0;
 	data->count = irand(5) + 1;
 	data->done = 0;
 	for (i = 1; i < entry->count; i++) {
 		effStageClearWork* work = &data[i];
 
-		work->x = (f32)((i - 1) * 0x26 - (entry->count - 1) * 0x26 / 2 + 0x14);
-		work->y = 0.0f;
-		work->z = 0.0f;
+		work->position.x = (f32)((i - 1) * 0x26 - (entry->count - 1) * 0x26 / 2 + 0x14);
+		work->position.y = 0.0f;
+		work->position.z = 0.0f;
 		work->scale = 0.0f;
 		work->timer = (s32)((f32)i * (0.2f * gp->framerate));
-		work->field_0x1C = 0;
+		work->age = 0;
 		work->evt = NULL;
 	}
 	return entry;
@@ -115,12 +115,12 @@ static inline Vec initializeStageClearVec(Vec* input) {
 
 void effStageClearMain(EffectEntry* effect) {
 	effStageClearWork* data = effect->userdata;
-	Vec disp = initializeStageClearVec((Vec*)&data->x);
+	Vec disp = initializeStageClearVec(&data->position);
 	s32 i;
 	s32 type = data->type;
 	s32 retired = 0;
 
-	data->field_0x1C++;
+	data->age++;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		if (data->timer != 0) {
@@ -129,10 +129,10 @@ void effStageClearMain(EffectEntry* effect) {
 				psndSFXOn((const char*)(type == 0 ? 0x29B : 0x82E));
 			}
 		} else {
-			if ((u32)data->field_0x1C < 0xB) {
-				data->scale = (f32)scale_dt[data->field_0x1C] / 100.f;
+			if ((u32)data->age < 0xB) {
+				data->scale = (f32)scale_dt[data->age] / 100.f;
 			}
-			data->field_0x1C++;
+			data->age++;
 			if (data->scale > float_0p9_80420f18) {
 				if (data->evt == NULL) {
 					s32* dt;
@@ -189,7 +189,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 	effStageClearWork* data = effect->userdata;
 	CameraEntry* cam;
 	CameraEntry* cam2;
-	s32 field1C;
+	s32 age;
 	s32 shadow;
 	effStageClearWork* work;
 	s32 j;
@@ -213,7 +213,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	scale = float_1p7_80420f1c * data->scale;
 	scale = float_0p9_80420f18 * scale;
-	field1C = data->field_0x1C;
+	age = data->age;
 	type = data->type;
 	if (gp->language != 0) {
 		scale = scale * float_0p6_80420f20;
@@ -226,7 +226,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 	GXSetZCompLoc(1);
 	GXSetAlphaCompare(7, 0, 0, 7, 0);
 	GXSetZMode(0, 3, 0);
-	PSMTXTrans(trans, data->x, data->y, data->z);
+	PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
 	PSMTXScale(scaleMtx, scale, scale, scale);
 	PSMTXConcat(trans, scaleMtx, mtx);
 	GXSetNumChans(0);
@@ -299,7 +299,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 					GXSetTevOp(0, 3);
 				}
 			}
-			PSMTXTrans(trans, work->x + f27, work->y + f26, 0.0f);
+			PSMTXTrans(trans, work->position.x + f27, work->position.y + f26, 0.0f);
 			PSMTXScale(scaleMtx, work->scale, work->scale, work->scale);
 			PSMTXConcat(mtx, trans, trans);
 			PSMTXConcat(trans, scaleMtx, trans);
@@ -317,7 +317,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 				C_MTXLookAt(lookAt, &camPos, &camUp, &target);
 				PSMTXConcat(persp, lookAt, persp);
 				PSMTXConcat(persp, trans, trans);
-				PSMTXTrans(scaleMtx, (f32)-field1C, 0.0f, 0.0f);
+				PSMTXTrans(scaleMtx, (f32)-age, 0.0f, 0.0f);
 				PSMTXConcat(trans, scaleMtx, trans);
 				GXLoadTexMtxImm(trans, 0x1E, 1);
 				half = 0.5f;

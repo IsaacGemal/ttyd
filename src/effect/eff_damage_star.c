@@ -275,10 +275,10 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
     data->position.z = z;
     data->rot = speed;
     data->angle = angle;
-    data->field_0x24 = 99;
+    data->timer = 99;
     data->frame = 0;
-    data->field_0x3C = origCount;
-    data->field_0x40 = gp->retraceCount;
+    data->damage = origCount;
+    data->prevRetraceCount = gp->retraceCount;
 
     angleStep = 30.0f - (f32)(count + 2);
     i = 1;
@@ -328,8 +328,8 @@ void effDamageStarMain(EffectEntry* effect) {
 
     effCalcMayaAnim(data->anim);
 
-    if (gp->retraceCount > (u32)data->field_0x40) {
-        steps = gp->retraceCount - data->field_0x40;
+    if (gp->retraceCount > data->prevRetraceCount) {
+        steps = gp->retraceCount - data->prevRetraceCount;
     }
     if (steps < 1) {
         steps = 1;
@@ -337,11 +337,11 @@ void effDamageStarMain(EffectEntry* effect) {
 
     while (steps--) {
         data = effect->userdata;
-        if (data->field_0x24 < 100) {
-            data->field_0x24--;
+        if (data->timer < 100) {
+            data->timer--;
         }
         data->frame++;
-        if (data->field_0x24 < 0) {
+        if (data->timer < 0) {
             effDeleteMayaAnim(data->anim);
             effDelete(effect);
             return;
@@ -380,7 +380,7 @@ void effDamageStarMain(EffectEntry* effect) {
     }
 
     data = effect->userdata;
-    data->field_0x40 = gp->retraceCount;
+    data->prevRetraceCount = gp->retraceCount;
     dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effDamageStarDisp, effect);
 }
 
@@ -443,7 +443,7 @@ void effDamageStarDisp(CameraId camId, void* param) {
     data = effect->userdata;
     angle = data->angle;
     frame = data->frame;
-    damage = data->field_0x3C;
+    damage = data->damage;
     if (angle > 0.0f) {
         mirrorX = 1;
     } else {

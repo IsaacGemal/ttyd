@@ -152,8 +152,8 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 		ptr->position.z = 0.0f;
 		ptr->position.y = 0.0f;
 		ptr->position.x = 0.0f;
-		ptr->offsetX = 0.0f;
-		ptr->offsetY = 0.0f;
+		ptr->velX = 0.0f;
+		ptr->velZ = 0.0f;
 		ptr->delay = 0;
 		ptr->scaleZ = 1.0f;
 		ptr->scaleY = 1.0f;
@@ -220,11 +220,11 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 		f32 angle = (f32)irand(360);
 		f32 radius = (f32)irand(5);
 		angle = 6.2831855f * angle / 360.0f;
-		ptr->offsetX = splashScaledSin(radius, angle);
-		ptr->offsetY = radius * splashCos(angle);
-		ptr->position.x = 2.0f * ptr->offsetX;
+		ptr->velX = splashScaledSin(radius, angle);
+		ptr->velZ = radius * splashCos(angle);
+		ptr->position.x = 2.0f * ptr->velX;
 		ptr->position.y = 0.0f;
-		ptr->position.z = 2.0f * ptr->offsetY;
+		ptr->position.z = 2.0f * ptr->velZ;
 		ptr->velocity = 10.0f;
 		ptr->decel = 1.0f;
 		ptr->delay = irand(10);
@@ -295,8 +295,8 @@ void effSplashMain(EffectEntry* effect) {
 			continue;
 		}
 
-		data->position.x += data->offsetX;
-		data->position.z += data->offsetY;
+		data->position.x += data->velX;
+		data->position.z += data->velZ;
 		data->position.y += data->velocity;
 		data->velocity -= data->decel;
 

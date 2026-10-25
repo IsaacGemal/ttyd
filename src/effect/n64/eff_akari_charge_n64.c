@@ -79,7 +79,7 @@ static inline f32 sqrtf(f32 x) {
 
 // .data vertex array, local to this file.
 
-EffectEntry* effAkariChargeN64Entry(s32 type, s32 a2, f32 a3, f32 a4, f32 a5, f32 a6) {
+EffectEntry* effAkariChargeN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	EffAkariChargeWork* work;
 	EffAkariChargeParticle* p;
@@ -95,16 +95,16 @@ EffectEntry* effAkariChargeN64Entry(s32 type, s32 a2, f32 a3, f32 a4, f32 a5, f3
 
 	work->type = type;
 	work->counter = 0;
-	if (a2 <= 0) {
+	if (life <= 0) {
 		work->life = 1000;
 	} else {
-		work->life = a2;
+		work->life = life;
 	}
 	work->alpha = 0;
-	work->x = a3;
-	work->y = a4;
-	work->z = a5;
-	work->scale = a6;
+	work->x = x;
+	work->y = y;
+	work->z = z;
+	work->scale = scale;
 	work->reg0R = 0xFF;
 	work->reg0G = 0xE6;
 	work->reg0B = 0;

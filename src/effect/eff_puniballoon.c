@@ -46,11 +46,11 @@ EffectEntry* effPuniBalloonEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->position.x = x;
 	data->position.y = y;
 	data->position.z = z;
-	data->field_0x24 = 0.0f;
+	data->rotZ = 0.0f;
 	data->lifetime = (type == 0) ? 1000 : 30;
 	data->counter = 0;
 	data->scale = 0.0f;
-	data->field_0x1c = scale;
+	data->baseScale = scale;
 
 	data++;
 	for (i = 1; i < entry->count; i++, data++) {
@@ -96,7 +96,7 @@ void effPuniBalloonMain(EffectEntry* effect) {
 
 	scale = data->scale;
 	data->scale = scale + (1.0f - scale) / 10.0f;
-	data->field_0x24 = 20.0f * (f32)sin((f32)data->counter / 20.0f);
+	data->rotZ = 20.0f * (f32)sin((f32)data->counter / 20.0f);
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -140,12 +140,12 @@ void balloon_0(CameraId camId, EffectEntry* effect) {
 		f32 s = (f32)sin((f32)data->counter / 10.0f);
 		scale += s * 0.1f;
 	}
-	scale *= data->field_0x1c;
+	scale *= data->baseScale;
 	PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rot, 'y', MTXDegToRad(-camGetPtr(camId)->viewYaw));
 	PSMTXConcat(mtx, rot, view);
 	PSMTXConcat(camera->view, view, mtx);
-	PSMTXRotRad(rot, 'z', MTXDegToRad(data->field_0x24));
+	PSMTXRotRad(rot, 'z', MTXDegToRad(data->rotZ));
 	PSMTXScale(scl, scale, scale, scale);
 	PSMTXConcat(mtx, rot, mtx);
 	PSMTXConcat(mtx, scl, mtx);

@@ -161,9 +161,9 @@ EffectEntry* effTorchEntry(s32 id, f32 x, f32 y, f32 z, f32 scale) {
 		position.z = z;
 		data->position = position;
 	}
-	data->field_0x10 = 0.5f * scale;
-	data->field_0x14 = 1.0f;
-	data->field_0x18 = 1.0f;
+	data->scale = 0.5f * scale;
+	data->scaleX = 1.0f;
+	data->scaleY = 1.0f;
 	return entry;
 }
 
@@ -185,8 +185,8 @@ void effTorchDisp(CameraId cameraId, void* param) {
 	camView = camGetPtr(cameraId);
 	PSMTXTrans(mtxPos, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(mtxRot, 'y', -camGetPtr(cameraId)->viewYaw * 0.017453292f);
-	scale = data->field_0x10;
-	PSMTXScale(mtxScale, scale * data->field_0x14, scale * data->field_0x18, scale);
+	scale = data->scale;
+	PSMTXScale(mtxScale, scale * data->scaleX, scale * data->scaleY, scale);
 	PSMTXConcat(mtxPos, mtxRot, mtxView);
 	PSMTXConcat(mtxView, mtxScale, mtxView);
 	PSMTXConcat(camView->view, mtxView, mtxView);

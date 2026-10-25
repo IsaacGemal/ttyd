@@ -29,7 +29,7 @@ EffectEntry* effMajinaiEntry(s32 type, f32 x, f32 y, f32 z) {
     work->x = x;
     work->y = y;
     work->z = z;
-    work->field_0x10 = 1.0f;
+    work->scale = 1.0f;
     work->alpha = 0xff;
     work->state = 0;
     work->animPose = -1;
@@ -106,7 +106,7 @@ void effMajinaiMain(EffectEntry* effect) {
             }
 
             if (animPoseGetLoopTimes(work->animPose) >= 0.93f) {
-                f32 scale = work->field_0x10;
+                f32 scale = work->scale;
                 effStardustEntry(0, 0x10, 0x3C, work->x,
                     55.0f * scale + work->y, work->z,
                     45.0f * scale, 45.0f * scale);
@@ -166,7 +166,7 @@ void effMajinaiDisp(CameraId cameraId, void* param) {
 
     if (work->animPose != -1) {
         PSMTXTrans(trans, work->x, work->y, work->z);
-        PSMTXScale(scale, work->field_0x10, work->field_0x10, work->field_0x10);
+        PSMTXScale(scale, work->scale, work->scale, work->scale);
         PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(cameraId)->viewYaw);
         PSMTXConcat(trans, rot, trans);
         PSMTXConcat(trans, scale, trans);

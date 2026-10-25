@@ -47,8 +47,8 @@ EffectEntry* effFreezeN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scal
 	data->color1[1] = 0xff;
 	data->color1[2] = 0xff;
 	data->color1[3] = 0xff;
-	data->field_0x25 = 0;
-	data->field_0x24 = 0;
+	data->frameTimer = 0;
+	data->frame = 0;
 	data->snowDust = effSnowDustN64Entry(1, x, 10.0f + y, z, 4, 0, 32.0f, 30.0f, scale);
 	return entry;
 }
@@ -99,15 +99,15 @@ void effFreezeMain(EffectEntry* effect) {
 	}
 
 	counter = data->counter;
-	data->field_0x25--;
-	if ((s8)data->field_0x25 < 0) {
-		data->field_0x25 = rand() % 60 + 8;
+	data->frameTimer--;
+	if (data->frameTimer < 0) {
+		data->frameTimer = rand() % 60 + 8;
 	}
-	if ((s8)data->field_0x25 < 8) {
-		data->field_0x24 = (s8)data->field_0x25 / 2;
+	if (data->frameTimer < 8) {
+		data->frame = data->frameTimer / 2;
 	}
 	else {
-		data->field_0x24 = 0;
+		data->frame = 0;
 	}
 
 	if (life > 16 && counter % 16 == 0) {
@@ -196,7 +196,7 @@ void effFreezeDisp(CameraId cameraId, void* param) {
 	effGetTexObjN64(0x8a, &texObj);
 	GXLoadTexObj(&texObj, 0);
 	GXSetCullMode(0);
-	effSetVtxDescN64(&((effVtxArray*)size32x64_tex32x64_vtx)[(s8)data->field_0x24]);
+	effSetVtxDescN64(&((effVtxArray*)size32x64_tex32x64_vtx)[data->frame]);
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

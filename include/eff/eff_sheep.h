@@ -8,13 +8,13 @@ typedef struct EffSheepWork {
 	f32 y;           // 0x08
 	f32 z;           // 0x0C
 	f32 scale;       // 0x10
-	s32 field_0x14;  // 0x14
-	f32 field_0x18;  // 0x18
-	f32 field_0x1C;  // 0x1C
+	s32 hopFrames;   // 0x14, hopping sheep (type 1): airtime of one hop; only Entry reads it, to set velY
+	f32 velY;        // 0x18, hopping sheep: added to y each frame, negated on landing
+	f32 gravity;     // 0x1C, hopping sheep: subtracted from velY each frame
 	s32 poseId;      // 0x20
 	s32 state;       // 0x24
 	s32 timer;       // 0x28
-	f32 field_0x2C;  // 0x2C
+	f32 velX;        // 0x2C, added to x each frame until x reaches 500
 	s32 sfxId;       // 0x30
 } EffSheepWork;
 void effSheepDisp(CameraId camId, void* param);

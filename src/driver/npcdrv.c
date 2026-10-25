@@ -3624,7 +3624,7 @@ s32 _majinai_effect(EventEntry* evt, s32 a2) {
         EffectEntry* e = (EffectEntry*)evt->userdata[0];
         MajinaiWork* work = e->userdata;
 
-        work->field_0x10 = 0.8f;
+        work->scale = 0.8f;
         }
         effSetName((EffectEntry*)evt->userdata[0], "mjef_coinup");
     }

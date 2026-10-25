@@ -26,9 +26,9 @@ EffectEntry* effSnowN64Entry(s32 type, f32 x, f32 y, f32 z) {
 	data = __memAlloc(HEAP_EFFECT, sizeof(effSnowData));
 	effect->userdata = data;
 	effect->callback = effSnowMain;
-	data->x = x;
-	data->y = y;
-	data->z = z;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
 	data->velX = 0.0f;
 	data->velY = -1.5f;
 	data->velZ = 0.0f;
@@ -48,7 +48,7 @@ void effSnowMain(EffectEntry* effect) {
 	effSnowData* data = effect->userdata;
 	Vec disp;
 
-	disp = initializeVec((Vec*)&data->x);
+	disp = initializeVec(&data->position);
 
 	data->type--;
 	if (data->type < 0) {
@@ -56,9 +56,9 @@ void effSnowMain(EffectEntry* effect) {
 	} else {
 		MarioWork* mario;
 
-		data->x += data->velX;
-		data->y += data->velY;
-		data->z += data->velZ;
+		data->position.x += data->velX;
+		data->position.y += data->velY;
+		data->position.z += data->velZ;
 		data->rotX += data->rotXVel;
 		if (data->rotX < 10.0f) {
 			data->rotX = 10.0f;
@@ -70,15 +70,15 @@ void effSnowMain(EffectEntry* effect) {
 		}
 		data->rotY += data->rotYVel;
 		mario = marioGetPtr();
-		if (data->x - mario->position.x > 200.0f) {
-			data->x -= 400.0f;
-		} else if (mario->position.x - data->x > 200.0f) {
-			data->x += 400.0f;
+		if (data->position.x - mario->position.x > 200.0f) {
+			data->position.x -= 400.0f;
+		} else if (mario->position.x - data->position.x > 200.0f) {
+			data->position.x += 400.0f;
 		}
-		if (data->z - mario->position.z > 200.0f) {
-			data->z -= 400.0f;
-		} else if (mario->position.z - data->z > 200.0f) {
-			data->z += 400.0f;
+		if (data->position.z - mario->position.z > 200.0f) {
+			data->position.z -= 400.0f;
+		} else if (mario->position.z - data->position.z > 200.0f) {
+			data->position.z += 400.0f;
 		}
 		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effSnowDisp, effect);
 	}
@@ -95,7 +95,7 @@ void effSnowDisp(CameraId camId, void* param) {
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	PSMTXTrans(mtx, data->x, data->y, data->z);
+	PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, rotMtx, destMtx);
 	PSMTXConcat(cam->view, destMtx, destMtx);

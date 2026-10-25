@@ -12,7 +12,7 @@ typedef struct effBlowData {
     f32 scaleY;        // 0x48
     f32 rotZ;          // 0x4C
     u8 pad_0x50[0x8];
-    u32 field_0x58;    // 0x58
+    s32 alpha;         // 0x58, TEVREG0 alpha (effBlowParticle.alpha)
     u8 pad_0x5C[0xC];
 } effBlowData;
 #include "driver/camdrv.h"

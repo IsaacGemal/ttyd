@@ -13,8 +13,8 @@ typedef struct ToikiData {
 	f32 velZ;       // 0x18
 	f32 scale;      // 0x1C
 	f32 rotation;   // 0x20
-	f32 field_0x24; // 0x24
-	f32 field_0x28; // 0x28
+	f32 texOffsetX; // 0x24, texture-matrix X translation (scrolls the texture); 0.015 per frame up to 4; Main spawns the mist puffs while it is between 1 and 4
+	f32 alpha;      // 0x28, TEVREG0 alpha, 255 then life * 16 over the last 16 frames; never visible: stage 0 takes its alpha from TEXA * RASA
 	s32 field_0x2C; // 0x2C
 	s32 life;       // 0x30
 } ToikiData;

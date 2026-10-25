@@ -12,7 +12,7 @@
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 
 typedef struct effNozleEntryData {
-	f32 field_0x00; // 0x00
+	u8 pad_0x00[4]; // 0x00
 	f32 offsetX;    // 0x04, petal offset, decays by 1/300 per frame
 	f32 offsetY;    // 0x08
 	f32 offsetZ;    // 0x0C, 20 * index
@@ -22,13 +22,10 @@ typedef struct effNozleEntryData {
 	f32 scrollY0;   // 0x1C, +0.002 per frame
 	f32 scrollX1;   // 0x20, texture 1 translation
 	f32 scrollY1;   // 0x24, +0.004 per frame
-	f32 field_0x28; // 0x28
-	f32 field_0x2C; // 0x2C
-	f32 field_0x30; // 0x30
+	u8 pad_0x28[12]; // 0x28
 	s32 field_0x34; // 0x34, set to 0xFF, never read (the head's alpha slot; Disp uses the head alpha)
 	s32 shrinking;  // 0x38, set to 1 once scaleY passes 1.2
-	f32 field_0x3C; // 0x3C
-	f32 field_0x40; // 0x40
+	u8 pad_0x3C[8]; // 0x3C
 } effNozleEntryData;
 
 typedef struct effNozleData {
@@ -44,7 +41,7 @@ typedef struct effNozleData {
 	s32 lifetime;                // 0x2C
 	s32 counter;                 // 0x30
 	s32 alpha;                   // 0x34
-	f32 field_0x38;              // 0x38
+	u8 pad_0x38[4];              // 0x38
 	f32 rotX;                    // 0x3C, degrees
 	f32 rotY;                    // 0x40, degrees
 	effNozleEntryData entries[]; // 0x44

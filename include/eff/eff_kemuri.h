@@ -58,7 +58,7 @@ typedef struct effKemuriData {
 	f32 velX; //0x4C sideways speed, damped by 0.85 per tick (type 0)
 	u8 field_0x50[0x58 - 0x50]; //0x50
 	f32 offX; //0x58 x offset, accumulates velX
-	f32 field_0x5C; //0x5C
+	f32 field_0x5C; //0x5C cleared by effKemuriEntry, never read
 	u8 field_0x60[0x74 - 0x60]; //0x60
 	f32 scale; //0x74 uniform scale of the whole puff, starts at 1
 	u8 field_0x78[0x80 - 0x78]; //0x78

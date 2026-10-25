@@ -15,7 +15,7 @@ typedef struct StarPointData {
     f32 velZ;       // 0x1C
     f32 velY;       // 0x20
     f32 gravity;    // 0x24
-    s32 field_0x28; // 0x28
+    u8 pad_0x28[4]; // 0x28
     s32 alpha;      // 0x2C
     s32 delay;      // 0x30
 } StarPointData;

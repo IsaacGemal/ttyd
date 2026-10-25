@@ -142,9 +142,9 @@ EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 		angle = (i == 1) ? float_0_8041f70c : 100.0f * i / 4.0f - 50.0f;
 		PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041f710 * angle);
 		data->type = type;
-		data->x = x;
-		data->y = y;
-		data->z = z;
+		data->position.x = x;
+		data->position.y = y;
+		data->position.z = z;
 		data->vx = float_0p6_8041f72c * (mtx[0][0] * dirX + mtx[0][1] * dirY + mtx[0][2] * dirZ);
 		data->vy = mtx[1][0] * dirX + mtx[1][1] * dirY + mtx[1][2] * dirZ;
 		data->vz = float_0p6_8041f72c * (mtx[2][0] * dirX + mtx[2][1] * dirY + mtx[2][2] * dirZ);
@@ -176,7 +176,7 @@ void effMagic3Main(EffectEntry* effect) {
 	Vec position;
 
 	data = effect->userdata;
-	position = initializeVec((Vec*)&data->x);
+	position = initializeVec(&data->position);
 	data->life--;
 	data->timer++;
 	life = data->life;
@@ -205,9 +205,9 @@ void effMagic3Main(EffectEntry* effect) {
 				data->scale = float_3_8041f728 * sa + sg + extra;
 			}
 		}
-		data->x += data->vx;
-		data->y += data->vy;
-		data->z += data->vz;
+		data->position.x += data->vx;
+		data->position.y += data->vy;
+		data->position.z += data->vz;
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMagic3Disp, effect);
 }
@@ -244,7 +244,7 @@ void effMagic3Disp(CameraId camId, void* param) {
 	effSetVtxDescN64(size32x16_tex64x32_vtx);
 	angle = float_deg2rad_8041f710;
 	for (i = 0; i < effect->count; i++, data++) {
-		PSMTXTrans(mtx1, data->x, data->y, data->z);
+		PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
 		PSMTXRotRad(mtx2, 'y', angle * -camGetPtr(CAMERA_3D)->viewYaw);
 		PSMTXRotRad(mtx3, 'z', angle * data->rot);
 		PSMTXScale(mtx4, data->scale, data->scale, float_1_8041f714);

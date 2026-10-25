@@ -10,29 +10,29 @@
 #include <math_ext.h>
 
 typedef struct effKemuri3Data {
-    s32 type;       // 0x0
-    u16 field_0x4;  // 0x4
-    s16 field_06;   // 0x6
-    u8 field_08;    // 0x8
+    s32 type;       // 0x0, 0 = inactive (skipped by Main and Disp)
+    u8 pad_0x4[2];  // 0x4
+    s16 life;       // 0x6, counts down; the entry goes inactive at 0
+    u8 alpha;       // 0x8, GX_TEVREG0 alpha
     u8 pad_09[3];   // 0x9
     Vec position;   // 0xC
-    f32 field_18;   // 0x18
-    f32 field_1C;   // 0x1C
-    f32 field_20;   // 0x20
-    f32 field_24;   // 0x24
-    f32 field_28;   // 0x28
-    f32 field_2C;   // 0x2C
-    Mtx field_30;   // 0x30
-    f32 field_60;   // 0x60
-    f32 field_64;   // 0x64
-    f32 field_68;   // 0x68
-    f32 field_6C;   // 0x6C
-    f32 field_70;   // 0x70
-    f32 field_74;   // 0x74
-    f32 field_78;   // 0x78
-    f32 field_7C;   // 0x7C
-    f32 field_80;   // 0x80
-    f32 field_84;   // 0x84
+    f32 scaleX;     // 0x18
+    f32 scaleY;     // 0x1C
+    f32 scaleZ;     // 0x20
+    f32 rotX;       // 0x24, degrees
+    f32 rotY;       // 0x28, degrees; also the heading of dirX/dirZ
+    f32 rotZ;       // 0x2C, degrees
+    Mtx modelMtx;   // 0x30, built by Main, drawn by Disp under the camera view
+    f32 speed;      // 0x60, horizontal speed along (dirX, dirZ)
+    f32 field_0x64; // 0x64
+    f32 field_0x68; // 0x68
+    f32 field_0x6C; // 0x6C
+    f32 velY;       // 0x70
+    f32 velYAccel;  // 0x74, added to velY every frame
+    f32 velYJerk;   // 0x78, added to velYAccel every frame
+    f32 velYSnap;   // 0x7C, added to velYJerk every frame
+    f32 dirX;       // 0x80, sin of the heading
+    f32 dirZ;       // 0x84, cos of the heading
 } effKemuri3Data;
 
 EffectEntry* effKemuri3N64Entry(f32 x, f32 y, f32 z, f32 a4) {
@@ -53,30 +53,30 @@ EffectEntry* effKemuri3N64Entry(f32 x, f32 y, f32 z, f32 a4) {
 
     for (i = 0; i < 5; i++, data++) {
         data->type = 1;
-        data->field_64 = 0.29999998f;
-        data->field_68 = 0.0f;
-        data->field_6C = 0.0f;
+        data->field_0x64 = 0.29999998f;
+        data->field_0x68 = 0.0f;
+        data->field_0x6C = 0.0f;
         data->position.x = x;
         data->position.y = y;
         data->position.z = z;
-        data->field_18 = 1.0f;
-        data->field_1C = 1.0f;
-        data->field_20 = 1.0f;
-        data->field_08 = 0xff;
-        data->field_06 = 0x3c;
-        data->field_24 = 0.0f;
+        data->scaleX = 1.0f;
+        data->scaleY = 1.0f;
+        data->scaleZ = 1.0f;
+        data->alpha = 0xff;
+        data->life = 0x3c;
+        data->rotX = 0.0f;
         angle = a4 + (f32)(i * 72);
-        data->field_28 = angle;
-        data->field_2C = 0.0f;
-        data->field_70 = 1.75f;
-        data->field_74 = -0.08f;
-        data->field_78 = 0.0f;
-        data->field_7C = 0.0f;
-        data->field_60 = -3.9f;
-        angle = reviseAngle(data->field_28);
+        data->rotY = angle;
+        data->rotZ = 0.0f;
+        data->velY = 1.75f;
+        data->velYAccel = -0.08f;
+        data->velYJerk = 0.0f;
+        data->velYSnap = 0.0f;
+        data->speed = -3.9f;
+        angle = reviseAngle(data->rotY);
         angle = 6.2831855f * angle / 360.0f;
-        data->field_80 = sin(angle);
-        data->field_84 = cos(angle);
+        data->dirX = sin(angle);
+        data->dirZ = cos(angle);
     }
 
     return effect;
@@ -108,39 +108,39 @@ void effKemuri3Main(EffectEntry* effect) {
         if (data->type == 0) {
             continue;
         }
-        if (--data->field_06 <= 0) {
+        if (--data->life <= 0) {
             data->type = 0;
             continue;
         }
         active = 1;
 
-        data->field_60 *= 0.85f;
-        data->position.x += data->field_60 * data->field_80;
-        data->position.z += data->field_60 * data->field_84;
+        data->speed *= 0.85f;
+        data->position.x += data->speed * data->dirX;
+        data->position.z += data->speed * data->dirZ;
 
-        data->field_78 += data->field_7C;
-        data->field_74 += data->field_78;
-        data->field_70 += data->field_74;
-        data->position.y += data->field_70;
+        data->velYJerk += data->velYSnap;
+        data->velYAccel += data->velYJerk;
+        data->velY += data->velYAccel;
+        data->position.y += data->velY;
 
-        if (data->field_70 < 0.0f) {
-            data->field_78 = 0.004f;
+        if (data->velY < 0.0f) {
+            data->velYJerk = 0.004f;
         }
 
-        data->field_24 -= 1.0f;
-        if (data->field_24 < -100.0f) {
-            data->field_24 = -100.0f;
+        data->rotX -= 1.0f;
+        if (data->rotX < -100.0f) {
+            data->rotX = -100.0f;
         }
 
-        PSMTXRotRad(rotX, 'x', 0.017453292f * data->field_24);
-        PSMTXRotRad(rotY, 'y', 0.017453292f * data->field_28);
-        PSMTXRotRad(rotZ, 'z', 0.017453292f * data->field_2C);
+        PSMTXRotRad(rotX, 'x', 0.017453292f * data->rotX);
+        PSMTXRotRad(rotY, 'y', 0.017453292f * data->rotY);
+        PSMTXRotRad(rotZ, 'z', 0.017453292f * data->rotZ);
         PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
-        PSMTXScale(scale, data->field_18, data->field_1C, data->field_20);
+        PSMTXScale(scale, data->scaleX, data->scaleY, data->scaleZ);
         PSMTXConcat(rotX, rotZ, rotZ);
         PSMTXConcat(rotY, rotZ, rotZ);
         PSMTXConcat(rotZ, scale, scale);
-        PSMTXConcat(trans, scale, data->field_30);
+        PSMTXConcat(trans, scale, data->modelMtx);
     }
 
     if (active == 0) {
@@ -187,8 +187,8 @@ void effKemuri3Disp(CameraId camId, void* param) {
         if (data->type == 0) {
             continue;
         }
-        GXSetTevColor(1, (GXColor){ 0x70, 0x60, 0x19, data->field_08 });
-        PSMTXConcat(cam->view, data->field_30, mtx);
+        GXSetTevColor(1, (GXColor){ 0x70, 0x60, 0x19, data->alpha });
+        PSMTXConcat(cam->view, data->modelMtx, mtx);
         GXLoadPosMtxImm(mtx, 0);
         GXBegin(0x80, 0, 4);
         GXPosition3f32(8.0f, 0.0f, 8.0f);

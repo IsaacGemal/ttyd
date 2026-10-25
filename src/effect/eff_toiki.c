@@ -63,13 +63,13 @@ EffectEntry* effToikiEntry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	data->rotation = 0.0f;
 	data->life = life;
 	data->field_0x2C = 0;
-	data->field_0x28 = 255.0f;
+	data->alpha = 255.0f;
 	angle = 6.2831855f * (200.0f + data->rotation) / 360.0f;
 	data->velX = 2.5f * (f32)cos(angle);
 	angle = 6.2831855f * (200.0f + data->rotation) / 360.0f;
 	data->velY = 2.5f * (f32)sin(angle);
 	data->velZ = 0.0f;
-	data->field_0x24 = 0.0f;
+	data->texOffsetX = 0.0f;
 	return entry;
 }
 
@@ -105,9 +105,9 @@ void effToikiMain(EffectEntry* effect) {
 	data->velY *= 0.95f;
 	data->velZ *= 0.95f;
 	if (data->life < 0x10) {
-		data->field_0x28 = (f32)(data->life * 16);
+		data->alpha = (f32)(data->life * 16);
 	}
-	if (data->field_0x24 > 1.0f && data->field_0x24 < 4.0f && data->life % 20 == 0) {
+	if (data->texOffsetX > 1.0f && data->texOffsetX < 4.0f && data->life % 20 == 0) {
 		size = 320.0f * data->scale;
 		angle = 6.2831855f * (200.0f + data->rotation) / 360.0f;
 		mistPos.x = data->x + size * (f32)cos(angle);
@@ -118,9 +118,9 @@ void effToikiMain(EffectEntry* effect) {
 		effMistEntry(type + 1, 0x3c, mistPos.x, mistPos.y, mistPos.z, 0.0f);
 	}
 	data->field_0x2C++;
-	data->field_0x24 += 0.015f;
-	if (data->field_0x24 > 4.0f) {
-		data->field_0x24 = 4.0f;
+	data->texOffsetX += 0.015f;
+	if (data->texOffsetX > 4.0f) {
+		data->texOffsetX = 4.0f;
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effToikiDisp, effect);
 }
@@ -142,10 +142,10 @@ void effToikiDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
-	GXSetTevColor(1, (GXColor){ color_tbl[type].r, color_tbl[type].g, color_tbl[type].b, data->field_0x28 });
+	GXSetTevColor(1, (GXColor){ color_tbl[type].r, color_tbl[type].g, color_tbl[type].b, data->alpha });
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	PSMTXTrans(mtx, data->field_0x24, 0.0f, 0.0f);
+	PSMTXTrans(mtx, data->texOffsetX, 0.0f, 0.0f);
 	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);

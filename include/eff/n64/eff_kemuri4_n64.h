@@ -9,7 +9,7 @@ typedef struct effKemuri4Data {
 	u16 type;            // 0x04
 	s16 lifetime;        // 0x06: frames left; also extended while Mario idles
 	u8 field_0x08;       // 0x08: 255, reduced by 12 per frame (never read)
-	u8 textureIndex;     // 0x09: picks texture 0x4C or 0x4D
+	s8 textureIndex;     // 0x09: picks texture 0x4C or 0x4D
 	u8 pad_0A[2];        // 0x0A
 	Vec position;        // 0x0C
 	f32 scaleX;          // 0x18

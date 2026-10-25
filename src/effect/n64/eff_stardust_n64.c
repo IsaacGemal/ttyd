@@ -25,7 +25,7 @@ typedef struct EffStardustN64Data {
     f32 r;          // 0x28
     f32 g;          // 0x2C
     f32 b;          // 0x30
-    s32 field_0x34; // 0x34
+    s32 field_0x34; // 0x34 particles: i % 3 (0 in type 0), written and never read
     s32 vtxIndex;   // 0x38
     s32 drawCam;    // 0x3C
 } EffStardustN64Data;

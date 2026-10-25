@@ -219,7 +219,7 @@ void effParticleMain(EffectEntry* effect) {
 			prev->next = particle->next;
 			particle->next = work->particles[work->count + 1].next;
 			work->particles[work->count + 1].next = i;
-			work->head--;
+			work->numLive--;
 		} else {
 			PSVECAdd(&particle->position, &particle->velocity, &particle->position);
 			particle->velocity.y += -0.03f;
@@ -268,7 +268,7 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	work->alpha = 0xFF;
 	work->count = count;
 	work->particles = (ParticleEntry*)(work + entry->count);
-	work->field_0xAC = 4.0f;
+	work->particleSpeed = 4.0f;
 	{
 		ParticleWork* w2 = entry->userdata;
 
@@ -276,17 +276,17 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 			w2->particles[i - 1].next = i;
 		}
 		w2->particles[i - 1].next = 0;
-		w2->head = 0;
+		w2->numLive = 0;
 	}
 	PSMTXIdentity(work->emitter.matrix);
 	work->emitter.field_0x3C.z = 0.0f;
 	work->emitter.field_0x3C.y = 0.0f;
 	work->emitter.field_0x3C.x = 0.0f;
 	work->emitter.field_0x48 = work->emitter.field_0x3C;
-	work->emitter.field_0x54 = 0.0f;
-	work->emitter.field_0x58 = 5.0f;
-	work->emitter.field_0x5C = 125.0f;
-	work->emitter.field_0x60 = 25.0f;
+	work->emitter.emitTotal = 0.0f;
+	work->emitter.emitRate = 5.0f;
+	work->emitter.lifeBase = 125.0f;
+	work->emitter.lifeSpread = 25.0f;
 	{
 		Vec direction;
 		Vec direction2;
@@ -315,13 +315,13 @@ void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 	s32 node;
 	u32 i;
 
-	oldCount = (u32)emitter->field_0x54;
-	emitter->field_0x54 += emitter->field_0x58;
-	newCount = (u32)emitter->field_0x54 - oldCount;
-	work->head += newCount;
-	if (work->head > work->count) {
-		newCount -= work->head - work->count;
-		work->head = work->count;
+	oldCount = (u32)emitter->emitTotal;
+	emitter->emitTotal += emitter->emitRate;
+	newCount = (u32)emitter->emitTotal - oldCount;
+	work->numLive += newCount;
+	if (work->numLive > work->count) {
+		newCount -= work->numLive - work->count;
+		work->numLive = work->count;
 	}
 	if (newCount != 0) {
 		node = work->count + 1;
@@ -375,7 +375,7 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 		y2 = z * factor;
 	}
 
-	particle->life = (s32)(emitter->field_0x60 * random + emitter->field_0x5C);
+	particle->life = (s32)(emitter->lifeSpread * random + emitter->lifeBase);
 
 	{
 		f32 c1 = 1.0f;
@@ -399,7 +399,7 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 		particle->velocity.y = particle_sqrtf(c1 - radius, &secondScratch);
 	}
 
-	PSVECScale(&particle->velocity, &particle->velocity, work->field_0xAC);
+	PSVECScale(&particle->velocity, &particle->velocity, work->particleSpeed);
 	PSMTXMultVec(emitter->matrix, &particle->velocity, &particle->velocity);
 	PSVECScale(&particle->velocity, &particle->position, 2.5f);
 	PSVECAdd(&emitter->position, &particle->position, &particle->position);

@@ -36,13 +36,12 @@ typedef struct effKemuri6Data {
     f32 baseScaleX;  // 0x28, grows 0.14 per frame
     f32 baseScaleY;  // 0x2C, decays by 0.94 per frame
     f32 swayAngle;   // 0x30, degrees, +12 per frame
-    f32 field_0x34;  // 0x34
+    u8 pad_0x34[4];  // 0x34
     f32 velY;        // 0x38, added to position.y each frame
     f32 accelY;      // 0x3C, added to velY, starts -0.5
     f32 accelStep;   // 0x40, added to accelY each frame (0.0)
     f32 field_0x44;  // 0x44
-    f32 field_0x48;  // 0x48
-    f32 field_0x4C;  // 0x4C
+    u8 pad_0x48[8];  // 0x48
 } effKemuri6Data;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_kemuri11_n64.c).

@@ -34,9 +34,9 @@ typedef struct effKemuri7Data {
     Mtx matrix;                  // 0x30: world matrix built each frame
     f32 direction;               // 0x60: 0 mirrors the quad on X
     u8 pad_64[0x6C - 0x64];      // 0x64
-    f32 field_0x6C;              // 0x6C
-    f32 field_0x70;              // 0x70
-    f32 field_0x74;              // 0x74
+    f32 field_0x6C;              // 0x6C: only cleared
+    f32 field_0x70;              // 0x70: only cleared
+    f32 field_0x74;              // 0x74: only cleared
     u8 pad_78[0x80 - 0x78];      // 0x78
     f32 sinAngle;                // 0x80: sine of the spawn yaw
     f32 cosAngle;                // 0x84: cosine of the spawn yaw

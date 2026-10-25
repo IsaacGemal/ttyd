@@ -36,17 +36,17 @@ EffectEntry* effHagetakaFlushN64Entry(s32 type, s32 unused, f32 x, f32 y, f32 z,
 	effect->callback = effHagetakaFlushMain;
 	effect->flags |= 2;
 	data->type = type;
-	data->field_0x14 = 0;
-	data->field_0x10 = 10;
-	data->field_0x24 = 0xff;
+	data->frame = 0;
+	data->life = 10;
+	data->alpha = 0xff;
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x28 = scale;
+	data->baseScale = scale;
 	data->field_0x18 = 70;
 	data->field_0x1C = 180;
 	data->field_0x20 = 120;
-	data->field_0x2C = 0.0f;
+	data->scale = 0.0f;
 	return effect;
 }
 
@@ -63,25 +63,25 @@ void effHagetakaFlushMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x10 = 10;
+		data->life = 10;
 	}
 
-	if (data->field_0x10 < 1000) {
-		data->field_0x10--;
+	if (data->life < 1000) {
+		data->life--;
 	}
-	data->field_0x14++;
+	data->frame++;
 
-	if (data->field_0x10 < 0) {
+	if (data->life < 0) {
 		effDelete(effect);
 		return;
 	}
 
-	frame = data->field_0x14;
-	if (data->field_0x10 < 4) {
-		data->field_0x2C *= 0.5f;
+	frame = data->frame;
+	if (data->life < 4) {
+		data->scale *= 0.5f;
 	}
 	else {
-		data->field_0x2C = frame * 0.2f + 0.3f;
+		data->scale = frame * 0.2f + 0.3f;
 	}
 
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effHagetakaFlushDisp, effect);
@@ -105,8 +105,8 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 
-	alpha = data->field_0x24;
-	scale = data->field_0x28 * data->field_0x2C;
+	alpha = data->alpha;
+	scale = data->baseScale * data->scale;
 	PSMTXTrans(mtxTrans, data->x, data->y, data->z);
 	PSMTXRotRad(mtxRot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(mtxScale, scale, scale, scale);
@@ -129,7 +129,7 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	effGetTexObjN64(0x1c, &texObj);
 	GXLoadTexObj(&texObj, 0);
 
-	colorIndex = data->field_0x14 * 3;
+	colorIndex = data->frame * 3;
 	// `%=` (as in eff_wangflush_n64.c) lets the remainder reuse the dividend register r7.
 	colorIndex %= 24;
 	GXSetTevColor(1, (GXColor){ color_rotation_data[colorIndex], color_rotation_data[colorIndex + 1],

@@ -9,13 +9,11 @@ BOOL effStageClearEndChk(EffectEntry* effect);
 #include "manager/evtmgr.h"
 typedef struct effStageClearWork {
 	s32 type;         // 0x00
-	f32 x;            // 0x04
-	f32 y;            // 0x08
-	f32 z;            // 0x0C
-	f32 field_0x10;   // 0x10
+	Vec position;     // 0x04
+	u8 pad_0x10[0x4]; // 0x10
 	f32 scale;        // 0x14
 	s32 timer;        // 0x18
-	s32 field_0x1C;   // 0x1C
+	s32 age;          // 0x1C, frames counted (head: since spawn, scrolls the rainbow texture in Disp; pieces: since their delay ran out, indexes scale_dt)
 	EventEntry* evt;  // 0x20
 	s32 count;        // 0x24
 	s32 done;         // 0x28

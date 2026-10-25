@@ -36,9 +36,9 @@ EffectEntry* effBreathFireN64Entry(s32 kind, f32 x, f32 y, s32 children, f32 z, 
 	data->kind = kind;
 	data->childrenLeft = children;
 	data->seed = seed;
-	data->posX = x;
-	data->posY = y;
-	data->posZ = z;
+	data->pos.x = x;
+	data->pos.y = y;
+	data->pos.z = z;
 	data->startX = x;
 	data->startY = y;
 	data->startZ = z;
@@ -96,7 +96,7 @@ void effBreathFireMain(EffectEntry* effect) {
 	effBreathFireData* data = effect->userdata;
 	s32 total;
 	s32 timer;
-	Vec position = initializeVec((Vec*)&data->posX);
+	Vec position = initializeVec(&data->pos);
 	EffectEntry* newEffect;
 
 	data->texPos = 4.0f * (f32)data->age / 10.0f;
@@ -112,12 +112,12 @@ void effBreathFireMain(EffectEntry* effect) {
 	if (life > 5 && data->kind == 0) {
 		data->scale = data->scale + 0.05f * (2.5f - data->scale);
 	}
-	data->posX = data->startX + (f32)timer * (data->bendX + (data->endX - data->startX)) / (f32)total;
-	data->posY = data->startY + (f32)timer * (data->bendY + (data->endY - data->startY)) / (f32)total;
-	data->posZ = data->startZ + (f32)timer * (data->bendZ + (data->endZ - data->startZ)) / (f32)total;
+	data->pos.x = data->startX + (f32)timer * (data->bendX + (data->endX - data->startX)) / (f32)total;
+	data->pos.y = data->startY + (f32)timer * (data->bendY + (data->endY - data->startY)) / (f32)total;
+	data->pos.z = data->startZ + (f32)timer * (data->bendZ + (data->endZ - data->startZ)) / (f32)total;
 	if (data->kind == 1) {
 		data->rise = data->rise + 0.01f * (f32)timer;
-		data->posY = data->posY + data->rise;
+		data->pos.y = data->pos.y + data->rise;
 	}
 	if (timer == data->seed + 1 && data->childrenLeft > 0) {
 		newEffect = effBreathFireN64Entry(data->kind, data->startX, data->startY, data->childrenLeft - 1, data->startZ, data->seed, data->endX, total, data->endY, data->endZ);
@@ -198,7 +198,7 @@ void effBreathFireDisp(CameraId camId, void* param) {
 	PSMTXConcat(scale, trans, scale);
 	GXLoadTexMtxImm(scale, GX_TEXMTX1, GX_MTX2x4);
 
-	PSMTXTrans(trans, data->posX, data->posY, data->posZ);
+	PSMTXTrans(trans, data->pos.x, data->pos.y, data->pos.z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(scale, data->scale, data->scale, 0.0f);
 	PSMTXConcat(trans, rot, trans);

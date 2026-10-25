@@ -16,12 +16,12 @@ typedef struct effKemuTestData {
 	s32 frame;      //0x20: flipbook column of the current frame, 0..15 (16 * age / life)
 	s32 nextFrame;  //0x24: flipbook column of the next frame, capped at 15
 	s32 age;        //0x28: frames elapsed
-	s32 field_0x2C; //0x2C
+	u8 pad_0x2C[4]; //0x2C
 	s32 life;       //0x30: frames until the particle is done
 	f32 speed;      //0x34: per-frame motion (added to posY, or along the particle's fan direction in types 10/12/14)
 	f32 accel;      //0x38: added to speed each frame
 	f32 damp;       //0x3C: speed and accel are multiplied by this each frame
-	s32 field_0x40; //0x40
+	u8 pad_0x40[4]; //0x40
 	s32 delay;      //0x44: frames to wait before the particle is drawn or moved
 	f32 scale;      //0x48
 	u8 colorR;      //0x4C

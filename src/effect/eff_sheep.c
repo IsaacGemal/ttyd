@@ -57,14 +57,14 @@ EffectEntry* effSheepEntry(s32 type, f32 x, f32 y, f32 z) {
 		p->poseId = -1;
 		p->state = 0;
 		p->scale = (f32)(irand(5) + 8) / 10.f;
-		p->field_0x2C = (f32)(irand(20) + 20) / 10.f;
+		p->velX = (f32)(irand(20) + 20) / 10.f;
 		p->timer = i + irand(30);
 		p->z = (f32)(100 - irand(200));
 
 		if (p->type != 0) {
-			p->field_0x14 = (s32)((f32)(irand(50) + 50) / p->field_0x2C);
-			p->field_0x1C = 0.2f;
-			p->field_0x18 = p->field_0x1C * p->field_0x14 / 2.0f;
+			p->hopFrames = (s32)((f32)(irand(50) + 50) / p->velX);
+			p->gravity = 0.2f;
+			p->velY = p->gravity * p->hopFrames / 2.0f;
 		}
 		if (entry->count - 1 == i) {
 			p->z = 0.0f;
@@ -154,14 +154,14 @@ void effSheepMain(EffectEntry* effect) {
 				psndSFX_pos(p->sfxId, &soundPos3);
 			}
 			if (p->x < 500.f) {
-				p->x += p->field_0x2C;
+				p->x += p->velX;
 				if (p->type == 1) {
 					f32 zero = 0.0f;
-					p->y += p->field_0x18;
-					p->field_0x18 -= p->field_0x1C;
+					p->y += p->velY;
+					p->velY -= p->gravity;
 					if (p->y < zero) {
 						p->y = zero;
-						p->field_0x18 *= -1.0f;
+						p->velY *= -1.0f;
 					}
 				}
 			}

@@ -14,11 +14,11 @@ typedef struct MobjBrokenWork {
 	f32 posZ;       // 0x0C
 	f32 scale;      // 0x10
 	s32 field_0x14; // 0x14
-	f32 field_0x18; // 0x18
-	f32 field_0x1C; // 0x1C
-	f32 field_0x20; // 0x20
-	f32 field_0x24; // 0x24
-	f32 field_0x28; // 0x28
+	f32 rotAngle;   // 0x18 tumble angle (degrees) about the dir axis; eases toward 20/720
+	f32 dir;        // 0x1C horizontal travel direction (degrees); also the tumble axis
+	f32 speed;      // 0x20 horizontal speed along dir
+	f32 velY;       // 0x24 added to posY each frame
+	f32 gravity;    // 0x28 subtracted from velY each frame
 	s32 poseId;     // 0x2C
 } MobjBrokenWork;
 void effMObjBrokenDisp2(CameraId camId, void* param);

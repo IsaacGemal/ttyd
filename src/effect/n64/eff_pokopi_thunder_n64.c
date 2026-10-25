@@ -106,17 +106,16 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 	}
 	data->tev1A = 0xFF;
 
-	// The unnamed scratch fields the original keeps in the struct's reserved runs.
-	data->field_0x10 = x;
-	data->field_0x14 = y;
-	data->field_0x18 = z;
-	data->field_0x1C = endX;
-	data->field_0x20 = endY;
-	data->field_0x24 = endZ;
+	data->startX = x;
+	data->startY = y;
+	data->startZ = z;
+	data->endX = endX;
+	data->endY = endY;
+	data->endZ = endZ;
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x4C = scale;
+	data->scale = scale;
 
 	data->cameraId = cameraId;
 
@@ -136,7 +135,7 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 	data->tev2R = 0xFF;
 	data->tev2G = 0xFF;
 	data->tev2B = 0xFF;
-	data->field_0x110 = rand() % 360;
+	data->phase = rand() % 360;
 	return effect;
 }
 void effPokopiThunderMain(EffectEntry* effect) {
@@ -302,7 +301,7 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	timer = data->timer;
 	cr = data->tev1A;
 	type = data->type;
-	scale = data->field_0x4C;
+	scale = data->scale;
 	if (data->cameraId != 4) {
 		cam = camGetPtr(CAMERA_3D);
 		GXGetProjectionv(proj);
@@ -366,20 +365,20 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	}
 
 	for (i = 0; i < 12; i++) {
-		s32 idx = data->field_0x110 + (i - timer) * 10;
+		s32 idx = data->phase + (i - timer) * 10;
 		t = (f32)tbl[i];
-		wx = 0.09090909f * (data->field_0x1C - data->field_0x10);
+		wx = 0.09090909f * (data->endX - data->startX);
 		ang = 6.2831855f * (f32)(idx % 120 - 60) / 360.0f;
-		wy = 0.09090909f * (data->field_0x20 - data->field_0x14);
+		wy = 0.09090909f * (data->endY - data->startY);
 		f20 = 0.04f * (t * (f32)sin(ang));
 		f6 = 0.04f * (t * (f32)cos(ang));
 		t = wx * f6 - wy * f20;
 		data->ptX[i] = (t) +
-		          (0.09090909f * ((f32)i * (data->field_0x1C - data->field_0x10)) + data->field_0x10);
+		          (0.09090909f * ((f32)i * (data->endX - data->startX)) + data->startX);
 		t = wy * f6;
 		data->ptY[i] = (wx * f20 + t) +
-		          (0.09090909f * ((f32)i * (data->field_0x20 - data->field_0x14)) + data->field_0x14);
-		data->ptZ[i] = zero + (0.09090909f * ((f32)i * (data->field_0x24 - data->field_0x18)) + data->field_0x18);
+		          (0.09090909f * ((f32)i * (data->endY - data->startY)) + data->startY);
+		data->ptZ[i] = zero + (0.09090909f * ((f32)i * (data->endZ - data->startZ)) + data->startZ);
 		data->ptScale[i] = 0.1f * (f32)tbl[i + 12];
 	}
 

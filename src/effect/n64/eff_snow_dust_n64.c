@@ -116,7 +116,7 @@ static u32 size32x32_tex32x32_vtx[18] = {
 };
 #pragma force_active reset
 
-EffectEntry* effSnowDustN64Entry(s32 type, f32 x, f32 y, f32 z, s32 count, s32 life, f32 a6, f32 a7, f32 scale) {
+EffectEntry* effSnowDustN64Entry(s32 type, f32 x, f32 y, f32 z, s32 count, s32 life, f32 spreadX, f32 spreadY, f32 scale) {
 	EffectEntry* effect;
 	effSnowDustData* data;
 	effSnowDustData* ptr;
@@ -143,8 +143,8 @@ EffectEntry* effSnowDustN64Entry(s32 type, f32 x, f32 y, f32 z, s32 count, s32 l
 	data->y = y;
 	data->z = z;
 	data->scale = scale;
-	data->spreadX = a6;
-	data->spreadY = a7;
+	data->spreadX = spreadX;
+	data->spreadY = spreadY;
 	data->camId = 4;
 	data->colorR = 0xff;
 	data->colorG = 0xff;

@@ -23,7 +23,8 @@ typedef struct effKemuri10Data {
     u8 tevReg0R;      // 0x64 TEVREG0 red
     u8 tevReg0G;      // 0x65 TEVREG0 green
     u8 tevReg0B;      // 0x66 TEVREG0 blue
-    u8 field_0x67[5]; // 0x67 a second RGB copy at 0x67-0x69 (written at init, never read), 0x6A-0x6B unused
+    u8 field_0x67[3]; // 0x67 a second copy of the TEVREG0 RGB, written at init and never read
+    u8 pad_0x6A[2];   // 0x6A
     s32 camId;        // 0x6C dispEntry camera (CAMERA_3D)
 } effKemuri10Data;
 void effKemuri10Disp(CameraId camId, void* param);

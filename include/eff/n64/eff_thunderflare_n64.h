@@ -4,7 +4,7 @@
 #include "driver/effdrv.h"
 
 typedef struct EffThunderflareData {
-	s32 field_0x00; // 0x00
+	s32 field_0x00; // 0x00, only cleared (elements 1..30)
 	s32 type;       // 0x04
 	f32 x;          // 0x08
 	f32 y;          // 0x0C

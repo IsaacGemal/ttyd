@@ -9,7 +9,7 @@ typedef struct EffPeachFukidashiData {
     Vec position;   // 0x4
     f32 angle;      // 0x10
     f32 radius;     // 0x14
-    f32 field_0x18; // 0x18
+    f32 rotZ;       // 0x18: Disp's z roll of the bubble icon, in degrees (copied from angle)
     s32 lifetime;   // 0x1C
     NpcEntry* npc;  // 0x20
 } EffPeachFukidashiData;

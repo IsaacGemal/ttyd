@@ -108,7 +108,7 @@ EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32
 	root->g2 = 0xf5;
 	root->b2 = 0;
 	root->scaleMul = 1.0f;
-	root->field_0x38 = (f32)vx_data[a];
+	root->offsetX = (f32)vx_data[a];
 	angle = (f32)(rand() % 360);
 	for (i = 1; i < effect->count; i++, data++) {
 		data->type = a % 3;
@@ -116,38 +116,38 @@ EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32
 		case 0:
 		case 1:
 		case 2:
-			data->field_0x38 = -(0.2f + 0.2f * (f32)(rand() % 10));
+			data->velX = -(0.2f + 0.2f * (f32)(rand() % 10));
 			data->lifetime = 20;
 			data->scale = 1.0f - 0.1f * (f32)(i % 3);
 			data->rotSpeed = 0.0f;
 			break;
 		case 3:
 		case 5:
-			data->field_0x38 = 0.2f + 0.2f * (f32)(rand() % 10);
+			data->velX = 0.2f + 0.2f * (f32)(rand() % 10);
 			data->lifetime = 20;
 			data->scale = 1.0f - 0.1f * (f32)(i % 3);
 			data->rotSpeed = 0.0f;
 			break;
 		case 6:
-			data->field_0x38 = (f32)(-((rand() % 10) + 4));
+			data->velX = (f32)(-((rand() % 10) + 4));
 			data->lifetime = 10;
 			data->scale = 1.0f - 0.3f * (f32)(i % 3);
 			data->rotSpeed = 0.0f;
 			break;
 		case 7:
-			data->field_0x38 = (f32)(-((rand() % 10) + 4));
+			data->velX = (f32)(-((rand() % 10) + 4));
 			data->lifetime = 10;
 			data->scale = 1.0f - 0.3f * (f32)(i % 3);
 			data->rotSpeed = 0.0f;
 			break;
 		case 8:
-			data->field_0x38 = 0.6f + 0.2f * (f32)(rand() % 10);
+			data->velX = 0.6f + 0.2f * (f32)(rand() % 10);
 			data->lifetime = 20;
 			data->scale = 1.0f - 0.3f * (f32)(i % 3);
 			data->rotSpeed = -1.0f;
 			break;
 		case 9:
-			data->field_0x38 = -(0.6f + 0.2f * (f32)(rand() % 10));
+			data->velX = -(0.6f + 0.2f * (f32)(rand() % 10));
 			data->lifetime = 20;
 			data->scale = 1.0f - 0.3f * (f32)(i % 3);
 			data->rotSpeed = -2.0f;
@@ -159,30 +159,30 @@ EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32
 			root->b2 = 0x0a;
 			break;
 		case 10:
-			data->field_0x38 = 2.0f + 0.1f * (f32)(rand() % 10);
+			data->velX = 2.0f + 0.1f * (f32)(rand() % 10);
 			data->lifetime = 10;
 			data->scale = 0.5f * (1.0f - 0.3f * (f32)(i % 3));
 			data->rotSpeed = 0.0f;
 			break;
 		case 11:
-			data->field_0x38 = 0.2f + 0.05f * (f32)(rand() % 10);
+			data->velX = 0.2f + 0.05f * (f32)(rand() % 10);
 			data->lifetime = 30;
 			data->scale = 1.0f - 0.3f * (f32)(i % 3);
 			data->rotSpeed = -1.0f;
 			break;
 		case 4:
 		case 12:
-			data->field_0x38 = 0.6f + 0.2f * (f32)(rand() % 10);
+			data->velX = 0.6f + 0.2f * (f32)(rand() % 10);
 			data->lifetime = 20;
 			data->scale = 1.0f - 0.3f * (f32)(i % 3);
 			data->rotSpeed = -2.0f;
 			break;
 		}
 		data->timer = -(rand() % data->lifetime);
-		if (data->field_0x38 < 0.0f) {
-			data->x = (f32)(data->lifetime - data->timer) * -data->field_0x38;
+		if (data->velX < 0.0f) {
+			data->x = (f32)(data->lifetime - data->timer) * -data->velX;
 		} else {
-			data->x = (f32)(-data->timer) * data->field_0x38;
+			data->x = (f32)(-data->timer) * data->velX;
 		}
 		data->y = 0.0f;
 		data->z = 0.0f;
@@ -232,14 +232,14 @@ void effPokopiPchargeMain(EffectEntry* effect) {
 		data->timer++;
 		if (data->timer >= data->lifetime) {
 			data->timer = 0;
-			if (data->field_0x38 < 0.0f) {
-				data->x = (f32)(-data->lifetime) * data->field_0x38;
+			if (data->velX < 0.0f) {
+				data->x = (f32)(-data->lifetime) * data->velX;
 			} else {
 				data->x = 0.0f;
 			}
 			data->rot = (f32)(rand() % 360);
 		}
-		data->x += data->field_0x38;
+		data->x += data->velX;
 		data->rot += data->rotSpeed;
 		{
 			s32 v = data->timer * 180 / data->lifetime;
@@ -287,7 +287,7 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 	r = data->r;
 	g = data->g;
 	b = data->b;
-	radialOffset = data->field_0x38;
+	radialOffset = data->offsetX;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(scale, scaleXZ, scaleXZ, scaleXZ);
