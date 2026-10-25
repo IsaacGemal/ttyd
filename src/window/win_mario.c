@@ -420,7 +420,7 @@ void winMarioMain2(WindowWork* work) {
 }
 
 char* winZenkakuStr(s32 num) {
-    signed char buf[0x100];
+    char buf[0x100];
     const char* tbl[10] = {
         "\x82\x4F", "\x82\x50", "\x82\x51", "\x82\x52", "\x82\x53",
         "\x82\x54", "\x82\x55", "\x82\x56", "\x82\x57", "\x82\x58",
@@ -434,15 +434,15 @@ char* winZenkakuStr(s32 num) {
     } else {
         strcpy(tmp2, "");
     }
-    sprintf((char*)buf, "%d", num);
-    for (i = 0; i < strlen((char*)buf); i++) {
+    sprintf(buf, "%d", num);
+    for (i = 0; i < strlen(buf); i++) {
         strcat(tmp2, tbl[buf[i] - 0x30]);
     }
     return tmp2;
 }
 
 char* winZenkakuPadStr(s32 num, s32 width) {
-    signed char buf[0x100];
+    char buf[0x100];
     const char* tbl[10] = {
         "\x82\x4F", "\x82\x50", "\x82\x51", "\x82\x52", "\x82\x53",
         "\x82\x54", "\x82\x55", "\x82\x56", "\x82\x57", "\x82\x58",
@@ -456,12 +456,12 @@ char* winZenkakuPadStr(s32 num, s32 width) {
     } else {
         strcpy(tmp, "");
     }
-    sprintf((char*)buf, "%d", num);
+    sprintf(buf, "%d", num);
     for (i = 0; i < width; i++) {
-        if (i < width - strlen((char*)buf)) {
+        if (i < width - strlen(buf)) {
             strcat(tmp, "\x82\x4F");
         } else {
-            strcat(tmp, tbl[buf[i - (width - (s32)strlen((char*)buf))] - 0x30]);
+            strcat(tmp, tbl[buf[i - (width - (s32)strlen(buf))] - 0x30]);
         }
     }
     return tmp;
