@@ -109,7 +109,7 @@ typedef struct WindowWork {
     s32 partyCount;             // 0x1E0, partners joined (winPartyInit counts them; win_root, win_item read it)
     f32 partyAngle;             // 0x1E4, win_party: current ring angle
     f32 partyAngleTarget;       // 0x1E8
-    u8 field_1EC[0x1FC - 0x1EC]; // 0x1EC
+    u8 field_0x1EC[0x1FC - 0x1EC]; // 0x1EC
     s32 lastPartySel;           // 0x1FC, win_party: slot before the last move (win_root compares it)
     s32 partyState;             // 0x200, win_party: state machine switch
     s32 wazaCount;              // 0x204, win_party: moves shown (attack level + 2)
@@ -143,7 +143,7 @@ typedef struct WindowWork {
     s32 useItemSlot;            // 0x2D8, its pouch index (pouchRemoveItemIndex)
     s32 useTargetSel;           // 0x2DC, target: 0 = Mario, else index into the joined partners
     s32 useTimer;               // 0x2E0, frames since the item was used (removed after framerate * 2)
-    u8 field_2E4[0x2E8 - 0x2E4]; // 0x2E4
+    u8 field_0x2E4[0x2E8 - 0x2E4]; // 0x2E4
     s16 skipList[0x79];         // 0x2E8, win_item: key items shown (winMakeSkipList: those not in menu_skip_list)
     s16 skipCount;              // 0x3DA, entries in skipList
     s32 badgeState;             // 0x3DC, win_badge: state machine switch

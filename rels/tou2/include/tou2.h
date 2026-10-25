@@ -12,7 +12,7 @@ typedef struct RuleEntry {
     const char* msg;   // 0x4, description key
     s32 kind;          // 0x8, rule kind: the _rule_msg_table index
     s32 param;         // 0xC, the value printed by the rule display
-    s32 field_10;      // 0x10, copied to NpcBattleInfo.battleRules[2], never read
+    s32 field_0x10;    // 0x10, copied to NpcBattleInfo.battleRules[2], never read
 } RuleEntry;
 
 typedef struct DispWork {

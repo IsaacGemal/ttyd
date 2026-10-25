@@ -864,7 +864,7 @@ static USER_FUNC(evt_tou_get_rule_info) {
     evtSetValue(event, args[1], (s32)dt[i].name);
     evtSetValue(event, args[2], dt[i].kind);
     evtSetValue(event, args[3], dt[i].param);
-    evtSetValue(event, args[4], dt[i].field_10);
+    evtSetValue(event, args[4], dt[i].field_0x10);
     return EVT_RETURN_DONE;
 }
 

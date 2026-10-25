@@ -33,7 +33,7 @@ typedef struct PoseState {
 	u8 pad_1A[2];   // 0x1A
 	f32 velY;       // 0x1C, added to the pose's y each hop frame
 	s32 entryIdx;   // 0x20, the PoseData.entries animation the pose plays (pose_change, pose_main)
-	s32 field_24; // 0x24
+	s32 field_0x24; // 0x24
 	u64 time;     // 0x28
 } PoseState;      // 0x30
 
