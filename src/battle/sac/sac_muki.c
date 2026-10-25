@@ -40,61 +40,61 @@ extern s32 marioAttackEvent_Muki[];
 // The Muki action-command work area, at _battleWorkPointer + 0x1F4C. No header declares it.
 typedef struct MukiEntry {
     s32 type;             // 0x00
-    s32 field_04;         // 0x04
+    s32 timer;            // 0x04, main_icon's frame in the current type
     s32 mode;             // 0x08
     Vec pos;              // 0x0C
     Vec scale;            // 0x18
-    f32 field_24;         // 0x24
+    f32 tipRotY;          // 0x24, the star stone's tipRotY
     f32 rot;              // 0x28
-    f32 field_2C;         // 0x2C
+    f32 tipRotZ;          // 0x2C, the star stone's tipRotZ
     EffectEntry* effect;  // 0x30
     u8 alpha;             // 0x34
-    u8 field_35[0x38 - 0x35];
+    u8 pad_0x35[0x38 - 0x35];
 } MukiEntry;
 
 typedef struct MukiPoint {
     s32 type;          // 0x00
-    s32 field_04;      // 0x04
+    s32 timer;         // 0x04, main_point's countdown to the next type
     Vec pos;           // 0x08
-    Vec field_14;      // 0x14
-    MukiEntry* field_20; // 0x20, but MukiEntry is declared above? no
+    Vec scale;         // 0x14, disp_3D's PSMTXScale
+    MukiEntry* entry;  // 0x20, the icon main_point put on this point
 } MukiPoint;
 
 typedef struct MukiWork {
-    s32 field_00;                    // 0x000
+    s32 flags;                       // 0x000, 1: Mario hit the bad icon (slow cursor, M_X_1)
     s32 state;                       // 0x004
-    s32 field_08;                    // 0x008
-    s32 field_0C;                    // 0x00C
-    s32 field_10;                    // 0x010
-    f32 field_14;                    // 0x014
-    f32 field_18;                    // 0x018
-    f32 field_1C;                    // 0x01C
-    f32 field_20;                    // 0x020
-    s32 field_24;                    // 0x024
-    s32 field_28;                    // 0x028
-    f32 field_2C;                    // 0x02C
-    f32 field_30;                    // 0x030
-    s32 field_34;                    // 0x034
-    s32 field_38;                    // 0x038
-    s32 field_3C;                    // 0x03C
-    s32 field_40;                    // 0x040
-    Vec field_44;                    // 0x044
-    Vec field_50;                    // 0x050
-    Vec field_5C;                    // 0x05C
-    Vec field_68;                    // 0x068
-    GXColor field_74;                // 0x074
+    s32 timer;                       // 0x008, frames in states 3 and 6
+    s32 timeLeft;                    // 0x00C, 0x383 frames of play in state 4
+    s32 field_0x10;                  // 0x010
+    f32 atkChange;                   // 0x014, set_weapon(0)'s atkChangeStrength (wait_game_end's LW(0))
+    f32 atkChangeDisp;               // 0x018, eased toward atkChange; disp_2D's bar and number
+    f32 defChange;                   // 0x01C, set_weapon(1)'s defChangeStrength (wait_game_end's LW(1))
+    f32 defChangeDisp;               // 0x020, eased toward defChange
+    s32 atkBlinkTimer;               // 0x024, 60 when atkChange gains a level; % 12 blinks the number
+    s32 defBlinkTimer;               // 0x028
+    f32 gaugeX;                      // 0x02C, disp_2D's gauge position, slid in from -400 in state 3
+    f32 gaugeY;                      // 0x030
+    s32 penaltyTimer;                // 0x034, frames since flags 1 was set; cleared at 0x78
+    s32 cursorState;                 // 0x038, main_cursor's switch
+    s32 cursorTimer;                 // 0x03C, intplGetValue frame of a cursor move
+    s32 cursorIndex;                 // 0x040, the points[] (3x3 grid) the cursor is on
+    Vec cursorPos;                   // 0x044
+    Vec cursorFrom;                  // 0x050
+    Vec cursorTo;                    // 0x05C
+    Vec cursorScale;                 // 0x068
+    GXColor cursorColor;             // 0x074
     MukiPoint points[9];             // 0x078
     MukiEntry entries[9];            // 0x1BC
-    s32 field_3B4;                   // 0x3B4
-    s32 field_3B8;                   // 0x3B8
+    s32 starState;                   // 0x3B4, main_star's switch; star_stone_appear sets 1
+    s32 starTimer;                   // 0x3B8
     Vec pos;                         // 0x3BC
     Vec start;                       // 0x3C8
     Vec end;                         // 0x3D4
-    u8 field_3E0[0x3EC - 0x3E0];     // 0x3E0
+    u8 pad_0x3E0[0x3EC - 0x3E0];     // 0x3E0
     Vec scale;                       // 0x3EC
-    Vec scale2;                      // 0x3F8
+    Vec rot;                         // 0x3F8, the star stone's tipRotY/rotY/tipRotZ
     EffectEntry* starStone;          // 0x404
-    u8 weapon[0xC0];                 // 0x408
+    BattleWeapon weapon;             // 0x408, set_weapon's copy of the file's weapon
 } MukiWork;                          // size 0x4C8
 
 static BattleWeapon weapon = {
@@ -211,7 +211,7 @@ s32 main_muki(EventEntry* event, BOOL isFirstCall) {
 
     if (isFirstCall) {
         memset(work, 0, 0x4C8);
-        work->field_10 = evtGetValue(event, args[0]);
+        work->field_0x10 = evtGetValue(event, args[0]);
         for (i = 0; i < 9; i++) {
             f32 zero = 0.0f;
             work->entries[i].effect = effStarStoneEntry(9, zero, -1000.0f, zero,
@@ -243,11 +243,11 @@ static void main_base(void) {
     f32 f;
     f32 diff;
 
-    if (work->field_24 > 0) {
-        work->field_24--;
+    if (work->atkBlinkTimer > 0) {
+        work->atkBlinkTimer--;
     }
-    if (work->field_28 > 0) {
-        work->field_28--;
+    if (work->defBlinkTimer > 0) {
+        work->defBlinkTimer--;
     }
 
     switch (work->state) {
@@ -255,13 +255,13 @@ static void main_base(void) {
         break;
     case 1:
         work->state = 2;
-        work->field_18 = 0.0f;
-        work->field_14 = 0.0f;
-        work->field_20 = 0.0f;
-        work->field_1C = 0.0f;
-        work->field_2C = -400.0f;
-        work->field_30 = 90.0f;
-        work->field_0C = 0x383;
+        work->atkChangeDisp = 0.0f;
+        work->atkChange = 0.0f;
+        work->defChangeDisp = 0.0f;
+        work->defChange = 0.0f;
+        work->gaugeX = -400.0f;
+        work->gaugeY = 90.0f;
+        work->timeLeft = 0x383;
         for (i = 0; i < 9; i++) {
             work->points[i].type = 1;
         }
@@ -278,39 +278,39 @@ static void main_base(void) {
         }
         if (count == 9) {
             work->state = 3;
-            work->field_08 = 0;
+            work->timer = 0;
         }
         break;
     case 3:
-        work->field_08++;
-        work->field_2C = intplGetValue(4, work->field_08, 0x1E, -400.0f, -120.0f);
-        if (work->field_08 >= 0x1E) {
+        work->timer++;
+        work->gaugeX = intplGetValue(4, work->timer, 0x1E, -400.0f, -120.0f);
+        if (work->timer >= 0x1E) {
             work->state = 4;
-            work->field_08 = 0;
-            work->field_38 = 1;
+            work->timer = 0;
+            work->cursorState = 1;
             for (i = 0; i < 9; i++) {
                 work->points[i].type = 5;
             }
         }
         break;
     case 4:
-        if (work->field_00 & 1) {
-            work->field_34++;
-            if (work->field_34 == 0x1E) {
+        if (work->flags & 1) {
+            work->penaltyTimer++;
+            if (work->penaltyTimer == 0x1E) {
                 BtlUnit_SetAnim(part, "M_X_1");
             }
         }
-        work->field_0C--;
-        if (work->field_0C <= 0) {
+        work->timeLeft--;
+        if (work->timeLeft <= 0) {
             work->state = 5;
-            work->field_08 = 0;
-            work->field_38 = 7;
+            work->timer = 0;
+            work->cursorState = 7;
             BtlUnit_SetAnim(part, "M_S_1");
             for (i = 0; i < 9; i++) {
                 work->points[i].type = 6;
                 work->entries[i].type = 9;
             }
-            count = (s32)(work->field_14 + work->field_1C);
+            count = (s32)(work->atkChange + work->defChange);
             if (count >= 1) {
                 if (count == 1) count = 2;
                 else if (count == 2) count = 3;
@@ -333,21 +333,21 @@ static void main_base(void) {
         }
         if (count == 9) {
             work->state = 6;
-            work->field_08 = 0;
+            work->timer = 0;
         }
         break;
     case 6:
-        work->field_08++;
-        if (work->field_08 >= 0x1E) {
+        work->timer++;
+        if (work->timer >= 0x1E) {
             work->state = 7;
-            work->field_08 = 0;
+            work->timer = 0;
         }
         break;
     case 7:
         break;
     }
 
-    diff = work->field_14 - work->field_18;
+    diff = work->atkChange - work->atkChangeDisp;
     if (0.0f != diff) {
         if (diff > 0.0f) {
             f = 0.1f;
@@ -355,9 +355,9 @@ static void main_base(void) {
                 f32 prod = f * diff;
                 f = (prod < f) ? f : prod;
             }
-            work->field_18 += f;
-            if (work->field_14 - work->field_18 < 0.0f) {
-                work->field_18 = work->field_14;
+            work->atkChangeDisp += f;
+            if (work->atkChange - work->atkChangeDisp < 0.0f) {
+                work->atkChangeDisp = work->atkChange;
             }
         }
         else {
@@ -368,14 +368,14 @@ static void main_base(void) {
             else {
                 f = -0.1f * diff;
             }
-            work->field_18 -= f;
-            if (work->field_14 - work->field_18 > 0.0f) {
-                work->field_18 = work->field_14;
+            work->atkChangeDisp -= f;
+            if (work->atkChange - work->atkChangeDisp > 0.0f) {
+                work->atkChangeDisp = work->atkChange;
             }
         }
     }
 
-    diff = work->field_1C - work->field_20;
+    diff = work->defChange - work->defChangeDisp;
     if (0.0f != diff) {
         if (diff > 0.0f) {
             f = 0.1f;
@@ -383,9 +383,9 @@ static void main_base(void) {
                 f32 prod = f * diff;
                 f = (prod < f) ? f : prod;
             }
-            work->field_20 += f;
-            if (work->field_1C - work->field_20 < 0.0f) {
-                work->field_20 = work->field_1C;
+            work->defChangeDisp += f;
+            if (work->defChange - work->defChangeDisp < 0.0f) {
+                work->defChangeDisp = work->defChange;
             }
         }
         else {
@@ -396,9 +396,9 @@ static void main_base(void) {
             else {
                 f = -0.1f * diff;
             }
-            work->field_20 -= f;
-            if (work->field_1C - work->field_20 > 0.0f) {
-                work->field_20 = work->field_1C;
+            work->defChangeDisp -= f;
+            if (work->defChange - work->defChangeDisp > 0.0f) {
+                work->defChangeDisp = work->defChange;
             }
         }
     }
@@ -415,42 +415,42 @@ void main_cursor(void) {
     f32 y;
     f32 z;
 
-    switch (work->field_38) {
+    switch (work->cursorState) {
     case 0:
         break;
     case 1:
         if (work->points[4].type < 5) {
             break;
         }
-        work->field_38 = 2;
-        work->field_44 = work->points[4].pos;
-        work->field_44.z += 5.0f;
-        work->field_68 = (Vec){0.5f, 0.5f, 1.0f};
-        work->field_40 = 4;
-        work->field_74 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+        work->cursorState = 2;
+        work->cursorPos = work->points[4].pos;
+        work->cursorPos.z += 5.0f;
+        work->cursorScale = (Vec){0.5f, 0.5f, 1.0f};
+        work->cursorIndex = 4;
+        work->cursorColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
         /* fallthrough */
     case 2:
-        work->field_74 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-        if (work->field_34 >= 0x78) {
+        work->cursorColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+        if (work->penaltyTimer >= 0x78) {
             BtlUnit_SetAnim(part, "M_I_Y");
-            work->field_00 &= ~1;
-            work->field_34 = 0;
+            work->flags &= ~1;
+            work->penaltyTimer = 0;
         }
         if (keyGetButtonTrg(0) & 0x100) {
-            work->field_38 = 5;
-            entry = work->points[work->field_40].field_20;
+            work->cursorState = 5;
+            entry = work->points[work->cursorIndex].entry;
             if (entry != NULL) {
                 entry->type = 5;
                 effHitEntry(0, 5, entry->pos.x, entry->pos.y, entry->pos.z, 1.0f);
                 switch (entry->mode) {
                 case 0:
-                    old = work->field_14;
-                    work->field_14 += 0.25f;
-                    if (work->field_14 > 9.0f) {
-                        work->field_14 = 9.0f;
+                    old = work->atkChange;
+                    work->atkChange += 0.25f;
+                    if (work->atkChange > 9.0f) {
+                        work->atkChange = 9.0f;
                     }
-                    if ((s32)work->field_14 > (s32)old) {
-                        work->field_24 = 0x3C;
+                    if ((s32)work->atkChange > (s32)old) {
+                        work->atkBlinkTimer = 0x3C;
                         psndSFXOn("SFX_BTL_SAC_BODY6");
                         if (audienceNum >= 1 && audienceNum <= 0x31) {
                             BattleAudienceSoundCallKind(1);
@@ -470,13 +470,13 @@ void main_cursor(void) {
                     psndSFXOn("SFX_BTL_SAC_BODY4");
                     break;
                 case 1:
-                    old = work->field_1C;
-                    work->field_1C += 0.25f;
-                    if (work->field_1C > 9.0f) {
-                        work->field_1C = 9.0f;
+                    old = work->defChange;
+                    work->defChange += 0.25f;
+                    if (work->defChange > 9.0f) {
+                        work->defChange = 9.0f;
                     }
-                    if ((s32)work->field_1C > (s32)old) {
-                        work->field_28 = 0x3C;
+                    if ((s32)work->defChange > (s32)old) {
+                        work->defBlinkTimer = 0x3C;
                         psndSFXOn("SFX_BTL_SAC_BODY6");
                         if (audienceNum >= 1 && audienceNum <= 0x31) {
                             BattleAudienceSoundCallKind(1);
@@ -509,8 +509,8 @@ void main_cursor(void) {
                         ((effStampData*)eff->userdata)->tevReg1G = 0x0A;
                         ((effStampData*)eff->userdata)->tevReg1B = 0;
                     }
-                    work->field_34 = 0;
-                    work->field_00 |= 1;
+                    work->penaltyTimer = 0;
+                    work->flags |= 1;
                     psndSFXOn("SFX_BTL_SAC_BODY5");
                     if (audienceNum >= 1 && audienceNum <= 0x31) {
                         BattleAudienceSoundBooingKind(1);
@@ -529,65 +529,65 @@ void main_cursor(void) {
             }
         }
         if (keyGetDirTrg(0) & 0x8000) {
-            if (work->field_40 % 3 != 2) {
-                work->field_38 = 3;
-                work->field_40++;
+            if (work->cursorIndex % 3 != 2) {
+                work->cursorState = 3;
+                work->cursorIndex++;
             }
         }
         if (keyGetDirTrg(0) & 0x4000) {
-            if (work->field_40 % 3 != 0) {
-                work->field_38 = 3;
-                work->field_40--;
+            if (work->cursorIndex % 3 != 0) {
+                work->cursorState = 3;
+                work->cursorIndex--;
             }
         }
         if (keyGetDirTrg(0) & 0x1000) {
-            if (work->field_40 / 3 != 0) {
-                work->field_38 = 3;
-                work->field_40 -= 3;
+            if (work->cursorIndex / 3 != 0) {
+                work->cursorState = 3;
+                work->cursorIndex -= 3;
             }
         }
         if (keyGetDirTrg(0) & 0x2000) {
-            if (work->field_40 / 3 != 2) {
-                work->field_38 = 3;
-                work->field_40 += 3;
+            if (work->cursorIndex / 3 != 2) {
+                work->cursorState = 3;
+                work->cursorIndex += 3;
             }
         }
         break;
     case 3:
-        work->field_38 = 4;
-        work->field_3C = 0;
-        work->field_50 = work->field_44;
-        work->field_5C = work->points[work->field_40].pos;
+        work->cursorState = 4;
+        work->cursorTimer = 0;
+        work->cursorFrom = work->cursorPos;
+        work->cursorTo = work->points[work->cursorIndex].pos;
         psndSFXOn("SFX_BTL_SAC_BODY3");
         /* fallthrough */
     case 4:
-        work->field_3C++;
-        work->field_74 = (GXColor){0x00, 0x00, 0xFF, 0xFF};
-        if (!(work->field_00 & 1)) {
-            work->field_44.x = intplGetValue(4, work->field_3C, 5, work->field_50.x, work->field_5C.x);
-            work->field_44.y = intplGetValue(4, work->field_3C, 5, work->field_50.y, work->field_5C.y);
-            if (work->field_3C >= 5) {
-                work->field_38 = 2;
+        work->cursorTimer++;
+        work->cursorColor = (GXColor){0x00, 0x00, 0xFF, 0xFF};
+        if (!(work->flags & 1)) {
+            work->cursorPos.x = intplGetValue(4, work->cursorTimer, 5, work->cursorFrom.x, work->cursorTo.x);
+            work->cursorPos.y = intplGetValue(4, work->cursorTimer, 5, work->cursorFrom.y, work->cursorTo.y);
+            if (work->cursorTimer >= 5) {
+                work->cursorState = 2;
             }
         }
         else {
-            work->field_44.x = intplGetValue(4, work->field_3C, 0x19, work->field_50.x, work->field_5C.x);
-            work->field_44.y = intplGetValue(4, work->field_3C, 0x19, work->field_50.y, work->field_5C.y);
-            if (work->field_3C >= 0x19) {
-                work->field_38 = 2;
+            work->cursorPos.x = intplGetValue(4, work->cursorTimer, 0x19, work->cursorFrom.x, work->cursorTo.x);
+            work->cursorPos.y = intplGetValue(4, work->cursorTimer, 0x19, work->cursorFrom.y, work->cursorTo.y);
+            if (work->cursorTimer >= 0x19) {
+                work->cursorState = 2;
             }
         }
         break;
     case 5:
-        work->field_38 = 6;
-        work->field_3C = 0;
+        work->cursorState = 6;
+        work->cursorTimer = 0;
         /* fallthrough */
     case 6:
-        work->field_3C++;
-        work->field_74 = (GXColor){0xFF, 0x00, 0x00, 0xFF};
-        if (work->field_3C >= 1) {
-            work->field_38 = 2;
-            work->field_3C = 0;
+        work->cursorTimer++;
+        work->cursorColor = (GXColor){0xFF, 0x00, 0x00, 0xFF};
+        if (work->cursorTimer >= 1) {
+            work->cursorState = 2;
+            work->cursorTimer = 0;
         }
         break;
     case 7:
@@ -606,7 +606,7 @@ void main_point(s32 index) {
     switch (point->type) {
     case 1:
         point->type = 2;
-        point->field_04 = irand(0x1E) + 0x1E;
+        point->timer = irand(0x1E) + 0x1E;
         {
             s32 row = index / 3;
             s32 col = index % 3;
@@ -615,35 +615,35 @@ void main_point(s32 index) {
             pos.y = (f32)(0x7D - row * 0x30);
             point->pos = pos;
         }
-        point->field_14 = (Vec){0.0f, 0.0f, 1.0f};
-        point->field_20 = NULL;
+        point->scale = (Vec){0.0f, 0.0f, 1.0f};
+        point->entry = NULL;
         /* fallthrough */
     case 2:
-        point->field_04--;
-        if (point->field_04 <= 0x1E) {
-            f = intplGetValue(0, 0x1E - point->field_04, 0x1E, 0.0f, 0.5f);
-            point->field_14.y = f;
-            point->field_14.x = f;
+        point->timer--;
+        if (point->timer <= 0x1E) {
+            f = intplGetValue(0, 0x1E - point->timer, 0x1E, 0.0f, 0.5f);
+            point->scale.y = f;
+            point->scale.x = f;
         }
-        if (point->field_04 <= 0) {
+        if (point->timer <= 0) {
             point->type = 3;
-            point->field_04 = 0;
+            point->timer = 0;
         }
         break;
     case 3:
         point->type = 4;
-        point->field_04 = 0;
-        point->field_14 = (Vec){0.5f, 0.5f, 1.0f};
+        point->timer = 0;
+        point->scale = (Vec){0.5f, 0.5f, 1.0f};
         break;
     case 0:
     case 4:
     case 8:
         break;
     case 5:
-        entry = point->field_20;
+        entry = point->entry;
         if (entry != NULL) {
             if (entry->type == 0) {
-                point->field_20 = NULL;
+                point->entry = NULL;
             }
         }
         else if (irand(0x41) == 0) {
@@ -653,7 +653,7 @@ void main_point(s32 index) {
                     entry->type = 1;
                     entry->pos = point->pos;
                     entry->pos.z = 0.0f;
-                    point->field_20 = entry;
+                    point->entry = entry;
                     break;
                 }
             }
@@ -661,19 +661,19 @@ void main_point(s32 index) {
         break;
     case 6:
         point->type = 7;
-        point->field_04 = irand(0x1E) + 0x1E;
-        point->field_20 = NULL;
+        point->timer = irand(0x1E) + 0x1E;
+        point->entry = NULL;
         /* fallthrough */
     case 7:
-        point->field_04--;
-        if (point->field_04 <= 0x1E) {
-            f = intplGetValue(0, 0x1E - point->field_04, 0x1E, 0.5f, 0.0f);
-            point->field_14.y = f;
-            point->field_14.x = f;
+        point->timer--;
+        if (point->timer <= 0x1E) {
+            f = intplGetValue(0, 0x1E - point->timer, 0x1E, 0.5f, 0.0f);
+            point->scale.y = f;
+            point->scale.x = f;
         }
-        if (point->field_04 <= 0) {
+        if (point->timer <= 0) {
             point->type = 8;
-            point->field_04 = 0;
+            point->timer = 0;
         }
         break;
     }
@@ -692,29 +692,29 @@ void main_icon(s32 index) {
         break;
     case 1:
         entry->type = 2;
-        entry->field_04 = 0;
+        entry->timer = 0;
         entry->mode = irand(3);
         entry->rot = 0.0f;
         entry->scale = (Vec){0.3f, 0.3f, 0.3f};
         /* fallthrough */
     case 2:
-        entry->field_04++;
-        entry->rot = intplGetValue(4, entry->field_04, 0x1E, 180.0f, 1080.0f);
-        entry->alpha = (u8)intplGetValue(0, entry->field_04, 0x1E, 0.0f, 255.0f);
-        if (entry->field_04 >= 0x1E) {
+        entry->timer++;
+        entry->rot = intplGetValue(4, entry->timer, 0x1E, 180.0f, 1080.0f);
+        entry->alpha = (u8)intplGetValue(0, entry->timer, 0x1E, 0.0f, 255.0f);
+        if (entry->timer >= 0x1E) {
             entry->type = 7;
         }
         break;
     case 3:
         entry->type = 4;
-        entry->field_04 = 0;
+        entry->timer = 0;
         entry->rot = 0.0f;
         /* fallthrough */
     case 4:
-        entry->field_04++;
-        entry->rot = intplGetValue(1, entry->field_04, 0x1E, 0.0f, 900.0f);
-        entry->alpha = (u8)intplGetValue(0, entry->field_04, 0x1E, 255.0f, 0.0f);
-        if (entry->field_04 >= 0x1E) {
+        entry->timer++;
+        entry->rot = intplGetValue(1, entry->timer, 0x1E, 0.0f, 900.0f);
+        entry->alpha = (u8)intplGetValue(0, entry->timer, 0x1E, 255.0f, 0.0f);
+        if (entry->timer >= 0x1E) {
             entry->type = 0;
         }
         break;
@@ -726,13 +726,13 @@ void main_icon(s32 index) {
         break;
     case 7:
         entry->type = 8;
-        entry->field_04 = 0;
+        entry->timer = 0;
         entry->rot = 0.0f;
         break;
     case 8:
-        entry->field_04++;
+        entry->timer++;
         entry->alpha = 0xFF;
-        if (entry->field_04 >= 0x5A) {
+        if (entry->timer >= 0x5A) {
             entry->type = 3;
         }
         break;
@@ -751,9 +751,9 @@ void main_icon(s32 index) {
         data->x = entry->pos.x;
         data->y = entry->pos.y;
         data->z = entry->pos.z;
-        data->tipRotY = entry->field_24;
+        data->tipRotY = entry->tipRotY;
         data->rotY = entry->rot;
-        data->tipRotZ = entry->field_2C;
+        data->tipRotZ = entry->tipRotZ;
         data->scale = 9.0f * entry->scale.x;
         data->tevReg0A = entry->alpha;
     }
@@ -765,18 +765,18 @@ static void main_star(void) {
     effStarStoneData* data;
     f32 f;
 
-    switch (work->field_3B4) {
+    switch (work->starState) {
     case 0:
         break;
     case 1:
         {
             f32 zero = 0.0f;
 
-            work->field_3B4 = 2;
+            work->starState = 2;
             {
                 f32 neg = -1000.0f;
 
-                work->field_3B8 = 0;
+                work->starTimer = 0;
                 work->starStone = effStarStoneEntry(2, zero, neg, zero, 1.0f);
             }
         }
@@ -787,15 +787,15 @@ static void main_star(void) {
         work->end.y += 50.0f;
         work->end.z += -1.0f;
         work->scale = (Vec){0.0f, 0.0f, 0.0f};
-        work->scale2 = (Vec){0.0f, 0.0f, 0.0f};
+        work->rot = (Vec){0.0f, 0.0f, 0.0f};
         /* fallthrough */
     case 2:
-        work->field_3B8++;
-        if (work->field_3B8 <= 0x64) {
-            work->pos.x = intplGetValue(0, work->field_3B8, 0x64, work->start.x, work->end.x);
-            work->pos.y = intplGetValue(0, work->field_3B8, 0x64, work->start.y, work->end.y);
-            work->pos.z = intplGetValue(0, work->field_3B8, 0x64, work->start.z, work->end.z);
-            f = intplGetValue(0, work->field_3B8, 0x64, 0.0f, 2.0f);
+        work->starTimer++;
+        if (work->starTimer <= 0x64) {
+            work->pos.x = intplGetValue(0, work->starTimer, 0x64, work->start.x, work->end.x);
+            work->pos.y = intplGetValue(0, work->starTimer, 0x64, work->start.y, work->end.y);
+            work->pos.z = intplGetValue(0, work->starTimer, 0x64, work->start.z, work->end.z);
+            f = intplGetValue(0, work->starTimer, 0x64, 0.0f, 2.0f);
             work->scale.z = f;
             work->scale.y = f;
             work->scale.x = f;
@@ -810,20 +810,20 @@ static void main_star(void) {
             work->scale.y = two;
             work->scale.x = two;
         }
-        work->scale2.y = intplGetValue(4, work->field_3B8, 0x78, 0.0f, 2160.0f);
-        if (work->field_3B8 >= 0x78) {
-            work->field_3B4 = 3;
-            work->field_3B8 = 0;
+        work->rot.y = intplGetValue(4, work->starTimer, 0x78, 0.0f, 2160.0f);
+        if (work->starTimer >= 0x78) {
+            work->starState = 3;
+            work->starTimer = 0;
             work->start = work->pos;
             work->end.y = 300.0f;
         }
         break;
     case 3:
-        work->field_3B8++;
-        work->pos.y = intplGetValue(1, work->field_3B8, 0x3C, work->start.y, work->end.y);
-        if (work->field_3B8 >= 0x3C) {
-            work->field_3B4 = 5;
-            work->field_3B8 = 0;
+        work->starTimer++;
+        work->pos.y = intplGetValue(1, work->starTimer, 0x3C, work->start.y, work->end.y);
+        if (work->starTimer >= 0x3C) {
+            work->starState = 5;
+            work->starTimer = 0;
         }
         break;
     case 4:
@@ -838,9 +838,9 @@ static void main_star(void) {
         data->x = work->pos.x;
         data->y = work->pos.y;
         data->z = work->pos.z;
-        data->tipRotY = work->scale2.x;
-        data->rotY = work->scale2.y;
-        data->tipRotZ = work->scale2.z;
+        data->tipRotY = work->rot.x;
+        data->rotY = work->rot.y;
+        data->tipRotZ = work->rot.z;
         data->scale = s * work->scale.x;
     }
 }
@@ -860,13 +860,13 @@ s32 end_muki(EventEntry* event, BOOL isFirstCall) {
 
 // Each gauge's screen point is built through an aggregate return, so the template copy lands in a
 // stack temp and is then copied to the caller's Vec, as the original schedules it. `y` is the
-// helper's own local, read after `v.x` is set: as an inline local it ranks below the `field_2C`
+// helper's own local, read after `v.x` is set: as an inline local it ranks below the `gaugeX`
 // load and takes f2, as in the original. MATCH_F32 keeps MWCC from propagating it into `v.y`.
 static inline Vec mukiScreenVec0(MukiWork* work) {
     Vec v = {0.0f, 0.0f, 0.0f};
     f32 y;
-    v.x = work->field_2C;
-    y = MATCH_F32(work->field_30);
+    v.x = work->gaugeX;
+    y = MATCH_F32(work->gaugeY);
     v.y = y;
     v.z = 0.0f;
     return v;
@@ -875,8 +875,8 @@ static inline Vec mukiScreenVec0(MukiWork* work) {
 static inline Vec mukiScreenVec1(MukiWork* work) {
     Vec v = {0.0f, 0.0f, 0.0f};
     f32 y;
-    v.x = work->field_2C;
-    y = MATCH_F32(work->field_30) - 30.0f;
+    v.x = work->gaugeX;
+    y = MATCH_F32(work->gaugeY) - 30.0f;
     v.y = y;
     v.z = 0.0f;
     return v;
@@ -922,10 +922,10 @@ static void disp_2D(CameraId cameraId, void* param) {
         btlDispTexPlane2(mtx, 0x43, c, 0);
 
         left = sx - w - 8.0f;
-        frac = work->field_18 - (f32)(s32)work->field_18;
+        frac = work->atkChangeDisp - (f32)(s32)work->atkChangeDisp;
         btlDispGXInit2DRasta();
         GXLoadPosMtxImm(camGetPtr(8)->view, 0);
-        d = work->field_14 - work->field_18;
+        d = work->atkChange - work->atkChangeDisp;
         if (0.0f != d) {
             cr = 0xFF;
             cg = 0xB4;
@@ -940,7 +940,7 @@ static void disp_2D(CameraId cameraId, void* param) {
         }
         btlDispGXQuads2DRasta(left, 8.0f + sy, frac * len + left,
                               sy - 8.0f, cr, cg, cb, ca);
-        n = work->field_24 % 12;
+        n = work->atkBlinkTimer % 12;
         if (n >= 0 && n <= 5) {
             PSMTXScale(mtx, 0.5f, 0.5f, 0.5f);
             PSMTXTransApply(mtx, mtx, left - 30.0f, sy, 0.0f);
@@ -955,7 +955,7 @@ static void disp_2D(CameraId cameraId, void* param) {
             PSMTXScale(mtx, 0.7f, 0.7f, 0.7f);
             PSMTXTransApply(mtx, mtx, left - 25.0f, sy - 14.0f, 0.0f);
             c = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-            iconNumberDispGx(mtx, (s32)work->field_18, 0, c);
+            iconNumberDispGx(mtx, (s32)work->atkChangeDisp, 0, c);
         }
     }
 
@@ -976,7 +976,7 @@ static void disp_2D(CameraId cameraId, void* param) {
         btlDispTexPlane2(mtx, 0x43, c, 0);
 
         left = sx - w - 8.0f;
-        frac = work->field_20 - (f32)(s32)work->field_20;
+        frac = work->defChangeDisp - (f32)(s32)work->defChangeDisp;
         btlDispGXInit2DRasta();
         GXLoadPosMtxImm(camGetPtr(8)->view, 0);
         if (0.0f != d) {
@@ -993,7 +993,7 @@ static void disp_2D(CameraId cameraId, void* param) {
         }
         btlDispGXQuads2DRasta(left, 8.0f + sy, frac * len + left,
                               sy - 8.0f, cr, cg, cb, ca);
-        n = work->field_28 % 12;
+        n = work->defBlinkTimer % 12;
         if (n >= 0 && n <= 5) {
             PSMTXScale(mtx, 0.5f, 0.5f, 0.5f);
             PSMTXTransApply(mtx, mtx, left - 30.0f, sy, 0.0f);
@@ -1008,7 +1008,7 @@ static void disp_2D(CameraId cameraId, void* param) {
             PSMTXScale(mtx, 0.7f, 0.7f, 0.7f);
             PSMTXTransApply(mtx, mtx, left - 25.0f, sy - 14.0f, 0.0f);
             c = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-            iconNumberDispGx(mtx, (s32)work->field_20, 0, c);
+            iconNumberDispGx(mtx, (s32)work->defChangeDisp, 0, c);
         }
     }
 }
@@ -1029,26 +1029,26 @@ static void disp_3D(CameraId cameraId, void* param) {
         point = &work->points[i];
         if (point->type >= 2 && point->type < 8) {
             for (t = 0; t < 4; t++) {
-                PSMTXScale(m, (f32)arr2[t * 2] * point->field_14.x,
-                           (f32)arr2[t * 2 + 1] * point->field_14.y, point->field_14.z);
+                PSMTXScale(m, (f32)arr2[t * 2] * point->scale.x,
+                           (f32)arr2[t * 2 + 1] * point->scale.y, point->scale.z);
                 PSMTXTransApply(m, m, point->pos.x, point->pos.y, point->pos.z);
-                PSMTXTransApply(m, m, (f32)arr0[t * 2] * point->field_14.x,
-                                (f32)arr0[t * 2 + 1] * point->field_14.y,
+                PSMTXTransApply(m, m, (f32)arr0[t * 2] * point->scale.x,
+                                (f32)arr0[t * 2 + 1] * point->scale.y,
                                 0.0f);
                 color = (GXColor){0xDE, 0xDE, 0xDE, 0xFF};
                 btlDispTexPlane2(m, 0x42, color, 0);
             }
         }
     }
-    if (work->field_38 >= 2 && work->field_38 < 7) {
+    if (work->cursorState >= 2 && work->cursorState < 7) {
         for (t = 0; t < 4; t++) {
-            PSMTXScale(m, (f32)arr2[t * 2] * work->field_68.x,
-                       (f32)arr2[t * 2 + 1] * work->field_68.y, work->field_68.z);
-            PSMTXTransApply(m, m, work->field_44.x, work->field_44.y, work->field_44.z);
-            PSMTXTransApply(m, m, (f32)arr1[t * 2] * work->field_68.x,
-                            (f32)arr1[t * 2 + 1] * work->field_68.y,
+            PSMTXScale(m, (f32)arr2[t * 2] * work->cursorScale.x,
+                       (f32)arr2[t * 2 + 1] * work->cursorScale.y, work->cursorScale.z);
+            PSMTXTransApply(m, m, work->cursorPos.x, work->cursorPos.y, work->cursorPos.z);
+            PSMTXTransApply(m, m, (f32)arr1[t * 2] * work->cursorScale.x,
+                            (f32)arr1[t * 2 + 1] * work->cursorScale.y,
                             0.0f);
-            color = work->field_74;
+            color = work->cursorColor;
             btlDispTexPlane2(m, 0x41, color, 0);
         }
     }
@@ -1136,20 +1136,20 @@ static s32 set_weapon(EventEntry* event, BOOL isFirstCall) {
     s32 value = evtGetValue(event, args[1]);
 
     work = get_ptr();
-    memcpy(work->weapon, &weapon, 0xC0);
+    memcpy(&work->weapon, &weapon, 0xC0);
     switch (type) {
     case 0:
-        work->weapon[0x96] = 0x64;
-        work->weapon[0x97] = 3;
-        work->weapon[0x98] = value;
+        work->weapon.atkChangeChance = 0x64;
+        work->weapon.atkChangeTime = 3;
+        work->weapon.atkChangeStrength = value;
         break;
     case 1:
-        work->weapon[0x99] = 0x64;
-        work->weapon[0x9A] = 3;
-        work->weapon[0x9B] = value;
+        work->weapon.defChangeChance = 0x64;
+        work->weapon.defChangeTime = 3;
+        work->weapon.defChangeStrength = value;
         break;
     }
-    evtSetValue(event, args[2], (s32)work->weapon);
+    evtSetValue(event, args[2], (s32)&work->weapon);
     return 2;
 }
 
@@ -1166,8 +1166,8 @@ static s32 wait_game_end(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
 
     if (work->state == 7) {
-        evtSetValue(event, args[0], (s32)work->field_14);
-        evtSetValue(event, args[1], (s32)work->field_1C);
+        evtSetValue(event, args[0], (s32)work->atkChange);
+        evtSetValue(event, args[1], (s32)work->defChange);
         return 2;
     }
     return 0;
@@ -1177,7 +1177,7 @@ static s32 wait_game_end(EventEntry* event, BOOL isFirstCall) {
 // .text:0x0 | 0x80246DCC | size: 0x2C
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall) {
     MukiWork* work = get_ptr();
-    work->field_3B4 = 1;
+    work->starState = 1;
     return 2;
 }
 
