@@ -93,22 +93,25 @@ typedef struct PartyEntry {
     u8 pad_0x22[0x24 - 0x22];    // 0x22
     s32 timer;                   // 0x24, frame countdown: `--timer <= 0` checks, reset to 0x14/0x1E/0x3C/0x41
     s16 forceMoveFrames;         // 0x28, partySetForceMove's frame count; partyForceWalk counts it down and restores
-                                 //       the previous run mode at 0; nonzero also picks the forced-walk speeds
+                                 //       the previous run mode at 0; the speed, homing and jump routines test it for nonzero
     s16 mutekiTime;              // 0x2A, marioSetMutekiTime copies Mario's into it
     s8 kemuriCount;              // 0x2C, party_kemuri: counts walking frames, a dust puff each time it passes 6
     s8 stepSfxCount;             // 0x2D, partyStepSfx: counts frames, footstep sounds at its lo/hi marks
     s8 dokanType;                // 0x2E, partyDokanEnd's copy of Mario's dokanType; partyDokanMain picks the exit by it
     s8 currentSlotId;            // 0x2F
-    s8 padChan;                  // 0x30, pad index partyUpdateKeyData reads the GlobalWork pad arrays with
+    s8 padChan;                  // 0x30, pad index partyUpdateKeyData reads the GlobalWork pad arrays with (never written, so 0)
     s8 currentMemberId;          // 0x31, PartyMembers
     u8 isFlyer;                  // 0x32, 1 for Flurrie and Vivian (their init_funcs): party_move and party_motion take the
-                                 //       fly routines, party_kemuri raises no dust, partyStepSfx plays the float sound
+                                 //       fly motions (party_motion_homing_fly, _behind_mario_fly), party_kemuri raises no dust,
+                                 //       partyStepSfx plays one sound (0x926) in place of the step pair
     u8 partnerType;              // 0x33, PartyMember of the init_func that set the entry up (kuribo_init's for Goombella and
                                  //       every NPC follower); fbatHitCheck tests Koops' before nokonokoGetStatus, and Bobbery's
     u8 runMode;                  // 0x34, partyChgRunMode
-    u8 prevRunMode;              // 0x35, runMode before partyChgRunMode; unk_800ba2dc returns to it
+    u8 prevRunMode;              // 0x35, runMode before partyChgRunMode, unless that was 9 (forced walk) or 3 (use);
+                                 //       unk_800ba2dc returns to it
     u8 mot;                      // 0x36, partyChgMot
-    u8 paperMot;                 // 0x37, paper motion to run: 1 party_slit, 2 party_roll, 0 none
+    u8 paperMot;                 // 0x37, paper motion to run: party_slit runs at 1, party_roll at 2 (no setter of 2 in the
+                                 //       tree), 0 none
     u8 motionStep;               // 0x38, switch selector of the party_motion_* routines
     u8 useMotionId;              // 0x39
     u8 paperMotStep;             // 0x3A, switch selector of party_slit and party_roll; allPartySlitOff moves it to 0x28
@@ -199,7 +202,8 @@ typedef struct PartyEntry {
     s32 camId;                   // 0x164
     s32 yoshiPsndSFXId;          // 0x168
     s32 evtUseMsec;              // 0x16C, length of an event-started use in ms (evt_party_cloud_breathout's argument, 5000 from
-                                 //        evt_party_nokotaro_hold): cloud's useTimer is sysMsec2Frame of it, Koops holds while > 0
+                                 //        evt_party_nokotaro_kick_hold, 0 from ..._kick): cloud's useTimer is sysMsec2Frame of
+                                 //        it; nokonoko_use holds when it is > 0
     union {
         void* useStruct;                     // 0x170
         struct BomheiWork* bomheiWork;       // 0x170, party_bomhei
@@ -261,7 +265,7 @@ void partyCtrlOff(void);
 void partyChgPaper(PartyEntry* party, char* paper);
 void partyCtrlOn(void);
 f32 partyGetHeight(PartyEntry* party);
-void partySetForceMove(PartyEntry* party, s32 frames, f32 x, f32 z);
+void partySetForceMove(PartyEntry* party, s32 frames, f32 dir, f32 speed);
 s32 yoshiSetColor(void);
 s32 partyKill(s32 memberId);
 s32 partyKill2(s32 memberId);

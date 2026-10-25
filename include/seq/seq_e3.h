@@ -8,7 +8,7 @@ typedef struct seq_e3_work {
     FileEntry* handle; // 0x00
     u32 showMenu;      // 0x04, e3Disp draws the Press Start screen at 0 and the scenario menu at 1 (the CAMERA_OFFSCREEN2
                        //       pass draws the other)
-    u32 nextShowMenu;  // 0x08, 1 on Start, 0 on B or the idle timeout; e3DispOffscreen copies it into showMenu under the fade
+    u32 nextShowMenu;  // 0x08, 1 on Start or A, 0 on B or the idle timeout; e3DispOffscreen copies it into showMenu under the fade
     s32 scenario;      // 0x0C
     f32 curX;          // 0x10
     f32 curY;          // 0x14

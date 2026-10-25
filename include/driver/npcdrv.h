@@ -97,7 +97,7 @@ typedef struct NpcBattleInfo {
     const char* music;                 // 0xC0, copied from BattleSetupData.music
     u8 battleRules[3];                 // 0xC4, set by evt_npc_set_battle_rule (Glitz Pit): rule kind (the _rule_msg_table index),
                                        // its parameter (printed by _rule_disp), a third byte; seq_battle copies them to FieldBattleInfo
-    u8 field_C7[0xC8 - 0xC7];          // 0xC7
+    u8 pad_0xC7[0xC8 - 0xC7];          // 0xC7
 } NpcBattleInfo;
 
 // The 0xC-byte entries of the weighted battle setup list selected by npcSetupBattleInfo.
@@ -168,10 +168,10 @@ typedef struct NpcEntry {
     f32 shadowScale;                // 0x154, multiplies the shadow radius; 1.0 at entry, eased by the evt_npc_majo_disp_* events
     Vec jumpStartPos;               // 0x158
     Vec jumpTargetPos;              // 0x164
-    u8 field_170[0x178 - 0x170];    // 0x170
+    u8 pad_0x170[0x178 - 0x170];    // 0x170
     OSTime airTicks;                // 0x178, ticks under gravity while flags 0x20000 is set; reset on landing
     f32 airTime;                    // 0x180, airTicks in seconds
-    u8 field_184[0x188 - 0x184];    // 0x184
+    u8 pad_0x184[0x188 - 0x184];    // 0x184
     OSTime moveElapsed;             // 0x188, ticks since the current move began; cleared by the move events
     OSTime frameTicks;              // 0x190, ticks since the last update (16 ms if it was over 500 ms)
     OSTime lastUpdateTick;          // 0x198, gp->renderTime at the last update
@@ -276,7 +276,7 @@ typedef struct FieldBattleData {
     s32 talkEvtId;               // 0xC, event started for talkNpc, waited on in state 1
     s32 firstAttackKind;         // 0x10, how the field contact was made, written by fbatHitCheck: 0x20000-0x80000
                                  // jumps, 0x100000-0x400000 hammers, 0x800000, 0x1000000; tou_03 forces 0x10000000;
-                                 // seq_battle turns it into BattleInformationSetFirstAttack kinds 1-7
+                                 // seq_battle turns it into BattleInformationSetFirstAttack kinds 1-8
     u32 firstAttackArg;          // 0x14, BattleInformationSetFirstAttack argument for firstAttackKind 0x10000000
                                  // (seq_battle; tou_03 sets 0x10)
     u8 pad_0x18[0x1C - 0x18];    // 0x18
