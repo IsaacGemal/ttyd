@@ -7521,3 +7521,110 @@ its only reader), mist `rise*` (from the sign of the chain), shock `type1Alpha`.
 src/driver/npcdrv.c's `work->scale = 0.8f` (MajinaiWork); fmap may touch that file. Leads: effGlassData `angle`/
 `angleVel` is a 0..1 animation phase (Disp uses `4 * angle` as the sheet frame; renaming it touches eff_freeze);
 effBlowData duplicates effBlowParticle; kemuri2's `active` is written once and never read; SstarVtx keeps `s16 unk[4]`.
+## Motion and manager fields named from their consumers: MotionPlaneData, MarioWork's motion fields, EventEntry, JabaraWork, MotionShipData, CardWork (2026-10-25, Claude Opus 5.5, n9-q-fmotion)
+
+Task (Isaac's prompt): name and type `field_0xNN` in src/motion/**, src/manager/** and their include/motion,
+include/mot, include/manager headers from their consumers, under CLEANUP_GUIDE section 3; MarioWork only where a motion
+file proves a remaining placeholder; remove the casts the new types make unnecessary. Parallel branch: fbtlsrc
+(src/battle/*.c), so nothing here touches src/battle.
+
+- **MotionPlaneData** (include/mot/mot_plane.h; mot_plane.c is its only user). 0x10 `speedAccel` (flyMain adds it to
+  baseSpeed in the `-80 <= pitch < 0` branch, its only read), 0x14 `pitchSpeed` (flyMain: `pitch += it` in both pitch
+  branches; integrated there, and in the `-80 <= pitch < 0` branch capped at 1 while the stick is pushed one way, by flags & 1), 0x18 `velY` (flyMain: `position.y += it` each frame;
+  the held stick drives it to planeData[19], else it decays; the `pitch >= 0` branch also adds it, or its step, to pitch), 0x24 `pitchMin` (flyMain: `if (pitch <= it) pitch = it`;
+  -22 over attr-0x38 ground, else eased to planeData[4]), 0x30 `hitRearPos` and 0x3C `hitFrontPos` (chkCollision: the
+  origins of its marioHitCheck rays; 0x30 is planeData[40] = 28 back along the flight axis and planeData[39] = 6 down
+  (bank-rotated) from the display centre, 0x3C 4 below it along the pitched down axis, and the segment from 0x30 to 0x3C goes to marioHitCheckVec). 0x1C stays `field_0x1C`: it is a second term
+  added to pitch (set non-positive from the speed shortfall, relaxed to 0 while the stick is held) and nothing tells it
+  apart from pitchSpeed by name. 0x2C (u8[4]) has no user and keeps its placeholder. chkCollision's local `normal` was
+  marioHitCheckVec's third argument, which is the hit position (mario_hit.c copies `query.hitPos` there), so it is
+  `hitPos`.
+- **MarioWork** (include/mario/mario.h), the fields a motion file proves:
+  - 0xE0 `fallReturnPos` (Vec): its readers put Mario back there after a fall: mot_bottomless (mario_motion.c) lands on
+    its x/z at y+300 and treats y < -2000 as "none" (marioReInit stores y = -10000; a per-map fallback follows), and
+    mot_damage uses it as the return target in bg mode in place of hitGetDamageReturnPos. mot_dokan stores position
+    there at the end of each pipe exit.
+  - 0x58 `lowHpPoseTimer` (s16): mot_stay only. Counts frames of the M_S_3 pose it picks when pouchGetHP() <= 5, wraps
+    past 0xF0, and plays sounds 0xE1 at 15 and 0xE2 at 135.
+  - 0x2A0 union: `hammerHitFrame` (s32, mot_hammer): `poseTime = min(multiTimer, it)`, and the impact (quake event,
+    hitobjHammer) runs when multiTimer equals it; set from hitEstimate's type (7 counts as 3); 10 replaces it when flag
+    0x800 is clear. Replaces the M_S32 raw accessor.
+  - 0x2AC union: `planeEndY` (mot_plane: the exits put position.y at 1 + it, or 1 + it - 37 after a head hit, and the
+    water sink runs until position.y < it - 100; it holds chkCollision's hit y, or position.y on a cancel or stall) and
+    `damageVelY` (mot_damage and mot_damageToge: added to position.y each frame of the throw out of the damage floor,
+    starting at 20 or 4, minus 1 a frame, at least 10). The f32 `field_0x2AC` member stays for mot_bottomless, whose
+    movePos speed it is.
+  - 0x2B4: an f32 `field_0x2B4` member replaces mot_jump's MWF32 raw store (the x of the map object jumped from; the z
+    goes to field_0x2B8). Neither store is read back (party_yoshi reads its own f32 at 0x2B4 raw), and mario.c reads 0x2B8 as a z rotation in the yoshi motion, so
+    both stay placeholders. mot_hammer2's s16 view of 0x2A4 (M_S16) stays raw: it is set to 0, then 10 every frame,
+    and compared with 1, which gives no meaning.
+  - Comments only, placeholders kept: 0x8 (mot_roll stores 0x10 at a roll's start and 0 at its end; evt_mario waits for
+    0 after marioRollCancel; renaming it to a sentinel showed these two files are its only users, but the bit's wider
+    meaning isn't shown), 0x18C (a move speed stored by marioMove and the plane, ship, yoshi and koopa motions, cleared
+    by itemdrv; no reader in the C), 0x128 (two meanings: the x/z jump distance from jumpFromPos that evt_mario and
+    mot_ship store, never read, and party_yoshi's summed rise checked against 0.7 * marioGetJumpHeight()).
+- **EventEntry** (include/manager/evtmgr.h). 0x184-0x18F was `EventEntryMsg unk184` (two f32) plus `u32 unk18C`;
+  evt_msg_toge writes three floats there and _evt_msg_print copies them to `window->anchor` as one Vec (for toge types
+  2 and 3, through a local `EventVec` overlay). Now `Vec msgAnchor`; the overlay, the `*(f32*)&` pun and the split
+  copies in evtChildEntry, evtDelete, evt_inline_evt and evt_inline_evt_id go, and the whole-Vec copies compile to the same
+  object. Left: 0x90 (user-function scratch with different meanings in unit_party_vivian and battle_stage_object; the
+  latter is fbtlsrc's file), 0x194, 0x1AC and EventWork 0x94 (no access in the C or in evtmgr's asm).
+- **JabaraWork** (local to mot_jabara.c). 0x4 `swingAccel` and 0x8 `swingDecel` (swingMain adds the first to
+  jabaraSpeed while jabaraTimer runs, capped at 40, and the second, negative, once it is 0, until the speed reaches 0),
+  0x10 `accelStep` (added to or taken from jabaraAccel), 0x14 `ofsStepFlips` and 0x18 `prevOfsStep` (state 0x32: the
+  +-0.6 dispOfs step is compared with prevOfsStep; each change bumps ofsStepFlips, whose 1st, 2nd and 3rd play sounds
+  0x189-0x18B), 0x1C `headHitTimer` (frames A has been released while marioSearchHead finds a ceiling; past
+  sysMsec2Frame(5000) the launch goes ahead anyway). 0xC stays `unkC` (only zeroed). mario.h's jabaraTimer comment uses
+  the new names.
+- **MotionShipData** (local to mot_ship.c). 0x08 `bobAngle` (`dispOfs.y = 3 sin(it) - 13`; also picks the stopped
+  wake's strength), 0x0C `bobSpeed` (taken from bobAngle each frame, 4.25), 0x10 `wakeSpeed` (shipWakeUpdate: eased to
+  0.3/0.6 and passed as EffFunemizuData speed while the ship is stopped), 0x1C `turnRate` (eased, added to dispDir each
+  frame, as planeTurnRate is), 0x20 `turnTarget` (the size turnRate eases toward, signed by flags & 1), 0x28 `swirlDir`
+  and 0x2C `swirlSpeed` (marioSetSwirlPower's third and second arguments; shipMove passes them to movePos as the angle
+  and the distance; yuu_01 passes 8.0f and a hoko_tbl angle), 0x3C `harborPos` (checkHarbor/shipHarborTarget's out
+  point; the landing moves to it). marioSetSwirlPower's parameters are `speed, dir` now (header too). 0x04 (written,
+  never read) and 0x34 (no user) keep their unk names.
+- **CardWork, CardMetadata, CardSaveSlot** (include/manager/cardmgr.h; cardmgr.c is CardWork's only user). 0xE0
+  `operation` (cardMain switches on it: 1 write_main from cardWrite/cardErase/cardCopy, 2 write_header_main, 3
+  read_main, 4 read_all_main from cardReadAll, 5 create_main from cardCreate, 6 the format steps from cardFormat, 7 the
+  delete steps, 8 nothing, set after an error; 0 idle), 0xD8 `step` (every *_main switches on it and increments it),
+  0xA4 `readSlot` (the slot read_main reads; read_all_main steps it 0..3), 0xAC `readBuf` (memcard_read's buffer for the
+  header and save checks, kept void* since it is read as both CardMetadata and CardSaveSlot), 0xB0 `writeBuf`
+  (cardErase/cardCopy prepare it; write_main writes it under flag 0x800, then copies it into data->saves), 0xBC
+  `firstCopy` and 0xC0 `secondCopy` (write_main's steps 10 and 11 write the slot to `copy * 4 slots` past the header:
+  the backup first when only the main copy is valid). CardMetadata 0x1E40/0x1E42/0x1E44 `rumbleEnabled`,
+  `soundSurround`, `lastFileSlot` (make_header stores gp's fields of those names, read_all_main restores them). The
+  never-touched `unk` byte gaps (CardWork 0x2, 0x18, 0xC4, 0xDC, 0xE8; CardSaveSlot 0x2, 0x213B) are `pad_0xNN`, and the
+  0x4000 read sizes are `sizeof(CardSaveSlot)`.
+- **Allocations:** mot_jabara, mot_roll and mot_ship allocate and clear their work with `sizeof(JabaraWork)`,
+  `sizeof(MotRoll)` and `sizeof(MotionShipData)` instead of 0x20, 0x14 and 0x48.
+- **Left, and why.** filemgr.c's FileType3/7/8/9 views (109 `field_0x` sites, the bulk of src/manager's): they are the
+  file-relative pointers fileGarbageDataAdrSet/Clear relocate for file types 3, 6-10, which no caller in this build
+  loads, so nothing shows what any of them points to (Super Paper Mario's filemgr leaves the same words unknown).
+  FileEntry 0x8 and 0x60: no C access, but FileEntry is reachable from many files, so they keep their names. MotRoll
+  0x8 (tested and cleared in mot_roll, never set in the C) and 0x10 (no user). mot_dokan's 0x2A4 store and mot_ship's
+  0x128/0x18C stores (no reader). The s32 zero resets of the scratch words in mot_jabara (MW_S32) and mot_roll stay raw:
+  they store integer 0 across members whose users type them f32, s16 or s32. The remaining motion casts are MUST_MATCH
+  volatile/pun sites or `(const char*)` SFX ids. dvdmgr's `DVDEntry.unknown` and fontmgr's `BinaryFontWidthEntry.unknown`
+  are written or read nowhere that shows their use.
+- **Checks.** Each commit: `build/G8MJ01/ok` recreated, the changed C files built under `configure.py --non-matching`,
+  then CI PASS through `~/ci_notests.py` (its tools/tests step fails here for environment reasons, as recorded above:
+  no `elftools` for test_reloc_value_check and the test_wave_launch pipe timeouts; no tool changed). This worktree had
+  no ratchet baseline, so `ci.py --init` ran first on the byte-identical first build. At the end all 1,018 game objects
+  (every src/ and rels/ unit) compiled under `--non-matching` with no failures, then a normal reconfigure and rebuild to
+  `ok`. fncast_lint and local_prototypes clean.
+- **Counts** (`tools/cleanup_index.py`, 5619c3bf -> this branch, same script): index 13.669 -> 13.509 per kLOC (9548 ->
+  9436 weighted); field_0x 2403 -> 2305, raw_offset 150 -> 145, struct_ptr_cast 1245 -> 1243, deref_cast 484 -> 483,
+  the rest unchanged. `field_0x` in this task's files (src/motion, src/manager, include/motion, include/mot,
+  include/manager): 229 -> 139, of which filemgr.c's 109 are unchanged; outside filemgr: 120 -> 30. Per file:
+  mot_plane.c 75 -> 9, mot_plane.h 8 -> 2, mot_damage.c 9 -> 0, mot_stay.c 7 -> 0, mot_dokan.c 3 -> 1, mot_jump.c 2 -> 4
+  (the raw MWF32 store became `field_0x2B4`), evtmgr.h 6 -> 4; mario.h 22 -> 21, mario_motion.c 10 -> 6, mario.c 4 -> 3,
+  evt_msg.c 2 -> 0. The index doesn't count `unkNN` field names, so the JabaraWork, MotionShipData and CardWork names
+  don't move it.
+- **Review.** A fresh Claude Opus 5.5 subagent re-read every use of every new name against CLEANUP_GUIDE section 3: no
+  wrong names; it corrected four comments (pitchSpeed's cap, velY's pitch use, the hit points' offsets, and that
+  party_yoshi reads 0x2B4), applied before the last commit.
+- **For a reviewer.** The names that rest most on interpretation: `fallReturnPos` (named from its two readers, both
+  return-after-a-fall paths, rather than from mot_dokan, its writer), `hammerHitFrame` (the stored value is
+  hitEstimate's type, used as a frame count), `firstCopy`/`secondCopy` (0 = main, 1 = backup, the `validSave1/2` order)
+  and MotionPlaneData's `hitFrontPos`/`hitRearPos` (front and rear relative to each other along the heading).

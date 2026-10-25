@@ -48,7 +48,7 @@ EVT_END()
 typedef struct MotionShipData {
     u32 flags;        // 0x00
     f32 unk04;        // 0x04
-    f32 bobAngle;     // 0x08, phase of the bob: dispOfs.y = 3 sin(bobAngle) - 13; also picks the stopped wake's strength
+    f32 bobAngle;     // 0x08, phase of the bob: dispOfs.y = 3 sin(bobAngle) - 13; also picks the stopped wake's speed
     f32 bobSpeed;     // 0x0C, taken from bobAngle each frame (4.25)
     f32 wakeSpeed;    // 0x10, the wake effect's speed while the ship is stopped, eased toward 0.3 or 0.6 (shipWakeUpdate)
     f32 velX;         // 0x14
