@@ -290,19 +290,19 @@ void disp_sight(CameraId cameraId, void* param) {
     drawBG(0, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
     drawBG(0, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f);
     drawBG(0, 0.0f, 0.0f, -1.0f, -1.0f, 0.0f);
-    drawBG(1, 0.0f, 0.0f, 1.0f, 1.0f, sight_wp->field_0x18);
-    drawBG(1, 0.0f, 0.0f, -1.0f, 1.0f, -sight_wp->field_0x18);
-    drawBG(1, 0.0f, 0.0f, 1.0f, -1.0f, -sight_wp->field_0x18);
-    drawBG(1, 0.0f, 0.0f, -1.0f, -1.0f, sight_wp->field_0x18);
+    drawBG(1, 0.0f, 0.0f, 1.0f, 1.0f, sight_wp->rot);
+    drawBG(1, 0.0f, 0.0f, -1.0f, 1.0f, -sight_wp->rot);
+    drawBG(1, 0.0f, 0.0f, 1.0f, -1.0f, -sight_wp->rot);
+    drawBG(1, 0.0f, 0.0f, -1.0f, -1.0f, sight_wp->rot);
 
     if (sight_wp->state == 2) {
-        sight_wp->field_0x18 += 2.0f;
+        sight_wp->rot += 2.0f;
     } else if (sight_wp->state == 3) {
-        sight_wp->field_0x18 -= 2.0f;
+        sight_wp->rot -= 2.0f;
     } else if (sight_wp->state == 0) {
-        sight_wp->field_0x18 -= 2.0f;
+        sight_wp->rot -= 2.0f;
     } else {
-        sight_wp->field_0x18 += 1.0f;
+        sight_wp->rot += 1.0f;
     }
 
     winTexInit(sight_wp->file->data[0]);
@@ -333,15 +333,15 @@ void disp_sight(CameraId cameraId, void* param) {
 
     if ((gp->retraceCount & 3) == 0) {
         for (i = 0; i < 4; i++) {
-            sight_wp->field_4[i] = sight_wp->field_4[i + 1];
+            sight_wp->levels[i] = sight_wp->levels[i + 1];
         }
         // the sample SoundAIDMACallback writes next
-        sight_wp->field_4[4] = abs(sound.outputSamples[sound.outputHalf][sound.outputPos]);
+        sight_wp->levels[4] = abs(sound.outputSamples[sound.outputHalf][sound.outputPos]);
     }
 
     for (i = 0; i < 5; i++) {
         s32 j;
-        s32 v = sight_wp->field_4[i];
+        s32 v = sight_wp->levels[i];
 
         v /= 300;
 
@@ -392,20 +392,20 @@ void disp_sight(CameraId cameraId, void* param) {
         case 2:
             drawBG(id, -180.0f, 16.0f, 1.0f, 1.0f, 180.0f);
             if (flag != 0 && (gp->retraceCount & 3) == 0) {
-                sight_wp->field_20++;
+                sight_wp->leftCount++;
             }
             break;
         case 3:
             drawBG(id, 180.0f, -16.0f, 1.0f, 1.0f, 0.0f);
             if (flag != 0 && (gp->retraceCount & 3) == 0) {
-                sight_wp->field_24++;
+                sight_wp->rightCount++;
             }
             break;
         }
     }
 
-    drawNum(sight_wp->field_20, 2, -220.0f, 0.0f, 0.8f);
-    drawNum(sight_wp->field_24, 2, 200.0f, 0.0f, 0.8f);
+    drawNum(sight_wp->leftCount, 2, -220.0f, 0.0f, 0.8f);
+    drawNum(sight_wp->rightCount, 2, 200.0f, 0.0f, 0.8f);
 }
 
 EVT_BEGIN(evt_door_1)
@@ -570,10 +570,10 @@ static USER_FUNC(sight) {
         sight_wp = _mapAlloc(0x28);
         memset(sight_wp, 0, 0x28);
         for (i = 0; i < 5; i++) {
-            sight_wp->field_4[i] = 0;
+            sight_wp->levels[i] = 0;
         }
-        sight_wp->field_20 = rand();
-        sight_wp->field_24 = rand();
+        sight_wp->leftCount = rand();
+        sight_wp->rightCount = rand();
         sight_wp->state = 5;
     }
     if (sight_wp->file == NULL) {
@@ -622,8 +622,8 @@ USER_FUNC(bom_fall) {
     PoseEntry* e;
     PoseData* pd;
 
-    for (i = 0; i < data->field_0x4; i++, pose++) {
-        data->states[i].field_0 = 0x7f;
+    for (i = 0; i < data->poseCount; i++, pose++) {
+        data->states[i].state = 0x7f;
         pose->matrix[0][0][3] = 600.0f * rand() / 32767.0f;
         pose->matrix[0][1][3] = 300.0f + 3700.0f * rand() / 32767.0f;
         pose->matrix[0][2][3] = -650.0f + -450.0f * rand() / 32767.0f;
@@ -634,8 +634,8 @@ USER_FUNC(bom_fall) {
             }
         }
         if (j < pd->count) {
-            if (pd->states[i].field_20 != j) {
-                pd->states[i].field_20 = (s16)j;
+            if (pd->states[i].entryIdx != j) {
+                pd->states[i].entryIdx = (s16)j;
                 pd->states[i].time = gp->renderTime + rand();
             }
         }
@@ -659,9 +659,9 @@ static void pose_init(void) {
             pd->count++;
         }
         strcpy(pd->entries[pd->count].name, buf);
-        pd->entries[pd->count].field_C = start;
-        pd->entries[pd->count].field_10 = i - start + 1;
-        pd->entries[pd->count].field_8 = p->value;
+        pd->entries[pd->count].firstTexId = start;
+        pd->entries[pd->count].texCount = i - start + 1;
+        pd->entries[pd->count].duration = p->value;
         i++;
     } while ((++p)->name != NULL);
     pd->count++;
@@ -673,15 +673,15 @@ static void pose_main(void) {
     ExtPose* pose;
 
     pose = extGetPosePtr();
-    for (i = 0; i < pd->field_0x4; i++) {
-        PoseEntry* entry = &pd->entries[pd->states[i].field_20];
-        f32 t = 60.0f * (f32)OSTicksToMilliseconds(gp->renderTime - pd->states[i].time) / 1000.0f / entry->field_8;
+    for (i = 0; i < pd->poseCount; i++) {
+        PoseEntry* entry = &pd->entries[pd->states[i].entryIdx];
+        f32 t = 60.0f * (f32)OSTicksToMilliseconds(gp->renderTime - pd->states[i].time) / 1000.0f / entry->duration;
 
         if (t >= 1.0f) {
             pd->states[i].time = gp->renderTime;
             t = 0.0f;
         }
-        pose->texId = entry->field_C + (s32)((f32)(entry->field_10 - 1) * t);
+        pose->texId = entry->firstTexId + (s32)((f32)(entry->texCount - 1) * t);
         pose++;
     }
 }
@@ -697,8 +697,8 @@ static void pose_change(s32 index, const char* name) {
         }
     }
     if (i < pd->count) {
-        if (pd->states[index].field_20 != i) {
-            pd->states[index].field_20 = (s16)i;
+        if (pd->states[index].entryIdx != i) {
+            pd->states[index].entryIdx = (s16)i;
             pd->states[index].time = gp->renderTime + rand();
         }
     }
@@ -746,13 +746,13 @@ static void ext_init(void) {
     lp[0] = smartAlloc(0xBC30, 1);
     pd = lp[0]->address;
     memset(pd, 0, 0xBC30);
-    pd->field_0x4 = extGetPoseNum();
+    pd->poseCount = extGetPoseNum();
     pose_init();
     pose = extGetPosePtr();
-    for (i = 0; i < pd->field_0x4; i++, pose++) {
-        pd->states[i].field_1C = 0.0f;
-        pd->states[i].field_14 = 0.0f;
-        pd->states[i].field_0 = 0;
+    for (i = 0; i < pd->poseCount; i++, pose++) {
+        pd->states[i].velY = 0.0f;
+        pd->states[i].gravity = 0.0f;
+        pd->states[i].state = 0;
         pose->flags |= 7;
         PSMTXIdentity(*pose->matrix);
         angle = (f32)rand() * 6.2831855f / 32767.0f;
@@ -845,22 +845,22 @@ void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
     f32 d;
     f32 dy;
 
-    pd->states[index].field_4 = (Vec){x, y, z};
-    pd->states[index].field_10 = p;
-    pd->states[index].field_14 = q;
+    pd->states[index].target = (Vec){x, y, z};
+    pd->states[index].speed = p;
+    pd->states[index].gravity = q;
     dy = y - ep->matrix[0][1][3];
     d = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
     // the original calls angleABf here and discards the result (see asm 0x2EC0)
     angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
-    pd->states[index].field_18 = d / pd->states[index].field_10;
+    pd->states[index].framesLeft = d / pd->states[index].speed;
     {
-        f32 m = pd->states[index].field_14 * (f32)pd->states[index].field_18;
+        f32 m = pd->states[index].gravity * (f32)pd->states[index].framesLeft;
 
-        pd->states[index].field_1C = m / 2.0f +
-                                     dy / (f32)pd->states[index].field_18;
+        pd->states[index].velY = m / 2.0f +
+                                     dy / (f32)pd->states[index].framesLeft;
     }
-    pd->states[index].field_1 = a;
-    pd->states[index].field_0 = 100;
+    pd->states[index].nextState = a;
+    pd->states[index].state = 100;
     ep->heading = angleABf(x, z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
     if (index % 20 == 0 && !(pd->flags & 1)) {
         Vec pos2 = (Vec){ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3]};
@@ -877,13 +877,13 @@ static void ext_main(void) {
     PoseData* pd = lp[0]->address;
     ExtPose* pose = extGetPosePtr();
 
-    for (i = 0; i < pd->field_0x4; i++, pose++) {
+    for (i = 0; i < pd->poseCount; i++, pose++) {
         Vec zero1 = {0.0f, 0.0f, 0.0f};
         Vec pos = (Vec){pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]};
         Vec zero2 = {0.0f, 0.0f, 0.0f};
 
 
-        switch ((s8)pd->states[i].field_0) {
+        switch ((s8)pd->states[i].state) {
         case 0:
             if (PSVECDistance(&zero1, &pos) > 280.0f) {
                 Vec dir;
@@ -897,7 +897,7 @@ static void ext_main(void) {
                 pose->matrix[0][2][3] = pos.z;
                 pose->heading = angleABf(0.0f, 0.0f, pos.x, pos.z);
             } else {
-                pd->states[i].field_0++;
+                pd->states[i].state++;
             }
             break;
         case 1: {
@@ -956,7 +956,7 @@ static void ext_main(void) {
             break;
         }
         case 4:
-            pd->states[i].field_0++;
+            pd->states[i].state++;
             break;
         case 5:
             break;
@@ -966,20 +966,20 @@ static void ext_main(void) {
             f32 sinv;
             f32 cosv;
 
-            pose->matrix[0][1][3] += pd->states[i].field_1C;
-            pd->states[i].field_1C -= pd->states[i].field_14;
-            angle = angleABf(pose->matrix[0][0][3], pose->matrix[0][2][3], pd->states[i].field_4.x,
-                             pd->states[i].field_4.z);
+            pose->matrix[0][1][3] += pd->states[i].velY;
+            pd->states[i].velY -= pd->states[i].gravity;
+            angle = angleABf(pose->matrix[0][0][3], pose->matrix[0][2][3], pd->states[i].target.x,
+                             pd->states[i].target.z);
             rad = 3.1415927f * angle / 180.0f;
             sinv = bomSinApprox(rad);
-            pose->matrix[0][0][3] += pd->states[i].field_10 * sinv;
+            pose->matrix[0][0][3] += pd->states[i].speed * sinv;
             cosv = bomCosApprox(rad);
-            pose->matrix[0][2][3] += pd->states[i].field_10 * -cosv;
-            if (--pd->states[i].field_18 < 0) {
-                pose->matrix[0][0][3] = pd->states[i].field_4.x;
-                pose->matrix[0][1][3] = pd->states[i].field_4.y;
-                pose->matrix[0][2][3] = pd->states[i].field_4.z;
-                pd->states[i].field_0 = pd->states[i].field_1;
+            pose->matrix[0][2][3] += pd->states[i].speed * -cosv;
+            if (--pd->states[i].framesLeft < 0) {
+                pose->matrix[0][0][3] = pd->states[i].target.x;
+                pose->matrix[0][1][3] = pd->states[i].target.y;
+                pose->matrix[0][2][3] = pd->states[i].target.z;
+                pd->states[i].state = pd->states[i].nextState;
             }
             break;
         }
@@ -2149,9 +2149,9 @@ static inline void pose_init_minnnanokoe_copy(void) {
             pd->count++;
         }
         strcpy(pd->entries[pd->count].name, buf);
-        pd->entries[pd->count].field_C = start;
-        pd->entries[pd->count].field_10 = i - start + 1;
-        pd->entries[pd->count].field_8 = p->value;
+        pd->entries[pd->count].firstTexId = start;
+        pd->entries[pd->count].texCount = i - start + 1;
+        pd->entries[pd->count].duration = p->value;
         i++;
     } while ((++p)->name != NULL);
     pd->count++;
@@ -2330,13 +2330,13 @@ void ext_init_minnnanokoe(void) {
     lp[0] = smartAlloc(0xBC30, 1);
     data = lp[0]->address;
     memset(data, 0, 0xBC30);
-    data->field_0x4 = extGetPoseNum();
+    data->poseCount = extGetPoseNum();
     pose_init_minnnanokoe_copy();
     pose = extGetPosePtr();
-    for (i = 0; i < data->field_0x4; i++, pose++) {
-        data->states[i].field_1C = 0.0f;
-        data->states[i].field_14 = 0.0f;
-        data->states[i].field_0 = 5;
+    for (i = 0; i < data->poseCount; i++, pose++) {
+        data->states[i].velY = 0.0f;
+        data->states[i].gravity = 0.0f;
+        data->states[i].state = 5;
         pose->flags |= 3;
         PSMTXIdentity((MtxPtr)pose->matrix);
         rx = (i % 14) * 30 - 205 + rand() % 10;
@@ -2348,8 +2348,8 @@ void ext_init_minnnanokoe(void) {
         pd = lp[0]->address;
         j = find_entry_minnnanokoe(pd);
         if (j < pd->count) {
-            if (pd->states[i].field_20 != j) {
-                pd->states[i].field_20 = (s16)j;
+            if (pd->states[i].entryIdx != j) {
+                pd->states[i].entryIdx = (s16)j;
                 pd->states[i].time = gp->renderTime + rand();
             }
         }
@@ -2362,17 +2362,17 @@ void jump_minnnanokoe(s32 index, f32 f) {
     PoseData* pd = lp[0]->address;
     ExtPose* pose = &extGetPosePtr()[index];
 
-    pd->states[index].field_4 = (Vec){pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]};
-    pd->states[index].field_10 = 0.0f;
-    pd->states[index].field_14 = 0.1f;
-    pd->states[index].field_18 = 20;
+    pd->states[index].target = (Vec){pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]};
+    pd->states[index].speed = 0.0f;
+    pd->states[index].gravity = 0.1f;
+    pd->states[index].framesLeft = 20;
     {
-        f32 m = pd->states[index].field_14 * (f32)pd->states[index].field_18;
+        f32 m = pd->states[index].gravity * (f32)pd->states[index].framesLeft;
 
-        pd->states[index].field_1C = m / 2.0f + f / (f32)pd->states[index].field_18;
+        pd->states[index].velY = m / 2.0f + f / (f32)pd->states[index].framesLeft;
     }
-    pd->states[index].field_1 = 5;
-    pd->states[index].field_0 = 100;
+    pd->states[index].nextState = 5;
+    pd->states[index].state = 100;
     if (evtGetValue(0, 0xF5DE0180) != 401 && index % 5 == 0) {
         Vec pos2 = (Vec){pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]};
 
@@ -2442,9 +2442,9 @@ USER_FUNC(bom1000_msg) {
 // bom1000_jump(): kick a random pose's state and occasionally play a 3D SFX.
 USER_FUNC(bom1000_jump) {
     PoseData* pd = lp[0]->address;
-    s32 idx = rand() % pd->field_0x4;
+    s32 idx = rand() % pd->poseCount;
 
-    if ((s32)pd->states[idx].field_0 != 100) {
+    if ((s32)pd->states[idx].state != 100) {
         jump_minnnanokoe(idx, 10.0f);
     }
     return EVT_RETURN_DONE;
