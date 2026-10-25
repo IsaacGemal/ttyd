@@ -561,7 +561,7 @@ EVT_BEGIN(evt_bom_01_karakara)
     RETURN
 EVT_END()
 
-static ExtTableEntry ext_data[31];
+static ExtMakeTextureEntry ext_data[31];
 
 static USER_FUNC(sight) {
     s32 i;
@@ -646,22 +646,22 @@ USER_FUNC(bom_fall) {
 static void pose_init(void) {
     char buf[0x20];
     PoseData* pd = lp[0]->address;
-    ExtTableEntry* p = ext_data;
+    ExtMakeTextureEntry* p = ext_data;
     s32 i = 0;
     s32 start;
 
     strcpy(buf, "");
     pd->count = -1;
     do {
-        if (strcmp(p->type, buf) != 0) {
-            strcpy(buf, p->type);
+        if (strcmp(p->animName, buf) != 0) {
+            strcpy(buf, p->animName);
             start = i;
             pd->count++;
         }
         strcpy(pd->entries[pd->count].name, buf);
         pd->entries[pd->count].firstTexId = start;
         pd->entries[pd->count].texCount = i - start + 1;
-        pd->entries[pd->count].duration = p->value;
+        pd->entries[pd->count].duration = p->frame;
         i++;
     } while ((++p)->name != NULL);
     pd->count++;
@@ -710,13 +710,13 @@ USER_FUNC(make_ext_table) {
     memset(ext_data, 0, 0x174);
     for (i = 0; i < 10; i++) {
         ext_data[i].name = "c_bom_sen";
-        ext_data[i].type = "R_1";
-        ext_data[i].value = (f32)i * 2.0f;
+        ext_data[i].animName = "R_1";
+        ext_data[i].frame = (f32)i * 2.0f;
     }
     for (i = 0; i < 20; i++) {
         ext_data[10 + i].name = "c_bom_sen";
-        ext_data[10 + i].type = "S_2";
-        ext_data[10 + i].value = (f32)i * 6.0f;
+        ext_data[10 + i].animName = "S_2";
+        ext_data[10 + i].frame = (f32)i * 6.0f;
     }
     ext_data[30].name = NULL;
     return EVT_RETURN_DONE;
@@ -1019,7 +1019,7 @@ static void ext_main(void) {
 #pragma opt_lifetimes reset
 
 
-static ExtTableEntry ext_data[31] = {0};
+static ExtMakeTextureEntry ext_data[31] = {0};
 
 
 EVT_BEGIN(evt_bom1000)
@@ -2136,22 +2136,22 @@ EVT_END()
 static inline void pose_init_minnnanokoe_copy(void) {
     char buf[0x20];
     PoseData* pd = lp[0]->address;
-    ExtTableEntry* p = ext_data;
+    ExtMakeTextureEntry* p = ext_data;
     s32 i = 0;
     s32 start;
 
     strcpy(buf, "");
     pd->count = -1;
     do {
-        if (strcmp(p->type, buf) != 0) {
-            strcpy(buf, p->type);
+        if (strcmp(p->animName, buf) != 0) {
+            strcpy(buf, p->animName);
             start = i;
             pd->count++;
         }
         strcpy(pd->entries[pd->count].name, buf);
         pd->entries[pd->count].firstTexId = start;
         pd->entries[pd->count].texCount = i - start + 1;
-        pd->entries[pd->count].duration = p->value;
+        pd->entries[pd->count].duration = p->frame;
         i++;
     } while ((++p)->name != NULL);
     pd->count++;
@@ -2304,13 +2304,13 @@ USER_FUNC(make_ext_table_minnnanokoe) {
     memset(ext_data, 0, 0x174);
     for (i = 0; i < 10; i++) {
         ext_data[i].name = "c_bom_sen";
-        ext_data[i].type = "S_1";
-        ext_data[i].value = (f32)i * 4.0f;
+        ext_data[i].animName = "S_1";
+        ext_data[i].frame = (f32)i * 4.0f;
     }
     for (i = 0; i < 20; i++) {
         ext_data[10 + i].name = "c_bom_sen";
-        ext_data[10 + i].type = "R_1";
-        ext_data[10 + i].value = (f32)i * 2.0f;
+        ext_data[10 + i].animName = "R_1";
+        ext_data[10 + i].frame = (f32)i * 2.0f;
     }
     ext_data[30].name = NULL;
     return EVT_RETURN_DONE;

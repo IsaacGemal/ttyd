@@ -2,14 +2,9 @@
 
 #include "evt/evt_cmd.h"
 #include "driver/dispdrv.h"
+#include "driver/extdrv.h"
 #include "manager/filemgr.h"
 #include "memory.h"
-
-typedef struct ExtTableEntry {
-	const char* name;
-	const char* type;
-	f32 value;
-} ExtTableEntry;
 
 typedef struct SightWork {
 	FileEntry* file; // 0x0
