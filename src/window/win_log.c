@@ -64,13 +64,6 @@ typedef struct WinLogEntry {
     const char* name;     // 0xD90
     u32 field_0x1C;       // 0xD94
 } WinLogEntry;
-typedef struct WinLogWork {
-    u8 pad_0[0xD6C];
-    s32 sel;              // 0xD6C
-    s32 count;            // 0xD70
-    u8 pad_74[4];         // 0xD74
-    WinLogEntry entries[1]; // 0xD78
-} WinLogWork;
 #define SFX(id) psndSFXOn((const char*)(id))
 typedef struct TubuDt {
     s16 x;           // 0x0
@@ -80,7 +73,7 @@ typedef struct TubuDt {
     u16 minProgress; // 0x6
     const char* id;  // 0x8
 } TubuDt;
-#define LOGWIN_CHECK(field, off) typedef char logwin_##field##_check[(offsetof(LogWin, field) == (off)) ? 1 : -1]
+#define LOGWIN_CHECK(field, off) typedef char logwin_##field##_check[(offsetof(WindowWork, field) == (off)) ? 1 : -1]
 extern TubuDt tubuDt[0x5D];
 extern s32 stone_tbl[7];
 TubuDt tubuDt[0x5D] = {
@@ -181,21 +174,21 @@ s32 stone_tbl[7] = {0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78};
 extern const u8 enemy_monoshiri_sort_table[];
 #define LOG_ADD_TAB(w, tabType, msg)                                                  \
     do {                                                                              \
-        LogRow* r_ = &(w)->rows[(w)->count];                                          \
+        LogRow* r_ = &(w)->logRows[(w)->logCount];                                    \
         r_->type = (tabType);                                                         \
         r_->timer = 0;                                                                \
         r_->phase = 0;                                                                \
         r_->name = (msg);                                                             \
-        (w)->count++;                                                                 \
-        for (k_ = 0; k_ < (w)->count; k_++) {                                         \
-            (w)->rows[k_].curX = 0.0f;                                    \
-            (w)->rows[k_].targetX = 0.0f;                                 \
+        (w)->logCount++;                                                              \
+        for (k_ = 0; k_ < (w)->logCount; k_++) {                                      \
+            (w)->logRows[k_].curX = 0.0f;                                             \
+            (w)->logRows[k_].targetX = 0.0f;                                          \
             {                                                                         \
-                f32 a_ = 45.0f * winLogI2F((w)->count, base, &i2fScratch);   \
-                f32 b_ = 45.0f * winLogI2F(k_, base, &macScratch);           \
-                f32 y_ = a_ / 2.0f - b_;                                 \
-                (w)->rows[k_].curY = y_;                                              \
-                (w)->rows[k_].targetY = y_;                                           \
+                f32 a_ = 45.0f * winLogI2F((w)->logCount, base, &i2fScratch);         \
+                f32 b_ = 45.0f * winLogI2F(k_, base, &macScratch);                    \
+                f32 y_ = a_ / 2.0f - b_;                                              \
+                (w)->logRows[k_].curY = y_;                                           \
+                (w)->logRows[k_].targetY = y_;                                        \
             }                                                                         \
         }                                                                             \
     } while (0)
@@ -203,23 +196,23 @@ extern const u8 enemy_monoshiri_sort_table[];
 // Match-only: the loop counter is a helper local, so the backend numbers it as a temp and can
 // fold its zero into the one already materialised for the header stores (the original keeps the
 // counter and that zero in r5). The msg is read through msg_help so the name pointer stays r0.
-static inline void winLogAddTab0(LogWin* w, s32 tabType, const char** msg_help, s32 msgIdx) {
-    LogRow* r = &w->rows[w->count];
+static inline void winLogAddTab0(WindowWork* work, s32 tabType, const char** msg_help, s32 msgIdx) {
+    LogRow* r = &work->logRows[work->logCount];
     s32 k;
     r->type = tabType;
     r->timer = 0;
     r->phase = 0;
     r->name = msg_help[msgIdx];
-    w->count++;
-    for (k = 0; k < w->count; k++) {
-        w->rows[k].curX = 0.0f;
-        w->rows[k].targetX = 0.0f;
+    work->logCount++;
+    for (k = 0; k < work->logCount; k++) {
+        work->logRows[k].curX = 0.0f;
+        work->logRows[k].targetX = 0.0f;
         {
-            f32 a = 45.0f * ((f32)w->count);
+            f32 a = 45.0f * ((f32)work->logCount);
             f32 b = 45.0f * ((f32)k);
             f32 y = a / 2.0f - b;
-            w->rows[k].curY = y;
-            w->rows[k].targetY = y;
+            work->logRows[k].curY = y;
+            work->logRows[k].targetY = y;
         }
     }
 }
@@ -250,7 +243,6 @@ typedef struct TattleCamEntry {
 #define winLogI2F(v, base, scratch) ((f32)(v))
 
 void winLogInit(WindowWork* work) {
-    LogWin* w = (LogWin*)work;
     static const char* msg_help[5] = {"msg_menu_kiroku_map", "msg_menu_kiroku_stone", "msg_menu_kiroku_badge", "msg_menu_kiroku_ryori", "msg_menu_kiroku_mono"};
     const char* area;
     s32 i;
@@ -258,36 +250,36 @@ void winLogInit(WindowWork* work) {
     f64 i2fScratch;
     f64 macScratch;
 
-    ((LogWin*)work)->state = 0;
-    w->sel = 0;
-    w->count = 0;
-    LOG_ADD_TAB_0(w, 0, msg_help[0]);
+    work->logState = 0;
+    work->logSel = 0;
+    work->logCount = 0;
+    LOG_ADD_TAB_0(work, 0, msg_help[0]);
     if (swByteGet(0) >= 0x13) {
-        LOG_ADD_1(w, 1, msg_help[1]);
+        LOG_ADD_1(work, 1, msg_help[1]);
     }
     if (swByteGet(0) >= 7) {
-        LOG_ADD_4(w, 4, msg_help[4]);
+        LOG_ADD_4(work, 4, msg_help[4]);
     }
     if (swByteGet(0) >= 0x14) {
-        LOG_ADD_2(w, 2, msg_help[2]);
+        LOG_ADD_2(work, 2, msg_help[2]);
     }
     if (swGet(0x40) != 0) {
-        LOG_ADD_3(w, 3, msg_help[3]);
+        LOG_ADD_3(work, 3, msg_help[3]);
     }
-    w->stoneNum = 0;
+    work->stoneNum = 0;
     for (i = 0; i < 7; i++) {
         if (pouchCheckItem(stone_tbl[i]) != 0) {
-            w->stoneNum++;
+            work->stoneNum++;
         }
     }
     for (i = 0; i < 7; i++) {
         EffectEntry* e;
 
-        if (i < w->stoneNum) {
-            e = w->stones[i] =
+        if (i < work->stoneNum) {
+            e = work->stones[i] =
                 effStarStoneEntry(i, 0.0f, -1000.f, 0.0f, 2.0f);
         } else {
-            e = w->stones[i] = effStarStoneEntry(i + 7, 0.0f, -1000.f, 0.0f,
+            e = work->stones[i] = effStarStoneEntry(i + 7, 0.0f, -1000.f, 0.0f,
                                                  2.0f);
             ((effStarStoneData*)e->userdata)->tevReg0R = 0x20;
             ((effStarStoneData*)e->userdata)->tevReg0G = 0x20;
@@ -297,18 +289,18 @@ void winLogInit(WindowWork* work) {
         ((effStarStoneData*)e->userdata)->flags &= ~4;
         ((effStarStoneData*)e->userdata)->flags |= 0x20;
     }
-    w->mapTpl = NULL;
-    w->mapMarioPose = -1;
-    w->mapSel = -1;
-    w->mapPick = 0;
-    w->mapCy = 0.0f;
-    w->mapCx = 0.0f;
-    w->mapX = 0.0f;
-    w->mapTargetX = 0.0f;
-    w->mapY = -480.f;
-    w->mapTargetY = -480.f;
-    w->mapScrollY = 0.0f;
-    w->mapScrollX = 0.0f;
+    work->mapTpl = NULL;
+    work->mapMarioPose = -1;
+    work->mapSel = -1;
+    work->mapPick = 0;
+    work->mapCy = 0.0f;
+    work->mapCx = 0.0f;
+    work->mapX = 0.0f;
+    work->mapTargetX = 0.0f;
+    work->mapY = -480.f;
+    work->mapTargetY = -480.f;
+    work->mapScrollY = 0.0f;
+    work->mapScrollX = 0.0f;
     area = gp->currentAreaName;
     if (strcmp(gp->currentMapName, "pik_02") == 0
         || strcmp(gp->currentMapName, "pik_03") == 0) {
@@ -362,80 +354,80 @@ void winLogInit(WindowWork* work) {
         }
     }
     if ((u32)i < 0x5D) {
-        w->mapPick = i;
+        work->mapPick = i;
     }
-    w->mapCx = 304.0f + (f32)tubuDt[w->mapPick].x;
-    w->mapCy = 240.f + (f32)tubuDt[w->mapPick].y;
+    work->mapCx = 304.0f + (f32)tubuDt[work->mapPick].x;
+    work->mapCy = 240.f + (f32)tubuDt[work->mapPick].y;
     {
-        s32 ox = (s32)((w->mapCx + w->mapScrollX) - 230.f);
-        s32 oy = (s32)((w->mapCy + w->mapScrollY) - 120.f);
+        s32 ox = (s32)((work->mapCx + work->mapScrollX) - 230.f);
+        s32 oy = (s32)((work->mapCy + work->mapScrollY) - 120.f);
 
-        w->mapScrollX -= (f32)ox;
-        w->mapScrollY -= (f32)oy;
+        work->mapScrollX -= (f32)ox;
+        work->mapScrollY -= (f32)oy;
     }
-    if (w->mapScrollX > 0.0f) {
-        w->mapScrollX = 0.0f;
+    if (work->mapScrollX > 0.0f) {
+        work->mapScrollX = 0.0f;
     }
-    if (w->mapScrollY > 0.0f) {
-        w->mapScrollY = 0.0f;
+    if (work->mapScrollY > 0.0f) {
+        work->mapScrollY = 0.0f;
     }
-    if (w->mapScrollX < -148.0f) {
-        w->mapScrollX = -148.0f;
+    if (work->mapScrollX < -148.0f) {
+        work->mapScrollX = -148.0f;
     }
-    if (w->mapScrollY < -240.f) {
-        w->mapScrollY = -240.f;
+    if (work->mapScrollY < -240.f) {
+        work->mapScrollY = -240.f;
     }
-    w->stoneSel = 0;
+    work->stoneSel = 0;
     {
-        f32 angle = 51.42857f * winLogI2F(w->stoneSel, base, &i2fScratch);
-        w->stoneTargetAngle = angle;
-        w->stoneAngle = angle;
+        f32 angle = 51.42857f * winLogI2F(work->stoneSel, base, &i2fScratch);
+        work->stoneTargetAngle = angle;
+        work->stoneAngle = angle;
     }
-    w->stoneX = 0.0f;
-    w->stoneTargetX = 0.0f;
-    w->stoneY = -480.f;
-    w->stoneTargetY = -480.f;
-    w->stoneAlpha = 0.0f;
-    w->stoneTargetAlpha = 0.0f;
-    w->cardCnt = 0;
+    work->stoneX = 0.0f;
+    work->stoneTargetX = 0.0f;
+    work->stoneY = -480.f;
+    work->stoneTargetY = -480.f;
+    work->stoneAlpha = 0.0f;
+    work->stoneTargetAlpha = 0.0f;
+    work->cardCnt = 0;
     for (i = 0xF0; i < 0xF0 + 0x63; i++) {
         if (itemDataTable[i].type_sort_order != -1) {
-            w->cardIcon[w->cardCnt++] = i - 0xF0;
+            work->cardIcon[work->cardCnt++] = i - 0xF0;
         }
     }
-    qqsort(w->cardIcon, w->cardCnt, 2, compare_func5_2);
-    w->cardSel = 0;
-    w->cardTargetX = 320.f;
-    w->cardX = 320.f;
-    w->cardTargetY = -240.f;
-    w->cardY = -240.f;
-    w->cardPage = 0;
-    w->cardScrollTarget = 0.0f;
-    w->cardScrollPos = 0.0f;
-    w->cardIconTargetX = -200.f;
-    w->cardIconX = -200.f;
-    w->cardIconTargetY = -300.f;
-    w->cardIconY = -300.f;
-    w->badgeCnt = 0;
+    qqsort(work->cardIcon, work->cardCnt, 2, compare_func5_2);
+    work->cardSel = 0;
+    work->cardTargetX = 320.f;
+    work->cardX = 320.f;
+    work->cardTargetY = -240.f;
+    work->cardY = -240.f;
+    work->cardPage = 0;
+    work->cardScrollTarget = 0.0f;
+    work->cardScrollPos = 0.0f;
+    work->cardIconTargetX = -200.f;
+    work->cardIconX = -200.f;
+    work->cardIconTargetY = -300.f;
+    work->cardIconY = -300.f;
+    work->logBadgeCnt = 0;
     for (i = 0xB3; i < 0xB3 + 0x39; i++) {
         if (itemDataTable[i].type_sort_order != -1) {
-            w->badgeIcon[w->badgeCnt++] = i - 0xB3;
+            work->logBadgeIcon[work->logBadgeCnt++] = i - 0xB3;
         }
     }
-    qqsort(w->badgeIcon, w->badgeCnt, 2, compare_func6_2);
-    w->badgeSel = 0;
-    w->badgeTargetX = 320.f;
-    w->badgeX = 320.f;
-    w->badgeTargetY = -240.f;
-    w->badgeY = -240.f;
-    w->badgePage = 0;
-    w->badgeScrollTarget = 0.0f;
-    w->badgeScrollPos = 0.0f;
-    w->badgeIconTargetX = -200.f;
-    w->badgeIconX = -200.f;
-    w->badgeIconTargetY = -300.f;
-    w->badgeIconY = -300.f;
-    w->charCnt = 0;
+    qqsort(work->logBadgeIcon, work->logBadgeCnt, 2, compare_func6_2);
+    work->logBadgeSel = 0;
+    work->logBadgeTargetX = 320.f;
+    work->logBadgeX = 320.f;
+    work->logBadgeTargetY = -240.f;
+    work->logBadgeY = -240.f;
+    work->logBadgePage = 0;
+    work->logBadgeScrollTarget = 0.0f;
+    work->logBadgeScrollPos = 0.0f;
+    work->logBadgeIconTargetX = -200.f;
+    work->logBadgeIconX = -200.f;
+    work->logBadgeIconTargetY = -300.f;
+    work->logBadgeIconY = -300.f;
+    work->charCnt = 0;
     for (i = 1; i < 0xD8; i++) {
         if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL) {
             if (evtGetValue(NULL, GSW(0)) < 0x187) {
@@ -456,37 +448,37 @@ void winLogInit(WindowWork* work) {
                     continue;
                 }
             }
-            w->chars[w->charCnt].pad = enemy_monoshiri_sort_table[i];
-            w->chars[w->charCnt++].id = i;
+            work->logChars[work->charCnt].pad = enemy_monoshiri_sort_table[i];
+            work->logChars[work->charCnt++].id = i;
         }
     }
     {
         s32 a;
         s32 b;
 
-        for (a = 0; a < w->charCnt - 1; a++) {
-            for (b = a + 1; b < w->charCnt; b++) {
-                if (w->chars[a].pad > w->chars[b].pad) {
-                    LogChar t = w->chars[a];
-                    w->chars[a] = w->chars[b];
-                    w->chars[b] = t;
+        for (a = 0; a < work->charCnt - 1; a++) {
+            for (b = a + 1; b < work->charCnt; b++) {
+                if (work->logChars[a].pad > work->logChars[b].pad) {
+                    LogChar t = work->logChars[a];
+                    work->logChars[a] = work->logChars[b];
+                    work->logChars[b] = t;
                 }
             }
         }
     }
-    w->charSel = 0;
-    w->field_0x102C = 0.0f;
-    w->field_0x1028 = 0.0f;
-    w->field_0x1034 = 0.0f;
-    w->field_0x1030 = 0.0f;
-    w->charPage = 0;
-    w->field_0x104C = 0.0f;
-    w->field_0x1048 = 0.0f;
-    w->seenCnt = 0;
+    work->charSel = 0;
+    work->field_0x102C = 0.0f;
+    work->field_0x1028 = 0.0f;
+    work->field_0x1034 = 0.0f;
+    work->field_0x1030 = 0.0f;
+    work->charPage = 0;
+    work->field_0x104C = 0.0f;
+    work->field_0x1048 = 0.0f;
+    work->seenCnt = 0;
     for (i = 1; i < 0xD8; i++) {
         if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL && (u32)(i - 0x1F) > 1 && i != 0x4D && i != 0x3F
             && swGet(i + 0x117A) != 0) {
-            w->seenCnt++;
+            work->seenCnt++;
         }
     }
 }
@@ -498,42 +490,41 @@ void winLogInit(WindowWork* work) {
 // The conversion double still pools as an anonymous @271 literal instead of the
 // named 4503601774854144.0 (project-wide limitation, not scored).
 void winLogInit2(WindowWork* work) {
-    LogWin* w = (LogWin*)work;
     f32 v;
     const char* name;
     s32 a;
     s32 b;
 
     work->targetX = -128.0f;
-    a = w->count;
-    b = w->sel;
+    a = work->logCount;
+    b = work->logSel;
     {
         f32 t = 45.0f * (f32)a;
         work->targetY = 8.0f + (t / 2.0f - 45.0f * (f32)b);
     }
-    w->cardTargetX = 320.f;
-    w->cardX = 320.f;
-    w->cardTargetY = -240.f;
-    w->cardY = -240.f;
-    v = w->cardPage * 0xE8;
-    w->cardScrollTarget = v;
-    w->cardScrollPos = v;
-    w->cardIconTargetX = -200.f;
-    w->cardIconX = -200.f;
-    w->cardIconTargetY = -300.f;
-    w->cardIconY = -300.f;
-    w->badgeTargetX = 320.f;
-    w->badgeX = 320.f;
-    w->badgeTargetY = -240.f;
-    w->badgeY = -240.f;
-    v = w->badgePage * 0xE8;
-    w->badgeScrollTarget = v;
-    w->badgeScrollPos = v;
-    w->badgeIconTargetX = -200.f;
-    w->badgeIconX = -200.f;
-    w->badgeIconTargetY = -300.f;
-    w->badgeIconY = -300.f;
-    name = w->rows[w->sel].name;
+    work->cardTargetX = 320.f;
+    work->cardX = 320.f;
+    work->cardTargetY = -240.f;
+    work->cardY = -240.f;
+    v = work->cardPage * 0xE8;
+    work->cardScrollTarget = v;
+    work->cardScrollPos = v;
+    work->cardIconTargetX = -200.f;
+    work->cardIconX = -200.f;
+    work->cardIconTargetY = -300.f;
+    work->cardIconY = -300.f;
+    work->logBadgeTargetX = 320.f;
+    work->logBadgeX = 320.f;
+    work->logBadgeTargetY = -240.f;
+    work->logBadgeY = -240.f;
+    v = work->logBadgePage * 0xE8;
+    work->logBadgeScrollTarget = v;
+    work->logBadgeScrollPos = v;
+    work->logBadgeIconTargetX = -200.f;
+    work->logBadgeIconX = -200.f;
+    work->logBadgeIconTargetY = -300.f;
+    work->logBadgeIconY = -300.f;
+    name = work->logRows[work->logSel].name;
     winMsgEntry(work, 0, name, NULL);
 }
 
@@ -549,7 +540,7 @@ void winLogExit(WindowWork* work) {
         work->mapMarioPose = -1;
     }
     for (i = 0; i < 7; i++) {
-        effSoftDelete(((LogWin*)work)->stones[i]);
+        effSoftDelete(work->stones[i]);
     }
 }
 
@@ -557,14 +548,14 @@ void winLogExit(WindowWork* work) {
 
 
 
-// The fields of WindowWork that winLogMain touches (win_main.h only declares the first 0x1210 bytes).
+// Offset checks for WindowWork's win_log band.
 
-LOGWIN_CHECK(rows, 0xD74);
+LOGWIN_CHECK(logRows, 0xD74);
 LOGWIN_CHECK(mapSel, 0xE14);
-LOGWIN_CHECK(badgeTargetX, 0xF84);
-LOGWIN_CHECK(badgeIcon, 0xFB4);
+LOGWIN_CHECK(logBadgeTargetX, 0xF84);
+LOGWIN_CHECK(logBadgeIcon, 0xFB4);
 LOGWIN_CHECK(charCnt, 0x1038);
-LOGWIN_CHECK(chars, 0x1050);
+LOGWIN_CHECK(logChars, 0x1050);
 LOGWIN_CHECK(mono, 0x1200);
 
 
@@ -603,7 +594,6 @@ static inline BOOL tubuUnlocked(TubuDt* t) {
 
 // Tattle log / menu main: the tabbed "kiroku" window (map, crystal stars, cards, tattle log).
 s32 winLogMain(WindowWork* work) {
-    LogWin* w = (LogWin*)work;
     const char* tpl;
     const char* root;
     u8* p;
@@ -611,93 +601,93 @@ s32 winLogMain(WindowWork* work) {
     u32 j;
 
     {
-        switch (w->state) {
+        switch (work->logState) {
         case 0:
-            if (w->buttonTrg & 0x200) {
+            if (work->buttonTrg & 0x200) {
                 SFX(0x20013);
                 return -1;
             }
-            if (w->buttonTrg & 0x1000) {
+            if (work->buttonTrg & 0x1000) {
                 return -2;
             }
-            if (w->dirRep & 0x2000) {
-                s32 old = w->sel;
-                w->sel = old + 1;
-                if (w->sel >= w->count) {
-                    w->sel = 0;
+            if (work->dirRep & 0x2000) {
+                s32 old = work->logSel;
+                work->logSel = old + 1;
+                if (work->logSel >= work->logCount) {
+                    work->logSel = 0;
                 }
-                if (old != w->sel) {
+                if (old != work->logSel) {
                     SFX(0x20005);
                 }
-            } else if (w->dirRep & 0x1000) {
-                s32 old = w->sel;
-                w->sel = old - 1;
-                if (w->sel < 0) {
-                    w->sel = w->count - 1;
+            } else if (work->dirRep & 0x1000) {
+                s32 old = work->logSel;
+                work->logSel = old - 1;
+                if (work->logSel < 0) {
+                    work->logSel = work->logCount - 1;
                 }
-                if (old != w->sel) {
+                if (old != work->logSel) {
                     SFX(0x20005);
                 }
-            } else if (w->buttonTrg & 0x100) {
+            } else if (work->buttonTrg & 0x100) {
                 {
                     p = (u8*)work;
                     i = 0;
-                    while (i < w->count) {
-                        *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x1E;
+                    while (i < work->logCount) {
+                        *(s32*)(p + offsetof(WindowWork, logRows) + offsetof(LogRow, phase)) = 0x1E;
                         p += 0x20;
                         i++;
                     }
                 }
-                w->rows[w->sel].phase = 0xA;
-                w->state = w->rows[w->sel].type + 0xA;
-                switch (w->rows[w->sel].type) {
+                work->logRows[work->logSel].phase = 0xA;
+                work->logState = work->logRows[work->logSel].type + 0xA;
+                switch (work->logRows[work->logSel].type) {
                 case 4:
                     break;
                 case 0:
-                    w->mapTargetY = 20.f;
+                    work->mapTargetY = 20.f;
                     break;
                 case 1:
-                    w->stoneTargetY = 20.f;
-                    w->stoneTargetAlpha = 255.0f;
+                    work->stoneTargetY = 20.f;
+                    work->stoneTargetAlpha = 255.0f;
                     break;
                 case 2:
-                    w->cardTargetX = -130.f;
-                    w->cardTargetY = 120.f;
-                    w->cardIconTargetX = -200.f;
-                    w->cardIconTargetY = 60.f;
+                    work->cardTargetX = -130.f;
+                    work->cardTargetY = 120.f;
+                    work->cardIconTargetX = -200.f;
+                    work->cardIconTargetY = 60.f;
                     break;
                 case 3:
-                    w->badgeTargetX = -130.f;
-                    w->badgeTargetY = 120.f;
-                    w->badgeIconTargetX = -200.f;
-                    w->badgeIconTargetY = 60.f;
+                    work->logBadgeTargetX = -130.f;
+                    work->logBadgeTargetY = 120.f;
+                    work->logBadgeIconTargetX = -200.f;
+                    work->logBadgeIconTargetY = 60.f;
                     break;
                 }
                 SFX(0x20012);
             }
-            w->targetX = -128.0f;
+            work->targetX = -128.0f;
             {
-                f32 t = 45.0f * (f32)w->count;
-                w->targetY =
-                    8.0f + (t / 2.0f - 45.0f * (f32)w->sel);
+                f32 t = 45.0f * (f32)work->logCount;
+                work->targetY =
+                    8.0f + (t / 2.0f - 45.0f * (f32)work->logSel);
             }
-            winMsgEntry(work, 0, w->rows[w->sel].name, NULL);
+            winMsgEntry(work, 0, work->logRows[work->logSel].name, NULL);
             break;
         case 10:
             tpl = winGetMapTplName();
             root = getMarioStDvdRoot();
             if (fileAsyncf(FILE_TYPE_TPL, NULL, "%s/w/jp/%s", root, tpl) != 0) {
-                if (w->mapTpl == 0) {
+                if (work->mapTpl == 0) {
                     tpl = winGetMapTplName();
                     root = getMarioStDvdRoot();
                     // (s32) add defeats the CSE with the fileAsyncf string above, so MWCC recomputes it
                     // into r4 (as the original) instead of pinning it in r28 across the call.
-                    w->mapTpl = fileAllocf(FILE_TYPE_TPL, "%s/w/jp/%s", root, tpl);
+                    work->mapTpl = fileAllocf(FILE_TYPE_TPL, "%s/w/jp/%s", root, tpl);
                 }
-                if (w->mapMarioPose == -1) {
-                    if (w->flags & 0x2000) {
+                if (work->mapMarioPose == -1) {
+                    if (work->flags & 0x2000) {
                         const char* anim = "W_1";
-                        w->mapMarioPose = animPoseEntry("d_mario", 0);
+                        work->mapMarioPose = animPoseEntry("d_mario", 0);
                         switch (marioGetColor()) {
                         case 0:
                             anim = "W_1";
@@ -712,7 +702,7 @@ s32 winLogMain(WindowWork* work) {
                             anim = "W_18";
                             break;
                         }
-                        animPoseSetAnim(w->mapMarioPose, anim, 1);
+                        animPoseSetAnim(work->mapMarioPose, anim, 1);
                     } else {
                         const char* model = "a_mario";
                         switch (marioGetColor()) {
@@ -729,40 +719,40 @@ s32 winLogMain(WindowWork* work) {
                             model = "a_mario_wl";
                             break;
                         }
-                        w->mapMarioPose = animPoseEntry(model, 0);
-                        animPoseSetAnim(w->mapMarioPose, "M_W_1", 1);
+                        work->mapMarioPose = animPoseEntry(model, 0);
+                        animPoseSetAnim(work->mapMarioPose, "M_W_1", 1);
                     }
-                    animPoseSetMaterialFlagOn(w->mapMarioPose, 0x1800);
+                    animPoseSetMaterialFlagOn(work->mapMarioPose, 0x1800);
                 }
-                if (w->buttonTrg & 0x200) {
+                if (work->buttonTrg & 0x200) {
                     SFX(0x20013);
                     {
                         p = (u8*)work;
                         i = 0;
-                        while (i < w->count) {
-                            *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x28;
+                        while (i < work->logCount) {
+                            *(s32*)(p + offsetof(WindowWork, logRows) + offsetof(LogRow, phase)) = 0x28;
                             p += 0x20;
                             i++;
                         }
                     }
-                    w->rows[w->sel].phase = 0x14;
-                    w->state = 0;
-                    w->mapTargetY = -480.f;
-                    fileFree(w->mapTpl);
-                    w->mapTpl = 0;
-                    if (w->mapMarioPose != -1) {
-                        animPoseRelease(w->mapMarioPose);
+                    work->logRows[work->logSel].phase = 0x14;
+                    work->logState = 0;
+                    work->mapTargetY = -480.f;
+                    fileFree(work->mapTpl);
+                    work->mapTpl = 0;
+                    if (work->mapMarioPose != -1) {
+                        animPoseRelease(work->mapMarioPose);
                     }
-                    w->mapMarioPose = -1;
-                } else if (w->buttonTrg & 0x1000) {
+                    work->mapMarioPose = -1;
+                } else if (work->buttonTrg & 0x1000) {
                     return -2;
                 }
                 {
                     f32 best = 10000.f;
-                    f32 px = -230.f + w->mapScrollX + w->mapCx;
-                    f32 py = -120.f + w->mapScrollY + w->mapCy;
-                    f32 qx = 74.0f + w->mapScrollX;
-                    f32 qy = 120.f + w->mapScrollY;
+                    f32 px = -230.f + work->mapScrollX + work->mapCx;
+                    f32 py = -120.f + work->mapScrollY + work->mapCy;
+                    f32 qx = 74.0f + work->mapScrollX;
+                    f32 qy = 120.f + work->mapScrollY;
                     TubuDt* t = tubuDt;
                     s32 bestIdx;
                     f32 sx, sy;
@@ -788,13 +778,13 @@ s32 winLogMain(WindowWork* work) {
                         static char help[0x40];
                         sprintf(name, "menu_monosiri_%s", tubuDt[bestIdx].id);
                         sprintf(help, "menu_map_%s", tubuDt[bestIdx].id);
-                        if (w->mapSel != bestIdx) {
+                        if (work->mapSel != bestIdx) {
                             SFX(0x20035);
                         }
-                        w->mapSel = bestIdx;
+                        work->mapSel = bestIdx;
                         winMsgEntry(work, 0, help, name);
                     } else {
-                        w->mapSel = -1;
+                        work->mapSel = -1;
                         winMsgEntry(work, 0, "msg_menu_kiroku_map", NULL);
                     }
                     sx = (f32)keyGetStickX(0) / 8.0f;
@@ -812,189 +802,189 @@ s32 winLogMain(WindowWork* work) {
                         }
                     }
                     if (0.0f == sx && 0.0f == sy) {
-                        s32 sel = w->mapSel;
+                        s32 sel = work->mapSel;
                         if (sel != -1) {
-                            sx = (304.0f + (f32)tubuDt[sel].x) - w->mapCx;
-                            sy = (240.f + (f32)tubuDt[sel].y) - w->mapCy;
+                            sx = (304.0f + (f32)tubuDt[sel].x) - work->mapCx;
+                            sy = (240.f + (f32)tubuDt[sel].y) - work->mapCy;
                             sx *= 0.2f;
                             sy *= 0.2f;
                         }
                     }
-                    w->mapCx = w->mapCx + sx;
-                    w->mapCy = w->mapCy + sy;
-                    if (w->mapCx < 16.0f) {
-                        w->mapCx = 16.0f;
+                    work->mapCx = work->mapCx + sx;
+                    work->mapCy = work->mapCy + sy;
+                    if (work->mapCx < 16.0f) {
+                        work->mapCx = 16.0f;
                     }
-                    if (w->mapCy < 8.0f) {
-                        w->mapCy = 8.0f;
+                    if (work->mapCy < 8.0f) {
+                        work->mapCy = 8.0f;
                     }
-                    if (w->mapCx >= 604.0f) {
-                        w->mapCx = 604.0f;
+                    if (work->mapCx >= 604.0f) {
+                        work->mapCx = 604.0f;
                     }
-                    if (w->mapCy >= 468.0f) {
-                        w->mapCy = 468.0f;
+                    if (work->mapCy >= 468.0f) {
+                        work->mapCy = 468.0f;
                     }
-                    ox = (s32)((w->mapCx + w->mapScrollX) - 230.f);
-                    oy = (s32)((w->mapCy + w->mapScrollY) - 120.f);
+                    ox = (s32)((work->mapCx + work->mapScrollX) - 230.f);
+                    oy = (s32)((work->mapCy + work->mapScrollY) - 120.f);
                     if ((f32)ox >= 166.0f) {
-                        w->mapScrollX = w->mapScrollX - ((f32)ox - 166.0f);
+                        work->mapScrollX = work->mapScrollX - ((f32)ox - 166.0f);
                     }
                     if ((f32)ox <= -150.f) {
-                        w->mapScrollX = w->mapScrollX - (150.f + (f32)ox);
+                        work->mapScrollX = work->mapScrollX - (150.f + (f32)ox);
                     }
                     if ((f32)oy >= 80.f) {
-                        w->mapScrollY = w->mapScrollY - ((f32)oy - 80.f);
+                        work->mapScrollY = work->mapScrollY - ((f32)oy - 80.f);
                     }
                     if ((f32)oy <= -80.f) {
-                        w->mapScrollY = w->mapScrollY - (80.f + (f32)oy);
+                        work->mapScrollY = work->mapScrollY - (80.f + (f32)oy);
                     }
-                    if (w->mapScrollX > 0.0f) {
-                        w->mapScrollX = 0.0f;
+                    if (work->mapScrollX > 0.0f) {
+                        work->mapScrollX = 0.0f;
                     }
-                    if (w->mapScrollY > 0.0f) {
-                        w->mapScrollY = 0.0f;
+                    if (work->mapScrollY > 0.0f) {
+                        work->mapScrollY = 0.0f;
                     }
-                    if (w->mapScrollX < -148.0f) {
-                        w->mapScrollX = -148.0f;
+                    if (work->mapScrollX < -148.0f) {
+                        work->mapScrollX = -148.0f;
                     }
-                    if (w->mapScrollY < -240.f) {
-                        w->mapScrollY = -240.f;
+                    if (work->mapScrollY < -240.f) {
+                        work->mapScrollY = -240.f;
                     }
-                    w->targetX = -230.f + w->mapScrollX + w->mapCx;
-                    w->targetY = -120.f + w->mapScrollY + w->mapCy;
-                    w->targetX -= 24.0f;
-                    w->targetY += 20.f;
+                    work->targetX = -230.f + work->mapScrollX + work->mapCx;
+                    work->targetY = -120.f + work->mapScrollY + work->mapCy;
+                    work->targetX -= 24.0f;
+                    work->targetY += 20.f;
                 }
             }
             break;
         case 11:
-            if (w->buttonTrg & 0x200) {
+            if (work->buttonTrg & 0x200) {
                 SFX(0x20013);
                 {
                     p = (u8*)work;
                     i = 0;
-                    while (i < w->count) {
-                        *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x28;
+                    while (i < work->logCount) {
+                        *(s32*)(p + offsetof(WindowWork, logRows) + offsetof(LogRow, phase)) = 0x28;
                         p += 0x20;
                         i++;
                     }
                 }
-                w->rows[w->sel].phase = 0x14;
-                w->state = 0;
-                w->stoneTargetY = -480.f;
-                w->stoneTargetAlpha = 0.0f;
-            } else if (w->dirRep & 0x4000) {
-                w->stoneSel = w->stoneSel - 1;
-                while (w->stoneSel < 0) {
-                    w->stoneSel = w->stoneSel + 7;
+                work->logRows[work->logSel].phase = 0x14;
+                work->logState = 0;
+                work->stoneTargetY = -480.f;
+                work->stoneTargetAlpha = 0.0f;
+            } else if (work->dirRep & 0x4000) {
+                work->stoneSel = work->stoneSel - 1;
+                while (work->stoneSel < 0) {
+                    work->stoneSel = work->stoneSel + 7;
                 }
-                w->stoneTargetAngle = 51.42857f * (f32)w->stoneSel;
-                while (w->stoneAngle < w->stoneTargetAngle) {
-                    w->stoneAngle += 360.f;
-                }
-                SFX(0x209D6);
-                SFX(0x20037);
-            } else if (w->dirRep & 0x8000) {
-                w->stoneSel = w->stoneSel + 1;
-                while (w->stoneSel > 6) {
-                    w->stoneSel = w->stoneSel - 7;
-                }
-                w->stoneTargetAngle = 51.42857f * (f32)w->stoneSel;
-                while (w->stoneAngle > w->stoneTargetAngle) {
-                    w->stoneAngle -= 360.f;
+                work->stoneTargetAngle = 51.42857f * (f32)work->stoneSel;
+                while (work->stoneAngle < work->stoneTargetAngle) {
+                    work->stoneAngle += 360.f;
                 }
                 SFX(0x209D6);
                 SFX(0x20037);
-            } else if (w->buttonTrg & 0x1000) {
+            } else if (work->dirRep & 0x8000) {
+                work->stoneSel = work->stoneSel + 1;
+                while (work->stoneSel > 6) {
+                    work->stoneSel = work->stoneSel - 7;
+                }
+                work->stoneTargetAngle = 51.42857f * (f32)work->stoneSel;
+                while (work->stoneAngle > work->stoneTargetAngle) {
+                    work->stoneAngle -= 360.f;
+                }
+                SFX(0x209D6);
+                SFX(0x20037);
+            } else if (work->buttonTrg & 0x1000) {
                 return -2;
             }
-            w->targetX = -50.f;
-            w->targetY = -50.f;
-            if (w->stoneSel < w->stoneNum) {
-                ItemData* it = &itemDataTable[stone_tbl[w->stoneSel]];
+            work->targetX = -50.f;
+            work->targetY = -50.f;
+            if (work->stoneSel < work->stoneNum) {
+                ItemData* it = &itemDataTable[stone_tbl[work->stoneSel]];
                 winMsgEntry(work, -1, it->description, it->name);
             } else {
                 winMsgEntry(work, -1, "msg_menu_stone_none_help", "msg_menu_stone_none_name");
             }
             break;
         case 12: {
-            s32 cnt = w->cardCnt;
-            u32 trg = w->buttonTrg;
+            s32 cnt = work->cardCnt;
+            u32 trg = work->buttonTrg;
             s32 pages = (cnt + 0x1B) / 28;
             if (trg & 0x200) {
                 SFX(0x20013);
                 {
                     p = (u8*)work;
                     i = 0;
-                    while (i < w->count) {
-                        *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x28;
+                    while (i < work->logCount) {
+                        *(s32*)(p + offsetof(WindowWork, logRows) + offsetof(LogRow, phase)) = 0x28;
                         p += 0x20;
                         i++;
                     }
                 }
-                w->rows[w->sel].phase = 0x14;
-                w->state = 0;
-                w->cardTargetX = 330.f;
-                w->cardTargetY = -250.f;
-                w->cardIconTargetX = -200.f;
-                w->cardIconTargetY = -300.f;
-            } else if (w->buttonRep & 0x40) {
-                w->cardPage = w->cardPage - 1;
-                if (w->cardPage < 0) {
-                    w->cardPage = 0;
+                work->logRows[work->logSel].phase = 0x14;
+                work->logState = 0;
+                work->cardTargetX = 330.f;
+                work->cardTargetY = -250.f;
+                work->cardIconTargetX = -200.f;
+                work->cardIconTargetY = -300.f;
+            } else if (work->buttonRep & 0x40) {
+                work->cardPage = work->cardPage - 1;
+                if (work->cardPage < 0) {
+                    work->cardPage = 0;
                 }
-                w->cardSel = w->cardPage * 0x1C;
+                work->cardSel = work->cardPage * 0x1C;
                 SFX(0x20035);
-            } else if (w->buttonRep & 0x20) {
-                w->cardPage = w->cardPage + 1;
-                if (w->cardPage >= pages) {
-                    w->cardPage = pages - 1;
+            } else if (work->buttonRep & 0x20) {
+                work->cardPage = work->cardPage + 1;
+                if (work->cardPage >= pages) {
+                    work->cardPage = pages - 1;
                 }
-                w->cardSel = w->cardPage * 0x1C;
+                work->cardSel = work->cardPage * 0x1C;
                 SFX(0x20035);
-            } else if (w->dirRep & 0x8000) {
-                if (w->cardSel % 7 < 6) {
-                    s32 v = w->cardSel + 1;
+            } else if (work->dirRep & 0x8000) {
+                if (work->cardSel % 7 < 6) {
+                    s32 v = work->cardSel + 1;
                     if (v < cnt) {
-                        w->cardSel = v;
+                        work->cardSel = v;
                     }
                 }
                 SFX(0x20035);
-            } else if (w->dirRep & 0x4000) {
-                if (w->cardSel % 7 > 0) {
-                    w->cardSel = w->cardSel - 1;
+            } else if (work->dirRep & 0x4000) {
+                if (work->cardSel % 7 > 0) {
+                    work->cardSel = work->cardSel - 1;
                 }
                 SFX(0x20035);
-            } else if (w->dirRep & 0x1000) {
-                s32 cur = w->cardSel;
+            } else if (work->dirRep & 0x1000) {
+                s32 cur = work->cardSel;
                 s32 v = cur - 7;
                 if (v >= 0 && v < cnt) {
-                    w->cardSel = cur - 7;
+                    work->cardSel = cur - 7;
                 }
-                w->cardPage = w->cardSel / 28;
+                work->cardPage = work->cardSel / 28;
                 SFX(0x20035);
-            } else if (w->dirRep & 0x2000) {
-                s32 cur = w->cardSel;
+            } else if (work->dirRep & 0x2000) {
+                s32 cur = work->cardSel;
                 s32 v = cur + 7;
                 if (v >= 0 && v < cnt) {
-                    w->cardSel = cur + 7;
-                } else if (cur + (7 - w->cardSel % 7) < cnt) {
-                    w->cardSel = cnt - 1;
+                    work->cardSel = cur + 7;
+                } else if (cur + (7 - work->cardSel % 7) < cnt) {
+                    work->cardSel = cnt - 1;
                 }
-                w->cardPage = w->cardSel / 28;
+                work->cardPage = work->cardSel / 28;
                 SFX(0x20035);
             } else if (trg & 0x10) {
                 winSortEntry(work, 4, -310.f, 150.f);
-                w->savedState = w->state;
+                work->savedState = work->logState;
                 SFX(0x20012);
-                w->state = 0x3E8;
+                work->logState = 0x3E8;
             } else if (trg & 0x1000) {
                 return -2;
             }
-            w->targetX = (f32)(((w->cardSel % 28) % 7) * 0x38 - 0x8C);
-            w->targetY = (f32)(0x5A - ((w->cardSel % 28) / 7) * 0x38);
-            if (swGet(w->cardIcon[w->cardSel] + 0x80) != 0) {
-                ItemData* it = &itemDataTable[w->cardIcon[w->cardSel]];
+            work->targetX = (f32)(((work->cardSel % 28) % 7) * 0x38 - 0x8C);
+            work->targetY = (f32)(0x5A - ((work->cardSel % 28) / 7) * 0x38);
+            if (swGet(work->cardIcon[work->cardSel] + 0x80) != 0) {
+                ItemData* it = &itemDataTable[work->cardIcon[work->cardSel]];
                 winMsgEntry(work, -2, (it + 240)->menu_description, (it + 240)->name);
             } else {
                 winMsgEntry(work, -2, "msg_menu_stone_none_help", "msg_menu_stone_none_name");
@@ -1002,83 +992,83 @@ s32 winLogMain(WindowWork* work) {
             break;
         }
         case 13: {
-            s32 cnt = w->badgeCnt;
-            u32 trg = w->buttonTrg;
+            s32 cnt = work->logBadgeCnt;
+            u32 trg = work->buttonTrg;
             s32 pages = (cnt + 0x1B) / 28;
             if (trg & 0x200) {
                 SFX(0x20013);
                 {
                     p = (u8*)work;
                     i = 0;
-                    while (i < w->count) {
-                        *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x28;
+                    while (i < work->logCount) {
+                        *(s32*)(p + offsetof(WindowWork, logRows) + offsetof(LogRow, phase)) = 0x28;
                         p += 0x20;
                         i++;
                     }
                 }
-                w->rows[w->sel].phase = 0x14;
-                w->state = 0;
-                w->badgeTargetX = 330.f;
-                w->badgeTargetY = -250.f;
-                w->badgeIconTargetX = -200.f;
-                w->badgeIconTargetY = -300.f;
-            } else if (w->buttonRep & 0x40) {
-                w->badgePage = w->badgePage - 1;
-                if (w->badgePage < 0) {
-                    w->badgePage = 0;
+                work->logRows[work->logSel].phase = 0x14;
+                work->logState = 0;
+                work->logBadgeTargetX = 330.f;
+                work->logBadgeTargetY = -250.f;
+                work->logBadgeIconTargetX = -200.f;
+                work->logBadgeIconTargetY = -300.f;
+            } else if (work->buttonRep & 0x40) {
+                work->logBadgePage = work->logBadgePage - 1;
+                if (work->logBadgePage < 0) {
+                    work->logBadgePage = 0;
                 }
-                w->badgeSel = w->badgePage * 0x1C;
+                work->logBadgeSel = work->logBadgePage * 0x1C;
                 SFX(0x20035);
-            } else if (w->buttonRep & 0x20) {
-                w->badgePage = w->badgePage + 1;
-                if (w->badgePage >= pages) {
-                    w->badgePage = pages - 1;
+            } else if (work->buttonRep & 0x20) {
+                work->logBadgePage = work->logBadgePage + 1;
+                if (work->logBadgePage >= pages) {
+                    work->logBadgePage = pages - 1;
                 }
-                w->badgeSel = w->badgePage * 0x1C;
+                work->logBadgeSel = work->logBadgePage * 0x1C;
                 SFX(0x20035);
-            } else if (w->dirRep & 0x8000) {
-                if (w->badgeSel % 7 < 6) {
-                    s32 v = w->badgeSel + 1;
+            } else if (work->dirRep & 0x8000) {
+                if (work->logBadgeSel % 7 < 6) {
+                    s32 v = work->logBadgeSel + 1;
                     if (v < cnt) {
-                        w->badgeSel = v;
+                        work->logBadgeSel = v;
                     }
                 }
                 SFX(0x20035);
-            } else if (w->dirRep & 0x4000) {
-                if (w->badgeSel % 7 > 0) {
-                    w->badgeSel = w->badgeSel - 1;
+            } else if (work->dirRep & 0x4000) {
+                if (work->logBadgeSel % 7 > 0) {
+                    work->logBadgeSel = work->logBadgeSel - 1;
                 }
                 SFX(0x20035);
-            } else if (w->dirRep & 0x1000) {
-                s32 cur = w->badgeSel;
+            } else if (work->dirRep & 0x1000) {
+                s32 cur = work->logBadgeSel;
                 s32 v = cur - 7;
                 if (v >= 0 && v < cnt) {
-                    w->badgeSel = cur - 7;
+                    work->logBadgeSel = cur - 7;
                 }
-                w->badgePage = w->badgeSel / 28;
+                work->logBadgePage = work->logBadgeSel / 28;
                 SFX(0x20035);
-            } else if (w->dirRep & 0x2000) {
-                s32 cur = w->badgeSel;
+            } else if (work->dirRep & 0x2000) {
+                s32 cur = work->logBadgeSel;
                 s32 v = cur + 7;
                 if (v >= 0 && v < cnt) {
-                    w->badgeSel = cur + 7;
-                } else if (cur + (7 - w->badgeSel % 7) < cnt) {
-                    w->badgeSel = cnt - 1;
+                    work->logBadgeSel = cur + 7;
+                } else if (cur + (7 - work->logBadgeSel % 7) < cnt) {
+                    work->logBadgeSel = cnt - 1;
                 }
-                w->badgePage = w->badgeSel / 28;
+                work->logBadgePage = work->logBadgeSel / 28;
                 SFX(0x20035);
             } else if (trg & 0x10) {
                 winSortEntry(work, 5, -310.f, 150.f);
-                w->savedState = w->state;
+                work->savedState = work->logState;
                 SFX(0x20012);
-                w->state = 0x3E8;
+                work->logState = 0x3E8;
             } else if (trg & 0x1000) {
                 return -2;
             }
-            w->targetX = (f32)(((w->badgeSel % 28) % 7) * 0x38 - 0x8C);
-            w->targetY = (f32)(0x5A - ((w->badgeSel % 28) / 7) * 0x38);
-            if (swGet(w->badgeIcon[w->badgeSel] + 0x41) != 0) {
-                ItemData* it = &itemDataTable[w->badgeIcon[w->badgeSel]];
+            work->targetX = (f32)(((work->logBadgeSel % 28) % 7) * 0x38 - 0x8C);
+            work->targetY = (f32)(0x5A - ((work->logBadgeSel % 28) / 7) * 0x38);
+            if (swGet(work->logBadgeIcon[work->logBadgeSel] + 0x41) != 0) {
+                ItemData* it = &itemDataTable[work->logBadgeIcon[work->logBadgeSel]];
                 winMsgEntry(work, -2, (it + 179)->menu_description, (it + 179)->name);
             } else {
                 winMsgEntry(work, -2, "msg_menu_stone_none_help", "msg_menu_stone_none_name");
@@ -1086,94 +1076,94 @@ s32 winLogMain(WindowWork* work) {
             break;
         }
         case 0xE: {
-            u32 trg = w->buttonTrg;
-            s32 pages = (w->charCnt + 0xF) / 16;
+            u32 trg = work->buttonTrg;
+            s32 pages = (work->charCnt + 0xF) / 16;
             if (trg & 0x200) {
                 SFX(0x20013);
                 {
                     p = (u8*)work;
                     i = 0;
-                    while (i < w->count) {
-                        *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x28;
+                    while (i < work->logCount) {
+                        *(s32*)(p + offsetof(WindowWork, logRows) + offsetof(LogRow, phase)) = 0x28;
                         p += 0x20;
                         i++;
                     }
                 }
-                w->rows[w->sel].phase = 0x14;
-                w->state = 0;
-                w->field_0x102C = 320.f;
-                w->field_0x1034 = -240.f;
-            } else if (w->buttonRep & 0x40) {
-                w->charPage = w->charPage - 1;
-                if (w->charPage < 0) {
-                    w->charPage = 0;
+                work->logRows[work->logSel].phase = 0x14;
+                work->logState = 0;
+                work->field_0x102C = 320.f;
+                work->field_0x1034 = -240.f;
+            } else if (work->buttonRep & 0x40) {
+                work->charPage = work->charPage - 1;
+                if (work->charPage < 0) {
+                    work->charPage = 0;
                 }
-                w->charSel = w->charPage * 0x10;
+                work->charSel = work->charPage * 0x10;
                 SFX(0x20035);
-            } else if (w->buttonRep & 0x20) {
-                w->charPage = w->charPage + 1;
-                if (w->charPage >= pages) {
-                    w->charPage = pages - 1;
+            } else if (work->buttonRep & 0x20) {
+                work->charPage = work->charPage + 1;
+                if (work->charPage >= pages) {
+                    work->charPage = pages - 1;
                 }
-                w->charSel = w->charPage * 0x10;
+                work->charSel = work->charPage * 0x10;
                 SFX(0x20035);
-            } else if (w->dirRep & 0xC000) {
-                s32 cur = w->charSel;
+            } else if (work->dirRep & 0xC000) {
+                s32 cur = work->charSel;
                 if (cur % 16 < 8) {
-                    w->charSel = cur + 8;
+                    work->charSel = cur + 8;
                 } else {
-                    w->charSel = cur - 8;
+                    work->charSel = cur - 8;
                 }
-                if (w->charSel >= w->charCnt) {
-                    w->charSel = w->charCnt - 1;
+                if (work->charSel >= work->charCnt) {
+                    work->charSel = work->charCnt - 1;
                 }
-                if (w->charSel < 0) {
-                    w->charSel = 0;
+                if (work->charSel < 0) {
+                    work->charSel = 0;
                 }
                 SFX(0x20035);
-            } else if (w->dirRep & 0x1000) {
-                s32 cur = w->charSel;
+            } else if (work->dirRep & 0x1000) {
+                s32 cur = work->charSel;
                 if (cur % 8 == 0) {
-                    w->charSel = cur - 9;
+                    work->charSel = cur - 9;
                 } else {
-                    w->charSel = cur - 1;
+                    work->charSel = cur - 1;
                 }
-                if (w->charSel < 0) {
-                    w->charSel = 0;
+                if (work->charSel < 0) {
+                    work->charSel = 0;
                 }
-                w->charPage = w->charSel / 16;
+                work->charPage = work->charSel / 16;
                 SFX(0x20035);
-            } else if (w->dirRep & 0x2000) {
-                s32 cur = w->charSel;
+            } else if (work->dirRep & 0x2000) {
+                s32 cur = work->charSel;
                 if (cur % 8 == 7) {
-                    w->charSel = cur + 9;
+                    work->charSel = cur + 9;
                 } else {
-                    w->charSel = cur + 1;
+                    work->charSel = cur + 1;
                 }
-                if (w->charSel >= w->charCnt) {
-                    w->charSel = w->charCnt - 1;
+                if (work->charSel >= work->charCnt) {
+                    work->charSel = work->charCnt - 1;
                 }
-                w->charPage = w->charSel / 16;
+                work->charPage = work->charSel / 16;
                 SFX(0x20035);
             } else if (trg & 0x100) {
-                if (swGet(w->chars[w->charSel].id + 0x117A) != 0) {
+                if (swGet(work->logChars[work->charSel].id + 0x117A) != 0) {
                     SFX(0x20012);
-                    w->state = 0x15;
-                    w->mono = monosiriInit(w->chars[w->charSel].id, -60.f, 150.f);
+                    work->logState = 0x15;
+                    work->mono = monosiriInit(work->logChars[work->charSel].id, -60.f, 150.f);
                 }
             } else if (trg & 0x10) {
                 winSortEntry(work, 6, -310.f, 150.f);
-                w->savedState = w->state;
+                work->savedState = work->logState;
                 SFX(0x20012);
-                w->state = 0x3E9;
+                work->logState = 0x3E9;
             } else if (trg & 0x1000) {
                 return -2;
             }
-            w->targetX = (f32)((w->charSel % 16 / 8) * 0xD8 - 0xB4);
-            w->targetY = (f32)(0x6A - (w->charSel % 16 % 8) * 0x18);
-            if (swGet(w->chars[w->charSel].id + 0x117A) != 0) {
+            work->targetX = (f32)((work->charSel % 16 / 8) * 0xD8 - 0xB4);
+            work->targetY = (f32)(0x6A - (work->charSel % 16 % 8) * 0x18);
+            if (swGet(work->logChars[work->charSel].id + 0x117A) != 0) {
                 winMsgEntry(work, 0,
-                            battleGetUnitMonosiriPtr(w->chars[w->charSel].id)->tattleLogTag, NULL);
+                            battleGetUnitMonosiriPtr(work->logChars[work->charSel].id)->tattleLogTag, NULL);
             } else {
                 winMsgEntry(work, 0, "msg_menu_monosiri_enemy", NULL);
             }
@@ -1181,31 +1171,31 @@ s32 winLogMain(WindowWork* work) {
             break;
         }
         case 21:
-            if (w->buttonTrg & 0x200) {
+            if (work->buttonTrg & 0x200) {
                 SFX(0x20013);
-                w->state = 0x16;
-                monosiriClose(w->mono);
-            } else if (w->buttonTrg & 0x1000) {
-                monosiriExit(w->mono);
+                work->logState = 0x16;
+                monosiriClose(work->mono);
+            } else if (work->buttonTrg & 0x1000) {
+                monosiriExit(work->mono);
                 return -2;
             } else {
-                monosiriMain(w->mono);
+                monosiriMain(work->mono);
             }
             break;
         case 22:
-            if (monosiriCloseWait(w->mono)) {
-                w->state = 0xE;
-                monosiriExit(w->mono);
+            if (monosiriCloseWait(work->mono)) {
+                work->logState = 0xE;
+                monosiriExit(work->mono);
             } else {
-                monosiriMain(w->mono);
+                monosiriMain(work->mono);
             }
             break;
         case 0x3E8:
         case 0x3E9:
             if (winSortWait(work) == 0) {
-                w->state = w->savedState;
+                work->logState = work->savedState;
             }
-            if (w->buttonTrg & 0x1000) {
+            if (work->buttonTrg & 0x1000) {
                 return -2;
             }
             break;
@@ -1223,12 +1213,10 @@ s32 winLogMain(WindowWork* work) {
 // temps give the diff-first fmadd operand order; `ep` steps the entry base so
 // the prologue copy lands first.
 void winLogMain2(WindowWork* work) {
-    WinLogWork* w = (WinLogWork*)work;
     u8* ep = (u8*)work;
-    LogWin* lw = (LogWin*)work;
     s32 i;
 
-    for (i = 0; i < w->count; i++, ep += 0x20) {
+    for (i = 0; i < work->logCount; i++, ep += 0x20) {
         WinLogEntry* e = (WinLogEntry*)(ep + 0xD78);
 
         switch (e->state) {
@@ -1258,7 +1246,7 @@ void winLogMain2(WindowWork* work) {
             if (++e->timer > 8) {
                 e->targetX = 0.0f;
                 {
-                    f32 prod = 45.0f * (f32)w->count;
+                    f32 prod = 45.0f * (f32)work->logCount;
                     e->targetY = prod / 2.0f - 45.0f * (f32)i;
                 }
                 e->timer = 0;
@@ -1274,7 +1262,7 @@ void winLogMain2(WindowWork* work) {
         case 40:
             e->targetX = 0.0f;
             {
-                f32 prod = 45.0f * (f32)w->count;
+                f32 prod = 45.0f * (f32)work->logCount;
                 e->targetY = prod / 2.0f - 45.0f * (f32)i;
             }
             e->timer = 0;
@@ -1293,41 +1281,41 @@ void winLogMain2(WindowWork* work) {
     }
 
     {
-        f32 d1 = lw->mapTargetX - lw->mapX;
-        lw->mapX += d1 / 8.0;
+        f32 d1 = work->mapTargetX - work->mapX;
+        work->mapX += d1 / 8.0;
     }
     {
-        f32 d2 = lw->mapTargetY - lw->mapY;
-        lw->mapY += d2 / 8.0;
+        f32 d2 = work->mapTargetY - work->mapY;
+        work->mapY += d2 / 8.0;
     }
     {
-        f32 d3 = lw->stoneTargetX - lw->stoneX;
-        lw->stoneX += d3 / 8.0;
+        f32 d3 = work->stoneTargetX - work->stoneX;
+        work->stoneX += d3 / 8.0;
     }
     {
-        f32 d4 = lw->stoneTargetY - lw->stoneY;
-        lw->stoneY += d4 / 8.0;
+        f32 d4 = work->stoneTargetY - work->stoneY;
+        work->stoneY += d4 / 8.0;
     }
     {
-        f32 d5 = lw->stoneTargetAlpha - lw->stoneAlpha;
-        lw->stoneAlpha += d5 / 8.0;
+        f32 d5 = work->stoneTargetAlpha - work->stoneAlpha;
+        work->stoneAlpha += d5 / 8.0;
     }
     {
-        f32 d6 = lw->stoneTargetAngle - lw->stoneAngle;
-        lw->stoneAngle += d6 / 4.0f;
+        f32 d6 = work->stoneTargetAngle - work->stoneAngle;
+        work->stoneAngle += d6 / 4.0f;
     }
-    lw->cardScrollTarget = (f32)(lw->cardPage * 0xE8);
-    lw->cardScrollPos += (lw->cardScrollTarget - lw->cardScrollPos) / 6.0f;
-    lw->cardX += (lw->cardTargetX - lw->cardX) / 6.0f;
-    lw->cardY += (lw->cardTargetY - lw->cardY) / 6.0f;
-    lw->cardIconX += (lw->cardIconTargetX - lw->cardIconX) / 6.0f;
-    lw->cardIconY += (lw->cardIconTargetY - lw->cardIconY) / 6.0f;
-    lw->badgeScrollTarget = (f32)(lw->badgePage * 0xE8);
-    lw->badgeScrollPos += (lw->badgeScrollTarget - lw->badgeScrollPos) / 6.0f;
-    lw->badgeX += (lw->badgeTargetX - lw->badgeX) / 6.0f;
-    lw->badgeY += (lw->badgeTargetY - lw->badgeY) / 6.0f;
-    lw->badgeIconX += (lw->badgeIconTargetX - lw->badgeIconX) / 6.0f;
-    lw->badgeIconY += (lw->badgeIconTargetY - lw->badgeIconY) / 6.0f;
+    work->cardScrollTarget = (f32)(work->cardPage * 0xE8);
+    work->cardScrollPos += (work->cardScrollTarget - work->cardScrollPos) / 6.0f;
+    work->cardX += (work->cardTargetX - work->cardX) / 6.0f;
+    work->cardY += (work->cardTargetY - work->cardY) / 6.0f;
+    work->cardIconX += (work->cardIconTargetX - work->cardIconX) / 6.0f;
+    work->cardIconY += (work->cardIconTargetY - work->cardIconY) / 6.0f;
+    work->logBadgeScrollTarget = (f32)(work->logBadgePage * 0xE8);
+    work->logBadgeScrollPos += (work->logBadgeScrollTarget - work->logBadgeScrollPos) / 6.0f;
+    work->logBadgeX += (work->logBadgeTargetX - work->logBadgeX) / 6.0f;
+    work->logBadgeY += (work->logBadgeTargetY - work->logBadgeY) / 6.0f;
+    work->logBadgeIconX += (work->logBadgeIconTargetX - work->logBadgeIconX) / 6.0f;
+    work->logBadgeIconY += (work->logBadgeIconTargetY - work->logBadgeIconY) / 6.0f;
 }
 
 static inline Vec logMkVec(Vec base, f32 x, f32 y) {
@@ -1343,8 +1331,8 @@ static inline Vec logMkVecYX(Vec base, f32 y, f32 x) {
 }
 
 // Draws one page of the log window: map, crystal stars, cards, badges, the tattle viewer and the tab strip.
-void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
-    LogWin* w = (LogWin*)work;
+void winLogDisp(CameraId camId, void* param, s32 idx) {
+    WindowWork* work = param;
     static const GXColor white0 = {0xFF, 0xFF, 0xFF, 0xFF};
     GXColor white3;
     GXColor white;
@@ -1356,13 +1344,13 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
     white3 = white0;
 
     winBgGX(work, 4, x, y);
-    if (y + w->mapY > -480.f) {
-        mapGX(work, x + w->mapX, y + w->mapY);
+    if (y + work->mapY > -480.f) {
+        mapGX(work, x + work->mapX, y + work->mapY);
     }
-    if (y + w->stoneY > -480.f) {
+    if (y + work->stoneY > -480.f) {
         winTexInit(LOG_TEXPAL());
-        winTexSet(0x24, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->stoneX, y + w->stoneY), (Vec){6e+01f, 1.0f, 1.0f},
-                  (GXColor){0xFF, 0xFF, 0xFF, w->stoneAlpha});
+        winTexSet(0x24, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + work->stoneX, y + work->stoneY), (Vec){6e+01f, 1.0f, 1.0f},
+                  (GXColor){0xFF, 0xFF, 0xFF, work->stoneAlpha});
         for (i = 0; i < 7; i++) {
             Vec p = (Vec){0.0f, 0.0f, 1.7e+02f};
             Mtx rx;
@@ -1371,57 +1359,57 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
             PSMTXRotRad(rx, 'x', 0.43633232f);
             PSMTXRotRad(ry, 'y', 0.017453292f * (51.42857f *
                 (f32)i
-                - w->stoneAngle));
+                - work->stoneAngle));
             PSMTXMultVec(ry, &p, &p);
             PSMTXMultVec(rx, &p, &p);
-            winKageGX(work, p.x + (x + w->stoneX), (p.y + (y + w->stoneY)) - 30.f, p.z,
+            winKageGX(work, p.x + (x + work->stoneX), (p.y + (y + work->stoneY)) - 30.f, p.z,
                       1.0f, &(GXColor){0x00, 0x00, 0x00, 0x80});
-            ((effStarStoneData*)w->stones[i]->userdata)->x = p.x + (x + w->stoneX);
-            ((effStarStoneData*)w->stones[i]->userdata)->y = 20.f + (p.y + (y + w->stoneY));
-            ((effStarStoneData*)w->stones[i]->userdata)->z = p.z;
+            ((effStarStoneData*)work->stones[i]->userdata)->x = p.x + (x + work->stoneX);
+            ((effStarStoneData*)work->stones[i]->userdata)->y = 20.f + (p.y + (y + work->stoneY));
+            ((effStarStoneData*)work->stones[i]->userdata)->z = p.z;
         }
         for (i = 0; i < 7; i++) {
-            effStarStoneDraw(8, w->stones[i]);
+            effStarStoneDraw(8, work->stones[i]);
         }
     }
-    if (w->cardX < 320.f && w->cardY > -240.f) {
-        winHakoGX(work, 0, x + w->cardX, y + w->cardY);
+    if (work->cardX < 320.f && work->cardY > -240.f) {
+        winHakoGX(work, 0, x + work->cardX, y + work->cardY);
         winTexInit(LOG_TEXPAL());
-        winTexSet(0x95, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->cardIconX, y + w->cardIconY), (Vec){1.0f, 1.0f, 1.0f}, white);
-        if (swGet(w->cardIcon[w->cardSel] + 0x80) != 0) {
+        winTexSet(0x95, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + work->cardIconX, y + work->cardIconY), (Vec){1.0f, 1.0f, 1.0f}, white);
+        if (swGet(work->cardIcon[work->cardSel] + 0x80) != 0) {
             winIconInit();
-            winIconSet(itemDataTable[w->cardIcon[w->cardSel] + 240].icon_id,
-                       logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->cardIconX, (y + w->cardIconY) - 4.0f),
+            winIconSet(itemDataTable[work->cardIcon[work->cardSel] + 240].icon_id,
+                       logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + work->cardIconX, (y + work->cardIconY) - 4.0f),
                        (Vec){1.0f, 1.0f, 1.0f}, white);
         }
     }
-    if (w->badgeX < 320.f && w->badgeY > -240.f) {
-        winHakoGX(work, 1, x + w->badgeX, y + w->badgeY);
+    if (work->logBadgeX < 320.f && work->logBadgeY > -240.f) {
+        winHakoGX(work, 1, x + work->logBadgeX, y + work->logBadgeY);
         winTexInit(LOG_TEXPAL());
-        winTexSet(0x96, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->badgeIconX, y + w->badgeIconY), (Vec){1.0f, 1.0f, 1.0f}, white);
-        if (swGet(w->badgeIcon[w->badgeSel] + 0x41) != 0) {
+        winTexSet(0x96, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + work->logBadgeIconX, y + work->logBadgeIconY), (Vec){1.0f, 1.0f, 1.0f}, white);
+        if (swGet(work->logBadgeIcon[work->logBadgeSel] + 0x41) != 0) {
             winIconInit();
-            winIconSet(itemDataTable[w->badgeIcon[w->badgeSel] + 179].icon_id,
-                       logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->badgeIconX, (y + w->badgeIconY) - 10.f),
+            winIconSet(itemDataTable[work->logBadgeIcon[work->logBadgeSel] + 179].icon_id,
+                       logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + work->logBadgeIconX, (y + work->logBadgeIconY) - 10.f),
                        (Vec){1.0f, 1.0f, 1.0f}, white);
         }
     }
-    if (w->state == 0xE || (u32)(w->state - 0x14) <= 2 || w->state == 0x3E9) {
+    if (work->logState == 0xE || (u32)(work->logState - 0x14) <= 2 || work->logState == 0x3E9) {
         monoshiriGX(work, x - 170.f, 130.f + y);
     }
-    for (i = 0; i < w->count; i++) {
-        if (i == w->sel) {
+    for (i = 0; i < work->logCount; i++) {
+        if (i == work->logSel) {
             winTexInit(LOG_TEXPAL());
-            winTexSet(0xB5, logMkVecYX((Vec){0.0f, 0.0f, 0.0f}, y + w->rows[i].curY, x + w->rows[i].curX),
+            winTexSet(0xB5, logMkVecYX((Vec){0.0f, 0.0f, 0.0f}, y + work->logRows[i].curY, x + work->logRows[i].curX),
                       (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0x00, 0x00, 0x00, 0x80});
             winTexInit_x2(LOG_TEXPAL());
-            winTexSet_x2(w->rows[i].type + 0x1F, 0xB5,
-                         (Vec){(x + w->rows[i].curX) - 8.0f, 8.0f + (y + w->rows[i].curY), 0.0f},
+            winTexSet_x2(work->logRows[i].type + 0x1F, 0xB5,
+                         (Vec){(x + work->logRows[i].curX) - 8.0f, 8.0f + (y + work->logRows[i].curY), 0.0f},
                          (Vec){1.0f, 1.0f, 1.0f}, white3);
         } else {
             winTexInit_x2(LOG_TEXPAL());
-            winTexSet_x2(w->rows[i].type + 0x1F, 0xB5,
-                         logMkVecYX((Vec){0.0f, 0.0f, 0.0f}, y + w->rows[i].curY, x + w->rows[i].curX),
+            winTexSet_x2(work->logRows[i].type + 0x1F, 0xB5,
+                         logMkVecYX((Vec){0.0f, 0.0f, 0.0f}, y + work->logRows[i].curY, x + work->logRows[i].curX),
                          (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0x80, 0x80, 0x80, 0xFF});
         }
     }
@@ -1459,23 +1447,22 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
     static f32 pos_tbl[7][2] = {
         {165.0f, 68.0f}, {0.0f, 75.0f}, {97.0f, 150.0f}, {-139.0f, -33.0f}, {41.0f, -163.0f}, {211.0f, -91.0f}, {-209.0f, 159.0f},
     };
-    LogWin* w = (LogWin*)work;
     f32 top;
-    f32 tx = 74.0f + (x + w->mapScrollX);
+    f32 tx = 74.0f + (x + work->mapScrollX);
     static const GXColor white = {0xFF, 0xFF, 0xFF, 0xFF};
     GXColor c0;
-    f32 ty = 120.f + (y + w->mapScrollY);
+    f32 ty = 120.f + (y + work->mapScrollY);
     GXColor c1 = white;
     f32 bounce;
     f32 d;
     s32 i;
 
     c0 = white;
-    if (w->mapTpl != NULL) {
+    if (work->mapTpl != NULL) {
         top = 120.f + y;
         GXSetScissor((u32)(((304.0f + x) - 230.f) - 2.0f),
                      (u32)((240.f - top) - 2.0f), 0x1D0, 0xF4);
-        winTexInit(w->mapTpl->data[0]);
+        winTexInit(work->mapTpl->data[0]);
         winTexSet(0, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx, ty), (Vec){1.0f, 1.0f, 1.0f}, c1);
         winTexInit(LOG_TEXPAL());
         for (i = 0; (u32)i < 0x5D; i++) {
@@ -1486,7 +1473,7 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                     continue;
                 }
             }
-            if (w->mapSel == i) {
+            if (work->mapSel == i) {
                 GXColor c = c0;
 
                 winTexSet(((gp->retraceCount >> 4) & 1) ? WIN_LOG_TEX_PIN_SEL : WIN_LOG_TEX_PIN_ON, (Vec){tx + (f32)t->x, ty + (f32)t->y, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, c);
@@ -1528,7 +1515,7 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 winIconSet(icon, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + pos_tbl[k][0], 45.0f + (ty + pos_tbl[k][1])), (Vec){1.0f, 1.0f, 1.0f}, c1);
             }
         }
-        if (w->mapMarioPose != -1) {
+        if (work->mapMarioPose != -1) {
             AnimData* anim;
             f32 scale;
             Mtx m;
@@ -1537,16 +1524,16 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
             animPoseGetAnimPosePtr(work->marioPose);
             anim = animPoseGetAnimDataPtr(work->marioPose);
             scale = 1.5f;
-            if (w->flags & 0x2000) {
+            if (work->flags & 0x2000) {
                 scale = 3.0f;
             }
-            PSMTXTrans(m, tx + (f32)tubuDt[w->mapPick].x, ty + (f32)tubuDt[w->mapPick].y, 0.0f);
+            PSMTXTrans(m, tx + (f32)tubuDt[work->mapPick].x, ty + (f32)tubuDt[work->mapPick].y, 0.0f);
             n = (s32)anim->clip->end;
-            animPoseSetLocalTime(w->mapMarioPose, (f32)(gp->retraceCount % n));
-            animPoseMain(w->mapMarioPose);
-            animPoseDrawMtx(w->mapMarioPose, m, 1, 0.0f, scale);
-            animPoseDrawMtx(w->mapMarioPose, m, 2, 0.0f, scale);
-            animPoseDrawMtx(w->mapMarioPose, m, 3, 0.0f, scale);
+            animPoseSetLocalTime(work->mapMarioPose, (f32)(gp->retraceCount % n));
+            animPoseMain(work->mapMarioPose);
+            animPoseDrawMtx(work->mapMarioPose, m, 1, 0.0f, scale);
+            animPoseDrawMtx(work->mapMarioPose, m, 2, 0.0f, scale);
+            animPoseDrawMtx(work->mapMarioPose, m, 3, 0.0f, scale);
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
         winTexInit(LOG_TEXPAL());
@@ -1567,27 +1554,27 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         bounce = (f32)__fabs(2.0f * (f32)sin((f32)gp->retraceCount / 8.0f));
 #endif
         winTexInit(LOG_TEXPAL());
-        if (-240.f == w->mapScrollY) {
+        if (-240.f == work->mapScrollY) {
             d = 0.0f;
         } else {
             d = bounce;
         }
         winTexSet(0xBD, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, top + d), (Vec){1.0f, 1.0f, 1.0f}, c1);
-        if (-148.0f == w->mapScrollX) {
+        if (-148.0f == work->mapScrollX) {
             d = 0.0f;
         } else {
             d = bounce;
         }
         winTexInit(LOG_TEXPAL());
         winTexSet(0xBC, logMkVec((Vec){0.0f, 0.0f, 0.0f}, 220.f + x + d, y), (Vec){1.0f, 1.0f, 1.0f}, c1);
-        if (0.0f == w->mapScrollY) {
+        if (0.0f == work->mapScrollY) {
             d = 0.0f;
         } else {
             d = bounce;
         }
         winTexInit(LOG_TEXPAL());
         winTexSet(0xBE, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, (y - 120.f) - d), (Vec){1.0f, 1.0f, 1.0f}, c1);
-        if (0.0f == w->mapScrollX) {
+        if (0.0f == work->mapScrollX) {
             d = 0.0f;
         } else {
             d = bounce;
@@ -1610,7 +1597,6 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
     static const GXColor white = {0xFF, 0xFF, 0xFF, 0xFF};
     static const GXColor black = {0x00, 0x00, 0x00, 0xFF};
     s32 i;
-    LogWin* w = (LogWin*)work;
     GXColor c8c;
     GXColor c4;
     GXColor c8b;
@@ -1633,7 +1619,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
                                 y - 166.0f), (Vec){0.75f, 0.75f, 0.75f}, c8b, pmsg);
         }
     }
-    sprintf(buf, "%d\201^%d", w->seenCnt, w->charCnt);
+    sprintf(buf, "%d\201^%d", work->seenCnt, work->charCnt);
     wdt = (s32)(0.75f * (f32)FontGetMessageWidth(buf));
     {
         winFontSet(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - 108.0f) + (f32)((100 - (u16)wdt) / 2),
@@ -1641,11 +1627,11 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
     }
     winFontInit();
     for (i = 0; i < 16; i++) {
-        s32 id = w->chars[i + w->charPage * 16].id;
+        s32 id = work->logChars[i + work->charPage * 16].id;
         TattleEntry* tattle = battleGetUnitMonosiriPtr(id);
         
 
-        if (i + w->charPage * 16 >= w->charCnt) {
+        if (i + work->charPage * 16 >= work->charCnt) {
             break;
         }
         if (swGet(id + 0x117A) != 0) {
@@ -1670,7 +1656,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
             winFontSet(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (56.0f + x) + (f32)(((i / 8) * 0xD8)), (y - 16.0f) - (f32)((i % 8) * 0x18)), (Vec){0.75f, 0.75f, 0.75f}, c8c, msg);
         }
     }
-    if (w->charPage > 0) {
+    if (work->charPage > 0) {
         f32 bx;
 
         winTexInit(LOG_TEXPAL());
@@ -1681,7 +1667,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
             winIconSet(0x7E, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, y), (Vec){0.6f, 0.6f, 0.6f}, c4);
         }
     }
-    if (w->charPage < (w->charCnt + 0xF) / 16 - 1) {
+    if (work->charPage < (work->charCnt + 0xF) / 16 - 1) {
         f32 bx;
 
         winTexInit(LOG_TEXPAL());

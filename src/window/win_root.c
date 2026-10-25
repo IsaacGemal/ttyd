@@ -33,7 +33,6 @@ typedef struct SortTable {
     void (*func)(WindowWork* work);    // 0x4
 } SortTable;
 
-#define LOGWIN(w) ((LogWin*)(w))
 
 extern ItemData itemDataTable[];
 
@@ -1541,13 +1540,13 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     s32 id;
 
     if (type == 0) {
-        scroll = LOGWIN(work)->cardScrollPos;
-        count = LOGWIN(work)->cardCnt;
-        cursor = LOGWIN(work)->cardPage;
+        scroll = work->cardScrollPos;
+        count = work->cardCnt;
+        cursor = work->cardPage;
     } else {
-        scroll = LOGWIN(work)->badgeScrollPos;
-        count = LOGWIN(work)->badgeCnt;
-        cursor = LOGWIN(work)->badgePage;
+        scroll = work->logBadgeScrollPos;
+        count = work->logBadgeCnt;
+        cursor = work->logBadgePage;
     }
 
     GXSetBlendMode(0, 1, 0, 0);
@@ -1643,12 +1642,12 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                 s32 idx = page * 0x1C + row * 7 + col;
                 if (idx < count) {
                     if (texBase == 0) {
-                        s16 itemId = LOGWIN(work)->cardIcon[idx];
+                        s16 itemId = work->cardIcon[idx];
                         if (swGet(itemId + 0x80) != 0) {
                             continue;
                         }
                     } else {
-                        s16 itemId = LOGWIN(work)->badgeIcon[idx];
+                        s16 itemId = work->logBadgeIcon[idx];
                         if (swGet(itemId + 0x41) != 0) {
                             continue;
                         }
@@ -1669,15 +1668,15 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                     s32 iconId;
 
                     if (texBase == 0) {
-                        if (swGet(LOGWIN(work)->cardIcon[idx] + 0x80) == 0) {
+                        if (swGet(work->cardIcon[idx] + 0x80) == 0) {
                             continue;
                         }
-                        iconId = itemDataTable[LOGWIN(work)->cardIcon[idx] + 0xF0].icon_id;
+                        iconId = itemDataTable[work->cardIcon[idx] + 0xF0].icon_id;
                     } else {
-                        if (swGet(LOGWIN(work)->badgeIcon[idx] + 0x41) == 0) {
+                        if (swGet(work->logBadgeIcon[idx] + 0x41) == 0) {
                             continue;
                         }
-                        iconId = itemDataTable[LOGWIN(work)->badgeIcon[idx] + 0xB3].icon_id;
+                        iconId = itemDataTable[work->logBadgeIcon[idx] + 0xB3].icon_id;
                     }
                     winIconSet(iconId, (Vec){((x + (f32)(col * 0x38)) + 24.0f) + 4.0f, ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - 28.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
@@ -2052,27 +2051,27 @@ int compare_func5_2_r(const void* a, const void* b) {
 
 void sort_5_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, compare_func5_1);
+        qqsort(work->cardIcon, work->cardCnt, 2, compare_func5_1);
     } else {
-        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, compare_func5_1_r);
+        qqsort(work->cardIcon, work->cardCnt, 2, compare_func5_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    LOGWIN(work)->cardSel = 0;
-    LOGWIN(work)->cardPage = LOGWIN(work)->cardSel / 28;
+    work->cardSel = 0;
+    work->cardPage = work->cardSel / 28;
 }
 
 void sort_5_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, compare_func5_2);
+        qqsort(work->cardIcon, work->cardCnt, 2, compare_func5_2);
     } else {
-        qqsort(LOGWIN(work)->cardIcon, LOGWIN(work)->cardCnt, 2, compare_func5_2_r);
+        qqsort(work->cardIcon, work->cardCnt, 2, compare_func5_2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    LOGWIN(work)->cardSel = 0;
-    LOGWIN(work)->cardPage = LOGWIN(work)->cardSel / 28;
+    work->cardSel = 0;
+    work->cardPage = work->cardSel / 28;
 }
 
-// Same bubble sort as sort_4_3 but over LogWin.cardIcon (itemDataTable index = entry + 0xF0).
+// Same bubble sort as sort_4_3 but over WindowWork.cardIcon (itemDataTable index = entry + 0xF0).
 // Indexing the array (`cardIcon[i]`) rather than walking `pa`/`pb` pointers
 // lets MWCC strength-reduce them to the same pa=r7/pb=r6
 // induction variables the target uses. The per-branch declaration order of the
@@ -2089,11 +2088,11 @@ void sort_5_3_func(WindowWork* work) {
         s16 ib;
         s32 swap;
 
-        for (i = 0; i < LOGWIN(work)->cardCnt - 1; i++) {
+        for (i = 0; i < work->cardCnt - 1; i++) {
             j = i + 1;
-            while (j < LOGWIN(work)->cardCnt) {
-                la = LOGWIN(work)->cardIcon[i];
-                lb = LOGWIN(work)->cardIcon[j];
+            while (j < work->cardCnt) {
+                la = work->cardIcon[i];
+                lb = work->cardIcon[j];
                 ia = (s16)((s32)la + 0xF0);
                 ib = (s16)((s32)lb + 0xF0);
                 swap = 0;
@@ -2104,8 +2103,8 @@ void sort_5_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    LOGWIN(work)->cardIcon[i] = lb;
-                    LOGWIN(work)->cardIcon[j] = la;
+                    work->cardIcon[i] = lb;
+                    work->cardIcon[j] = la;
                 }
                 j++;
             }
@@ -2119,11 +2118,11 @@ void sort_5_3_func(WindowWork* work) {
         s16 ia;
         s16 ib;
 
-        for (i = 0; i < LOGWIN(work)->cardCnt - 1; i++) {
+        for (i = 0; i < work->cardCnt - 1; i++) {
             j = i + 1;
-            while (j < LOGWIN(work)->cardCnt) {
-                la = LOGWIN(work)->cardIcon[i];
-                lb = LOGWIN(work)->cardIcon[j];
+            while (j < work->cardCnt) {
+                la = work->cardIcon[i];
+                lb = work->cardIcon[j];
                 ia = (s16)((s32)la + 0xF0);
                 ib = (s16)((s32)lb + 0xF0);
                 swap = 0;
@@ -2134,8 +2133,8 @@ void sort_5_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    LOGWIN(work)->cardIcon[i] = lb;
-                    LOGWIN(work)->cardIcon[j] = la;
+                    work->cardIcon[i] = lb;
+                    work->cardIcon[j] = la;
                 }
                 j++;
             }
@@ -2143,8 +2142,8 @@ void sort_5_3_func(WindowWork* work) {
     }
 
     work->sortReverseNext = 1 - work->sortReverseNext;
-    LOGWIN(work)->cardSel = 0;
-    LOGWIN(work)->cardPage = LOGWIN(work)->cardSel / 28;
+    work->cardSel = 0;
+    work->cardPage = work->cardSel / 28;
 }
 
 // 1:1 (the `const` parameters reproduce the target's hoisted `lha` prologue load).
@@ -2209,24 +2208,24 @@ int compare_func6_2_r(const void* a, const void* b) {
 
 void sort_6_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, compare_func6_1);
+        qqsort(work->logBadgeIcon, work->logBadgeCnt, 2, compare_func6_1);
     } else {
-        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, compare_func6_1_r);
+        qqsort(work->logBadgeIcon, work->logBadgeCnt, 2, compare_func6_1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    LOGWIN(work)->badgeSel = 0;
-    LOGWIN(work)->badgePage = LOGWIN(work)->badgeSel / 28;
+    work->logBadgeSel = 0;
+    work->logBadgePage = work->logBadgeSel / 28;
 }
 
 void sort_6_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, compare_func6_2);
+        qqsort(work->logBadgeIcon, work->logBadgeCnt, 2, compare_func6_2);
     } else {
-        qqsort(LOGWIN(work)->badgeIcon, LOGWIN(work)->badgeCnt, 2, compare_func6_2_r);
+        qqsort(work->logBadgeIcon, work->logBadgeCnt, 2, compare_func6_2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    LOGWIN(work)->badgeSel = 0;
-    LOGWIN(work)->badgePage = LOGWIN(work)->badgeSel / 28;
+    work->logBadgeSel = 0;
+    work->logBadgePage = work->logBadgeSel / 28;
 }
 
 int compare_func1(const void* a, const void* b) {
@@ -2256,13 +2255,13 @@ int compare_func1_r(const void* a, const void* b) {
 
 void sort_7_1_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(LOGWIN(work)->chars, LOGWIN(work)->charCnt, 2, compare_func1);
+        qqsort(work->logChars, work->charCnt, 2, compare_func1);
     } else {
-        qqsort(LOGWIN(work)->chars, LOGWIN(work)->charCnt, 2, compare_func1_r);
+        qqsort(work->logChars, work->charCnt, 2, compare_func1_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    LOGWIN(work)->charSel = 0;
-    LOGWIN(work)->charPage = LOGWIN(work)->charSel / 16;
+    work->charSel = 0;
+    work->charPage = work->charSel / 16;
 }
 
 static inline s32 winRootFindTag(const char* tag, char* buf) {
@@ -2327,15 +2326,15 @@ int compare_func2_r(const void* a, const void* b) {
 
 void sort_7_2_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func1);
-        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func2);
+        qqsort(work->logChars, work->charCnt, 2, compare_func1);
+        qqsort(work->logChars, work->charCnt, 2, compare_func2);
     } else {
-        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func1_r);
-        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func2_r);
+        qqsort(work->logChars, work->charCnt, 2, compare_func1_r);
+        qqsort(work->logChars, work->charCnt, 2, compare_func2_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    LOGWIN(work)->charSel = 0;
-    LOGWIN(work)->charPage = LOGWIN(work)->charSel / 16;
+    work->charSel = 0;
+    work->charPage = work->charSel / 16;
 }
 
 int compare_func3(const void* a, const void* b) {
@@ -2398,15 +2397,15 @@ int compare_func3_r(const void* a, const void* b) {
 
 void sort_7_3_func(WindowWork* work) {
     if (work->sortReverseNext == 0) {
-        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func1);
-        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func3);
+        qqsort(work->logChars, work->charCnt, 2, compare_func1);
+        qqsort(work->logChars, work->charCnt, 2, compare_func3);
     } else {
-        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func1_r);
-        qqsort(work->logChars, LOGWIN(work)->charCnt, 2, compare_func3_r);
+        qqsort(work->logChars, work->charCnt, 2, compare_func1_r);
+        qqsort(work->logChars, work->charCnt, 2, compare_func3_r);
     }
     work->sortReverseNext = 1 - work->sortReverseNext;
-    LOGWIN(work)->charSel = 0;
-    LOGWIN(work)->charPage = LOGWIN(work)->charSel / 16;
+    work->charSel = 0;
+    work->charPage = work->charSel / 16;
 }
 
 // The mail list (work->mailList) holds byte pairs: display number, then mail id.
