@@ -837,8 +837,8 @@ void winItemDisp(CameraId camId, void* param, s32 idx) {
     f32 c;
     f32 b;
     f32 a;
-    f32 x = w->recs[idx].b;
-    f32 y = w->recs[idx].c;
+    f32 x = w->recs[idx].x;
+    f32 y = w->recs[idx].y;
     GXColor color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     s32 i;
 

@@ -16,11 +16,11 @@ typedef struct WinRootTab {
 
 // win_root's submenu window records (WindowWork.recs).
 typedef struct WinRootRec {
-    s32 a; // 0x0
-    f32 b; // 0x4
-    f32 c; // 0x8
-    s32 d; // 0xC
-    s32 e; // 0x10
+    s32 tabId; // 0x0, the submenu drawn (winRootDisp's switch: 0 Mario ... 4 log), -1 none
+    f32 x;     // 0x4, the window's position, read by each submenu's Disp
+    f32 y;     // 0x8
+    s32 state; // 0xC, win_root's slide state machine (0x64 shown, -1 hidden)
+    s32 step;  // 0x10, the slide's intplGetValue step
 } WinRootRec;
 
 // win_badge's equipped-badge list entry (WindowWork.equipList), built by winMakeEquipList.
@@ -55,7 +55,7 @@ typedef struct WindowWork {
     s32 tabSel;                 // 0x40, win_root: index of the tab under the cursor
     s32 tabCount;               // 0x44, win_root: tabs in use
     WinRootTab tabs[5];         // 0x48
-    WinRootRec recs[5];         // 0xC0, one per submenu window; b/c are its position (each submenu's Disp reads its own)
+    WinRootRec recs[5];         // 0xC0, one per submenu window
     s32 savedState;             // 0x124, win_badge/win_item/win_log: menu state to return to after help text
     f32 msgX;                   // 0x128, win_root: winMsgDisp's x (winMsgMain slides it in from -800)
     f32 msgY;                   // 0x12C, winMsgDisp's y

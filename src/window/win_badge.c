@@ -335,9 +335,9 @@ void winBadgeDisp(CameraId camId, void* param, s32 idx) {
     f32 tabX;
     f32 tabY;
     f32 tabTop;
-    f32 x = work->recs[idx].b;
+    f32 x = work->recs[idx].x;
     s32 i;
-    f32 y = work->recs[idx].c;
+    f32 y = work->recs[idx].y;
     (void)camId;
 
     winBgGX(work, 3, x, y);

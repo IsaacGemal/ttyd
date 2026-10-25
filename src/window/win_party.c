@@ -343,8 +343,8 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     loopWhite = white;
     black = (GXColor){0x00, 0x00, 0x00, 0xFF};
     loopBlack = black;
-    x = work->recs[partyIdx].b;
-    y = work->recs[partyIdx].c;
+    x = work->recs[partyIdx].x;
+    y = work->recs[partyIdx].y;
 
     winBgGX(work, 1, x, y);
     if (work->partyCount == 0) {

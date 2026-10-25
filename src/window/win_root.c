@@ -231,30 +231,30 @@ s32 winRootMain(WindowWork* work) {
                 work->tabSel = j;
             }
         }
-        work->recs[0].d = -1;
-        work->recs[0].c = 1000.0f;
-        work->recs[0].b = 1000.0f;
-        work->recs[0].a = -1;
-        work->recs[1].d = -1;
-        work->recs[1].c = 1000.0f;
-        work->recs[1].b = 1000.0f;
-        work->recs[1].a = -1;
-        work->recs[2].d = -1;
-        work->recs[2].c = 1000.0f;
-        work->recs[2].b = 1000.0f;
-        work->recs[2].a = -1;
-        work->recs[3].d = -1;
-        work->recs[3].c = 1000.0f;
-        work->recs[3].b = 1000.0f;
-        work->recs[3].a = -1;
-        work->recs[4].d = -1;
-        work->recs[4].c = 1000.0f;
-        work->recs[4].b = 1000.0f;
-        work->recs[4].a = -1;
-        work->recs[0].c = 1000.0f;
-        work->recs[0].b = 1000.0f;
-        work->recs[0].d = 0;
-        work->recs[0].a = work->tabs[work->tabSel].id;
+        work->recs[0].state = -1;
+        work->recs[0].y = 1000.0f;
+        work->recs[0].x = 1000.0f;
+        work->recs[0].tabId = -1;
+        work->recs[1].state = -1;
+        work->recs[1].y = 1000.0f;
+        work->recs[1].x = 1000.0f;
+        work->recs[1].tabId = -1;
+        work->recs[2].state = -1;
+        work->recs[2].y = 1000.0f;
+        work->recs[2].x = 1000.0f;
+        work->recs[2].tabId = -1;
+        work->recs[3].state = -1;
+        work->recs[3].y = 1000.0f;
+        work->recs[3].x = 1000.0f;
+        work->recs[3].tabId = -1;
+        work->recs[4].state = -1;
+        work->recs[4].y = 1000.0f;
+        work->recs[4].x = 1000.0f;
+        work->recs[4].tabId = -1;
+        work->recs[0].y = 1000.0f;
+        work->recs[0].x = 1000.0f;
+        work->recs[0].state = 0;
+        work->recs[0].tabId = work->tabs[work->tabSel].id;
         work->msgState = 0;
         work->msgY = 1000.0f;
         work->msgX = 1000.0f;
@@ -322,7 +322,7 @@ s32 winRootMain(WindowWork* work) {
         break;
     case 10:
         if (work->buttonTrg & 0x1200) {
-            if (work->recs[0].d == 0x64) {
+            if (work->recs[0].state == 0x64) {
                 work->rootState = 0x14;
             }
             break;
@@ -361,10 +361,10 @@ s32 winRootMain(WindowWork* work) {
             for (j = 4; j > 0; j--) {
                 work->recs[j] = work->recs[j - 1];
             }
-            work->recs[0].c = 1000.0f;
-            work->recs[0].b = 1000.0f;
-            work->recs[0].d = 0x1E;
-            work->recs[0].a = work->tabs[work->tabSel].id;
+            work->recs[0].y = 1000.0f;
+            work->recs[0].x = 1000.0f;
+            work->recs[0].state = 0x1E;
+            work->recs[0].tabId = work->tabs[work->tabSel].id;
             work->targetX = (f32)(work->tabSel * 0x69 - 0x10E);
             str = work->tabs[work->tabSel].str;
             winMsgEntry(work, 0, str, NULL);
@@ -378,17 +378,17 @@ s32 winRootMain(WindowWork* work) {
             for (j = 4; j > 0; j--) {
                 work->recs[j] = work->recs[j - 1];
             }
-            work->recs[0].c = 1000.0f;
-            work->recs[0].b = 1000.0f;
-            work->recs[0].d = 0x14;
-            work->recs[0].a = work->tabs[work->tabSel].id;
+            work->recs[0].y = 1000.0f;
+            work->recs[0].x = 1000.0f;
+            work->recs[0].state = 0x14;
+            work->recs[0].tabId = work->tabs[work->tabSel].id;
             work->targetX = (f32)(work->tabSel * 0x69 - 0x10E);
             str = work->tabs[work->tabSel].str;
             winMsgEntry(work, 0, str, NULL);
         }
         break;
     case 100:
-        if (work->recs[work->tabSel].d == 0x64) {
+        if (work->recs[work->tabSel].state == 0x64) {
             work->rootState = 0xA;
         }
         break;
@@ -434,11 +434,11 @@ s32 winRootMain(WindowWork* work) {
         for (j = 0; j < work->tabCount; j++) {
             work->tabs[j].state = 0xA;
         }
-        work->recs[0].d = 0xA;
-        work->recs[1].d = 0xA;
-        work->recs[2].d = 0xA;
-        work->recs[3].d = 0xA;
-        work->recs[4].d = 0xA;
+        work->recs[0].state = 0xA;
+        work->recs[1].state = 0xA;
+        work->recs[2].state = 0xA;
+        work->recs[3].state = 0xA;
+        work->recs[4].state = 0xA;
         work->msgState = 0xA;
         N_mapDispOn();
         camDispOn(CAMERA_3D);
@@ -489,7 +489,7 @@ s32 winRootMain(WindowWork* work) {
             work->posX += (work->targetX - work->posX) / 4.0f;
             work->posY += (work->targetY + (work->tabs[work->tabSel].y - 185.0f) - work->posY) / 4.0f;
     } else {
-            work->posX += (work->targetX + work->recs[0].b - work->posX) / 4.0f;
+            work->posX += (work->targetX + work->recs[0].x - work->posX) / 4.0f;
             work->posY += (work->targetY - work->posY) / 4.0f;
     }
     work->posX = (f32)(work->posX +
@@ -563,19 +563,19 @@ void winRootDisp(CameraId camId, WindowWork* work) {
 
     for (i = 4; i >= 0; i--) {
         WinRootRec* e = &work->recs[i];
-        s32 state = e->d;
+        s32 state = e->state;
 
         if (state == -1) {
             continue;
         }
-        if (i > 0 && work->recs[i - 1].d == 0x64) {
+        if (i > 0 && work->recs[i - 1].state == 0x64) {
             continue;
         }
         if (i > 0 && (u32)(state - 0xA) <= 1) {
             continue;
         }
 
-        switch (e->a) {
+        switch (e->tabId) {
             case 0:
                 winMarioDisp(camId, work, i);
                 break;
@@ -627,82 +627,82 @@ static inline void winRootTabDisp(WindowWork* work) {
     }
 }
 
-// Switch over each of the 5 recs[i].d. The explicit empty case -1 below (a redirect
+// Switch over each of the 5 recs[i].state. The explicit empty case -1 below (a redirect
 // target of cases 11 and 41) is what makes MWCC pick 0 as the [0,10) search-tree
 // pivot; without it the tree pivots on 1.
 void winBgMain(WindowWork* work) {
     s32 i;
 
     for (i = 0; i < 5; i++) {
-        switch (work->recs[i].d) {
+        switch (work->recs[i].state) {
             case 0:
-                work->recs[i].b = 800.0f;
-                work->recs[i].c = 0.0f;
-                work->recs[i].e = 0;
-                work->recs[i].d = work->recs[i].d + 1;
+                work->recs[i].x = 800.0f;
+                work->recs[i].y = 0.0f;
+                work->recs[i].step = 0;
+                work->recs[i].state = work->recs[i].state + 1;
                 break;
             case 1: {
-                s32 step = work->recs[i].e;
-                work->recs[i].e = step + 1;
-                work->recs[i].b = intplGetValue(0xB, step, 0x10, 800.0f, 0.0f);
-                if (work->recs[i].e > 0x10) {
-                    work->recs[i].d = 0x64;
+                s32 step = work->recs[i].step;
+                work->recs[i].step = step + 1;
+                work->recs[i].x = intplGetValue(0xB, step, 0x10, 800.0f, 0.0f);
+                if (work->recs[i].step > 0x10) {
+                    work->recs[i].state = 0x64;
                 }
                 break;
             }
             case 10:
-                work->recs[i].c = 0.0f;
-                work->recs[i].e = 0;
-                work->recs[i].d = work->recs[i].d + 1;
+                work->recs[i].y = 0.0f;
+                work->recs[i].step = 0;
+                work->recs[i].state = work->recs[i].state + 1;
                 break;
             case 11: {
-                s32 step = work->recs[i].e;
-                work->recs[i].e = step + 1;
-                work->recs[i].b = intplGetValue(0xB, step, 0x10, 0.0f, 800.0f);
-                if (work->recs[i].e > 0x10) {
-                    work->recs[i].d = -1;
+                s32 step = work->recs[i].step;
+                work->recs[i].step = step + 1;
+                work->recs[i].x = intplGetValue(0xB, step, 0x10, 0.0f, 800.0f);
+                if (work->recs[i].step > 0x10) {
+                    work->recs[i].state = -1;
                 }
                 break;
             }
             case 20:
-                work->recs[i].c = 0.0f;
-                work->recs[i].e = 0;
-                work->recs[i].d = work->recs[i].d + 1;
+                work->recs[i].y = 0.0f;
+                work->recs[i].step = 0;
+                work->recs[i].state = work->recs[i].state + 1;
                 break;
             case 21: {
-                s32 step = work->recs[i].e;
-                work->recs[i].e = step + 1;
-                work->recs[i].b = intplGetValue(0xB, step, 0x18, 640.0f, 0.0f);
-                if (work->recs[i].e > 0x18) {
-                    work->recs[i].d = 0x64;
+                s32 step = work->recs[i].step;
+                work->recs[i].step = step + 1;
+                work->recs[i].x = intplGetValue(0xB, step, 0x18, 640.0f, 0.0f);
+                if (work->recs[i].step > 0x18) {
+                    work->recs[i].state = 0x64;
                 }
                 break;
             }
             case 30:
-                work->recs[i].c = 0.0f;
-                work->recs[i].e = 0;
-                work->recs[i].d = work->recs[i].d + 1;
+                work->recs[i].y = 0.0f;
+                work->recs[i].step = 0;
+                work->recs[i].state = work->recs[i].state + 1;
                 break;
             case 31: {
-                s32 step = work->recs[i].e;
-                work->recs[i].e = step + 1;
-                work->recs[i].b = intplGetValue(0xB, step, 0x18, -640.0f, 0.0f);
-                if (work->recs[i].e > 0x18) {
-                    work->recs[i].d = 0x64;
+                s32 step = work->recs[i].step;
+                work->recs[i].step = step + 1;
+                work->recs[i].x = intplGetValue(0xB, step, 0x18, -640.0f, 0.0f);
+                if (work->recs[i].step > 0x18) {
+                    work->recs[i].state = 0x64;
                 }
                 break;
             }
             case 40:
-                work->recs[i].c = 0.0f;
-                work->recs[i].e = 0;
-                work->recs[i].d = work->recs[i].d + 1;
+                work->recs[i].y = 0.0f;
+                work->recs[i].step = 0;
+                work->recs[i].state = work->recs[i].state + 1;
                 break;
             case 41: {
-                s32 step = work->recs[i].e;
-                work->recs[i].e = step + 1;
-                work->recs[i].b = intplGetValue(0xB, step, 0x18, 0.0f, -640.0f);
-                if (work->recs[i].e > 0x18) {
-                    work->recs[i].d = -1;
+                s32 step = work->recs[i].step;
+                work->recs[i].step = step + 1;
+                work->recs[i].x = intplGetValue(0xB, step, 0x18, 0.0f, -640.0f);
+                if (work->recs[i].step > 0x18) {
+                    work->recs[i].state = -1;
                 }
                 break;
             }
@@ -1541,11 +1541,11 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     s32 id;
 
     if (type == 0) {
-        scroll = LOGWIN(work)->ea0;
+        scroll = LOGWIN(work)->cardScrollPos;
         count = LOGWIN(work)->cardCnt;
         cursor = LOGWIN(work)->cardPage;
     } else {
-        scroll = LOGWIN(work)->f9c;
+        scroll = LOGWIN(work)->badgeScrollPos;
         count = LOGWIN(work)->badgeCnt;
         cursor = LOGWIN(work)->badgePage;
     }
