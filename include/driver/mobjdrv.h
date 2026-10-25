@@ -80,11 +80,12 @@ typedef struct MapObjectEntry {
 typedef struct MapObjectWork {
     s32 count;                // 0x0
     MapObjectEntry* entries;  // 0x4
-    HitEntry* field_0x8;      // 0x8
-    HitEntry* field_0xC;      // 0xC
-    HitEntry* field_0x10;     // 0x10
-    HitEntry* field_0x14;     // 0x14
-    HitEntry* field_0x18;     // 0x18
+    // mobjMain's copies of the hits below, replaced only when the hit's name changes, NULL when there is none
+    HitEntry* hitobjHammer;   // 0x8, MarioWork.hitobjHammer
+    HitEntry* hitobjHead;     // 0xC, MarioWork.hitobjHead
+    HitEntry* hitobjStandOn;  // 0x10, MarioWork.hitobjStandOn
+    HitEntry* hitobjFront;    // 0x14, MarioWork.hitobjFront
+    HitEntry* partyFrontHit;  // 0x18, the partner's PartyEntry.frontHit
 } MapObjectWork;
 
 void mobjInit(void);

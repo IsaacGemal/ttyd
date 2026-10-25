@@ -182,7 +182,7 @@ void extMakeTexture(CameraId camId, void* param) {
 		s32 j;
 		s32 k;
 
-		animPoseDisp_MakeExtTexture(p->name, p->animName, p->field_0x8, &tex->texObj, tex, 4.0f, &out0, &out1, &out2,
+		animPoseDisp_MakeExtTexture(p->name, p->animName, p->frame, &tex->texObj, tex, 4.0f, &out0, &out1, &out2,
 		                            &out3);
 		j = i * 12;
 		wp->vertices[j++] = (f32)out0 * half;

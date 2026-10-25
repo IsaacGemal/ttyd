@@ -223,10 +223,10 @@ void mot_damage(void) {
 		}
 		break;
 	case 0xC:
-		mario->field_EC.y = mario->field_EC.y + mario->wCamVal1;
+		mario->camFollowPos.y = mario->camFollowPos.y + mario->wCamVal1;
 		movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
-		mario->field_EC.x = mario->position.x;
-		mario->field_EC.z = mario->position.z;
+		mario->camFollowPos.x = mario->position.x;
+		mario->camFollowPos.z = mario->position.z;
 		if (--mario->multiTimer <= 0) {
 			mario->currSubMotionId = 0xD;
 			mario->flags |= MARIO_FLAG_STOP_AIR_MOVEMENT;
@@ -241,9 +241,9 @@ void mot_damage(void) {
 		}
 		break;
 	case 0xE:
-		mario->field_EC.y = mario->field_EC.y + mario->wCamVal1;
-		mario->field_EC.x = mario->position.x;
-		mario->field_EC.z = mario->position.z;
+		mario->camFollowPos.y = mario->camFollowPos.y + mario->wCamVal1;
+		mario->camFollowPos.x = mario->position.x;
+		mario->camFollowPos.z = mario->position.z;
 		if (--mario->multiTimer <= 0) {
 			mario->flags |= MARIO_FLAG_STOP_AIR_MOVEMENT;
 			marioSetFallPara();
@@ -408,10 +408,10 @@ void mot_damageToge(void) {
 		mario->currSubMotionId = 0xC;
 		break;
 	case 0xC:
-		mario->field_EC.y = mario->field_EC.y + mario->wCamVal1;
+		mario->camFollowPos.y = mario->camFollowPos.y + mario->wCamVal1;
 		movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
-		mario->field_EC.x = mario->position.x;
-		mario->field_EC.z = mario->position.z;
+		mario->camFollowPos.x = mario->position.x;
+		mario->camFollowPos.z = mario->position.z;
 		if (--mario->multiTimer <= 0) {
 			mario->currSubMotionId = 0xD;
 			mario->flags |= MARIO_FLAG_STOP_AIR_MOVEMENT;

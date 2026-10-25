@@ -219,7 +219,7 @@ void effMistDisp(CameraId cameraId, void* param) {
 	cam = camGetPtr(cameraId);
 	alpha = (s32)work->alpha;
 	if (work->type == 4) {
-		if (mapGetWork()->entries[0].flags & 2) {
+		if (mapGetWork()->entries[0].flags & MAPENTRY_FLAG_BLEND) {
 			return;
 		}
 	}

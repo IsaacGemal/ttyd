@@ -281,10 +281,10 @@ const f32 float_37_8041aaf8 = 37.0f;
 static inline void jabaraSetCamParam(f32 a, f32 b, f32 c) {
     MarioWork* mario = marioGetPtr();
 
-    mario->unk148 = a;
-    mario->unk150.z = b;
-    mario->field_68 = c;
-    mario->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
+    mario->camZoomWeightTarget = a;
+    mario->camShiftRate.z = b;
+    mario->camZoom = c;
+    mario->camZoomFocusOfs = (Vec){ 0.0f, 40.0f, 0.0f };
 }
 #endif
 
@@ -292,8 +292,8 @@ static inline void jabaraSetCamParam(f32 a, f32 b, f32 c) {
 static inline void jabaraResetMario(void) {
     MarioWork* mario = marioGetPtr();
 
-    mario->dispDir = mario->field_0x2A4;
-    mario->dispReqDir = mario->field_0x2A4;
+    mario->dispDir = mario->jabaraDir;
+    mario->dispReqDir = mario->jabaraDir;
     mario->dispPivot = (Vec){ 0.0f, 0.0f, 0.0f };
     mario->dispOfs = (Vec){ 0.0f, 0.0f, 0.0f };
     mario->dispRot = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -383,8 +383,8 @@ void mot_jabara_post(void) {
 
     mario->flags &= ~MARIO_FLAG_WALLS_DISABLED;
     mario2 = marioGetPtr();
-    mario2->unk148 = 0.0f;
-    mario2->unk150.z = MATCH_F32(float_0p01_8041aaf0);
+    mario2->camZoomWeightTarget = 0.0f;
+    mario2->camShiftRate.z = MATCH_F32(float_0p01_8041aaf0);
     if (mario->dispFlags & 0x40000000) {
         marioPaperOff();
     }
@@ -472,8 +472,8 @@ void mot_jabara(void) {
     switch (mario->currSubMotionId) {
     case 0:
         mario->dispFlags |= 0x100;
-        mario->field_0x41 = 1;
-        mario->field_0x42 = 0;
+        mario->rubCount = 1;
+        mario->chargeLevel = 0;
         mario->airTimer = 0;
         mario->airTimerPeak = 0;
         mario->baseSpeed = 0.0f;
@@ -481,7 +481,7 @@ void mot_jabara(void) {
         marioChgPose(RSTR(0x30, str_802C5BB8));
         marioPaperOn(RSTR(0x38, str_p_jyabara));
         marioChgPaper(RSTR(0x44, str_PM_J_1B));
-        mario->field_0x11C = mario->position;
+        mario->jumpFromPos = mario->position;
         marioChkGnd();
         if (mario->currMotionId != MARIO_MOTION_JABARA) {
             mario->currSubMotionId = 0x64;
@@ -497,10 +497,10 @@ void mot_jabara(void) {
 #ifdef MUST_MATCH
         jabaraSetCamParam(0.2f, 0.005f, 1.5f);
 #else
-        mario->unk148 = 0.2f;
-        mario->unk150.z = 0.005f;
-        mario->field_68 = 1.5f;
-        mario->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
+        mario->camZoomWeightTarget = 0.2f;
+        mario->camShiftRate.z = 0.005f;
+        mario->camZoom = 1.5f;
+        mario->camZoomFocusOfs = (Vec){ 0.0f, 40.0f, 0.0f };
 #endif
         mario->multiTimer = 8;
         mario->currSubMotionId = 0xB;
@@ -516,27 +516,27 @@ void mot_jabara(void) {
     case 12:
         sp3C = marioChkOverheadJabara(&sp40, &sp38);
         if (marioGetRub(0x100, &sp48, &sp4C, &sp44) == 1) {
-            mario->field_0x41 = mario->field_0x41 + 1;
-            if (mario->field_0x41 >= 0x14) {
-                mario->field_0x41 = 0x14;
+            mario->rubCount = mario->rubCount + 1;
+            if (mario->rubCount >= 0x14) {
+                mario->rubCount = 0x14;
             }
         }
         {
-            s8 jt = mario->field_0x41;
+            s8 jt = mario->rubCount;
             if (jt == 3) {
                 if (!(marioGetPtr()->jabaraWork->flags & 0x40000)) {
                     marioGetPtr()->jabaraWork->flags |= 0x40000;
                     psndSFXOn_3D((const char*)0x184, &mario->position);
                 }
                 marioChgPaper(RSTR(0x4C, str_PM_J_3B));
-                mario->field_0x42 = 3;
+                mario->chargeLevel = 3;
 #ifdef MUST_MATCH
                 jabaraSetCamParam(0.4f, 0.005f, 1.7f);
 #else
-                mario->unk148 = 0.4f;
-                mario->unk150.z = 0.005f;
-                mario->field_68 = 1.7f;
-                mario->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
+                mario->camZoomWeightTarget = 0.4f;
+                mario->camShiftRate.z = 0.005f;
+                mario->camZoom = 1.7f;
+                mario->camZoomFocusOfs = (Vec){ 0.0f, 40.0f, 0.0f };
 #endif
             } else if (jt == 2) {
                 if (!(marioGetPtr()->jabaraWork->flags & 0x20000)) {
@@ -544,14 +544,14 @@ void mot_jabara(void) {
                     psndSFXOn_3D((const char*)0x183, &mario->position);
                 }
                 marioChgPaper(RSTR(0x54, str_PM_J_2B));
-                mario->field_0x42 = 2;
+                mario->chargeLevel = 2;
 #ifdef MUST_MATCH
                 jabaraSetCamParam(0.3f, 0.005f, 1.6f);
 #else
-                mario->unk148 = 0.3f;
-                mario->unk150.z = 0.005f;
-                mario->field_68 = 1.6f;
-                mario->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
+                mario->camZoomWeightTarget = 0.3f;
+                mario->camShiftRate.z = 0.005f;
+                mario->camZoom = 1.6f;
+                mario->camZoomFocusOfs = (Vec){ 0.0f, 40.0f, 0.0f };
 #endif
             }
         }
@@ -583,15 +583,15 @@ void mot_jabara(void) {
         }
         if (var_r28 != 0 || !(mario->buttonHeld & 0x100) || (mario->buttonUp & 0x100)) {
             mario2 = marioGetPtr();
-            mario2->unk148 = 0.0f;
-            mario2->unk150.z = JABARA_F32(float_0p01_8041aaf0);
+            mario2->camZoomWeightTarget = 0.0f;
+            mario2->camShiftRate.z = JABARA_F32(float_0p01_8041aaf0);
             camFollowYOff();
             marioChgPose(RSTR(0x5C, str_802C5BE4));
             marioChgPaper(RSTR(0x64, str_PM_J_1C));
             psndSFXOn_3D((const char*)0x20185, &mario->position);
             psndSFXOn_3D((const char*)0x200B5, &mario->position);
             {
-                s8 jt = mario->field_0x42;
+                s8 jt = mario->chargeLevel;
                 if (jt == 3) {
                     mario->jumpVelY = JABARA_F32(float_10p45_8041ab28);
                     mario->jumpAccelY = JABARA_F32(float_0p278_8041ab2c);
@@ -609,18 +609,18 @@ void mot_jabara(void) {
                     mario->jumpJerkStepY = JABARA_F32(float_neg0p015_8041ab40);
                 }
             }
-            if (mario->field_0x42 == 3) {
+            if (mario->chargeLevel == 3) {
                 unk_80130374();
             }
             mario->hitobjJumpFrom = mario->hitobjStandOn;
             mario->hitobjStandOn = NULL;
-            mario->field_0x2A4 = mario->dispReqDir;
+            mario->jabaraDir = mario->dispReqDir;
             mario->currSubMotionId = 0x14;
         }
         break;
     case 20:
         marioMakeJumpPara();
-        if (mario->field_0x42 == 3) {
+        if (mario->chargeLevel == 3) {
             sp3C = marioChkOverheadJabara(&sp40, &sp38);
         } else {
             sp3C = marioChkOverhead();
@@ -634,12 +634,12 @@ void mot_jabara(void) {
             break;
         }
         f31 = sp3C;
-        if (f31 < mario->field_0x11C.y) {
+        if (f31 < mario->jumpFromPos.y) {
             HitEntry* stand;
 
             marioPaperOff();
             stand = mario->hitobjStandOn;
-            jabaraLanding(mario->field_0x11C.y, stand);
+            jabaraLanding(mario->jumpFromPos.y, stand);
             camFollowYOn();
             marioGetPtr();
             allPartyRideOff();
@@ -649,10 +649,10 @@ void mot_jabara(void) {
             return;
         } else {
             mario->position.y = f31;
-            if (mario->field_0x42 <= 2) {
+            if (mario->chargeLevel <= 2) {
                 mario->currSubMotionId = 0x1E;
             } else if (hitGetAttr(mario->hitobjHead) & 0x40000) {
-                mario->field_0x2A4 = mario->dispReqDir;
+                mario->jabaraDir = mario->dispReqDir;
                 mario->dispDir = mario->dispReqDir;
                 mario->currSubMotionId = 0x46;
                 mario->multiTimer = 0xA;

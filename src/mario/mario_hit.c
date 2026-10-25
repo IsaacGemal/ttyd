@@ -524,7 +524,7 @@ void marioChkGnd(void) {
                 dy = fy - wp->position.y;
                 if (hit != NULL) {
                     if (dy <= 11.0f && dy >= 5.0f && wp->slopeAngle <= 30.f) {
-                        wp->field_0x1C4 = fy;
+                        wp->stepUpY = fy;
                         if (wp->baseSpeed) {
                             if (!(wp->dispFlags & 0x1000000)) {
                                 marioChgMot(0xC);
@@ -540,7 +540,7 @@ void marioChkGnd(void) {
                 dy = fy - wp->position.y;
                 if (hit != NULL) {
                     if (dy <= 11.0f && dy >= 5.0f && wp->slopeAngle <= 30.f) {
-                        wp->field_0x1C4 = fy;
+                        wp->stepUpY = fy;
                         if (wp->baseSpeed) {
                             roll_upstairs_on();
                             return;
@@ -1340,8 +1340,8 @@ f32 marioChkOverhead(void) {
             }
         }
         v.y = (f32)(s32)(10.f * (v.y - f31) + 0.5f) / 10.f - 1.0f;
-        if (!(wp->flags & 0x20000) && v.y < wp->field_0x11C.y) {
-            v.y = wp->field_0x11C.y;
+        if (!(wp->flags & 0x20000) && v.y < wp->jumpFromPos.y) {
+            v.y = wp->jumpFromPos.y;
             if (!(wp->flags & 0x1000000) && wp->currMotionId != 0x19 &&
                 wp->currMotionId != 0x18 && wp->currMotionId != 0x1C &&
                 wp->characterId != 2 && marioChkSlitEnd() == 0) {
@@ -1737,10 +1737,10 @@ void marioCheckWall(f32 a, f32 b) {
 
             wp->frontWallDist = f8;
             wp->hitobjWall = hit;
-            t = wp->field_0x3F + 1;
-            wp->field_0x3F = t;
+            t = wp->wallPushCount + 1;
+            wp->wallPushCount = t;
             if ((s8)t >= 0x14) {
-                wp->field_0x3F = 0x14;
+                wp->wallPushCount = 0x14;
                 if ((hitGetAttr(hit) & 0x80) == 0) {
                     r = 1;
                 } else {
@@ -1770,7 +1770,7 @@ void marioSearchFrontWall_staying(f32 a) {
     f32 angle;
     HitEntry* hit;
 
-    wp->field_0x3F = 0;
+    wp->wallPushCount = 0;
     halfx = 0.5f * wp->wPlayerCollisionBox.x;
     if (wp->flags & 0x100000) {
         halfx = 0.0f;
@@ -1918,10 +1918,10 @@ void marioCheckWall_roll(f32 a, f32 b) {
 
             wp->frontWallDist = f8;
             wp->hitobjWall = hit;
-            t = wp->field_0x3F + 1;
-            wp->field_0x3F = t;
+            t = wp->wallPushCount + 1;
+            wp->wallPushCount = t;
             if ((s8)t >= 0x14) {
-                wp->field_0x3F = 0x14;
+                wp->wallPushCount = 0x14;
                 if ((hitGetAttr(hit) & 0x80) == 0) {
                     r = 1;
                 } else {
@@ -2018,7 +2018,7 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     }
     count = 2;
     if (wp->characterId == 2) {
-        if (wp->field_0x14 & 1) {
+        if (wp->kpaStageFlags & 1) {
             count = 3;
             half[0] = 0.75f * wp->wPlayerCollisionBox.y;
             half[1] = 0.5f * wp->wPlayerCollisionBox.y;
@@ -2709,16 +2709,16 @@ void marioCheckWallShip(f32 a, f32 b) {
             return;
         } else {
             if (!a) {
-                wp->field_0x3F = 0;
+                wp->wallPushCount = 0;
             } else {
                 s32 t;
 
                 wp->frontWallDist = f8;
                 wp->hitobjWall = hit;
-                t = wp->field_0x3F + 1;
-                wp->field_0x3F = t;
+                t = wp->wallPushCount + 1;
+                wp->wallPushCount = t;
                 if ((s8)t >= 0x14) {
-                    wp->field_0x3F = 0x14;
+                    wp->wallPushCount = 0x14;
                     if ((hitGetAttr(hit) & 0x80) == 0) {
                         r = 1;
                     } else {

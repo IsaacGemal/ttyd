@@ -729,7 +729,7 @@ void effFireDisp3(CameraId camId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
 	if (data->useMapBlend) {
 		work = mapGetWork();
-		if (work->entries[0].flags & 2) {
+		if (work->entries[0].flags & MAPENTRY_FLAG_BLEND) {
 			mapGetBlend(&blend);
 			GXSetNumTevStages(4);
 			GXSetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);

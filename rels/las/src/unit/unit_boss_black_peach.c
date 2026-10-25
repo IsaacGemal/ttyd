@@ -1462,7 +1462,7 @@ USER_FUNC(make_pattern) {
     animPoseSetAnim(npc->poseId, "KRT_S_1", 1);
     animPoseGetAnimPosePtr(npc->poseId);
     data = animPoseGetAnimDataPtr(npc->poseId);
-    for (i = 0; i < (s32)data->clip->field_0x8; i += 3) {
+    for (i = 0; i < (s32)data->clip->end; i += 3) {
         p->str1 = "c_s_hand";
         p->str2 = "KRT_S_1";
         p->value = 3.0f * (f32)i;

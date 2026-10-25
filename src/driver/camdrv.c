@@ -198,16 +198,16 @@ void camMain(void) {
         MTXConcat(trans, camera->view, camera->view);
 
         if (cameraId == CAMERA_3D && !gp->inBattle) {
-            weight = marioGetPtr()->field_64;
+            weight = marioGetPtr()->camZoomWeight;
 
             // Focus, M.
             focus = (Vec){ 0.0f, 0.0f, 0.0f };
-            focus.x = marioGetPtr()->position.x + marioGetPtr()->field_6C.x;
-            focus.y = marioGetPtr()->position.y + marioGetPtr()->field_6C.y;
-            focus.z = marioGetPtr()->position.z + marioGetPtr()->field_6C.z;
+            focus.x = marioGetPtr()->position.x + marioGetPtr()->camZoomFocusOfs.x;
+            focus.y = marioGetPtr()->position.y + marioGetPtr()->camZoomFocusOfs.y;
+            focus.z = marioGetPtr()->position.z + marioGetPtr()->camZoomFocusOfs.z;
             projPt = focus;
 
-            zoom = marioGetPtr()->field_68;
+            zoom = marioGetPtr()->camZoom;
 
             hExtent = weight * (1.0f - 1.0f / zoom) * (f32)DEMOGetRenderModeObj()->fbWidth;
             vExtent = weight * (1.0f - 1.0f / zoom) * (f32)DEMOGetRenderModeObj()->efbHeight;
@@ -468,10 +468,10 @@ void cam3dMain(CameraEntry* camera) {
 
             if (!(camera->flags & 0x10)) {
                 camera->marioPos.y +=
-                    (((1.0f + marioGetPtr()->field_EC.y) - camera->marioPos.y) * marioGetCamFollowRate());
+                    (((1.0f + marioGetPtr()->camFollowPos.y) - camera->marioPos.y) * marioGetCamFollowRate());
             }
-            camera->marioPos.x = 0.01f + marioGetPtr()->field_EC.x;
-            camera->marioPos.z = marioGetPtr()->field_EC.z;
+            camera->marioPos.x = 0.01f + marioGetPtr()->camFollowPos.x;
+            camera->marioPos.z = marioGetPtr()->camFollowPos.z;
             camera->dollyStart = 0.0f;
             camera->marioAt.x = marioGetPtr()->camCollision.x;
             camera->marioAt.y = 1.0f + marioGetPtr()->camCollision.y;

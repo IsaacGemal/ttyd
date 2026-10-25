@@ -317,7 +317,7 @@ void effMahojinDisp(CameraId camId, void* param) {
             }
         }
 
-        mapWork->entries[0].flags &= ~1;
+        mapWork->entries[0].flags &= ~MAPENTRY_FLAG_FOG;
         PSMTXTrans(mtx, data[0].position.x, data[0].position.y, data[0].position.z);
 
         for (j = 0; j < effect->count; j++) {

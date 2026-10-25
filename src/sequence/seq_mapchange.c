@@ -472,7 +472,7 @@ void _load(const char* prevMapName, const char* newMapName, const char* beroName
         party = partyGetPtr(marioGetPartyId());
         extraParty = partyGetPtr(marioGetExtraPartyId());
         mario->position = gp->savePlayerPos;
-        mario->field_EC = mario->position;
+        mario->camFollowPos = mario->position;
         camRoadReset();
         camShiftReset();
         if (party != NULL) {
@@ -535,7 +535,7 @@ void _load(const char* prevMapName, const char* newMapName, const char* beroName
     camera->marioAt.x = camera->marioPos.x;
     camera->marioAt.y = camera->marioPos.y;
     camera->marioAt.z = camera->marioPos.z;
-    mario->field_EC = mario->position;
+    mario->camFollowPos = mario->position;
     camRoadReset();
     camShiftReset();
     if (camera->flags & 4) {

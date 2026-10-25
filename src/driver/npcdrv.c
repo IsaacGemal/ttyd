@@ -877,7 +877,7 @@ void npcMain(void) {
     Vec feet;
 
     npcwork = gp->inBattle ? &work.battle : &work.field;
-    marioGetPtr()->field_0x1D8 = 0;
+    marioGetPtr()->sideHitNpc = NULL;
     total = npcwork->total;
     npcMainCount++;
     fallSfx = "SFX_KUPPA_3RD_WATER_FALL1";
@@ -1615,7 +1615,7 @@ s32 npcCheckHitMarioSide(NpcEntry* entry) {
     if (d2 > radius) {
         return 0;
     }
-    mario->field_0x1D8 = (s32)entry;
+    mario->sideHitNpc = entry;
     angle = angleABf(mario->position.x, mario->position.z, entry->position.x, entry->position.z);
     if (__fabsf(compAngle(angle, mario->directionView)) < 40.0f) {
         viewT = 6.2831855f * mario->directionView;
@@ -2416,12 +2416,12 @@ void fbatBattleMode(void) {
                 NpcEntry* npc2;
                 s32 total2;
                 s32 i2;
-                fbatData->field_0x54C = 0;
+                fbatData->majinaiCoinBonus = 0;
                 info2 = &fbatData->field_20;
                 result = BattleInformationGetResult(info2);
                 if (pouch->mMerleeNextCurseType == 4 && result == 1) {
                     fbatData->state = 3;
-                    fbatData->field_0x54C = 1;
+                    fbatData->majinaiCoinBonus = 1;
                     evt = evtEntry(_evt_majinai_coin_up_effect, 0, 0);
                     fbatData->majinaiEvtId = evt->eventId;
                     BattleMajinaiDone();
@@ -2490,7 +2490,7 @@ void fbatBattleMode(void) {
                         entry->btlCoinDropCount = 0;
                         goto after;
                     }
-                    if (fbatData->field_0x54C) {
+                    if (fbatData->majinaiCoinBonus) {
                         mult = 3;
                     }
                     if (pouchEquipCheckBadge(ITEM_MONEY_MONEY)) {

@@ -15,7 +15,7 @@ typedef struct HimoWork {
     Mtx mtx1;         // 0x48
     Vec points[4];    // 0x78
     f32 knots[4];     // 0xA8
-    f32 tangents[12]; // 0xB8
+    Vec tangents[4];  // 0xB8
 } HimoWork;
 
 extern s32 __float_nan[];
@@ -143,7 +143,7 @@ void vivihimo(Mtx mtxA, Mtx mtxB, f32 phase, f32 spread, f32 offA, f32 offB) {
 
         points[0] = work.pos0;
         points[3] = work.pos1;
-        spline_maketable(4, (s32)points, (s32*)wp->knots, (s32*)wp->tangents);
+        spline_maketable(4, points, wp->knots, wp->tangents);
         vivihimoDisp(camGetCurNo(), wp);
     }
 }
@@ -171,15 +171,9 @@ void vivihimo(Mtx mtxA, Mtx mtxB, f32 phase, f32 spread, f32 offA, f32 offB) {
 void vivihimoDisp(CameraId cameraId, void* data) {
     HimoWork* work = data;
     CameraEntry* cam;
-#ifdef MUST_MATCH
-    s32 points = (s32)work->points;
-    s32 knots = (s32)work->knots;
-    s32 tangents = (s32)work->tangents;
-#else
     Vec* points = work->points;
     f32* knots = work->knots;
-    f32* tangents = work->tangents;
-#endif
+    Vec* tangents = work->tangents;
     s32 i;
 #ifdef MUST_MATCH
     f32 c12881;
@@ -226,7 +220,7 @@ void vivihimoDisp(CameraId cameraId, void* data) {
 
     prev = &mtxPrev;
     cur = &mtxCur;
-    spline_getvalue((f32*)&prevPos, 4, (s32)points, (s32)knots, (s32)tangents, float_0_8041decc);
+    spline_getvalue((f32*)&prevPos, 4, points, knots, tangents, float_0_8041decc);
     mtx[0][0] = float_10_8041ded0 * (float_1_8041ded4 * work->mtx0[0][0] + float_0_8041decc * work->mtx1[0][0]);
     mtx[0][1] = float_1_8041ded4 * work->mtx0[0][1] + float_0_8041decc * work->mtx1[0][1];
     mtx[0][2] = float_1_8041ded4 * work->mtx0[0][2] + float_0_8041decc * work->mtx1[0][2];
@@ -250,11 +244,7 @@ void vivihimoDisp(CameraId cameraId, void* data) {
 #endif
     mtxp = &mtx;
     for (i = 0; i < 15; i++) {
-#ifdef MUST_MATCH
         spline_getvalue((f32*)&pos, 4, points, knots, tangents, t);
-#else
-        spline_getvalue((f32*)&pos, 4, (s32)points, (s32)knots, (s32)tangents, t);
-#endif
         GXLoadPosMtxImm(*prev, 0);
         s = HIMO_C1 - t;
         (*mtxp)[0][0] = HIMO_C10 * (s * work->mtx0[0][0] + t * work->mtx1[0][0]);

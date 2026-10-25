@@ -55,9 +55,9 @@ typedef struct EnvironmentWork {
     GXTexObj captureObj2; //0x2C
     void* envBlur; //0x4C, see envBlurOn
     GXTexObj envBlurObj; //0x50
-    MtxPtr field_0x70; //0x70, envAddTev stores the current camera view; envTevLoadTexMtxImm reads it
-    MtxPtr field_0x74; //0x74, envAddTev stores EnvironmentYami.unk4
-    MtxPtr field_0x78; //0x78, envAddTev stores view * unk4; envTevLoadTexMtxImm reads it
+    MtxPtr viewMtx; //0x70, envAddTev stores the current camera view; envTevLoadTexMtxImm reads it
+    MtxPtr modelMtx; //0x74, envAddTev stores EnvironmentYami.mtx
+    MtxPtr modelViewMtx; //0x78, envAddTev stores viewMtx * modelMtx; envTevLoadTexMtxImm reads it
     f32 field_0x7C; //0x7C, set per type by envAddTev, read by envTevLoadTexMtxImm
     f32 field_0x80; //0x80
     f32 field_0x84; //0x84
@@ -70,7 +70,7 @@ typedef struct EnvironmentWork {
 
 typedef struct EnvironmentYami {
     struct MapObject* unk0; //0x0, the object being drawn (MapTevCallback.obj)
-    MtxPtr unk4; //0x4
+    MtxPtr mtx; //0x4, the object's model matrix (MapTevCallback.mtx; envAddTev and envSetWater multiply by it)
     s32 unk8; //0x8
     s32 tevStage; //0xC
     s32 texMap; //0x10

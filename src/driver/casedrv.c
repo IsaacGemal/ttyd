@@ -252,13 +252,13 @@ void caseMain(void) {
 	i2 = 0;
 	while (i2 < wp->count) {
 		if ((entry2->flags & 1) && (entry2->flags & 2)) {
-			if (evtCheckID(entry2->field_0x94) == 0) {
-				entry2->field_0x94 = 0;
+			if (evtCheckID(entry2->evtId) == 0) {
+				entry2->evtId = 0;
 			}
-			if (entry2->field_0x94 == 0) {
+			if (entry2->evtId == 0) {
 				EventEntry* evt = evtEntry(entry2->evtCode, entry2->priority, 0x20);
 				evt->caseId = entry2->caseId;
-				entry2->field_0x94 = evt->eventId;
+				entry2->evtId = evt->eventId;
 				memcpy(evt->lwData, entry2->lwData, 0x40);
 				if (entry2->priority == 0x14) {
 					npcStopForEvent();

@@ -17,10 +17,6 @@
 // Local declarations for functions whose headers don't declare them yet.
 // Listed in REPORT.md so they can move to a header later.
 
-// Raw accessors for MarioWork fields not named in include/mario/mario.h.
-// Offsets are listed in REPORT.md.
-#define MWS32(m, off) (*(s32*)((u8*)(m) + (off)))
-
 // .sdata2
 const char str_8041AEF0[] = "M_S_1";
 
@@ -46,7 +42,7 @@ BOOL marioChkDeepSleep(void) {
     MarioWork* mario = marioGetPtr();
 
     if (mario->currMotionId == MARIO_MOTION_STAY) {
-        if (MWS32(mario, 0x2B4) >= sysMsec2Frame(0x2710)) {
+        if (mario->sleepTimer >= sysMsec2Frame(0x2710)) {
             ret = TRUE;
         }
     }
@@ -76,11 +72,11 @@ void mot_stay(void) {
         mario->multiTimer = 0;
         mario->currSubMotionId = 0;
         mario->wMotionTimer = 0;
-        mario->field_0x11C = mario->position;
-        MWS32(mario, 0x2B0) = 0;
-        MWS32(mario, 0x2B8) = 0;
-        MWS32(mario, 0x2B4) = 0;
-        mario->field_0x5A = 0;
+        mario->jumpFromPos = mario->position;
+        mario->stayJabaraWait = 0;
+        mario->stayAHoldTimer = 0;
+        mario->sleepTimer = 0;
+        mario->stayTimer = 0;
         marioSoundInit();
         marioResetCamFollowRate();
 
@@ -141,7 +137,7 @@ void mot_stay(void) {
         return;
     }
 
-    if (++mario->field_0x5A > sysMsec2Frame(1000)) {
+    if (++mario->stayTimer > sysMsec2Frame(1000)) {
         if (!(mario->flags & MARIO_FLAG_IS_CARRYING_BOBBERY) && marioChkKey()) {
             s32 low = pouchGetHP() <= 5;
 
@@ -152,8 +148,8 @@ void mot_stay(void) {
                 mario->dispFlags |= 4;
                 marioChgPose("M_S_3");
             } else {
-                if (mario->currSubMotionId == 0 && mario->field_0x5A != 0) {
-                    mario->field_0x5A = 0;
+                if (mario->currSubMotionId == 0 && mario->stayTimer != 0) {
+                    mario->stayTimer = 0;
                     if (strcmp(mario->animName, "M_I_Y") != 0) {
                         marioChgPose(str_8041AEF0);
                     }
@@ -195,8 +191,8 @@ void mot_stay(void) {
         return;
     }
 
-    if (++MWS32(mario, 0x2B0) >= 0xA) {
-        MWS32(mario, 0x2B0) = 0xA;
+    if (++mario->stayJabaraWait >= 0xA) {
+        mario->stayJabaraWait = 0xA;
         if (marioChkJabara()) {
             marioChgMot(MARIO_MOTION_JABARA);
             return;
@@ -209,12 +205,12 @@ void mot_stay(void) {
         BOOL bail = FALSE;
 
         if (mario->buttonHeld & 0x100) {
-            MWS32(mario, 0x2B8)++;
+            mario->stayAHoldTimer++;
         } else {
-            MWS32(mario, 0x2B8) = 0;
+            mario->stayAHoldTimer = 0;
         }
         if (mario->buttonHeld & 0x100) {
-            if (MWS32(mario, 0x2B8) < 0xA) {
+            if (mario->stayAHoldTimer < 0xA) {
                 bail = FALSE;
             } else {
                 bail = TRUE;
@@ -282,7 +278,7 @@ void mot_stay(void) {
                     marioChgEvtPose("M_N_5A");
                     mario->multiTimer = 0;
                     mario->currSubMotionId = 4;
-                    MWS32(mario, 0x2B4) = 0;
+                    mario->sleepTimer = 0;
                     {
                         MarioWork* m = marioGetPtr();
                         m->sfxIds[0] = psndSFXOn_3D((const char*)0xE4, &m->position);
@@ -290,8 +286,8 @@ void mot_stay(void) {
                 }
                 break;
             case 4:
-                if (++MWS32(mario, 0x2B4) >= sysMsec2Frame(0x2710)) {
-                    MWS32(mario, 0x2B4) = sysMsec2Frame(0x2710);
+                if (++mario->sleepTimer >= sysMsec2Frame(0x2710)) {
+                    mario->sleepTimer = sysMsec2Frame(0x2710);
                 }
                 if (++mario->multiTimer >= 0x8C) {
                     mario->multiTimer = 0;

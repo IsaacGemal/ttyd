@@ -433,7 +433,7 @@ void door_position_sub(s32 mode, const char* mapName, const char* hitIn, const c
 	}
 
 	if (mapObj != NULL) {
-		PSMTXInverse(mapObj->unkAC, m1);
+		PSMTXInverse(mapObj->userMtx, m1);
 		PSMTXConcat(mapObj->modelWorldMtx, m1, m2);
 		PSMTXMultVec(m2, &mapObj->joints->bboxMin, &v14);
 		PSMTXMultVec(m2, &mapObj->joints->bboxMax, &v20);

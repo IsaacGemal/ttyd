@@ -325,8 +325,8 @@ void marioSlitForceCancel(void) {
         mario->dispFlags &= ~4;
         marioAdjustMoveDir();
         mario = marioGetPtr();
-        mario->unk148 = 0.0f;
-        mario->unk150.z = 0.004f;
+        mario->camZoomWeightTarget = 0.0f;
+        mario->camShiftRate.z = 0.004f;
         allPartyForceSlitOff();
     }
 }
@@ -497,8 +497,8 @@ static inline void slitSetWalkSpeed(MarioWork* mario) {
 static inline void slitResetBounce(void) {
     MarioWork* m = marioGetPtr();
 
-    m->unk148 = 0.0f;
-    m->unk150.z = 0.004f;
+    m->camZoomWeightTarget = 0.0f;
+    m->camShiftRate.z = 0.004f;
 }
 
 // Mario in the slit (crevice): the paper-mode state machine for squeezing through a gap in a wall.

@@ -109,10 +109,10 @@ USER_FUNC(evt_light_bind_mapobj) {
 	pos.z = event->userdataf[2];
 	switch (mode) {
 	case 0:
-		PSMTXMultVec(mapObj->unkAC, &pos, &pos);
+		PSMTXMultVec(mapObj->userMtx, &pos, &pos);
 		break;
 	case 1:
-		PSMTXTrans(mtx, mapObj->unkAC[0][3], mapObj->unkAC[1][3], mapObj->unkAC[2][3]);
+		PSMTXTrans(mtx, mapObj->userMtx[0][3], mapObj->userMtx[1][3], mapObj->userMtx[2][3]);
 		PSMTXMultVec(mtx, &pos, &pos);
 		break;
 	}

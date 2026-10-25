@@ -11,22 +11,22 @@
 void marioResetCamShift(void) {
     MarioWork* mario = marioGetPtr();
 
-    mario->unk138 = 0.0f;
-    mario->unk140 = 0.0f;
-    mario->unk148 = 0.0f;
-    mario->field_64 = 0.0f;
-    mario->field_68 = 2.0f;
-    mario->field_6C = (Vec){ 0.0f, 0.0f, 0.0f };
+    mario->camShiftSideTarget = 0.0f;
+    mario->camShiftUpTarget = 0.0f;
+    mario->camZoomWeightTarget = 0.0f;
+    mario->camZoomWeight = 0.0f;
+    mario->camZoom = 2.0f;
+    mario->camZoomFocusOfs = (Vec){ 0.0f, 0.0f, 0.0f };
 }
 void marioResetCamShiftRate(void) {
     MarioWork* mario = marioGetPtr();
 
-    mario->unk150.x = 0.03;
-    mario->unk150.y = 0.06;
-    mario->unk150.z = 0.06;
-    mario->field_64 = 0.0f;
-    mario->field_68 = 2.0f;
-    mario->field_6C = (Vec){ 0.0f, 0.0f, 0.0f };
+    mario->camShiftRate.x = 0.03;
+    mario->camShiftRate.y = 0.06;
+    mario->camShiftRate.z = 0.06;
+    mario->camZoomWeight = 0.0f;
+    mario->camZoom = 2.0f;
+    mario->camZoomFocusOfs = (Vec){ 0.0f, 0.0f, 0.0f };
 }
 void marioInitCamId(void) {
     marioGetPtr()->camId = CAMERA_3D;
@@ -73,12 +73,12 @@ void marioCamMain(void) {
     if (!(mario2->dispFlags & 0x100000)) {
         mario2->dispFlags &= ~0x200000;
     } else if (mario2->dispFlags & 0x200000) {
-        if (--mario2->unk5C <= 0) {
-            mario2->unk5C = 0;
+        if (--mario2->camZoomOffDelay <= 0) {
+            mario2->camZoomOffDelay = 0;
             mario2->unk60 = 0;
             mario2->dispFlags &= ~0x300000;
-            temp_r8 = mario2->unk62 * 10;
-            mario2->unk5E = (temp_r8 * 60) / 1000;
+            temp_r8 = mario2->camZoomOffTime * 10;
+            mario2->camZoomOffTimer = (temp_r8 * 60) / 1000;
             args[0] = temp_r8;
             args[1] = 11;
             event.args = args;
@@ -89,13 +89,13 @@ void marioCamMain(void) {
     camera = camGetPtr(CAMERA_3D);
     mario2 = marioGetPtr();
     if (mario2->controlStickSensitivity) {
-        if (camera->cameraPos.x == mario2->unk160) {
+        if (camera->cameraPos.x == mario2->prevCamPosX) {
             mario2->dispFlags |= 0x20;
         } else {
             mario2->dispFlags &= ~0x20;
         }
     }
-    mario2->unk160 = camera->cameraPos.x;
+    mario2->prevCamPosX = camera->cameraPos.x;
     mario->dispFlags &= ~0x40000;
 }
 void marioUpdateCamCollision(Vec collision) {
@@ -112,54 +112,54 @@ void marioUpdateCam(void) {
     f32 diff;
     f32 step;
 
-    rate = mario->unk150.x;
-    if (mario->unk13C > mario->unk138) {
-        diff = (mario->unk138 - 1.0f) - mario->unk13C;
+    rate = mario->camShiftRate.x;
+    if (mario->camShiftSideCur > mario->camShiftSideTarget) {
+        diff = (mario->camShiftSideTarget - 1.0f) - mario->camShiftSideCur;
         step = rate * diff;
-        mario->unk13C += step;
-        if (mario->unk13C < mario->unk138) {
-            mario->unk13C = mario->unk138;
+        mario->camShiftSideCur += step;
+        if (mario->camShiftSideCur < mario->camShiftSideTarget) {
+            mario->camShiftSideCur = mario->camShiftSideTarget;
         }
-    } else if (mario->unk13C < mario->unk138) {
-        diff = (mario->unk138 + 1.0f) - mario->unk13C;
+    } else if (mario->camShiftSideCur < mario->camShiftSideTarget) {
+        diff = (mario->camShiftSideTarget + 1.0f) - mario->camShiftSideCur;
         step = rate * diff;
-        mario->unk13C += step;
-        if (mario->unk13C > mario->unk138) {
-            mario->unk13C = mario->unk138;
-        }
-    }
-
-    rate = mario->unk150.y;
-    if (mario->unk144 > mario->unk140) {
-        diff = (mario->unk140 - 1.0f) - mario->unk144;
-        step = rate * diff;
-        mario->unk144 += step;
-        if (mario->unk144 < mario->unk140) {
-            mario->unk144 = mario->unk140;
-        }
-    } else if (mario->unk144 < mario->unk140) {
-        diff = (mario->unk140 + 1.0f) - mario->unk144;
-        step = rate * diff;
-        mario->unk144 += step;
-        if (mario->unk144 > mario->unk140) {
-            mario->unk144 = mario->unk140;
+        mario->camShiftSideCur += step;
+        if (mario->camShiftSideCur > mario->camShiftSideTarget) {
+            mario->camShiftSideCur = mario->camShiftSideTarget;
         }
     }
 
-    rate = mario->unk150.z;
-    if (mario->unk14C > mario->unk148) {
-        diff = (mario->unk148 - 1.0f) - mario->unk14C;
+    rate = mario->camShiftRate.y;
+    if (mario->camShiftUpCur > mario->camShiftUpTarget) {
+        diff = (mario->camShiftUpTarget - 1.0f) - mario->camShiftUpCur;
         step = rate * diff;
-        mario->unk14C += step;
-        if (mario->unk14C < mario->unk148) {
-            mario->unk14C = mario->unk148;
+        mario->camShiftUpCur += step;
+        if (mario->camShiftUpCur < mario->camShiftUpTarget) {
+            mario->camShiftUpCur = mario->camShiftUpTarget;
         }
-    } else if (mario->unk14C < mario->unk148) {
-        diff = (mario->unk148 + 1.0f) - mario->unk14C;
+    } else if (mario->camShiftUpCur < mario->camShiftUpTarget) {
+        diff = (mario->camShiftUpTarget + 1.0f) - mario->camShiftUpCur;
         step = rate * diff;
-        mario->unk14C += step;
-        if (mario->unk14C > mario->unk148) {
-            mario->unk14C = mario->unk148;
+        mario->camShiftUpCur += step;
+        if (mario->camShiftUpCur > mario->camShiftUpTarget) {
+            mario->camShiftUpCur = mario->camShiftUpTarget;
+        }
+    }
+
+    rate = mario->camShiftRate.z;
+    if (mario->camZoomWeightCur > mario->camZoomWeightTarget) {
+        diff = (mario->camZoomWeightTarget - 1.0f) - mario->camZoomWeightCur;
+        step = rate * diff;
+        mario->camZoomWeightCur += step;
+        if (mario->camZoomWeightCur < mario->camZoomWeightTarget) {
+            mario->camZoomWeightCur = mario->camZoomWeightTarget;
+        }
+    } else if (mario->camZoomWeightCur < mario->camZoomWeightTarget) {
+        diff = (mario->camZoomWeightTarget + 1.0f) - mario->camZoomWeightCur;
+        step = rate * diff;
+        mario->camZoomWeightCur += step;
+        if (mario->camZoomWeightCur > mario->camZoomWeightTarget) {
+            mario->camZoomWeightCur = mario->camZoomWeightTarget;
         }
     }
 
@@ -169,17 +169,17 @@ void marioUpdateCam(void) {
         sincosf(&sin, &cos, camera->viewYaw - 90.0f);
 
         if (!(mario->dispFlags & 0x20000)) {
-            mario->field_EC.x = mario->position.x + sin * mario->unk13C;
-            mario->field_EC.z = mario->position.z + cos * mario->unk13C;
-            mario->field_EC.y = mario->position.y + mario->dispOfs.y + mario->unk144;
+            mario->camFollowPos.x = mario->position.x + sin * mario->camShiftSideCur;
+            mario->camFollowPos.z = mario->position.z + cos * mario->camShiftSideCur;
+            mario->camFollowPos.y = mario->position.y + mario->dispOfs.y + mario->camShiftUpCur;
             if (mario->currMotionId == MARIO_MOTION_SHIP) {
-                mario->field_EC.y += 10.0f;
+                mario->camFollowPos.y += 10.0f;
             }
-            mario->field_64 = mario->unk14C;
+            mario->camZoomWeight = mario->camZoomWeightCur;
         } else {
-            mario->field_EC.x = mario->position.x + sin * mario->unk13C + sin * mario->unk14C;
-            mario->field_EC.z = mario->position.z + cos * mario->unk13C + cos * mario->unk14C;
-            mario->field_64 = mario->unk14C;
+            mario->camFollowPos.x = mario->position.x + sin * mario->camShiftSideCur + sin * mario->camZoomWeightCur;
+            mario->camFollowPos.z = mario->position.z + cos * mario->camShiftSideCur + cos * mario->camZoomWeightCur;
+            mario->camZoomWeight = mario->camZoomWeightCur;
         }
     }
 }
@@ -202,8 +202,8 @@ void marioCamZoomOffReq(void) {
 
     if (mario->dispFlags & 0x100000 && !(mario->dispFlags & 0x200000)) {
         mario->dispFlags |= 0x200000;
-        mario->unk62 = 220;
-        mario->unk5C = 32;
+        mario->camZoomOffTime = 220;
+        mario->camZoomOffDelay = 32;
     }
 }
 void marioCamZoomOffReq2(s32 value) {
@@ -211,8 +211,8 @@ void marioCamZoomOffReq2(s32 value) {
 
     if (mario->dispFlags & 0x100000) {
         mario->dispFlags |= 0x200000;
-        mario->unk62 = value / 10;
-        mario->unk5C = 32;
+        mario->camZoomOffTime = value / 10;
+        mario->camZoomOffDelay = 32;
     }
 }
 BOOL marioCamZoomOff(void) {
@@ -230,15 +230,15 @@ BOOL marioCamZoomOff(void) {
         return FALSE;
     }
 
-    if (--mario->unk5C > 0) {
+    if (--mario->camZoomOffDelay > 0) {
         return FALSE;
     }
 
-    mario->unk5C = 0;
+    mario->camZoomOffDelay = 0;
     mario->unk60 = 0;
     mario->dispFlags &= ~0x300000;
-    temp_r8 = mario->unk62 * 10;
-    mario->unk5E = ((temp_r8 * 60) / 1000);
+    temp_r8 = mario->camZoomOffTime * 10;
+    mario->camZoomOffTimer = ((temp_r8 * 60) / 1000);
     args[0] = temp_r8;
     args[1] = 11;
     event.args = args;
@@ -284,7 +284,7 @@ BOOL marioCamZoomUp(void) {
     }
 
     mario->dispFlags |= 0x100000;
-    mario->unk5E = 0;
+    mario->camZoomOffTimer = 0;
 
     zoomDistance = (mario->characterId == 2) ? 750.0f : 450.0f;
 
@@ -356,7 +356,7 @@ BOOL marioCamZoomUpLevelMain(void) {
     }
 
     mario->dispFlags |= 0x100000;
-    mario->unk5E = 0;
+    mario->camZoomOffTimer = 0;
 
     if (mario->unk60 == 1) {
         zoomDistance = 520.0f;

@@ -277,8 +277,8 @@ void animInit(void) {
     wp->paperMtxPtr[1] = NULL;
     wp->paperMtxPtr[2] = NULL;
 
-    wp->field_0xD8 = 1;
-    wp->field_0xDC = 1;
+    wp->useTexAlpha[0] = 1;
+    wp->useTexAlpha[1] = 1;
 
     wp->testHeap = NULL;
     wp->inBattle = FALSE;
@@ -975,11 +975,11 @@ u32 animPoseGetMaterialEvtColor(s32 poseId) {
 static inline void animPoseAddVecDelta(Vec* dst, AnimPoseVecDelta* src, s32 count, f32 scale) {
     AnimPoseVecDelta* end = src + count;
     while (src < end) {
-        dst += src->field_0x0;
+        dst += src->skip;
         {
-            f32 dx = __OSs8tof32(&src->field_0x1);
-            f32 dy = __OSs8tof32(&src->field_0x2);
-            f32 dz = __OSs8tof32(&src->field_0x3);
+            f32 dx = __OSs8tof32(&src->dx);
+            f32 dy = __OSs8tof32(&src->dy);
+            f32 dz = __OSs8tof32(&src->dz);
             dst->x += scale * dx;
             dst->y += scale * dy;
             dst->z += scale * dz;
@@ -991,11 +991,11 @@ static inline void animPoseAddVecDelta(Vec* dst, AnimPoseVecDelta* src, s32 coun
 // The same runs given as [src, end): the reset path walks its frames with these.
 static inline void animPoseAddVecDeltaRange(Vec* dst, AnimPoseVecDelta* src, AnimPoseVecDelta* end, f32 scale) {
     while (src < end) {
-        dst += src->field_0x0;
+        dst += src->skip;
         {
-            f32 dx = __OSs8tof32(&src->field_0x1);
-            f32 dy = __OSs8tof32(&src->field_0x2);
-            f32 dz = __OSs8tof32(&src->field_0x3);
+            f32 dx = __OSs8tof32(&src->dx);
+            f32 dy = __OSs8tof32(&src->dy);
+            f32 dz = __OSs8tof32(&src->dz);
             dst->x += scale * dx;
             dst->y += scale * dy;
             dst->z += scale * dz;
@@ -1008,8 +1008,8 @@ static inline void animPoseAddVecDeltaRange(Vec* dst, AnimPoseVecDelta* src, Ani
 static inline void animPoseAddVisDelta(AnimPoseVisDelta* src, u8* dst, s32 count) {
     AnimPoseVisDelta* end = src + count;
     while (src < end) {
-        dst += src->field_0x0;
-        *dst += src->field_0x1;
+        dst += src->skip;
+        *dst += src->delta;
         src++;
     }
 }
@@ -1018,16 +1018,16 @@ static inline void animPoseAddVisDelta(AnimPoseVisDelta* src, u8* dst, s32 count
 static inline void animPoseAddNodeDelta(f32* dst, AnimPoseNodeDelta* src, s32 count, f32 scale) {
     AnimPoseNodeDelta* end = src + count;
     while (src < end) {
-        dst += src->field_0x0;
-        *dst += scale * __OSs8tof32(&src->field_0x1);
+        dst += src->skip;
+        *dst += scale * __OSs8tof32(&src->delta);
         src++;
     }
 }
 
 static inline void animPoseAddNodeDeltaRange(f32* dst, AnimPoseNodeDelta* src, AnimPoseNodeDelta* end, f32 scale) {
     while (src < end) {
-        dst += src->field_0x0;
-        *dst += scale * __OSs8tof32(&src->field_0x1);
+        dst += src->skip;
+        *dst += scale * __OSs8tof32(&src->delta);
         src++;
     }
 }
@@ -1036,10 +1036,10 @@ static inline void animPoseAddNodeDeltaRange(f32* dst, AnimPoseNodeDelta* src, A
 static inline void animPoseAddTexDelta(AnimTexMtx* dst, AnimPoseTexDelta* src, s32 count) {
     AnimPoseTexDelta* end = src + count;
     while (src < end) {
-        dst += src->field_0x0;
-        dst->mTexBindIdx += src->field_0x1;
-        dst->mTransS += src->field_0x4;
-        dst->mTransT += src->field_0x8;
+        dst += src->skip;
+        dst->mTexBindIdx += src->bindIdxDelta;
+        dst->mTransS += src->transSDelta;
+        dst->mTransT += src->transTDelta;
         src++;
     }
 }
@@ -1134,7 +1134,7 @@ void animPoseMain(s32 poseId) {
 
     OSInitFastCast();
 
-    if (*(s32*)&wp->mbUseFloatScratch) {
+    if (wp->mbUseFloatScratch) {
         vtxPos = wp->vtxArrayPos;
         vtxNrm = wp->vtxArrayNrm;
     } else {
@@ -1153,14 +1153,14 @@ void animPoseMain(s32 poseId) {
         return;
     }
 
-    canLoop = anim->clip->field_0x0;
+    canLoop = anim->clip->loop;
     now = animTimeGetTime(pose->type);
     pose->animTime = (f32)(u64)(now - pose->localTime) * 60.0f / 1000.0f;
     pose->animTime *= pose->localTimeRate;
 
     time = pose->animTime;
-    end = anim->clip->field_0x8;
-    start = anim->clip->field_0x4;
+    end = anim->clip->end;
+    start = anim->clip->start;
     duration = end - start;
 
     if (0.0f == duration) {
@@ -1221,7 +1221,7 @@ void animPoseMain(s32 poseId) {
         }
     }
 
-    pose->evtValue = anim->frames2[pose->evtFrame1].field_0x4;
+    pose->evtValue = anim->frames2[pose->evtFrame1].value;
 
     {
         f32 num = pose->clipTime - anim->frames[pose->keyFrame1].time;
@@ -1229,7 +1229,7 @@ void animPoseMain(s32 poseId) {
         if (canLoop) {
             if (pose->keyFrame2 >= anim->frameCount) {
                 pose->keyFrame2 = 0;
-                den = anim->clip->field_0x8 - anim->frames[pose->keyFrame1].time;
+                den = anim->clip->end - anim->frames[pose->keyFrame1].time;
             } else {
                 den = anim->frames[pose->keyFrame2].time
                     - anim->frames[pose->keyFrame1].time;
@@ -1330,11 +1330,11 @@ void animPoseMain(s32 poseId) {
                 memcpy_as4(d, vc, posNum * 0xC);
             }
             while (posSrc < posEnd) {
-                d += posSrc->field_0x0;
+                d += posSrc->skip;
                 {
-                    f32 dx = __OSs8tof32(&posSrc->field_0x1);
-                    f32 dy = __OSs8tof32(&posSrc->field_0x2);
-                    f32 dz = __OSs8tof32(&posSrc->field_0x3);
+                    f32 dx = __OSs8tof32(&posSrc->dx);
+                    f32 dy = __OSs8tof32(&posSrc->dy);
+                    f32 dz = __OSs8tof32(&posSrc->dz);
                     d->x += dx * blend;
                     d->y += dy * blend;
                     d->z += dz * blend;
@@ -1352,11 +1352,11 @@ void animPoseMain(s32 poseId) {
                 memcpy_as4(d, nc, nrmNum * 0xC);
             }
             while (nrmSrc < nrmEnd) {
-                d += nrmSrc->field_0x0;
+                d += nrmSrc->skip;
                 {
-                    f32 dx = __OSs8tof32(&nrmSrc->field_0x1);
-                    f32 dy = __OSs8tof32(&nrmSrc->field_0x2);
-                    f32 dz = __OSs8tof32(&nrmSrc->field_0x3);
+                    f32 dx = __OSs8tof32(&nrmSrc->dx);
+                    f32 dy = __OSs8tof32(&nrmSrc->dy);
+                    f32 dz = __OSs8tof32(&nrmSrc->dz);
                     d->x += dx * blend;
                     d->y += dy * blend;
                     d->z += dz * blend;
@@ -1378,11 +1378,11 @@ void animPoseMain(s32 poseId) {
             }
             {
                 while (src < srcEnd) {
-                    s32 t1 = (s8)src->field_0x3;
-                    dst += src->field_0x0;
+                    s32 t1 = (s8)src->endTanIdx;
+                    dst += src->skip;
                     if (t1 < 0x59 && t1 > -0x59) {
-                        f32 step = 0.0625f * __OSs8tof32(&src->field_0x1);
-                        f32 tan0 = tanfTbl[(s8)src->field_0x2 + 0x59];
+                        f32 step = 0.0625f * __OSs8tof32(&src->delta);
+                        f32 tan0 = tanfTbl[src->startTanIdx + 0x59];
                         f32 tan1 = tanfTbl[t1 + 0x59];
 
                         *dst += animHermite(alpha, step, timedelta * tan0, timedelta * tan1);
@@ -2097,7 +2097,7 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
                         check2 = FALSE;
                     }
 
-                    if (check1 && (texChange1 && (s32)wp->field_0xD8 == 0 || check2 && (s32)wp->field_0xDC == 0) &&
+                    if (check1 && (texChange1 && wp->useTexAlpha[0] == 0 || check2 && wp->useTexAlpha[1] == 0) &&
                         !draw->drawMode) {
                         GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
                     }
@@ -2149,7 +2149,7 @@ void renderProc(s32 shapeId, s32 keyFrame1) {
                 nrmFirstId = draw->firstIdNrm;
                 clr0FirstId = draw->firstIdClr0;
 
-                if ((s32)wp->mbUseFloatScratch != 0) {
+                if (wp->mbUseFloatScratch) {
                     posVtxPtr = &wp->vtxArrayPos[posFirstVtx];
                     nrmVtxPtr = &wp->vtxArrayNrm[nrmFirstVtx];
                 } else {
@@ -2351,8 +2351,8 @@ static inline void animPoseMainScratch(AnimationPose* pose) {
             s32 nrmNum = animPoseGetBaseData(pose)->mBufferNrmNum;
             s32 total = posNum + nrmNum;
 
-            if (total <= (s32)wp->mFloatScratchRP) {
-                if ((s32)(wp->mFloatScratchWP + total) > (s32)wp->mFloatScratchRP) {
+            if (total <= wp->mFloatScratchRP) {
+                if (wp->mFloatScratchWP + total > wp->mFloatScratchRP) {
                     wp->mFloatScratchWP = 0;
                 }
                 wp->mbUseFloatScratch = 1;
@@ -2502,7 +2502,7 @@ void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f3
     wp->mpCurPose = pose;
     wp->mpCurAnimData = animData;
     wp->mpCurPoseData = poseData;
-    useScratch = (s32)wp->mbUseFloatScratch;
+    useScratch = wp->mbUseFloatScratch;
     if (useScratch) {
         DCFlushRange(wp->vtxArrayPos, animPoseGetBaseData(pose)->mBufferPosNum * 12);
         DCFlushRange(wp->vtxArrayNrm, animPoseGetBaseData(pose)->mBufferNrmNum * 12);
@@ -2647,8 +2647,8 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
             wp->mpTexDatas[0] = texData0;
             wp->mpTexDatas[1] = texData1;
             wp->mpCurTexData = NULL;
-            wp->field_0xD8 = 1;
-            wp->field_0xDC = 1;
+            wp->useTexAlpha[0] = 1;
+            wp->useTexAlpha[1] = 1;
         }
 
         paperPose->materialFlag = pose->materialFlag;
@@ -2704,15 +2704,15 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
     }
 }
 
-void animSetPaperTexObj(GXTexObj* a1, GXTexObj* a2, GXTexObj* a3, void* a4, void* a5, void* a6, s32 a7, s32 a8) {
-    wp->mpTexObjs[0] = a4 ? a1 : NULL;
-    wp->mpTexObjs[1] = a5 ? a2 : NULL;
-    wp->mpCurTexObj = a6 ? a3 : NULL;
-    wp->mpTexDatas[0] = a4;
-    wp->mpTexDatas[1] = a5;
-    wp->mpCurTexData = a6;
-    wp->field_0xD8 = a7;
-    wp->field_0xDC = a7;
+void animSetPaperTexObj(GXTexObj* texObj0, GXTexObj* texObj1, GXTexObj* curTexObj, void* texData0, void* texData1, void* curTexData, s32 useTexAlpha, s32 unused) {
+    wp->mpTexObjs[0] = texData0 ? texObj0 : NULL;
+    wp->mpTexObjs[1] = texData1 ? texObj1 : NULL;
+    wp->mpCurTexObj = curTexData ? curTexObj : NULL;
+    wp->mpTexDatas[0] = texData0;
+    wp->mpTexDatas[1] = texData1;
+    wp->mpCurTexData = curTexData;
+    wp->useTexAlpha[0] = useTexAlpha;
+    wp->useTexAlpha[1] = useTexAlpha;
 }
 
 // animPoseRelease
@@ -2859,11 +2859,6 @@ void animPaperPoseDisp(CameraId camId, void* param) {
     }
 }
 
-// AnimData's paper fields (not declared in the header's truncated AnimData).
-#define ANIMDATA_F44(d) ((d)->field_0x44)
-#define ANIMDATA_F48(d) ((d)->field_0x48)
-#define ANIMDATA_F50(d) ((d)->field_0x50)
-#define ANIMDATA_F54(d) ((d)->field_0x54)
 // AnimationPose fields the header keeps as opaque padding.
 
 extern GXColor dat_80419a34;
@@ -2908,14 +2903,14 @@ void animPaperPoseDispSub(s32 unused, void* param) {
     data = animPoseGetBaseData(pose);
     animData = data->mpAnims[pose->animId].data;
 
-    f31 *= 25.74f / (ANIMDATA_F54(animData) - ANIMDATA_F48(animData));
+    f31 *= 25.74f / (animData->bboxMax.y - animData->bboxMin.y);
     f30 = 0.75f * (f32)DEMOGetRenderModeObj()->efbHeight;
 
     sysWaitDrawSync();
     GXClearBoundingBox();
 
     PSMTXTrans(mtxTrans, 0.0f,
-               0.25f * -(f32)DEMOGetRenderModeObj()->efbHeight - ANIMDATA_F48(animData) * f31,
+               0.25f * -(f32)DEMOGetRenderModeObj()->efbHeight - animData->bboxMin.y * f31,
                0.0f);
 
     materialFlag = pose->materialFlag;
@@ -2955,9 +2950,9 @@ void animPaperPoseDispSub(s32 unused, void* param) {
     }
 
     if ((pose->flags & 2) && (pose->flags & 4) && gp->inBattle) {
-        x = (s32)(ANIMDATA_F44(animData) * f31 + (f32)(DEMOGetRenderModeObj()->fbWidth / 2));
-        y = (s32)(ANIMDATA_F50(animData) * f31 + (f32)(DEMOGetRenderModeObj()->fbWidth / 2));
-        y2 = (s32)(f30 - f31 * (ANIMDATA_F54(animData) - ANIMDATA_F48(animData)));
+        x = (s32)(animData->bboxMin.x * f31 + (f32)(DEMOGetRenderModeObj()->fbWidth / 2));
+        y = (s32)(animData->bboxMax.x * f31 + (f32)(DEMOGetRenderModeObj()->fbWidth / 2));
+        y2 = (s32)(f30 - f31 * (animData->bboxMax.y - animData->bboxMin.y));
         b = (s32)f30;
         if (x <= left && y >= right && y2 <= top && b >= bottom) {
             left = x;
@@ -2989,7 +2984,7 @@ void animPaperPoseDispSub(s32 unused, void* param) {
             pose->paperBottom = bottom + margin1;
             pose->paperScaleX = scale * ((f32)(pose->paperRight - pose->paperLeft) / 150.0f);
             pose->paperScaleY = scale * ((f32)(pose->paperBottom - pose->paperTop) / 215.0f);
-            pose->paperOffsetY = ANIMDATA_F48(animData) + (f30 - (f32)bottom) / f31;
+            pose->paperOffsetY = animData->bboxMin.y + (f30 - (f32)bottom) / f31;
             pose->flags &= ~4;
         }
     } else {
@@ -3006,7 +3001,7 @@ void animPaperPoseDispSub(s32 unused, void* param) {
         pose->paperBottom = bottom + btmp;
         pose->paperScaleX = scale * ((f32)(pose->paperRight - pose->paperLeft) / 150.0f);
         pose->paperScaleY = scale * ((f32)(pose->paperBottom - pose->paperTop) / 215.0f);
-        pose->paperOffsetY = ANIMDATA_F48(animData) + (f30 - (f32)bottom) / f31;
+        pose->paperOffsetY = animData->bboxMin.y + (f30 - (f32)bottom) / f31;
     }
 
     left -= 2;
@@ -3055,8 +3050,8 @@ u32 anim_ext_tex_size;
 
 extern GXColor dat_80419a3c;
 extern GXColor dat_80419a40;
-void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 f1, void* texObj, void* base,
-                                 f32 f2, s32* out0, s32* out1, s32* out2, s32* out3) {
+void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 frame, void* texObj, void* base,
+                                 f32 scale, s32* out0, s32* out1, s32* out2, s32* out3) {
     s32 i;
     s32 found;
     AnimationPose* pose;
@@ -3115,7 +3110,7 @@ void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 f1,
         // declared before `time =` so the compiler schedules the fmuls above it and the (OSTime)
         // conversion below it, as the target does; moving it after costs ~1.4%.
         AnimationPose* p2 = &wp->poses[i];
-        time = (OSTime)(16.666666f * f1);
+        time = (OSTime)(16.666666f * frame);
         p2->localTime = animTimeGetTime(p2->type) - time;
         p2->mLocalTimeInit = p2->localTime;
         if (p2->paperId != -1) {
@@ -3140,9 +3135,9 @@ void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 f1,
     pose->materialFlag = 0;
     pose->materialColor = dat_80419a3c;
     pose->materialColor2 = dat_80419a40;
-    _animPoseDrawMtx(pose, mtx, 1, 0.0f, f2);
-    _animPoseDrawMtx(pose, mtx, 2, 0.0f, f2);
-    _animPoseDrawMtx(pose, mtx, 3, 0.0f, f2);
+    _animPoseDrawMtx(pose, mtx, 1, 0.0f, scale);
+    _animPoseDrawMtx(pose, mtx, 2, 0.0f, scale);
+    _animPoseDrawMtx(pose, mtx, 3, 0.0f, scale);
     pose->materialColor = color0;
     pose->materialColor2 = color1;
     pose->flags = flags;
@@ -3467,8 +3462,8 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
     AnimationPose* prevPose;
     AnimData* prevAnimData;
     AnimationPoseData* prevPoseData;
-    u32 prevD8;
-    u32 prevDC;
+    u32 prevUseTexAlpha0;
+    u32 prevUseTexAlpha1;
 
     prevPose = wp->mpCurPose;
     prevAnimData = wp->mpCurAnimData;
@@ -3482,8 +3477,8 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
     prevPaperMtx0 = wp->paperMtxPtr[0];
     prevPaperMtx1 = wp->paperMtxPtr[1];
     prevPaperMtx2 = wp->paperMtxPtr[2];
-    prevD8 = wp->field_0xD8;
-    prevDC = wp->field_0xDC;
+    prevUseTexAlpha0 = wp->useTexAlpha[0];
+    prevUseTexAlpha1 = wp->useTexAlpha[1];
 
     wp->mpCurPose = pose;
     wp->mpCurAnimData = animPoseGetBaseData(pose)->mpAnims[pose->animId].data;
@@ -3498,8 +3493,8 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
     wp->paperMtxPtr[0] = NULL;
     wp->paperMtxPtr[1] = NULL;
     wp->paperMtxPtr[2] = NULL;
-    wp->field_0xD8 = 0;
-    wp->field_0xDC = 0;
+    wp->useTexAlpha[0] = 0;
+    wp->useTexAlpha[1] = 0;
 
     animPoseMainScratch(pose);
     renderProc(shapeId, pose->keyFrame1);
@@ -3516,8 +3511,8 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
     wp->paperMtxPtr[0] = prevPaperMtx0;
     wp->paperMtxPtr[1] = prevPaperMtx1;
     wp->paperMtxPtr[2] = prevPaperMtx2;
-    wp->field_0xD8 = prevD8;
-    wp->field_0xDC = prevDC;
+    wp->useTexAlpha[0] = prevUseTexAlpha0;
+    wp->useTexAlpha[1] = prevUseTexAlpha1;
 }
 
 s32 animPoseGetShapeIdx(s32 poseId, const char* name) {

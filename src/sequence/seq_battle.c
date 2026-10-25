@@ -337,8 +337,8 @@ BOOL battle_init(void) {
     }
 
     BattleInfomationSetBattleSetupInfo(info, &target->battleInfo);
-    info->field_0x18 = target->battleInfo.battleRules[0];
-    info->field_0x1A = target->battleInfo.battleRules[1];
+    info->ruleKind = target->battleInfo.battleRules[0];
+    info->ruleCount = target->battleInfo.battleRules[1];
     info->field_0x1B = target->battleInfo.battleRules[2];
     BattleInit(info);
     return 0;

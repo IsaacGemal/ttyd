@@ -19,7 +19,7 @@ void BtlActRec_JudgeTurnRuleKeep(void) {
     BattleWork* wp = _battleWorkPointer;
     u8* f = wp->field_16F1C;
     FieldBattleInfo* info = wp->fbatInfo;
-    u8 cond = info->field_0x18;
+    u8 cond = info->ruleKind;
 
     switch (cond) {
     case 0x3C:
@@ -70,7 +70,7 @@ void BtlActRec_JudgeRuleKeep(void) {
     mario = BattleGetMarioPtr(wp);
     party = BattleGetPartyPtr(wp);
     (void)party;
-    cond = info->field_0x18;
+    cond = info->ruleKind;
 
     switch (cond) {
     case 0x00:
@@ -256,7 +256,7 @@ void BtlActRec_JudgeRuleKeep(void) {
         info->ruleKeepResult = _check_use(WP(0x30) + WP(0x32));
         break;
     case 0x3A:
-        if (WP(0x3B) > info->field_0x1A) {
+        if (WP(0x3B) > info->ruleCount) {
             info->ruleKeepResult = 6;
         } else if (WP(0x3B) > info->field_0x1B) {
             info->ruleKeepResult = 2;
@@ -265,7 +265,7 @@ void BtlActRec_JudgeRuleKeep(void) {
         }
         break;
     case 0x3B:
-        if (WP(0x3B) <= info->field_0x1A) {
+        if (WP(0x3B) <= info->ruleCount) {
             info->ruleKeepResult = 6;
         } else if (WP(0x3B) <= info->field_0x1B) {
             info->ruleKeepResult = 2;
@@ -326,7 +326,7 @@ s32 _check_use(s32 arg) {
     BattleWork* wp = _battleWorkPointer;
     FieldBattleInfo* info = wp->fbatInfo;
 
-    if (arg >= info->field_0x1A) {
+    if (arg >= info->ruleCount) {
         return 6;
     }
     return (arg >= info->field_0x1B) + 1;
@@ -339,7 +339,7 @@ s32 _check_no_use(s32 arg) {
     if (arg >= info->field_0x1B) {
         return 1;
     }
-    return (arg >= info->field_0x1A) ? 2 : 6;
+    return (arg >= info->ruleCount) ? 2 : 6;
 }
 
 u8 _check_turn_count_0_turn(s32 flag) {
@@ -354,7 +354,7 @@ u8 _check_turn_count_0_turn(s32 flag) {
             info->ruleKeepResult = 1;
         }
     }
-    if (*turn <= info->field_0x1A || info->field_0x1A == 0xFF) {
+    if (*turn <= info->ruleCount || info->ruleCount == 0xFF) {
         if (flag == 0) {
             info->ruleKeepResult = 6;
         } else if (!(info->ruleKeepResult & 2)) {
@@ -376,7 +376,7 @@ u8 _check_turn_count_0_end(s32 flag) {
             info->ruleKeepResult = 1;
         }
     }
-    if (*turn <= info->field_0x1A || info->field_0x1A == 0xFF) {
+    if (*turn <= info->ruleCount || info->ruleCount == 0xFF) {
         if (flag == 0) {
             info->ruleKeepResult = 6;
         } else if (!(info->ruleKeepResult & 2)) {

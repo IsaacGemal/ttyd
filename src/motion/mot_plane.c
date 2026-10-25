@@ -157,15 +157,15 @@ void mot_plane(void) {
 		MarioWork* m = marioGetPtr();
 		s32 attr;
 
-		m->unk148 = 0.4f;
-		m->unk150.z = 0.01f;
+		m->camZoomWeightTarget = 0.4f;
+		m->camShiftRate.z = 0.01f;
 #ifdef MUST_MATCH
 		// Keep the store above the per-component vector copy, as in the original.
-		*(volatile f32*)&m->field_68 = 2.0f;
-		*(volatile Vec*)&m->field_6C = *(volatile Vec*)&vec3_802c5c9c;
+		*(volatile f32*)&m->camZoom = 2.0f;
+		*(volatile Vec*)&m->camZoomFocusOfs = *(volatile Vec*)&vec3_802c5c9c;
 #else
-		m->field_68 = 2.0f;
-		m->field_6C = vec3_802c5c9c;
+		m->camZoom = 2.0f;
+		m->camZoomFocusOfs = vec3_802c5c9c;
 #endif
 		marioPreJump();
 		marioChgPose("M_J_1B");
@@ -173,7 +173,7 @@ void mot_plane(void) {
 		mario->currSubMotionId = 1;
 		mario->airTimer = 0;
 		mario->baseSpeed = 0.0f;
-		mario->field_0x2A4 = 0.0f;
+		mario->planeTurnRate = 0.0f;
 		mario->wCamVal1 = mario->position.y;
 		mario->field_0x2AC = 0.0f;
 		attr = hitGetAttr(mario->hitobjJumpFrom);
@@ -189,8 +189,8 @@ void mot_plane(void) {
 		marioMakeJumpPara();
 		dir = (mario->motionPlaneData->flags & 1) ? 1.0f : -1.0f;
 		t = 30.0f * dir;
-		mario->field_0x2A4 += 0.125f * (t - mario->field_0x2A4);
-		mario->dispDir += mario->field_0x2A4;
+		mario->planeTurnRate += 0.125f * (t - mario->planeTurnRate);
+		mario->dispDir += mario->planeTurnRate;
 		wrap = 0;
 		if (mario->motionPlaneData->flags & 1) {
 			if (mario->dispDir >= 630.0f) {
@@ -229,8 +229,8 @@ void mot_plane(void) {
 		animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], 0.0f);
 		dir = (mario->motionPlaneData->flags & 1) ? 1.0f : -1.0f;
 		t = 30.0f * dir;
-		mario->field_0x2A4 += 0.125f * (t - mario->field_0x2A4);
-		mario->dispDir += mario->field_0x2A4;
+		mario->planeTurnRate += 0.125f * (t - mario->planeTurnRate);
+		mario->dispDir += mario->planeTurnRate;
 		wrap = 0;
 		if (mario->motionPlaneData->flags & 1) {
 			if (mario->dispDir >= 1260.0f) {
@@ -262,7 +262,7 @@ void mot_plane(void) {
 		marioChgPaper("PM_P_1B");
 		mario->motionPlaneData->heading = (mario->motionPlaneData->flags & 1) ? 90.0f
 		                                                               : 270.0f;
-		mario->field_0x2A4 = 0.0f;
+		mario->planeTurnRate = 0.0f;
 		mario->motionPlaneData->pitch = 0.0f;
 		mario->motionPlaneData->bank = 0.0f;
 		mario->motionPlaneData->field_0x14 = 0.0f;
@@ -281,14 +281,14 @@ void mot_plane(void) {
 		mario->baseSpeed = 1.0f;
 		mario->motionPlaneData->field_0x10 = 2.0f;
 		m = marioGetPtr();
-		m->unk148 = 0.0f;
-		m->unk150.z = 0.004f;
+		m->camZoomWeightTarget = 0.0f;
+		m->camShiftRate.z = 0.004f;
 		{
 			f32 k70 = 70.0f;
 			dir = (mario->motionPlaneData->flags & 1) ? -1.0f : 1.0f;
-			mario->unk138 = k70 * dir;
+			mario->camShiftSideTarget = k70 * dir;
 		}
-		mario->unk140 = -70.0f;
+		mario->camShiftUpTarget = -70.0f;
 		break;
 	}
 	default:
@@ -297,7 +297,7 @@ void mot_plane(void) {
 
 	// Common per-frame tail.
 	if (mario->position.y < 100.0f) {
-		mario->unk140 = __fabsf(planeData[38]);
+		mario->camShiftUpTarget = __fabsf(planeData[38]);
 	}
 	flyMain();
 	if (marioKeyOffChk() && !(mario->trigFlags & 4)) {
@@ -308,8 +308,8 @@ void mot_plane(void) {
 	if (mario->currSubMotionId == 0x14 || mario->currSubMotionId == 0x1E) {
 		MarioWork* m;
 		camFollowYOff();
-		mario->unk140 = 0.0f;
-		mario->unk138 = 0.0f;
+		mario->camShiftUpTarget = 0.0f;
+		mario->camShiftSideTarget = 0.0f;
 		marioClearJumpPara();
 		mario->baseSpeed = 0.0f;
 		m = marioGetPtr();
@@ -402,7 +402,7 @@ void mot_plane(void) {
 		planeReset();
 		mario->dispFlags &= ~0x100;
 		mario->baseSpeed = 0.0f;
-		mario->field_0x2A4 = 0.0f;
+		mario->planeTurnRate = 0.0f;
 		mario->position.y = 1.0f + mario->field_0x2AC;
 		marioPreJump();
 		mario->jumpVelY *= 0.5f;
@@ -416,8 +416,8 @@ void mot_plane(void) {
 		f32 dir;
 
 		dir = (mario->motionPlaneData->flags & 1) ? 1.0f : -1.0f;
-		mario->field_0x2A4 += 0.3f * (28.0f * dir - mario->field_0x2A4);
-		mario->dispDir = revise360(mario->dispDir + mario->field_0x2A4);
+		mario->planeTurnRate += 0.3f * (28.0f * dir - mario->planeTurnRate);
+		mario->dispDir = revise360(mario->dispDir + mario->planeTurnRate);
 		marioMakeJumpPara();
 		mario->position.y += mario->jumpVelY;
 		marioChkOverhead();
@@ -438,8 +438,8 @@ void mot_plane(void) {
 
 		if (mario->multiTimer > 0) {
 			dir = (mario->motionPlaneData->flags & 1) ? 1.0f : -1.0f;
-			mario->field_0x2A4 += 0.3f * (28.0f * dir - mario->field_0x2A4);
-			mario->dispDir = revise360(mario->dispDir + mario->field_0x2A4);
+			mario->planeTurnRate += 0.3f * (28.0f * dir - mario->planeTurnRate);
+			mario->dispDir = revise360(mario->dispDir + mario->planeTurnRate);
 			if (--mario->multiTimer <= 0) {
 				mario->dispFlags &= ~0x100;
 			}
@@ -475,8 +475,8 @@ void mot_plane(void) {
 				__memFree(HEAP_DEFAULT, mario->motStruct);
 				mario->motStruct = NULL;
 			}
-			mario->unk138 = 0.0f;
-			mario->unk140 = 0.0f;
+			mario->camShiftSideTarget = 0.0f;
+			mario->camShiftUpTarget = 0.0f;
 			marioChgMot(0);
 		}
 		break;
@@ -506,8 +506,8 @@ void mot_plane(void) {
 	case 0x48: {
 		MarioWork* m;
 
-		mario->unk140 = 0.0f;
-		mario->unk138 = 0.0f;
+		mario->camShiftUpTarget = 0.0f;
+		mario->camShiftSideTarget = 0.0f;
 		marioClearJumpPara();
 		m = marioGetPtr();
 		if (m->motStruct != NULL) {
@@ -904,8 +904,8 @@ void mot_plane_post(void) {
 		}
 	}
 	planeReset();
-	mario->unk138 = 0.0f;
-	mario->unk140 = 0.0f;
+	mario->camShiftSideTarget = 0.0f;
+	mario->camShiftUpTarget = 0.0f;
 	if (mario->motStruct != NULL) {
 		__memFree(HEAP_DEFAULT, mario->motStruct);
 		mario->motStruct = NULL;

@@ -186,7 +186,7 @@ void effNiceMain(EffectEntry* effect) {
 		switch (type) {
 		case 0:
 		case 1:
-			end = animData->clip->field_0x8;
+			end = animData->clip->end;
 			base = gp->language == 0 ? 32.0f : 34.0f;
 			time = pose->clipTime;
 			if (time > base) {
@@ -199,7 +199,7 @@ void effNiceMain(EffectEntry* effect) {
 			}
 			break;
 		case 2:
-			end2 = animData->clip->field_0x8;
+			end2 = animData->clip->end;
 			base2 = gp->language == 0 ? 35.0f : 37.0f;
 			time2 = pose->clipTime;
 			if (time2 > base2) {
@@ -212,7 +212,7 @@ void effNiceMain(EffectEntry* effect) {
 			}
 			break;
 		case 3:
-			end3 = animData->clip->field_0x8;
+			end3 = animData->clip->end;
 			base3 = gp->language == 0 ? 45.0f : 40.f;
 			time3 = pose->clipTime;
 			if (time3 > base3) {
@@ -225,7 +225,7 @@ void effNiceMain(EffectEntry* effect) {
 			}
 			break;
 		case 4:
-			end4 = animData->clip->field_0x8;
+			end4 = animData->clip->end;
 			base4 = gp->language == 0 ? 48.0f : 40.f;
 			time4 = pose->clipTime;
 			if (time4 > base4) {

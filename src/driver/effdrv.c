@@ -447,8 +447,8 @@ void effCalcMayaAnimMatrix(void* animPtr, void* trackPtr, void* matrix, f32* alp
 #ifdef MUST_MATCH
 		effMayaSetGQR5();
 #endif
-		if (anim->field_0x4 <= cur->frame) {
-			frame = anim->field_0x4;
+		if (anim->frame <= cur->frame) {
+			frame = anim->frame;
 		} else if (i == track->count - 1) {
 			frame = cur->frame;
 		} else {
@@ -504,7 +504,7 @@ void effPlayMayaAnim(void* animPtr) {
 	EffectMayaAnim* anim = animPtr;
 
 	anim->startTime = OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
-	anim->field_0x4 = 0.0f;
+	anim->frame = 0.0f;
 	anim->flags |= 1;
 }
 
@@ -519,15 +519,15 @@ void effCalcMayaAnim(void* animPtr) {
 		return;
 	}
 
-	anim->field_0x4 = (f32)(u64)(OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime) - anim->startTime) * gp->framerate / 1000.0f;
+	anim->frame = (f32)(u64)(OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime) - anim->startTime) * gp->framerate / 1000.0f;
 
-	if (anim->field_0x4 >= anim->animData->field_0x4) {
-		anim->field_0x4 = anim->animData->field_0x4;
+	if (anim->frame >= anim->animData->duration) {
+		anim->frame = anim->animData->duration;
 		anim->flags |= 2;
 	}
 
 	for (i = 0; i < anim->animData->count[0]; i++) {
-		effCalcMayaAnimMatrix(anim, (u8*)anim->animData->count[1] + i * 0x10, anim->entries[i].mtx, &anim->entries[i].field_0x30);
+		effCalcMayaAnimMatrix(anim, (u8*)anim->animData->count[1] + i * 0x10, anim->entries[i].mtx, &anim->entries[i].alpha);
 	}
 }
 

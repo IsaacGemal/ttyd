@@ -127,7 +127,7 @@ HitEntry* _hitEnt(MapFileJoint* joint, HitEntry* parent, Mtx parentMtx, s32 mapI
     hit->vectors = NULL;
 
     if (joint->drawMode != NULL) {
-        hit->attributes = joint->drawMode->unk8;
+        hit->attributes = joint->drawMode->attributes;
     } else {
         hit->attributes = 0;
     }
@@ -161,11 +161,11 @@ HitEntry* _hitEnt(MapFileJoint* joint, HitEntry* parent, Mtx parentMtx, s32 mapI
 
             if (!mesh->isPackedDisplay) {
                 for (j = 0; j < mesh->displayListCount; j++) {
-                    numVectors += *mesh->displayLists.normalLists[j] - 2;
+                    numVectors += mesh->displayLists.normalLists[j]->count - 2;
                 }
             } else {
                 for (j = 0; j < mesh->displayListCount; j++) {
-                    u8* dl = (u8*)mesh->displayLists.packedLists[j].offset;
+                    u8* dl = mesh->displayLists.packedLists[j].data;
                     dl++;
                     numVectors += *(u16*)dl - 2;
                 }
@@ -313,9 +313,9 @@ void hitMain(void) {
         for (j = 0; j < map->animCount; j++, anim++) {
             u16 animFlags = anim->flags;
             MapAnimTableEntry* list = anim->data;
-            MapAnimJointList* childList = list->field_0xC;
+            MapAnimJointList* childList = list->jointTracks;
 
-            if ((animFlags & 1) && !((animFlags & 2) && (animFlags & 0x1000)) && childList != NULL) {
+            if ((animFlags & MAPANIM_FLAG_ACTIVE) && !((animFlags & MAPANIM_FLAG_DONE) && (animFlags & MAPANIM_FLAG_HIT_UPDATED)) && childList != NULL) {
                 for (k = 0; k < childList->count; k++) {
 #ifdef MUST_MATCH
                     found = hitFindElem(childList->entries[k]);
@@ -327,7 +327,7 @@ void hitMain(void) {
                         anyScale = 1;
                         found->flags |= HIT_FLAG_ANIMATED;
                         found->flags |= HIT_FLAG_MTX_DIRTY;
-                        anim->flags |= 0x1000;
+                        anim->flags |= MAPANIM_FLAG_HIT_UPDATED;
                     }
                 }
             }
@@ -494,7 +494,7 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
             PSMTXConcat(mtx, hit->localMtx, hit->worldMtx);
         }
         if (hit->flags & HIT_FLAG_MAPOBJ) {
-            PSMTXConcat(hit->worldMtx, hit->mapObj->unkAC, hit->worldMtx);
+            PSMTXConcat(hit->worldMtx, hit->mapObj->userMtx, hit->worldMtx);
         }
         PSMTXMultVec(hit->worldMtx, &hit->centerLocal, &hit->centerWorld);
         hitCalcVtxPosition(hit);
@@ -537,7 +537,7 @@ static inline void hitSetGQR5(u32 shift) {
 // two. Retail returns numVectors in r3 without an extsh, so the function returns s32. All locals are declared
 // at the top (C89 style) and the loop counters are shared by both branches; the declaration order sets the
 // register colouring. Both branches index `&hit->vectors[numVectors]` and MWCC strength-reduces the byte
-// offsets itself (including the packed branch's per-list copy). The packed list base is the u32 `offset` field,
+// offsets itself (including the packed branch's per-list copy). The packed list base is kept as a u32 (`list`),
 // so `list + 3 + stride * k` adds the list first as retail does, and the triangle count is the raw u16 with
 // the `- 2` in the loop test.
 s32 hitCalcVtxPosition(HitEntry* hit) {
@@ -591,7 +591,7 @@ s32 hitCalcVtxPosition(HitEntry* hit) {
                     i1 = *(s16*)(base + (triIndex + 1) * 0x18 + 4);
                     i2 = *(s16*)(base + (triIndex + 2) * 0x18 + 4);
                     vector = &hit->vectors[numVectors++];
-                    vtx = (Vec*)(((u32*)mesh->vcdTableOffset)[0] + 4);
+                    vtx = (Vec*)mesh->vcdTableOffset->posArray->data;
 
                     PSMTXMultVec(hit->worldMtx, &vtx[i0], &vector->v0);
                     PSMTXMultVec(hit->worldMtx, &vtx[(s16)(!(triIndex & 1) ? i2 : i1)], &vector->v1);
@@ -614,11 +614,11 @@ s32 hitCalcVtxPosition(HitEntry* hit) {
             stride *= 2;
 
             for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
-                list = mesh->displayLists.packedLists[dlIndex].offset;
+                list = (u32)mesh->displayLists.packedLists[dlIndex].data;
                 triCount = *(u16*)(list + 1);
 
                 for (triIndex = 0; triIndex < triCount - 2; triIndex++) {
-                    pvtx = (s16*)(((u32*)mesh->vcdTableOffset)[0] + 4);
+                    pvtx = (s16*)mesh->vcdTableOffset->posArray->data;
                     pi0 = *(u16*)(list + 3 + stride * triIndex);
                     pi1 = *(u16*)(list + 3 + stride * (triIndex + 1));
                     pi2 = *(u16*)(list + 3 + stride * (triIndex + 2));

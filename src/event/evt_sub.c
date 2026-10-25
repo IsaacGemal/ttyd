@@ -69,9 +69,9 @@ void FontDrawColor(GXColor* color);
 
 typedef struct SplineWork {
 	s32 type;      // 0x0
-	s32* knots;    // 0x4
-	s32 points;    // 0x8
-	s32* tangents; // 0xC
+	f32* knots;    // 0x4
+	Vec* points;   // 0x8
+	Vec* tangents; // 0xC
 	s32 step;      // 0x10
 	s32 steps;     // 0x14
 	s32 mode;      // 0x18
@@ -245,7 +245,7 @@ USER_FUNC(evt_sub_spline_init) {
 	event->lwData[15] = (s32)work;
 	work->type = count;
 	work->knots = _mapAlloc(count * 4);
-	work->points = c;
+	work->points = (Vec*)c;
 	work->tangents = _mapAlloc(count * 0xC);
 	spline_maketable(count, work->points, work->knots, work->tangents);
 	work->timeBased = a;
@@ -272,7 +272,7 @@ USER_FUNC(evt_sub_spline_get_value) {
 		f31 = (f32)(diff / (OS_TIMER_CLOCK / 1000));
 		f1 = intplGetValue(work->mode, (s32)f31, work->endTime, 0.0f, 1.0f);
 	}
-	spline_getvalue(out, work->type, work->points, (s32)work->knots, (s32)work->tangents, f1);
+	spline_getvalue(out, work->type, work->points, work->knots, work->tangents, f1);
 	evtSetValue(event, args[0], (s32)(1024.0f * out[0]) + 0xF24A7A80);
 	evtSetValue(event, args[1], (s32)(1024.0f * out[1]) + 0xF24A7A80);
 	evtSetValue(event, args[2], (s32)(1024.0f * out[2]) + 0xF24A7A80);
@@ -309,7 +309,7 @@ USER_FUNC(evt_sub_spline_get_value_manual) {
 		t = work->steps;
 	}
 	t = frame / t;
-	spline_getvalue(out, work->type, work->points, (s32)work->knots, (s32)work->tangents, t);
+	spline_getvalue(out, work->type, work->points, work->knots, work->tangents, t);
 	evtSetValue(event, args[1], (s32)(1024.0f * out[0]) + 0xF24A7A80);
 	evtSetValue(event, args[2], (s32)(1024.0f * out[1]) + 0xF24A7A80);
 	evtSetValue(event, args[3], (s32)(1024.0f * out[2]) + 0xF24A7A80);

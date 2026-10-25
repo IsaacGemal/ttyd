@@ -62,7 +62,7 @@ void marioPreJump(void) {
     mario->hitobjJumpFrom = mario->hitobjStandOn;
     clear_hitobj_ride();
     marioSetJumpPara();
-    mario->field_0x11C = mario->position;
+    mario->jumpFromPos = mario->position;
 }
 
 f32 marioGetJumpHeight(void) {
@@ -87,8 +87,8 @@ void mot_jumpStand(void) {
         mario2->hitobjJumpFrom = mario2->hitobjStandOn;
         clear_hitobj_ride();
         marioSetJumpPara();
-        mario2->field_0x11C = mario2->position;
-        mario->field_0x2B0 = float_0_8041abb8;
+        mario2->jumpFromPos = mario2->position;
+        mario->jumpRiseY = float_0_8041abb8;
         mario->currSubMotionId = 0;
         mario->multiTimer = 0;
     }
@@ -114,13 +114,13 @@ void mot_jumpStand(void) {
                 mario->currSubMotionId = 6;
             }
             mario->position.y += mario->jumpVelY;
-            mario->field_0x2B0 += mario->jumpVelY;
+            mario->jumpRiseY += mario->jumpVelY;
             break;
         }
         case 6:
             mario->position.y += mario->jumpVelY;
-            mario->field_0x2B0 += mario->jumpVelY;
-            if (mario->field_0x2B0 >= mario->jumpHeight * marioJumpStandData[9]) {
+            mario->jumpRiseY += mario->jumpVelY;
+            if (mario->jumpRiseY >= mario->jumpHeight * marioJumpStandData[9]) {
                 mario->currSubMotionId = 8;
             }
             if (mario->jumpVelY <= float_0_8041abb8) {
@@ -144,7 +144,7 @@ void mot_jumpStand(void) {
                                  + mario->jumpVelY;
 #endif
             mario->position.y += mario->jumpVelY;
-            mario->field_0x2B0 += mario->jumpVelY;
+            mario->jumpRiseY += mario->jumpVelY;
             if (mario->jumpVelY <= float_0_8041abb8) {
                 mario->currSubMotionId = 10;
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
@@ -218,7 +218,7 @@ void mot_jumpSw(void) {
         mario2->hitobjJumpFrom = mario2->hitobjStandOn;
         clear_hitobj_ride();
         marioSetJumpPara();
-        mario2->field_0x11C = mario2->position;
+        mario2->jumpFromPos = mario2->position;
         if (!(mario->flags & 0x2000) && mario->characterId == 0) {
             marioChgPose("M_J_1B\0");
         }
@@ -330,7 +330,7 @@ void mot_jumpNpc(void) {
         mario2->hitobjJumpFrom = mario2->hitobjStandOn;
         clear_hitobj_ride();
         marioSetJumpPara();
-        mario2->field_0x11C = mario2->position;
+        mario2->jumpFromPos = mario2->position;
         if (mario->characterId == 2) {
             mario->jumpVelY = MATCH_F32(float_2p6_8041abc4);
             mario->jumpAccelY = MATCH_F32(float_neg0p06_8041abc8);
@@ -458,7 +458,7 @@ void mot_jump(void) {
         mario2->hitobjJumpFrom = mario2->hitobjStandOn;
         clear_hitobj_ride();
         marioSetJumpPara();
-        mario2->field_0x11C = mario2->position;
+        mario2->jumpFromPos = mario2->position;
         if (mario->currMotionId == 8) {
             camFollowYOn();
         } else {
@@ -529,7 +529,7 @@ void mot_jumpSmall(void) {
         mario2->hitobjJumpFrom = mario2->hitobjStandOn;
         clear_hitobj_ride();
         marioSetJumpPara();
-        mario2->field_0x11C = mario2->position;
+        mario2->jumpFromPos = mario2->position;
         if (mario->currMotionId != 8) {
             camFollowYOff();
         }
@@ -583,7 +583,7 @@ void mot_upstairs(void) {
         mario->flags |= 0x80;
         marioClearJumpPara();
         mario->multiTimer = 3;
-        mario->jumpVelY = (mario->field_0x1C4 - mario->position.y)
+        mario->jumpVelY = (mario->stepUpY - mario->position.y)
                              / (f32)mario->multiTimer;
         mario->currSubMotionId = 0;
     }
@@ -641,7 +641,7 @@ void mot_fall(void) {
 
     switch (mario->currSubMotionId) {
         case 0:
-            if (mario->position.y <= mario->field_0x11C.y) {
+            if (mario->position.y <= mario->jumpFromPos.y) {
                 if (!marioBgmodeChk()) {
                     camFollowYOn();
                 }

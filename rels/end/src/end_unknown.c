@@ -1535,7 +1535,7 @@ s32 credits_moamoa_setup(EventEntry* event, BOOL isFirstCall) {
     for (i = 0; i < 0x28; i++) {
         credits_ext_setup[0][i].name = credits_ext_npc_name;
         credits_ext_setup[0][i].animName = credits_ext_anim_name;
-        credits_ext_setup[0][i].field_0x8 = (f32)i;
+        credits_ext_setup[0][i].frame = (f32)i;
     }
     evtSetValue(event, LW(10), (s32)credits_ext_setup[0]);
 

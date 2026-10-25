@@ -322,7 +322,7 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
     }
 
     if (ret == 2) {
-        mario->field_0x3E = type;
+        mario->dokanType = type;
         marioChgMot(0x1d);
     }
     return ret;
@@ -1484,7 +1484,7 @@ USER_FUNC(evt_mario_jump_pos) {
             mario2->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING |
                                MARIO_FLAG_IS_STEPPING | MARIO_FLAG_HAS_INPUT_JUMP);
             mario2->field_0x128 = __fabsf(distABf(mario2->position.x, mario2->position.z,
-                                                          mario2->field_0x11C.x, mario2->field_0x11C.z));
+                                                          mario2->jumpFromPos.x, mario2->jumpFromPos.z));
             mario2->airTimer = 0;
             mario2->airTimerPeak = 0;
             mario2->flags &= ~MARIO_FLAG_STOP_AIR_MOVEMENT;
@@ -1656,7 +1656,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             player->hitobjStandOn = hit;
             player->position.y = outY;
             player->flags &= ~0x000F0000;
-            player->field_0x128 = __fabsf(distABf(player->position.x, player->position.z, player->field_0x11C.x, player->field_0x11C.z));
+            player->field_0x128 = __fabsf(distABf(player->position.x, player->position.z, player->jumpFromPos.x, player->jumpFromPos.z));
             player->airTimer = 0;
             player->airTimerPeak = 0;
             player->flags &= ~0x80;
@@ -1742,7 +1742,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             player->hitobjStandOn = hit;
             player->position.y = outY;
             player->flags &= ~0x000F0000;
-            player->field_0x128 = __fabsf(distABf(player->position.x, player->position.z, player->field_0x11C.x, player->field_0x11C.z));
+            player->field_0x128 = __fabsf(distABf(player->position.x, player->position.z, player->jumpFromPos.x, player->jumpFromPos.z));
             player->airTimer = 0;
             player->airTimerPeak = 0;
             player->flags &= ~0x80;
@@ -1946,7 +1946,7 @@ USER_FUNC(evt_koopa_hip_attack) {
             mario2->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING |
                               MARIO_FLAG_IS_STEPPING | MARIO_FLAG_HAS_INPUT_JUMP);
             mario2->field_0x128 = __fabsf(distABf(mario2->position.x, mario2->position.z,
-                                                  mario2->field_0x11C.x, mario2->field_0x11C.z));
+                                                  mario2->jumpFromPos.x, mario2->jumpFromPos.z));
             mario2->airTimer = 0;
             mario2->airTimerPeak = 0;
             mario2->flags &= ~MARIO_FLAG_STOP_AIR_MOVEMENT;

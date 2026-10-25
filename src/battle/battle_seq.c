@@ -745,7 +745,7 @@ void btlseqTurn(BattleWork* wp) {
 				BattleIncSeq(wp, SEQ_TURN);
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
-			} else if (wp->fbatInfo->field_0x18 == 0) {
+			} else if (wp->fbatInfo->ruleKind == 0) {
 				BattleIncSeq(wp, SEQ_TURN);
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
@@ -1868,12 +1868,12 @@ void _rule_disp(void) {
 
 	if (evtGetValue(NULL, 0xF5DE0180) < 0xAC) {
 		if (evtGetValue(NULL, 0xF5DE03C4) < 0xB) {
-			sprintf(buf, msgSearch(_rule_msg_table_1bu[info->field_0x18]), info->field_0x1A);
+			sprintf(buf, msgSearch(_rule_msg_table_1bu[info->ruleKind]), info->ruleCount);
 		} else {
-			sprintf(buf, msgSearch(_rule_msg_table_2bu[info->field_0x18]), info->field_0x1A);
+			sprintf(buf, msgSearch(_rule_msg_table_2bu[info->ruleKind]), info->ruleCount);
 		}
 	} else {
-		sprintf(buf, msgSearch(_rule_msg_table_after[info->field_0x18]), info->field_0x1A);
+		sprintf(buf, msgSearch(_rule_msg_table_after[info->ruleKind]), info->ruleCount);
 	}
 	width = FontGetMessageWidthLine(buf, &lines);
 	lines++;

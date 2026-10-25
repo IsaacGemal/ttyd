@@ -948,8 +948,8 @@ void marioLandOn(void) {
         return;
     }
     mario->field_0x2B0 =
-        fabsf(distABf(mario->position.x, mario->position.z, mario->field_0x11C.x,
-                      mario->field_0x11C.z));
+        fabsf(distABf(mario->position.x, mario->position.z, mario->jumpFromPos.x,
+                      mario->jumpFromPos.z));
     attr = hitGetAttr(mario->hitobjStandOn);
     if (mario->currMotionId != MARIO_MOTION_DAMAGE && (attr & (1 << 9))) {
         set_damage_root_ypos(mario->position.y);
@@ -1602,8 +1602,8 @@ void mot_bottomless(void) {
     case 0:
         movePos(&mario->position.x, &mario->position.z, mario->field_0x2AC,
                 mario->field_0x2B0);
-        mario->field_EC.x = mario->position.x;
-        mario->field_EC.z = mario->position.z;
+        mario->camFollowPos.x = mario->position.x;
+        mario->camFollowPos.z = mario->position.z;
         if (--mario->multiTimer <= 0) {
             mario->currSubMotionId = 2;
             mario->flags |= MARIO_FLAG_STOP_AIR_MOVEMENT;

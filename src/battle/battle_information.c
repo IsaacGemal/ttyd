@@ -24,9 +24,9 @@ void BattleInformationInit(FieldBattleInfo* info) {
 	BattleInformationSetResult(info, 0);
 	info->setup = NULL;
 	info->storeCoin = 0;
-	info->field_0x18 = 0;
+	info->ruleKind = 0;
 	info->ruleKeepResult = 0;
-	info->field_0x1A = 0;
+	info->ruleCount = 0;
 	info->field_0x1B = 0;
 }
 
@@ -140,9 +140,9 @@ void BattleInformationSetDropMaterial(FieldBattleInfo* info) {
 	}
 
 	{
-		s32 heldItemChance = group->field_0x8;
-		s32 dropTableChance = group->field_0xC;
-		s32 noDropChance = group->field_0x10;
+		s32 heldItemChance = group->heldItemWeight;
+		s32 dropTableChance = group->dropTableWeight;
+		s32 noDropChance = group->noDropWeight;
 		s32 band = 0;
 		s32 badge;
 

@@ -1032,7 +1032,7 @@ static inline Vec marioCoinPos(f32 x, f32 y, f32 z) {
 
 // The blur history update is inlined in the original, and every copy re-reads mp.
 static inline void marioUpdateBlurPos(void) {
-	if ((mp->field_0x34 & 1) && (mp->dispFlags & 0x08000000)) {
+	if ((mp->frameCount & 1) && (mp->dispFlags & 0x08000000)) {
 		Vec* p = &blurPos[blurPosId];
 
 		*p = mp->position;
@@ -1108,7 +1108,7 @@ void marioMain(void) {
 			itemCoinDrop(&pos);
 		}
 	}
-	if (wp->unk5E > 0 && --wp->unk5E <= 0) {
+	if (wp->camZoomOffTimer > 0 && --wp->camZoomOffTimer <= 0) {
 		wp->dispFlags &= ~0x100000;
 	}
 
@@ -1130,7 +1130,7 @@ void marioMain(void) {
 			p->riderDelta.x = 0.0f;
 			p->riderDelta.y = 0.0f;
 			p->riderDelta.z = 0.0f;
-			p->field_0x34 += 1;
+			p->frameCount += 1;
 		}
 		return;
 	}
@@ -1159,7 +1159,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				p->field_0x34 += 1;
+				p->frameCount += 1;
 			}
 			return;
 		}
@@ -1190,7 +1190,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				p->field_0x34 += 1;
+				p->frameCount += 1;
 			}
 			return;
 		}
@@ -1213,7 +1213,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				p->field_0x34 += 1;
+				p->frameCount += 1;
 			}
 			return;
 		}
@@ -1236,7 +1236,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				p->field_0x34 += 1;
+				p->frameCount += 1;
 			}
 			return;
 		}
@@ -1259,7 +1259,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				p->field_0x34 += 1;
+				p->frameCount += 1;
 			}
 			return;
 		}
@@ -1270,7 +1270,7 @@ void marioMain(void) {
 			mario_kemuri_80130474();
 			partyMain();
 			marioCamMain();
-			if ((wp->field_0x34 & 1) && (mp->dispFlags & 0x08000000)) {
+			if ((wp->frameCount & 1) && (mp->dispFlags & 0x08000000)) {
 				Vec* p = &blurPos[blurPosId];
 
 				*p = mp->position;
@@ -1290,7 +1290,7 @@ void marioMain(void) {
 				p->riderDelta.x = 0.0f;
 				p->riderDelta.y = 0.0f;
 				p->riderDelta.z = 0.0f;
-				p->field_0x34 += 1;
+				p->frameCount += 1;
 			}
 			return;
 		}
@@ -1364,7 +1364,7 @@ void marioMain(void) {
 	mario_kemuri_80130474();
 	partyMain();
 	marioCamMain();
-	if ((wp->field_0x34 & 1) && (mp->dispFlags & 0x08000000)) {
+	if ((wp->frameCount & 1) && (mp->dispFlags & 0x08000000)) {
 		Vec* p = &blurPos[blurPosId];
 
 		*p = mp->position;
@@ -1384,7 +1384,7 @@ void marioMain(void) {
 		p->riderDelta.x = 0.0f;
 		p->riderDelta.y = 0.0f;
 		p->riderDelta.z = 0.0f;
-		p->field_0x34 += 1;
+		p->frameCount += 1;
 	}
 }
 

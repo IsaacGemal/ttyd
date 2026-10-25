@@ -1121,7 +1121,7 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
         break;
     case 1:
         PSMTXRotRad(mtx, 'Y', -1.5707964f);
-        PSMTXConcat(mtx, wp->field_0x78, mtx);
+        PSMTXConcat(mtx, wp->modelViewMtx, mtx);
         PSMTXInvXpose(mtx, mtx);
         PSVECNormalize((Vec*)&mtx[0], (Vec*)&mtx[0]);
         PSVECNormalize((Vec*)&mtx[1], (Vec*)&mtx[1]);
@@ -1157,9 +1157,9 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
         tmp = (f32)cos(angX);
         vecB.z = -(f32)cos(angY) * tmp;
 #endif
-        PSMTXMultVecSR(wp->field_0x70, &vecB, &vecB);
+        PSMTXMultVecSR(wp->viewMtx, &vecB, &vecB);
         C_VECHalfAngle(&vecB, &vecA, &vecC);
-        PSMTXInvXpose(wp->field_0x78, mtx);
+        PSMTXInvXpose(wp->modelViewMtx, mtx);
         PSVECNormalize((Vec*)&mtx[0], (Vec*)&mtx[0]);
         PSVECNormalize((Vec*)&mtx[1], (Vec*)&mtx[1]);
         PSVECNormalize((Vec*)&mtx[2], (Vec*)&mtx[2]);
@@ -1185,7 +1185,7 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
         vecD.x = (f32)cos(angY) * (f32)sin(angX);
         vecD.y = (f32)sin(angY);
         vecD.z = (f32)cos(angY) * (f32)cos(angX);
-        PSMTXMultVecSR(wp->field_0x70, &vecD, &vecD);
+        PSMTXMultVecSR(wp->viewMtx, &vecD, &vecD);
         tmp = PSVECDotProduct(&vecD, &vecG);
         if (tmp == -1.0f) {
             PSMTXScale(mtx, 0.0f, 0.0f, 0.0f);
@@ -1195,7 +1195,7 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
             vecE.x = -vecE.x;
             vecE.y = -vecE.y;
             vecE.z = -vecE.z;
-            PSMTXInvXpose(wp->field_0x78, invC);
+            PSMTXInvXpose(wp->modelViewMtx, invC);
             PSVECNormalize((Vec*)&invC[0], (Vec*)&invC[0]);
             PSVECNormalize((Vec*)&invC[1], (Vec*)&invC[1]);
             PSVECNormalize((Vec*)&invC[2], (Vec*)&invC[2]);
@@ -1216,7 +1216,7 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
         break;
     }
     case 4:
-        PSMTXInvXpose(wp->field_0x78, mtx);
+        PSMTXInvXpose(wp->modelViewMtx, mtx);
         PSVECNormalize((Vec*)&mtx[0], (Vec*)&mtx[0]);
         PSVECNormalize((Vec*)&mtx[1], (Vec*)&mtx[1]);
         PSVECNormalize((Vec*)&mtx[2], (Vec*)&mtx[2]);
@@ -1239,7 +1239,7 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
         vecJ = data->vec58;
         C_MTXLookAt(lookE, &vecH, &vecJ, &vecI);
         C_MTXLightFrustum(frustumE, -32.0f, 32.0f, -32.0f, 32.0f, 300.0f, 0.5f, 0.5f, 0.5f, 0.5f);
-        PSMTXInverse(wp->field_0x70, invE);
+        PSMTXInverse(wp->viewMtx, invE);
         PSMTXConcat(lookE, invE, concatE);
         PSMTXConcat(frustumE, concatE, mtx);
         GXLoadTexMtxImm(mtx, texMtx2, mtxType);
@@ -1318,10 +1318,10 @@ void envAddTev(s32 type, void* param) {
     GXColor kColor;
 
     if (type != 0) {
-        PSMTXConcat(camGetCurPtr()->view, yami->unk4, mtx);
-        wp->field_0x70 = camGetCurPtr()->view;
-        wp->field_0x74 = yami->unk4;
-        wp->field_0x78 = mtx;
+        PSMTXConcat(camGetCurPtr()->view, yami->mtx, mtx);
+        wp->viewMtx = camGetCurPtr()->view;
+        wp->modelMtx = yami->mtx;
+        wp->modelViewMtx = mtx;
         GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
         GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -1564,7 +1564,7 @@ void envSetWater(s32 arg0, void* arg1) {
     GXInitTexObj(&captureObj, capture, (u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GXInitTexObjLOD(&captureObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 
-    PSMTXMultVec(yami->unk4, &yami->unk0->center, &pos);
+    PSMTXMultVec(yami->mtx, &yami->unk0->center, &pos);
     scale = 1000.0f / PSVECDistance(&camGetCurPtr()->cameraPos, &pos);
     if (scale < 0.0f) {
         scale = 0.0f;
@@ -1606,7 +1606,7 @@ void envSetWater(s32 arg0, void* arg1) {
         (f32)gp->efbHeight / 2.0f / fovTan,
         0.5f, 0.5f, 0.5f, 0.5f);
     PSMTXConcat(mtx, camGetCurPtr()->view, mtx);
-    PSMTXConcat(mtx, yami->unk4, mtx);
+    PSMTXConcat(mtx, yami->mtx, mtx);
 
     GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
     GXLoadTexMtxImm(mtx, dat_802f9338.tbl[texMap], GX_MTX3x4);
@@ -1677,13 +1677,13 @@ void envSetYami(EnvironmentYami* yami) {
 
     C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u1, 0.5f);
     PSMTXConcat(mtx, wp->yamiView, mtx);
-    PSMTXConcat(mtx, yami->unk4, mtx);
+    PSMTXConcat(mtx, yami->mtx, mtx);
     GXLoadTexMtxImm(mtx, dat_802f9338.tbl[texMap], GX_MTX3x4);
     GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 
     C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u2, 0.5f);
     PSMTXConcat(mtx, wp->yamiView, mtx);
-    PSMTXConcat(mtx, yami->unk4, mtx);
+    PSMTXConcat(mtx, yami->mtx, mtx);
     GXLoadTexMtxImm(mtx, dat_802f9338.tbl[texMap + 1], GX_MTX3x4);
     GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, dat_802f9338.tbl[texMap + 1], GX_FALSE, GX_PTIDENTITY);
 

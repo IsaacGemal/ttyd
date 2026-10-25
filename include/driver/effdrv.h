@@ -32,19 +32,19 @@ typedef struct EffectWork {
 
 typedef struct EffectMayaAnimEntry {
     f32 mtx[3][4];  // 0x0
-    f32 field_0x30; // 0x30
+    f32 alpha;      // 0x30, effCalcMayaAnimMatrix's alpha output, clamped to 0..1
 } EffectMayaAnimEntry;
 
 typedef struct EffectMayaAnimData {
     u32 field_0x0; // 0x0
-    f32 field_0x4; // 0x4
+    f32 duration;  // 0x4, frames; effCalcMayaAnim clamps the frame to it and sets flag 2
     s32* count;    // 0x8
 } EffectMayaAnimData;
 
 typedef struct EffectMayaAnim {
     u16 flags;                      // 0x0
     u8 field_0x2[0x2];              // 0x2
-    f32 field_0x4;                  // 0x4
+    f32 frame;                      // 0x4, (now - startTime) in frames (effCalcMayaAnim), zeroed by effPlayMayaAnim
     OSTime startTime;               // 0x8
     EffectMayaAnimData* animData;   // 0x10
     EffectMayaAnimEntry entries[];  // 0x14

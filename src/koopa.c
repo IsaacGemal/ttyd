@@ -25,12 +25,6 @@
 // locals for symbols with no home header
 extern f32 marioJumpData[];
 
-#define MW_U8(m, off)  (*(u8*)((u8*)(m) + (off)))
-#define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
-#define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
-#define MW_S32(m, off) (*(s32*)((u8*)(m) + (off)))
-#define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
-
 u32 kpaPauseSeTable[28] = {
     0x10C, 0x10D, 0x10E, 0x10F, 0x111, 0x112, 0x113, 0x114,
     0x116, 0x117, 0x118, 0x119, 0x11B, 0x11E, 0x11F, 0x120,
@@ -111,7 +105,7 @@ static inline void kpaFireBreath(MarioWork* mp, Vec* pos) {
     {
         MarioWork* mp2 = marioGetPtr();
         f32 py = pos->y;
-        f32 off = (((MW_S32(mp2, 0x14) & 1) ^ 1) == 1) ? 6.0f : 0.0f;
+        f32 off = (((mp2->kpaStageFlags & 1) ^ 1) == 1) ? 6.0f : 0.0f;
         y = py + (20.0f * scale + off);
     }
     z = pos->z;
@@ -169,7 +163,7 @@ static inline void kpaFireBreath2(MarioWork* mp, Vec* pos) {
     {
         MarioWork* mp2 = marioGetPtr();
         f32 py = pos->y;
-        f32 off = (((MW_S32(mp2, 0x14) & 1) ^ 1) == 1) ? 6.0f : 0.0f;
+        f32 off = (((mp2->kpaStageFlags & 1) ^ 1) == 1) ? 6.0f : 0.0f;
         y = py + (20.0f * scale + off);
     }
     z = pos->z;
@@ -237,7 +231,7 @@ void kpaMSetMutekiTimer(void) {
 }
 
 void kpaChgPose(const char* a, const char* b) {
-    marioChgPose((((MW_S32(marioGetPtr(), 0x14) & 1) ^ 1) == 1) ? a : b);
+    marioChgPose((((marioGetPtr()->kpaStageFlags & 1) ^ 1) == 1) ? a : b);
 }
 
 s32 kpaGetLevel(void) {
@@ -290,16 +284,16 @@ s32 kpaGetBodyStatus(void) {
 }
 
 s32 kpaGetStageType(void) {
-    return (marioGetPtr()->field_0x14 >> 1) & 1;
+    return (marioGetPtr()->kpaStageFlags >> 1) & 1;
 }
 
 s32 kpaGetStageViewType(void) {
-    return !(marioGetPtr()->field_0x14 & 1);
+    return !(marioGetPtr()->kpaStageFlags & 1);
 }
 
 s32 kpaCamFollow(void) {
     MarioWork* mp = marioGetPtr();
-    if (marioBgmodeChk() == 1 || ((MW_S32(marioGetPtr(), 0x14) & 1) ^ 1) == 1) {
+    if (marioBgmodeChk() == 1 || ((marioGetPtr()->kpaStageFlags & 1) ^ 1) == 1) {
         return 0;
     }
     if (mp->position.y > 76.0f) {
@@ -331,21 +325,21 @@ void kpaPreInit(void) {
         || strcmp(gp->currentMapName, "kpa_04") == 0
         || strcmp(gp->currentMapName, "kpa_05") == 0
         || strcmp(gp->currentMapName, "kpa_06") == 0) {
-        mp->field_0x14 |= 1;
+        mp->kpaStageFlags |= 1;
     } else {
-        mp->field_0x14 &= ~1;
+        mp->kpaStageFlags &= ~1;
     }
     mp = marioGetPtr();
     if (strcmp(gp->currentMapName, "kpa_03") == 0) {
-        mp->field_0x14 |= 2;
+        mp->kpaStageFlags |= 2;
     } else {
-        mp->field_0x14 &= ~2;
+        mp->kpaStageFlags &= ~2;
     }
     fireefp = NULL;
 }
 
 void kpaMain(void) {
-    if (marioGetPtr()->field_0x14 & 1) {
+    if (marioGetPtr()->kpaStageFlags & 1) {
         kpa2DMain();
     } else {
         kpa3DMain();
@@ -395,7 +389,7 @@ void kpa2DMain(void) {
         marioPreDisp();
         mario_kemuri_80130474();
         marioCamMain();
-        mp->field_0x34++;
+        mp->frameCount++;
         return;
     }
     pos = mp->position;
@@ -456,7 +450,7 @@ void kpa2DMain(void) {
     marioBalloonMain();
     mario_kemuri_80130474();
     marioCamMain();
-    mp->field_0x34++;
+    mp->frameCount++;
     prevPos = &mp->prevPosition;
     *prevPos = mp->position;
     mp->riderDelta.x = 0.0f;
@@ -483,7 +477,7 @@ void kpa3DMain(void) {
         mp->currMotionId == MARIO_MOTION_DAMAGE_TOGE) {
         marioPreDisp();
         marioBottomless();
-        mp->field_0x34++;
+        mp->frameCount++;
         partyMain();
         marioCamMain();
         mp->hitobjHead = NULL;
@@ -518,7 +512,7 @@ void kpa3DMain(void) {
         mario_kemuri_80130474();
         partyMain();
         marioCamMain();
-        mp->field_0x34++;
+        mp->frameCount++;
         return;
     }
     if (mp->flags & 0x40000) {
@@ -556,7 +550,7 @@ void kpa3DMain(void) {
     mario_kemuri_80130474();
     partyMain();
     marioCamMain();
-    mp->field_0x34++;
+    mp->frameCount++;
     prevPos = &mp->prevPosition;
     *prevPos = mp->position;
     mp->riderDelta.x = 0.0f;
@@ -1017,7 +1011,7 @@ void kpaFireMain(void) {
         // form pulls both after the branch.
         mp2 = marioGetPtr();
         py = mp->position.y;
-        off = (((MW_S32(mp2, 0x14) & 1) ^ 1) == 1) ? 6.0f : 0.0f;
+        off = (((mp2->kpaStageFlags & 1) ^ 1) == 1) ? 6.0f : 0.0f;
         y = py + (20.0f * scale + off);
         z = mp->position.z;
         ((KpaFireNode*)fireefp->userdata)->pos.x = x;
