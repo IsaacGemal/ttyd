@@ -1016,7 +1016,7 @@ void marioReInit(void) {
 		pouchGetItem(ITEM_HAMMER);
 	}
 
-	wp->field_0xE0 = (Vec){0.0f, -10000.0f, 0.0f};
+	wp->fallReturnPos = (Vec){0.0f, -10000.0f, 0.0f};
 }
 
 // The original builds the coin position in an inlined struct return, so the

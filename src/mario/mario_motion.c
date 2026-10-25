@@ -1564,7 +1564,7 @@ void mot_bottomless(void) {
         mario->baseSpeed = 0.0f;
         mario->airTimer = 0;
         mario->currSubMotionId = 0;
-        if (mario->field_0xE0.y < -2000.0f) {
+        if (mario->fallReturnPos.y < -2000.0f) {
             if (strcmp(gp->currentMapName, "win_03") == 0) {
                 f31 = 250.0f;
                 landY = 13.0f;
@@ -1579,9 +1579,9 @@ void mot_bottomless(void) {
                 f29 = mario->position.z;
             }
         } else {
-            f31 = mario->field_0xE0.x;
-            landY = mario->field_0xE0.y;
-            f29 = mario->field_0xE0.z;
+            f31 = mario->fallReturnPos.x;
+            landY = mario->fallReturnPos.y;
+            f29 = mario->fallReturnPos.z;
         }
         pos = (Vec){ f31, 300.0f + landY, f29 };
         vec2 = pos;

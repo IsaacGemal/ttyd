@@ -14,12 +14,6 @@
 #include <string.h>
 #include <stdio.h>
 
-// event->unk184/unk18C form a Vec not declared in evtmgr.h.
-typedef struct EventVec {
-    u8 pad_0x0[0x184];
-    Vec vec;                          // 0x184
-} EventVec;
-
 // .rodata
 
 // .bss
@@ -154,11 +148,11 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
             break;
         case 2:
             window->dispFlags = 7;
-            window->anchor = ((EventVec*)event)->vec;
+            window->anchor = event->msgAnchor;
             break;
         case 3:
             window->dispFlags = 2;
-            window->anchor = ((EventVec*)event)->vec;
+            window->anchor = event->msgAnchor;
             break;
         }
 
@@ -396,9 +390,9 @@ USER_FUNC(evt_msg_toge) {
 
     event->printWindowFlags &= 0xE1000000;
     event->printWindowFlags |= value;
-    event->unk184.field_0x0 = evtGetFloat(event, *args++);
-    event->unk184.field_0x4 = evtGetFloat(event, *args++);
-    *(f32*)&event->unk18C = evtGetFloat(event, *args++);
+    event->msgAnchor.x = evtGetFloat(event, *args++);
+    event->msgAnchor.y = evtGetFloat(event, *args++);
+    event->msgAnchor.z = evtGetFloat(event, *args++);
     return EVT_RETURN_DONE;
 }
 

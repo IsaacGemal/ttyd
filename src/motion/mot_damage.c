@@ -146,7 +146,7 @@ void mot_damage(void) {
 		}
 		mario->multiTimer = 0;
 		mario->currSubMotionId = 0xA;
-		mario->field_0x2AC = 20.0f;
+		mario->damageVelY = 20.0f;
 		break;
 	case 0xA:
 		if ((++mario->multiTimer) == 2) {
@@ -161,13 +161,13 @@ void mot_damage(void) {
 		{
 			f32 oldY = mario->position.y;
 
-			spd = mario->field_0x2AC;
+			spd = mario->damageVelY;
 			mario->position.y = oldY + spd;
 			spd -= 1.0f;
 			if (spd < 10.0f) {
 				spd = 10.0f;
 			}
-			mario->field_0x2AC = spd;
+			mario->damageVelY = spd;
 			if (mario->position.y >= mario->damageRootY && mario->damageRootY > oldY) {
 				Vec splashPos = mario->position;
 
@@ -204,9 +204,9 @@ void mot_damage(void) {
 		if (mario->flags & MARIO_FLAG_BG_MODE) {
 			Vec bgTmp = (Vec){ 0.0f, 0.0f, 0.0f };
 
-			bgTmp.x = mario->field_0xE0.x;
-			bgTmp.y = mario->field_0xE0.y;
-			bgTmp.z = mario->field_0xE0.z;
+			bgTmp.x = mario->fallReturnPos.x;
+			bgTmp.y = mario->fallReturnPos.y;
+			bgTmp.z = mario->fallReturnPos.z;
 			target = bgTmp;
 		}
 		spd = target.z;
@@ -362,7 +362,7 @@ void mot_damageToge(void) {
 		mario->baseSpeed = 0.0f;
 		mario->damageRootY = mario->position.y;
 		mario->multiTimer = 5;
-		mario->field_0x2AC = 4.0f;
+		mario->damageVelY = 4.0f;
 	}
 
 	switch (mario->currSubMotionId) {
@@ -380,13 +380,13 @@ void mot_damageToge(void) {
 		mario->currSubMotionId = 0xB;
 		// fallthrough
 	case 0xB:
-		spd = mario->field_0x2AC;
+		spd = mario->damageVelY;
 		mario->position.y = mario->position.y + spd;
 		spd -= 1.0f;
 		if (spd < 10.0f) {
 			spd = 10.0f;
 		}
-		mario->field_0x2AC = spd;
+		mario->damageVelY = spd;
 		if (mario->position.y < mario->damageRootY + 500.0f) {
 			break;
 		}

@@ -292,7 +292,7 @@ void mot_dokan(void) {
         }
         break;
     case 0x67:
-        mario->field_0xE0 = mario->position;
+        mario->fallReturnPos = mario->position;
         mario->scale = (Vec){ 1.0f, 1.0f, 1.0f };
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;
@@ -347,7 +347,7 @@ void mot_dokan(void) {
         }
         break;
     case 0x71:
-        mario->field_0xE0 = mario->position;
+        mario->fallReturnPos = mario->position;
         mario->scale = (Vec){ 1.0f, 1.0f, 1.0f };
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;

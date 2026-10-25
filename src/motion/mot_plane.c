@@ -82,7 +82,7 @@ s32 mario_plane_cancel(void) {
 	}
 	if (mario->currSubMotionId >= 0xC && mario->currSubMotionId < 0x14) {
 		mario->currSubMotionId = 0x32;
-		mario->field_0x2AC = mario->position.y;
+		mario->planeEndY = mario->position.y;
 		return 1;
 	}
 	return 0;
@@ -175,7 +175,7 @@ void mot_plane(void) {
 		mario->baseSpeed = 0.0f;
 		mario->planeTurnRate = 0.0f;
 		mario->wCamVal1 = mario->position.y;
-		mario->field_0x2AC = 0.0f;
+		mario->planeEndY = 0.0f;
 		attr = hitGetAttr(mario->hitobjJumpFrom);
 		mario->motionPlaneData->flags = (attr >> 4) & 1;
 		psndSFXOn_3D((char*)0x17d, &mario->position);
@@ -265,8 +265,8 @@ void mot_plane(void) {
 		mario->planeTurnRate = 0.0f;
 		mario->motionPlaneData->pitch = 0.0f;
 		mario->motionPlaneData->bank = 0.0f;
-		mario->motionPlaneData->field_0x14 = 0.0f;
-		mario->motionPlaneData->field_0x10 = 0.0f;
+		mario->motionPlaneData->pitchSpeed = 0.0f;
+		mario->motionPlaneData->speedAccel = 0.0f;
 		if (mario->motionPlaneData->flags & 1) {
 			mario->dispPivot.x = planeData[33];
 			mario->dispOfs.x = planeData[34];
@@ -279,7 +279,7 @@ void mot_plane(void) {
 		mario->baseSpeed = __fabsf(0.02f * (f32)mario->wStickDir1);
 		mario->currSubMotionId = 0xC;
 		mario->baseSpeed = 1.0f;
-		mario->motionPlaneData->field_0x10 = 2.0f;
+		mario->motionPlaneData->speedAccel = 2.0f;
 		m = marioGetPtr();
 		m->camZoomWeightTarget = 0.0f;
 		m->camShiftRate.z = 0.004f;
@@ -348,7 +348,7 @@ void mot_plane(void) {
 		if (--mario->multiTimer <= 0) {
 			planeReset();
 			marioChgPose("M_J_1C");
-			mario->position.y = 1.0f + (mario->field_0x2AC - 37.0f);
+			mario->position.y = 1.0f + (mario->planeEndY - 37.0f);
 			mario->baseSpeed = 0.0f;
 			marioSetFallPara();
 			mario->jumpVelY = 0.0f;
@@ -403,7 +403,7 @@ void mot_plane(void) {
 		mario->dispFlags &= ~0x100;
 		mario->baseSpeed = 0.0f;
 		mario->planeTurnRate = 0.0f;
-		mario->position.y = 1.0f + mario->field_0x2AC;
+		mario->position.y = 1.0f + mario->planeEndY;
 		marioPreJump();
 		mario->jumpVelY *= 0.5f;
 		marioChgPose("M_J_1B");
@@ -498,7 +498,7 @@ void mot_plane(void) {
 	case 0x47:
 		marioMakeJumpPara();
 		mario->position.y += mario->jumpVelY;
-		if (mario->position.y >= mario->field_0x2AC - 100.0f) {
+		if (mario->position.y >= mario->planeEndY - 100.0f) {
 			break;
 		}
 		mario->currSubMotionId = 0x48;
@@ -568,12 +568,12 @@ static void flyMain(void) {
 	}
 	if (mario->buttonNew & 0x100) {
 		mario->currSubMotionId = 0x33;
-		mario->field_0x2AC = mario->position.y;
+		mario->planeEndY = mario->position.y;
 		return;
 	}
 	if (mario->buttonNew & 0x200) {
 		mario->currSubMotionId = 0x33;
-		mario->field_0x2AC = mario->position.y;
+		mario->planeEndY = mario->position.y;
 		return;
 	}
 	mario->motionPlaneData->heading = revise360(mario->motionPlaneData->bank * planeData[14] + mario->motionPlaneData->heading);
@@ -646,8 +646,8 @@ static void flyMain(void) {
 				}
 			}
 		} else {
-			if (mario->motionPlaneData->pitch <= 0.0f || mario->motionPlaneData->field_0x14 <= 0.0f) {
-				if (mario->motionPlaneData->field_0x14 > 0.0f && mario->motionPlaneData->field_0x14 < 1.0f) {
+			if (mario->motionPlaneData->pitch <= 0.0f || mario->motionPlaneData->pitchSpeed <= 0.0f) {
+				if (mario->motionPlaneData->pitchSpeed > 0.0f && mario->motionPlaneData->pitchSpeed < 1.0f) {
 					mario->motionPlaneData->pitch = MATCH_F32(mario->motionPlaneData->pitch) + planeData[30];
 				}
 				{
@@ -681,7 +681,7 @@ static void flyMain(void) {
 				mario->motionPlaneData->pitch = planeData[4];
 			}
 			if (mario->motionPlaneData->pitch >= 6.0f) {
-				mario->motionPlaneData->field_0x14 = 0.0f;
+				mario->motionPlaneData->pitchSpeed = 0.0f;
 			}
 		}
 	}
@@ -713,12 +713,12 @@ static void flyMain(void) {
 					s = sin(3.1415927f * mario->motionPlaneData->pitch / 180.0f);
 					a = planeData[21] * s;
 					f31 = f31 * a;
-					f31 = f31 + mario->motionPlaneData->field_0x14;
-					mario->motionPlaneData->field_0x14 = f31;
+					f31 = f31 + mario->motionPlaneData->pitchSpeed;
+					mario->motionPlaneData->pitchSpeed = f31;
 				} else {
-					mario->motionPlaneData->field_0x14 = planeData[22];
+					mario->motionPlaneData->pitchSpeed = planeData[22];
 				}
-				mario->motionPlaneData->pitch = mario->motionPlaneData->pitch + mario->motionPlaneData->field_0x14;
+				mario->motionPlaneData->pitch = mario->motionPlaneData->pitch + mario->motionPlaneData->pitchSpeed;
 				if (f31 <= 0.0f) {
 					if (mario->baseSpeed <= planeData[0] * planeData[23]) {
 						f31 = planeData[0] - mario->baseSpeed * planeData[24];
@@ -750,13 +750,13 @@ static void flyMain(void) {
 					f32 s = sin(3.1415927f * (planeData[0] - mario->baseSpeed) / 180.0f);
 
 					add = planeData[18] * s;
-					mario->motionPlaneData->field_0x18 = mario->motionPlaneData->field_0x18 + add;
-					if (mario->motionPlaneData->field_0x18 <= planeData[19]) {
-						mario->motionPlaneData->field_0x18 = planeData[19];
+					mario->motionPlaneData->velY = mario->motionPlaneData->velY + add;
+					if (mario->motionPlaneData->velY <= planeData[19]) {
+						mario->motionPlaneData->velY = planeData[19];
 					}
 				} else {
-					add = 0.1f * -mario->motionPlaneData->field_0x18 + mario->motionPlaneData->field_0x18;
-					mario->motionPlaneData->field_0x18 = add;
+					add = 0.1f * -mario->motionPlaneData->velY + mario->motionPlaneData->velY;
+					mario->motionPlaneData->velY = add;
 				}
 				mario->motionPlaneData->pitch = mario->motionPlaneData->pitch + add;
 			}
@@ -767,8 +767,8 @@ static void flyMain(void) {
 			{
 				f32 s = sin(3.1415927f * (planeData[9] * __fabsf(mario->motionPlaneData->pitch)) / 180.0f);
 
-				mario->motionPlaneData->field_0x10 = planeData[10] * s;
-				mario->baseSpeed = mario->baseSpeed + mario->motionPlaneData->field_0x10;
+				mario->motionPlaneData->speedAccel = planeData[10] * s;
+				mario->baseSpeed = mario->baseSpeed + mario->motionPlaneData->speedAccel;
 			}
 			f3 = 0.0f;
 			if (mario->motionPlaneData->pitch > 0.0f) {
@@ -782,16 +782,16 @@ static void flyMain(void) {
 				f31 = sin(3.1415927f * (planeData[12] * f3) / 180.0f);
 				y = sin(3.1415927f * (mario->baseSpeed * planeData[11]) / 180.0f);
 				x = planeData[13] * (y * f31);
-				mario->motionPlaneData->field_0x14 = mario->motionPlaneData->field_0x14 + x;
+				mario->motionPlaneData->pitchSpeed = mario->motionPlaneData->pitchSpeed + x;
 			}
 			if ((s8)(mario->wStickDir1 & 0xff) != 0) {
 				if (mario->motionPlaneData->flags & 1) {
-					if (mario->wStickDir1 > 0 && mario->motionPlaneData->field_0x14 >= 1.0f) {
-						mario->motionPlaneData->field_0x14 = 1.0f;
+					if (mario->wStickDir1 > 0 && mario->motionPlaneData->pitchSpeed >= 1.0f) {
+						mario->motionPlaneData->pitchSpeed = 1.0f;
 					}
 				} else {
-					if (mario->wStickDir1 < 0 && mario->motionPlaneData->field_0x14 >= 1.0f) {
-						mario->motionPlaneData->field_0x14 = 1.0f;
+					if (mario->wStickDir1 < 0 && mario->motionPlaneData->pitchSpeed >= 1.0f) {
+						mario->motionPlaneData->pitchSpeed = 1.0f;
 					}
 				}
 				onPlace = 0;
@@ -812,21 +812,21 @@ static void flyMain(void) {
 				onPlace = 1;
 			}
 			if (onPlace != 0) {
-				mario->motionPlaneData->field_0x24 = -22.0f;
+				mario->motionPlaneData->pitchMin = -22.0f;
 			} else {
-				mario->motionPlaneData->field_0x24 += 0.1f * (planeData[4] - mario->motionPlaneData->field_0x24);
+				mario->motionPlaneData->pitchMin += 0.1f * (planeData[4] - mario->motionPlaneData->pitchMin);
 			}
-			mario->motionPlaneData->pitch = mario->motionPlaneData->pitch + mario->motionPlaneData->field_0x14;
-			if (mario->motionPlaneData->pitch <= mario->motionPlaneData->field_0x24) {
-				mario->motionPlaneData->pitch = mario->motionPlaneData->field_0x24;
+			mario->motionPlaneData->pitch = mario->motionPlaneData->pitch + mario->motionPlaneData->pitchSpeed;
+			if (mario->motionPlaneData->pitch <= mario->motionPlaneData->pitchMin) {
+				mario->motionPlaneData->pitch = mario->motionPlaneData->pitchMin;
 			}
-			mario->motionPlaneData->field_0x18 = 0.1f * -mario->motionPlaneData->field_0x18 + mario->motionPlaneData->field_0x18;
+			mario->motionPlaneData->velY = 0.1f * -mario->motionPlaneData->velY + mario->motionPlaneData->velY;
 		}
 	}
 	if (mario->baseSpeed >= planeData[0]) {
 		mario->baseSpeed = planeData[0];
 	}
-	mario->position.y = mario->position.y + mario->motionPlaneData->field_0x18;
+	mario->position.y = mario->position.y + mario->motionPlaneData->velY;
 	mario->position.y = mario->position.y - planeData[29];
 	mario->dispRot.z = revise360(-mario->motionPlaneData->pitch);
 	{
@@ -848,7 +848,7 @@ static void flyMain(void) {
 
 				mario->motionPlaneData->stallTimer = c;
 				if (c >= frames) {
-					mario->field_0x2AC = mario->position.y;
+					mario->planeEndY = mario->position.y;
 					mario->currSubMotionId = 0x3C;
 					return;
 				}
@@ -859,7 +859,7 @@ static void flyMain(void) {
 
 				mario->motionPlaneData->stallTimer = c;
 				if (c >= frames) {
-					mario->field_0x2AC = mario->position.y;
+					mario->planeEndY = mario->position.y;
 					mario->currSubMotionId = 0x3C;
 					return;
 				}
@@ -869,7 +869,7 @@ static void flyMain(void) {
 		mario->motionPlaneData->stallTimer = 0;
 	}
 	mario->hitobjUnder = marioSearchUnder();
-	if (chkCollision(&mario->field_0x2AC) != 0) {
+	if (chkCollision(&mario->planeEndY) != 0) {
 		if (mario->hitobjHead != NULL) {
 			mario->currSubMotionId = 0x28;
 			return;
@@ -925,7 +925,7 @@ s32 chkCollision(f32* out) {
 	s32 flag = 0;
 	MarioWork* mario = marioGetPtr();
 	Vec dir;
-	Vec normal;
+	Vec hitPos;
 	Vec v3C;
 	Vec v30;
 	f32 sinC, cosC;
@@ -968,7 +968,7 @@ s32 chkCollision(f32* out) {
 		v3C.y = t8;
 		v3C.z = t14;
 	}
-	mario->motionPlaneData->field_0x3C = v3C;
+	mario->motionPlaneData->hitFrontPos = v3C;
 
 	sincosf(&sinR, &cosR, mario->motionPlaneData->bank);
 	sincosf(&sinA, &cosA, mario->motionPlaneData->pitch);
@@ -991,15 +991,15 @@ s32 chkCollision(f32* out) {
 		v30.y = vy;
 		vz = vz + (planeData[39] * (cosA * cosC) - planeData[39] * (sinR * sinC));
 		v30.z = vz;
-		mario->motionPlaneData->field_0x30 = v30;
+		mario->motionPlaneData->hitRearPos = v30;
 	}
 
 	ten = 10.0f;
 	{
 		MotionPlaneData* d = mario->motionPlaneData;
-		f32 a0 = d->field_0x30.x - ten * sinC;
-		f32 a2 = d->field_0x30.z - ten * cosC;
-		f32 a1 = d->field_0x30.y;
+		f32 a0 = d->hitRearPos.x - ten * sinC;
+		f32 a2 = d->hitRearPos.z - ten * cosC;
+		f32 a1 = d->hitRearPos.y;
 		dist = ten + mario->baseSpeed;
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
 		                    a0, a1, a2, sinC, 0.0f, cosC);
@@ -1011,9 +1011,9 @@ s32 chkCollision(f32* out) {
 	}
 
 	{
-		f32 a0 = mario->motionPlaneData->field_0x3C.x;
-		f32 a1 = mario->motionPlaneData->field_0x3C.y;
-		f32 a2 = mario->motionPlaneData->field_0x3C.z;
+		f32 a0 = mario->motionPlaneData->hitFrontPos.x;
+		f32 a1 = mario->motionPlaneData->hitFrontPos.y;
+		f32 a2 = mario->motionPlaneData->hitFrontPos.z;
 		dist = mario->baseSpeed;
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
 		                    a0, a1, a2, sinC, 0.0f, cosC);
@@ -1025,9 +1025,9 @@ s32 chkCollision(f32* out) {
 	}
 
 	{
-		f32 a0 = mario->motionPlaneData->field_0x30.x;
-		f32 a1 = mario->motionPlaneData->field_0x30.y;
-		f32 a2 = mario->motionPlaneData->field_0x30.z;
+		f32 a0 = mario->motionPlaneData->hitRearPos.x;
+		f32 a1 = mario->motionPlaneData->hitRearPos.y;
+		f32 a2 = mario->motionPlaneData->hitRearPos.z;
 		mario->hitobjStandOn = NULL;
 		dist = 10.1f;
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
@@ -1041,9 +1041,9 @@ s32 chkCollision(f32* out) {
 
 	if (flag == 0) {
 		{
-			f32 a0 = mario->motionPlaneData->field_0x3C.x;
-			f32 a1 = mario->motionPlaneData->field_0x3C.y;
-			f32 a2 = mario->motionPlaneData->field_0x3C.z;
+			f32 a0 = mario->motionPlaneData->hitFrontPos.x;
+			f32 a1 = mario->motionPlaneData->hitFrontPos.y;
+			f32 a2 = mario->motionPlaneData->hitFrontPos.z;
 			mario->hitobjStandOn = NULL;
 			dist = 10.1f;
 			hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
@@ -1057,23 +1057,23 @@ s32 chkCollision(f32* out) {
 	}
 
 	if (flag == 0) {
-		PSVECSubtract(&mario->motionPlaneData->field_0x3C, &mario->motionPlaneData->field_0x30, &dir);
+		PSVECSubtract(&mario->motionPlaneData->hitFrontPos, &mario->motionPlaneData->hitRearPos, &dir);
 		dist = PSVECMag(&dir);
 		PSVECNormalize(&dir, &dir);
-		hit = marioHitCheckVec(&mario->motionPlaneData->field_0x30, &dir, &normal, NULL, &dist);
+		hit = marioHitCheckVec(&mario->motionPlaneData->hitRearPos, &dir, &hitPos, NULL, &dist);
 		if (hit != NULL) {
 			mario->hitobjStandOn = hit;
 			flag = 1;
-			*out = normal.y;
+			*out = hitPos.y;
 		}
 	}
 
 	mario->hitobjHead = NULL;
 	if (mario->hitobjStandOn == NULL) {
 		{
-			f32 a0 = mario->motionPlaneData->field_0x30.x;
-			f32 a1 = mario->motionPlaneData->field_0x30.y;
-			f32 a2 = mario->motionPlaneData->field_0x30.z;
+			f32 a0 = mario->motionPlaneData->hitRearPos.x;
+			f32 a1 = mario->motionPlaneData->hitRearPos.y;
+			f32 a2 = mario->motionPlaneData->hitRearPos.z;
 			dist = 2.0f;
 			hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
 			                    a0, a1, a2, 0.0f, 1.0f, 0.0f);

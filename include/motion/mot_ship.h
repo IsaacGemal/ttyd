@@ -13,7 +13,7 @@ s32 marioChkShipPlace(HitEntry* hit);
 s32 N_marioShipGetDir(void);
 void marioShipForceStop(void);
 s32 marioChkSwirlPower(void);
-void marioSetSwirlPower(s32 msec, f32 a, f32 b);
+void marioSetSwirlPower(s32 msec, f32 speed, f32 dir);
 void marioShipSetDispDir(void);
 s32 marioChkShipMoveMode(void);
 void marioShipChgFall(void);

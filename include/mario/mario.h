@@ -128,7 +128,7 @@ struct KpaWork;
 typedef struct MarioWork {
     u32 flags;                     // 0x0
     s32 dispFlags;                 // 0x4
-    u32 field_0x8;                 // 0x8
+    u32 field_0x8;                 // 0x8, mot_roll: 0x10 while a roll runs, 0 when it ends; evt_mario waits for 0 after marioRollCancel
     u32 trigFlags;                 // 0xC
     s32 peachFlags;                // 0x10, PeachFlags (peach.c, mario.c)
     s32 kpaStageFlags;             // 0x14, koopa stage bits from kpaPreInit's map: 1 the 2D stages kpa_02..06 (kpaMain runs
@@ -167,7 +167,7 @@ typedef struct MarioWork {
     s16 airTimerPeak;              // 0x52, airTimer when the jump peaks (marioJump, koopa_motion), cleared on landing; marioBoots and marioChkHipAttack test it
     s16 airTimerPrev;              // 0x54, airTimer copied at the end of the frame (mario.c, read by mario_kemuri)
     u8 field_0x56[0x58 - 0x56];    // 0x56
-    s16 field_0x58;                // 0x58
+    s16 lowHpPoseTimer;            // 0x58, mot_stay: frames into the M_S_3 pose it picks at HP <= 5 (wraps past 0xF0); sounds 0xE1 at 15, 0xE2 at 135
     s16 stayTimer;                 // 0x5A, mot_stay: frames standing (cleared on entry); after a second the idle poses are chosen
     s16 camZoomOffDelay;           // 0x5C, frames until marioCamZoomOff ends the zoom (marioCamZoomOffReq sets 32)
     s16 camZoomOffTimer;           // 0x5E, frames of the zoom-out evt_cam3d_evt_off runs; dispFlags 0x100000 clears at 0 (marioMain)
@@ -189,14 +189,17 @@ typedef struct MarioWork {
     Vec dispRot;                   // 0xBC, display rotation in degrees (x, z); y is not read: the y rotation comes from dispDir - targetYaw
     Vec scale;                     // 0xC8
     Vec lastGroundPos;             // 0xD4, position copied whenever airTimer is 0 (mot_jump, mot_roll)
-    Vec field_0xE0;                // 0xE0, bgTmp source in mot_damage
+    Vec fallReturnPos;             // 0xE0, where a fall puts Mario back: mot_bottomless's landing point (y < -2000, as marioReInit's
+                                   //       -10000, means none: a per-map fallback) and mot_damage's return target in bg mode;
+                                   //       mot_dokan stores position here at the end of each pipe exit
     Vec camFollowPos;              // 0xEC, the point the 3D camera follows: camdrv copies x/z into marioPos and eases y at camFollowRate
     Vec camCollision;              // 0xF8, marioUpdateCamCollision
     u8 unk104[0x110 - 0x104];      // 0x104
     Vec prevPosition;              // 0x110, copy of position taken each frame (mario.c, peach.c); party_vivian reads its y
     Vec jumpFromPos;               // 0x11C, position at takeoff (mot_jump, mot_stay, mot_jabara, mot_roll): landings compare y with it,
                                    //       evt_mario and mot_ship measure the jump distance from it, mario_hit clamps to its y
-    f32 field_0x128;               // 0x128, distance from field_0x11C at landing (evt_mario)
+    f32 field_0x128;               // 0x128, x/z distance from jumpFromPos at landing (evt_mario, mot_ship; no reader); party_yoshi
+                                   //        instead sums its rise here and checks it against 0.7 * marioGetJumpHeight()
     f32 peakYpos;                  // 0x12C, marioSetPeakYpos
     f32 rollScaleY;                // 0x130, Y scale of the roll squash/stretch state machine (mot_roll, mario.c PSMTXScale)
     CameraId camId;                // 0x134
@@ -217,7 +220,8 @@ typedef struct MarioWork {
 	f32 baseSpeed;                 // 0x180, same on US
     f32 mBaseWalkSpeed;            // 0x184
     f32 mBaseDashSpeed;            // 0x188, same on US
-    f32 field_0x18C;               // 0x18C
+    f32 field_0x18C;               // 0x18C, a move speed stored by marioMove and the plane, ship, yoshi and koopa motions (mot_plane: baseSpeed);
+                                   //        itemdrv clears it; no reader
 	f32 controlStickSensitivity;   // 0x190
 	f32 controlStickAngle;         // 0x194
     f32 targetYaw;                 // 0x198
@@ -298,6 +302,8 @@ typedef struct MarioWork {
     union {
         f32 spinSpeed;             // 0x2A0, added to dispDir each frame (mario_motion spin, mot_hip, evt_mario)
         f32 damageRootY;           // 0x2A0, surface height of the damage floor fallen into: splash height, start of the return arc (set_damage_root_ypos, mot_damage)
+        s32 hammerHitFrame;        // 0x2A0, mot_hammer: frame the swing lands on, from hitEstimate's type (7 counts as 3): the pose time
+                                   //        stops there and the impact (quake event) runs when multiTimer reaches it; 10 without flag 0x800
         struct {
             u16 kpaPoseCounter;    // 0x2A0, koopa_motion: frame counter, wraps past 0x50; half of it is the pose time
             u16 field_0x2A2;       // 0x2A2, koopa_motion: cleared beside kpaPoseCounter
@@ -320,7 +326,11 @@ typedef struct MarioWork {
         s32 hammerSwingType;       // 0x2A8, mot_hammer: swing type stored at the start, switched on at impact for the effect offset
     };
     union {
-        f32 field_0x2AC;           // 0x2AC, f32 in mot_plane, mot_damage, mot_slit and mot_bottomless (s32 0 in mot_roll/mot_jabara resets)
+        f32 field_0x2AC;           // 0x2AC, f32 in mot_bottomless (movePos speed; s32 0 in mot_roll/mot_jabara resets)
+        f32 planeEndY;             // 0x2AC, mot_plane: y the flight ended at (chkCollision's hit y, or position.y on a cancel or stall);
+                                   //        the exit puts position.y 1 above it, 37 lower after a head hit
+        f32 damageVelY;            // 0x2AC, mot_damage: per-frame rise added to position.y out of the damage floor (20, or 4 in
+                                   //        mot_damageToge; 1 less each frame, at least 10)
         f32 slitPrevY;             // 0x2AC, mot_slit: position.y at the last slit state 10 frame (a change calls slitResetBounce)
     };
     union {
@@ -335,6 +345,7 @@ typedef struct MarioWork {
         s32 sleepTimer;            // 0x2B4, mot_stay and peach_stay: frames asleep (cleared when the sleep pose starts, capped at
                                    //        sysMsec2Frame(10000)); marioChkDeepSleep tests the cap; f32 in party_yoshi
         f32 jabaraAccel;           // 0x2B4, mot_jabara: step added to jabaraSpeed each frame
+        f32 field_0x2B4;           // 0x2B4, mot_jump: x of the map object jumped from (its z goes to field_0x2B8), never read back; party_yoshi reads an f32 here raw
         s16 hammer2Flags;          // 0x2B4, mot_hammer2: flag word (0x1, 0x10, 0x1000, 0x2000), cleared on entry
         struct {
             s16 slitTurnTimer;     // 0x2B4, mot_slit: set to 6 when a turn starts, counts down in state 0x15
@@ -342,12 +353,12 @@ typedef struct MarioWork {
         };
     };
     union {
-        f32 field_0x2B8;           // 0x2B8
+        f32 field_0x2B8;           // 0x2B8, mot_jump: z of the map object jumped from; mario.c rotates the yoshi motion's display by it about z
         f32 jumpHeight;            // 0x2B8, marioGetJumpHeight/marioChgJumpStandMotion (jump stand)
         s32 stayAHoldTimer;        // 0x2B8, mot_stay: frames A has been held (0 when released); from 10 the stick no longer walks
         s32 motionSfxId2;          // 0x2B8, sound handle in mot_hammer (-1 when none)
         struct {
-            s16 jabaraTimer;       // 0x2B8, mot_jabara: frames left in the rising swing (swingMain adds unk4 each frame, then unk8 at 0)
+            s16 jabaraTimer;       // 0x2B8, mot_jabara: frames left in the rising swing (swingMain adds swingAccel each frame, then swingDecel at 0)
             s8 jabaraState;        // 0x2BA, mot_jabara: swingMain's state switch (0 idle, up to 15)
             s8 jabaraAnimTime;     // 0x2BB, mot_jabara: local time passed to animPoseSetLocalTime for the paper animation
         };

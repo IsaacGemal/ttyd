@@ -37,9 +37,6 @@ extern const f32 float_0p04_8041abf4;
 extern const f32 float_neg1_8041abf8;
 #pragma pool_data on // the original addresses its .rodata through one base register
 
-// Raw accessor for MarioWork 0x2B4, which mot_jump reads as an f32 (the s32 frame counter there is mot_stay's).
-#define MWF32(m, off) (*(f32*)((u8*)(m) + (off)))
-
 // The "M_J_1B" pose name is written with an explicit trailing NUL at its uses so the pooled
 // literal has the original object's 8 bytes (six characters and two NULs).
 
@@ -226,7 +223,7 @@ void mot_jumpSw(void) {
             if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
                 MapObjectEntry* obj = mobjHitObjPtrToPtr(mario->hitobjJumpFrom);
 
-                MWF32(mario, 0x2B4) = obj->position.x;
+                mario->field_0x2B4 = obj->position.x;
                 mario->field_0x2B8 = obj->position.z;
                 if (marioChkFront(&dist,
                                   (Vec){ obj->position.x, obj->position.y + float_0p5_8041abe0 * mario->wPlayerCollisionBox.y,
@@ -354,7 +351,7 @@ void mot_jumpNpc(void) {
                 f32 z;
                 f32 dist;
 
-                MWF32(mario, 0x2B4) = obj->position.x;
+                mario->field_0x2B4 = obj->position.x;
                 mario->field_0x2B8 = obj->position.z;
                 if (marioChkFront(&dist,
                                   (Vec){ obj->position.x, obj->position.y + MATCH_F32(float_0p5_8041abe0) * mario->wPlayerCollisionBox.y,

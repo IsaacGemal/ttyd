@@ -103,7 +103,7 @@ void mot_stay(void) {
                     if (low && marioChkKey()) {
                         mario->dispFlags |= 4;
                         marioChgPose("M_S_3");
-                        mario->field_0x58 = 0;
+                        mario->lowHpPoseTimer = 0;
                     } else if (strcmp(mario->animName, "M_I_Y") != 0) {
                         marioChgPose(str_8041AEF0);
                     }
@@ -143,7 +143,7 @@ void mot_stay(void) {
 
             if (low) {
                 if (strcmp(mario->animName, "M_S_3") != 0) {
-                    mario->field_0x58 = 0;
+                    mario->lowHpPoseTimer = 0;
                 }
                 mario->dispFlags |= 4;
                 marioChgPose("M_S_3");
@@ -161,14 +161,14 @@ void mot_stay(void) {
     if (strcmp(mario->animName, "M_S_3") == 0 && marioChkKey()) {
         MarioWork* m = marioGetPtr();
 
-        m->field_0x58++;
-        if (m->field_0x58 > 0xF0) {
-            m->field_0x58 = 0;
+        m->lowHpPoseTimer++;
+        if (m->lowHpPoseTimer > 0xF0) {
+            m->lowHpPoseTimer = 0;
         }
-        if (m->field_0x58 == 0xF) {
+        if (m->lowHpPoseTimer == 0xF) {
             m->sfxIds[0] = psndSFXOn_3D((const char*)0xE1, &m->position);
         }
-        if (m->field_0x58 == 0x87) {
+        if (m->lowHpPoseTimer == 0x87) {
             m->sfxIds[0] = psndSFXOn_3D((const char*)0xE2, &m->position);
         }
     }
