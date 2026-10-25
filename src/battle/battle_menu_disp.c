@@ -74,24 +74,6 @@ extern BattleWeapon ItemWeaponData_CookingItem;
 
 // In .rodata: `const` makes MWCC emit lis/addi instead of @sda21 loads.
 
-// Stack scratch block shared by the battle-menu draw workers. The original
-// build keeps these arrays in one contiguous frame region; listing them as
-// separate locals lets MWCC reorder them, so they are grouped here.
-typedef struct BattleMenuDispScratch {
-    f32 out0x10;    // 0x0
-    f32 out0x14;    // 0x4
-    Vec pos;        // 0x8
-    u16 arr24[7];   // 0x14
-    s32 arr34[7];   // 0x24
-    s32 arr50[7];   // 0x40
-    const char* arr6C[7]; // 0x5C
-    s32 arr88[7];   // 0x78
-    f32 scales[5];  // 0x94
-    Vec centers[5]; // 0xA8
-    Mtx mats[5];    // 0xE4
-    Mtx rot[7];     // 0x1D4
-} BattleMenuDispScratch;
-
 typedef struct MainIconCircleTable {
     f32 v[4][8];
 } MainIconCircleTable;
@@ -380,7 +362,7 @@ void DrawMainIconCircle(BattleMenuWork* window, BattleCommandAction* entry, Mtx*
     }
 }
 
-void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, const char** c, s32* d, s32* e, BattleCommandParty* table, s32 flag) {
+void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* enabled, u16* icons, const char** names, s32* fpCosts, s32* spCosts, BattleCommandParty* table, s32 flag) {
     BattleWork* wp = _battleWorkPointer;
     BattleCursor* cursor;
     Mtx mtx;
@@ -398,7 +380,7 @@ void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, const cha
             if (window->slotFlags[i] & 1) {
                 PSMTXTrans(mtx, 100.0f, 35.0f - 24.0f * (f32)i + f31, float_0_8041c144);
                 PSMTXConcat(mtx, mtxBase[i], result[i]);
-                DrawSubIconSub(window, i, result[i], a[i], b[i], c[i], d[i], e[i], table, flag);
+                DrawSubIconSub(window, i, result[i], enabled[i], icons[i], names[i], fpCosts[i], spCosts[i], table, flag);
             }
         }
     }
@@ -415,7 +397,7 @@ static inline void SubIconDrawColor(GXColor c) {
     FontDrawColor(c);
 }
 
-void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, const char* c, s32 d, s32 e, BattleCommandParty* table,
+void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 enabled, u16 iconId, const char* name, s32 fpCost, s32 spCost, BattleCommandParty* table,
                     s32 flag) {
     BattleWork* wp = _battleWorkPointer;
     BattleCursor* cursor = window->cursor;
@@ -424,14 +406,14 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, co
     Mtx mtxScale;
     Mtx mtxTrans;
     Mtx mtxOut;
-    s32 digitsD[3];
-    s32 posD[3];
-    s32 digitsE[3];
-    s32 posE[3];
+    s32 digitsFp[3];
+    s32 posFp[3];
+    s32 digitsSp[3];
+    s32 posSp[3];
     s32 digitsH[3];
     s32 posH[3];
-    char textD[2];
-    char textE[2];
+    char textFp[2];
+    char textSp[2];
     char textH[2];
     f32 frac;
     s32 alpha;
@@ -470,7 +452,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, co
     GXLoadTexObj(&texObj, GX_TEXMAP0);
 #ifdef MUST_MATCH
     // btlDispGXQuads2D's header declares its alpha as u8, but the original passes a 32-bit value
-    // with no truncation; casting `a` to s32 restores that ABI.
+    // with no truncation; casting its alpha to s32 restores that ABI.
     ((void (*)(f32, f32, f32, f32, u8, u8, u8, s32))btlDispGXQuads2D)(
         (-152.0f), 24.0f, (-136.0f), float_0_8041c144, cr, cg, cb, ca);
     ((void (*)(f32, f32, f32, f32, u8, u8, u8, s32))btlDispGXQuads2D)(
@@ -494,30 +476,30 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, co
     PSMTXScale(mtxScale, 0.5f, 0.5f, 1.0f);
     PSMTXConcat(mtx, mtxTrans, mtxOut);
     PSMTXConcat(mtxOut, mtxScale, mtxOut);
-    if (b == 0) {
-        b = 0x18B;
+    if (iconId == 0) {
+        iconId = 0x18B;
     }
-    if (a == 1) {
+    if (enabled == 1) {
 #ifdef MUST_MATCH
-        // iconDispGxCol's header declares iconId as s32, but the original passes the u16 `b` with no
+        // iconDispGxCol's header declares iconId as s32, but the original passes the u16 `iconId` with no
         // zero-extension; casting iconId to u16 restores that.
-        ((void (*)(Mtx, s16, u16, GXColor))iconDispGxCol)(mtxOut, 0x10, b,
+        ((void (*)(Mtx, s16, u16, GXColor))iconDispGxCol)(mtxOut, 0x10, iconId,
                                                           SubIconFontColor(((GXColor){ 0xFF,0xFF,0xFF,0x00 }), alpha));
 #else
-        iconDispGxCol(mtxOut, 0x10, b, SubIconFontColor(((GXColor){ 0xFF,0xFF,0xFF,0x00 }), alpha));
+        iconDispGxCol(mtxOut, 0x10, iconId, SubIconFontColor(((GXColor){ 0xFF,0xFF,0xFF,0x00 }), alpha));
 #endif
     } else {
 #ifdef MUST_MATCH
-        ((void (*)(Mtx, s16, u16, GXColor))iconDispGxCol)(mtxOut, 0x30, b,
+        ((void (*)(Mtx, s16, u16, GXColor))iconDispGxCol)(mtxOut, 0x30, iconId,
                                                           SubIconFontColor(((GXColor){ 0xFF,0xFF,0xFF,0x00 }), alpha));
 #else
-        iconDispGxCol(mtxOut, 0x30, b, SubIconFontColor(((GXColor){ 0xFF,0xFF,0xFF,0x00 }), alpha));
+        iconDispGxCol(mtxOut, 0x30, iconId, SubIconFontColor(((GXColor){ 0xFF,0xFF,0xFF,0x00 }), alpha));
 #endif
     }
     FontDrawStart();
     {
         GXColor color;
-        if (a == 1) {
+        if (enabled == 1) {
             color = SubIconFontColor(((GXColor){ 0x00, 0x00, 0x00, 0x00 }), alpha);
         } else {
             color = SubIconFontColor(((GXColor){ 0x40, 0x40, 0x40, 0x00 }), alpha);
@@ -527,8 +509,8 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, co
     PSMTXTrans(mtxTrans, (-104.0f), 22.0f, float_0_8041c144);
     if (flag == 1) {
         f32 scale;
-        if (FontGetMessageWidth(c) > 0x96) {
-            scale = 120.0f / (f32)FontGetMessageWidth(c);
+        if (FontGetMessageWidth(name) > 0x96) {
+            scale = 120.0f / (f32)FontGetMessageWidth(name);
         } else {
             scale = 0.8f;
         }
@@ -538,44 +520,44 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, co
     }
     PSMTXConcat(mtx, mtxTrans, mtxOut);
     PSMTXConcat(mtxOut, mtxScale, mtxOut);
-    FontDrawStringMtx(mtxOut, c);
+    FontDrawStringMtx(mtxOut, name);
 
-    if (d != 0) {
-        s32 h = d / 100;
+    if (fpCost != 0) {
+        s32 h = fpCost / 100;
         s32 t;
         s32 o;
         s32 rem;
-        rem = d - h * 100;
+        rem = fpCost - h * 100;
         t = rem / 10;
         o = rem - t * 10;
-        digitsD[0] = o;
-        digitsD[1] = t;
-        digitsD[2] = h;
+        digitsFp[0] = o;
+        digitsFp[1] = t;
+        digitsFp[2] = h;
         if (h > 0) {
-            posD[0] = 0x1C;
-            posD[1] = 0x0E;
-            posD[2] = 0;
+            posFp[0] = 0x1C;
+            posFp[1] = 0x0E;
+            posFp[2] = 0;
             count = 3;
         } else if (t > 0) {
-            posD[0] = 0x15;
-            posD[1] = 0x07;
-            posD[2] = 0;
+            posFp[0] = 0x15;
+            posFp[1] = 0x07;
+            posFp[2] = 0;
             count = 2;
         } else {
-            posD[0] = 0x0E;
-            posD[1] = 0;
-            posD[2] = 0;
+            posFp[0] = 0x0E;
+            posFp[1] = 0;
+            posFp[2] = 0;
             count = 1;
         }
         PSMTXScale(mtxScale, 1.0f, 1.0f, 1.0f);
         for (i = 0; i < count; i++) {
-            textD[0] = (char)(digitsD[i] + 0x30);
-            textD[1] = 0;
-            PSMTXTrans(mtxTrans, 4.0f + (72.0f + (f32)posD[i]), 25.0f,
+            textFp[0] = (char)(digitsFp[i] + 0x30);
+            textFp[1] = 0;
+            PSMTXTrans(mtxTrans, 4.0f + (72.0f + (f32)posFp[i]), 25.0f,
                        float_0_8041c144);
             PSMTXConcat(mtx, mtxTrans, mtxOut);
             PSMTXConcat(mtxOut, mtxScale, mtxOut);
-            FontDrawStringMtx(mtxOut, textD);
+            FontDrawStringMtx(mtxOut, textFp);
         }
         PSMTXTrans(mtxTrans, 120.0f, 22.0f, float_0_8041c144);
         PSMTXScale(mtxScale, 0.8f, 0.8f, 0.8f);
@@ -584,42 +566,42 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, co
         FontDrawStringMtx(mtxOut, msgSearch("btl_cost_disp_FP"));
     }
 
-    if (e != 0) {
-        s32 h = e / 100;
+    if (spCost != 0) {
+        s32 h = spCost / 100;
         s32 t;
         s32 o;
         s32 rem;
-        rem = e - h * 100;
+        rem = spCost - h * 100;
         t = rem / 10;
         o = rem - t * 10;
-        digitsE[0] = o;
-        digitsE[1] = t;
-        digitsE[2] = h;
+        digitsSp[0] = o;
+        digitsSp[1] = t;
+        digitsSp[2] = h;
         if (h > 0) {
-            posE[0] = 0x1C;
-            posE[1] = 0x0E;
-            posE[2] = 0;
+            posSp[0] = 0x1C;
+            posSp[1] = 0x0E;
+            posSp[2] = 0;
             count = 3;
         } else if (t > 0) {
-            posE[0] = 0x15;
-            posE[1] = 0x07;
-            posE[2] = 0;
+            posSp[0] = 0x15;
+            posSp[1] = 0x07;
+            posSp[2] = 0;
             count = 2;
         } else {
-            posE[0] = 0x0E;
-            posE[1] = 0;
-            posE[2] = 0;
+            posSp[0] = 0x0E;
+            posSp[1] = 0;
+            posSp[2] = 0;
             count = 1;
         }
         PSMTXScale(mtxScale, 1.0f, 1.0f, 1.0f);
         for (i = 0; i < count; i++) {
-            textE[0] = (char)(digitsE[i] + 0x30);
-            textE[1] = 0;
-            PSMTXTrans(mtxTrans, 4.0f + (72.0f + (f32)posE[i]), 25.0f,
+            textSp[0] = (char)(digitsSp[i] + 0x30);
+            textSp[1] = 0;
+            PSMTXTrans(mtxTrans, 4.0f + (72.0f + (f32)posSp[i]), 25.0f,
                        float_0_8041c144);
             PSMTXConcat(mtx, mtxTrans, mtxOut);
             PSMTXConcat(mtxOut, mtxScale, mtxOut);
-            FontDrawStringMtx(mtxOut, textE);
+            FontDrawStringMtx(mtxOut, textSp);
         }
         PSMTXTrans(mtxTrans, 120.0f, 22.0f, float_0_8041c144);
         PSMTXScale(mtxScale, 0.8f, 0.8f, 0.8f);
@@ -1642,12 +1624,12 @@ void DrawWeaponWin(void) {
     BattleWeapon* sel;
     f32 outX;
     f32 outY;
-    u16 arr24[7];
+    u16 icons[7];
     f32 scales[5];
-    s32 arr88[7];
-    const char* arr6C[7];
-    s32 arr50[7];
-    s32 arr34[7];
+    s32 enabled[7];
+    const char* names[7];
+    s32 fpCosts[7];
+    s32 spCosts[7];
     Vec centers[5];
     Mtx mats[5];
     Mtx rot[7];
@@ -1660,23 +1642,23 @@ void DrawWeaponWin(void) {
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->num) {
-            arr88[i] = window->weaponEntries[idx].mEnabled;
-            arr24[i] = cmd->weaponTable[idx].mIcon;
-            arr6C[i] = window->weaponEntries[idx].mName;
+            enabled[i] = window->weaponEntries[idx].mEnabled;
+            icons[i] = cmd->weaponTable[idx].mIcon;
+            names[i] = window->weaponEntries[idx].mName;
             if (window->weaponEntries[idx].mWeaponParams != 0) {
-                arr50[i] = BtlUnit_GetWeaponCost(unit, window->weaponEntries[idx].mWeaponParams);
+                fpCosts[i] = BtlUnit_GetWeaponCost(unit, window->weaponEntries[idx].mWeaponParams);
             } else {
-                arr50[i] = 0;
+                fpCosts[i] = 0;
             }
             if (window->weaponEntries[idx].mWeaponParams != 0) {
-                arr34[i] = window->weaponEntries[idx].mWeaponParams->baseSpCost;
+                spCosts[i] = window->weaponEntries[idx].mWeaponParams->baseSpCost;
             } else {
-                arr34[i] = 0;
+                spCosts[i] = 0;
             }
         }
     }
     DrawMainIcon(window, wp->commandMenu.actionTable, mats, centers, scales);
-    DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
+    DrawSubIcon(window, rot, enabled, icons, names, fpCosts, spCosts, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (sel != 0) {
         s32 id = sel->item;
@@ -1729,7 +1711,7 @@ void BattleMenuDisp_Operation_End(BattleWork* wp) {
 }
 
 // This declaration order, and the function-scope `entry`, are what make MWCC
-// pack the frame at the original offsets (outX/outY at 0x14/0x10, arr88 at 0x88,
+// pack the frame at the original offsets (outX/outY at 0x14/0x10, enabled at 0x88,
 // ...) and hand r10/r9 to i/entry; the natural order does not.
 void DrawOperationWin(void) {
     BattleWork* wp = _battleWorkPointer;
@@ -1737,15 +1719,15 @@ void DrawOperationWin(void) {
     BattleCursor* cursor = window->cursor;
     BattleCommandOperation* entries;
     f32 scales[5];
-    s32 arr88[7];
-    const char* arr6C[7];
+    s32 enabled[7];
+    const char* names[7];
     Vec centers[5];
-    u16 arr24[7];
+    u16 icons[7];
     f32 outX;
     Mtx rot[7];
-    s32 arr50[7];
+    s32 fpCosts[7];
     Mtx mats[5];
-    s32 arr34[7];
+    s32 spCosts[7];
     f32 outY;
 
     BattleCommandOperation* entry;
@@ -1757,19 +1739,19 @@ void DrawOperationWin(void) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->num) {
             entry = &entries[idx];
-            arr88[i] = entry->mEnabled;
+            enabled[i] = entry->mEnabled;
             if (entries[i].mIcon != 0) {
-                arr24[i] = entry->mIcon;
+                icons[i] = entry->mIcon;
             } else {
-                arr24[i] = 0x18B;
+                icons[i] = 0x18B;
             }
-            arr6C[i] = entry->mName;
-            arr50[i] = entry->mWeaponCost;
-            arr34[i] = 0;
+            names[i] = entry->mName;
+            fpCosts[i] = entry->mWeaponCost;
+            spCosts[i] = 0;
         }
     }
     DrawMainIcon(window, wp->commandMenu.actionTable, mats, centers, scales);
-    DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
+    DrawSubIcon(window, rot, enabled, icons, names, fpCosts, spCosts, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (entries[cursor->index].mDescription != 0) {
         DrawMenuHelpWin(entries[cursor->index].mDescription, outX, outY);
@@ -1809,12 +1791,12 @@ void DrawChangePartyWin(void) {
     BattleCommandParty* entries;
     f32 outX;
     f32 outY;
-    u16 arr24[7];
+    u16 icons[7];
     f32 scales[5];
-    s32 arr88[7];
-    const char* arr6C[7];
-    s32 arr50[7];
-    s32 arr34[7];
+    s32 enabled[7];
+    const char* names[7];
+    s32 fpCosts[7];
+    s32 spCosts[7];
     Vec centers[5];
     Mtx mats[5];
     Mtx rot[7];
@@ -1829,19 +1811,19 @@ void DrawChangePartyWin(void) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->num) {
             BattleCommandParty* entry = &entries[idx];
-            arr88[i] = entry->mEnabled;
+            enabled[i] = entry->mEnabled;
             if (entry->mIcon != 0) {
-                arr24[i] = entry->mIcon;
+                icons[i] = entry->mIcon;
             } else {
-                arr24[i] = 0x18B;
+                icons[i] = 0x18B;
             }
-            arr6C[i] = entry->mName;
-            arr50[i] = 0;
-            arr34[i] = 0;
+            names[i] = entry->mName;
+            fpCosts[i] = 0;
+            spCosts[i] = 0;
         }
     }
     DrawMainIcon(window, wp->commandMenu.actionTable, mats, centers, scales);
-    DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, entries, 1);
+    DrawSubIcon(window, rot, enabled, icons, names, fpCosts, spCosts, entries, 1);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (entries[cursor->index].mDescription != 0) {
         DrawMenuHelpWin(entries[cursor->index].mDescription, outX, outY);
@@ -1878,12 +1860,12 @@ void DrawMultiItemWin(void) {
     BattleCommandMultiItem* entries;
     f32 outX;
     f32 outY;
-    u16 arr24[7];
+    u16 icons[7];
     f32 scales[5];
-    s32 arr88[7];
-    const char* arr6C[7];
-    s32 arr50[7];
-    s32 arr34[7];
+    s32 enabled[7];
+    const char* names[7];
+    s32 fpCosts[7];
+    s32 spCosts[7];
     Vec centers[5];
     Mtx mats[5];
     Mtx rot[7];
@@ -1895,19 +1877,19 @@ void DrawMultiItemWin(void) {
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->scrollPos + i;
         if (idx < cursor->num) {
-            arr88[i] = entries[idx].mEnabled;
+            enabled[i] = entries[idx].mEnabled;
             if (entries[idx].mIcon != 0) {
-                arr24[i] = entries[idx].mIcon;
+                icons[i] = entries[idx].mIcon;
             } else {
-                arr24[i] = 0x18B;
+                icons[i] = 0x18B;
             }
-            arr6C[i] = entries[idx].mName;
-            arr50[i] = entries[idx].mWeaponCost;
-            arr34[i] = 0;
+            names[i] = entries[idx].mName;
+            fpCosts[i] = entries[idx].mWeaponCost;
+            spCosts[i] = 0;
         }
     }
     DrawMainIcon(window, wp->commandMenu.actionTable, mats, centers, scales);
-    DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
+    DrawSubIcon(window, rot, enabled, icons, names, fpCosts, spCosts, 0, 0);
     DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (entries[cursor->index].mDescription != 0) {
         DrawMenuHelpWin(entries[cursor->index].mDescription, outX, outY);

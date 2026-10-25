@@ -118,9 +118,9 @@ static void actionCommandDisp(f32 x, f32 y) {
 			x0 = xBase;
 		}
 		else {
-			x0 = xBase + (f32)(((u16*)_hp_tbl)[2 * i - 2] * 175) / 100.0f;
+			x0 = xBase + (f32)(_hp_tbl[i - 1].hp * 175) / 100.0f;
 		}
-		x1 = xBase + (f32)(((u16*)_hp_tbl)[2 * i] * 175) / 100.0f;
+		x1 = xBase + (f32)(_hp_tbl[i].hp * 175) / 100.0f;
 		btlDispGXQuads2DRasta(x0, yTop, x1, yBottom, (u8)((3 - abs(3 - i)) * 60), 0,
 		                      (u8)(180 - (3 - abs(3 - i)) * 60), 0xFF);
 	}

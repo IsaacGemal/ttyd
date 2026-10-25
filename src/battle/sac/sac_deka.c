@@ -91,7 +91,7 @@ typedef struct DekaWork {
     /*0x058*/ f32 gaugeWidth;
     /*0x05C*/ Vec gaugePos;
     /*0x068*/ u8 gaugeAlpha;
-    /*0x069*/ u8 pad069[0x6C - 0x69];
+    /*0x069*/ u8 pad_0x69[0x6C - 0x69];
     /*0x06C*/ s32 sndHandle;
     /*0x070*/ DekaTiming timing[8];
     /*0x230*/ DekaTiming timingCopy[8];
@@ -101,23 +101,23 @@ typedef struct DekaWork {
     /*0x3FC*/ Vec starPos;
     /*0x408*/ Vec starPrev;
     /*0x414*/ Vec starTarget;
-    /*0x420*/ u8 pad420[0x424 - 0x420];
+    /*0x420*/ u8 pad_0x420[0x424 - 0x420];
     /*0x424*/ f32 starVel;
-    /*0x428*/ u8 pad428[0x42C - 0x428];
+    /*0x428*/ u8 pad_0x428[0x42C - 0x428];
     /*0x42C*/ Vec starScale;
     /*0x438*/ Vec starRot;
     /*0x444*/ f32 starScaleFrom;
     /*0x448*/ f32 starScaleTo;
     /*0x44C*/ EffectEntry* starEffect;
     /*0x450*/ s32 unitIds[10];
-    /*0x478*/ struct { f32 x, y, z; } enemyVel[10];
-    /*0x4F0*/ f32 enemyUnk[10];
+    /*0x478*/ Vec enemyVel[10];  // main_enemy_sub adds it to the enemy's position; gravity -1.25, the floor's vel.y pushes it up
+    /*0x4F0*/ f32 enemyRotZVel[10];  // main_enemy_sub adds it to mRotation.z; +-20 when the rising floor hits the enemy
     /*0x518*/ u8 yukaActive[6];
-    /*0x51E*/ u8 pad51E[0x520 - 0x51E];
-    /*0x520*/ f32 yukaPos[6];
-    /*0x538*/ s32 yukaIndex[6];
-    /*0x550*/ f32 yukaScale[6];
-    /*0x568*/ f32 yukaUnk[6];
+    /*0x51E*/ u8 pad_0x51E[0x520 - 0x51E];
+    /*0x520*/ f32 yukaWaveSpeed[6];  // columns per frame (+-2) a floor wave moves; its sign steps yukaIndex
+    /*0x538*/ s32 yukaIndex[6];      // the next mesh column the wave kicks (stops at 0 and 0x80)
+    /*0x550*/ f32 yukaWavePos[6];    // the column the wave has reached; columns are kicked until yukaIndex passes it
+    /*0x568*/ f32 yukaWaveVelY[6];   // added to the vel.y of each column the wave passes
 } DekaWork;
 
 static DekaWork* get_ptr(void);
@@ -126,7 +126,7 @@ static DekaWork* get_ptr(void);
 typedef struct DekaYukaMesh {
     /*0x0000*/ Vec pos[2][0x81];
     /*0x0C18*/ Vec disp[2][0x81];
-    /*0x1830*/ Vec normal[2][0x81];
+    /*0x1830*/ Vec vel[2][0x81];     // per-vertex velocity: yuka_main adds vel.y to pos.y, then gravity (-2)
     /*0x2448*/ Vec prev[2][0x81];
     /*0x3060*/ f32 texU[2][0x81];
     /*0x3468*/ f32 texV[2][0x81];
@@ -218,7 +218,7 @@ static void yuka_init(void) {
             mesh->disp[i][j] = v;
             v2 = (Vec){ x, 0.0f, z };
             mesh->pos[i][j] = v2;
-            mesh->normal[i][j] = (Vec){ 0.0f, 0.0f, 0.0f };
+            mesh->vel[i][j] = (Vec){ 0.0f, 0.0f, 0.0f };
             tmp = (f32)j;
             mesh->texU[i][j] = 0.0078125f * tmp;
             mesh->texV[i][j] = (f32)i;
@@ -240,17 +240,17 @@ static void yuka_main(void) {
 
     for (i = 0; i < 6; i++) {
         if (p->yukaActive[i] == 1) {
-            p->yukaScale[i] += p->yukaPos[i];
+            p->yukaWavePos[i] += p->yukaWaveSpeed[i];
             for (;;) {
                 s32 idx = p->yukaIndex[i];
-                s32 sc = (s32)p->yukaScale[i];
+                s32 sc = (s32)p->yukaWavePos[i];
 
-                if ((sc > idx && p->yukaPos[i] > 0.0f) ||
-                    (sc < idx && p->yukaPos[i] < 0.0f)) {
+                if ((sc > idx && p->yukaWaveSpeed[i] > 0.0f) ||
+                    (sc < idx && p->yukaWaveSpeed[i] < 0.0f)) {
                     for (j = 0; j < 2; j++) {
-                        mesh->normal[j][p->yukaIndex[i]].y += p->yukaUnk[i];
+                        mesh->vel[j][p->yukaIndex[i]].y += p->yukaWaveVelY[i];
                     }
-                    if (p->yukaPos[i] > 0.0f) {
+                    if (p->yukaWaveSpeed[i] > 0.0f) {
                         p->yukaIndex[i]++;
                     }
                     else {
@@ -295,15 +295,15 @@ static void yuka_main(void) {
             v2.z = zero;
             PSVECScale(&v2, &v2, 0.01f);
 
-            PSVECAdd(&mesh->normal[i][j], &v2, &mesh->normal[i][j]);
-            PSVECScale(&mesh->normal[i][j], &v8, 0.1f);
+            PSVECAdd(&mesh->vel[i][j], &v2, &mesh->vel[i][j]);
+            PSVECScale(&mesh->vel[i][j], &v8, 0.1f);
             PSVECAdd(&mesh->pos[i][j], &v8, &mesh->pos[i][j]);
 
-            mesh->pos[i][j].y += mesh->normal[i][j].y;
-            mesh->normal[i][j].y -= two;
+            mesh->pos[i][j].y += mesh->vel[i][j].y;
+            mesh->vel[i][j].y -= two;
             if (mesh->pos[i][j].y <= zero) {
                 mesh->pos[i][j].y = zero;
-                mesh->normal[i][j].y = zero;
+                mesh->vel[i][j].y = zero;
             }
         }
     }
@@ -704,17 +704,17 @@ static void main_star(void) {
                 for (i = 0; i < 6; i++) {
                     if (p->yukaActive[i] == 0) {
                         p->yukaActive[i] = 1;
-                        p->yukaPos[i] = 2.0f;
+                        p->yukaWaveSpeed[i] = 2.0f;
                         if (j == 1) {
-                            p->yukaPos[i] *= -1.0f;
+                            p->yukaWaveSpeed[i] *= -1.0f;
                         }
                         if (j == 0) {
                             p->yukaIndex[i] = 0x2A;
                         } else {
                             p->yukaIndex[i] = 0x29;
                         }
-                        p->yukaScale[i] = 43.0f;
-                        p->yukaUnk[i] = (f32)p->starCounter * tblB[p->combo] + 4.0f;
+                        p->yukaWavePos[i] = 43.0f;
+                        p->yukaWaveVelY[i] = (f32)p->starCounter * tblB[p->combo] + 4.0f;
                         break;
                     }
                 }
@@ -826,7 +826,7 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
                     if ((unit->mAttributeFlags & kCeiling) && groundY < 120.f) {
                         break;
                     }
-                    if (mesh->normal[0][j].y > 0.0f) {
+                    if (mesh->vel[0][j].y > 0.0f) {
                         BattleUnitPart* part;
                         s32 partId;
 
@@ -835,8 +835,8 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
                         }
                         unit->mPosition.y = groundY;
                         unit->mRotation.z = 0.0f;
-                        p->enemyUnk[*count] = 0.0f;
-                        p->enemyVel[*count].y += 0.5f * mesh->normal[0][j].y;
+                        p->enemyRotZVel[*count] = 0.0f;
+                        p->enemyVel[*count].y += 0.5f * mesh->vel[0][j].y;
 
                         partId = BtlUnit_GetBodyPartsId(unit);
                         part = BtlUnit_GetPartsPtr(unit, partId);
@@ -847,9 +847,9 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
                             effSmallStarEntry(0, 2, cx, unit->mPosition.y, unit->mPosition.z, 0.0f, -1.0f, 0.0f);
                             BtlUnit_snd_se(unit, unit->mKindParams->damageSfxName, 0xF1194D80, 0);
                             if (!(unit->mAttributeFlags & 0x200000) && !(unit->mAttributeFlags & kInactive) && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
-                                p->enemyUnk[*count] = 20.f;
+                                p->enemyRotZVel[*count] = 20.f;
                                 if (irand(2) == 0) {
-                                    p->enemyUnk[*count] *= -1.0f;
+                                    p->enemyRotZVel[*count] *= -1.0f;
                                 }
                             }
                         }
@@ -863,14 +863,14 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
     unit->mPosition.x += p->enemyVel[*count].x;
     unit->mPosition.y += p->enemyVel[*count].y;
     unit->mPosition.z += p->enemyVel[*count].z;
-    unit->mRotation.z += p->enemyUnk[*count];
+    unit->mRotation.z += p->enemyRotZVel[*count];
 
     if (unit->mPosition.y < unit->mHomePosition.y) {
         unit->mPosition.y = unit->mHomePosition.y;
         p->enemyVel[*count].y = 0.0f;
         if (!(unit->mAttributeFlags & kInactive) && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
             unit->mRotation.z = 0.0f;
-            p->enemyUnk[*count] = 0.0f;
+            p->enemyRotZVel[*count] = 0.0f;
         }
     }
 
