@@ -1876,8 +1876,8 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     s32 type;
     u16 item;
 
-    select = __memAlloc(HEAP_DEFAULT, 0x3c);
-    memset(select, 0, 0x3c);
+    select = __memAlloc(HEAP_DEFAULT, sizeof(WinMgrSelect));
+    memset(select, 0, sizeof(WinMgrSelect));
 
     select->kind = kind;
     descId = kind;
@@ -2077,8 +2077,8 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         {
             s32 max = getBadgeStarmaniacTableMaxCount();
 
-            select->items = __memAlloc(HEAP_DEFAULT, max * 4);
-            memset(select->items, 0, max * 4);
+            select->items = __memAlloc(HEAP_DEFAULT, max * sizeof(WinMgrSelectItem));
+            memset(select->items, 0, max * sizeof(WinMgrSelectItem));
             select->numItems = 0;
             for (i = 0; i < BADGE_COUNT; i++) {
                 if (badgeShop_get(bdsw->starmaniac_table, (s16)(i + BADGE_MIN)) -
@@ -2109,8 +2109,8 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         {
             s32 max = getBadgeBottakuru100TableMaxCount();
 
-            select->items = __memAlloc(HEAP_DEFAULT, max * 4);
-            memset(select->items, 0, max * 4);
+            select->items = __memAlloc(HEAP_DEFAULT, max * sizeof(WinMgrSelectItem));
+            memset(select->items, 0, max * sizeof(WinMgrSelectItem));
             select->numItems = 0;
             for (i = 0; i < max; i++) {
                 select->items[select->numItems++].id = badge_bottakuru100_table[i];
@@ -2121,8 +2121,8 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
         {
             s32 max = getBadgeBteresaTableMaxCount();
 
-            select->items = __memAlloc(HEAP_DEFAULT, max * 4);
-            memset(select->items, 0, max * 4);
+            select->items = __memAlloc(HEAP_DEFAULT, max * sizeof(WinMgrSelectItem));
+            memset(select->items, 0, max * sizeof(WinMgrSelectItem));
             select->numItems = 0;
             for (i = 0; i < 0x152; i++) {
                 if (badgeShop_get(bdsw->bteresa_table, (s16)(i + 1)) > 0) {
@@ -2134,14 +2134,14 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     case 17:
     case 18:
         {
-            u8* unk = (type == 0x11) ? jdt->readFlags.perfectNewjohoReadFlag : jdt->readFlags.luigiNewjohoReadFlag;
+            u8* readFlag = (type == 0x11) ? jdt->readFlags.perfectNewjohoReadFlag : jdt->readFlags.luigiNewjohoReadFlag;
 
             select->numItems = jdt->count;
-            select->items = __memAlloc(HEAP_DEFAULT, (select->numItems + 1) * 4);
-            memset(select->items, 0, (select->numItems + 1) * 4);
+            select->items = __memAlloc(HEAP_DEFAULT, (select->numItems + 1) * sizeof(WinMgrSelectItem));
+            memset(select->items, 0, (select->numItems + 1) * sizeof(WinMgrSelectItem));
             for (i = 0; i < select->numItems; i++) {
                 select->items[i].id = i;
-                if (johoya_get(unk, jdt->info[i].storyId) != 0) {
+                if (johoya_get(readFlag, jdt->info[i].storyId) != 0) {
                     select->items[i].flags |= 1;
                 }
             }
@@ -2154,8 +2154,8 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
 
             while (list[n++] != -1)
                 ;
-            select->items = __memAlloc(HEAP_DEFAULT, (n + 1) * 4);
-            memset(select->items, 0, (n + 1) * 4);
+            select->items = __memAlloc(HEAP_DEFAULT, (n + 1) * sizeof(WinMgrSelectItem));
+            memset(select->items, 0, (n + 1) * sizeof(WinMgrSelectItem));
             select->numItems = 0;
             if (firstItem != 0) {
                 select->items[select->numItems++].id = firstItem;

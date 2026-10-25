@@ -14,6 +14,7 @@ typedef struct {
     s16 field_0xE; //0xE
 } InformantInfo;
 
+// Read flags (a bit per storyId) of the keti, perfect and luigi rumour lists, saved with the card as CardData.informant.
 typedef struct {
     u8 ketiNewjohoReadFlag[0xD]; //0x0, johoya_keti_newjoho_setreadflag (bit per storyId)
     u8 perfectNewjohoReadFlag[0xD]; //0xD, johoya_perfect_newjoho_setreadflag
