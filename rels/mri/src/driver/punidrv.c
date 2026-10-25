@@ -188,7 +188,7 @@ void puniEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void)
     s32 texCount = 0;
     s32 i;
 
-    while (p->unk0 != NULL) {
+    while (p->name != NULL) {
         texCount++;
         p++;
     }
@@ -242,7 +242,7 @@ void puniMakeTexture(CameraId camId, void* param) {
         s32 idx = i * 12;
         s32 vi = i * 4;
 
-        animPoseDisp_MakeExtTexture(info->unk0, info->unk4, info->unk8, &tex->texObj, tex, 5.84f, &out0, &out1, &out2,
+        animPoseDisp_MakeExtTexture(info->name, info->animName, info->frame, &tex->texObj, tex, 5.84f, &out0, &out1, &out2,
                                     &out3);
         wp->vertices[idx++] = (f32)out0 * k;
         wp->vertices[idx++] = (f32)(-out1) * k;

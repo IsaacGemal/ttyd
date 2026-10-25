@@ -65,9 +65,9 @@ enum PuniMode {
 };
 
 typedef struct MriPuniAnimSet {
-    s16* unk0[10]; // 0x00
-    s16 unk28[10]; // 0x28
-    s16 unk3C[10]; // 0x3C
+    s16* anims[10];      // 0x00, texId sequences, one per PuniData.animIdx (puniAnimation)
+    s16 frameCounts[10]; // 0x28, entries before each sequence's terminator
+    s16 terminators[10]; // 0x3C, the terminator: -1 loops, -2 holds the last frame
 } MriPuniAnimSet; // 0x50
 
 typedef struct PuniWork {
@@ -90,7 +90,7 @@ typedef struct PuniWork {
     s32 phase;                          // 0x43C, set to 2/3/5 by mode changes, 0 when idle
     s32 prevPhase;                      // 0x440
     BOOL showPuniCounter;               // 0x444
-    BOOL unk448;                        // 0x448
+    BOOL blinkCount;                    // 0x448, puni_disp_info_sub sets it while count != total; the count then blinks
     s32 puniCounterAlpha;               // 0x44C
     s32 randSeedA;                      // 0x450, puni_rnd / puniQrnd state
     s32 randSeedB;                      // 0x454
@@ -213,9 +213,9 @@ typedef struct PuniMap {
 } PuniMap; // 0x24
 
 typedef struct PuniTexInfo {
-    char* unk0; // 0x0
-    char* unk4; // 0x4
-    f32 unk8;   // 0x8
+    char* name;     // 0x0, animPoseDisp_MakeExtTexture's arguments (puniMakeTexture); NULL ends the table
+    char* animName; // 0x4
+    f32 frame;      // 0x8
 } PuniTexInfo;
 
 USER_FUNC(evt_puni_mem_init);
