@@ -178,14 +178,14 @@ static inline f32 bomCosApprox(f32 angle) {
 // The cannon sight state is private to this module.
 static SightWork* sight_wp;
 
-// The SoundWork fields disp_sight reads (sound.h conflicts with this unit's headers): the playing channel, the
-// per-channel s16 sample rings and the write position.
+// The SoundWork fields disp_sight reads (sound.h conflicts with this unit's headers): the half of the output
+// sample buffer being written, the two halves and the write position.
 typedef struct BomSoundView {
-    u8 field_0x0[0x330];                // 0x0
-    u16 unk330;                         // 0x330, channel
-    u8 field_0x332[0x5C0 - 0x332];      // 0x332
-    s16 unk5C0[2][0x400];               // 0x5C0, sample rings
-    s32 unk15C0;                        // 0x15C0, write position
+    u8 pad_0x0[0x330];                  // 0x0
+    u16 outputHalf;                     // 0x330
+    u8 pad_0x332[0x5C0 - 0x332];        // 0x332
+    s16 outputSamples[2][0x400];        // 0x5C0
+    s32 outputPos;                      // 0x15C0
 } BomSoundView;
 extern BomSoundView sound;
 
@@ -335,8 +335,8 @@ void disp_sight(CameraId cameraId, void* param) {
         for (i = 0; i < 4; i++) {
             sight_wp->field_4[i] = sight_wp->field_4[i + 1];
         }
-        // the newest sample of the playing channel's ring buffer (an s16 stream per channel)
-        sight_wp->field_4[4] = abs(sound.unk5C0[sound.unk330][sound.unk15C0]);
+        // the sample SoundAIDMACallback writes next
+        sight_wp->field_4[4] = abs(sound.outputSamples[sound.outputHalf][sound.outputPos]);
     }
 
     for (i = 0; i < 5; i++) {
