@@ -7941,3 +7941,126 @@ fmotion (src/motion, src/manager; not touched).
   one there is); `shotDamageRate`'s comment names BattleCheckDamage's other two conditions on those patterns too
   (attribute 0x4000, flag 0x20000), so the roll is not the whole gate. `AUDIENCE_KIND_TWO_SEATS` is a new enum constant named from its readers;
   the data tables keep their literal 0/1.
+
+## Event, party, sequence, Mario and driver fields named from their consumers (2026-10-25, Claude Opus 5.5, n9-q-fsrcmisc)
+
+Task (Isaac): name and type the remaining `field_0xNN` in src/event/**, src/party.c and src/party/**, src/sequence/**,
+src/mario/**, src/driver/** and the leftovers in include/driver, include/mario, include/evt, include/party(.h) and
+include/seq under CLEANUP_GUIDE section 3 (name from the reader, one name per meaning, evidence per name, placeholder
+when unsure), removing the casts the new types make unnecessary. #1135 had already named most driver/Mario fields, so
+those were renamed only where a real consumer turned up. Parallel branches: fmotion (src/motion, src/manager),
+fbtlsrc (src/battle), frels1, frels2.
+
+- **Method.** Untracked harness in build/fmisc/: every object saved before the branch (base/, 1,230); try.py (feff's,
+  pointed at that snapshot) compiles a .c or every user of a .h and runs obj_equiv, `--nat` without MUST_MATCH;
+  relabel.py rewrites the `// old` comment labels inside one type's initialisers; gate.sh (build to `ok`, try.py both
+  ways over every changed .c and every user of a changed .h, fncast_lint, local_prototypes, then tools/ci.py through
+  feff's ci_local.py, which accepts only the test_wave_launch.PassPipes environment errors). This worktree had no
+  ratchet baseline, so `ci.py --init` ran first on a build whose linked modules hash to build.sha1. Every commit:
+  BUILD-OK, all users EQUIV and NAT OK, CI PASS. At the end: `configure.py --non-matching` and the 1,000 objects built
+  from a changed .c or a user of a changed header compiled with no errors; a normal reconfigure rebuilt to `ok`;
+  `obj_equiv --tree` over all 1,230 objects against the pre-branch snapshot, every one equivalent.
+- **Counts** (`tools/cleanup_index.py`, 55fec9be -> this branch, same script): index **12.666 -> 12.306** per kLOC
+  (8847 -> 8595 weighted): field_0x 1721 -> 1499, raw_offset 150 -> 133, struct_ptr_cast 1226 -> 1224, deref_cast
+  484 -> 487 (party_cloud's four, see below, minus evt_msg's pun); nothing else changed and no file got worse. This
+  task's file set: weighted 2719 -> 2477, field_0x 360 -> 148, raw_offset 68 -> 51. By grep (comments included):
+  src/event 88 -> 31, src/party.c 34 -> 6, src/party 23 -> 4, src/sequence 19 -> 1, src/mario 18 -> 8, src/driver
+  63 -> 15, include/driver 61 -> 41, include/mario 36 -> 29, include/evt 14 -> 9, include/seq 11 -> 0,
+  include/party 1 -> 0, include/party.h 9 -> 6, include/event.h 2 -> 2 (379 -> 152). Biggest drops: party_yoshi
+  145 -> 100, envdrv.c 133 -> 102, evt_urouro 34 -> 6, party.c 46 -> 29, msgdrv.c 79 -> 64.
+
+**Names, per struct** (field -> name: the consumer that proves it).
+- UrouroWork (evt_urouro.c, local): 0x10 walkTime (urouro_main_func mode 0: `timer = walkTime / 2 + irand(walkTime / 2
+  + 1)`, mode 1 walks until it runs out), 0x14 waitTime (mode 2 sets mode 3's stand timer from it), 0x18 turnTime
+  (mode 3 reloads the timer from it between the 180-degree turns), 0x1C-0x24 -> Vec center (x/z are distABf's and
+  angleABf's target: the npc turns back when farther than radius; y is stored from npc->position.y, unread), 0x28
+  radius (the dist comparisons). urouro_init_func's a/b/c/d -> centerX/centerZ/radius/moveSpeed.
+- WinOneMsgWork (evt_window.c, local): 0x4 msgType (evt_win_one_message's argument; oneMessageDisp switches on it for
+  the message key, state 2 for the sound).
+- ShopperData (evt_shop.c, local): 0xC msgs[] (get_msg returns msgs[idx]; the shop scripts pass it to
+  evt_msg_print_insert/_add and evt_msg_select).
+- BadgeShopWork (evt_badgeshop.h): 0x10C bargainCount (badgeShop_bargainGeneration stores
+  `bargainTable[bargainCount++]` and loops while it is below the pick target; badgeShop_ThrowCheck loops to it), 0x114
+  flags (bit 1 only: badgeShop_init sets it, seq_mapChangeInit sets it between two maps that are not gor_01 and, on
+  entering gor_01 with it set, regenerates the bargain and bottakuru tables and clears it).
+- BeroEntry (evt_bero.h): 0xC/0x10/0x14 (`field_0xC`, `unknown1`, `unknown2`) -> posX/posY/posZ (evt_bero_get_into_info
+  and evt_bero_get_info_num pass &posX as lwData[6]; bero_get_position_normal reads p[0..2] as the start position,
+  p[0] == 100000 taking the hit's position instead, as aaa_00's table has).
+- DoorEntry (evt_door.h): 0x8 sfxType (evt_door_param case 8; door_open_se and door_close_se SWITCH on it for
+  SFX_DOOR_OPEN_*/SHUT_* 1-14, door_down_se is silent for 0), 0x2C downEvt (evt_door_param case 6's second value; the
+  door scripts, when it is set, SPAWN it every frame of a 0-180 evt_sub_intpl_msec run with door_down_se 500 ms in).
+  The 70 `// field_0x8` / `// field_0x2C` labels on the DoorEntry initialisers in seven rels files follow.
+- EventEntry (include/manager/evtmgr.h): `EventEntryMsg unk184` (two f32) + `u32 unk18C` -> `Vec msgAnchor` at 0x184
+  (evt_msg_toge stores x, y, z, the z through `*(f32*)&unk18C`; _evt_msg_print copies it to window->anchor, WindowEntry's
+  "world point the message window hangs from", for balloon types 2 and 3 through a file-local EventVec overlay). The
+  pun, the overlay and EventEntryMsg go; evtChildEntry, evtDelete, evt_inline_evt and evt_inline_evt_id copy the Vec
+  in one assignment (MWCC's 12-byte copy is the same lwz/lwz/stw/stw/lwz/stw).
+- KpaWork (include/koopa.h): 0x144 evtFireHold (koopa.c's breath steps, attack modes 0x17 and 0x2B, stop only when B
+  is up and it is 0; evt_koopa_fire holds it at 1 while its countdown runs).
+- MarioWork (mario.h): 0xE0 returnPos (mot_bottomless drops Mario back above it and walks him there, y < -2000 meaning
+  unset and a per-map point used instead; mot_damage's BG-mode walk target; mot_dokan stores position there when a
+  pipe exit finishes, marioReInit {0, -10000, 0}). Union members named by their motion: 0x128 yoshiRiseY (party_yoshi
+  0x3C-0x3F: jumpPara3 summed from the jump start until `>= 0.7 * marioGetJumpHeight()`, as mot_jump's jumpRiseY;
+  `field_0x128` stays as the member for evt_mario's and mot_ship's write-only landing distance), 0x2A0
+  yoshiFlutterVelY and 0x2A4 yoshiFlutterY (party_yoshi 0x14-0x16: the sine step is added to the height, Yoshi sits at
+  wCamVal1 + yoshiFlutterY), 0x2AC bottomlessSpeed and 0x2B0 bottomlessDir (mot_bottomless's movePos toward
+  returnPos), 0x2B0 yoshiInertiaX and 0x2B4 yoshiInertiaZ (the `inertia` symbol decays and clamps both and adds
+  stickX * 0.01 to x; L_yoshiFlyMove's speed is 0.1 * |(x, -z)|, its direction angleABf(0, 0, x, -z)). party_yoshi's
+  M_F offset macro, its four `*(f32*)((u8*)mario + 0x2B4)` and its `spinSpeed` misuse go.
+- PartyEntry (party.h): 0x124 spinSpeed (partyDokanMain adds it to dispDir or dispRot.x, partyDokanInit sets +-26/30
+  per dokanType, partyRideMain spins dispDir by it and raises it by 2 to 30), 0x15E -> `u8 unusedInput[2]` (zeroed with
+  every input copy in L_partyClearCont and partyUpdateKeyData, never set or read: MarioWork.unusedInput's precedent).
+  PartyData's post_func/exit_func typed `void (*)(PartyEntry*)` (every function party_data.c stores there has that
+  prototype), so party.c's eight `(PartyFunc)` casts and five local typedefs go.
+- SequenceWork (seqdrv.h): 0x10 frameCount, s32 (seq_battleMain is its only user: cleared in states 0 and 5, counted
+  in state 1, and state 6 leaves once `++frameCount > 30`; that test's `(s32)` cast goes). LogoWork (seq_logo.h): 0x4
+  progState (progDisp's step switch), 0x10 logoIdx (logoDisp loads tpl image 0/1/2 by it; seq_logoMain steps it at
+  the fade-ins), 0x18 lastInputTime (progDisp resets it on any pad input; 10 s without one answers the prompt).
+- EnvironmentWork (envdrv.h): 0x7C texMtxScale (envTevLoadTexMtxImm scales its texture matrix by it: x by 0.5 - 0.25 s
+  in mode 1, 20 s in mode 2, 2 s in mode 3), 0x80 dirYaw and 0x84 dirPitch (degrees: mode 0 rotates about Y by yaw and Z
+  by -pitch, modes 2/3 build (cos p sin y, sin p, cos p cos y) and half-angle it with the data vector; envAddTev sets
+  them per tev type and spins pitch with retraceCount for types 1/2).
+- MsgDataEntry (msgdrv.h): 0x14, two uses, now a union: popScale (flag-0x1 glyphs: msgDisp scales the glyph by it and
+  eases it to 1) and poseRotY (0xFFF4 anim entries: animPoseDrawMtx's rotY, 0 or 180; 90-270 mirrors z). MessageData
+  0x7A42 selectCancel (selectWindow_Main on B: -1 ignores B, -2 closes with selectCursor -1, otherwise closes with
+  selectCursor set to it; the old comment said it was never read).
+- LightEntry (lightdrv.h): 0x3C basePosition (lightEntry copies the entered position there; evt_light_bind_mapobj
+  takes the light's offset from the map object from it, then rewrites position each frame). OffscreenEntry
+  (offscreendrv.h): `name[4]` + `field_0x8[0xC]` -> `char name[16]` (offscreenEntry strcpys names such as fadedrv's
+  11-byte "fOff_peron" into it; currLeft follows at 0x14).
+- Pads (no access by name in the tree or by raw offset; the C is matched, so neither in the asm): alignment holes in
+  MarioWork 0x32/0x245/0x2C2, PouchData 0x57E/0x5B2, MapObject 0x6, MapEntryAnimData 0x2 and its tail 0x1C, MapEntry
+  0x22, IconEntry 0x2 and its tail 0x36, ImageEntry 0x10C, EffectMayaAnim 0x2, LogoWork 0x14 and its tail 0x24,
+  MovingFloorWork 0x14; untouched work tails and words in TwoDDisplayer 0x2C, seq_e3_work 0x50, TitleWork 0x4,
+  PartyCloud 0x3A, SequenceWork 0x14 and CaseSetup 0x50 (stack-built; caseEntry copies every other field).
+- party_cloud.c: the two `*(s32*)((u8*)party + 0x17C/0x180) = 0` raw offsets in cloud_init and cloud_use name their
+  fields as `*(s32*)&party->tail.flurrie.bobAngle`/`bobStep` (an integer-zero store into the f32s; the float store
+  compiles differently, and no guard was added). party.c's commented-out old partyPaperOn/partyEntry2 use the current
+  field names.
+
+**Left, and why.**
+- No reader, or written only: MarioWork 0x8 (one bit 0x10 from mot_roll that evt_mario waits on), 0x20, 0x164, 0x18C
+  (the frame's move speed: marioMoveMain, koopa_motion, party_yoshi, mot_ship, mot_plane and itemdrv write it, nothing
+  reads it), the `field_0x2A4`/`field_0x2B0` members (mot_dokan's and marioLandOn's stores); PartyEntry 0x13C, 0x144
+  (aji_13 tests it, nothing sets it), 0x148; PartyData 0x18-0x20 (NULL in every row); BadgeShopWork 0x110 and
+  0x116-0x120 (saved with the card, no access); PiantaParlorWork 0x134 (saved too); FieldBattleInfo 0x1B; NanNpcWork
+  0x8 and NanNpcEntry 0x16 (the 0x74/0x94 runs are the maps' per-entry scratch, which muj and gor name in their own
+  copies); TwoDDisplayer 0x12; MapError; MapHeader 0x3C; EventData 0x8/0xC (the "STG0_00" name and the Japanese
+  description strings: no code reads them); KusaAccessEntry 0x0 (only the `== 4` terminator).
+- More than one meaning: MarioWork 0x2B8 (mario.c rotates the YOSHI-motion display about z by it in degrees, while
+  party_yoshi reads the same word as marioGetJumpHeight() in that motion); BeroEntry 0x20 (lwData[10], defaulted per
+  kinddir type to 0/10/9/4/7; its script readers reuse LW(10) for other values).
+- Map, animation and Maya file data: the unread bytes of the loaded-file structs in mapdrv.h, animdrv.h and effdrv.c
+  (file contents, not gaps); MapMatTexMtx 0x14/0x18, as #1135 found, are read only in the rotation centre
+  `0.5 * a * scaleX`, `(1 - 0.5 * b) * scaleY`.
+- Raw offsets tried and kept: party.c's `partyPoseTbl`/`partyDotPoseTbl` `+ id * 0x3c + 16` (the `[id][4]` form
+  differs) and seq_load's `card + (cursor << 14) + 0x2000` (`card->saves[cursor].data.flags` differs).
+
+**For a reviewer.** Consumer edits outside this task's file set: src/motion/mot_damage.c and mot_dokan.c (returnPos),
+src/koopa.c (evtFireHold), src/manager/evtmgr.c and evtmgr_cmd.c (msgAnchor) are fmotion's files; the DoorEntry labels
+in bom_01, gor_01, gor_02, gor_03, tik_00, tou_01 and usu_00 are the rels branches'. Expect small conflicts in
+mario.h's unions if fmotion adds members there. The least direct names: PartyEntry `unusedInput` (named from the store
+pattern and MarioWork's precedent, not a reader), party_yoshi's case 0x33 now reads `yoshiFlutterVelY +=
+yoshiFlutterY` (what the code does; it was spelled `spinSpeed += field_0x2A4`), yoshiInertiaZ's axis (it reaches
+L_yoshiFlyMove negated as angleABf's z), and envdrv's dirYaw/dirPitch (from the direction vector they build; a light
+direction, but nothing names the light).
