@@ -33,6 +33,3 @@ extern char str_msg_menu_kiroku_map[];
 extern const char str_msg_menu_kiroku_map[];
 #endif
 
-// The 4-byte "S_1" anim name in .sdata2, addressed with @sda21 by the original. Declared with its real size
-// so MWCC treats it as small data; an unsized array is loaded with lis/addi instead.
-extern const char str_8041D810[4];

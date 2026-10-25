@@ -1149,7 +1149,7 @@ s32 credits_font_reset(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-s32 unk_end_000009a4(EventEntry* event, BOOL isFirstCall) {
+s32 credits_bgm_wait_stop(EventEntry* event, BOOL isFirstCall) {
     psndSetFlag(0x1000);
     return EVT_RETURN_DONE;
 }

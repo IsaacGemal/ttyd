@@ -37,7 +37,7 @@ USER_FUNC(yuuminigame2_opening_chk);
 USER_FUNC(yuuminigame2_opening_on_off);
 USER_FUNC(yuuminigame2_get_name);
 USER_FUNC(yuuminigame2_set_phase);
-USER_FUNC(unk_yuu_00005268);
+USER_FUNC(minigame02_cam_reset);
 EVT_DEF(yuu_01_kaijo_init);
 EVT_DEF(yuu_01_kaijo_init2);
 EVT_DEF(minigame02_main);
