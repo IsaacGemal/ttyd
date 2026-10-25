@@ -11,25 +11,29 @@ void door_position_sub(s32 mode, const char* mapName, const char* hitIn, const c
 
 // A shop's or house's door, handed to the evt_door.c door scripts as their DoorWork's param
 typedef struct DoorParam {
-    s32 field_00;         // 0x00
-    s32 field_04;         // 0x04
-    const char* field_08; // 0x08
-    s32 field_0C;         // 0x0C
-    const char* field_10; // 0x10
-    const char* field_14; // 0x14
-    const char* field_18; // 0x18
-    const char* field_1C; // 0x1C
-    const char* field_20; // 0x20
-    const char* field_24; // 0x24
-    const char* field_28; // 0x28
-    const char* field_2C; // 0x2C
-    const char* field_30; // 0x30
-    const char* field_34; // 0x34
-    const char* field_38; // 0x38
-    const char** field_3C; // 0x3C, npcs
-    const char** field_40; // 0x40, get_noclip_map's list
-    const char** field_44; // 0x44, mobjs
-    const char** field_48; // 0x48, items
+    s32 type;                    // 0x00, door_entry: which side of the outside door's normal the out point sits (0/1, 2, 3)
+    s32 outsideConditionId;      // 0x04, inout_hit's LW(0): evt_door_setup's evt_run_case_evt condition for house_in
+    const char* outsideHit;      // 0x08, the outside door's hit object: house_in's case target; door_entry puts the out
+                                 //       point 40 in front of it
+    s32 insideConditionId;       // 0x0C, inout_hit's LW(2): the evt_run_case_evt condition for house_out
+    const char* insideHit;       // 0x10, the inside door's hit object: house_out's case target; door_entry puts the in point
+                                 //       in front of it
+    const char* openAnim;        // 0x14, animation's LW(0): the map animation in_houseanim plays
+    const char* field_0x18;      // 0x18, animation's LW(1), unused by the scripts
+    const char* closeAnim;       // 0x1C, animation's LW(2): the map animation out_houseanim plays
+    const char* field_0x20;      // 0x20, animation's LW(3), unused by the scripts
+    const char* outsideGroup;    // 0x24, outside_group: house_in sets MAPOBJ_FLAG_NO_BLEND on this map group, house_out clears it
+    const char* doorGroup;       // 0x28, door_group: the door's map object (in_dooranim/out_dooranim rotate it; house_in sets
+                                 //       NO_BLEND and NO_BLEND1 on it, house_out clears them)
+    const char* insideGroup;     // 0x2C, inside_group's LW(0): house_in clears MAPOBJ_FLAG_HIDDEN on this map group,
+                                 //       house_out sets it
+    const char* insideHitGroup;  // 0x30, inside_group's LW(1): evt_hitobj_onoff turns it on in house_in, off in house_out
+    const char* initInsideGroup; // 0x34, init_inside_group's LW(0): evt_door_setup sets MAPOBJ_FLAG_HIDDEN on it
+    const char* initInsideHitGroup; // 0x38, init_inside_group's LW(1): evt_door_setup turns it off (evt_hitobj_onoff)
+    const char** npcNames;       // 0x3C, npc_dark/npc_light darken and restore them
+    const char** noclipMaps;     // 0x40, get_noclip_map's list: house_in clears MAPOBJ_FLAG_CLIP on each, house_out sets it
+    const char** mobjNames;      // 0x44, npc_dark/npc_light
+    const char** itemNames;      // 0x48, npc_dark/npc_light
 } DoorParam;
 
 // A map's door, read by evt_door_entry and evt_door_param

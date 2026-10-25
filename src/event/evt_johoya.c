@@ -93,7 +93,7 @@ USER_FUNC(johoya_data_free) {
 USER_FUNC(johoya_keti_newjoho_check) {
     InformantWork* wp = &_jdt;
     s32* args = event->args;
-    u8* flag = wp->unk14.ketiNewjohoReadFlag;
+    u8* flag = wp->readFlags.ketiNewjohoReadFlag;
     s32 count = 0;
     s32 i;
 
@@ -112,7 +112,7 @@ USER_FUNC(johoya_keti_newjoho_makelabel) {
     s32 value = evtGetValue(event, args[0]);
     InformantWork* wp = &_jdt;
     char sp[64];
-    u8* flag = wp->unk14.ketiNewjohoReadFlag;
+    u8* flag = wp->readFlags.ketiNewjohoReadFlag;
     const char* msg;
     s32 matchCount = 0;
     s32 i;
@@ -126,8 +126,8 @@ USER_FUNC(johoya_keti_newjoho_makelabel) {
                 evtSetValue(event, args[1], (s32)wp->infoEnd);
                 evtSetValue(event, args[2], (s32)msg);
                 evtSetValue(event, args[3], strlen(msg));
-                evtSetValue(event, args[4], wp->info[i].unkA);
-                wp->unk10 = i;
+                evtSetValue(event, args[4], wp->info[i].price);
+                wp->curIdx = i;
                 return 2;
             }
             matchCount++;
@@ -146,8 +146,8 @@ USER_FUNC(johoya_keti_newjoho_setreadflag) {
     InformantWork* wp = &_jdt;
     s32 index;
 
-    index = wp->unk10;
-    johoya_set(wp->unk14.ketiNewjohoReadFlag, wp->info[index].storyId, 1);
+    index = wp->curIdx;
+    johoya_set(wp->readFlags.ketiNewjohoReadFlag, wp->info[index].storyId, 1);
     wp->info[index].readFlag |= 1;
     return 2;
 }
@@ -156,7 +156,7 @@ USER_FUNC(johoya_keti_newjoho_setreadflag) {
 USER_FUNC(johoya_keti_oldspeak_check) {
     InformantWork* wp = &_jdt;
     s32* args = event->args;
-    u8* flag = wp->unk14.ketiNewjohoReadFlag;
+    u8* flag = wp->readFlags.ketiNewjohoReadFlag;
     s32 count = 0;
     s32 i;
 
@@ -175,7 +175,7 @@ USER_FUNC(johoya_keti_oldspeak_makelabel) {
     s32* args = event->args;
     s32 value = evtGetValue(event, args[0]);
     InformantWork* wp = &_jdt;
-    u8* flag = wp->unk14.ketiNewjohoReadFlag;
+    u8* flag = wp->readFlags.ketiNewjohoReadFlag;
     s32 matchCount = 0;
     s32 i;
 
@@ -188,7 +188,7 @@ USER_FUNC(johoya_keti_oldspeak_makelabel) {
                 evtSetValue(event, args[2], (s32)wp->info[i].initEndPos);
                 evtSetValue(event, args[3], wp->info[i].tagEndPos);
                 evtSetValue(event, args[4], 0);
-                wp->unk10 = i;
+                wp->curIdx = i;
                 return 2;
             }
             matchCount++;
@@ -206,7 +206,7 @@ USER_FUNC(johoya_keti_oldspeak_makelabel) {
 USER_FUNC(johoya_keti_oldspeak_setreadflag) {
     InformantWork* wp = &_jdt;
 
-    wp->info[wp->unk10].readFlag |= 1;
+    wp->info[wp->curIdx].readFlag |= 1;
     return 2;
 }
 
@@ -214,7 +214,7 @@ USER_FUNC(johoya_keti_oldspeak_setreadflag) {
 USER_FUNC(johoya_perfect_newjoho_setreadflag) {
     InformantWork* wp = &_jdt;
 
-    johoya_set(wp->unk14.perfectNewjohoReadFlag, wp->info[wp->unk10].storyId, 1);
+    johoya_set(wp->readFlags.perfectNewjohoReadFlag, wp->info[wp->curIdx].storyId, 1);
     return 2;
 }
 
@@ -222,7 +222,7 @@ USER_FUNC(johoya_perfect_newjoho_setreadflag) {
 USER_FUNC(johoya_luigi_newjoho_setreadflag) {
     InformantWork* wp = &_jdt;
 
-    johoya_set(wp->unk14.luigiNewjohoReadFlag, wp->info[wp->unk10].storyId, 1);
+    johoya_set(wp->readFlags.luigiNewjohoReadFlag, wp->info[wp->curIdx].storyId, 1);
     return 2;
 }
 
@@ -319,7 +319,7 @@ s32 johoya_data_make(const char* prefix, s32 type) {
                     wp->info[infoId].labelId = (s16)labelId;
                     wp->info[infoId].initEndPos = initEndPos;
                     wp->info[infoId].tagEndPos = tagEndPos;
-                    wp->info[infoId].unkA = 5;
+                    wp->info[infoId].price = 5;
                     wp->info[infoId].storyId = (s16)storyId;
                 }
                 infoId++;
@@ -333,11 +333,11 @@ s32 johoya_data_make(const char* prefix, s32 type) {
 
 
 void johoya_init(void) {
-    InformantUnknown* unk = &_jdt.unk14;
+    InformantUnknown* flags = &_jdt.readFlags;
     
-    memset(&unk->ketiNewjohoReadFlag, 0, 0xD);
-    memset(&unk->perfectNewjohoReadFlag, 0, 0xD);
-    memset(&unk->luigiNewjohoReadFlag, 0, 0xD);
+    memset(&flags->ketiNewjohoReadFlag, 0, 0xD);
+    memset(&flags->perfectNewjohoReadFlag, 0, 0xD);
+    memset(&flags->luigiNewjohoReadFlag, 0, 0xD);
 }
 
 

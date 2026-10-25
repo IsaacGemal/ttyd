@@ -509,7 +509,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
             GXColor color;
             f32 edgeY;
 
-            sprintf(buf, "%3d", info->unkA);
+            sprintf(buf, "%3d", info->price);
             winFontInit();
             color = (select->items[i].flags & 1) ? colorGray : colorBlack;
             tmpEdge = vec3_802ffcd8;
@@ -2134,7 +2134,7 @@ WinMgrSelect* winMgrSelectEntry(s32 kind, s32 firstItem, BOOL canCancel) {
     case 17:
     case 18:
         {
-            u8* unk = (type == 0x11) ? jdt->unk14.perfectNewjohoReadFlag : jdt->unk14.luigiNewjohoReadFlag;
+            u8* unk = (type == 0x11) ? jdt->readFlags.perfectNewjohoReadFlag : jdt->readFlags.luigiNewjohoReadFlag;
 
             select->numItems = jdt->count;
             select->items = __memAlloc(HEAP_DEFAULT, (select->numItems + 1) * 4);
@@ -2334,24 +2334,24 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
         case 17:
             sprintf(jdt->infoEnd, "%s_%04d", jdt->prefix, jdt->info[itemId].storyId);
             sprintf(buf, "jperfect_title_%04d", jdt->info[itemId].storyId);
-            jdt->unk10 = itemId;
+            jdt->curIdx = itemId;
             msg = msgSearch(buf);
             event->lwData[1] = (s32)jdt->infoEnd;
             event->lwData[2] = (s32)msg;
             event->lwData[3] = strlen(msg);
-            if (johoya_get(jdt->unk14.perfectNewjohoReadFlag, jdt->info[itemId].storyId) != 0) {
+            if (johoya_get(jdt->readFlags.perfectNewjohoReadFlag, jdt->info[itemId].storyId) != 0) {
                 event->lwData[4] = 0;
             } else {
-                event->lwData[4] = jdt->info[itemId].unkA;
+                event->lwData[4] = jdt->info[itemId].price;
             }
             break;
         case 18:
             sprintf(jdt->infoEnd, "%s_%04d", jdt->prefix, jdt->info[itemId].storyId);
-            jdt->unk10 = itemId;
+            jdt->curIdx = itemId;
             event->lwData[1] = (s32)jdt->infoEnd;
             event->lwData[2] = (s32)jdt->info[itemId].initEndPos;
             event->lwData[3] = jdt->info[itemId].tagEndPos;
-            if (johoya_get(jdt->unk14.luigiNewjohoReadFlag, jdt->info[itemId].storyId) != 0) {
+            if (johoya_get(jdt->readFlags.luigiNewjohoReadFlag, jdt->info[itemId].storyId) != 0) {
                 event->lwData[4] = 0;
             } else {
                 event->lwData[4] = 1;

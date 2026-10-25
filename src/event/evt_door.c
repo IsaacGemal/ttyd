@@ -159,35 +159,35 @@ USER_FUNC(door_entry) {
 	DoorWork* work = _mapAlloc(sizeof(DoorWork));
 
 	work->param = param;
-	switch (param->field_00) {
+	switch (param->type) {
 	case 0:
 	case 1:
-		hitObjGetPos(param->field_08, &a);
-		hitObjGetNormal(param->field_08, &b);
+		hitObjGetPos(param->outsideHit, &a);
+		hitObjGetNormal(param->outsideHit, &b);
 		work->out.x = a.x + b.x * 40.0f - b.z * 10.0f;
 		work->out.z = a.z + b.z * 40.0f + b.x * 10.0f;
-		hitObjGetPos(param->field_10, &a);
-		hitObjGetNormal(param->field_10, &b);
+		hitObjGetPos(param->insideHit, &a);
+		hitObjGetNormal(param->insideHit, &b);
 		work->in.x = a.x + b.x * 30.0f;
 		work->in.z = a.z + b.z * 30.0f;
 		break;
 	case 2:
-		hitObjGetPos(param->field_08, &a);
-		hitObjGetNormal(param->field_08, &b);
+		hitObjGetPos(param->outsideHit, &a);
+		hitObjGetNormal(param->outsideHit, &b);
 		work->out.x = a.x + b.x * 40.0f + b.z * 10.0f;
 		work->out.z = a.z + b.z * 40.0f - b.x * 10.0f;
-		hitObjGetPos(param->field_10, &a);
-		hitObjGetNormal(param->field_10, &b);
+		hitObjGetPos(param->insideHit, &a);
+		hitObjGetNormal(param->insideHit, &b);
 		work->in.x = a.x + b.x * 30.0f;
 		work->in.z = a.z + b.z * 30.0f;
 		break;
 	case 3:
-		hitObjGetPos(param->field_08, &a);
-		hitObjGetNormal(param->field_08, &b);
+		hitObjGetPos(param->outsideHit, &a);
+		hitObjGetNormal(param->outsideHit, &b);
 		work->out.x = a.x + b.x * 40.0f;
 		work->out.z = a.z + b.z * 40.0f;
-		hitObjGetPos(param->field_10, &a);
-		hitObjGetNormal(param->field_10, &b);
+		hitObjGetPos(param->insideHit, &a);
+		hitObjGetNormal(param->insideHit, &b);
 		work->in.x = a.x + b.x * 40.0f;
 		work->in.z = a.z + b.z * 40.0f;
 		break;
@@ -201,10 +201,10 @@ USER_FUNC(inout_hit) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
-	evtSetValue(event, args[1], work->param->field_04);
-	evtSetValue(event, args[2], (s32)work->param->field_08);
-	evtSetValue(event, args[3], work->param->field_0C);
-	evtSetValue(event, args[4], (s32)work->param->field_10);
+	evtSetValue(event, args[1], work->param->outsideConditionId);
+	evtSetValue(event, args[2], (s32)work->param->outsideHit);
+	evtSetValue(event, args[3], work->param->insideConditionId);
+	evtSetValue(event, args[4], (s32)work->param->insideHit);
 	return EVT_RETURN_DONE;
 }
 
@@ -233,7 +233,7 @@ USER_FUNC(outside_group) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
-	evtSetValue(event, args[1], (s32)work->param->field_24);
+	evtSetValue(event, args[1], (s32)work->param->outsideGroup);
 	return EVT_RETURN_DONE;
 }
 
@@ -242,7 +242,7 @@ USER_FUNC(door_group) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
-	evtSetValue(event, args[1], (s32)work->param->field_28);
+	evtSetValue(event, args[1], (s32)work->param->doorGroup);
 	return EVT_RETURN_DONE;
 }
 
@@ -251,8 +251,8 @@ USER_FUNC(inside_group) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
-	evtSetValue(event, args[1], (s32)work->param->field_2C);
-	evtSetValue(event, args[2], (s32)work->param->field_30);
+	evtSetValue(event, args[1], (s32)work->param->insideGroup);
+	evtSetValue(event, args[2], (s32)work->param->insideHitGroup);
 	return EVT_RETURN_DONE;
 }
 
@@ -261,8 +261,8 @@ USER_FUNC(init_inside_group) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
-	evtSetValue(event, args[1], (s32)work->param->field_34);
-	evtSetValue(event, args[2], (s32)work->param->field_38);
+	evtSetValue(event, args[1], (s32)work->param->initInsideGroup);
+	evtSetValue(event, args[2], (s32)work->param->initInsideHitGroup);
 	return EVT_RETURN_DONE;
 }
 
@@ -271,10 +271,10 @@ USER_FUNC(animation) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
-	evtSetValue(event, args[1], (s32)work->param->field_14);
-	evtSetValue(event, args[2], (s32)work->param->field_18);
-	evtSetValue(event, args[3], (s32)work->param->field_1C);
-	evtSetValue(event, args[4], (s32)work->param->field_20);
+	evtSetValue(event, args[1], (s32)work->param->openAnim);
+	evtSetValue(event, args[2], (s32)work->param->field_0x18);
+	evtSetValue(event, args[3], (s32)work->param->closeAnim);
+	evtSetValue(event, args[4], (s32)work->param->field_0x20);
 	return EVT_RETURN_DONE;
 }
 
@@ -305,8 +305,8 @@ USER_FUNC(npc_dark) {
 	if (party1 != NULL) {
 		animPoseSetMaterialFlagOn(party1->paperAnimGroup, 0x1800);
 	}
-	if (work->param->field_3C != NULL) {
-		list = work->param->field_3C;
+	if (work->param->npcNames != NULL) {
+		list = work->param->npcNames;
 		for (i = 0; list[i] != NULL; i++) {
 			npc = npcNameToPtr_NoAssert(list[i]);
 			if (npc != NULL) {
@@ -314,8 +314,8 @@ USER_FUNC(npc_dark) {
 			}
 		}
 	}
-	if (work->param->field_44 != NULL) {
-		list = work->param->field_44;
+	if (work->param->mobjNames != NULL) {
+		list = work->param->mobjNames;
 		for (i = 0; list[i] != NULL; i++) {
 			mobj = mobjNameToPtrNoAssert(list[i]);
 			if (mobj != NULL) {
@@ -323,8 +323,8 @@ USER_FUNC(npc_dark) {
 			}
 		}
 	}
-	if (work->param->field_48 != NULL) {
-		list = work->param->field_48;
+	if (work->param->itemNames != NULL) {
+		list = work->param->itemNames;
 		for (i = 0; list[i] != NULL; i++) {
 			item = itemNameToPtr(list[i]);
 			if (item != NULL) {
@@ -362,8 +362,8 @@ USER_FUNC(npc_light) {
 	if (party1 != NULL) {
 		animPoseSetMaterialFlagOff(party1->paperAnimGroup, 0x1800);
 	}
-	if (work->param->field_3C != NULL) {
-		list = work->param->field_3C;
+	if (work->param->npcNames != NULL) {
+		list = work->param->npcNames;
 		for (i = 0; list[i] != NULL; i++) {
 			npc = npcNameToPtr_NoAssert(list[i]);
 			if (npc != NULL) {
@@ -371,8 +371,8 @@ USER_FUNC(npc_light) {
 			}
 		}
 	}
-	if (work->param->field_44 != NULL) {
-		list = work->param->field_44;
+	if (work->param->mobjNames != NULL) {
+		list = work->param->mobjNames;
 		for (i = 0; list[i] != NULL; i++) {
 			mobj = mobjNameToPtrNoAssert(list[i]);
 			if (mobj != NULL) {
@@ -380,8 +380,8 @@ USER_FUNC(npc_light) {
 			}
 		}
 	}
-	if (work->param->field_48 != NULL) {
-		list = work->param->field_48;
+	if (work->param->itemNames != NULL) {
+		list = work->param->itemNames;
 		for (i = 0; list[i] != NULL; i++) {
 			item = itemNameToPtr(list[i]);
 			if (item != NULL) {
@@ -397,7 +397,7 @@ USER_FUNC(get_noclip_map) {
 	s32* args = event->args;
 	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 	s32 index = evtGetValue(event, args[1]);
-	const char** list = work->param->field_40;
+	const char** list = work->param->noclipMaps;
 
 	if (list != NULL) {
 		const char* value = list[index];
