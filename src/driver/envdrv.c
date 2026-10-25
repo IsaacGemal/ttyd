@@ -161,51 +161,51 @@ void envTexSetup(void) { //1:1
 
 void envCapture(CameraId camId, void* param) { //1:1
     EnvironmentWork* wp = envGetWork();
-    u16 var0, var1, var2, var3;
+    u16 width, height, halfWidth, halfHeight;
     u32 size;
     
-    var0 = gp->fbWidth;
-    var1 = gp->efbHeight;
-    var2 = (u16)(((u32)var0 & 0xFFFF) / 2);
-    var3 = (u16)(((u32)var1 & 0xFFFF) / 2);
+    width = gp->fbWidth;
+    height = gp->efbHeight;
+    halfWidth = (u16)(((u32)width & 0xFFFF) / 2);
+    halfHeight = (u16)(((u32)height & 0xFFFF) / 2);
     if (wp->flags & 1) {
         GXSetTexCopySrc(0, 0, gp->fbWidth, gp->efbHeight);
-        GXSetTexCopyDst(var2, var3, GX_TF_RGBA8, GX_TRUE);
-        size = GXGetTexBufferSize(var2, var3, GX_TF_RGBA8, GX_FALSE, 0);
+        GXSetTexCopyDst(halfWidth, halfHeight, GX_TF_RGBA8, GX_TRUE);
+        size = GXGetTexBufferSize(halfWidth, halfHeight, GX_TF_RGBA8, GX_FALSE, 0);
         wp->capture = smartAlloc(size, 3);
         GXCopyTex(wp->capture->address, GX_FALSE);
         GXPixModeSync();
-        GXInitTexObj(&wp->captureObj, wp->capture->address, var2, var3, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+        GXInitTexObj(&wp->captureObj, wp->capture->address, halfWidth, halfHeight, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
         GXInitTexObjLOD(&wp->captureObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     }
     if (wp->flags & 2) {
-        GXSetTexCopySrc(0, 0, var0, var1);
-        GXSetTexCopyDst(var2, var3, GX_CTF_Z8M, GX_TRUE);
-        size = GXGetTexBufferSize(var2, var3, GX_CTF_Z8M, GX_FALSE, 0);
+        GXSetTexCopySrc(0, 0, width, height);
+        GXSetTexCopyDst(halfWidth, halfHeight, GX_CTF_Z8M, GX_TRUE);
+        size = GXGetTexBufferSize(halfWidth, halfHeight, GX_CTF_Z8M, GX_FALSE, 0);
         wp->capture2 = smartAlloc(size, 3);
         GXCopyTex(wp->capture2->address, 0);
         GXPixModeSync();
-        GXInitTexObj(&wp->captureObj2, wp->capture2->address, var2, var3, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+        GXInitTexObj(&wp->captureObj2, wp->capture2->address, halfWidth, halfHeight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
         GXInitTexObjLOD(&wp->captureObj2, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     }
 }
 
 void envCapture2(CameraId camId, void* param) { //1:1
     EnvironmentWork* wp = envGetWork();
-    u16 var0, var1;
+    u16 halfWidth, halfHeight;
 
-    var0 = (u16)(((u32)gp->fbWidth & 0xFFFF) / 2);
-    var1 = (u16)(((u32)gp->efbHeight & 0xFFFF) / 2);
+    halfWidth = (u16)(((u32)gp->fbWidth & 0xFFFF) / 2);
+    halfHeight = (u16)(((u32)gp->efbHeight & 0xFFFF) / 2);
     if (wp->flags & 4) {
         GXSetTexCopySrc(0, 0, gp->fbWidth, gp->efbHeight);
-        GXSetTexCopyDst(var0, var1, GX_TF_RGB565, GX_TRUE);
+        GXSetTexCopyDst(halfWidth, halfHeight, GX_TF_RGB565, GX_TRUE);
         GXCopyTex(wp->envBlur, GX_FALSE);
         GXPixModeSync();
-        GXInitTexObj(&wp->envBlurObj, wp->envBlur, var0, var1, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+        GXInitTexObj(&wp->envBlurObj, wp->envBlur, halfWidth, halfHeight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
         GXInitTexObjLOD(&wp->envBlurObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     }
     if (wp->flags & 0x40000000) {
-        if ((wp->unk98.flags & 1) && (wp->flags & 8)) {
+        if ((wp->blur.flags & 1) && (wp->flags & 8)) {
             wp->flags &= ~4;
         }
         wp->flags |= 8;
@@ -421,7 +421,7 @@ static inline void envDofQuad(void) {
 }
 
 // The far pass: build its blur taps, blend against white, then composite with the frame.
-static inline void envDofFar(EnvironmentUnk88* u, GXColor* color) {
+static inline void envDofFar(EnvironmentDepthOfField* u, GXColor* color) {
     GXTevStageID tevStage;
     s32 texCoord;
     Mtx mtx;
@@ -439,7 +439,7 @@ static inline void envDofFar(EnvironmentUnk88* u, GXColor* color) {
 
         envDofSinCos(TWO_PI * i / 4, &s, &c);
 
-        MTXTrans(mtx, u->unk8 * s / 100.0f, u->unk8 * c / 100.0f, 0.0f);
+        MTXTrans(mtx, u->blurRadius[1] * s / 100.0f, u->blurRadius[1] * c / 100.0f, 0.0f);
         GXLoadTexMtxImm(mtx, *id, 1);
         GXSetTexCoordGen2(texCoord, 1, 4, *id, 0, 0x7D);
         GXSetTevKColorSel(tevStage, 6);
@@ -464,7 +464,7 @@ static inline void envDofFar(EnvironmentUnk88* u, GXColor* color) {
         id++;
         tevStage++;
     }
-    color->r = u->unk3;
+    color->r = u->depthThreshold[1];
     color->a = 0xFF;
     GXSetTevKColor(0, *color);
     GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
@@ -495,7 +495,7 @@ static inline void envDofFar(EnvironmentUnk88* u, GXColor* color) {
 #pragma opt_lifetimes off
 void envDisp_DepthOfField(void) {
     EnvironmentWork* wp = envGetWork();
-    EnvironmentUnk88* u = &wp->unk88;
+    EnvironmentDepthOfField* u = &wp->depthOfField;
     CameraEntry* cam;
     GXTexObj* texobj;
     s32 texCoord;
@@ -534,12 +534,12 @@ void envDisp_DepthOfField(void) {
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
     GXSetCullMode(0);
 
-    if ((u->unk0 & 1) && (u->unk4)) {
+    if ((u->flags & 1) && (u->blurRadius[0])) {
         texCoord = 0;
         tevStage = 0;
-        envDofTaps(&u->unk4, &texCoord, &tevStage);
+        envDofTaps(&u->blurRadius[0], &texCoord, &tevStage);
 #ifdef MUST_MATCH
-        red = u->unk2;
+        red = u->depthThreshold[0];
         color.r = red;
         alpha = 0xFF;
         color.a = alpha;
@@ -548,7 +548,7 @@ void envDisp_DepthOfField(void) {
         tc = texCoord++;
         envDofBlendStage(tevStage, tc, 2, 1);
 #else
-        color.r = u->unk2;
+        color.r = u->depthThreshold[0];
         color.a = 0xFF;
         GXSetTevKColor(0, color);
         GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
@@ -560,7 +560,7 @@ void envDisp_DepthOfField(void) {
         envDofQuad();
     }
 
-    if ((u->unk0 & 2) && (u->unk8)) {
+    if ((u->flags & 2) && (u->blurRadius[1])) {
         envDofFar(u, &color);
     }
 }
@@ -572,7 +572,7 @@ void envDisp_DepthOfField(void) {
 
 void envDisp_Blur(void) {
     EnvironmentWork* wp = envGetWork();
-    EnvironmentBlur* blur = &wp->unk98;
+    EnvironmentBlur* blur = &wp->blur;
     CameraEntry* cam;
     s32 alpha;
     f32 ratio;
@@ -598,7 +598,7 @@ void envDisp_Blur(void) {
         GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
         GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
 
-        duration = blur->unk10;
+        duration = blur->duration;
         if (duration != 0) {
             elapsed = gp->renderTime - blur->renderTime;
             ratio = (f32)(elapsed / (OS_TIMER_CLOCK / 1000)) / (f32)duration;
@@ -641,14 +641,14 @@ void envDisp_Blur(void) {
 
 void envBlurOn(s32 flag, s32 value) {
     EnvironmentWork* wp = envGetWork();
-    EnvironmentBlur* blur = &wp->unk98;
+    EnvironmentBlur* blur = &wp->blur;
 
     wp->flags |= 0x40000000;
     wp->flags |= 4;
     wp->flags &= ~8;
     memset(blur, 0, sizeof(EnvironmentBlur));
     blur->renderTime = gp->renderTime;
-    blur->unk10 = value;
+    blur->duration = value;
     if (flag != 0) {
         blur->flags |= 1;
     }
@@ -664,96 +664,96 @@ void envBlurOff(void) {
 }
 
 void envGlare(EnvironmentGlare* glare) {
-    GXTevStageID var_r23;
-    u16 temp_r8;
-    GXTexObj sp8;
-    GXTevStageID var_r22;
-    u32 var_r22_2;
-    Mtx44 sp88;
-    EnvironmentGlareFilter* temp_r30;
-    EnvironmentWork* var_r4 = envGetWork();
-    s32 temp_r30_2;
-    GXTevKColorSel temp_r21_2;
-    EnvironmentGlare* var_r21;
-    GXTevKColorSel temp_r20_2;
+    GXTevStageID subStage;
+    u16 width;
+    GXTexObj texObj;
+    GXTevStageID addStage;
+    u32 genMtx;
+    Mtx44 proj;
+    EnvironmentGlareFilter* filter;
+    EnvironmentWork* wp = envGetWork();
+    s32 bottom;
+    GXTevKColorSel weightSel;
+    EnvironmentGlare* batch;
+    GXTevKColorSel thresholdSel;
     // The target keeps the sign-extended filter x0 in r20 and the texture-matrix index in r23;
-    // declaring var_r22_3 ahead of var_r23_2 and (MUST_MATCH) caching the cast in x0s give those colours.
+    // declaring tap ahead of texMtxId and (MUST_MATCH) caching the cast in x0s give those colours.
 #ifdef MUST_MATCH
     s16 x0s;
 #endif
-    EnvironmentGlare* var_r22_3;
-    s32 temp_r29;
-    s32 var_r28;
-    u32 var_r23_2;
-    u16 temp_r27;
-    s32 temp_r31;
-    u32 temp_r20;
-    u32 temp_r21;
+    EnvironmentGlare* tap;
+    s32 count;
+    s32 tapIdx;
+    u32 texMtxId;
+    u16 y0;
+    s32 right;
+    u32 halfHeight;
+    u32 halfWidth;
     u32 size;
-    u16 temp_r26;
-    Mtx sp58;
-    Mtx sp28;
-    s32 var_r19_3;
-    void* temp_r19;
+    u16 x0;
+    Mtx posMtx;
+    Mtx texMtx;
+    s32 batchCount;
+    void* buffer;
     int i;
     int j;
-    u16 temp_r0;
+    u16 height;
 
     frame_cnt += 1.0f;
-    temp_r30 = &var_r4->filter;
-    temp_r27 = var_r4->filter.y0;
-    temp_r26 = var_r4->filter.x0;
-    temp_r8 = (u16)(var_r4->filter.x1 - temp_r26);
-    temp_r0 = (u16)(var_r4->filter.y1 - temp_r27);
-    temp_r21 = (u32)temp_r8 / 2;
-    temp_r20 = (u32)temp_r0 / 2;
-    size = GXGetTexBufferSize((u16)temp_r21, (u16)temp_r20, GX_TF_RGB565, GX_FALSE, 0);
-    temp_r19 = smartAlloc(size, 3)->address;
-    GXSetTexCopySrc(temp_r26, temp_r27, temp_r8, temp_r0);
-    GXSetTexCopyDst((u16)temp_r21, (u16)temp_r20, GX_TF_RGB565, GX_TRUE);
-    GXCopyTex(temp_r19, GX_FALSE);
+    filter = &wp->filter;
+    y0 = wp->filter.y0;
+    x0 = wp->filter.x0;
+    width = (u16)(wp->filter.x1 - x0);
+    height = (u16)(wp->filter.y1 - y0);
+    halfWidth = (u32)width / 2;
+    halfHeight = (u32)height / 2;
+    size = GXGetTexBufferSize((u16)halfWidth, (u16)halfHeight, GX_TF_RGB565, GX_FALSE, 0);
+    buffer = smartAlloc(size, 3)->address;
+    GXSetTexCopySrc(x0, y0, width, height);
+    GXSetTexCopyDst((u16)halfWidth, (u16)halfHeight, GX_TF_RGB565, GX_TRUE);
+    GXCopyTex(buffer, GX_FALSE);
     GXPixModeSync();
-    GXInitTexObj(&sp8, temp_r19, (u16)temp_r21, (u16)temp_r20, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GXInitTexObjLOD(&sp8, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    GXLoadTexObj(&sp8, GX_TEXMAP0);
-    temp_r29 = glare->count;
-    var_r28 = 0;
-    temp_r20_2 = glare->unkC;
-    temp_r21_2 = glare->unk10;
+    GXInitTexObj(&texObj, buffer, (u16)halfWidth, (u16)halfHeight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    count = glare->count;
+    tapIdx = 0;
+    thresholdSel = glare->thresholdSel;
+    weightSel = glare->weightSel;
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
     GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
     GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_KONST, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-    GXSetTevKColorSel(GX_TEVSTAGE0, temp_r20_2);
+    GXSetTevKColorSel(GX_TEVSTAGE0, thresholdSel);
     GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
     GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
     GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C1, GX_CC_KONST, GX_CC_ZERO);
-    GXSetTevKColorSel(GX_TEVSTAGE1, temp_r21_2);
+    GXSetTevKColorSel(GX_TEVSTAGE1, weightSel);
     GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
     i = 0;
-    var_r23 = 2;
-    var_r22 = 3;
+    subStage = 2;
+    addStage = 3;
     for (; i < 7; i++) {
-        GXSetTevOrder(var_r23, i + 1, 0, 0xFF);
-        GXSetTevColorOp(var_r23, 1, 0, 0, 1, 2);
-        GXSetTevColorIn(var_r23, 0xE, 0xF, 0xF, 8);
-        GXSetTevKColorSel(var_r23, temp_r20_2);
-        GXSetTevSwapMode(var_r23, 0, 0);
-        GXSetTevOrder(var_r22, 0xFF, 0xFF, 0xFF);
-        GXSetTevColorOp(var_r22, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(var_r22, 0xF, 4, 0xE, 0);
-        GXSetTevKColorSel(var_r22, temp_r21_2);
-        GXSetTevSwapMode(var_r22, 0, 0);
-        var_r23 += 2;
-        var_r22 += 2;
+        GXSetTevOrder(subStage, i + 1, 0, 0xFF);
+        GXSetTevColorOp(subStage, 1, 0, 0, 1, 2);
+        GXSetTevColorIn(subStage, 0xE, 0xF, 0xF, 8);
+        GXSetTevKColorSel(subStage, thresholdSel);
+        GXSetTevSwapMode(subStage, 0, 0);
+        GXSetTevOrder(addStage, 0xFF, 0xFF, 0xFF);
+        GXSetTevColorOp(addStage, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(addStage, 0xF, 4, 0xE, 0);
+        GXSetTevKColorSel(addStage, weightSel);
+        GXSetTevSwapMode(addStage, 0, 0);
+        subStage += 2;
+        addStage += 2;
     }
 
-    for (j = 0, var_r22_2 = GX_TEXMTX0; j < 8; j++, var_r22_2 += 3) {
-        GXSetTexCoordGen(j, GX_TG_MTX2x4, GX_TG_TEX0, var_r22_2);
+    for (j = 0, genMtx = GX_TEXMTX0; j < 8; j++, genMtx += 3) {
+        GXSetTexCoordGen(j, GX_TG_MTX2x4, GX_TG_TEX0, genMtx);
     }
 
-    if (temp_r30->flags & 1) {
+    if (filter->flags & 1) {
         GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
     } else {
         GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
@@ -763,10 +763,10 @@ void envGlare(EnvironmentGlare* glare) {
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
     GXSetViewport(0.0f, 0.0f, (f32)gp->fbWidth, (f32)gp->efbHeight, 0.0f, 1.0f);
     GXSetScissor(0, 0, gp->fbWidth, gp->efbHeight);
-    MTXOrtho(sp88, 0.0f, (f32)gp->efbHeight, 0.0f, (f32)gp->fbWidth, 0.0f, -32767.0f);
-    GXSetProjection(sp88, GX_ORTHOGRAPHIC);
-    PSMTXIdentity(sp58);
-    GXLoadPosMtxImm(sp58, 0);
+    MTXOrtho(proj, 0.0f, (f32)gp->efbHeight, 0.0f, (f32)gp->fbWidth, 0.0f, -32767.0f);
+    GXSetProjection(proj, GX_ORTHOGRAPHIC);
+    PSMTXIdentity(posMtx);
+    GXLoadPosMtxImm(posMtx, 0);
     GXSetCurrentMtx(0);
     GXClearVtxDesc();
     GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
@@ -774,46 +774,46 @@ void envGlare(EnvironmentGlare* glare) {
     GXSetVtxAttrFmt(GX_VTXFMT7, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
     GXSetVtxAttrFmt(GX_VTXFMT7, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
     GXSetCullMode(GX_CULL_BACK);
-    GXSetZScaleOffset(1.0f, temp_r30->zscale);
-    temp_r30_2 = temp_r27 + temp_r0;
-    temp_r31 = temp_r26 + temp_r8;
-    var_r21 = glare;
+    GXSetZScaleOffset(1.0f, filter->zscale);
+    bottom = y0 + height;
+    right = x0 + width;
+    batch = glare;
 #ifdef MUST_MATCH
-    x0s = (s16)temp_r26;
+    x0s = (s16)x0;
 #endif
-    while (var_r28 < temp_r29) {
-        var_r22_3 = var_r21;
-        var_r19_3 = 0;
-        var_r23_2 = 0x1E;
-        while ((var_r19_3 < 8) && (var_r28 < temp_r29)) {
-            MTXTrans(sp28, (glare->unk14 * var_r22_3->coords[0].unk0) / (f32) gp->fbWidth, (glare->unk14 * var_r22_3->coords[0].unk4) / (f32) gp->efbHeight, 0.0f); //temp_r4, temp_r5_3, as 2 3 and temp_f4 as last
-            GXLoadTexMtxImm(sp28, var_r23_2, 1);
-            var_r23_2 += 3;
-            var_r19_3 += 1;
-            var_r22_3 = (void*)((u32)var_r22_3 + 8);
-            var_r21 = (void*)((u32)var_r21 + 8);
-            var_r28 += 1;
+    while (tapIdx < count) {
+        tap = batch;
+        batchCount = 0;
+        texMtxId = 0x1E;
+        while ((batchCount < 8) && (tapIdx < count)) {
+            MTXTrans(texMtx, (glare->offsetScale * tap->coords[0].x) / (f32) gp->fbWidth, (glare->offsetScale * tap->coords[0].y) / (f32) gp->efbHeight, 0.0f);
+            GXLoadTexMtxImm(texMtx, texMtxId, 1);
+            texMtxId += 3;
+            batchCount += 1;
+            tap = (void*)((u32)tap + 8);
+            batch = (void*)((u32)batch + 8);
+            tapIdx += 1;
         }
-        GXSetNumTevStages((u8)(var_r19_3 * 2));
-        GXSetNumTexGens((u8)var_r19_3);
+        GXSetNumTevStages((u8)(batchCount * 2));
+        GXSetNumTexGens((u8)batchCount);
         GXBegin(GX_QUADS, GX_VTXFMT7, 4);
 #ifdef MUST_MATCH
-        GXPosition3s16(x0s, (s16)temp_r27, 0);
+        GXPosition3s16(x0s, (s16)y0, 0);
         GXTexCoord2u16(0, 0);
-        GXPosition3s16((s16)temp_r31, (s16)temp_r27, 0);
+        GXPosition3s16((s16)right, (s16)y0, 0);
         GXTexCoord2u16(1, 0);
-        GXPosition3s16((s16)temp_r31, (s16)temp_r30_2, 0);
+        GXPosition3s16((s16)right, (s16)bottom, 0);
         GXTexCoord2u16(1, 1);
-        GXPosition3s16(x0s, (s16)temp_r30_2, 0);
+        GXPosition3s16(x0s, (s16)bottom, 0);
         GXTexCoord2u16(0, 1);
 #else
-        GXPosition3s16((s16)temp_r26, (s16)temp_r27, 0);
+        GXPosition3s16((s16)x0, (s16)y0, 0);
         GXTexCoord2u16(0, 0);
-        GXPosition3s16((s16)temp_r31, (s16)temp_r27, 0);
+        GXPosition3s16((s16)right, (s16)y0, 0);
         GXTexCoord2u16(1, 0);
-        GXPosition3s16((s16)temp_r31, (s16)temp_r30_2, 0);
+        GXPosition3s16((s16)right, (s16)bottom, 0);
         GXTexCoord2u16(1, 1);
-        GXPosition3s16((s16)temp_r26, (s16)temp_r30_2, 0);
+        GXPosition3s16((s16)x0, (s16)bottom, 0);
         GXTexCoord2u16(0, 1);
 #endif
     }
@@ -1455,9 +1455,9 @@ void envAddTev(s32 type, void* param) {
 // set-flag path in the else arm. The bbox `lhz` loads sit in both arms (inside the walk before the
 // `break`, and in the else), as in the original, so the walk running out falls through to the flag
 // comparisons with whatever those registers hold. The initial `flags` load is written through
-// `yami->unk0` rather than `obj`; that makes MWCC spill `yami` first (`mr r17, r3`)
+// `yami->obj` rather than `obj`; that makes MWCC spill `yami` first (`mr r17, r3`)
 // and load obj with `lwz r3, 0x0(r3)` as the target does.
-#pragma opt_propagation off // stops MWCC re-evaluating yami->unk0, so obj/flags colour as the target
+#pragma opt_propagation off // stops MWCC re-evaluating yami->obj, so obj/flags colour as the target
 #pragma opt_lifetimes off // needed: without it envSetWater 99.58%
 // `texMap` is an `int` so its enum-typed `texMap + 1` arguments are not merged into one temporary; the
 // water texel offset is built in two steps from `i / 4` and `i % 4`; the frustum's near distance is an
@@ -1492,9 +1492,9 @@ void envSetWater(s32 arg0, void* arg1) {
     x0 = y0 = x1 = y1 = 0;
 #endif
 
-    obj = yami->unk0;
+    obj = yami->obj;
     tevStage = yami->tevStage;
-    flags = yami->unk0->flags;
+    flags = yami->obj->flags;
     texMap = yami->texMap;
     texCoord = yami->texCoord;
     numIndStage = yami->numIndStage;
@@ -1564,7 +1564,7 @@ void envSetWater(s32 arg0, void* arg1) {
     GXInitTexObj(&captureObj, capture, (u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GXInitTexObjLOD(&captureObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 
-    PSMTXMultVec(yami->mtx, &yami->unk0->center, &pos);
+    PSMTXMultVec(yami->mtx, &yami->obj->center, &pos);
     scale = 1000.0f / PSVECDistance(&camGetCurPtr()->cameraPos, &pos);
     if (scale < 0.0f) {
         scale = 0.0f;

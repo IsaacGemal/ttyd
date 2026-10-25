@@ -358,13 +358,13 @@ static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return &w->projectio
         Mtx44* proj;                                                                                                                       \
         Vec camPos;                                                                                                                        \
         GXInvalidateTexAll();                                                                                                              \
-        size = ShadowSizeTbl[((ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48))->sizeIdx];                                               \
+        size = ShadowSizeTbl[((ShadowConfigFields*)shadowConfig)[(w)->configIdx].sizeIdx];                                               \
         extra;                                                                                                                             \
         GXGetViewportv(tmp_vp);                                                                                                            \
         GXGetScissor(&tmp_sci[0], &tmp_sci[1], &tmp_sci[2], &tmp_sci[3]);                                                                  \
         GXSetViewport(float_0_804198f4, float_0_804198f4, (f32)size, (f32)size, float_0_804198f4, float_1_80419904);                                                                        \
         GXSetScissor(1, 1, size - 2, size - 2);                                                                                            \
-        cfg = (ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48);                                                                       \
+        cfg = &((ShadowConfigFields*)shadowConfig)[(w)->configIdx];                                                                       \
         proj = PROJ_MTX(w);                                                                                                            \
         camPos = cfg->camPos;                                                                                                              \
         C_MTXLookAt(w->lookAt, &camPos, &cfg->up, &cfg->target);                                                              \
@@ -374,7 +374,7 @@ static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return &w->projectio
         else {                                                                                                                             \
             C_MTXOrtho(*proj, cfg->halfHeight, -cfg->halfHeight, cfg->halfWidth, -cfg->halfWidth, cfg->nearZ, cfg->farZ);                                   \
         }                                                                                                                                  \
-        GXSetProjection((w)->projection, ((ShadowConfigFields*)(shadowConfig + (w)->configIdx * 0x48))->isOrtho);                                                                                                \
+        GXSetProjection((w)->projection, ((ShadowConfigFields*)shadowConfig)[(w)->configIdx].isOrtho);                                                                                                \
         PSMTXCopy(camGetCurPtr()->view, tmp_view);                                                                                         \
         PSMTXCopy(w->lookAt, camGetCurPtr()->view);                                                                          \
     } while (0)
@@ -484,7 +484,7 @@ void shadowDisp(CameraId cameraId, void* param) {
         switch (work->renderMode) {
         case 5: {
             shadowCharShadowDisp_Collision(cameraId, param);
-            config = (ShadowConfigFields*)(shadowConfig + cswp->configIdx * 0x48);
+            config = &((ShadowConfigFields*)shadowConfig)[cswp->configIdx];
             if (config->followCamera == 1) {
                 CameraEntry* cam = camGetPtr(CAMERA_3D);
 
@@ -644,7 +644,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     (void)camId;
     (void)param;
     work = cswp;
-    config = (ShadowConfigFields*)(shadowConfig + ((CharShadowWork*)work)->configIdx * 0x48);
+    config = &((ShadowConfigFields*)shadowConfig)[((CharShadowWork*)work)->configIdx];
     entry = ((CharShadowWork*)work)->entries;
     view = camGetCurPtr()->view;
     alpha = cswp->color.a;
@@ -1136,7 +1136,7 @@ GXColor shadowGetDepthShadowColor(void) {
 }
 
 ShadowConfigFields* shadowGetDepthShadowConfig(void) {
-    return (ShadowConfigFields*)(shadowConfig + dswp->configIdx * 0x48);
+    return &((ShadowConfigFields*)shadowConfig)[dswp->configIdx];
 }
 
 void shadowProjShadowDrawCountUp(void) {
@@ -1159,7 +1159,7 @@ GXColor shadowGetProjShadowColor(void) {
 }
 
 ShadowConfigFields* shadowGetProjShadowConfig(void) {
-    return (ShadowConfigFields*)(shadowConfig + pswp->configIdx * 0x48);
+    return &((ShadowConfigFields*)shadowConfig)[pswp->configIdx];
 }
 
 void projShadowEnd(s32 arg0, ProjShadowWork* work) {
@@ -1175,7 +1175,7 @@ void projShadowEnd(s32 arg0, ProjShadowWork* work) {
     GXSetScissor(tmp_sci[0], tmp_sci[1], tmp_sci[2], tmp_sci[3]);
 
     if (work->drawCount != 0) {
-        config = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
+        config = &((ShadowConfigFields*)shadowConfig)[work->configIdx];
         size = ShadowSizeTbl[config->sizeIdx];
         if (work->flags & 2) {
             if (work->flags & 4) {
@@ -1203,7 +1203,7 @@ void projShadowEnd(s32 arg0, ProjShadowWork* work) {
             GXInitTexObj(&work->texObj, work->texBuffer->address, size, size, GX_TF_IA4, 0, 0, 0);
         }
         GXInitTexObjLOD(&work->texObj, 1, 1, float_0_804198f4, float_0_804198f4, float_0_804198f4, 0, 0, 0);
-        config = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
+        config = &((ShadowConfigFields*)shadowConfig)[work->configIdx];
         if (&work->projTexMtx != NULL) {
             if (config->isOrtho == 0) {
                 C_MTXLightFrustum(mtx, -config->halfHeight, config->halfHeight, config->halfWidth, -config->halfWidth, config->nearZ, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
@@ -1224,10 +1224,10 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
     CameraEntry* cam;
     Mtx mtx2;
     Mtx mtx;
-    f32 f31;
-    f32 f30;
-    f32 f29;
-    f32 f4;
+    f32 range;
+    f32 farZ;
+    f32 nearZ;
+    f32 scale;
     s32 sizeFmt;
     s32 fmt;
     u16 size;
@@ -1239,7 +1239,7 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
     GXSetScissor(tmp_sci[0], tmp_sci[1], tmp_sci[2], tmp_sci[3]);
 
     if (work->drawCount != 0) {
-        config = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
+        config = &((ShadowConfigFields*)shadowConfig)[work->configIdx];
         if (config->depthMode <= 2) {
             fmt = GX_TF_Z8;
             sizeFmt = GX_TF_I8;
@@ -1259,7 +1259,7 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
         GXPixModeSync();
         GXInitTexObj(&work->texObj, work->texBuffer->address, size, size, sizeFmt, 0, 0, 0);
         GXInitTexObjLOD(&work->texObj, 0, 0, float_0_804198f4, float_0_804198f4, float_0_804198f4, 0, 0, 0);
-        config2 = (ShadowConfigFields*)(shadowConfig + work->configIdx * 0x48);
+        config2 = &((ShadowConfigFields*)shadowConfig)[work->configIdx];
         flag = (config2->depthMode > 2);
         if (&work->projTexMtx != NULL) {
             if (config2->isOrtho == 0) {
@@ -1271,35 +1271,35 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
             PSMTXConcat(mtx, work->lookAt, work->projTexMtx);
         }
         if (&work->depthMtx != NULL) {
-            f29 = config2->nearZ;
-            f30 = config2->farZ;
-            f31 = f30 - f29;
+            nearZ = config2->nearZ;
+            farZ = config2->farZ;
+            range = farZ - nearZ;
             PSMTXScale(mtx2, float_0_804198f4, float_0_804198f4, float_0_804198f4);
             if (flag) {
-                f4 = float_256_804198fc;
+                scale = float_256_804198fc;
             }
             else {
-                f4 = float_16_80419900;
+                scale = float_16_80419900;
             }
             if (config2->isOrtho == 0) {
-                f32 d = f30 / f31;
-                f32 n = f30 * f29 / f31;
+                f32 d = farZ / range;
+                f32 n = farZ * nearZ / range;
 
                 mtx2[0][2] = d;
                 mtx2[0][3] = n;
-                mtx2[1][2] = d * f4;
-                mtx2[1][3] = n * f4;
+                mtx2[1][2] = d * scale;
+                mtx2[1][3] = n * scale;
                 mtx2[2][2] = float_1_80419904;
                 mtx2[2][3] = config2->depthBias;
             }
             else {
-                f32 d = float_neg1_80419908 / f31;
-                f32 n = -f29 / f31;
+                f32 d = float_neg1_80419908 / range;
+                f32 n = -nearZ / range;
 
                 mtx2[0][2] = d;
                 mtx2[0][3] = n;
-                mtx2[1][2] = d * f4;
-                mtx2[1][3] = n * f4;
+                mtx2[1][2] = d * scale;
+                mtx2[1][3] = n * scale;
                 mtx2[2][3] = float_1_80419904 + config2->depthBias;
             }
             PSMTXConcat(mtx2, work->lookAt, work->depthMtx);

@@ -32,7 +32,7 @@ typedef struct ProjShadowWork {
     Mtx lookAt; //0xC
     Mtx44 projection; //0x3C
     Mtx projTexMtx; //0x7C
-    u8 padAC[0xDC - 0xAC];
+    u8 pad_0xAC[0xDC - 0xAC]; //0xAC
     GXTexObj texObj; //0xDC
     smartEntry* texBuffer; //0xFC
     GXColor color; //0x100
@@ -53,7 +53,7 @@ typedef struct ShadowEntry {
     f32 decayY;              // 0x20
     f32 decayZ;              // 0x24
     u8 mode;                 // 0x28, TEV alpha of the cylinder colour
-    u8 pad29[3];             // 0x29
+    u8 pad_0x29[3];          // 0x29
     Mtx matrix;              // 0x2C
 } ShadowEntry;
 
@@ -64,7 +64,7 @@ typedef struct CharShadowWork {
     Mtx lookAt; //0xC
     Mtx44 projection; //0x3C
     Mtx projTexMtx; //0x7C
-    u8 padAC[0xDC - 0xAC];
+    u8 pad_0xAC[0xDC - 0xAC]; //0xAC
     GXTexObj texObj; //0xDC
     smartEntry* texBuffer; //0xFC
     GXColor color; //0x100
@@ -76,7 +76,7 @@ typedef struct CharShadowWork {
     s32 defaultCollision; //0x118, shadowEntry sets flags 0x1 when set
 } CharShadowWork;
 
-// One shadowConfig block (0x48 bytes), reached as shadowConfig + configIdx * 0x48.
+// One shadowConfig block (0x48 bytes): shadowConfig is two of them, indexed by configIdx.
 // followCamera (0x0): 1 rebuilds the light position from CAMERA_3D each frame (shadowDisp, the char pass).
 // halfWidth/halfHeight (0x28/0x2C): the C_MTXFrustum/C_MTXOrtho extents, also the Projection quad's size.
 // nearZ/farZ (0x30/0x34): clip planes; depthShadowEnd builds the depth matrix from them.

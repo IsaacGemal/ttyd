@@ -109,7 +109,7 @@ static inline void PackTexPalette(TEXPalette* tpl) {
 					img->unpacked = FALSE;
 					tpl->descriptorArray[i].textureHeader->data -= (u32)tpl;
 				}
-				tpl->descriptorArray[i].textureHeader = (void*)((u32)tpl->descriptorArray[i].textureHeader - (u32)tpl);
+				FILE_UNRELOC(tpl->descriptorArray[i].textureHeader, tpl);
 			}
 			if (tpl->descriptorArray[i].CLUTHeader) {
 				CLUTHeader* pal = tpl->descriptorArray[i].CLUTHeader;
@@ -122,11 +122,11 @@ static inline void PackTexPalette(TEXPalette* tpl) {
 				// the way the original does.
 				*(u32*)&tpl->descriptorArray[i].CLUTHeader -= (u32)tpl;
 #else
-				tpl->descriptorArray[i].CLUTHeader = (void*)((u32)tpl->descriptorArray[i].CLUTHeader - (u32)tpl);
+				FILE_UNRELOC(tpl->descriptorArray[i].CLUTHeader, tpl);
 #endif
 			}
 		}
-		tpl->descriptorArray = (void*)((u32)tpl->descriptorArray - (u32)tpl);
+		FILE_UNRELOC(tpl->descriptorArray, tpl);
 	}
 }
 
@@ -333,19 +333,19 @@ static inline void fileUnpackTpl(TEXPalette* tpl) {
 		OSPanic("filemgr.c", 106, "invalid version number for texture palette");
 	}
 	if ((u32)tpl->descriptorArray < (u32)tpl) {
-		tpl->descriptorArray = (TEXDescriptor*)((u32)tpl->descriptorArray + (u32)tpl);
+		FILE_RELOC(tpl->descriptorArray, tpl);
 		for (i = 0; i < tpl->numDescriptors; i++) {
 			if (tpl->descriptorArray[i].textureHeader) {
-				tpl->descriptorArray[i].textureHeader = (TEXHeader*)((u32)tpl->descriptorArray[i].textureHeader + (u32)tpl);
+				FILE_RELOC(tpl->descriptorArray[i].textureHeader, tpl);
 				if (!tpl->descriptorArray[i].textureHeader->unpacked) {
-					tpl->descriptorArray[i].textureHeader->data = (char*)((u32)tpl + (u32)tpl->descriptorArray[i].textureHeader->data);
+					FILE_RELOC(tpl->descriptorArray[i].textureHeader->data, tpl);
 					tpl->descriptorArray[i].textureHeader->unpacked = TRUE;
 				}
 			}
 			if (tpl->descriptorArray[i].CLUTHeader) {
-				tpl->descriptorArray[i].CLUTHeader = (CLUTHeader*)((u32)tpl->descriptorArray[i].CLUTHeader + (u32)tpl);
+				FILE_RELOC(tpl->descriptorArray[i].CLUTHeader, tpl);
 				if (!tpl->descriptorArray[i].CLUTHeader->unpacked) {
-					tpl->descriptorArray[i].CLUTHeader->data = (char*)((u32)tpl + (u32)tpl->descriptorArray[i].CLUTHeader->data);
+					FILE_RELOC(tpl->descriptorArray[i].CLUTHeader->data, tpl);
 					tpl->descriptorArray[i].CLUTHeader->unpacked = TRUE;
 				}
 			}
