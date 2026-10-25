@@ -21,7 +21,7 @@ typedef enum DVDFlags {
 typedef struct DVDEntry {
 	char name[64]; //0x0
 	DVDFileInfo info; //0x40
-	void* address; //0x7C
+	u8* address; //0x7C, where the next chunk is read to; advanced by each chunk
 	s32 bytesLeft; //0x80
 	s32 offset; //0x84
 	s32 position; //0x88

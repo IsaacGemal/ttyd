@@ -30,10 +30,25 @@ typedef struct WinEquipRec {
     s32 badgeId;  // 0x8, badge item id (itemDataTable index in win_badge and win_root's sorts)
 } WinEquipRec;
 
+// win_log's menu tabs (WindowWork.logRows).
+typedef struct LogRow {
+    s32 type;         // 0x00
+    f32 curX;         // 0x04
+    f32 curY;         // 0x08
+    f32 targetX;      // 0x0C
+    f32 targetY;      // 0x10
+    s32 phase;        // 0x14
+    s32 timer;        // 0x18
+    const char* name; // 0x1C
+} LogRow;
+// win_log's tattle list entry (WindowWork.logChars); win_root's sorts compare the ids.
+typedef struct LogChar {
+    u8 pad;
+    u8 id;
+} LogChar;
 // The pause menu's work area. Each submenu keeps its state in its own band, laid out one after another
 // rather than overlaid: root 0x1C-0x184, win_mario 0x160-0x198, win_party 0x19C-0x208, win_item
-// 0x20C-0x3DA (plus 0x1208/0x120C), win_badge 0x3DC-0xD64, win_log 0xD68-0x1204. win_log's band is
-// declared in LogWin (window/win_log.h), an overlay of the whole struct that win_log and win_root use.
+// 0x20C-0x3DA (plus 0x1208/0x120C), win_badge 0x3DC-0xD64, win_log 0xD68-0x1204.
 typedef struct WindowWork {
     u16 flags;                  // 0x0, 0x2000 = famicom (8-bit) Mario
     u8 align_2[2];              // 0x2
@@ -139,11 +154,75 @@ typedef struct WindowWork {
     f32 badgeScrollTarget[2];   // 0x3FC
     WinEquipRec equipList[200]; // 0x404, winMakeEquipList; win_root sorts it
     s32 equipListCount;         // 0xD64
-    u8 field_D68[0xE1C - 0xD68]; // 0xD68
-    s32 mapMarioPose;           // 0xE1C, win_log map's Mario pose (LogWin.pose; mario_change rebuilds it)
-    u8 field_E20[0x1050 - 0xE20]; // 0xE20
-    u8 logChars[0x1200 - 0x1050]; // 0x1050, win_log's tattle list (LogWin.chars); win_root's sort_7_2/7_3 sort it
-    u8 field_1200[0x1208 - 0x1200]; // 0x1200
+    // win_log's band: the tabbed "kiroku" window (map, crystal stars, cards, badges, tattle log). win_root's
+    // sorts and book pages read the card, badge and tattle counts here too.
+    s32 logState;               // 0xD68
+    s32 logSel;                 // 0xD6C
+    s32 logCount;               // 0xD70
+    LogRow logRows[5];          // 0xD74
+    s32 mapSel;                 // 0xE14
+    s32 mapPick;                // 0xE18
+    s32 mapMarioPose;           // 0xE1C, the map page's Mario pose (win_badge's mario_change rebuilds it)
+    f32 mapCx;                  // 0xE20
+    f32 mapCy;                  // 0xE24
+    f32 mapTargetX;             // 0xE28, mapGX's position (win_log's Disp), easing towards the target
+    f32 mapX;                   // 0xE2C
+    f32 mapTargetY;             // 0xE30
+    f32 mapY;                   // 0xE34
+    f32 mapScrollX;             // 0xE38
+    f32 mapScrollY;             // 0xE3C
+    s32 stoneNum;               // 0xE40
+    struct EffectEntry* stones[7]; // 0xE44
+    s32 stoneSel;               // 0xE60
+    f32 stoneTargetX;           // 0xE64, the crystal star ring's position
+    f32 stoneX;                 // 0xE68
+    f32 stoneTargetY;           // 0xE6C
+    f32 stoneY;                 // 0xE70
+    f32 stoneTargetAlpha;       // 0xE74, the ring backdrop's alpha
+    f32 stoneAlpha;             // 0xE78
+    f32 stoneTargetAngle;       // 0xE7C, the ring's rotation, 360/7 degrees per stoneSel
+    f32 stoneAngle;             // 0xE80
+    f32 cardX;                  // 0xE84, the card window (winHakoGX 0), easing towards its target
+    f32 cardTargetX;            // 0xE88
+    f32 cardY;                  // 0xE8C
+    f32 cardTargetY;            // 0xE90
+    s32 cardCnt;                // 0xE94
+    s32 cardSel;                // 0xE98
+    s32 cardPage;               // 0xE9C
+    f32 cardScrollPos;          // 0xEA0, card list scroll, cardPage * 0xE8 (win_root's book pages read it)
+    f32 cardScrollTarget;       // 0xEA4
+    f32 cardIconX;              // 0xEA8, the selected card's picture frame (texture 0x95) and icon
+    f32 cardIconTargetX;        // 0xEAC
+    f32 cardIconY;              // 0xEB0
+    f32 cardIconTargetY;        // 0xEB4
+    s16 cardIcon[100];          // 0xEB8
+    f32 logBadgeX;              // 0xF80, the badge window (winHakoGX 1)
+    f32 logBadgeTargetX;        // 0xF84
+    f32 logBadgeY;              // 0xF88
+    f32 logBadgeTargetY;        // 0xF8C
+    s32 logBadgeCnt;            // 0xF90
+    s32 logBadgeSel;            // 0xF94
+    s32 logBadgePage;           // 0xF98
+    f32 logBadgeScrollPos;      // 0xF9C, badge list scroll, logBadgePage * 0xE8
+    f32 logBadgeScrollTarget;   // 0xFA0
+    f32 logBadgeIconX;          // 0xFA4, the selected badge's picture frame (texture 0x96) and icon
+    f32 logBadgeIconTargetX;    // 0xFA8
+    f32 logBadgeIconY;          // 0xFAC
+    f32 logBadgeIconTargetY;    // 0xFB0
+    s16 logBadgeIcon[58];       // 0xFB4
+    f32 field_0x1028;           // 0x1028
+    f32 field_0x102C;           // 0x102C
+    f32 field_0x1030;           // 0x1030
+    f32 field_0x1034;           // 0x1034
+    s32 charCnt;                // 0x1038
+    s32 seenCnt;                // 0x103C
+    s32 charSel;                // 0x1040
+    s32 charPage;               // 0x1044
+    f32 field_0x1048;           // 0x1048
+    f32 field_0x104C;           // 0x104C
+    LogChar logChars[216];      // 0x1050, win_root's sort_7_2/7_3 sort it
+    void* mono;                 // 0x1200
+    u8 pad_0x1204[0x4];         // 0x1204
     s32 useTargetWin[2];        // 0x1208, win_item: winMgr windows opened to pick who an item is used on
 } WindowWork;
 

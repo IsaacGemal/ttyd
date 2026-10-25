@@ -363,8 +363,16 @@ void effSplashGetCol(enum CameraId camId, void* param) {
 	f32 screenX;
 	f32 screenY;
 	f32 screenZ;
-	u32 color;
-	u32 palette;
+	union {
+		u32 argb;
+		struct {
+			u8 a, r, g, b;
+		} c;
+	} color; // GXPeekARGB's pixel
+	union {
+		u32 rgba;
+		GXColor c;
+	} palette; // the map's colour from unk_80224298 (FunemizuMapEntry.value)
 
 	cam = camGetPtr(camId);
 	GXSetProjection(cam->projection, cam->projType);
@@ -373,18 +381,18 @@ void effSplashGetCol(enum CameraId camId, void* param) {
 	GXProject(data->position.x, data->position.y, data->position.z, cam->view, projection, viewport, &screenX, &screenY, &screenZ);
 	if (screenX > 0.0f && screenX < 608.0f && screenY > 0.0f && screenY < 480.0f) {
 		sysWaitDrawSync();
-		GXPeekARGB((u16)screenX, (u16)screenY, &color);
-		data->color.r = ((u8*)&color)[1];
-		data->color.g = ((u8*)&color)[2];
-		data->color.b = ((u8*)&color)[3];
+		GXPeekARGB((u16)screenX, (u16)screenY, &color.argb);
+		data->color.r = color.c.r;
+		data->color.g = color.c.g;
+		data->color.b = color.c.b;
 		data->color.a = 0xFF;
 	}
 	data->gotColor = 1;
-	palette = unk_80224298();
+	palette.rgba = unk_80224298();
 	// A per-map color lookup overrides the backdrop sample.
-	data->color.r = ((u8*)&palette)[0];
-	data->color.g = ((u8*)&palette)[1];
-	data->color.b = ((u8*)&palette)[2];
+	data->color.r = palette.c.r;
+	data->color.g = palette.c.g;
+	data->color.b = palette.c.b;
 }
 
 

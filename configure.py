@@ -850,7 +850,7 @@ config.libs = [
             Object(Matching, "window/win_party.c"),
             Object(Matching, "window/win_badge.c"),
             Object(Matching, "window/win_item.c"),
-            Object(Matching, "window/win_mario.c"),
+            Object(Matching, "window/win_mario.c", extra_cflags=["-char signed"]),
             Object(Matching, "window/win_log.c"),
             Object(Matching, "window/win_main.c"),
         ],

@@ -80,38 +80,24 @@ static u32 stg__s_v[0x348 / 4] = {
 };
 static f32 vx_data[8] = { -1.0f, -0.5f, 0.5f, 1.0f, -1.0f, -0.5f, 0.5f, 1.0f };
 
-typedef struct GarekiChild {
-    f32 x;          // 0x00
-    f32 y;          // 0x04
-    f32 z;          // 0x08
-    u8 pad_0C[4];   // 0x0C
+// The userdata is effect->count of these. Record 0 drives the effect (groundY, timer, state, alpha and the spin
+// speeds are its own); records 1-8 are the fragments drawn once it lands (vx and the offset pair are theirs).
+typedef struct GarekiData {
+    Vec position;   // 0x00
+    f32 groundY;    // 0x0C
     f32 vx;         // 0x10
     f32 vy;         // 0x14
     f32 offsetX;    // 0x18
     f32 offsetY;    // 0x1C
-    u8 pad_20[0xC]; // 0x20
+    s32 timer;      // 0x20
+    s32 state;      // 0x24
+    s32 alpha;      // 0x28
     f32 angleX;     // 0x2C
-    u8 pad_30[4];   // 0x30
+    f32 angleY;     // 0x30
     f32 angleZ;     // 0x34
-    u8 pad_38[8];   // 0x38
-} GarekiChild; // 0x40
-
-typedef struct GarekiData {
-    Vec position;            // 0x00
-    f32 groundY;             // 0x0C
-    u8 pad_10[4];            // 0x10
-    f32 vy;                  // 0x14
-    u8 pad_18[8];            // 0x18
-    s32 timer;               // 0x20
-    s32 state;               // 0x24
-    s32 alpha;               // 0x28
-    f32 angleX;              // 0x2C
-    f32 angleZ;              // 0x30
-    f32 field_34;            // 0x34
-    f32 angleVelX;           // 0x38
-    f32 angleVelZ;           // 0x3C
-    GarekiChild children[];  // 0x40
-} GarekiData;
+    f32 angleVelX;  // 0x38
+    f32 angleVelY;  // 0x3C
+} GarekiData; // 0x40
 
 // clang-format off
 // Local copy of system.c's inline helper so it inlines here.
@@ -132,7 +118,7 @@ EffectEntry* effGarekiN64Entry(s32 type, f32 x, f32 y, f32 z, f32 groundY) {
     f32* vx;
     EffectEntry* effect;
     GarekiData* data;
-    GarekiChild* p;
+    GarekiData* p;
     s32 i;
 
     effect = effEntry();
@@ -148,22 +134,22 @@ EffectEntry* effGarekiN64Entry(s32 type, f32 x, f32 y, f32 z, f32 groundY) {
     data->position.z = z;
     data->vy = -2.0f;
     data->angleX = float_0_8041f048;
-    data->angleZ = float_0_8041f048;
-    data->field_34 = (f32)(rand() % 60 - 30);
+    data->angleY = float_0_8041f048;
+    data->angleZ = (f32)(rand() % 60 - 30);
     data->alpha = 0xff;
     data->angleVelX = (f32)(rand() % 60 - 30);
-    data->angleVelZ = 0.25f * data->angleVelX;
+    data->angleVelY = 0.25f * data->angleVelX;
     data->timer = 20;
 
     trans = trans_data + 1;
     vx = vx_data + 1;
-    p = data->children;
+    p = data + 1;
     for (i = 1; i < 9; i++, p++, trans++, vx++) {
         p->offsetX = trans[-1].x;
         p->offsetY = trans[-1].y;
-        p->x = float_0_8041f048;
-        p->y = float_0_8041f048;
-        p->z = float_0_8041f048;
+        p->position.x = float_0_8041f048;
+        p->position.y = float_0_8041f048;
+        p->position.z = float_0_8041f048;
         p->vx = 2.0f * vx[-1];
         p->vy = 2.0f * ((f32)(rand() % 10) * 0.1f) + 1.0f;
         p->angleX = float_0_8041f048;
@@ -183,7 +169,7 @@ void effGarekiMain(EffectEntry* effect) {
         data->vy += float_neg0p1_8041f054;
         data->position.y += data->vy;
         data->angleX += data->angleVelX;
-        data->angleZ += data->angleVelZ;
+        data->angleY += data->angleVelY;
         if (data->position.y <= data->groundY) {
             data->state = 1;
         }
@@ -200,12 +186,12 @@ void effGarekiMain(EffectEntry* effect) {
         }
         data++;
         for (i = 1; i < effect->count; i++, data++) {
-            ((GarekiChild*)data)->vy += -0.2f;
-            ((GarekiChild*)data)->vx *= 0.9f;
-            ((GarekiChild*)data)->x += ((GarekiChild*)data)->vx;
-            ((GarekiChild*)data)->y += ((GarekiChild*)data)->vy;
-            ((GarekiChild*)data)->angleX += 10.0f;
-            ((GarekiChild*)data)->angleZ += 20.0f;
+            data->vy += -0.2f;
+            data->vx *= 0.9f;
+            data->position.x += data->vx;
+            data->position.y += data->vy;
+            data->angleX += 10.0f;
+            data->angleZ += 20.0f;
         }
     }
 
@@ -249,11 +235,11 @@ void effGarekiDisp(CameraId camId, void* param) {
         PSMTXRotRad(rot, 'y', float_deg2rad_8041f050 * -camGetPtr(CAMERA_3D)->viewYaw);
         PSMTXConcat(trans, scale, base);
         PSMTXConcat(base, rot, base);
-        PSMTXRotRad(rot, 'z', float_deg2rad_8041f050 * data->field_34);
+        PSMTXRotRad(rot, 'z', float_deg2rad_8041f050 * data->angleZ);
         PSMTXConcat(base, rot, base);
         PSMTXRotRad(rot, 'x', float_deg2rad_8041f050 * data->angleX);
         PSMTXConcat(base, rot, base);
-        PSMTXRotRad(rot, 'y', float_deg2rad_8041f050 * data->angleZ);
+        PSMTXRotRad(rot, 'y', float_deg2rad_8041f050 * data->angleY);
         PSMTXConcat(base, rot, base);
         PSMTXConcat(cam->view, base, base);
         GXLoadPosMtxImm(base, 0);
@@ -270,13 +256,13 @@ void effGarekiDisp(CameraId camId, void* param) {
         PSMTXRotRad(rotX, 'x', float_deg2rad_8041f050 * data->angleX);
         data++;
         for (i = 1; i < effect->count; i++, data++) {
-            PSMTXTrans(trans, ((GarekiChild*)data)->x, ((GarekiChild*)data)->y, ((GarekiChild*)data)->z);
+            PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
             PSMTXConcat(trans, rotX, childMtx);
-            PSMTXTrans(trans, ((GarekiChild*)data)->offsetX, ((GarekiChild*)data)->offsetY, float_0_8041f048);
+            PSMTXTrans(trans, data->offsetX, data->offsetY, float_0_8041f048);
             PSMTXConcat(childMtx, trans, childMtx);
-            PSMTXRotRad(rot, 'x', float_deg2rad_8041f050 * ((GarekiChild*)data)->angleX);
+            PSMTXRotRad(rot, 'x', float_deg2rad_8041f050 * data->angleX);
             PSMTXConcat(childMtx, rot, childMtx);
-            PSMTXRotRad(rot, 'z', float_deg2rad_8041f050 * ((GarekiChild*)data)->angleZ);
+            PSMTXRotRad(rot, 'z', float_deg2rad_8041f050 * data->angleZ);
             PSMTXConcat(childMtx, rot, childMtx);
             PSMTXConcat(base, childMtx, childMtx);
             PSMTXConcat(cam->view, childMtx, childMtx);

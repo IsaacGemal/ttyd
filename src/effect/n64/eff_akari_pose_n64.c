@@ -55,39 +55,29 @@ static u8 a_data2[24] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-typedef struct effAkariPosePart {
-    u8 pad_0x00[0x4];  // 0x00
+// The userdata is effect->count of these: record 0 is the effect's own (type, position, life, frame), records
+// 1..count the parts (velocity, its target, seqIndex, angle); alpha and scale are used by both.
+typedef struct effAkariPoseData {
+    s32 type;          // 0x00
     f32 x;             // 0x04
     f32 y;             // 0x08
-    u8 pad_0x0C[0x4];  // 0x0C
+    f32 z;             // 0x0C
     f32 vx;            // 0x10
     f32 vy;            // 0x14
     f32 targetVx;      // 0x18
     f32 targetVy;      // 0x1C
     s32 seqIndex;      // 0x20
     f32 angle;         // 0x24
-    u8 pad_0x28[0x8];  // 0x28
+    s32 life;          // 0x28
+    s32 frame;         // 0x2C
     s32 alpha;         // 0x30
     f32 scale;         // 0x34
-} effAkariPosePart;
-
-typedef struct effAkariPoseData {
-    s32 type;                // 0x00
-    f32 x;                   // 0x04
-    f32 y;                   // 0x08
-    f32 z;                   // 0x0C
-    u8 pad_0x10[0x18];       // 0x10
-    s32 life;                // 0x28
-    s32 frame;               // 0x2C
-    s32 alpha;               // 0x30
-    f32 scale;               // 0x34
-    effAkariPosePart part[]; // 0x38
-} effAkariPoseData;
+} effAkariPoseData; // 0x38
 
 EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
     EffectEntry* effect;
     effAkariPoseData* data;
-    effAkariPosePart* part;
+    effAkariPoseData* part;
     s32 i;
     f32 seqStep;
     s32 seqNum;
@@ -115,16 +105,15 @@ EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 
 
     seqNum = max_seq_num[type];
     seqStep = seqNum / 2.0f;
-    for (i = 1, part = data->part; i < count + 1; i++, part++) {
+    for (i = 1, part = data + 1; i < count + 1; i++, part++) {
         part->seqIndex = (s32)(-1.0f - seqStep * (f32)(i & 1));
     }
     return effect;
 }
 
-// The original reuses the header pointer as the parts cursor: `data++` steps it past the 0x38-byte header
-// and the loop steps it once per part, so the part cursor is `data` cast to the part type. Keeping `data`
-// live across the loop also colours it into the target's callee-saved r28 (with `i`/`type` in r27/r26); a
-// separate `part = data->part` cursor leaves the pre-loop `data` in caller-saved r6 instead.
+// The original reuses the header pointer as the parts cursor: `data++` steps it past record 0 and the loop
+// steps it once per part. Keeping `data` live across the loop also colours it into the target's callee-saved
+// r28 (with `i`/`type` in r27/r26); a separate part cursor leaves the pre-loop `data` in caller-saved r6 instead.
 // Both type tests are written as `switch (type) { case 0: ...; break; default: ...; }` because that makes
 // mwcc emit the target's `beq then; b else` layout; a plain `if (type == 0) ... else ...` comes out as
 // `bne else` and mismatches two branches per test.
@@ -172,52 +161,50 @@ void effAkariPoseMain(EffectEntry* effect) {
         break;
     }
     for (i = 1; i < effect->count; i++, data++) {
-        effAkariPosePart* part = (effAkariPosePart*)data;
-        part->seqIndex++;
-        if (part->seqIndex >= max_seq_num[type]) {
-            part->seqIndex = 0;
+        data->seqIndex++;
+        if (data->seqIndex >= max_seq_num[type]) {
+            data->seqIndex = 0;
         }
-        if (part->seqIndex < 0) {
+        if (data->seqIndex < 0) {
             continue;
         }
-        if (part->seqIndex == 0) {
+        if (data->seqIndex == 0) {
             angle = 360.0f * (f32)i / (f32)(effect->count - 1);
             rad = 6.2831855f * angle / 360.0f;
-            part->x = 16.0f * (f32)sin(rad);
-            part->y = 16.0f * (f32)cos(rad);
-            part->vx = part->x * velScale;
-            part->vy = part->y * velScale;
-            part->targetVx = 0.0f;
-            part->targetVy = 0.0f;
-            part->angle = -angle - 45.0f;
-            part->scale = 1.0f;
+            data->x = 16.0f * (f32)sin(rad);
+            data->y = 16.0f * (f32)cos(rad);
+            data->vx = data->x * velScale;
+            data->vy = data->y * velScale;
+            data->targetVx = 0.0f;
+            data->targetVy = 0.0f;
+            data->angle = -angle - 45.0f;
+            data->scale = 1.0f;
         }
         switch (type) {
         case 0:
-            part->alpha = a_data[part->seqIndex];
-            part->scale = scale_data[part->seqIndex];
+            data->alpha = a_data[data->seqIndex];
+            data->scale = scale_data[data->seqIndex];
             break;
         default:
-            part->alpha = a_data2[part->seqIndex];
-            part->scale = scale_data2[part->seqIndex];
+            data->alpha = a_data2[data->seqIndex];
+            data->scale = scale_data2[data->seqIndex];
             break;
         }
         if ((frame & 1) == (i & 1)) {
-            part->x += part->vx;
-            part->y += part->vy;
+            data->x += data->vx;
+            data->y += data->vy;
         } else {
-            part->x += 0.2f * part->vx;
-            part->y += 0.2f * part->vy;
+            data->x += 0.2f * data->vx;
+            data->y += 0.2f * data->vy;
         }
-        part->vx += lerpScale * (part->targetVx - part->vx);
-        part->vy += lerpScale * (part->targetVy - part->vy);
+        data->vx += lerpScale * (data->targetVx - data->vx);
+        data->vy += lerpScale * (data->targetVy - data->vy);
     }
     dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effAkariPoseDisp, effect);
 }
 
-// The original reuses the header pointer as the parts cursor: `data++` steps it past the 0x38-byte
-// header and the loop steps it once per part, so the `part` cursor is `data` cast to the part type.
-// With a separate `part = data->part` pointer mwcc schedules the preheader `addi r30,r30,0x38`
+// The original reuses the header pointer as the parts cursor: `data++` steps it past record 0 and the
+// loop steps it once per part. With a separate part cursor mwcc schedules the preheader `addi r30,r30,0x38`
 // before `li r31,1` (99.25%); reusing `data` reproduces the original's `li`-then-`addi` order.
 void effAkariPoseDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
@@ -254,19 +241,18 @@ void effAkariPoseDisp(CameraId camId, void* param) {
     effSetVtxDescN64(size16x16_tex32x32_vtx);
     data++;
     for (i = 1; i < effect->count; i++, data++) {
-        effAkariPosePart* part = (effAkariPosePart*)data;
-        if (part->seqIndex < 0) {
+        if (data->seqIndex < 0) {
             continue;
         }
-        PSMTXTrans(mtx, part->x, part->y, 0.0f);
-        PSMTXRotRad(rotMtx, 'z', 0.017453292f * part->angle);
-        PSMTXScale(scaleMtx, part->scale, part->scale, part->scale);
+        PSMTXTrans(mtx, data->x, data->y, 0.0f);
+        PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->angle);
+        PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
         PSMTXConcat(mtx, rotMtx, mtx);
         PSMTXConcat(mtx, scaleMtx, mtx);
         PSMTXConcat(viewMtx, mtx, mtx);
         GXLoadPosMtxImm(mtx, 0);
         GXSetCurrentMtx(0);
-        GXSetTevColor(1, (GXColor){ 0, 0, 0, (alpha * part->alpha) >> 8 });
+        GXSetTevColor(1, (GXColor){ 0, 0, 0, (alpha * data->alpha) >> 8 });
         GXBegin(0x90, 0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }

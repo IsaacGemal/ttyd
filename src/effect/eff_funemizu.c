@@ -279,7 +279,10 @@ void effFunemizuDisp(CameraId camId, void* param) {
 	GXTexObj texObj;
 	FunemizuMapEntry* p;
 	GXColor color;
-	u32 colorVal;
+	union {
+		u32 rgba;
+		GXColor c;
+	} colorVal; // the map's colour for the effect (FunemizuMapEntry.value, as unk_80224298 returns it)
 	s32 type;
 	u32 j;
 	s32 i;
@@ -300,7 +303,7 @@ void effFunemizuDisp(CameraId camId, void* param) {
 			break;
 		}
 		if (strcmp(p->name, gp->currentMapName) == 0) {
-			colorVal = p->value;
+			colorVal.rgba = p->value;
 			goto found; // both searches skip the default store after them
 		}
 	}
@@ -309,14 +312,14 @@ void effFunemizuDisp(CameraId camId, void* param) {
 			break;
 		}
 		if (strncmp(entry->name, gp->currentMapName, 3) == 0) {
-			colorVal = entry->value;
+			colorVal.rgba = entry->value;
 			goto found;
 		}
 	}
-	colorVal = (u32)dat_80421468;
+	colorVal.rgba = (u32)dat_80421468;
 found:
 
-	color = *(GXColor*)&colorVal;
+	color = colorVal.c;
 	if (type == 0) {
 		funemizu_color0_tbl[0] = color.r;
 		funemizu_color0_tbl[1] = color.g;
