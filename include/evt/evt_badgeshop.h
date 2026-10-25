@@ -5,7 +5,7 @@
 
 typedef struct BadgeShopWork {
 	u8 special_table[0x19]; //0x0, Lovely Howz of Badges
-	u8 field_0x19[0x19]; //0x19, per-badge stock for the evt_badgeShop_throw_* functions
+	u8 throw_table[0x19]; //0x19, per-badge stock; evt_badgeShop_throw_inc/dec add to it with special_table
 	u8 starmaniac_table[0x19]; //0x32, Dazzle's Badges
 	u8 bottakuru_table[0x55]; //0x4B, Charlieton's Items
 	u8 bteresa_table[0x55]; //0xA0, Pianta Parlor

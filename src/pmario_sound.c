@@ -6038,7 +6038,14 @@ void psndSFXMain(void) {
     s32 i;
     u32 u;
     u32 ch;
-    u32 res;
+    union {
+        u32 word; // calc3D's result, its PAN bytes:
+        struct {
+            u8 vol;
+            u8 pan;
+            u8 span;
+        };
+    } res;
     PaperSoundWork* pp;
     s32 ratio;
 
@@ -6130,11 +6137,11 @@ void psndSFXMain(void) {
                     vol = (sfx->vol * sfx->baseVol) / 127 - sfx->attenuation;
                     if (vol < 0) vol = 0;
                     if (vol > 0x7F) vol = 0x7F;
-                    res = calc3D(sfx->sfxNo, &sfx->position, (u8)vol, sfx->dist);
-                    sfx->channel = SoundEfxPlayEx((u16)entry->flags, 0, ((u8*)&res)[0], ((u8*)&res)[1]);
+                    res.word = calc3D(sfx->sfxNo, &sfx->position, (u8)vol, sfx->dist);
+                    sfx->channel = SoundEfxPlayEx((u16)entry->flags, 0, res.vol, res.pan);
                     if (sfx->channel != -1) {
-                        SoundEfxSetVolume(sfx->channel, ((u8*)&res)[0]);
-                        SoundEfxSetSrndPan(sfx->channel, ((u8*)&res)[2]);
+                        SoundEfxSetVolume(sfx->channel, res.vol);
+                        SoundEfxSetSrndPan(sfx->channel, res.span);
                         SoundEfxSetPitch(sfx->channel, sfx->pitch);
                     }
                 } else {
@@ -6167,26 +6174,26 @@ void psndSFXMain(void) {
             vol = (sfx->vol * sfx->baseVol) / 127 - sfx->attenuation;
             if (vol < 0) vol = 0;
             if (vol > 0x7F) vol = 0x7F;
-            res = calc3D(sfx->sfxNo, &sfx->position, (u8)vol, sfx->dist);
+            res.word = calc3D(sfx->sfxNo, &sfx->position, (u8)vol, sfx->dist);
             if (entry->flags & 0x80000000) {
-                SoundSSSetPanCh(sfx->channel, ((u8*)&res)[1]);
-                vol = ((u8*)&res)[0] * psnd.sfxLevel / 100;
+                SoundSSSetPanCh(sfx->channel, res.pan);
+                vol = res.vol * psnd.sfxLevel / 100;
                 if (vol < 0) vol = 0;
                 if (vol > 0x7F) vol = 0x7F;
                 SoundSSSetVolCh(sfx->channel, (u8)vol);
-                SoundSSSetSrndPanCh(sfx->channel, ((u8*)&res)[2]);
+                SoundSSSetSrndPanCh(sfx->channel, res.span);
             } else if (entry->flags & 0x40000000) {
-                vol = ((u8*)&res)[0] * psnd.sfxLevel / 100;
+                vol = res.vol * psnd.sfxLevel / 100;
                 if (vol < 0) vol = 0;
                 if (vol > 0x7F) vol = 0x7F;
                 SoundSongSetVolCh(sfx->channel, (u8)vol);
             } else {
-                SoundEfxSetPan(sfx->channel, ((u8*)&res)[1]);
-                vol = ((u8*)&res)[0] * psnd.sfxLevel / 100;
+                SoundEfxSetPan(sfx->channel, res.pan);
+                vol = res.vol * psnd.sfxLevel / 100;
                 if (vol < 0) vol = 0;
                 if (vol > 0x7F) vol = 0x7F;
                 SoundEfxSetVolume(sfx->channel, (u8)vol);
-                SoundEfxSetSrndPan(sfx->channel, ((u8*)&res)[2]);
+                SoundEfxSetSrndPan(sfx->channel, res.span);
             }
         } else {
             if (entry->flags & 0x80000000) {
