@@ -90,7 +90,7 @@ typedef struct PuniWork {
     s32 phase;                          // 0x43C, set to 2/3/5 by mode changes, 0 when idle
     s32 prevPhase;                      // 0x440
     BOOL showPuniCounter;               // 0x444
-    BOOL blinkCount;                    // 0x448, puni_disp_info_sub sets it while count != total; the count then blinks
+    BOOL blinkCount;                    // 0x448, puni_disp_info_sub sets it while count != total; puniCountDisp then blinks the count
     s32 puniCounterAlpha;               // 0x44C
     s32 randSeedA;                      // 0x450, puni_rnd / puniQrnd state
     s32 randSeedB;                      // 0x454

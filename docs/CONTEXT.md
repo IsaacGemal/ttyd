@@ -7662,9 +7662,10 @@ fmotion, fbtlsrc. Nothing outside rels/ was edited.
     (evt_eff_firechange00 reads them as pos, moves pos and writes it back).
   - mri unit_boss_magnum_battender MagnumBattenderWork: `prevPos`, `pos`, `rotZ`, `targetRotZ`, the names aji's copy
     (ArmWork) already has; arm_main: prevPos = pos, pos = the unit position, targetRotZ = atan of the movement, rotZ
-    eased toward it and passed to BtlUnit_SetRotate as z, the effect placed 18 below pos.
+    eased toward it and passed to BtlUnit_SetRotate as z, the effect placed at pos plus (0, -18, 0) through the arm
+    matrix.
   - mri_puni: PuniWork 0x458 -> `sfx` (evt_puni_force_se_off passes it to psndSFXOff; nothing in mri sets it), 0x448
-    `unk448` -> `blinkCount` (puni_disp_info_sub sets it while count != total; evt_icon_disp_func then draws the count
+    `unk448` -> `blinkCount` (puni_disp_info_sub sets it while count != total; puniCountDisp then draws the count
     only every other 16 frames); PuniData 0x1E8 -> `turnsLeft` (puniModeHagure: copied from counter, parity picks 90
     or 270, counts down to state 20), 0x2AC -> `fukidashiPos` (the position of the fake MarioWork at 0x220 that
     effFukidashiEntry reads; y -1000 hides it); MriPuniAnimSet `unk0/unk28/unk3C` -> `anims`, `frameCounts`,
