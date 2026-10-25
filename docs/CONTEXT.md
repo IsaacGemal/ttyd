@@ -8760,3 +8760,87 @@ n2rels; none of their files was touched.
 - **For a reviewer.** `eventCode2` is a numbered name for a real pair (two script pointers, both run by mobjRunEvent);
   `depthThreshold`/`blurRadius` index by pass number rather than by an interpretation of the passes as near/far.
   Outside the task's files only evtmgr.h (union members) and evt_johoya.h (a comment) change.
+
+## Address names renamed only from outside evidence: content strings, byte-identical twins; dead externs dropped (2026-10-25, Claude Opus 5.5, n2addr)
+
+Task: the address-style names `tools/cleanup_index.py` counts (`address_name`, `unk_name`), renamed only with
+outside evidence (a string the object holds, an SDK name, a config/G8MJ01 symbol map, or a name already in the repo
+for the same code), every rename through `tools/rename_symbol.py`. Colour/vector templates and value-only constants
+keep their address names (CLEANUP_GUIDE §3).
+
+How the 580 distinct counted names (473 address_name, 107 unk_name; scratch inventory, src/ include/ rels/) were
+checked:
+- **Symbol maps.** Every one is spelled the same in `config/G8MJ01/symbols.txt` or its REL map, and no other
+  symbol shares its address, so the maps hold no hidden real names.
+- **Byte-identical twins.** Every `.fn`/`.obj` in `build/G8MJ01/**/asm` fingerprinted (instructions or data words,
+  local labels normalised), three ways: relocation symbols kept; data-symbol operands (`@ha/@l/@sda21`) masked, so
+  REL-local string copies compare equal; callees masked too (shape only, never used as evidence). An address-named
+  object identical to one with a real name takes that name.
+- **Strings in the bodies** of every remaining `unk_` function and script: none is a name (pose and NPC names,
+  `%s%s%s`, a Japanese status line).
+
+Renamed (rename_symbol.py; REL ones with `--rel`):
+- Strings named by their contents: `str_802C1B88` -> `str_actual_depth_from_the_light_16bit_depth` (shadowdrv's
+  six depth-view labels; the other five already had content names), `str_802FE344` -> `str_MOBJ_HiddenHatenaBlock`
+  (koopa_hit), `str_8041ABAC` -> `str_M_I_Y` (mot_jabara; one content name can name only one object, so the
+  sac_scissor and sac_genki "M_I_Y" copies keep their addresses, as with `str_mario` in #1021).
+- tou_07 `unk_tou_00006bd8`/`unk_tou_00006c00`: asm identical, relocations included, to the dol's `snd_on`/
+  `snd_off` (evt_kinopio, upstream names; psndClearFlag/psndSetFlag 0x80, called around the bed scene in
+  evt_tou_bed as evt_kinopio's are in kinopio_house_talk_evt) -> `tou_07_snd_on`, `tou_07_snd_off`.
+- tou_07 `unk_tou_00006cfc`: identical with string symbols masked to tou_08's `icon_off` (upstream name; iconFlagOn of
+  the "belt" item with flag 2), called at the same step of the twin belt-get scripts (tou_07.c:353,
+  tou_08.c:781) -> `tou_07_icon_off`.
+- end_unknown `unk_end_000009a4`: identical to rsh_02's `bgm_wait_stop` (upstream; psndSetFlag 0x1000) ->
+  `credits_bgm_wait_stop`, in the end map's `credits_` prefix. No caller in the tree.
+- yuu_00 `unk_yuu_00004250` and yuu_01 `unk_yuu_00005268`: identical to yuu_02/yuu_03's `minigame03_cam_reset`/
+  `minigame04_cam_reset` (camShiftReset), called from the map-named `minigame01_end`/`minigame02_end` at the same
+  point -> `minigame01_cam_reset`, `minigame02_cam_reset`.
+- rename_symbol refuses a name already spelled anywhere, so a copy can't take the bare name; the prefix is the file
+  stem (`gor_00_mony_regl` precedent), or the REL map's own prefix for end.
+
+Removed: extern declarations of symbols no file defines or reads (the .c files use literals or compound literals
+now). evt_mobj.h's block of 27 (`str_8041A118` ... `str_MOBJ_Lv2BigBigBlock`, five `float_*`, `vec3_802c3ee8`),
+mapdrv.h's `str_80419848` and `str_s_s`, win_log.h's `str_8041D810` with its comment, and eff_glass_n64.h's three
+`.sbss2` colour templates (`unk_80423120/24/28`) with eight `float_*` constants and their comment.
+
+Left, and why (counted names after this branch: vec3 199, lbl 155, dat 73, str 22, gap 3, suffixed functions 5,
+jumptable 1, table 1, unk 98 distinct):
+- **Templates and layout:** the `vec3_` Vec templates; the `lbl_` force_active `{-1,1}` pairs and unit `.data`
+  bases, `lbl_8040F344` (dispdrv's zero pad), `lbl_803080CC` (evt_sub's END word), the `.sdata2` floats
+  `lbl_8041E9A4`/`lbl_8041FDA0`; nearly every `dat_` (GXColor/u32 colour words, `-1` words, value tables); the
+  `.sbss2` `unk_` colour templates (evt_map, battle_stage, eff_recovery, eff_kiss) and `gap_` objects.
+- **Suffixed function names** (`kuribo_init_800C23B4`, `bomhei_init_`, `vivian_init_`, `mario_kemuri_`,
+  `kpa_fall_`): the map has them as scope:local and dtk globalises them with the suffix in the split objects, so
+  the C name has to match.
+- **str_ clashes:** the remaining Latin strings' content names are taken (`str_M_J_1A`, `str_gor_01`, `str_fmt_d`,
+  `str_M_S_1`, `str_S_1`, `str_Z_1`, `str_A_1`, `str_nok_00`, `str_pik_04`, `str_M_I_Y`). eff_kiss's two "<<<"
+  are the colour bytes 3C3C3C00 typed as char. The three Japanese strings (evt_kinopio 宿屋のカメラマン and
+  カメラマン, battle_ac_help めっせーじがみつかりません) have no romanised-name precedent here; a reading is not
+  the literal, so they wait for a decision.
+- **unk_ functions and scripts, dol and REL:** no string, SDK name, map name or named twin. Identical-code groups
+  with no named member: `unk_hei_000002a8` = `unk_tou_000005d0` = `unk_tou_00006e5c`; `unk_tou_0000063c` =
+  `unk_tou_00006ec8`; `unk_tou_00006d34` = `unk_tou_00006e08` (the belt camera ids). `jumptable_802C4970`
+  (evt_bero) is no jump table: it holds the eight direction prefixes "n_" ... "nw_", with no name evidence.
+  `table_802C1028` was reverted by an earlier review. yuu's `fn_31_112C` (uncounted) has no evidence either.
+- **Leads, not applied:**
+  - envdrv `dat_802f9338`: its `tbl` member is byte-identical to `texmtx_tbl` (mapdrv), `texmtx_tbl$584` (eki_03) and
+    `texmtx_tbl$633` (hom_00), all original names. The C object, though, is the merged `EnvTevMtxData` (the table plus
+    the five Vec templates after it), so `texmtx_tbl` would name more than the table. rsh's uncounted
+    `dat_rsh_0000fd20` is the same table on its own and could take a prefixed `texmtx_tbl`.
+  - gor.c `unk_gor_0000050c` has the code of `evt_exchange_msg_free`/`evt_uranaisi_msg_free` over its own buffer
+    (`unk_gor_bss00000000`, filled by `unk_gor_0000041c`), but the `<owner>` part of `evt_<owner>_msg_free` is unknown.
+  - npc_data's `unk_evt_8033d458` fills testenemynpc's move slot beside `testenemynpc_init_event`. The table's
+    pattern gives `testenemynpc_move_event`, but that is a pattern, not outside evidence.
+  - chuchurina's `(u32)lbl_80003500` is the flags value 0x80003500, which dtk reads as an address. Writing the
+    plain constant would change a data definition, so it is out of scope here.
+
+Verified: `build/G8MJ01/ok` recreated after every commit; all 1230 src/ and rels/ objects compile under
+`configure.py --non-matching` (the edited headers reach 254 files); `tools/fncast_lint.py` and
+`tools/local_prototypes.py` pass; `tools/ci.py` PASS at every commit, run through a driver that skips only its
+`tools/tests` step: `test_wave_launch` times out on this host's `$HOME/ttyd-agents*` state (8 errors, unrelated to
+the tree), and `test_reloc_value_check` needs pyelftools, which the system python lacks (added via PYTHONPATH for
+data_check). The ratchet reads the six REL functions as renames at 100%.
+
+Index (`tools/cleanup_index.py`, same script both sides), c4a2b397 -> this branch: 11.609 -> 11.564 per kLOC (8109
+-> 8077 weighted over 698500 -> 698459 code lines); address_name 1077 -> 1059, unk_name 305 -> 291, pool_constant
+(weight 0) 4937 -> 4924; every other category unchanged.
