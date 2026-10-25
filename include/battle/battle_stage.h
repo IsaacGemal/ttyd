@@ -46,7 +46,7 @@ typedef struct BattleStageColor {
 } BattleStageColor;
 
 typedef struct BattleStageDark {
-	u32 field_0;          //0x0, set to 1 in BattleStageInit, never read
+	u32 field_0x0;        //0x0, set to 1 in BattleStageInit, never read
 	u8 alpha;             //0x4, current darkness drawn by BattleStageDispDark
 	u8 baseAlpha;         //0x5
 	u8 alphaFrom;         //0x6
@@ -112,7 +112,7 @@ typedef struct BattleStageLight {
 } BattleStageLight;
 
 typedef struct BattleStage {
-	u32 field_0;                 //0x0
+	u32 field_0x0;               //0x0
 	BattleStageLight lights[12]; //0x4
 	BattleStageDark stgDark;     //0xAE4
 	BattleStageDark audDark;     //0xB04

@@ -8,7 +8,7 @@ typedef struct Yuuminigame2Data {
     u32 flags;                  // 0x00
     s32 phase;                  // 0x04
     s32 counterData;            // 0x08, yuucounter_get_data() at the finish, the ranking's result (minigame02_end LW(0))
-    s32 unk0C;                  // 0x0C, decremented each time a dai_uzu or uzu catches Mario; at the end turned into the ranking's mult
+    s32 field_0xC;              // 0x0C, decremented each time a dai_uzu or uzu catches Mario; at the end turned into the ranking's mult
     s32 objIndex;               // 0x10, s_nametbl/turn_tbl/hoko_tbl index of the uzu Mario is in (1-4 S_dai_uzu, 5-12 S_uzu), 0x15 for none
     s32 step;                   // 0x14, step of the dai_uzu sequence (objIndex 1-4)
     f32 startDist;              // 0x18, Mario's distance from the dai_uzu when caught, shrunk to 0 as timer runs

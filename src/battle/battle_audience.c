@@ -3683,7 +3683,7 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	if (BattleBreakSlot_GetBreakTurn() >= 1) {
 		audience->apGauge += (s32)(rate * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
 		                           crowdKindSum * marioMultiplier * partyMultiplier *
-		                           BattleBreakSlotGetPtr()->field_14);
+		                           BattleBreakSlotGetPtr()->apMultiplier);
 	}
 	else {
 		audience->apGauge += (s32)(rate * sqrtWeight * (spAcMultiplier + stylishMultiplier) *

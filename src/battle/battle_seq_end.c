@@ -521,7 +521,7 @@ void btlseqEnd(BattleWork* wp) {
         newWork = BattleAlloc(0x2AC);
         wp->seqEndWork = newWork;
         btlseqEnd_DispInit(wp);
-        newWork->unk0 = 0;
+        newWork->field_0x0 = 0;
         newWork->effect = NULL;
         newWork->whistleTimer = irand(0x78) + 0x3C;
         newWork->confettiEvtId = 0;
@@ -558,7 +558,7 @@ void btlseqEnd(BattleWork* wp) {
         newWork = BattleAlloc(0x2AC);
         wp->seqEndWork = newWork;
         btlseqEnd_DispInit(wp);
-        newWork->unk0 = 0;
+        newWork->field_0x0 = 0;
         return;
 
     case SEQ_END_LOSE_FADE:
@@ -805,7 +805,7 @@ void btlseqEnd(BattleWork* wp) {
         work->dispFlags &= ~1;
         if (work->lvupPending != 0) {
             work->lvupSelect = 1;
-            work->unk14 = 0;
+            work->field_0x14 = 0;
             work->lvupCount = 3;
             work->timer = 0;
             BattleAudience_WinSetActive(0);
@@ -873,7 +873,7 @@ void btlseqEnd(BattleWork* wp) {
             }
             if (f2 != 0) {
                 work->confirmSel = 0;
-                work->unk28 = 0;
+                work->field_0x28 = 0;
                 work->confirmCount = 2;
                 work->dispFlags &= ~SEQEND_DISP_LVUP_HELP;
                 BattleSetSeq(wp, SEQ_END, SEQ_END_LVUP_JUMP_WAIT);
@@ -1959,7 +1959,7 @@ void _audience_Whistle_control(void) {
     if (work == NULL) {
         return;
     }
-    switch (work->unk0) {
+    switch (work->field_0x0) {
     case SEQ_END_WIN_MAJINAI_WAIT: case SEQ_END_EXP_INIT: case SEQ_END_EXP_DELAY: case SEQ_END_EXP_START:
     case SEQ_END_EXP_COUNT: case SEQ_END_EXP_COUNT_END: case SEQ_END_EXP_END_WAIT: case SEQ_END_MAJINAI_END:
     case SEQ_END_MAJINAI_END_WAIT: case SEQ_END_LVUP_CHECK: case SEQ_END_LVUP_CURTAIN: case SEQ_END_LVUP_SELECT:

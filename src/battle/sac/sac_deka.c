@@ -59,26 +59,15 @@ void psndSFX_pit(s32 id, s32 pitch);
 // ---- local work struct at _battleWorkPointer + 0x1F4C ----
 typedef struct DekaTiming {
     /*0x00*/ s32 state;
-    /*0x04*/ s32 unk04;
+    /*0x04*/ s32 field_0x4;
     /*0x08*/ s32 kind;  // 1: a press in the window scores; other kinds boo
     /*0x0C*/ f32 time;
     /*0x10*/ Vec offset;  // added to the icon position; zeroed in state 2
-    /*0x1C*/ u8 pad1C[0x34 - 0x1C];
+    /*0x1C*/ u8 pad_0x1C[0x34 - 0x1C];
     /*0x34*/ u8 alpha;
     /*0x35*/ u8 flag;
-    /*0x36*/ u8 pad36[0x38 - 0x36];
+    /*0x36*/ u8 pad_0x36[0x38 - 0x36];
 } DekaTiming;
-
-typedef struct DekaStarEffectData {
-    /*0x00*/ u8 pad00[0x8];
-    /*0x08*/ Vec position;
-    /*0x14*/ f32 unk14;
-    /*0x18*/ Vec unk18;
-    /*0x24*/ u8 pad24[0x34 - 0x24];
-    /*0x34*/ void* unk34;
-    /*0x38*/ u8 pad38[0x5F - 0x38];
-    /*0x5F*/ u8 unk5F;
-} DekaStarEffectData;
 
 typedef struct DekaWork {
     /*0x000*/ smartEntry* texEntry;
@@ -95,7 +84,7 @@ typedef struct DekaWork {
     /*0x03C*/ f32 beatPos;
     /*0x040*/ s32 beatCount;
     /*0x044*/ s32 combo;
-    /*0x048*/ s32 unk48;
+    /*0x048*/ s32 field_0x48;
     /*0x04C*/ f32 timingSlideY;  // -40 when timing icons appear, eased to 0 over 30 frames
     /*0x050*/ s32 gaugeState;
     /*0x054*/ s32 gaugeTimer;
@@ -156,7 +145,7 @@ s32 main_deka(EventEntry* event, s32 arg) {
 
     if (arg != 0) {
         memset(p, 0, 0x580);
-        p->unk48 = evtGetValue(event, args[0]);
+        p->field_0x48 = evtGetValue(event, args[0]);
         yuka_init();
     }
     if (p->texEntry->address == NULL) {
@@ -561,7 +550,7 @@ void main_timing(s32 idx) {
         case 3:
             t->state = 4;
             t->alpha = 0xFF;
-            t->unk04 = 0;
+            t->field_0x4 = 0;
             break;
         case 1:
         case 4:
@@ -768,16 +757,16 @@ static void main_star(void) {
     }
 
     if (p->starEffect != NULL) {
-        DekaStarEffectData* d = p->starEffect->userdata;
+        effStarStoneData* d = p->starEffect->userdata;
 
-        d->position.x = p->starPos.x;
-        d->position.y = p->starPos.y;
-        d->position.z = p->starPos.z;
-        d->unk18.x = p->starRot.x;
-        d->unk18.y = p->starRot.y;
-        d->unk18.z = p->starRot.z;
-        d->unk14 = 1.5f * p->starScale.x;
-        d->unk5F = (u8)alpha;
+        d->x = p->starPos.x;
+        d->y = p->starPos.y;
+        d->z = p->starPos.z;
+        d->tipRotY = p->starRot.x;
+        d->rotY = p->starRot.y;
+        d->tipRotZ = p->starRot.z;
+        d->scale = 1.5f * p->starScale.x;
+        d->tevReg0A = (u8)alpha;
     }
 }
 
@@ -892,7 +881,7 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
 // .text:0x1158 | 0x80244150 | size: 0x48
 s32 end_deka(EventEntry* event) {
     DekaWork* p = get_ptr();
-    effDelete(((DekaStarEffectData*)p->starEffect->userdata)->unk34);
+    effDelete(((effStarStoneData*)p->starEffect->userdata)->dustEffect);
     effDelete(p->starEffect);
     return 2;
 }

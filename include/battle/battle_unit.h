@@ -489,7 +489,7 @@ typedef struct BattleWorkUnitBadgesEquipped {
     u8 CloseCall;     // 0x0
     u8 PrettyLucky;   // 0x1
     u8 LuckyDay;      // 0x2
-    u8 field_3;       // 0x3
+    u8 field_0x3;     // 0x3
     u8 PowerPlus;     // 0x4
     u8 PUpDDown;      // 0x5
     u8 AllOrNothing;  // 0x6

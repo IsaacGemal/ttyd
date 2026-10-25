@@ -478,25 +478,25 @@ void BattleBreakSlot_Main(void) {
             case 0:
                 evtEntry(kinoko_effect, 0, 0x20);
                 slot->breakTurn = 4;
-                slot->field_14 = 2.0f;
+                slot->apMultiplier = 2.0f;
                 break;
             case 1:
                 evtEntry(flower_effect, 0, 0x20);
                 slot->breakTurn = 4;
-                slot->field_14 = 2.0f;
+                slot->apMultiplier = 2.0f;
                 break;
             case 2:
                 evtEntry(star_effect, 0, 0x20);
                 pouchSetAP(pouchGetMaxAP());
                 psndSFXOn("SFX_HP_RECOVER_BIG1");
                 slot->breakTurn = 4;
-                slot->field_14 = 2.0f;
+                slot->apMultiplier = 2.0f;
                 break;
             case 3:
                 evtEntry(shine_effect, 0, 0x20);
                 pouchSetAP(pouchGetMaxAP());
                 slot->breakTurn = 6;
-                slot->field_14 = 3.0f;
+                slot->apMultiplier = 3.0f;
                 break;
             case 4:
                 evtEntry(doku_kinoko_effect, 0, 0x20);

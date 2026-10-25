@@ -177,7 +177,7 @@ typedef struct BattleAudience {
     FileEntry* normalTex;              // 0xC
     FileEntry* guestTex[2];            // 0x10
     AudienceMemberType guestType[2];   // 0x18
-    u8 field_1A[0x1BC - 0x1A];         // 0x1A
+    u8 field_0x1A[0x1BC - 0x1A];       // 0x1A
     BattleAudienceMember members[200]; // 0x1BC
     BattleAudienceItem items[100];     // 0xF25C
     BattleAudienceStar starpower[100]; // 0x10E7C
@@ -196,7 +196,7 @@ typedef struct BattleAudience {
     s32 crowdPleasedStreak;            // 0x137CC, capped at 2
     s32 crowdDispleasedStreak;         // 0x137D0, capped at 5
     s32 mNumStylishCommandsThisAttack; // 0x137D4
-    u8 field_137D8[0x137DC - 0x137D8]; // 0x137D8
+    u8 field_0x137D8[0x137DC - 0x137D8]; // 0x137D8
     s32 mCheckPhaseReactionState;      // 0x137DC, TODO: rename
     s32 phaseStep;                     // 0x137E0, 0, 5, 10 or 15 through the phase event steps
     s32 presentItemNo;                 // 0x137E4, item being used (BattleAudience_SetPresentItemNo)

@@ -510,7 +510,7 @@ void yuuminigame_main_3roll(EventEntry* event, BOOL isFirstCall) {
     case 2:
         data->position = mario->position;
         data->phase = 3;
-        data->field_0C = 0;
+        data->field_0xC = 0;
         // fallthrough
     case 3:
         if (yuuminigame3_gamerule(event, isFirstCall, work, data)) {
@@ -520,12 +520,12 @@ void yuuminigame_main_3roll(EventEntry* event, BOOL isFirstCall) {
     case 4:
         work->childEvent = evtEntry(minigame03_end, 0, 0);
         work->childEvent->lwData[0] = data->counter;
-        if (data->field_0C + 5 <= 0) {
-            data->field_0C = 1;
+        if (data->field_0xC + 5 <= 0) {
+            data->field_0xC = 1;
         } else {
-            data->field_0C += 0x105;
+            data->field_0xC += 0x105;
         }
-        work->childEvent->lwData[1] = data->field_0C;
+        work->childEvent->lwData[1] = data->field_0xC;
         work->childEvent->lwData[2] = data->monteCount;
         data->phase++;
         break;
@@ -559,7 +559,7 @@ s32 yuuminigame3_gamerule(EventEntry* event, BOOL isFirstCall, void* work, YuuMi
         data->event->lwData[1] = (s32)fukkipoint[data->index * 3 + 1] + 200;
         data->event->lwData[2] = (s32)fukkipoint[data->index * 3 + 2];
         data->event->lwData[3] = (s32)fukkipoint[data->index * 3 + 1];
-        data->field_0C--;
+        data->field_0xC--;
     }
 
     if (!(data->flags & 2)) {

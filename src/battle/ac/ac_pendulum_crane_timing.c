@@ -32,8 +32,8 @@ typedef struct PendulumCraneTimingWork {
 	s32 frame;     // 0x04
 	Vec center;    // 0x08
 	Vec position;  // 0x14
-	f32 unk20;     // 0x20
-	u8 unk24[4];   // 0x24
+	f32 field_0x20; // 0x20
+	u8 pad_0x24[4]; // 0x24
 	f32 amplitude; // 0x28
 	f32 angle;     // 0x2C
 	f32 angle2;    // 0x30
@@ -223,7 +223,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 		BtlUnit_GetPos(unit, &dec->position.x, &dec->position.y, &dec->position.z);
 		dec->center = dec->position;
 		dec->frame = 0;
-		dec->unk20 = 0.5f;
+		dec->field_0x20 = 0.5f;
 		dec->dir = 1;
 		work->actionCommands.mAcState = 0x3E8;
 		// fallthrough
