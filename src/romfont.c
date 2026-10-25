@@ -113,7 +113,7 @@ void romFontMake(void) {
         }
     }
 
-    /* 3. Deduplicate the sorted list; wp->unk4 = unique count. */
+    /* 3. Deduplicate the sorted list; wp->uniqueChars = unique count. */
     wp->uniqueChars = 0;
     uniqueChars = __memAlloc(HEAP_DEFAULT, 0x800);
     prev = 0xFFFF;

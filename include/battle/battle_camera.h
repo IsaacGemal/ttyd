@@ -6,7 +6,7 @@
 
 typedef struct BattleCameraWork {
     s32 flags;              // 0x00
-    s32 modeFrames;         // 0x04, frames in the current mode (mode 14 waits 10); btl_camera_set_mode clears it
+    s32 modeFrames;         // 0x04, mode 14 counts its frames here (moves on at 10); btl_camera_set_mode clears it
     s32 priLimit;           // 0x08
     s32 mode;               // 0x0C
     s32 homingUnitId;       // 0x10, the unit evt_btl_camera_set_homing_unit* set; the homing modes follow it
