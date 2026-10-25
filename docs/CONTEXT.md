@@ -8265,3 +8265,100 @@ After the rebase onto c987c90a (#1141-#1143), same script both sides: index 11.4
 weighted), field_0x 1016 -> 1340, ptr_to_int 33 -> 35, every other category unchanged. Tree-wide, code only:
 `field_N` 2534 -> 1091, `unkNN` 853 -> 414; 104 of what is left sits outside the fsrcmisc directories, in the structs listed under
 "Left" (PartyEntry, DoorParam, InformantWork, KinopioData, ...).
+
+## rels/: pointer casts typed away, the last placeholders checked, tik_05 deep-cleaned (2026-10-25, Claude Opus 5.5, n2rels)
+
+Task (Isaac): in rels/** remove the prim/struct/deref/raw-offset casts `tools/cleanup_index.py` counts by typing
+honestly, name the field_0xNN/field_N placeholders that have a real reader, deep-clean rels/tik/src/tik_05.c (top-10
+worst); shared include/ headers only where a REL consumer proves a placeholder; no data definitions retyped; src/
+untouched. Read first: the #1136, #1139, #1140 chapters (rels/common, the two map-REL naming passes) and #1143/#1144.
+
+- **What there was** (base bf361fce, rels/*/src + include/rel): 1,837 weighted; struct_ptr_cast 544, prim_ptr_cast
+  473, deref_cast 97, raw_offset 18, field_0x 192, unk_name 154. What is left after this branch in rels/*/src,
+  sorted by what each cast is (a classifier over the index's own matches): 434 are event-ABI
+  conversions (`(const char*)evtGetValue(...)`, `(char*)name` on an `s32 name` from evtGetValue, pointers and floats
+  in lwData/userdata[] words), 329 are effect userdata re-reads (`((T*)e->userdata)->x = ...` at every store: the
+  original reloads `e->userdata` after each store, checked in tik_05's starstone_set_position and starstone_setting
+  asm; a typed local loads it once, as #1123/#1143 found), 27 BattleUnit `work[]` slots (shared s32 array), 23
+  EventEntry 0x84 puns (shared, #1144), 12 GXColor templates read through `*(GXColor*)&dat_...` (data definitions),
+  17 volatile under MUST_MATCH, 10 MSL fpclassify/NAN idioms, 10 `(NpcEntry*)-2` sentinels, and ~140 others, listed
+  under "Tried and left" and "Left, by kind". The removable group was the script pointers in two kinds of
+  initialised table.
+- **Script pointers in setup tables.** NpcSetupInfo's event slots are `void*` and BeroEntry's enterEvent/exitEvent
+  `s32*`, so `(void*)&garawaru_init` / `(s32*)&bero_in_event` are plain `garawaru_init` / `bero_in_event`, as
+  tik_05's npcEnt already was (gor_04, las_28, muj_01, pik_00, rsh_00: 62; aji_09/10/16, dou_00, moo_02, mri_17,
+  muj_12: 9). Every name is an EVT_BEGIN/EVT_DEF array, so dropping `&` gives the same address; data_check holds
+  the bytes.
+- **Typed in place** (field -> name: the consumer):
+  - gor_00 `ckp0/ckp1/ckpw`: `f32*` indexed 0-7 and cast to Vec* -> `CamKaiten*` (rels/gor/include/gor_00.h, the
+    layout tik_05.h and win_06.h already define: pos, at, angle, dist; cam_kaiten_set_direct copies pos/at into the
+    camera's storedPos/storedAt and builds pos from at, dist and angle). Allocations use `sizeof(CamKaiten)`, in
+    tik_05 too.
+  - aji_06 `yuka_anim` (`u32[2]`, element 0 cast to MapEntryAnimData* six times) -> `YukaAnim { anim; flags; }`,
+    same size and alignment (.bss, 8 bytes): `anim` is mapSearchAnmObj("yuka")'s result that
+    yuka_anim_reverse_play rewinds; `flags` bit 0 pauses (yuka_anim_reverse_pause/_replay), bit 1 ends
+    (yuka_anim_reverse_end).
+  - dig_00 AnimTblUnknown 0x8 -> `actionEvent`: evt_action_sub hands it back in LW(3) and evt_action
+    `SPAWN_EVENT(LW(3))`s it for animMask bit 5 (32), deleting the NPC when it is 0 (it is 0 in every entry; the
+    type stays s32, data). dig_00 and end_unknown's `0x05070000` is `EXI_IS_VIEWER`.
+  - tou_10 setYoshiColor: the eight GSW bytes 0x1FC-0x203 go into a local union {u8 bytes[8]; s64 time;} instead of
+    `*(s64*)saved`; `time` is what it subtracts from retraceLocalTime.
+  - sys: the one-character draw buffer is a local union {u16 code[2]; char str[4];} (the SJIS code from msg, its
+    terminator at str[2], drawn by FontDrawStringMtx), three casts gone; `(MtxPtr)&cam->view` is `cam->view`.
+  - lect_mobj_hit_nasi (include/rel/common/evt_lect/, five lecture units, and win's copy): the name is
+    `const char*` from evtGetValue on, so strcmp and mobjNameToPtr take it without a cast each.
+  - bom_01, mri_puni, evt_yuunpc: `(MtxPtr)pose->matrix` (an `Mtx*`) -> `*pose->matrix` (57; the index doesn't count
+    MtxPtr casts).
+- **tik_05 deep-clean.** tiz_broken_draw's GX arguments are the SDK enums (GX_TF_RGB5A3, GX_CLAMP, GX_TG_MTX2x4,
+  GX_TEXMTX0, GX_PTIDENTITY, GX_REPLACE, GX_BM_NONE/GX_BL_ONE/GX_BL_ZERO/GX_LO_OR, GX_ALWAYS/GX_AOP_AND,
+  GX_LEQUAL, GX_CULL_NONE, GX_VA_POS/TEX0, GX_DIRECT, GX_POS_XYZ/GX_TEX_ST/GX_F32, GX_PNMTX0, GX_MTX2x4, GX_QUADS);
+  dispEntry's camera is CAMERA_2D, the stardust/star stone cameras CAMERA_3D_EFFECTA/B; evt_mapobj_flag_onoff's
+  flag words are MapObjectFlags (MAPOBJ_FLAG_HIDDEN/CLIP/DISPLAY_LIST, MAPOBJ_TEV_CALLBACK_MASK; 0x01000000, tev
+  callback 1 that mahojin_alpha installs, in hex: no constant for it); `memset(broken_wp, 0, sizeof(BrokenWork))`;
+  tiz_broken's `f0..f7` are `dx, dy, len, dist, dirX, dirY` (two were unused and went); param_tbl carries the names
+  name_tbl gives its five entries (delay, v0, vscale, pow, vr) with what tiz_broken does with each. Its index is
+  unchanged at 81: 44 userdata re-reads, 21 `(char*)name` event-ABI conversions, 4 GXColor templates, 2 MSL puns and
+  the two needed pragma pairs.
+- **Tried and left.** lect `*(Vec*)&lbtn[i].position = pos` (dou, tou) and evt_yuunpc `->position = *(Vec*)&v`:
+  the plain assignment changes the object, so the self-type cast is the original's shape (not guarded: no new
+  MUST_MATCH). end_unknown `(EventEntry*)((u32)event)` and cortez's `args = (s32*)BattleGetUnitPtr(...); unit =
+  (BattleUnit*)args` steer registers (plain forms DIFF); both are unguarded tricks a later MUST_MATCH pass may want
+  to guard. `PTR((char*)str_...)` in unit_purple_teresa doesn't compile without the cast ("illegal implicit
+  conversion from 'const char *' to 'char *'": the str_ arrays are const). `-char signed` on gor_03 (for exchange_msgp's four `(s8*)`) moves
+  .text+0x2d81 even with the casts kept.
+- **Left, by kind.** Data tables kept as words (hard rule: no retyping initialised data): SinTable/sintbl/yuusintbl
+  `(f32*)`, the nannpc anim tables `(s16*)`, barriern/batten spline tables `(Vec*)`, suifu100kaidan `(Vec*)`,
+  purple_teresa's regist/defence words, the door npc lists `(const char**)`, ext_yuunpc_minigame*_data, shopper_data,
+  the GXColor templates. Shared types: EventEntry 0x84, BattleUnit work[] and 0x30C (borodo), PartyEntry 0x144/0x110
+  (party.h; aji_13 and the set_dir/lect writers only write 0x110), FieldBattleInfo 0x14/0x1C (tou_03 only writes),
+  GoryuugijoWork.data (4 or 0x78 bytes by mode, SlotData only in the slot game), YuuminigameWork.data, FileEntry.data.
+  CloudEntry.mapGrpName (s8, #1139), xmemo (u32[5] .bss used as a char buffer: `s8[20]` would drop its 4-byte
+  alignment), keijiban's infoEnd (a string buffer placed after the info array), gor_03's `(s8*)` signedness,
+  mri_puni's `(u8*)puni + 0x220` fake MarioWork and PuniPaternData overlay, tou2/evt_yuuranking/tou_03 match-steering
+  offsets, rsh_05/mri prototype casts and mri_puni's evtGetValue callbacks (fn_ptr_cast, guarded or ABI).
+- **Placeholders.** None of the remaining rels field_0x members has a reader that pins one meaning; each was
+  re-checked against the #1139/#1140/#1144 lists: BattenEffUserdata 0x8-0x30 (only unused USER_FUNCs write them),
+  the monte entries' 0x38-byte member at 0x8 (pos is read; the member is named only by layout, #1140's lead stands),
+  YuunpcEntry 0x4 (a per-runner class gating jumps and errper; every errper case gives the same range but `default`),
+  yuu_01/yuu_02 0xC (two meanings), tou_02 FanPose 0x6/0x28/0x46, PoseGroup 0x18 and ExtFanWork 0x84/0x519, rsh_00,
+  eki_00, hei_10, jin_07, punidrv 0x24, tik_00 0xEC/0xF0, tou/tou2 RuleEntry 0x10, end 0x0, dmo 0x0, zakogun 0x0:
+  write-only or unread. ExtFanWork's 0x84-0x50C is exactly 29 more PoseGroups (groups[32] by size), but the data
+  makes 3 groups and nothing reaches past them: layout only, not applied. No `field_N`/`unkNN` spellings are left in
+  rels code; the `// field_NN` labels on DoorParam and KinopioData initialisers name members of include/evt headers
+  whose readers are in src/event (not this branch). The 154 unk_name sites are address names of REL functions,
+  scripts and .bss objects with no symbol, string or SDK evidence.
+- **Checks.** Every commit: the touched objects compared with obj_equiv against a snapshot of build/G8MJ01/src taken
+  at bf361fce before any edit (all equivalent), every changed C file (and the five units including
+  lect_mobj_hit_nasi.h) compiled under `configure.py --non-matching`, then a normal reconfigure and rebuild to
+  `build/G8MJ01/ok`; fncast_lint and local_prototypes clean; `tools/ci.py` PASS (through ~/ci_notests.py under
+  `uv run --with pyelftools`, tools/tests skipped for the tower's environment errors; this worktree had no baseline,
+  so `--init` ran first on the byte-identical build). At the end `obj_equiv --tree` over all 1,230 objects against
+  the snapshot: all equivalent.
+- **Counts** (`tools/cleanup_index.py`, bf361fce -> this branch, same script): index **11.962 -> 11.807** per kLOC
+  (8355 -> 8247 weighted); prim_ptr_cast 1873 -> 1798, struct_ptr_cast 1191 -> 1184, deref_cast 486 -> 474,
+  field_0x 1340 -> 1338, every other category unchanged. rels/*/src + include/rel: 1837 -> 1729 weighted;
+  prim_ptr_cast 473 -> 398, struct_ptr_cast 544 -> 537, deref_cast 97 -> 85, field_0x 192 -> 190. Per file
+  (weighted): muj_01 38 -> 9, gor_00 59 -> 39, gor_04 14 -> 0, pik_00 12 -> 0, aji_06 8 -> 1, las_28 8 -> 4, sys 8 ->
+  4, rsh_00 8 -> 5, aji_09 3 -> 1, dig_00 3 -> 1, tou_10 7 -> 5, tik_05 81 -> 81.
+- **Lead, not applied.** Script flag words written in decimal across the rels (evt_mapobj_flag_onoff alone: aji_01
+  has 101 calls) could take the MapObjectFlags names as tik_05's now do; outside this task's casts-and-fields scope.
