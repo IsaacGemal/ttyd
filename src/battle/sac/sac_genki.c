@@ -77,9 +77,9 @@ typedef struct GenkiStar {
     Vec from;                   // 0x18, intplGetValue start
     Vec to;                     // 0x24, intplGetValue end
     union {
-        Vec vel;                // state 3, rising: pos.y += vel.y (x and z unused)
+        Vec vel;                // state 3: pos.y += vel.y, vel.y += gravity (arcs to y 180; x and z unused)
         struct {
-            f32 velX;           // state 4: pos.x += velX, reversed at x 0 and 200
+            f32 velX;           // state 4: pos.x += velX, set to +-3 (+-0.05 idx in main_star0) past x 0 and 200
             f32 phase;          // state 4: pos.y = 10 sin(phase) + 180
         } hover;
     } move;                     // 0x30

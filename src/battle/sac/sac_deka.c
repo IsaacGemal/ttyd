@@ -116,7 +116,7 @@ typedef struct DekaWork {
     /*0x51E*/ u8 pad_0x51E[0x520 - 0x51E];
     /*0x520*/ f32 yukaWaveSpeed[6];  // columns per frame (+-2) a floor wave moves; its sign steps yukaIndex
     /*0x538*/ s32 yukaIndex[6];      // the next mesh column the wave kicks (stops at 0 and 0x80)
-    /*0x550*/ f32 yukaWavePos[6];    // the column the wave has reached; columns are kicked until yukaIndex passes it
+    /*0x550*/ f32 yukaWavePos[6];    // the column the wave has reached; columns are kicked until yukaIndex reaches it
     /*0x568*/ f32 yukaWaveVelY[6];   // added to the vel.y of each column the wave passes
 } DekaWork;
 
