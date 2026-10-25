@@ -590,7 +590,7 @@ USER_FUNC(elmos1000tai_init) {
         entry->pose->flags |= 4;
         entry->color.a = 0;
         entry->facingAngle = c90;
-        entry->entryIndex = i;
+        entry->field_0x70 = i;
         if (i % 3 != 0) {
             r = irand(140) + 110;
         } else {

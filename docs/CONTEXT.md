@@ -7690,7 +7690,7 @@ fmotion, fbtlsrc. Nothing outside rels/ was edited.
     entries in pose_main). bom_01's ExtTableEntry (whose `type` held "R_1"/"S_2" animation names) is
     ExtMakeTextureEntry now: both ext_data tables go to evt_ext_entry.
   - muj_10 NanNpcEntry 0x70: a union `nextState` (muj_00 tobikakari: the state taken when the jump lands) /
-    `entryIndex` (muj_20 elmos1000tai_init stores the entry's index; nothing reads it); CortezWork `field_194/25C`
+    `field_0x70` (muj_20 elmos1000tai_init stores the entry's index; nothing reads it); CortezWork `field_194/25C`
     -> `frame`/`step` (per-audience step switch and its frame counter, intplGetValue(0, frame, 30, ...)).
   - las_05 KaronPoseEntry `field_4/8/C/10` -> `timer`, `velX`, `velY`, `velZ` (added to the pose each frame, velY less
     0.3 gravity; timer is the drop delay, walk leg and escape run); LasWork `field_C` -> `frame` (frame % 20 picks
@@ -7712,14 +7712,14 @@ fmotion, fbtlsrc. Nothing outside rels/ was edited.
   `field_180C0`, tik_05's EffMist2Data `unk18`. CloudEntry.mapGrpName stays `s8`: as `char` (dropping three casts)
   mri_00's .text+0x124 differs. PuniPaternData (mri_puni.c's `pat/num/end` overlay of MriPuniAnimSet) stays: its
   `u16*` against the set's `s16*` would change loads.
-- **Counts.** `field_0x` by grep in those RELs and their headers: 4,014 -> 3,852 (outside the battle databases 1,578
-  -> 1,416; in code and REL-local declarations, comments excluded, 223 -> 62). `tools/cleanup_index.py` (5619c3bf ->
-  this branch, same script): index **13.669 -> 13.477** per kLOC (9548 -> 9414 weighted); field_0x 2403 -> 2269,
-  every other category unchanged. These RELs (rels/<area>, include/rel/<area>): 1076 -> 942 weighted, field_0x
-  181 -> 47. Per file (weighted): jin_07 37 -> 2, magnum_battender 25 -> 6, bom_01 38 -> 22, hei_10 39 -> 22,
-  tik_00 28 -> 10, mri_puni 51 -> 41, batten_leader 71 -> 59, las_04 23 -> 20, muj_00 7 -> 4, muj_20 45 -> 44.
+- **Counts.** `git grep -o field_0x` in those ten RELs (rels/<area>): 2,599 -> 2,439. `tools/cleanup_index.py`
+  (origin/main 55fec9be -> this branch rebased onto it, same script): index **12.666 -> 12.476** per kLOC (8847 ->
+  8714 weighted); field_0x 1721 -> 1588, every other category unchanged. These RELs (rels/<area>, include/rel/<area>):
+  860 -> 727 weighted, field_0x 178 -> 45. Per file (weighted): jin_07 37 -> 2, magnum_battender 25 -> 6, bom_01
+  38 -> 22, hei_10 39 -> 22, tik_00 28 -> 10, mri_puni 51 -> 41, batten_leader 71 -> 59, las_04 23 -> 20, muj_00
+  7 -> 4.
 - **For a reviewer.** `leftCount`/`rightCount` rest on where drawNum puts them (x -220 / 200, beside arrows 2 and 3)
   and the +1 while the arrow blinks; they start at rand(). `stopTex*`/`moveTex*` rest on the states that read them.
   `sfx` (PuniWork 0x458) is named from its one consumer, psndSFXOff; nothing in the REL writes it. The FirebarDesc and
-  NanNpcEntry unions follow the guide's one-member-per-use rule; `entryIndex` is named from its store (the index
-  itself), since nothing reads it.
+  NanNpcEntry unions follow the guide's one-member-per-use rule; muj_20's member stays `field_0x70`, since
+  nothing reads it.
