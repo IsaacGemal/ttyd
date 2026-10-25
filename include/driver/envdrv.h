@@ -49,7 +49,10 @@ typedef struct EnvironmentBlur {
 } EnvironmentBlur;
 
 typedef struct EnvironmentWork {
-    s32 flags; //0x0
+    s32 flags; //0x0, 0x1 envCapture copies the frame into capture, 0x2 the Z8 depth into capture2, 0x4 envCapture2
+               //      copies the blur frame, 0x8 a blur frame is there to draw, 0x10000000 envDisp_FF runs,
+               //      0x20000000 glare filter on (envGlareFilter), 0x40000000 blur on (envBlurOn/Off),
+               //      0x80000000 envDisp_DepthOfField runs
     smartEntry* capture; //0x4
     smartEntry* capture2; //0x8
     GXTexObj captureObj; //0xC

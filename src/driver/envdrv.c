@@ -161,47 +161,47 @@ void envTexSetup(void) { //1:1
 
 void envCapture(CameraId camId, void* param) { //1:1
     EnvironmentWork* wp = envGetWork();
-    u16 var0, var1, var2, var3;
+    u16 width, height, halfWidth, halfHeight;
     u32 size;
     
-    var0 = gp->fbWidth;
-    var1 = gp->efbHeight;
-    var2 = (u16)(((u32)var0 & 0xFFFF) / 2);
-    var3 = (u16)(((u32)var1 & 0xFFFF) / 2);
+    width = gp->fbWidth;
+    height = gp->efbHeight;
+    halfWidth = (u16)(((u32)width & 0xFFFF) / 2);
+    halfHeight = (u16)(((u32)height & 0xFFFF) / 2);
     if (wp->flags & 1) {
         GXSetTexCopySrc(0, 0, gp->fbWidth, gp->efbHeight);
-        GXSetTexCopyDst(var2, var3, GX_TF_RGBA8, GX_TRUE);
-        size = GXGetTexBufferSize(var2, var3, GX_TF_RGBA8, GX_FALSE, 0);
+        GXSetTexCopyDst(halfWidth, halfHeight, GX_TF_RGBA8, GX_TRUE);
+        size = GXGetTexBufferSize(halfWidth, halfHeight, GX_TF_RGBA8, GX_FALSE, 0);
         wp->capture = smartAlloc(size, 3);
         GXCopyTex(wp->capture->address, GX_FALSE);
         GXPixModeSync();
-        GXInitTexObj(&wp->captureObj, wp->capture->address, var2, var3, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+        GXInitTexObj(&wp->captureObj, wp->capture->address, halfWidth, halfHeight, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
         GXInitTexObjLOD(&wp->captureObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     }
     if (wp->flags & 2) {
-        GXSetTexCopySrc(0, 0, var0, var1);
-        GXSetTexCopyDst(var2, var3, GX_CTF_Z8M, GX_TRUE);
-        size = GXGetTexBufferSize(var2, var3, GX_CTF_Z8M, GX_FALSE, 0);
+        GXSetTexCopySrc(0, 0, width, height);
+        GXSetTexCopyDst(halfWidth, halfHeight, GX_CTF_Z8M, GX_TRUE);
+        size = GXGetTexBufferSize(halfWidth, halfHeight, GX_CTF_Z8M, GX_FALSE, 0);
         wp->capture2 = smartAlloc(size, 3);
         GXCopyTex(wp->capture2->address, 0);
         GXPixModeSync();
-        GXInitTexObj(&wp->captureObj2, wp->capture2->address, var2, var3, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+        GXInitTexObj(&wp->captureObj2, wp->capture2->address, halfWidth, halfHeight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
         GXInitTexObjLOD(&wp->captureObj2, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     }
 }
 
 void envCapture2(CameraId camId, void* param) { //1:1
     EnvironmentWork* wp = envGetWork();
-    u16 var0, var1;
+    u16 halfWidth, halfHeight;
 
-    var0 = (u16)(((u32)gp->fbWidth & 0xFFFF) / 2);
-    var1 = (u16)(((u32)gp->efbHeight & 0xFFFF) / 2);
+    halfWidth = (u16)(((u32)gp->fbWidth & 0xFFFF) / 2);
+    halfHeight = (u16)(((u32)gp->efbHeight & 0xFFFF) / 2);
     if (wp->flags & 4) {
         GXSetTexCopySrc(0, 0, gp->fbWidth, gp->efbHeight);
-        GXSetTexCopyDst(var0, var1, GX_TF_RGB565, GX_TRUE);
+        GXSetTexCopyDst(halfWidth, halfHeight, GX_TF_RGB565, GX_TRUE);
         GXCopyTex(wp->envBlur, GX_FALSE);
         GXPixModeSync();
-        GXInitTexObj(&wp->envBlurObj, wp->envBlur, var0, var1, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+        GXInitTexObj(&wp->envBlurObj, wp->envBlur, halfWidth, halfHeight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
         GXInitTexObjLOD(&wp->envBlurObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     }
     if (wp->flags & 0x40000000) {
