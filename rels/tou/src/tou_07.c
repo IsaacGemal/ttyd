@@ -318,7 +318,7 @@ USER_FUNC(unk_tou_00006d34) {
 }
 
 // 0x6CFC
-USER_FUNC(unk_tou_00006cfc) {
+USER_FUNC(tou_07_icon_off) {
     iconFlagOn(itemNameToPtr("belt")->name, 2);
     return EVT_RETURN_DONE;
 }
@@ -350,7 +350,7 @@ EVT_BEGIN(evt_champion_re)
     CALL(evt_eff, STRING("belt"), STRING("starstone"), 9, LW(0), LW(1), LW(2), FLOAT(0.75f), 0, 0, 0, 0, 0, 0, 0)
     CALL(unk_tou_00006d34)
     CALL(evt_item_entry, STRING("belt"), 65, 0, -1000, 0, 17, -1, 0)
-    CALL(unk_tou_00006cfc)
+    CALL(tou_07_icon_off)
     CALL(evt_item_get_item, STRING("belt"))
     CALL(evt_item_get_item_end_wait, STRING("belt"))
     CALL(evt_npc_delete, STRING("ベルト"))
@@ -463,13 +463,13 @@ USER_FUNC(mario_recovery) {
 }
 
 // 0x6C00
-USER_FUNC(tou_snd_off) {
+USER_FUNC(tou_07_snd_off) {
     psndSetFlag(0x80);
     return EVT_RETURN_DONE;
 }
 
 // 0x6BD8
-USER_FUNC(tou_snd_on) {
+USER_FUNC(tou_07_snd_on) {
     psndClearFlag(0x80);
     return EVT_RETURN_DONE;
 }
@@ -537,7 +537,7 @@ EVT_BEGIN(evt_tou_bed)
             WAIT_MS(200)
             CALL(evt_snd_sfxon_3d, STRING("SFX_OFF_MARIO_SLEEP2"), LW(0), LW(1), LW(2), 0)
         END_INLINE_EVENT
-        CALL(tou_snd_off)
+        CALL(tou_07_snd_off)
         CALL(evt_snd_bgmoff, 1024)
         CALL(evt_snd_bgmon, 1, STRING("BGM_FF_GO_SLEEPING1"))
         CALL(evt_fade_entry, 4, 1000, 0, 0, 0)
@@ -590,7 +590,7 @@ EVT_BEGIN(evt_tou_bed)
         WAIT_FRAMES(1)
         CALL(evt_snd_bgmoff, 513)
         CALL(evt_snd_bgmon, 288, 0)
-        CALL(tou_snd_on)
+        CALL(tou_07_snd_on)
         CALL(evt_fade_entry, 9, 1000, 0, 0, 0)
     END_IF
     CALL(evt_party_run, 0)
