@@ -70,76 +70,68 @@ extern const char str_80421D3C[6];
 extern const f32 float_0_80421d44;
 
 typedef struct GenkiStar {
-    s32 field_0;                // 0x0
-    s32 field_4;                // 0x4
-    s32 field_8;                // 0x8
-    Vec field_C;                // 0xC
-    Vec field_18;               // 0x18
-    Vec field_24;               // 0x24
-    Vec field_30;               // 0x30
-    Vec field_3C;               // 0x3C
-    Vec field_48;               // 0x48
-    f32 field_54;               // 0x54
-    f32 field_58;               // 0x58
-    f32 field_5C;               // 0x5C
-    EffectEntry* field_60;      // 0x60
+    s32 state;                  // 0x0, main_star0/main_star1's switch; star_appear sets 1
+    s32 timer;                  // 0x4, the intplGetValue frame of the current state
+    s32 field_0x8;              // 0x8
+    Vec pos;                    // 0xC, into the star stone effect's x/y/z
+    Vec from;                   // 0x18, intplGetValue start
+    Vec to;                     // 0x24, intplGetValue end
+    Vec field_0x30;             // 0x30
+    Vec scale;                  // 0x3C, x times 1.5 is the star stone's scale
+    Vec rot;                    // 0x48, the star stone's tipRotY/rotY/tipRotZ
+    f32 radius;                 // 0x54, distance from Mario while circling
+    f32 angle;                  // 0x58, cos/sin of it place the star around Mario
+    f32 angleVel;               // 0x5C, added to angle each frame
+    EffectEntry* eff;           // 0x60, effStarStoneEntry
 } GenkiStar;                    // 0x64
 
 typedef struct GenkiObject {
-    s32 field_0;                // 0x0
-    s32 field_4;                // 0x4
-    s32 field_8;                // 0x8
-    f32 field_C;                // 0xC
-    f32 field_10;               // 0x10
-    f32 field_14;               // 0x14
-    u8 pad_18[0x2C - 0x18];     // 0x18
+    s32 state;                  // 0x0, main_object's switch; object_entry sets 1, 2 while falling
+    s32 timer;                  // 0x4, counts 0..0x78; % 12 blinks the big icons
+    s32 kind;                   // 0x8, 0/1 Mario HP, 2/3 partner HP, 4/5 FP (odd: +3), 6 the bad one
+    Vec pos;                    // 0xC
+    u8 pad_0x18[0x2C - 0x18];   // 0x18
 } GenkiObject;                  // 0x2C
 
 typedef struct GenkiEffect {
-    s32 field_0;                // 0x0
+    s32 field_0x0;              // 0x0
     Vec pos;                    // 0x4
-    f32 field_10;               // 0x10
+    f32 field_0x10;             // 0x10
 } GenkiEffect;                  // 0x14
 
 typedef struct GenkiWeapon {
-    s32 field_0;                // 0x0
-    s32 field_4;                // 0x4
+    s32 state;                  // 0x0, main_weapon's switch; weapon_entry sets 1
+    s32 delay;                  // 0x4, frames from weapon_entry to the launch
     Vec pos[4];                 // 0x8, current position then 3 trail positions
     Vec vel;                    // 0x38
-    EffectEntry* field_44;      // 0x44
-    EffectEntry* field_48[3];   // 0x48
+    EffectEntry* eff;           // 0x44, effStarStoneEntry at pos[0]
+    EffectEntry* trailEff[3];   // 0x48, effStarStoneEntry at pos[1..3]
 } GenkiWeapon;                  // 0x54
 
 typedef struct GenkiWork {
-    u8 pad_0[0x4];              // 0x0
-    s32 field_4;                // 0x4
-    u8 pad_8[0xC - 0x8];        // 0x8
-    s32 field_C;                // 0xC
+    u8 pad_0x0[0x4];            // 0x0
+    s32 state;                  // 0x4, main_base's switch; start_game sets 1, wait_game_end waits for 3
+    u8 pad_0x8[0xC - 0x8];      // 0x8
+    s32 variant;                // 0xC, 0 for marioAttackEvent_Genki0, 1 for Genki1 (main_genki's args[1])
     s32 score[3];               // 0x10
-    f32 field_1C;               // 0x1C
-    f32 field_20;               // 0x20
-    f32 field_24;               // 0x24
-    s32 field_28;               // 0x28
-    s32 field_2C;               // 0x2C
-    s32 field_30;               // 0x30
-    EffectEntry* field_34;      // 0x34
-    EffectEntry* field_38;      // 0x38
-    EffectEntry* field_3C;      // 0x3C
-    s32 field_40;               // 0x40
-    s32 field_44;               // 0x44
-    s32 field_48;               // 0x48
-    s32 field_4C;               // 0x4C
-    s32 field_50;               // 0x50
-    s32 field_54;               // 0x54
-    s32 field_58;               // 0x58
-    s32* field_5C;              // 0x5C
-    s32 field_60;               // 0x60
-    s32 field_64;               // 0x64
-    s32 field_68;               // 0x68
-    f32 field_6C;               // 0x6C
-    f32 field_70;               // 0x70
-    Vec field_74;               // 0x74
-    GenkiEffect field_80[7];    // 0x80
+    f32 dispScore[3];           // 0x1C, counts toward score[]; the number disp_3D draws
+    s32 scoreBlinkTimer[3];     // 0x28, set to 60 when dispScore changes; % 12 blinks the number
+    EffectEntry* recoveryEff[3]; // 0x34, effRecoveryEntry under each score number
+    s32 timeLeft;               // 0x40, 900 frames; objects spawn while it is > 0
+    s32 marioState;             // 0x44, main_mario's switch
+    s32 marioTimer;             // 0x48, frames in marioState 3/4
+    s32 spawnTimer;             // 0x4C, frames to the next object_entry
+    s32 partyUnitId;            // 0x50, main_genki's args[0]; -1 with no partner
+    s32 holdTimer;              // 0x54, counts down while the stick is held; Genki1 fires again at 0
+    s32 weaponNum;              // 0x58, 3 or 7: the GenkiWeapon slots in use
+    s32* kindTable;             // 0x5C, BattleAlloc'd, shuffled GenkiObject kinds
+    s32 spawnCount;             // 0x60, objects spawned; indexes kindTable
+    s32 targetState;            // 0x64, main_target's switch
+    s32 targetRot;              // 0x68, degrees; the sight's btlDispTex4 rotation
+    f32 aimAngle;               // 0x6C, degrees, 0..60: launch angle and sight position
+    f32 aimAngleVel;            // 0x70, +-1.25 per frame
+    Vec field_0x74;             // 0x74
+    GenkiEffect field_0x80[7];  // 0x80
     GenkiWeapon weapon[7];      // 0x10C
     GenkiObject objects[10];    // 0x358
     GenkiStar stars[7];         // 0x510
@@ -156,39 +148,39 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
     if (isFirstCall) {
         args = event->args;
         memset(genki, 0, 0x7CC);
-        genki->field_50 = evtGetValue(event, args[0]);
-        genki->field_C = evtGetValue(event, args[1]);
-        genki->field_40 = 0x384;
+        genki->partyUnitId = evtGetValue(event, args[0]);
+        genki->variant = evtGetValue(event, args[1]);
+        genki->timeLeft = 0x384;
         genki->score[2] = 0;
         genki->score[1] = 0;
         genki->score[0] = 0;
-        genki->field_24 = 0.0f;
-        genki->field_20 = 0.0f;
-        genki->field_1C = 0.0f;
-        if (genki->field_C == 0) {
-            genki->field_58 = 3;
+        genki->dispScore[2] = 0.0f;
+        genki->dispScore[1] = 0.0f;
+        genki->dispScore[0] = 0.0f;
+        if (genki->variant == 0) {
+            genki->weaponNum = 3;
         } else {
-            genki->field_58 = 7;
+            genki->weaponNum = 7;
         }
-        if (genki->field_C == 0) {
-            genki->field_5C = BattleAlloc(0x64);
+        if (genki->variant == 0) {
+            genki->kindTable = BattleAlloc(0x64);
         } else {
-            genki->field_5C = BattleAlloc(0xC8);
+            genki->kindTable = BattleAlloc(0xC8);
         }
-        genki->field_34 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
-        genki->field_38 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
-        genki->field_3C = effRecoveryEntry(3, 0, 0.0f, -1000.0f, 0.0f);
+        genki->recoveryEff[0] = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
+        genki->recoveryEff[1] = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
+        genki->recoveryEff[2] = effRecoveryEntry(3, 0, 0.0f, -1000.0f, 0.0f);
         for (i = 0; i < 7; i++) {
-            genki->weapon[i].field_44 = effStarStoneEntry(i, 0.0f, -1000.0f, 0.0f, 1.0f);
+            genki->weapon[i].eff = effStarStoneEntry(i, 0.0f, -1000.0f, 0.0f, 1.0f);
             for (j = 0; j < 3; j++) {
-                genki->weapon[i].field_48[j] = effStarStoneEntry(i + 7, 0.0f, -1000.0f, 0.0f, 1.0f);
+                genki->weapon[i].trailEff[j] = effStarStoneEntry(i + 7, 0.0f, -1000.0f, 0.0f, 1.0f);
             }
         }
     }
     main_base();
     main_mario();
     main_target();
-    for (i = 0; i < genki->field_58; i++) {
+    for (i = 0; i < genki->weaponNum; i++) {
         main_weapon(i);
     }
     for (i = 0; i < 10; i++) {
@@ -209,118 +201,118 @@ static void main_base(void) {
     s32 t;
     s32 k;
 
-    if (genki->field_1C > (f32)genki->score[0]) {
-        genki->field_1C -= 1.0f;
-        genki->field_28 = 0x3C;
+    if (genki->dispScore[0] > (f32)genki->score[0]) {
+        genki->dispScore[0] -= 1.0f;
+        genki->scoreBlinkTimer[0] = 0x3C;
     }
-    if (genki->field_1C < (f32)genki->score[0]) {
-        genki->field_1C += 1.0f;
-        genki->field_28 = 0x3C;
+    if (genki->dispScore[0] < (f32)genki->score[0]) {
+        genki->dispScore[0] += 1.0f;
+        genki->scoreBlinkTimer[0] = 0x3C;
     }
-    if (genki->field_20 > (f32)genki->score[1]) {
-        genki->field_20 -= 1.0f;
-        genki->field_2C = 0x3C;
+    if (genki->dispScore[1] > (f32)genki->score[1]) {
+        genki->dispScore[1] -= 1.0f;
+        genki->scoreBlinkTimer[1] = 0x3C;
     }
-    if (genki->field_20 < (f32)genki->score[1]) {
-        genki->field_20 += 1.0f;
-        genki->field_2C = 0x3C;
+    if (genki->dispScore[1] < (f32)genki->score[1]) {
+        genki->dispScore[1] += 1.0f;
+        genki->scoreBlinkTimer[1] = 0x3C;
     }
-    if (genki->field_24 > (f32)genki->score[2]) {
-        genki->field_24 -= 1.0f;
-        genki->field_30 = 0x3C;
+    if (genki->dispScore[2] > (f32)genki->score[2]) {
+        genki->dispScore[2] -= 1.0f;
+        genki->scoreBlinkTimer[2] = 0x3C;
     }
-    if (genki->field_24 < (f32)genki->score[2]) {
-        genki->field_24 += 1.0f;
-        genki->field_30 = 0x3C;
+    if (genki->dispScore[2] < (f32)genki->score[2]) {
+        genki->dispScore[2] += 1.0f;
+        genki->scoreBlinkTimer[2] = 0x3C;
     }
-    if (genki->field_28 > 0) {
-        genki->field_28--;
+    if (genki->scoreBlinkTimer[0] > 0) {
+        genki->scoreBlinkTimer[0]--;
     }
-    if (genki->field_2C > 0) {
-        genki->field_2C--;
+    if (genki->scoreBlinkTimer[1] > 0) {
+        genki->scoreBlinkTimer[1]--;
     }
-    if (genki->field_30 > 0) {
-        genki->field_30--;
+    if (genki->scoreBlinkTimer[2] > 0) {
+        genki->scoreBlinkTimer[2]--;
     }
 
-    switch (genki->field_4) {
+    switch (genki->state) {
     case 0:
         break;
     case 1:
-        genki->field_4 = 2;
-        genki->field_44 = 1;
-        genki->field_64 = 1;
-        genki->field_60 = 0;
-        if (genki->field_C == 0) {
+        genki->state = 2;
+        genki->marioState = 1;
+        genki->targetState = 1;
+        genki->spawnCount = 0;
+        if (genki->variant == 0) {
             k = 0;
             for (i = 0; i < 7; i++) {
-                genki->field_5C[k++] = 0;
+                genki->kindTable[k++] = 0;
             }
             for (i = 0; i < 7; i++) {
-                genki->field_5C[k++] = 2;
+                genki->kindTable[k++] = 2;
             }
             for (i = 0; i < 8; i++) {
-                genki->field_5C[k++] = 4;
+                genki->kindTable[k++] = 4;
             }
             for (i = 0; i < 3; i++) {
-                genki->field_5C[k++] = 6;
+                genki->kindTable[k++] = 6;
             }
             for (i = 0; i < 200; i++) {
                 a = irand(25);
                 b = irand(25);
-                t = genki->field_5C[a];
-                genki->field_5C[a] = genki->field_5C[b];
-                genki->field_5C[b] = t;
+                t = genki->kindTable[a];
+                genki->kindTable[a] = genki->kindTable[b];
+                genki->kindTable[b] = t;
             }
         } else {
             k = 0;
             for (i = 0; i < 12; i++) {
-                genki->field_5C[k++] = 0;
+                genki->kindTable[k++] = 0;
             }
             for (i = 0; i < 4; i++) {
-                genki->field_5C[k++] = 1;
+                genki->kindTable[k++] = 1;
             }
             for (i = 0; i < 12; i++) {
-                genki->field_5C[k++] = 2;
+                genki->kindTable[k++] = 2;
             }
             for (i = 0; i < 4; i++) {
-                genki->field_5C[k++] = 3;
+                genki->kindTable[k++] = 3;
             }
             for (i = 0; i < 12; i++) {
-                genki->field_5C[k++] = 4;
+                genki->kindTable[k++] = 4;
             }
             for (i = 0; i < 4; i++) {
-                genki->field_5C[k++] = 5;
+                genki->kindTable[k++] = 5;
             }
             for (i = 0; i < 2; i++) {
-                genki->field_5C[k++] = 6;
+                genki->kindTable[k++] = 6;
             }
             for (i = 0; i < 200; i++) {
                 a = irand(50);
                 b = irand(50);
-                t = genki->field_5C[a];
-                genki->field_5C[a] = genki->field_5C[b];
-                genki->field_5C[b] = t;
+                t = genki->kindTable[a];
+                genki->kindTable[a] = genki->kindTable[b];
+                genki->kindTable[b] = t;
             }
         }
         /* fallthrough */
     case 2:
-        genki->field_4C--;
-        if (genki->field_4C <= 0) {
-            if (genki->field_C == 0) {
-                genki->field_4C = 0x25;
+        genki->spawnTimer--;
+        if (genki->spawnTimer <= 0) {
+            if (genki->variant == 0) {
+                genki->spawnTimer = 0x25;
             } else {
-                genki->field_4C = 0x12;
+                genki->spawnTimer = 0x12;
             }
-            if (genki->field_40 > 0) {
+            if (genki->timeLeft > 0) {
                 object_entry();
             }
         }
-        if (genki->field_40 <= 0) {
+        if (genki->timeLeft <= 0) {
             s32 ocount;
             s32 wcount = 0;
-            for (i = 0; i < genki->field_58; i++) {
-                if (genki->weapon[i].field_0 == 0) {
+            for (i = 0; i < genki->weaponNum; i++) {
+                if (genki->weapon[i].state == 0) {
                     wcount++;
                 } else {
                     break;
@@ -328,17 +320,17 @@ static void main_base(void) {
             }
             ocount = 0;
             for (i = 0; i < 10; i++) {
-                if (genki->objects[i].field_0 == 0) {
+                if (genki->objects[i].state == 0) {
                     ocount++;
                 } else {
                     break;
                 }
             }
-            if (wcount == genki->field_58 && ocount == 10) {
-                genki->field_4 = 3;
+            if (wcount == genki->weaponNum && ocount == 10) {
+                genki->state = 3;
             }
         } else {
-            genki->field_40--;
+            genki->timeLeft--;
         }
         break;
     case 3:
@@ -352,40 +344,40 @@ void main_mario(void) {
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     BattleUnitPart* parts = BtlUnit_GetPartsPtr(mario, BtlUnit_GetBodyPartsId(mario));
 
-    if (genki->field_44 >= 1 && genki->field_44 <= 4 && genki->field_40 <= 0 && object_get_num() == 0) {
-        genki->field_44 = 5;
-        genki->field_64 = 4;
+    if (genki->marioState >= 1 && genki->marioState <= 4 && genki->timeLeft <= 0 && object_get_num() == 0) {
+        genki->marioState = 5;
+        genki->targetState = 4;
         BtlUnit_SetAnim(parts, "M_S_1");
     }
-    switch (genki->field_44) {
+    switch (genki->marioState) {
     case 0:
         break;
     case 1:
         if (stickX < -0x28) {
-            genki->field_44 = 2;
-            genki->field_48 = 0;
-            genki->field_54 = 10;
+            genki->marioState = 2;
+            genki->marioTimer = 0;
+            genki->holdTimer = 10;
             BtlUnit_SetAnim(parts, "M_C_2A");
         }
         break;
     case 2:
         if (stickX > -0x14) {
-            genki->field_44 = 1;
+            genki->marioState = 1;
             weapon_entry();
         } else {
-            genki->field_54--;
-            if (genki->field_54 == 2) {
+            genki->holdTimer--;
+            if (genki->holdTimer == 2) {
                 BtlUnit_SetAnim(parts, "M_C_2B");
             }
-            if (genki->field_54 <= 0 && genki->field_C == 1) {
-                genki->field_54 = 10;
+            if (genki->holdTimer <= 0 && genki->variant == 1) {
+                genki->holdTimer = 10;
                 weapon_entry();
             }
         }
         break;
     case 3:
-        genki->field_44 = 4;
-        genki->field_48 = 0;
+        genki->marioState = 4;
+        genki->marioTimer = 0;
         BtlUnit_SetAnim(parts, "M_D_1");
         {
             f32 x, y, z;
@@ -400,14 +392,14 @@ void main_mario(void) {
             ((effStampData*)eff->userdata)->tevReg1B = 0;
         }
     case 4:
-        genki->field_48++;
-        if (genki->field_48 == 0x1E) {
+        genki->marioTimer++;
+        if (genki->marioTimer == 0x1E) {
             BtlUnit_SetAnim(parts, "M_X_1");
         }
-        if (genki->field_48 == 0xB4) {
+        if (genki->marioTimer == 0xB4) {
             BtlUnit_SetAnim(parts, str_80421D3C);
-            genki->field_44 = 1;
-            genki->field_48 = 0;
+            genki->marioState = 1;
+            genki->marioTimer = 0;
         }
         break;
     case 5:
@@ -418,36 +410,36 @@ void main_mario(void) {
 void main_target(void) {
     GenkiWork* genki = get_ptr();
 
-    switch (genki->field_64) {
+    switch (genki->targetState) {
     case 0:
         break;
     case 1:
-        genki->field_68 = 0;
-        genki->field_6C = 30.0f;
-        genki->field_70 = 1.25f;
-        genki->field_64 = 2;
+        genki->targetRot = 0;
+        genki->aimAngle = 30.0f;
+        genki->aimAngleVel = 1.25f;
+        genki->targetState = 2;
     case 2:
-        genki->field_68++;
-        if (genki->field_68 >= 0x168) {
-            genki->field_68 = (s32)((f32)genki->field_68 - 360.0f);
+        genki->targetRot++;
+        if (genki->targetRot >= 0x168) {
+            genki->targetRot = (s32)((f32)genki->targetRot - 360.0f);
         }
-        genki->field_6C += genki->field_70;
-        if (genki->field_6C >= 60.0f) {
-            genki->field_6C = 60.0f;
-            genki->field_70 = -1.25f;
-            genki->field_64 = 3;
+        genki->aimAngle += genki->aimAngleVel;
+        if (genki->aimAngle >= 60.0f) {
+            genki->aimAngle = 60.0f;
+            genki->aimAngleVel = -1.25f;
+            genki->targetState = 3;
         }
         break;
     case 3:
-        genki->field_68++;
-        if (genki->field_68 >= 0x168) {
-            genki->field_68 = (s32)((f32)genki->field_68 - 360.0f);
+        genki->targetRot++;
+        if (genki->targetRot >= 0x168) {
+            genki->targetRot = (s32)((f32)genki->targetRot - 360.0f);
         }
-        genki->field_6C += genki->field_70;
-        if (genki->field_6C <= 0.0f) {
-            genki->field_6C = 0.0f;
-            genki->field_70 = 1.25f;
-            genki->field_64 = 2;
+        genki->aimAngle += genki->aimAngleVel;
+        if (genki->aimAngle <= 0.0f) {
+            genki->aimAngle = 0.0f;
+            genki->aimAngleVel = 1.25f;
+            genki->targetState = 2;
         }
         break;
     case 4:
@@ -462,7 +454,7 @@ void main_weapon(s32 idx) {
     GenkiWork* genki = get_ptr();
     GenkiWeapon* weapon = &genki->weapon[idx];
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
-    f32 angle = 3.141592f * (2.0f * genki->field_6C) / 360.0f;
+    f32 angle = 3.141592f * (2.0f * genki->aimAngle) / 360.0f;
     s32 audienceNum = BattleAudience_GetAudienceNum();
     s32 i;
 
@@ -471,27 +463,27 @@ void main_weapon(s32 idx) {
     }
     weapon->pos[1] = weapon->pos[0];
 
-    switch (weapon->field_0) {
+    switch (weapon->state) {
     case 0:
         weapon->pos[0] = (Vec){0.0f, -1000.0f, 0.0f};
         break;
     case 1:
-        weapon->field_4--;
-        if (weapon->field_4 >= 0) {
+        weapon->delay--;
+        if (weapon->delay >= 0) {
             break;
         }
-        weapon->field_0 = 2;
+        weapon->state = 2;
         BtlUnit_GetPos(mario, &weapon->pos[0].x, &weapon->pos[0].y, &weapon->pos[0].z);
         weapon->pos[0].x += 20.0f * mario->mSizeMultiplier;
         weapon->pos[0].y += 28.0f * mario->mSizeMultiplier;
         weapon->vel = (Vec){10.0f * (f32)cos(angle), 10.0f * (f32)sin(angle), 0.0f};
         for (i = 0; i < 7; i++) {
-            GenkiEffect* eff = &genki->field_80[i];
+            GenkiEffect* eff = &genki->field_0x80[i];
 
-            if (eff->field_0 <= 0) {
-                eff->field_0 = 0x1E;
-                eff->pos = genki->field_74;
-                eff->field_10 = 2.0f * (f32)genki->field_68;
+            if (eff->field_0x0 <= 0) {
+                eff->field_0x0 = 0x1E;
+                eff->pos = genki->field_0x74;
+                eff->field_0x10 = 2.0f * (f32)genki->targetRot;
                 break;
             }
         }
@@ -507,7 +499,7 @@ void main_weapon(s32 idx) {
             BtlUnit_GetPos(mario, &x, &y, &z);
             if (weapon->pos[0].x >= 250.0f || weapon->pos[0].y >= 180.0f ||
                 weapon->pos[0].y <= y) {
-                weapon->field_0 = 3;
+                weapon->state = 3;
                 break;
             }
             {
@@ -520,9 +512,9 @@ void main_weapon(s32 idx) {
                 for (i = 0; i < 10; i++) {
                     obj = &genki->objects[i];
 
-                    if (obj->field_0 == 2) {
-                        f32 dx = wx - obj->field_C;
-                        f32 dy = wy - obj->field_10;
+                    if (obj->state == 2) {
+                        f32 dx = wx - obj->pos.x;
+                        f32 dy = wy - obj->pos.y;
                         f32 d = dx * dx + dy * dy;
 
                         if (d < best) {
@@ -538,7 +530,7 @@ void main_weapon(s32 idx) {
                 {
                     f32 threshold;
 
-                    switch (obj->field_8) {
+                    switch (obj->kind) {
                     case 6:
                         threshold = 344.0f;
                         break;
@@ -551,13 +543,13 @@ void main_weapon(s32 idx) {
                         threshold = 1296.0f;
                         break;
                     }
-                    if (best <= threshold && obj->field_10 <= 200.0f) {
-                        weapon->field_0 = 3;
-                        obj->field_0 = 3;
-                effStardustN64Entry(5, obj->field_C, obj->field_10, obj->field_14,
+                    if (best <= threshold && obj->pos.y <= 200.0f) {
+                        weapon->state = 3;
+                        obj->state = 3;
+                effStardustN64Entry(5, obj->pos.x, obj->pos.y, obj->pos.z,
                                     10.0f);
-                effHitEntry(0, 5, obj->field_C, obj->field_10, obj->field_14, 1.0f);
-                switch (obj->field_8) {
+                effHitEntry(0, 5, obj->pos.x, obj->pos.y, obj->pos.z, 1.0f);
+                switch (obj->kind) {
                 case 0:
                     psndSFXOn_3D((const char*)0xA64, &weapon->pos[0]);
                     genki->score[0] += 1;
@@ -602,10 +594,10 @@ void main_weapon(s32 idx) {
                     break;
                 case 6:
                     psndSFXOn_3D((const char*)0xA68, &weapon->pos[0]);
-                    genki->field_44 = 3;
+                    genki->marioState = 3;
                     break;
                 }
-                switch (obj->field_8) {
+                switch (obj->kind) {
                 case 0:
                 case 1:
                 case 2:
@@ -648,15 +640,15 @@ void main_weapon(s32 idx) {
         }
         break;
     case 3:
-        weapon->field_0 = 0;
+        weapon->state = 0;
         break;
     }
 
     {
         f32 scale = 1.125f;
 
-        if (weapon->field_44 != NULL) {
-            effStarStoneData* data = weapon->field_44->userdata;
+        if (weapon->eff != NULL) {
+            effStarStoneData* data = weapon->eff->userdata;
 
             data->x = weapon->pos[0].x;
             data->y = weapon->pos[0].y;
@@ -665,7 +657,7 @@ void main_weapon(s32 idx) {
             data->tevReg0A = 0xFF;
         }
         for (i = 0; i < 3; i++) {
-            effStarStoneData* data = weapon->field_48[i]->userdata;
+            effStarStoneData* data = weapon->trailEff[i]->userdata;
 
             data->x = weapon->pos[i + 1].x;
             data->y = weapon->pos[i + 1].y;
@@ -691,90 +683,90 @@ void main_object(s32 idx) {
     GenkiStar* star;
     f32 x, y, z;
 
-    switch (obj->field_0) {
+    switch (obj->state) {
     case 0:
         break;
     case 1:
-        obj->field_0 = 2;
-        obj->field_4 = 0;
+        obj->state = 2;
+        obj->timer = 0;
         {
             s32 limit;
-            if (genki->field_C == 0) {
+            if (genki->variant == 0) {
                 limit = 0x19;
             } else {
                 limit = 0x32;
             }
-            if (genki->field_60 < limit) {
-                obj->field_8 = genki->field_5C[genki->field_60];
+            if (genki->spawnCount < limit) {
+                obj->kind = genki->kindTable[genki->spawnCount];
             } else {
-                s32 r = irand(genki->field_C == 0 ? 7 : 0xE);
+                s32 r = irand(genki->variant == 0 ? 7 : 0xE);
                 if (r == 0) {
-                    obj->field_8 = 6;
+                    obj->kind = 6;
                 } else {
-                    if (genki->field_50 != -1) {
-                        obj->field_8 = local[irand(3)];
+                    if (genki->partyUnitId != -1) {
+                        obj->kind = local[irand(3)];
                     } else {
-                        obj->field_8 = local[irand(2)];
+                        obj->kind = local[irand(2)];
                     }
-                    if (irand(5) == 0 && genki->field_C == 1) {
-                        switch (obj->field_8) {
+                    if (irand(5) == 0 && genki->variant == 1) {
+                        switch (obj->kind) {
                         case 0:
-                            obj->field_8 = 1;
+                            obj->kind = 1;
                             break;
                         case 2:
-                            obj->field_8 = 3;
+                            obj->kind = 3;
                             break;
                         case 4:
-                            obj->field_8 = 5;
+                            obj->kind = 5;
                             break;
                         }
                     }
                 }
             }
         }
-        if (genki->field_50 == -1 && obj->field_8 == 2) {
-            obj->field_8 = 0;
+        if (genki->partyUnitId == -1 && obj->kind == 2) {
+            obj->kind = 0;
         }
-        if (genki->field_50 == -1 && obj->field_8 == 3) {
-            obj->field_8 = 1;
+        if (genki->partyUnitId == -1 && obj->kind == 3) {
+            obj->kind = 1;
         }
-        genki->field_60++;
-        if (genki->field_C == 0) {
+        genki->spawnCount++;
+        if (genki->variant == 0) {
             star = &genki->stars[irand(7)];
         } else {
             star = &genki->stars[0];
         }
         {
             BtlUnit_GetPos(mario, &x, &y, &z);
-            obj->field_C = star->field_C.x;
-            obj->field_10 = star->field_C.y;
-            obj->field_14 = z + (f32)idx;
+            obj->pos.x = star->pos.x;
+            obj->pos.y = star->pos.y;
+            obj->pos.z = z + (f32)idx;
         }
     case 2:
-        if (genki->field_C == 0) {
-            obj->field_10 -= 1.32f;
+        if (genki->variant == 0) {
+            obj->pos.y -= 1.32f;
         } else {
-            obj->field_10 -= 1.98f;
+            obj->pos.y -= 1.98f;
         }
         {
             BtlUnit_GetPos(mario, &x, &y, &z);
             {
                 f32 fifteen = 15.0f;
-                if (obj->field_10 <= fifteen + y) {
+                if (obj->pos.y <= fifteen + y) {
                     f32 thirty = 30.0f;
-                    obj->field_0 = 3;
-                    effStardustEntry(5, 0xA, 0x3C, obj->field_C, fifteen + y, obj->field_14,
+                    obj->state = 3;
+                    effStardustEntry(5, 0xA, 0x3C, obj->pos.x, fifteen + y, obj->pos.z,
                                      thirty, thirty);
                 }
             }
         }
-        obj->field_4++;
-        if (obj->field_4 > 0x78) {
-            obj->field_4 = 0;
+        obj->timer++;
+        if (obj->timer > 0x78) {
+            obj->timer = 0;
         }
         break;
     case 3:
-        obj->field_0 = 0;
+        obj->state = 0;
         break;
     }
 }
@@ -783,7 +775,7 @@ static void main_star(void) {
     GenkiWork* genki = get_ptr();
     s32 i;
 
-    if (genki->field_C == 0) {
+    if (genki->variant == 0) {
         for (i = 0; i < 7; i++) {
             main_star0(i);
         }
@@ -795,7 +787,7 @@ static void main_star(void) {
 // 100%: the Vec literals make MWCC anchor the .rodata section base in r31, fold the
 // anonymous int->float pool double into `lfd fX, 0x1b8(r31)`, and pick the original's
 // callee-saved map (idx=r28, mario=r29, star=r30, vec=r31, genki=r27).
-// Putting field_58 after field_54/field_3C/field_48 (its original source order) fixed
+// Putting the angle store after radius/scale/rot (its original source order) fixed
 // the case-1 schedule. Logic, schedule and constants match the assembly.
 void main_star0(s32 idx) {
     GenkiWork* genki = get_ptr();
@@ -804,114 +796,114 @@ void main_star0(s32 idx) {
     f32 x, y, z;
     f32 f;
 
-    switch (star->field_0) {
+    switch (star->state) {
     case 0:
         break;
     case 1:
-        star->field_0 = 2;
-        star->field_4 = 0;
-        star->field_60 = effStarStoneEntry(idx, 0.0f, -1000.0f, 0.0f, 1.0f);
-        BtlUnit_GetPos(mario, &star->field_C.x, &star->field_C.y, &star->field_C.z);
-        star->field_C.y = star->field_C.y +
+        star->state = 2;
+        star->timer = 0;
+        star->eff = effStarStoneEntry(idx, 0.0f, -1000.0f, 0.0f, 1.0f);
+        BtlUnit_GetPos(mario, &star->pos.x, &star->pos.y, &star->pos.z);
+        star->pos.y = star->pos.y +
             (mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f);
-        star->field_18 = star->field_C;
-        star->field_24 = star->field_C;
-        star->field_24.y += 30.0f;
-        star->field_3C = (Vec){0.0f, 0.0f, 0.0f};
-        star->field_48 = (Vec){0.0f, 0.0f, 0.0f};
-        star->field_54 = 0.0f;
-        star->field_58 = 6.283184f * (f32)idx / 7.0f;
-        star->field_5C = 0.1f;
+        star->from = star->pos;
+        star->to = star->pos;
+        star->to.y += 30.0f;
+        star->scale = (Vec){0.0f, 0.0f, 0.0f};
+        star->rot = (Vec){0.0f, 0.0f, 0.0f};
+        star->radius = 0.0f;
+        star->angle = 6.283184f * (f32)idx / 7.0f;
+        star->angleVel = 0.1f;
         /* fallthrough */
     case 2:
-        star->field_4++;
-        if (star->field_4 <= 0x64) {
-            star->field_C.y = intplGetValue(0, star->field_4, 0x64, star->field_18.y, star->field_24.y);
+        star->timer++;
+        if (star->timer <= 0x64) {
+            star->pos.y = intplGetValue(0, star->timer, 0x64, star->from.y, star->to.y);
             BtlUnit_GetPos(mario, &x, &y, &z);
-            star->field_54 = intplGetValue(0, star->field_4, 0x64, 0.0f,
+            star->radius = intplGetValue(0, star->timer, 0x64, 0.0f,
                                            40.0f);
-            star->field_58 += star->field_5C;
-            star->field_C.x = x + star->field_54 * (f32)cos(star->field_58);
-            star->field_C.z = z + star->field_54 * (f32)sin(star->field_58);
-            f = intplGetValue(0, star->field_4, 0x64, 0.0f, 0.75f);
-            star->field_3C.z = f;
-            star->field_3C.y = f;
-            star->field_3C.x = f;
+            star->angle += star->angleVel;
+            star->pos.x = x + star->radius * (f32)cos(star->angle);
+            star->pos.z = z + star->radius * (f32)sin(star->angle);
+            f = intplGetValue(0, star->timer, 0x64, 0.0f, 0.75f);
+            star->scale.z = f;
+            star->scale.y = f;
+            star->scale.x = f;
         } else {
-            star->field_C.y = star->field_24.y;
+            star->pos.y = star->to.y;
             BtlUnit_GetPos(mario, &x, &y, &z);
-            star->field_58 += star->field_5C;
-            star->field_C.x = x + star->field_54 * (f32)cos(star->field_58);
-            star->field_C.z = z + star->field_54 * (f32)sin(star->field_58);
-            star->field_3C.z = 0.75f;
-            star->field_3C.y = 0.75f;
-            star->field_3C.x = 0.75f;
+            star->angle += star->angleVel;
+            star->pos.x = x + star->radius * (f32)cos(star->angle);
+            star->pos.z = z + star->radius * (f32)sin(star->angle);
+            star->scale.z = 0.75f;
+            star->scale.y = 0.75f;
+            star->scale.x = 0.75f;
         }
-        star->field_48.y = intplGetValue(4, star->field_4, 0x78, 0.0f,
+        star->rot.y = intplGetValue(4, star->timer, 0x78, 0.0f,
                                        2160.0f);
-        if (star->field_4 >= 0x78) {
-            star->field_0 = 3;
-            star->field_4 = 0;
-            star->field_18 = star->field_C;
-            star->field_24 = (Vec){200.0f * (f32)rand() / 32767.0f, 180.0f, star->field_18.z};
-            star->field_30 = (Vec){0.0f, 0.0f, 0.0f};
-            star->field_30.y = (2.0f * (star->field_24.y - star->field_18.y) -
+        if (star->timer >= 0x78) {
+            star->state = 3;
+            star->timer = 0;
+            star->from = star->pos;
+            star->to = (Vec){200.0f * (f32)rand() / 32767.0f, 180.0f, star->from.z};
+            star->field_0x30 = (Vec){0.0f, 0.0f, 0.0f};
+            star->field_0x30.y = (2.0f * (star->to.y - star->from.y) -
                               (60.0f * (60.0f *
                                (0.2f - 0.01f * (f32)idx)))) /
                              120.0f;
         }
         break;
     case 3:
-        star->field_4++;
-        star->field_C.x = intplGetValue(4, star->field_4, 0x3C, star->field_18.x, star->field_24.x);
-        star->field_C.y += star->field_30.y;
-        star->field_30.y += 0.2f - 0.01f * (f32)idx;
-        star->field_48.y = 0.0f;
-        star->field_3C.z = 0.75f;
-        star->field_3C.y = 0.75f;
-        star->field_3C.x = 0.75f;
-        if (star->field_4 >= 0x3C) {
-            star->field_0 = 4;
-            star->field_4 = 0;
+        star->timer++;
+        star->pos.x = intplGetValue(4, star->timer, 0x3C, star->from.x, star->to.x);
+        star->pos.y += star->field_0x30.y;
+        star->field_0x30.y += 0.2f - 0.01f * (f32)idx;
+        star->rot.y = 0.0f;
+        star->scale.z = 0.75f;
+        star->scale.y = 0.75f;
+        star->scale.x = 0.75f;
+        if (star->timer >= 0x3C) {
+            star->state = 4;
+            star->timer = 0;
             if (irand(2) == 0) {
-                star->field_30.x = -2.0f - 0.05f * (f32)idx;
+                star->field_0x30.x = -2.0f - 0.05f * (f32)idx;
             }
-            star->field_30.x = 2.0f + 0.05f * (f32)idx;
-            star->field_30.y = 0.0f;
+            star->field_0x30.x = 2.0f + 0.05f * (f32)idx;
+            star->field_0x30.y = 0.0f;
         }
         break;
     case 4:
-        star->field_C.x += star->field_30.x;
-        if (star->field_C.x < 0.0f) {
-            star->field_30.x = 3.0f + 0.05f * (f32)idx;
+        star->pos.x += star->field_0x30.x;
+        if (star->pos.x < 0.0f) {
+            star->field_0x30.x = 3.0f + 0.05f * (f32)idx;
         }
-        if (star->field_C.x > 200.0f) {
-            star->field_30.x = -3.0f - 0.05f * (f32)idx;
+        if (star->pos.x > 200.0f) {
+            star->field_0x30.x = -3.0f - 0.05f * (f32)idx;
         }
-        star->field_30.y += 0.1f + 0.01f * (f32)idx;
-        if (star->field_30.y >= 6.283184f) {
-            star->field_30.y -= 6.283184f;
+        star->field_0x30.y += 0.1f + 0.01f * (f32)idx;
+        if (star->field_0x30.y >= 6.283184f) {
+            star->field_0x30.y -= 6.283184f;
         }
-        star->field_C.y = 10.0f * (f32)sin(star->field_30.y) + 180.0f;
-        if (genki->field_40 <= 0) {
-            star->field_0 = 5;
-            star->field_4 = 0;
-            star->field_C = (Vec){0.0f, -1000.0f, 0.0f};
+        star->pos.y = 10.0f * (f32)sin(star->field_0x30.y) + 180.0f;
+        if (genki->timeLeft <= 0) {
+            star->state = 5;
+            star->timer = 0;
+            star->pos = (Vec){0.0f, -1000.0f, 0.0f};
         }
         break;
     case 5:
         break;
     }
 
-    if (star->field_60 != NULL) {
-        effStarStoneData* p = star->field_60->userdata;
-        p->x = star->field_C.x;
-        p->y = star->field_C.y;
-        p->z = star->field_C.z;
-        p->tipRotY = star->field_48.x;
-        p->rotY = star->field_48.y;
-        p->tipRotZ = star->field_48.z;
-        p->scale = 1.5f * star->field_3C.x;
+    if (star->eff != NULL) {
+        effStarStoneData* p = star->eff->userdata;
+        p->x = star->pos.x;
+        p->y = star->pos.y;
+        p->z = star->pos.z;
+        p->tipRotY = star->rot.x;
+        p->rotY = star->rot.y;
+        p->tipRotZ = star->rot.z;
+        p->scale = 1.5f * star->scale.x;
     }
 }
 
@@ -924,104 +916,104 @@ void main_star1(void) {
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     f32 f;
 
-    switch (star->field_0) {
+    switch (star->state) {
     case 0:
         break;
     case 1:
-        star->field_0 = 2;
-        star->field_4 = 0;
-        star->field_60 = effStarStoneEntry(4, 0.0f, -1000.0f, 0.0f, 1.0f);
-        BtlUnit_GetPos(mario, &star->field_C.x, &star->field_C.y, &star->field_C.z);
-        star->field_C.y = star->field_C.y +
+        star->state = 2;
+        star->timer = 0;
+        star->eff = effStarStoneEntry(4, 0.0f, -1000.0f, 0.0f, 1.0f);
+        BtlUnit_GetPos(mario, &star->pos.x, &star->pos.y, &star->pos.z);
+        star->pos.y = star->pos.y +
             (mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f);
-        star->field_18 = star->field_C;
-        star->field_24 = star->field_C;
-        star->field_24.y += 50.0f;
-        star->field_24.z += -1.0f;
-        star->field_3C = (Vec){0.0f, 0.0f, 0.0f};
-        star->field_48 = (Vec){0.0f, 0.0f, 0.0f};
+        star->from = star->pos;
+        star->to = star->pos;
+        star->to.y += 50.0f;
+        star->to.z += -1.0f;
+        star->scale = (Vec){0.0f, 0.0f, 0.0f};
+        star->rot = (Vec){0.0f, 0.0f, 0.0f};
         /* fallthrough */
     case 2:
-        star->field_4++;
-        if (star->field_4 <= 0x64) {
-            star->field_C.x = intplGetValue(0, star->field_4, 0x64, star->field_18.x, star->field_24.x);
-            star->field_C.y = intplGetValue(0, star->field_4, 0x64, star->field_18.y, star->field_24.y);
-            star->field_C.z = intplGetValue(0, star->field_4, 0x64, star->field_18.z, star->field_24.z);
-            f = intplGetValue(0, star->field_4, 0x64, 0.0f, 2.0f);
-            star->field_3C.z = f;
-            star->field_3C.y = f;
-            star->field_3C.x = f;
+        star->timer++;
+        if (star->timer <= 0x64) {
+            star->pos.x = intplGetValue(0, star->timer, 0x64, star->from.x, star->to.x);
+            star->pos.y = intplGetValue(0, star->timer, 0x64, star->from.y, star->to.y);
+            star->pos.z = intplGetValue(0, star->timer, 0x64, star->from.z, star->to.z);
+            f = intplGetValue(0, star->timer, 0x64, 0.0f, 2.0f);
+            star->scale.z = f;
+            star->scale.y = f;
+            star->scale.x = f;
         } else {
-            star->field_C.x = star->field_24.x;
-            star->field_C.y = star->field_24.y;
-            star->field_C.z = star->field_24.z;
-            star->field_3C.z = 2.0f;
-            star->field_3C.y = 2.0f;
-            star->field_3C.x = 2.0f;
+            star->pos.x = star->to.x;
+            star->pos.y = star->to.y;
+            star->pos.z = star->to.z;
+            star->scale.z = 2.0f;
+            star->scale.y = 2.0f;
+            star->scale.x = 2.0f;
         }
-        star->field_48.y = intplGetValue(4, star->field_4, 0x78, 0.0f,
+        star->rot.y = intplGetValue(4, star->timer, 0x78, 0.0f,
                                        2160.0f);
-        if (star->field_4 >= 0x78) {
-            star->field_0 = 3;
-            star->field_4 = 0;
-            star->field_18 = star->field_C;
-            star->field_24 = (Vec){200.0f * (f32)rand() / 32767.0f, 180.0f, star->field_18.z};
-            star->field_30 = (Vec){0.0f, 0.0f, 0.0f};
-            star->field_30.y = (2.0f * (star->field_24.y - star->field_18.y) -
+        if (star->timer >= 0x78) {
+            star->state = 3;
+            star->timer = 0;
+            star->from = star->pos;
+            star->to = (Vec){200.0f * (f32)rand() / 32767.0f, 180.0f, star->from.z};
+            star->field_0x30 = (Vec){0.0f, 0.0f, 0.0f};
+            star->field_0x30.y = (2.0f * (star->to.y - star->from.y) -
                               720.0f) / 120.0f;
         }
         break;
     case 3:
-        star->field_4++;
-        star->field_C.x = intplGetValue(4, star->field_4, 0x3C, star->field_18.x, star->field_24.x);
-        star->field_C.y += star->field_30.y;
-        star->field_30.y += 0.2f;
-        star->field_48.y = 0.0f;
-        star->field_3C.z = 2.0f;
-        star->field_3C.y = 2.0f;
-        star->field_3C.x = 2.0f;
-        if (star->field_4 >= 0x3C) {
-            star->field_0 = 4;
-            star->field_4 = 0;
+        star->timer++;
+        star->pos.x = intplGetValue(4, star->timer, 0x3C, star->from.x, star->to.x);
+        star->pos.y += star->field_0x30.y;
+        star->field_0x30.y += 0.2f;
+        star->rot.y = 0.0f;
+        star->scale.z = 2.0f;
+        star->scale.y = 2.0f;
+        star->scale.x = 2.0f;
+        if (star->timer >= 0x3C) {
+            star->state = 4;
+            star->timer = 0;
             if (irand(2) == 0) {
-                star->field_30.x = -2.0f;
+                star->field_0x30.x = -2.0f;
             }
-            star->field_30.x = 2.0f;
-            star->field_30.y = 0.0f;
+            star->field_0x30.x = 2.0f;
+            star->field_0x30.y = 0.0f;
         }
         break;
     case 4:
-        star->field_C.x += star->field_30.x;
-        if (star->field_C.x < 0.0f) {
-            star->field_30.x = 3.0f;
+        star->pos.x += star->field_0x30.x;
+        if (star->pos.x < 0.0f) {
+            star->field_0x30.x = 3.0f;
         }
-        if (star->field_C.x > 200.0f) {
-            star->field_30.x = -3.0f;
+        if (star->pos.x > 200.0f) {
+            star->field_0x30.x = -3.0f;
         }
-        star->field_30.y += 0.1f;
-        if (star->field_30.y >= 6.283184f) {
-            star->field_30.y -= 6.283184f;
+        star->field_0x30.y += 0.1f;
+        if (star->field_0x30.y >= 6.283184f) {
+            star->field_0x30.y -= 6.283184f;
         }
-        star->field_C.y = 10.0f * (f32)sin(star->field_30.y) + 180.0f;
-        if (genki->field_40 <= 0) {
-            star->field_0 = 5;
-            star->field_4 = 0;
-            star->field_C = (Vec){0.0f, -1000.0f, 0.0f};
+        star->pos.y = 10.0f * (f32)sin(star->field_0x30.y) + 180.0f;
+        if (genki->timeLeft <= 0) {
+            star->state = 5;
+            star->timer = 0;
+            star->pos = (Vec){0.0f, -1000.0f, 0.0f};
         }
         break;
     case 5:
         break;
     }
 
-    if (star->field_60 != NULL) {
-        effStarStoneData* p = star->field_60->userdata;
-        p->x = star->field_C.x;
-        p->y = star->field_C.y;
-        p->z = star->field_C.z;
-        p->tipRotY = star->field_48.x;
-        p->rotY = star->field_48.y;
-        p->tipRotZ = star->field_48.z;
-        p->scale = 1.5f * star->field_3C.x;
+    if (star->eff != NULL) {
+        effStarStoneData* p = star->eff->userdata;
+        p->x = star->pos.x;
+        p->y = star->pos.y;
+        p->z = star->pos.z;
+        p->tipRotY = star->rot.x;
+        p->rotY = star->rot.y;
+        p->tipRotZ = star->rot.z;
+        p->scale = 1.5f * star->scale.x;
     }
 }
 
@@ -1036,26 +1028,26 @@ USER_FUNC(end_genki) {
 
     for (i = 0; i < 7; i++) {
         star = &genki->stars[i];
-        if (star->field_60 != NULL) {
-            effDelete(((effStarStoneData*)star->field_60->userdata)->dustEffect);
-            effDelete(star->field_60);
+        if (star->eff != NULL) {
+            effDelete(((effStarStoneData*)star->eff->userdata)->dustEffect);
+            effDelete(star->eff);
         }
     }
     for (i = 0; i < 7; i++) {
         weapon = &genki->weapon[i];
-        if (weapon->field_44 != NULL) {
-            effDelete(((effStarStoneData*)weapon->field_44->userdata)->dustEffect);
-            effDelete(weapon->field_44);
+        if (weapon->eff != NULL) {
+            effDelete(((effStarStoneData*)weapon->eff->userdata)->dustEffect);
+            effDelete(weapon->eff);
             for (j = 0; j < 3; j++) {
-                effDelete(((effStarStoneData*)weapon->field_48[j]->userdata)->dustEffect);
-                effDelete(weapon->field_48[j]);
+                effDelete(((effStarStoneData*)weapon->trailEff[j]->userdata)->dustEffect);
+                effDelete(weapon->trailEff[j]);
             }
         }
     }
-    effDelete(genki->field_34);
-    effDelete(genki->field_38);
-    effDelete(genki->field_3C);
-    BattleFree(genki->field_5C);
+    effDelete(genki->recoveryEff[0]);
+    effDelete(genki->recoveryEff[1]);
+    effDelete(genki->recoveryEff[2]);
+    BattleFree(genki->kindTable);
     return 2;
 }
 
@@ -1073,7 +1065,7 @@ static void disp_3D(CameraId cameraId, void* param) {
     GenkiWork* genki = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     BattleUnit* party = BattleGetPartyPtr(_battleWorkPointer);
-    f32 angle = 3.141592f * genki->field_6C / 180.0f;
+    f32 angle = 3.141592f * genki->aimAngle / 180.0f;
     Mtx mtx;
     Vec pos;
     Vec pos2;
@@ -1093,18 +1085,18 @@ static void disp_3D(CameraId cameraId, void* param) {
     GXColor iconC5;
 #endif
 
-    if (genki->field_4 != 0) {
+    if (genki->state != 0) {
         BtlUnit_GetHomePos(mario, &x, &y, &z);
         y += 60.0f;
         {
-            RecoveryData* ud = genki->field_34->userdata;
+            RecoveryData* ud = genki->recoveryEff[0]->userdata;
             ud->x = x;
             ud->y = y - 10.0f;
             ud->z = z + 5.0f;
         }
         {
             s32 frame;
-            if (genki->field_1C >= 10.0f) {
+            if (genki->dispScore[0] >= 10.0f) {
                 Vec v = *(const Vec*)vec3_8030034c;
                 v.x = x + 6.0f;
                 v.y = y;
@@ -1118,29 +1110,29 @@ static void disp_3D(CameraId cameraId, void* param) {
                 pos = v;
             }
             PSMTXTrans(mtx, pos.x, pos.y, pos.z);
-            frame = genki->field_28 % 12;
+            frame = genki->scoreBlinkTimer[0] % 12;
             if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
                 iconC1 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-                ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_1C, 0, &iconC1);
+                ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->dispScore[0], 0, &iconC1);
 #else
-                iconNumberDispGx3D(mtx, (s32)genki->field_1C, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                iconNumberDispGx3D(mtx, (s32)genki->dispScore[0], 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #endif
 
             }
         }
-        if (genki->field_50 != -1) {
+        if (genki->partyUnitId != -1) {
             BtlUnit_GetHomePos(party, &px, &py, &pz);
             py += 60.0f;
             {
-                RecoveryData* ud = genki->field_38->userdata;
+                RecoveryData* ud = genki->recoveryEff[1]->userdata;
                 ud->x = px;
                 ud->y = py - 10.0f;
                 ud->z = pz + 5.0f;
             }
             {
                 s32 frame;
-                if (genki->field_20 >= 10.0f) {
+                if (genki->dispScore[1] >= 10.0f) {
                     Vec v = *(const Vec*)vec3_80300364;
                     v.x = px + 6.0f;
                     v.y = py;
@@ -1154,13 +1146,13 @@ static void disp_3D(CameraId cameraId, void* param) {
                     pos2 = v;
                 }
                 PSMTXTrans(mtx, pos2.x, pos2.y, pos2.z);
-                frame = genki->field_2C % 12;
+                frame = genki->scoreBlinkTimer[1] % 12;
                 if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
                     iconC2 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_20, 0, &iconC2);
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->dispScore[1], 0, &iconC2);
 #else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_20, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                    iconNumberDispGx3D(mtx, (s32)genki->dispScore[1], 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #endif
 
                 }
@@ -1170,14 +1162,14 @@ static void disp_3D(CameraId cameraId, void* param) {
             x = 0.5f * (x + px);
             y += 90.0f;
             {
-                RecoveryData* ud = genki->field_3C->userdata;
+                RecoveryData* ud = genki->recoveryEff[2]->userdata;
                 ud->x = x;
                 ud->y = y - 10.0f;
                 ud->z = z + 5.0f;
             }
             {
                 s32 frame;
-                if (genki->field_24 >= 10.0f) {
+                if (genki->dispScore[2] >= 10.0f) {
                     Vec v = *(const Vec*)vec3_8030037c;
                     v.x = x + 6.0f;
                     v.y = y;
@@ -1191,13 +1183,13 @@ static void disp_3D(CameraId cameraId, void* param) {
                     pos = v;
                 }
                 PSMTXTrans(mtx, pos.x, pos.y, pos.z);
-                frame = genki->field_30 % 12;
+                frame = genki->scoreBlinkTimer[2] % 12;
                 if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
                     iconC3 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC3);
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->dispScore[2], 0, &iconC3);
 #else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                    iconNumberDispGx3D(mtx, (s32)genki->dispScore[2], 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #endif
 
                 }
@@ -1206,14 +1198,14 @@ static void disp_3D(CameraId cameraId, void* param) {
             BtlUnit_GetHomePos(mario, &x, &y, &z);
             y += 90.0f;
             {
-                RecoveryData* ud = genki->field_3C->userdata;
+                RecoveryData* ud = genki->recoveryEff[2]->userdata;
                 ud->x = x;
                 ud->y = y - 10.0f;
                 ud->z = z + 5.0f;
             }
             {
                 s32 frame;
-                if (genki->field_24 >= 10.0f) {
+                if (genki->dispScore[2] >= 10.0f) {
                     Vec v = *(const Vec*)vec3_80300394;
                     v.x = x + 6.0f;
                     v.y = y;
@@ -1227,13 +1219,13 @@ static void disp_3D(CameraId cameraId, void* param) {
                     pos = v;
                 }
                 PSMTXTrans(mtx, pos.x, pos.y, pos.z);
-                frame = genki->field_30 % 12;
+                frame = genki->scoreBlinkTimer[2] % 12;
                 if (frame >= 0 && frame <= 5) {
 #ifdef MUST_MATCH
                     iconC4 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC4);
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->dispScore[2], 0, &iconC4);
 #else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                    iconNumberDispGx3D(mtx, (s32)genki->dispScore[2], 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #endif
 
                 }
@@ -1244,7 +1236,7 @@ static void disp_3D(CameraId cameraId, void* param) {
     for (i = 0; i < 10; i++) {
         obj = &genki->objects[i];
 
-        if (obj->field_0 != 2) {
+        if (obj->state != 2) {
             continue;
         }
         flags = 0;
@@ -1253,13 +1245,13 @@ static void disp_3D(CameraId cameraId, void* param) {
             s32 icon;
             s32 frame;
 
-            switch (obj->field_8) {
+            switch (obj->kind) {
             case 0:
             case 1:
                 icon = 0x1A3;
-                if (obj->field_8 == 1) {
+                if (obj->kind == 1) {
                     scale = 2.0f;
-                    frame = obj->field_4 % 12;
+                    frame = obj->timer % 12;
                     if (frame >= 0 && frame <= 5) {
                         flags |= 0x20;
                     }
@@ -1315,9 +1307,9 @@ static void disp_3D(CameraId cameraId, void* param) {
                     icon = 0;
                     break;
                 }
-                if (obj->field_8 == 3) {
+                if (obj->kind == 3) {
                     scale = 2.0f;
-                    frame = obj->field_4 % 12;
+                    frame = obj->timer % 12;
                     if (frame >= 0 && frame <= 5) {
                         flags |= 0x20;
                     }
@@ -1326,9 +1318,9 @@ static void disp_3D(CameraId cameraId, void* param) {
             case 4:
             case 5:
                 icon = 0x1B1;
-                if (obj->field_8 == 5) {
+                if (obj->kind == 5) {
                     scale = 2.0f;
-                    frame = obj->field_4 % 12;
+                    frame = obj->timer % 12;
                     if (frame >= 0 && frame <= 5) {
                         flags |= 0x20;
                     }
@@ -1339,8 +1331,8 @@ static void disp_3D(CameraId cameraId, void* param) {
                 break;
             }
             PSMTXScale(mtx, scale, scale, 1.0f);
-            PSMTXTransApply(mtx, mtx, obj->field_C,
-                            obj->field_10 - 20.0f * scale, obj->field_14);
+            PSMTXTransApply(mtx, mtx, obj->pos.x,
+                            obj->pos.y - 20.0f * scale, obj->pos.z);
 #ifdef MUST_MATCH
             // The original passes `flags` without a sign extension; with the header's s16
             // parameter MWCC emits `extsh`, so call it through a u16 prototype. The named
@@ -1353,7 +1345,7 @@ static void disp_3D(CameraId cameraId, void* param) {
         }
     }
 
-    if (genki->field_64 >= 2 && genki->field_64 <= 3) {
+    if (genki->targetState >= 2 && genki->targetState <= 3) {
         Mtx mtx2;
 
         PSMTXScale(mtx2, 0.5f, 0.5f, 0.5f);
@@ -1373,7 +1365,7 @@ static void disp_3D(CameraId cameraId, void* param) {
             z += 10.0f;
             color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
             tmp = *(const Vec*)vec3_803003c4;
-            tmp.z = 6.0f * (f32)genki->field_68;
+            tmp.z = 6.0f * (f32)genki->targetRot;
             rot = tmp;
             scale = *(const Vec*)vec3_803003b8;
             pos = *(const Vec*)vec3_803003ac;
@@ -1393,7 +1385,7 @@ static void disp_3D(CameraId cameraId, void* param) {
 
             color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
             tmp = *(const Vec*)vec3_803003e8;
-            tmp.z = 6.0f * -(f32)genki->field_68;
+            tmp.z = 6.0f * -(f32)genki->targetRot;
             rot = tmp;
             scale = *(const Vec*)vec3_803003dc;
             pos = *(const Vec*)vec3_803003d0;
@@ -1444,9 +1436,9 @@ void weapon_entry(void) {
         BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
         BattleUnitPart* parts = BtlUnit_GetPartsPtr(mario, BtlUnit_GetBodyPartsId(mario));
 
-        count = genki->field_58;
+        count = genki->weaponNum;
         for (i = 0; i < count; i++) {
-            if (genki->weapon[i].field_0 == 0) {
+            if (genki->weapon[i].state == 0) {
                 offsets[found++] = i;
             }
         }
@@ -1455,8 +1447,8 @@ void weapon_entry(void) {
             {
                 GenkiWeapon* wep = &genki->weapon[idx];
 
-                wep->field_0 = 1;
-                wep->field_4 = 7;
+                wep->state = 1;
+                wep->delay = 7;
             }
             BtlUnit_SetAnim(parts, "M_C_2C");
         }
@@ -1470,8 +1462,8 @@ void object_entry(void) {
     for (i = 0; i < 10; i++) {
         GenkiObject* obj = &genki->objects[i];
 
-        if (obj->field_0 == 0) {
-            obj->field_0 = 1;
+        if (obj->state == 0) {
+            obj->state = 1;
             break;
         }
     }
@@ -1483,7 +1475,7 @@ s32 object_get_num(void) {
     s32 count = 0;
 
     for (; i < 10; i++) {
-        if (genki->objects[i].field_0 == 2) {
+        if (genki->objects[i].state == 2) {
             count++;
         }
     }
@@ -1493,14 +1485,14 @@ s32 object_get_num(void) {
 USER_FUNC(start_game) {
     GenkiWork* genki = get_ptr();
 
-    genki->field_4 = 1;
+    genki->state = 1;
     return 2;
 }
 
 USER_FUNC(wait_game_end) {
     GenkiWork* genki = get_ptr();
 
-    return (genki->field_4 == 3) ? 2 : 0;
+    return (genki->state == 3) ? 2 : 0;
 }
 
 USER_FUNC(get_score) {
@@ -1525,8 +1517,8 @@ USER_FUNC(star_appear) {
     for (i = 0; i < 7; i++) {
         GenkiStar* star = &genki->stars[i];
 
-        star->field_0 = 1;
-        star->field_8 = 0;
+        star->state = 1;
+        star->field_0x8 = 0;
     }
     return 2;
 }
@@ -1534,8 +1526,8 @@ USER_FUNC(star_appear) {
 USER_FUNC(star_stone_appear) {
     GenkiWork* genki = get_ptr();
 
-    genki->stars[0].field_0 = 1;
-    genki->stars[0].field_8 = 1;
+    genki->stars[0].state = 1;
+    genki->stars[0].field_0x8 = 1;
     return 2;
 }
 
