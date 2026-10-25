@@ -473,7 +473,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			f32 rotY;
 
 			PSMTXIdentity(mtx);
-			rotY = entry->field_0x14;
+			rotY = entry->poseRotY;
 			if (rotY >= 90.0f && rotY <= 270.0f) {
 				PSMTXScaleApply(mtx, mtx, 1.0f, 1.0f, -1.0f);
 			}
@@ -483,7 +483,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				0.0f);
 			animPoseMain(entry->arg);
 			animPoseDrawMtx(entry->arg, mtx, 2,
-				entry->field_0x14, entry->scale);
+				entry->poseRotY, entry->scale);
 			FontDrawStart_alpha(alpha);
 			FontDrawColor(color);
 			break;
@@ -617,12 +617,12 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 					fy = py + (f32)(irand(10000) % 3);
 				}
 				PSMTXTrans(mtx, (f32)(-half), 12.0f, 0.0f);
-				PSMTXScaleApply(mtx, mtx, entry->field_0x14, entry->field_0x14, entry->field_0x14);
+				PSMTXScaleApply(mtx, mtx, entry->popScale, entry->popScale, entry->popScale);
 				PSMTXTransApply(mtx, mtx, (f32)half, -12.0f, 0.0f);
 				PSMTXScaleApply(mtx, mtx, entry->scale, entry->scale, entry->scale);
 				PSMTXTransApply(mtx, mtx, fx, fy, 0.0f);
 				FontDrawCodeMtx(mtx, entry->glyph);
-				entry->field_0x14 = 0.5f * ((entry->field_0x14) - 1.0f) + 1.0f;
+				entry->popScale = 0.5f * ((entry->popScale) - 1.0f) + 1.0f;
 			}
 			else if (entry->arg & 2) {
 				f32 fx = px + (f32)(irand(10000) % 3);
@@ -810,7 +810,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 				entry->arg |= 8;
 			}
 			if (flags & 1) {
-				entry->field_0x14 = dyn;
+				entry->popScale = dyn;
 			}
 			if (maxScale < scale) {
 				maxScale = scale;
@@ -1081,7 +1081,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 				data->flags |= 0x20;
 				sscanf(tagArg, "%hd%hd%hd%hd%hd", &sel2, &sel1, &data->selectWidth, &data->selectY);
 				data->selectInit = (s8)sel2;
-				data->field_0x7A42 = (s8)sel1;
+				data->selectCancel = (s8)sel1;
 				data->selectCount = 1;
 				flags |= 0x100;
 				var54 = 0;
@@ -1143,7 +1143,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 					entry->arg = flags;
 					entry->arg |= 8;
 					if (flags & 1) {
-						entry->field_0x14 = dyn;
+						entry->popScale = dyn;
 					}
 					if (maxScale < scale) {
 						maxScale = scale;
@@ -1166,7 +1166,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 				entry->x = (s16)animA;
 				entry->y = (s16)((s32)var[2] - animB);
 				entry->scale = animF;
-				entry->field_0x14 = (animC == 0) ? 0.0f : 180.f;
+				entry->poseRotY = (animC == 0) ? 0.0f : 180.f;
 				r24 += var54;
 				entry++;
 				data->entryId++;
@@ -1235,7 +1235,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 					entry->scale = 0.55f * scale;
 					entry->arg = flags;
 					if (flags & 1) {
-						entry->field_0x14 = dyn;
+						entry->popScale = dyn;
 					}
 					entry->startTime = 0;
 					r25 += rinc;
@@ -1267,7 +1267,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 			entry->arg |= 8;
 		}
 		if (flags & 1) {
-			entry->field_0x14 = dyn;
+			entry->popScale = dyn;
 		}
 		if (maxScale < scale) {
 			maxScale = scale;
@@ -1999,7 +1999,7 @@ void selectWindow_Main(WindowEntry* window) {
 			psndSFXOn((const char*)0x20005);
 		}
 		if (keyGetButtonTrg(0) & 0x200) {
-			switch (data->field_0x7A42) {
+			switch (data->selectCancel) {
 			case -1:
 				break;
 			case -2:
@@ -2008,7 +2008,7 @@ void selectWindow_Main(WindowEntry* window) {
 				psndSFXOn((const char*)0x20013);
 				break;
 			default:
-				data->selectCursor = data->field_0x7A42;
+				data->selectCursor = data->selectCancel;
 				window->state = 7;
 				psndSFXOn((const char*)0x20013);
 				break;

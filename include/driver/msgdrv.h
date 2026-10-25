@@ -15,7 +15,10 @@ typedef struct MsgDataEntry {
 	s16 iconOffsetY; //0xA: the icon tag's fourth value, added to the icon's y (0xFFF8)
 	s32 startTime; //0xC: ms at which the entry is reached (compared with textTime); an index into paperPoseTbl for 0xFFF3
 	f32 scale; //0x10
-	f32 field_0x14; //0x14: pop-in scale that decays to 1 (flag 0x1), or a paper pose's Y rotation
+	union {
+		f32 popScale; //0x14: glyphs with flag 0x1: msgDisp scales the glyph by it, then eases it to 1
+		f32 poseRotY; //0x14: 0xFFF4 (anim tag) entries: animPoseDrawMtx's rotY, 0 or 180; 90-270 mirrors z
+	};
 } MsgDataEntry;
 
 // The smart buffer a message window owns (window->userdata).
@@ -56,7 +59,8 @@ typedef struct MessageData {
 	s32 charDelay; //0x7A3C: ms added to timeCursor per character (0x19 at open, 0 after some tags)
 	s8 selectCount; //0x7A40: items in a select window; its width is count * 0x24 + 0x28
 	s8 selectInit; //0x7A41: initial cursor
-	s8 field_0x7A42; //0x7A42: second value of the select tag, never read
+	s8 selectCancel; //0x7A42: the select tag's second value, the item B picks: -1 B does nothing, -2 closes with
+	                 // selectCursor -1, otherwise closes with selectCursor set to it
 	s8 selectCursor; //0x7A43: cursor; evt_msg reads it as the chosen item
 	s16 selectWidth; //0x7A44
 	s16 selectY; //0x7A46

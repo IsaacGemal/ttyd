@@ -186,7 +186,7 @@ typedef struct MapObject {
     u32 flags;                // 0x0, MapObjectFlags
     u8 renderMode;            // 0x4, dispEntry render mode 0-5, chosen in _mapEnt from the joint's drawMode
     u8 cameraId;              // 0x5, dispEntry camera, CAMERA_3D from _mapEnt (lect_map_cam_chg_sub retargets it)
-    u8 field_0x6[0x8 - 0x6];  // 0x6
+    u8 pad_0x6[0x8 - 0x6];    // 0x6
     MapFileJoint* joints;     // 0x8
     GXColor color;            // 0xC, colour scale with MAPOBJ_FLAG_COLOR, flush colour with MAPOBJ_FLAG_FLUSH
     Vec center;               // 0x10, centre of the joint's bounds
@@ -350,12 +350,12 @@ enum MapEntryAnimFlags {
 
 typedef struct MapEntryAnimData {
     u16 flags;           // 0x0, MapEntryAnimFlags
-    u8 field_0x2[6];     // 0x2
+    u8 pad_0x2[0x8 - 0x2]; // 0x2
     OSTime startTime;    // 0x8, in milliseconds
     f32 frame;           // 0x10
     f32 rate;            // 0x14, mapSetPlayRate
     MapAnimTableEntry* data; // 0x18
-    u8 field_0x1C[4];    // 0x1C
+    u8 pad_0x1C[0x20 - 0x1C]; // 0x1C
 } MapEntryAnimData;
 
 // A vertex attribute array in the map file: a 4-byte word every reader skips, then the array.
@@ -392,7 +392,7 @@ typedef struct MapEntry {
     u16 flags;                     // 0x4, MapEntryFlags
     char name[16];                 // 0x6
     GXColor blend[3];              // 0x16, colour scales for flags 0x2 / 0x4 / 0x8 (mapSetBlend, mapSetBlend2)
-    u8 field_0x22[0x24 - 0x22];    // 0x22
+    u8 pad_0x22[0x24 - 0x22];      // 0x22
     s32 fogEnable;                 // 0x24
     s32 fogType;                   // 0x28, index into fog_type
     f32 fogStart;                  // 0x2C

@@ -7,8 +7,7 @@
 
 typedef struct OffscreenEntry {
 	s32 flags; //0x0
-	char name[4]; //0x4, TODO get full size
-	u8 field_0x8[0x14 - 0x8]; //0x8
+	char name[16]; //0x4, offscreenEntry strcpys names up to "fOff_peron" (11 bytes) here; currLeft follows at 0x14
 	u16 currLeft; //0x14
 	u16 currTop; //0x16
 	u16 currRight; //0x18

@@ -11,7 +11,7 @@ typedef struct CaseSetup {
 	u32 swFlag; //0x8
 	s32 (*activeFunc)(struct CaseEntry* entry); //0xC, copied to CaseEntry.activeFunc
 	s32 lwData[16]; //0x10
-	u8 field_0x50[0x54 - 0x50]; //0x50
+	u8 pad_0x50[0x54 - 0x50]; //0x50
 	void* evtCode; //0x54, TODO re-type
 	s32 priority; //0x58
 } CaseSetup;

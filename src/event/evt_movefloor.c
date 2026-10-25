@@ -30,7 +30,7 @@ typedef struct MovingFloorWork {
     /* 0x08 */ f32 speed;
     /* 0x0C */ f32 axisPos;
     /* 0x10 */ f32 progress;
-    /* 0x14 */ u32 field_0x14;
+    /* 0x14 */ u8 pad_0x14[0x18 - 0x14];
     /* 0x18 */ OSTime prevLifetime;
     /* 0x20 */ s32 mode;
     /* 0x24 */ s32 direction;

@@ -22,9 +22,7 @@ typedef struct SequenceWork {
 	const char* mapName; //0x8
 	const char* beroName; //0xC
 	s32 frameCount; //0x10, seq_battleMain: counted up while the audience textures load and for 30 frames before leaving
-	u32 field_0x14; //0x14
-	u32 field_0x18; //0x18
-	u32 field_0x1C; //0x1C
+	u8 pad_0x14[0x20 - 0x14]; //0x14
 } SequenceWork;
 
 void seqInit_MARIOSTORY(void);

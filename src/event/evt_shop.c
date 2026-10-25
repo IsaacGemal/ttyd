@@ -60,7 +60,7 @@ typedef struct ShopperData {
 	const char* name;        //0x0
 	s32 fookEvt;             //0x4
 	s32 buyEvt;              //0x8
-	const char* field_0xC[]; //0xC, message keys get_msg returns by index
+	const char* msgs[];      //0xC, message keys: get_msg returns msgs[idx], which the shop scripts pass to evt_msg_print_*/evt_msg_select
 } ShopperData;
 
 typedef struct ShopWork {
@@ -420,7 +420,7 @@ USER_FUNC(get_msg) {
 	s32 idx = evtGetValue(event, args[1]);
 	s32 value;
 
-	value = (s32)wp->shopper->field_0xC[idx];
+	value = (s32)wp->shopper->msgs[idx];
 
 	evtSetValue(event, args[2], value);
 	return EVT_RETURN_DONE;

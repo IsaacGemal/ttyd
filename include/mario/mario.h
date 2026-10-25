@@ -141,7 +141,7 @@ typedef struct MarioWork {
     u8 field_0x2A[0x2E - 0x2A];    // 0x2A
     MarioMotion currMotionId;      // 0x2E
     MarioMotion prevMotionId;      // 0x30, TODO check
-    u8 field_0x32[0x34 - 0x32];    // 0x32
+    u8 pad_0x32[0x34 - 0x32];      // 0x32
     u32 frameCount;                // 0x34, bumped at the end of every marioMain/peach/koopa main step; marioUpdateBlurPos records on odd counts
     s8 ctrlOffCount;               // 0x38, marioCtrlOff nesting count (flag 0x2); marioCtrlOn returns it to 0
     s8 keyOffCount;                // 0x39, marioKeyOff nesting count (flag 0x8); marioKeyOn returns it to 0
@@ -269,7 +269,7 @@ typedef struct MarioWork {
     u8 field_0x240[0x241 - 0x240]; // 0x240
     s8 currPartySlotId[2];         // 0x241 JP, 0x245 US
     s8 prevPartyMemberId[2];       // 0x243 JP, 0x247 US
-    u8 field_0x245;                // 0x245
+    u8 pad_0x245;                  // 0x245
     u16 buttonHeld;                // 0x246, GC pad button bits copied from gp->button by marioUpdateKeyData
     u16 buttonNew;                 // 0x248, gp->buttonNew; mot_roll also ORs 0x100/0x200 into it
     u16 buttonRepeat;              // 0x24A, gp->buttonRepeat
@@ -379,7 +379,7 @@ typedef struct MarioWork {
     };
     u8 field_0x2BC[4];             // 0x2BC
     s16 coinDropTimer;             // 0x2C0, frames left dropping coins after fleeing a field battle: npcdrv sets sysMsec2Frame(3000) with marioSetMutekiTime(3000) on battle result 4 (escaped); mario.c drops a coin every 30 frames while it runs
-    u8 field_0x2C2[0x2C4 - 0x2C2]; // 0x2C2
+    u8 pad_0x2C2[0x2C4 - 0x2C2];   // 0x2C2
     f32 kpaSpeed;                  // 0x2C4, signed walk/swim speed (koopa_motion, koopa.c reset)
     u32 reloadMapOnBottomless;     // 0x2C8, set by N_marioReloadMapOnBottomlessOn/Off
     Vec bottomlessResetPosition;   // 0x2CC JP, 0x2E4 US

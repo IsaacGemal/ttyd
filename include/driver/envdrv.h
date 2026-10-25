@@ -58,9 +58,11 @@ typedef struct EnvironmentWork {
     MtxPtr viewMtx; //0x70, envAddTev stores the current camera view; envTevLoadTexMtxImm reads it
     MtxPtr modelMtx; //0x74, envAddTev stores EnvironmentYami.mtx
     MtxPtr modelViewMtx; //0x78, envAddTev stores viewMtx * modelMtx; envTevLoadTexMtxImm reads it
-    f32 field_0x7C; //0x7C, set per type by envAddTev, read by envTevLoadTexMtxImm
-    f32 field_0x80; //0x80
-    f32 field_0x84; //0x84
+    f32 texMtxScale; //0x7C, set per type by envAddTev; envTevLoadTexMtxImm scales its texture matrix by it
+                     //      (x by 0.5 - 0.25 * s for mode 1, 20 * s for 2, 2 * s for 3)
+    f32 dirYaw; //0x80, degrees, set by envAddTev: envTevLoadTexMtxImm rotates about Y by it (mode 0) or aims the
+                //      direction (cos p sin y, sin p, cos p cos y) with it (modes 2, 3)
+    f32 dirPitch; //0x84, degrees, the p of that direction; mode 0 rotates about Z by -p (envAddTev spins it with retraceCount)
     EnvironmentUnk88 unk88; //0x88
     u8 unk94[0x98 - 0x94]; //0x94
     EnvironmentBlur unk98; //0x98, envBlurOn / envDisp_Blur

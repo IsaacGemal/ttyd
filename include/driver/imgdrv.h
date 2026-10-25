@@ -35,7 +35,7 @@ typedef struct ImageEntry {
 	s32 shadowId; //0x100
 	s32 poseId; //0x104
 	const char* animName; //0x108
-	u8 field_0x10C[0x110 - 0x10C]; //0x10C
+	u8 pad_0x10C[0x110 - 0x10C]; //0x10C
 	OSTime startTime; //0x110
 	f32 loopTimes; //0x118
 	f32 depthPlaneOffset; //0x11C
