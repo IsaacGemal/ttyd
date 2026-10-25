@@ -1046,7 +1046,7 @@ void kpaFireMain(void) {
                 if (root->noHit != 0) {
                     continue;
                 }
-                if (root->field_0x1C <= 0x10) {
+                if (root->lifetime <= 0x10) {
                     continue;
                 }
                 f30 = float_7_804203dc * root->radius;

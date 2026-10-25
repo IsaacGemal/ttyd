@@ -46,13 +46,22 @@ typedef enum KpaFlags {
 
 #define KPA_SFX_NONE 0xFFFFFFFFu
 
-// userdata of the fire effect (fireefp->userdata); nodes are 0x50 bytes apart
+// userdata of the fire effect (fireefp->userdata, effGonbabaBreathData's layout); nodes are 0x50 bytes apart
 typedef struct KpaFireNode {
-    u8 pad_0x0[0x04];
+    s32 type;       // 0x00
     Vec pos;        // 0x04
-    u8 pad_0x10[0x1C - 0x10];
-    s32 field_0x1C; // 0x1C
-    u8 pad_0x20[0x40 - 0x20];
+    f32 velX;       // 0x10
+    f32 velY;       // 0x14
+    s32 field_0x18; // 0x18
+    s32 lifetime;   // 0x1C (the effect counts it down; the fire hit checks skip nodes at 0x10 or less)
+    s32 counter;    // 0x20
+    s32 colorR;     // 0x24
+    s32 colorG;     // 0x28
+    s32 colorB;     // 0x2C
+    s32 targetR;    // 0x30
+    s32 targetG;    // 0x34
+    s32 targetB;    // 0x38
+    s32 alpha;      // 0x3C
     f32 radius;     // 0x40
     s32 noHit;      // 0x44 (nonzero: skipped by the fire hit checks)
     f32 yaw;        // 0x48
