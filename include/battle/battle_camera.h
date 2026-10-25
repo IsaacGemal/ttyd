@@ -17,10 +17,10 @@ typedef struct BattleCameraWork {
     f32 zoom;               // 0x24
     s16 moveSpeedLv;        // 0x28
     s16 zoomSpeedLv;        // 0x2A
-    Vec field_0x2C;         // 0x2C, cameraPos as battleCameraMain last set it
-    Vec field_0x38;         // 0x38, cameraPos at the start of battleCameraMain (restored per axis by flags 4/8/0x10)
-    Vec field_0x44;         // 0x44, cameraAt as battleCameraMain last set it
-    Vec field_0x50;         // 0x50, cameraAt at the start of battleCameraMain (restored with field_0x38)
+    Vec cameraPos;          // 0x2C, the camera's cameraPos as battleCameraMain last set it; copied back at its start
+    Vec prevCameraPos;      // 0x38, cameraPos at the start of battleCameraMain (restored per axis by flags 4/8/0x10)
+    Vec cameraAt;           // 0x44, the camera's cameraAt as battleCameraMain last set it; copied back at its start
+    Vec prevCameraAt;       // 0x50, cameraAt at the start of battleCameraMain (restored with prevCameraPos)
     Vec position;           // 0x5C
     Vec unk68;              // 0x68 (speed / delta)
     Vec field_0x74;         // 0x74, battleCameraMain's o4-o6 (unk68 gets o1-o3)
@@ -43,8 +43,8 @@ typedef struct BattleCameraWork {
     f32 unkF0;              // 0xF0
     f32 unkF4;              // 0xF4
     f32 unkF8;              // 0xF8
-    f32 field_0xFC;         // 0xFC, the current x offset of a btl_camera_shake_w shake (flag 1)
-    f32 field_0x100;        // 0x100, the current y offset of a btl_camera_shake_h shake (flag 2)
+    f32 shakeOffsetX;       // 0xFC, the current x offset of a btl_camera_shake_w shake (flag 1)
+    f32 shakeOffsetY;       // 0x100, the current y offset of a btl_camera_shake_h shake (flag 2)
 } BattleCameraWork;
 
 void battleCameraInit(void);

@@ -189,18 +189,18 @@ void BattleStageMain(void) {
 			if (light->flags & 4) {
 				BattleStageLightSpline* spline = light->spline;
 
-				light->targetCur.x = getSpline(spline->field_0x24[0][0], spline->field_0x24[0][1], spline->field_0x24[0][2],
-					spline->field_0x24[0][3], spline->field_0x4, spline->field_0x0, light->targetFrames);
-				light->targetCur.y = getSpline(spline->field_0x24[1][0], spline->field_0x24[1][1], spline->field_0x24[1][2],
-					spline->field_0x24[1][3], spline->field_0x4, spline->field_0x0, light->targetFrames);
-				light->targetCur.z = getSpline(spline->field_0x24[2][0], spline->field_0x24[2][1], spline->field_0x24[2][2],
-					spline->field_0x24[2][3], spline->field_0x4, spline->field_0x0, light->targetFrames);
+				light->targetCur.x = getSpline(spline->coef[0][0], spline->coef[0][1], spline->coef[0][2],
+					spline->coef[0][3], spline->knots, spline->knotCount, light->targetFrames);
+				light->targetCur.y = getSpline(spline->coef[1][0], spline->coef[1][1], spline->coef[1][2],
+					spline->coef[1][3], spline->knots, spline->knotCount, light->targetFrames);
+				light->targetCur.z = getSpline(spline->coef[2][0], spline->coef[2][1], spline->coef[2][2],
+					spline->coef[2][3], spline->knots, spline->knotCount, light->targetFrames);
 				light->targetFrames++;
-				if (light->targetFrames >= spline->field_0x4[spline->field_0x0 - 1]) {
+				if (light->targetFrames >= spline->knots[spline->knotCount - 1]) {
 					if (light->flags & 8) {
-						light->targetFrames -= spline->field_0x4[spline->field_0x0 - 1];
+						light->targetFrames -= spline->knots[spline->knotCount - 1];
 					} else {
-						light->targetFrames = spline->field_0x4[spline->field_0x0 - 1];
+						light->targetFrames = spline->knots[spline->knotCount - 1];
 					}
 				}
 			} else {
