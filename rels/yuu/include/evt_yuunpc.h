@@ -8,30 +8,30 @@
 
 // YuunpcEntry: one per NPC entry in YuunpcWp.entries (stride 0x70).
 typedef struct YuunpcEntry {
-    u16 field_0;      //0x0
+    u16 index;        //0x0, the entry's number; varies lanes and timing per runner (index % 101, index & 3)
     u16 flags;        //0x2
     s16 field_4;      //0x4
     u16 pad_06;       //0x6
-    f32 field_8;      //0x8
-    Vec field_C;      //0xC
-    Vec field_18;     //0x18
-    Vec field_24;     //0x24  position
-    Vec field_30;     //0x30  velocity
-    f32 field_3C;     //0x3C  velocity scale
-    f32 field_40;     //0x40
-    f32 field_44;     //0x44
-    f32 field_48;     //0x48
-    s32 field_4C;     //0x4C
-    s32 field_50;     //0x50
-    s16 field_54;     //0x54
-    s16 field_56;     //0x56
-    s16 field_58;     //0x58
-    s16 field_5A;     //0x5A
-    s16 field_5C;     //0x5C
+    f32 errper;       //0x8, set by errper_set_rtn (+-0.25 or +-0.1); minigame 4 shifts the runner's lane bounds by 150 * errper
+    Vec goal;         //0xC, finish point; goalincheck moves target to it, and stops the runner there
+    Vec target;       //0x18, point the runner heads for (dir)
+    Vec position;     //0x24, copied into the pose matrix and the NPC
+    Vec dir;          //0x30, unit x/z direction toward target
+    f32 speed;        //0x3C, step along dir per frame (0 standing, 0.5-2.25 by moveState); goalincheck's reach
+    f32 velY;         //0x40, fallcheck: added to position.y, gravity 0.533 a frame
+    f32 spinHeading;  //0x44, pose heading when the flags 0x8/0x10 spin started
+    f32 pushZ;        //0x48, the stream's z push added to each hitcheck step
+    s32 moveState;    //0x4C, minigame 4: 0 stand, 1 walk, 2 run, 3 fall, 4 jump
+    s32 spinTimer;    //0x50, frames left in the 30-frame spin
+    s16 poseIndex;    //0x54, current YuunpcWp.poseEntries index
+    s16 standPose;    //0x56, poseEntries index for moveState 0 (an S_1 animation)
+    s16 walkPose;     //0x58, for moveState 1 (W_1, or R_1 where there is none)
+    s16 runPose;      //0x5A, for moveState 2 (R_1)
+    s16 jumpPose;     //0x5C, held at its jumpFrame for moveStates 3 and 4 (R_1)
     u8 pad_5E[2];     //0x5E
     NpcEntry* npc;    //0x60
-    f32 field_64;     //0x64
-    u64 field_68;     //0x68
+    f32 cycleScale;   //0x64, the pose cycle lasts cycleFrames * cycleScale frames (yuunpc_pose_sub)
+    u64 animTime;     //0x68, renderTime the pose cycle started; with flags 0x4 the held offset into it
 } YuunpcEntry;
 
 typedef struct YuunpcPoseEntry {
@@ -39,31 +39,31 @@ typedef struct YuunpcPoseEntry {
     char anim[8];     //0x10
     s16 field_18;     //0x18
     u16 pad_1A;       //0x1A
-    f32 field_1C;     //0x1C
-    f32 field_20;     //0x20
-    s32 field_24;     //0x24
-    s32 field_28;     //0x28
+    f32 cycleFrames;  //0x1C, frames for one pass through the group's poses
+    f32 jumpFrame;    //0x20, yuunpc_set_jump_pose: the frame a jumpPose is held at
+    s32 firstPose;    //0x24, texId of the group's first pose
+    s32 numPoses;     //0x28
     u16 flags;        //0x2C
     u16 pad_2E;       //0x2E
-    f32 field_30;     //0x30
+    f32 walkCycleScale; //0x30, cycleScale the walk state (moveState 1) plays the group with
 } YuunpcPoseEntry;
 
 // One entry of the pose description passed to yuunpc_pose_init; stride 0xC.
 typedef struct YuunpcPoseArg {
-    char* name;   //0x0
-    char* anim;   //0x4
-    f32 field_8;  //0x8
+    char* name;       //0x0
+    char* anim;       //0x4
+    f32 cycleFrames;  //0x8, for the entries after the first list's terminator
 } YuunpcPoseArg;
 
 typedef struct YuunpcWp {
     u16 flags;                     //0x0
     u16 pad_02;                    //0x2
     s32 count;                     //0x4
-    s32 field_08[3];               //0x8
+    s32 spIndex[3];                //0x8, entries that become the yuusp0-yuusp2 NPCs (-1 for none)
     YuunpcEntry* entries;          //0x14
-    s32 field_18;                  //0x18
-    s32 field_1C;                  //0x1C
-    s32 field_20;                  //0x20
+    s32 groupCount;                //0x18, poseEntries built from the first list
+    s32 poseEntryCount;            //0x1C, poseEntries in use
+    s32 chusanIndex;               //0x20, poseEntries index of c_tyusan CHU_S_1 (played through chusan_*_tbl)
     s16 map[7 * 72];               //0x24
     YuunpcPoseEntry poseEntries[32];  //0x414
 } YuunpcWp;

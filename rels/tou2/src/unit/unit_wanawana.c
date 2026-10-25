@@ -205,7 +205,7 @@ void replace_disp(CameraId cameraId, void* param) {
     GXPixModeSync();
     GXTexModeSync();
     memcpy(camGetPtr(cameraId), &save, 0x260);
-    p->field_0x00 = 1;
+    p->captured = 1;
 }
 
 // .text:0x26C | 0x86B8 | size: 0xB8
@@ -213,7 +213,7 @@ void replace_callback(BattleUnitPart* part, s32 arg) {
     WanawanaWork* p = part->mOwner->mExtraWork;
     Mtx mtx;
 
-    if (p->field_0x00 == 0) {
+    if (p->captured == 0) {
         return;
     }
     PSMTXIdentity(mtx);
@@ -261,7 +261,7 @@ USER_FUNC(replace_evt) {
     part->dispCallback = replace_callback;
     unit->mExtraWork = p;
     unit->mSmartEntry = p->tex;
-    p->field_0x00 = 0;
+    p->captured = 0;
     dispEntry(CAMERA_SHADOW, 0.0f, 0, replace_disp, p);
     return EVT_RETURN_DONE;
 }

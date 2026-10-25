@@ -27,10 +27,19 @@ struct FanPose {
     Vec position;   // 0x10
     Vec velocity;   // 0x1C
     f32 field_0x28; // 0x28
-    Vec target;     // 0x2C
-    f32 field_0x38; // 0x38
-    f32 field_0x3C; // 0x3C
-    f32 field_0x40; // 0x40
+    Vec target;     // 0x2C, the hop's landing point; the per-frame velocity while drifting (state 20)
+    union {
+        f32 hopVelY;     // 0x38, state 10: rise per frame, reduced by hopGravity each frame
+        f32 driftAccelX; // 0x38, state 20: added to target.x, the velocity, each frame
+    };
+    union {
+        f32 hopSpeed;    // 0x3C, state 10: x/z step toward target per frame (timer = distance / hopSpeed)
+        f32 driftAccelY; // 0x3C, state 20: added to target.y
+    };
+    union {
+        f32 hopGravity;  // 0x40, state 10: taken off hopVelY each frame
+        f32 driftAccelZ; // 0x40, state 20: added to target.z
+    };
     s16 timer;      // 0x44, frames left in states 10 and 20
     s16 field_0x46; // 0x46
 };

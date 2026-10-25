@@ -4,9 +4,9 @@
 #include "memory.h"
 
 typedef struct FollowPath {
-    s32 unk0;
-    s32* ptr;
-    s32 count;
+    s32 minStage; // 0x0, monosiri_check stops at the first entry whose minStage is above GSW(0)
+    s32* ptr;     // 0x4
+    s32 count;    // 0x8
 } FollowPath;
 
 USER_FUNC(camera_move_check);

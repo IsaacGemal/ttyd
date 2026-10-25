@@ -4897,7 +4897,7 @@ USER_FUNC(gundan1000tai_circle_pos_func) {
 }
 
 // Splitting the angle product (marked above) puts the eight pooled float constants in the original's
-// registers; assigning base before field_0x60 puts the 90/-280 and 270/340 address temps in r3/r4.
+// registers; assigning base before facingAngle puts the 90/-280 and 270/340 address temps in r3/r4.
 // With the lifetime optimiser on, the allocator splits the two halves' live ranges and the second half's
 // angle/s come out in f22/f21; off, and with radius/s/angle/c/c2 declared in this order, both halves keep
 // angle in f21 and s in f22. The second half's cos result needs its own temp (c2) to stay in f1.
@@ -5036,11 +5036,11 @@ void gundan1000tai_seq00(NanNpcEntry* entry) {
         f32 angle = angleABf(entry->position.x, entry->position.z, entry->hoseiPosition.x, entry->hoseiPosition.z);
         f32 half = 0.5f;
         f32 scaled = (f32)(irand(0xB4) + 0xB4) + dist * half;
-        f32 duration = sysFrame2SecFloat(scaled * half);
+        f32 step = sysFrame2SecFloat(scaled * half);
 
-        entry->field_0x78 = duration;
-        entry->field_0x7C = angle;
-        entry->field_0x70 = (s32)(dist / duration);
+        entry->stepDist = step;
+        entry->moveAngle = angle;
+        entry->moveSteps = (s32)(dist / step);
         entry->timer = 0;
         entry->moveDone = 0;
         evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_run_animtbl);
@@ -5048,9 +5048,9 @@ void gundan1000tai_seq00(NanNpcEntry* entry) {
         // fallthrough
     }
     case 3:
-        movePos(&entry->position.x, &entry->position.z, entry->field_0x78, entry->field_0x7C);
+        movePos(&entry->position.x, &entry->position.z, entry->stepDist, entry->moveAngle);
         entry->timer++;
-        if (entry->timer >= entry->field_0x70) {
+        if (entry->timer >= entry->moveSteps) {
             entry->position.x = entry->hoseiPosition.x;
             entry->position.z = entry->hoseiPosition.z;
             entry->moveDone = 1;
@@ -5123,18 +5123,18 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
         entry->targetPos.x = 0.9f * (radius * s) + 30.0f;
         entry->targetPos.y = 15.0f;
         entry->targetPos.z = 0.5f * (radius * c) - 300.0f;
-        entry->field_0x78 = -4.0f * (f32)(irand(0x3C) + 0x32);
-        entry->field_0x7C = (entry->targetPos.y - entry->hoseiPosition.y) - entry->field_0x78;
+        entry->arcQuad = -4.0f * (f32)(irand(0x3C) + 0x32);
+        entry->arcLinear = (entry->targetPos.y - entry->hoseiPosition.y) - entry->arcQuad;
         entry->timer = irand(0x1F4) + 0x258;
         if (entry->state == 10) {
-            entry->field_0x70 = 0x15;
+            entry->nextState = 0x15;
             if (entry->hoseiPosition.x < entry->targetPos.x) {
                 entry->facingAngle = 90.0f;
             } else {
                 entry->facingAngle = 270.0f;
             }
         } else {
-            entry->field_0x70 = 0x16;
+            entry->nextState = 0x16;
             if (entry->hoseiPosition.x < entry->targetPos.x) {
                 entry->facingAngle = 270.0f;
             } else {
@@ -5153,10 +5153,10 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
 
             entry->position.x = intplGetValue(0, elapsed, entry->timer, entry->hoseiPosition.x, entry->targetPos.x);
             entry->position.z = intplGetValue(0, elapsed, entry->timer, entry->hoseiPosition.z, entry->targetPos.z);
-            entry->position.y = entry->hoseiPosition.y + t * (entry->field_0x7C + entry->field_0x78 * t);
+            entry->position.y = entry->hoseiPosition.y + t * (entry->arcLinear + entry->arcQuad * t);
         } else {
             entry->position = entry->targetPos;
-            entry->state = entry->field_0x70;
+            entry->state = entry->nextState;
             entry->startTime = gp->renderTime;
             entry->timer = irand(0x7D0) + 0x1F4;
         }
@@ -5183,8 +5183,8 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
         entry->timer = irand(0x7D0) + 0x1F4;
         entry->startTime = gp->renderTime;
         entry->basePos = entry->position;
-        entry->field_0x78 = 15.0f + entry->basePos.x;
-        entry->field_0x7C = entry->basePos.x - 15.0f;
+        entry->swayMaxX = 15.0f + entry->basePos.x;
+        entry->swayMinX = entry->basePos.x - 15.0f;
         if (irand(1) != 0) {
             entry->stepX = 1.0f;
             entry->facingAngle = 90.0f;
@@ -5206,11 +5206,11 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
             entry->state = 10;
             break;
         }
-        if (entry->field_0x78 < entry->position.x) {
+        if (entry->swayMaxX < entry->position.x) {
             entry->stepX = -1.0f;
             entry->facingAngle = 270.0f;
         }
-        if (entry->field_0x7C > entry->position.x) {
+        if (entry->swayMinX > entry->position.x) {
             entry->stepX = 1.0f;
             entry->facingAngle = 90.0f;
         }
@@ -5235,20 +5235,20 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
         a = angleABf(entry->position.x, entry->position.z, entry->hoseiPosition.x, entry->hoseiPosition.z);
         {
             f32 half = 0.5f;
-            f32 duration = sysFrame2SecFloat((f32)(irand(0xB4) + 0xB4) + dist * half);
+            f32 step = sysFrame2SecFloat((f32)(irand(0xB4) + 0xB4) + dist * half);
 
-            entry->field_0x78 = duration;
-            entry->field_0x7C = a;
-            entry->field_0x70 = (s32)(dist / duration);
+            entry->stepDist = step;
+            entry->moveAngle = a;
+            entry->moveSteps = (s32)(dist / step);
         }
         entry->timer = 0;
         entry->state = 101;
         // fallthrough
     }
     case 101:
-        movePos(&entry->position.x, &entry->position.z, entry->field_0x78, entry->field_0x7C);
+        movePos(&entry->position.x, &entry->position.z, entry->stepDist, entry->moveAngle);
         entry->timer++;
-        if (entry->timer >= entry->field_0x70) {
+        if (entry->timer >= entry->moveSteps) {
             entry->position.x = entry->hoseiPosition.x;
             entry->position.z = entry->hoseiPosition.z;
             entry->state = 102;
@@ -5467,52 +5467,52 @@ void suifu100taikikan_seq01(NanNpcEntry* entry) {
     case 0:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.x = -180.0f + (f32)irand(0x32);
-        entry->field_0x78 = 140.0f + (f32)irand(0x78);
+        entry->speed = 140.0f + (f32)irand(0x78);
         entry->facingAngle = 270.0f;
-        entry->field_0x70 = 1;
+        entry->nextState = 1;
         entry->state = 100;
         break;
     case 1:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.x = -255.0f + (f32)irand(0x1E);
         entry->hoseiPosition.z = -230.0f + (f32)irand(0x1E);
-        entry->field_0x70 = 10;
+        entry->nextState = 10;
         entry->state = 100;
         break;
     case 10:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.z = -350.0f + (f32)irand(0x32);
-        entry->field_0x70 = 20;
+        entry->nextState = 20;
         entry->state = 100;
         break;
     case 20:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.x += 520.0f + (f32)irand(0x32);
         entry->facingAngle = 90.0f;
-        entry->field_0x70 = 30;
+        entry->nextState = 30;
         entry->state = 100;
         break;
     case 30:
         entry->hoseiPosition = *(Vec*)&suifu100kaidanDOWN[irand(3) * 3];
-        entry->field_0x70 = 40;
+        entry->nextState = 40;
         entry->state = 100;
         break;
     case 40:
         entry->hoseiPosition = *(Vec*)&suifu100kaidanUP[irand(3) * 3];
         entry->facingAngle = 270.0f;
-        entry->field_0x70 = 50;
+        entry->nextState = 50;
         entry->state = 100;
         break;
     case 50:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.x = -30.0f + (f32)irand(0x3C);
-        entry->field_0x70 = 60;
+        entry->nextState = 60;
         entry->state = 100;
         break;
     case 60:
         entry->hoseiPosition = entry->position;
         entry->hoseiPosition.z -= 100.0f;
-        entry->field_0x70 = 99;
+        entry->nextState = 99;
         entry->state = 100;
         break;
     case 99:
@@ -5532,14 +5532,14 @@ void suifu100taikikan_seq01(NanNpcEntry* entry) {
 
         PSVECSubtract(&entry->hoseiPosition, &entry->basePos, &v);
         mag = PSVECMag(&v);
-        total = (s32)(1000.0f * mag / entry->field_0x78);
+        total = (s32)(1000.0f * mag / entry->speed);
         elapsed = ((s32)gp->renderTime - (s32)entry->startTime) / (OS_TIMER_CLOCK / 1000);
         PSVECScale(&v, &out, (f32)elapsed / (f32)total);
         if (elapsed < total) {
             PSVECAdd(&entry->basePos, &out, &entry->position);
         } else {
             entry->position = entry->hoseiPosition;
-            entry->state = entry->field_0x70;
+            entry->state = entry->nextState;
         }
         break;
     }

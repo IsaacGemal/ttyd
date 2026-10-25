@@ -7723,3 +7723,117 @@ fmotion, fbtlsrc. Nothing outside rels/ was edited.
   `sfx` (PuniWork 0x458) is named from its one consumer, psndSFXOff; nothing in the REL writes it. The FirebarDesc and
   NanNpcEntry unions follow the guide's one-member-per-use rule; muj_20's member stays `field_0x70`, since
   nothing reads it.
+## Map RELs gor, rsh, eki, yuu, tou, tou2: work-struct fields named from their consumers (2026-10-25, Claude Opus 5.5, n9-q-frels1)
+
+Task (Isaac): name and type the `field_0xNN` members of the per-map work structs, NPC/minigame state and local tables
+in rels/gor, rsh, eki, yuu, tou and tou2 (non-database sources and their rels/<area>/include headers; there is no
+include/rel/rsh, eki, tou or tou2, and include/rel/gor and include/rel/yuu had none), from consumers in the same REL,
+CLEANUP_GUIDE section 3. Parallel branches: frels2 (other rels), fsrcmisc, fmotion, fbtlsrc; none of their files
+were touched. The same structs' other placeholder spellings (`unkNN`, `field_NN`, which the index does not count)
+were named on the same evidence where a consumer proves them.
+
+- **What the field_0x sites were** (grep, non-database files). gor 214, rsh 137, eki 39, yuu 38, tou 36, tou2 367;
+  of those, 308 were code and local-struct declarations, the rest `// field_0xNN` labels on data initialisers of
+  shared-header types (BattleUnitKind 0x14/0x54/0x58/0x8C, BattleWeapon 0x14/0x19/0x1B/0x6F, BattleUnitKindPart 0x32,
+  DoorEntry 0x8/0x2C), which stay: nothing in these RELs reads those members (see the rels/common chapter).
+- **gor_00 NanNpcEntry** (rels/gor/include/gor_00.h, a copy of evt_nannpc's layout). Three slots each used several
+  ways, so each is an anonymous union with one member per use: 0x70 `moveSteps` (gundan1000tai_seq00 case 3 and
+  seq01 case 101: `timer >= moveSteps` ends the movePos walk) / `nextState` (seq01 case 20 and
+  suifu100taikikan_seq01 case 101: `state = nextState`); 0x78 `stepDist` (movePos's per-frame distance, the third
+  argument; the local that fed it, misnamed `duration`, is `step` now) / `arcQuad` and 0x7C `arcLinear` (seq01 case
+  20: `y = hoseiPosition.y + t * (arcLinear + arcQuad * t)`, arcLinear chosen so t = 1 lands on targetPos.y) /
+  `swayMaxX` and `swayMinX` (seq01 case 30: stepX flips to -1 above swayMaxX, to +1 below swayMinX) / `speed` (suifu
+  case 101: `total = 1000 * mag / speed` ms, units per second); 0x7C's first use `moveAngle` (movePos's degree
+  argument). 0x16, 0x84 and 0x94 have no gor reader and stay.
+- **gor_03 Monte** (the slot game's falling medals): 0x0 `hidden` (monte_disp draws only while 0; set on pickup or
+  when lifeTimer runs out), 0x1 `state` (fall_rtn's switch: wait, fall/bounce, lie, gone), 0x2 `delay` (state 0
+  counts it down), 0x4 `lifeTimer` (300 on landing, blinks below 60, hides at 0), 0x40 `vel` (PSVECAdd'ed to the
+  position, y minus 0.8167 a frame), 0x4C `slot` (the SlotData; its prize bounds every loop). MonteField8.0x4 `pos`
+  (iconDispGx, psndSFXOn_3D, get_monte_check). GoryuugijoWork 0x04 `waitEvent`: evt_goryuugijo_main_func skips main()
+  while `evtCheckID(waitEvent->eventId)`, then clears it; nothing in gor sets it non-NULL.
+- **gor, other spellings.** YuRankWork 0x10 `y` (every draw in evt_yuuranking_disp_func is `work->y + k`, x is 0x0C),
+  0x14 `mode` (indexes yuwp->rankUsed/rankScore/rankMonte, titleTbl/scoreTbl and yuu_kesan_chk; yuu's copy already
+  calls it mode); yuu's YuuRankingWork 0x10 `y` the same. gor_02 FollowPath 0x0 `minStage` (monosiri_check stops at the
+  first entry above GSW(0); values 23..401). gor_10 TegamiWork 0x0 `alpha` (draw passes it to drawColor as c.a;
+  tegami ramps it to 0x80).
+- **The moamoa/fan jump** (rsh_05, rsh_06, eki_00 MoamoaPose; tou_02 FanPose). The three f32s after `target` serve
+  three movements, so each is a union: jump (moamoa_jump writes; state 3 reads) `jumpVelY` (added to the matrix y,
+  then `-= jumpGravity`), `jumpSpeed` (`frames = dist / jumpSpeed`; the x/z step), `jumpGravity`; fly-off (state
+  0x30, set on a breath hit) `flyAccelX/Y/Z` (added to target, which is the per-frame velocity there); fusion hover
+  (state 0x33/0x34) `hoverHeight` (`ty += hoverHeight * f`) and `hoverRadius` (the sin/cos circle). FanPose uses its
+  own states' words: `hopVelY/hopSpeed/hopGravity` (state 10) and `driftAccelX/Y/Z` (state 20). moamoa_jump's
+  parameters `p4, p5, field0x2` (eki: `f1..f5, b, c`) are `speed, gravity, queuedState` (and x, y, z, flag).
+- **rsh, the rest.** rsh_06 MoamoaWork 0x40 `hammerFrames`, 0x558 `bounceCount`: the code is rsh_05's, whose fields
+  already carry those names (moamoa_hit_check: `bounceCount < 2`, reset when Mario is grounded; ext_moamoa_main
+  counts MARIO_MOTION_HAMMER frames, and the test's `0x12` literal is that enum now). rsh_00 MoamoaPose 0x18 `loop`
+  (moamoa_pose_main restarts the cycle when set, clamps when 0; pose_init clears it for "J" poses) and MoamoaEntry
+  0x18 `poseIndex` (indexes wp->poses; set by moamoa_pose_change). unit_boss_moamoa MoamoaWorkPose 0x34/0x40:
+  moamoa_guruguru and ext_moamoa_main use them as `spinPos` (subtracted from center, rotated, re-added) and
+  `spinAxis` (PSMTXRotAxisRad's axis), moamoa_bomb as `bombVel` and `bombPos` (pos += vel, vel.y -= 1), so two unions.
+- **tou, tou2.** RankEntry's byte view of score (both copies) `scoreBytes` (the swByteSet/swByteGet loops).
+  WanawanaWork 0x00 `captured` (replace_disp sets it; replace_callback does nothing until it is set). tou_03's tev
+  callback locals `field_10/14/18` are `texMap/texCoord/numIndStage`, the MapTevCallback fields they save.
+- **yuu monte chips** (yuu_00 YuuMonte, yuu_01/yuu_02 MonteEntry, yuu_03 Yuuminigame4Work): 0x0 `hidden` in all four
+  (each disp draws the chip only while 0; set on pickup). yuu_02 called it `active`, the inverse of what the code
+  does, and yuu_00 `flag`. 0x4 `state` in all four (fall_rtn's switch: 0 until picked up; yuu_03's entry_init keeps
+  the icon over Mario in state 0), replacing yuu_01/03 `unk4` and yuu_02 `hit`.
+- **yuu minigame data.** Yuuminigame2Data (yuu_01, the boat game): 0x08 `counterData` (yuucounter_get_data() at the
+  finish, LW(0) to minigame02_end and the ranking's result; yuu_00's name), 0x10 `objIndex` (s_nametbl/turn_tbl/
+  hoko_tbl index: 1-4 S_dai_uzu, 5-12 S_uzu, 0x15 none), 0x14 `step` (the dai_uzu sequence's switch), 0x18
+  `startDist`, 0x1C `dir`, 0x28 `timer`, 0x2C `startY`, 0x30 `startX` (yuuminigame2_gamerule's capture: Mario
+  circles in from startDist along dir, sinks from startY, slides from startX), 0x34 `monteCount` (fall_rtn's pickup
+  count, LW(2), the ranking's bonus), 0x38 `viewEvent` (minigame_view_monte; yuu_02's name). YuuMinigame3Data 0x24
+  `monteCount` likewise. Yuuminigame4Data (yuu_03): 0x08 `counterData`, 0x0C `mult` (only ever 0x105/0x103/0x101,
+  LW(1), the ranking's mult), 0x10 `state` and 0x14 `stateTimer` (yuuminigame4_gamerule's timed machine; evt_ryushi
+  and evt_yuunpc read them too), 0x18 `puroAngle` and 0x1C `peraAngle` (mapObjRotate of puro_* and pera_*).
+  YuuTitleWork: `x, y` (FontDrawString), `fromX, fromY` (toX/toY + 200) and `toX, toY` (the alloc arguments), the two
+  ends of the slide evt_yuutitle_disp_func eases between.
+- **yuu_03 RyushiEntry** (xwp; entry 0 is the emitter, 1..ryuwp-1 the particles): 0x04 `direction` (evt_ryushi's
+  switch: z falls when 0, rises when 1), 0x08-0x10 unions `spacingX/Y/Z` (emitter: evt_ryushi_clr's grid spacing)
+  / `homeX/Y/Z` (particle: its grid cell, where a wrapped particle restarts), 0x20 `alpha` (ryushi_disp's TEVREG0
+  alpha per particle), 0x24 `age` (evt_ryushi's counter, ramping the emitter alpha), 0x30/0x34 `tev0G/tev0B` and
+  0x38-0x40 `tev1R/G/B` (ryushi_disp's GXSetTevColor(1/2, ...) arguments).
+- **evt_yuunpc** (rels/yuu/include/evt_yuunpc.h). YuunpcEntry: 0x0 `index` (= i; `index % 101`, `index & 3`), 0x8
+  `errper` (the one field errper_set_rtn writes; minigame 4 offsets lane bounds by 150 * errper), 0xC `goal` (start +
+  3300 x; goalincheck retargets to it and stops there), 0x18 `target`, 0x24 `position` (into the matrix and the NPC),
+  0x30 `dir` (normalised target - position), 0x3C `speed` (hitcheck's step along dir and goalincheck's reach; 0 /
+  0.5-2.25 by state), 0x40 `velY` (fallcheck: y += velY, gravity 0.533), 0x44 `spinHeading` and 0x50 `spinTimer`
+  (the 30-frame flags 0x8/0x10 spin), 0x48 `pushZ` (the stream push, hitcheck's disp.z), 0x4C `moveState` (0 stand,
+  1 walk, 2 run, 3 fall, 4 jump), 0x54 `poseIndex`, 0x56-0x5C `standPose/walkPose/runPose/jumpPose` (the S_1/W_1/R_1
+  lookups each state passes to yuunpc_pose_change), 0x64 `cycleScale` (yuunpc_pose_sub: the cycle lasts
+  cycleFrames * cycleScale frames, so larger is slower), 0x68 `animTime` (cycle start, or the held offset with flags
+  0x4). YuunpcPoseEntry: 0x1C `cycleFrames` (pose_init counts one per frame row; animPoseSetLocalTime), 0x20
+  `jumpFrame` (yuunpc_set_jump_pose; the frame a jumpPose is held at), 0x24 `firstPose`, 0x28 `numPoses` (texId),
+  0x30 `walkCycleScale` (the cycleScale state 1 passes); YuunpcPoseArg 0x8 `cycleFrames`. YuunpcWp: 0x08 `spIndex[3]`
+  (entries that become yuusp0-2), 0x18 `groupCount`, 0x1C `poseEntryCount`, 0x20 `chusanIndex` (c_tyusan CHU_S_1,
+  played through chusan_*_tbl).
+- **Left, and why.** Write-only or unread: IraiWork 0x94 (reset to 0 on a cursor move, never read), MonteField8 and the
+  yuu copies' 0x0 and 0x10 (0x10 is written 1.0f and never read; yuu_02's existing `scale` for it was kept), rsh_00
+  0x1A/0x1C/0x6/MoamoaWork 0x0, rsh_05 MoamoaWork 0x2, the eki/tou_02 unused words, unit_boss_moamoa 0x14, PoseGroup
+  0x18 (written 1), tou_03 ScreenWork 0x28 and KyakuState 0x0, KeijibanInfo 0x0, YuunpcPoseEntry 0x18, Yuuminigame4Data
+  0x20, RyushiEntry 0x0/0x2C, RuleEntry 0x10 (handed on to battleRules[2], which nothing reads). Two meanings in one
+  word: yuu_01 `unk0C` / yuu_02 `field_0C` count down once per miss and are then rewritten into the ranking's mult code,
+  commented, not named. YuunpcEntry 0x4: a per-runner class (0-5 random, 6 nokorin, 7 luigi, -1 joho) that gates jumps
+  and errper's range; its meaning isn't pinned down. Shared headers: BattleUnit 0x30C (borodo_king writes it),
+  EventEntry 0x84 (gor_00's pun), BattleWork 0x19080, the field_B4 unit labels. Match-steering raw offsets (A74F/A14R,
+  tou2's `entries + off`, tou_03's `param + zero`) stay.
+- **Lead, not applied.** The 0x38-byte member at 0x8 of every monte entry has IconEntry's layout (size 0x38, a Vec at
+  0x4, `scale` at 0x10 set to 1.0f the way iconEntry does) and is drawn with iconDispGx; typing it `IconEntry icon`
+  would name the last 30 field_0x sites in yuu and gor_03, but the evidence is layout only, which section 3 rules out.
+- **Checks.** Every commit: `build/G8MJ01/ok` recreated, `obj_equiv --tree` over all objects in build/G8MJ01/src against
+  a snapshot taken before the branch (all equivalent; the 23 changed objects differ only in .debug/.rela.debug, which
+  carry the field names), and `tools/ci.py` PASS (run through the tower's ~/ci_notests.py wrapper: tools/tests skipped
+  for its environment errors; the worktree had no baseline, so `--init` ran on the first gor edits' build, whose linked
+  modules were unchanged). All 27 objects whose sources or headers changed (from `ninja -t deps`) built under
+  `configure.py --non-matching` with no errors (only the existing "no prototype" and section-permission warnings), then
+  a normal reconfigure and rebuild to `ok`. fncast_lint and local_prototypes clean.
+- **Counts** (`tools/cleanup_index.py`, 5619c3bf -> this branch, same script): index 13.669 -> 13.328 per kLOC (9548
+  -> 9310 weighted); field_0x 2403 -> 2165, every other category unchanged. These six areas: 958 -> 720 weighted,
+  field_0x 302 -> 64 (gor 114 -> 20, rsh 94 -> 3, eki 29 -> 4, yuu 30 -> 30, tou 23 -> 1, tou2 12 -> 6; the index's
+  areas include the database files). `field_0x` by grep in the non-database files, code and declarations only (labels
+  excluded): gor 105 -> 22, rsh 92 -> 8, eki 26 -> 4, yuu 38 -> 38, tou 32 -> 7, tou2 15 -> 8 (308 -> 87); with the
+  labels: gor 214 -> 131, rsh 137 -> 53, eki 39 -> 17, yuu 38 -> 38, tou 36 -> 11, tou2 367 -> 360.
+- **For a reviewer.** The unions (NanNpcEntry, the four moamoa/fan copies, MoamoaWorkPose, RyushiEntry): each member
+  is named by the state that uses it, so check the state ranges cited above. yuu_02's `active` -> `hidden` reverses
+  an existing name; the draw tests prove the direction. `cycleScale` replaces the obvious "speed" because it
+  multiplies the cycle length.

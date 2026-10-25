@@ -32,14 +32,26 @@ struct NanNpcEntry {
     s16* animTable;                 // 0x58
     s16 animCount;                  // 0x5C
     s16 animCurrent;                // 0x5E
-    f32 facingAngle;                // 0x60, y rotation (evt_nannpc negates it into pose->field_0x4); 90 or 270 here
+    f32 facingAngle;                // 0x60, y rotation (evt_nannpc negates it into pose->heading); 90 or 270 here
     void (*callback)(NanNpcEntry*); // 0x64
     s32 state;                      // 0x68, switch selector of the seq functions
     s32 timer;                      // 0x6C, wait or move duration in ms, or the step count of a seq00 move
-    s32 field_0x70;                 // 0x70, step total of a movePos move, or the state to enter after a jump/walk
+    union {
+        s32 moveSteps;              // 0x70, gundan1000tai: movePos steps to the target, compared with timer
+        s32 nextState;              // 0x70, state entered when a gundan1000tai jump or a suifu100taikikan walk ends
+    };
     s32 index;                      // 0x74, the entry number from gundan1000tai_init
-    f32 field_0x78;                 // 0x78, movePos step, jump arc term, sway right bound, or suifu speed
-    f32 field_0x7C;                 // 0x7C, movePos angle, jump arc term, or sway left bound
+    union {
+        f32 stepDist;               // 0x78, gundan1000tai: movePos distance per frame
+        f32 arcQuad;                // 0x78, gundan1000tai jump: y = hoseiPosition.y + t * (arcLinear + arcQuad * t)
+        f32 swayMaxX;               // 0x78, gundan1000tai sway: stepX turns to -1 past this x
+        f32 speed;                  // 0x78, suifu100taikikan walk: units per second to hoseiPosition
+    };
+    union {
+        f32 moveAngle;              // 0x7C, gundan1000tai: movePos angle in degrees
+        f32 arcLinear;              // 0x7C, gundan1000tai jump: linear term, chosen so the arc ends at targetPos.y
+        f32 swayMinX;               // 0x7C, gundan1000tai sway: stepX turns to +1 below this x
+    };
     f32 stepX;                      // 0x80, +1 or -1 per frame in the sway state
     s32 field_0x84;                 // 0x84, not used by gor_00
     Vec targetPos;                  // 0x88

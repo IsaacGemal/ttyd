@@ -104,5 +104,5 @@ struct MapObject;
 // scalarised struct makes MWCC allocate them to r5/r6 (two plain locals come out swapped).
 typedef struct RshWindowTevObj {
     struct MapObject* obj; // 0x0, param->obj
-    u32 flags;             // 0x0, *(u32*)obj->field_0x0
+    u32 flags;             // 0x0, obj->flags
 } RshWindowTevObj;

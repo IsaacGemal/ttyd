@@ -81,7 +81,7 @@ typedef struct RankEntry {
     s32 id;    // 0x04
     union {
         s16 score;       // 0x08
-        u8 field_0x8[2]; // 0x08 score, saved byte by byte with swByteSet/swByteGet
+        u8 scoreBytes[2]; // 0x08 score, saved byte by byte with swByteSet/swByteGet
     };
     u16 pad2;  // 0x0A
 } RankEntry;
@@ -3667,7 +3667,7 @@ USER_FUNC(unk_tou_00002e24) {
             swClear(e->id + 0x9a1);
         }
         for (j = 0; j < 2; j++) {
-            swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
+            swByteSet(e->id * 2 + 0x207 + j, e->scoreBytes[j]);
         }
     }
     _mapFree(rank_wp->entries);
@@ -3701,7 +3701,7 @@ static USER_FUNC(evt_rankingReInit) {
             swClear(e->id + 0x9a1);
         }
         for (j = 0; j < 2; j++) {
-            swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
+            swByteSet(e->id * 2 + 0x207 + j, e->scoreBytes[j]);
         }
     }
     _mapFree(rank_wp->entries);
@@ -3721,7 +3721,7 @@ static void rankingExit(void) {
             swClear(e->id + 0x9a1);
         }
         for (j = 0; j < 2; j++) {
-            swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
+            swByteSet(e->id * 2 + 0x207 + j, e->scoreBytes[j]);
         }
     }
     _mapFree(rank_wp->entries);
@@ -3745,7 +3745,7 @@ static void rankingInit(void) {
         }
         if (swGet(0x9e1)) {
             for (j = 0; j < 2; j++) {
-                e->field_0x8[j] = swByteGet(e->id * 2 + 0x207 + j);
+                e->scoreBytes[j] = swByteGet(e->id * 2 + 0x207 + j);
             }
         } else {
             e->score = fighterDt[e->id].defaultScore;
@@ -3796,7 +3796,7 @@ void _epilog(void) {
             swClear(e->id + 0x9a1);
         }
         for (j = 0; j < 2; j++) {
-            swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
+            swByteSet(e->id * 2 + 0x207 + j, e->scoreBytes[j]);
         }
     }
     _mapFree(rank_wp->entries);

@@ -3487,7 +3487,7 @@ USER_FUNC(monosiri_check) {
     FollowPath* entry;
 
     for (i = 0, entry = follow; i < 8; i++, entry++) {
-        if (stage < entry->unk0) {
+        if (stage < entry->minStage) {
             break;
         }
         for (j = 0; j < entry->count; j++) {

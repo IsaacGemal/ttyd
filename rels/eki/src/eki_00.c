@@ -60,12 +60,23 @@ typedef struct MoamoaPose {
     s16 stateTimer;     // 0x04, frames left in the current state
     u16 field_0x06;     // 0x06
     Vec target;         // 0x08, moamoa_jump's landing target; a per-frame velocity in the fly-off states
-                        //       (0x30, 0x3F on), with 0x14/0x1C/0x20 as its per-frame change
-    f32 field_0x14;     // 0x14
+                        //       (0x30, 0x3F on), with flyAccelX/Y/Z as its per-frame change
+    union {
+        f32 jumpVelY;   // 0x14, moamoa_jump: rise per frame, reduced by jumpGravity each frame of state 3
+        f32 flyAccelX;  // 0x14, fly-off (state 0x30): added to target.x, the velocity, each frame
+    };
     s16 frames;         // 0x18, frames left in the current jump or glide
     u8 pad_0x1A[2];     // 0x1A
-    f32 field_0x1C;     // 0x1C
-    f32 field_0x20;     // 0x20
+    union {
+        f32 jumpSpeed;  // 0x1C, moamoa_jump: x/z step toward target per frame (frames = distance / jumpSpeed)
+        f32 flyAccelY;  // 0x1C, fly-off: added to target.y
+        f32 hoverHeight; // 0x1C, fusion hover (state 0x34): height above the gathering point
+    };
+    union {
+        f32 jumpGravity; // 0x20, moamoa_jump: taken off jumpVelY each frame
+        f32 flyAccelZ;  // 0x20, fly-off: added to target.z
+        f32 hoverRadius; // 0x20, fusion hover: radius of the circle around the gathering point
+    };
     s16 queuedState;    // 0x24, state to enter when the current jump lands
     u8 pad_0x26[2];     // 0x26
     f32 savedX;         // 0x28, position saved when a glide starts
@@ -196,7 +207,7 @@ static void ext_moamoa_dispent(void);
 static void ext_moamoa_main(void);
 static s32 evt_moamoa_escape[0xBC / 4];
 static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose);
-static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, s32 b, s32 c);
+static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, f32 x, f32 y, f32 z, f32 speed, f32 gravity, s32 queuedState, s32 flag);
 static void ext_shadow_disp(CameraId cameraId, void* param);
 static void ext_disp(CameraId cameraId, void* param);
 static void ext_moamoa_init(void);
@@ -1403,7 +1414,7 @@ static void ext_shadow_disp(CameraId cameraId, void* param) {
 
 // The original calls moamoa_jump (a real bl) from ext_moamoa_main; the raised inline limits would inline it.
 #pragma dont_inline on
-static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, s32 b, s32 c) {
+static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, f32 x, f32 y, f32 z, f32 speed, f32 gravity, s32 queuedState, s32 flag) {
     f32 hitX;
     f32 hitY;
     f32 hitZ;
@@ -1417,36 +1428,36 @@ static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, f32 f1, f32 f2, f32 f3, f
     f32 angle;
     f32 dy;
 
-    if (c != 0) {
+    if (flag != 0) {
         hitZ = 0.0f;
         hitY = 0.0f;
         hitX = 0.0f;
         distance = 1000000.0f;
-        if (hitCheckFilter(NULL, f1, f2 + 100.0f, f3, 0.0f, -1.0f, 0.0f, &hitX, &hitY, &hitZ, &distance,
+        if (hitCheckFilter(NULL, x, y + 100.0f, z, 0.0f, -1.0f, 0.0f, &hitX, &hitY, &hitZ, &distance,
                            &hitNX, &hitNY, &hitNZ)
             != NULL) {
-            dy = f2 - hitY;
+            dy = y - hitY;
             if (__fabs(dy) > 30.0) {
-                f4 -= 0.1f;
-                f5 += 0.1f;
+                speed -= 0.1f;
+                gravity += 0.1f;
             }
-            f2 = hitY;
+            y = hitY;
         }
     }
     pos = vec3_eki_000088a8;
-    pos.x = f1;
-    pos.y = f2;
-    pos.z = f3;
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
     pose->target = pos;
-    pose->field_0x1C = f4;
-    pose->field_0x20 = f5;
+    pose->jumpSpeed = speed;
+    pose->jumpGravity = gravity;
     ty = pose->target.y - ep->matrix[0][1][3];
     dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->target.x, pose->target.z);
     angle = angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->target.x, pose->target.z);
-    pose->frames = (s16)(dist / pose->field_0x1C);
-    pose->field_0x14 = pose->field_0x20 * (f32)pose->frames / 2.0f + ty / (f32)pose->frames;
+    pose->frames = (s16)(dist / pose->jumpSpeed);
+    pose->jumpVelY = pose->jumpGravity * (f32)pose->frames / 2.0f + ty / (f32)pose->frames;
     pose->state = 3;
-    pose->queuedState = b;
+    pose->queuedState = queuedState;
     ep->heading = angle + 180.0f;
     pose->flags |= 0x2;
     ep->flags |= EXT_POSE_SHADOW_AT_GROUND;
@@ -1852,9 +1863,9 @@ static void ext_moamoa_main(void) {
                 pose->target = vec3_eki_00008908;
                 dist = randf(0.1f, 0.2f);
                 rad = 6.2831855f * f / 360.0f;
-                pose->field_0x14 = dist * ekiSinfM(rad);
-                pose->field_0x1C = randf(0.03f, 0.06f);
-                pose->field_0x20 = dist * -ekiCosfM(rad);
+                pose->flyAccelX = dist * ekiSinfM(rad);
+                pose->flyAccelY = randf(0.03f, 0.06f);
+                pose->flyAccelZ = dist * -ekiCosfM(rad);
                 pose->frames = 0x78;
                 wp->hitCount++;
                 moamoa_pose_change(pose, "c_n_moa_a", "D_1");
@@ -1939,8 +1950,8 @@ static void ext_moamoa_main(void) {
         case 0x33: {
             f32 rad, tx, f, dist, ty;
 
-            pose->field_0x1C = randf(0.0f, 200.0f);
-            pose->field_0x20 = randf(0.0f, 300.0f * pose->field_0x1C / 200.0f);
+            pose->hoverHeight = randf(0.0f, 200.0f);
+            pose->hoverRadius = randf(0.0f, 300.0f * pose->hoverHeight / 200.0f);
             pose->state++;
             pose->stateTimer = 0;
             /* fallthrough */
@@ -1962,10 +1973,10 @@ static void ext_moamoa_main(void) {
             tx = MOA_TARGET(i).x;
             ty = MOA_TARGET(i).y;
             tz = MOA_TARGET(i).z;
-            dist = pose->field_0x20 * (f32)sin((f32)(i + gp->retraceCount) / 4.0f);
-            ty = pose->field_0x1C * f + ty;
+            dist = pose->hoverRadius * (f32)sin((f32)(i + gp->retraceCount) / 4.0f);
+            ty = pose->hoverHeight * f + ty;
             tx = f * dist + tx;
-            tz = f * (-pose->field_0x20 * (f32)cos((f32)(i + gp->retraceCount) / 4.0f)) + tz;
+            tz = f * (-pose->hoverRadius * (f32)cos((f32)(i + gp->retraceCount) / 4.0f)) + tz;
             ep->matrix[0][0][3] += (tx - ep->matrix[0][0][3]) / 15.0f;
             ep->matrix[0][1][3] += (ty - ep->matrix[0][1][3]) / 15.0f;
             ep->matrix[0][2][3] += (tz - ep->matrix[0][2][3]) / 15.0f;
@@ -2024,12 +2035,12 @@ static void ext_moamoa_main(void) {
         case 0x3: {
             f32 rad;
 
-            ep->matrix[0][1][3] += pose->field_0x14;
-            pose->field_0x14 -= pose->field_0x20;
+            ep->matrix[0][1][3] += pose->jumpVelY;
+            pose->jumpVelY -= pose->jumpGravity;
             rad = 6.2831855f * angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->target.x, pose->target.z)
                   / 360.0f;
-            ep->matrix[0][0][3] = pose->field_0x1C * ekiSinfM(rad) + ep->matrix[0][0][3];
-            ep->matrix[0][2][3] = pose->field_0x1C * -ekiCosfM(rad) + ep->matrix[0][2][3];
+            ep->matrix[0][0][3] = pose->jumpSpeed * ekiSinfM(rad) + ep->matrix[0][0][3];
+            ep->matrix[0][2][3] = pose->jumpSpeed * -ekiCosfM(rad) + ep->matrix[0][2][3];
             if (--pose->frames < 0) {
                 ep->matrix[0][0][3] = pose->target.x;
                 ep->matrix[0][1][3] = pose->target.y;
@@ -2112,9 +2123,9 @@ static void ext_moamoa_main(void) {
         }
         case 0x30:
             if (--pose->frames > 0) {
-                pose->target.x += pose->field_0x14;
-                pose->target.y += pose->field_0x1C;
-                pose->target.z += pose->field_0x20;
+                pose->target.x += pose->flyAccelX;
+                pose->target.y += pose->flyAccelY;
+                pose->target.z += pose->flyAccelZ;
                 ep->matrix[0][0][3] += pose->target.x;
                 ep->matrix[0][1][3] += pose->target.y;
                 ep->matrix[0][2][3] += pose->target.z;

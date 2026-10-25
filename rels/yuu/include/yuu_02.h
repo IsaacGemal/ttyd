@@ -12,10 +12,10 @@ typedef struct MonteEntryField8 {
 } MonteEntryField8;                // 0x38
 
 typedef struct MonteEntry {
-    u8 active;                     // 0x00
+    u8 hidden;                     // 0x00, monte_disp/monte_single_disp draw the chip only while 0
     u8 pad_01;                     // 0x01
     s16 count;                     // 0x02
-    u8 hit;                        // 0x04
+    u8 state;                      // 0x04, fall_rtn: 0 until Mario picks the chip up (or it is left out), then 1
     u8 pad_05[0x08 - 0x05];        // 0x05
     MonteEntryField8 field_0x8;    // 0x08
     struct YuuminigameWork* work;  // 0x40
@@ -34,11 +34,11 @@ typedef struct YuuMinigame3Data {
     u32 flags;                     // 0x00
     s32 phase;                     // 0x04
     s32 counter;                   // 0x08
-    s32 field_0C;                  // 0x0C
+    s32 field_0C;                  // 0x0C, decremented per fall; at the end turned into the ranking's mult
     s32 index;                     // 0x10
     EventEntry* event;             // 0x14
     Vec position;                  // 0x18
-    s32 field_24;                  // 0x24
+    s32 monteCount;                // 0x24, chips picked up (fall_rtn), the ranking's bonus (minigame03_end LW(2))
     EventEntry* viewEvent;         // 0x28
     u8 pad_2C[0x40 - 0x2C];        // 0x2C
 } YuuMinigame3Data;

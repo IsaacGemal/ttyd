@@ -31,8 +31,8 @@ static void depthDisp(CameraId cameraId, void* param);
 static void draw(CameraId cameraId, void* param);
 
 typedef struct TegamiWork {
-    s32 unk0;
-    FileEntry* file;
+    s32 alpha;       // 0x0, draw's colour alpha (drawColor); tegami raises it by 2 a frame up to 0x80
+    FileEntry* file; // 0x4
 } TegamiWork;
 
 // File-scope constants used by mabutaDisp/draw. They are emitted at the start of .rodata, before the scripts' strings.
@@ -242,7 +242,7 @@ static inline GXColor drawColor(u8 a) {
 static void draw(CameraId cameraId, void* param) {
     winTexInit(wp->file->data[0]);
     {
-        GXColor color = drawColor(wp->unk0);
+        GXColor color = drawColor(wp->alpha);
         winTexSet(4, vec3_gor_0001da38, vec3_gor_0001da44, color);
     }
 }
@@ -251,12 +251,12 @@ USER_FUNC(tegami) {
     if (isFirstCall) {
         wp = _mapAlloc(8);
         memset(wp, 0, 8);
-        wp->unk0 = 0;
+        wp->alpha = 0;
         wp->file = fileAllocf(FILE_TYPE_TPL, "%s/mariost.tpl", getMarioStDvdRoot());
     }
-    wp->unk0 += 2;
-    if (wp->unk0 > 0x80) {
-        wp->unk0 = 0x80;
+    wp->alpha += 2;
+    if (wp->alpha > 0x80) {
+        wp->alpha = 0x80;
     }
     dispEntry(8, 0.0f, 0, draw, wp);
     return EVT_RETURN_BLOCK;

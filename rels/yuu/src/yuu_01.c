@@ -41,10 +41,10 @@ typedef struct MonteEntryField8 {
 } MonteEntryField8;             // 0x38
 
 typedef struct MonteEntry {
-    u8 unk0;                    // 0x00
+    u8 hidden;                  // 0x00, monte_disp draws the chip only while 0; set when Mario picks it up
     u8 unk1;                    // 0x01
     s16 count;                  // 0x02
-    u8 unk4;                    // 0x04
+    u8 state;                   // 0x04, fall_rtn: 0 until Mario picks the chip up, then 1
     u8 pad_05[0x08 - 0x05];     // 0x05
     MonteEntryField8 field_0x8; // 0x08
     YuuminigameWork* work;      // 0x40
@@ -640,7 +640,7 @@ static void monte_disp(CameraId cameraId, void* param) {
 
     if (param != NULL) {
         for (i = 0; i < entries->count; i++) {
-            if (entries[i].unk0 == 0) {
+            if (entries[i].hidden == 0) {
                 iconDispGx(1.0f, &entries[i].field_0x8.position, 0, 0x13f);
             }
         }
@@ -692,7 +692,7 @@ static USER_FUNC(fall_rtn) {
         memset(monte_p, 0, total * 0x44);
         monte_p->count = total;
         monte_p->work = work;
-        data->unk34 = 0;
+        data->monteCount = 0;
 
         tableIdx = 0;
         pointIdx = 0;
@@ -748,10 +748,10 @@ static USER_FUNC(fall_rtn) {
     {
         for (i = 0; i < monte_p->count; i++) {
             MonteEntry* p = &monte_p[i];
-            switch (p->unk4) {
+            switch (p->state) {
             case 0:
                 if (get_monte_check(&p->field_0x8.position, &marioGetPtr()->position) == 1) {
-                    data->unk34++;
+                    data->monteCount++;
                     psndSFXOn_3D(
 #ifdef MUST_MATCH
                         // match-only: the (u32)->(const char*) round-trip makes MWCC colour this value r26
@@ -761,8 +761,8 @@ static USER_FUNC(fall_rtn) {
                         sfx,
 #endif
                         &marioGetPtr()->position);
-                    p->unk0 = 1;
-                    p->unk4 = 1;
+                    p->hidden = 1;
+                    p->state = 1;
                 }
                 break;
             case 1:
@@ -779,12 +779,12 @@ static USER_FUNC(fall_rtn) {
 static USER_FUNC(re_fall_rtn) {
     if (monte_p != NULL) {
         Yuuminigame2Data* data = monte_p->work->data;
-        if (data->unk38 != NULL) {
-            evtDeleteID(data->unk38->eventId);
-            data->unk38 = NULL;
+        if (data->viewEvent != NULL) {
+            evtDeleteID(data->viewEvent->eventId);
+            data->viewEvent = NULL;
             _mapFree(monte_p);
-            data->unk38 = evtEntryType(minigame_view_monte, 0, 0, 0);
-            data->unk38->lwData[0] = (s32)monte_p->work;
+            data->viewEvent = evtEntryType(minigame_view_monte, 0, 0, 0);
+            data->viewEvent->lwData[0] = (s32)monte_p->work;
         }
     }
     return EVT_RETURN_DONE;
@@ -835,8 +835,8 @@ void yuuminigame_init_2fune(EventEntry* event, BOOL isFirstCall) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     Yuuminigame2Data* data = work->data;
 
-    data->unk38 = evtEntryType(minigame_view_monte, 0, 0, 0);
-    data->unk38->lwData[0] = event->lwData[0];
+    data->viewEvent = evtEntryType(minigame_view_monte, 0, 0, 0);
+    data->viewEvent->lwData[0] = event->lwData[0];
     data->flags |= 1;
     marioChgShipMotion();
 }
@@ -855,7 +855,7 @@ void yuuminigame_main_2fune(EventEntry* event, BOOL isFirstCall) {
         data->phase++;
         break;
     case 2:
-        data->unk10 = 0x15;
+        data->objIndex = 0x15;
         data->phase = 3;
         data->unk0C = 0;
         /* fallthrough */
@@ -866,14 +866,14 @@ void yuuminigame_main_2fune(EventEntry* event, BOOL isFirstCall) {
         break;
     case 4:
         work->childEvent = evtEntry(minigame02_end, 0, 0);
-        work->childEvent->lwData[0] = data->unk08;
+        work->childEvent->lwData[0] = data->counterData;
         if (data->unk0C + 5 <= 0) {
             data->unk0C = 1;
         } else {
             data->unk0C += 0x105;
         }
         work->childEvent->lwData[1] = data->unk0C;
-        work->childEvent->lwData[2] = data->unk34;
+        work->childEvent->lwData[2] = data->monteCount;
         data->phase++;
         break;
     }
@@ -898,9 +898,9 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
     f32 radius2;
     f32 angle;
 
-    if (data->unk10 == 0x15) {
+    if (data->objIndex == 0x15) {
         if ((mario->position.x <= -700.0f && mario->position.z <= 0.0f) || yuucounter_get_data() < 0) {
-            data->unk08 = yuucounter_get_data();
+            data->counterData = yuucounter_get_data();
             marioKeyOff();
             partyKeyOff();
             yuucounter_flag_on(2);
@@ -914,7 +914,7 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
     near[0].x -= 12.5f;
     near[2].x += 12.5f;
 
-    while (data->unk10 < 1 || data->unk10 >= 5) {
+    while (data->objIndex < 1 || data->objIndex >= 5) {
         radius2 = 3306.25f;
         for (i = 1; i < 5; i++) {
             mapObjGetPos(s_nametbl[i], &pos);
@@ -925,18 +925,18 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
                     if (tmp.x == pos.x && tmp.z == pos.z) {
                         tmp.x += 1.0f;
                     }
-                    data->unk10 = i;
+                    data->objIndex = i;
                     marioKeyOff();
                     partyKeyOff();
                     mario->flags |= 0x200;
                     mario->flags |= 0x100;
-                    data->unk14 = 0;
-                    PSVECSubtract(&tmp, &pos, &data->unk1C);
-                    data->unk1C.y = 0.0f;
-                    data->unk18 = PSVECMag(&data->unk1C);
-                    PSVECNormalize(&data->unk1C, &data->unk1C);
-                    data->unk28 = 0x78;
-                    data->unk2C = mario->position.y;
+                    data->step = 0;
+                    PSVECSubtract(&tmp, &pos, &data->dir);
+                    data->dir.y = 0.0f;
+                    data->startDist = PSVECMag(&data->dir);
+                    PSVECNormalize(&data->dir, &data->dir);
+                    data->timer = 0x78;
+                    data->startY = mario->position.y;
                     mario->dispFlags |= 0x100;
                     psndSFXOn_3D((const char*)0x8DB, &mario->position);
                     data->unk0C--;
@@ -959,9 +959,9 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
                             psndSFXOn_3D((const char*)0x8DC, &mario->position);
                             data->unk0C--;
                         }
-                        data->unk10 = i;
+                        data->objIndex = i;
                         {
-                            marioSetSwirlPower(1000, 8.0f, (f32)(s32)(hoko_tbl[data->unk10] + irand(0x5B) - 0x2D));
+                            marioSetSwirlPower(1000, 8.0f, (f32)(s32)(hoko_tbl[data->objIndex] + irand(0x5B) - 0x2D));
                         }
                         mario->dispFlags |= 0x100;
                         break;
@@ -978,11 +978,11 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
         break;
     }
 
-    if (data->unk10 != 0x15) {
-        angle = mario->dispDir + (f32)(s32)turn_tbl[data->unk10];
-        if (data->unk10 >= 5 && data->unk10 < 0xD) {
+    if (data->objIndex != 0x15) {
+        angle = mario->dispDir + (f32)(s32)turn_tbl[data->objIndex];
+        if (data->objIndex >= 5 && data->objIndex < 0xD) {
             if (marioChkSwirlPower() == 0) {
-                data->unk10 = 0x15;
+                data->objIndex = 0x15;
                 mario->dispFlags &= ~0x100;
                 if (mario->dispDir >= -90.0f && mario->dispDir < 90.0f) {
                     angle = 0.0f;
@@ -990,55 +990,55 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
                     angle = 180.0f;
                 }
             }
-        } else if (data->unk10 >= 1 && data->unk10 < 5) {
-            switch (data->unk14) {
+        } else if (data->objIndex >= 1 && data->objIndex < 5) {
+            switch (data->step) {
             case 0:
-                data->unk28--;
-                PSMTXRotRad(mtx, 'Y', (f32)(s32)turn_tbl[data->unk10] * 0.017453292f);
-                PSMTXMultVec(mtx, &data->unk1C, &data->unk1C);
-                data->unk1C.y = 0.0f;
-                PSVECNormalize(&data->unk1C, &data->unk1C);
+                data->timer--;
+                PSMTXRotRad(mtx, 'Y', (f32)(s32)turn_tbl[data->objIndex] * 0.017453292f);
+                PSMTXMultVec(mtx, &data->dir, &data->dir);
+                data->dir.y = 0.0f;
+                PSVECNormalize(&data->dir, &data->dir);
                 {
                     f32 scale;
 
-                    if (data->unk28 >= 0x1E) {
-                        scale = data->unk18 * ((f32)(data->unk28 - 0x1E) / 90.0f);
+                    if (data->timer >= 0x1E) {
+                        scale = data->startDist * ((f32)(data->timer - 0x1E) / 90.0f);
                     } else {
                         scale = 0.0f;
                     }
-                    PSVECScale(&data->unk1C, &vec, scale);
+                    PSVECScale(&data->dir, &vec, scale);
                 }
-                mapObjGetPos(s_nametbl[data->unk10], &pos);
+                mapObjGetPos(s_nametbl[data->objIndex], &pos);
                 PSVECAdd(&vec, &pos, &vec);
                 mario->position.x = vec.x;
                 mario->position.z = vec.z;
-                mario->position.y = data->unk2C - 30.0f * ((f32)(0x78 - data->unk28) / 120.0f);
-                if (data->unk28 <= 0) {
-                    data->unk14++;
+                mario->position.y = data->startY - 30.0f * ((f32)(0x78 - data->timer) / 120.0f);
+                if (data->timer <= 0) {
+                    data->step++;
                     angle = 0.0f;
-                    data->unk28 = 0x1E;
+                    data->timer = 0x1E;
                     mario->dispFlags &= ~0x100;
-                    data->unk30 = mario->position.x;
+                    data->startX = mario->position.x;
                 }
                 break;
 
             case 1:
-                data->unk28--;
+                data->timer--;
                 angle = 0.0f;
-                mario->position.x = data->unk30 + (-100.0f) * ((f32)(0x1E - data->unk28) / 30.0f);
-                mario->position.y = data->unk2C - 30.0f;
-                if (data->unk28 <= 0) {
-                    data->unk14++;
-                    data->unk28 = 0x1E;
+                mario->position.x = data->startX + (-100.0f) * ((f32)(0x1E - data->timer) / 30.0f);
+                mario->position.y = data->startY - 30.0f;
+                if (data->timer <= 0) {
+                    data->step++;
+                    data->timer = 0x1E;
                 }
                 break;
 
             case 2:
-                data->unk28--;
+                data->timer--;
                 angle = 0.0f;
-                mario->position.y = data->unk2C - 30.0f * ((f32)data->unk28 / 30.0f);
-                if (data->unk28 <= 0) {
-                    data->unk10 = 0x15;
+                mario->position.y = data->startY - 30.0f * ((f32)data->timer / 30.0f);
+                if (data->timer <= 0) {
+                    data->objIndex = 0x15;
                     marioKeyOn();
                     partyKeyOn();
                     mario->flags &= ~0x200;

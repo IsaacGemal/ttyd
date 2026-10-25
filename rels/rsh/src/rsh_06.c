@@ -46,12 +46,23 @@ typedef struct MoamoaPose {
     s16 stateTimer;  // 0x4, frames left in the current state
     u8 pad_06[0x2];
     Vec target;      // 0x8, moamoa_jump's landing target; a per-frame velocity in the fly-off states
-                     //      (0x30, 0x3F on), with 0x14/0x1C/0x20 as its per-frame change
-    f32 field_0x14;  // 0x14
+                     //      (0x30, 0x3F on), with flyAccelX/Y/Z as its per-frame change
+    union {
+        f32 jumpVelY;   // 0x14, moamoa_jump: rise per frame, reduced by jumpGravity each frame of state 3
+        f32 flyAccelX;  // 0x14, fly-off (state 0x30): added to target.x, the velocity, each frame
+    };
     s16 frames;      // 0x18, frames left in the current jump or glide
     u8 pad_1A[0x2];
-    f32 field_0x1C;  // 0x1C
-    f32 field_0x20;  // 0x20
+    union {
+        f32 jumpSpeed;  // 0x1C, moamoa_jump: x/z step toward target per frame (frames = distance / jumpSpeed)
+        f32 flyAccelY;  // 0x1C, fly-off: added to target.y
+        f32 hoverHeight; // 0x1C, fusion hover (state 0x34): height above the gathering point
+    };
+    union {
+        f32 jumpGravity; // 0x20, moamoa_jump: taken off jumpVelY each frame
+        f32 flyAccelZ;  // 0x20, fly-off: added to target.z
+        f32 hoverRadius; // 0x20, fusion hover: radius of the circle around the gathering point
+    };
     s16 queuedState; // 0x24, state to enter when the current jump lands
     u8 pad_26[0x28 - 0x26];
     f32 savedX;      // 0x28, position saved when a glide starts
@@ -97,7 +108,7 @@ typedef struct MoamoaWork {
     s16 hitCount;      // 0x38, incremented on each hit
     u16 nearHits[2];   // 0x3A, hits near targets[i] (as in rsh_05); set to 100 by evt_moamoa_target_off
     u8 pad_3E[0x40 - 0x3E];
-    s16 field_0x40;    // 0x40
+    s16 hammerFrames;  // 0x40, frames Mario has stayed in MARIO_MOTION_HAMMER
     s16 idleFrames;    // 0x42, frames Mario has stood still (capped at 1000)
     u8 pad_44[0x48 - 0x44];
     s32 poseId;        // 0x48, pose id of the "base" NPC
@@ -106,7 +117,7 @@ typedef struct MoamoaWork {
     u8 pad_78[0x550 - 0x78];
     f32 angleToMario;  // 0x550, angle from Mario to the moamoa in the current pose
     f32 distToMario;   // 0x554, distance from Mario to the current pose
-    s32 field_0x558;   // 0x558
+    s32 bounceCount;   // 0x558, consecutive bounces off the moamoa while Mario is airborne (capped at 2)
     f32 breathDir;     // 0x55C, cloud breath direction (-1 when not in use)
     f32 breathDist;    // 0x560, cloud breath distance
     Vec breathPos;     // 0x564
@@ -121,7 +132,7 @@ static USER_FUNC(ramp_r);
 static void ext_moamoa_dispent(void);  // TODO: real signature
 static void ext_moamoa_main(void);  // TODO: real signature
 static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry);
-static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f32 p4, f32 p5, s32 field0x2, s32 flag);
+static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f32 speed, f32 gravity, s32 queuedState, s32 flag);
 static void ext_shadow_disp(CameraId cameraId, void* param);
 static void ext_disp(CameraId cameraId, void* param);
 static void ext_moamoa_init(void);  // TODO: real signature
@@ -1762,7 +1773,7 @@ static void ext_shadow_disp(CameraId cameraId, void* param) {
 }
 // The original calls moamoa_jump (a real bl) from ext_moamoa_main; the raised inline limits would inline it.
 #pragma dont_inline on
-static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f32 p4, f32 p5, s32 field0x2, s32 flag) {
+static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f32 speed, f32 gravity, s32 queuedState, s32 flag) {
     if (flag) {
         f32 hx, hy, hz, dist, nx, ny, nz;
 
@@ -1772,8 +1783,8 @@ static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f
         dist = 1000000.0f;
         if (hitCheckFilter(NULL, x, 100.0f + y, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &dist, &nx, &ny, &nz)) {
             if (__fabsf(y - hy) > 30.0) {
-                p4 -= 0.1f;
-                p5 += 0.1f;
+                speed -= 0.1f;
+                gravity += 0.1f;
             }
             y = hy;
         }
@@ -1786,19 +1797,19 @@ static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, f32 x, f32 y, f32 z, f
         pos.z = z;
         entry->target = pos;
     }
-    entry->field_0x1C = p4;
-    entry->field_0x20 = p5;
+    entry->jumpSpeed = speed;
+    entry->jumpGravity = gravity;
     {
         f32 dy = entry->target.y - (*pose->matrix)[1][3];
         f32 d = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->target.x, entry->target.z);
         f32 ang = angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->target.x, entry->target.z);
         s32 frames;
 
-        frames = (s32)(d / entry->field_0x1C);
+        frames = (s32)(d / entry->jumpSpeed);
         entry->frames = frames;
-        entry->field_0x14 = entry->field_0x20 * entry->frames / 2.0f + dy / entry->frames;
+        entry->jumpVelY = entry->jumpGravity * entry->frames / 2.0f + dy / entry->frames;
         entry->state = 3;
-        entry->queuedState = field0x2;
+        entry->queuedState = queuedState;
         pose->heading = 180.0f + ang;
     }
     entry->flags |= 2;
@@ -1899,19 +1910,19 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
         // (x + 20) / 2 folds to the same * 0.5 but orders the operands as the target does.
         if (d < (mario->wPlayerCollisionBox.x + 20.0f) / 2.0f) {
             if (mario->position.y > 10.0f + (*pose->matrix)[1][3] && (mario->flags & 0x20000) &&
-                !(mario->flags & 0x10000) && wp->field_0x558 < 2) {
+                !(mario->flags & 0x10000) && wp->bounceCount < 2) {
                 if (mario->currMotionId != 0x16 && mario->currMotionId != 0x1A)
                     marioChgMot(5);
-                wp->field_0x558++;
+                wp->bounceCount++;
                 return 1;
             }
         }
     }
 
     if ((mario->flags & 0x30000) == 0)
-        wp->field_0x558 = 0;
+        wp->bounceCount = 0;
 
-    if (mario->currMotionId == 0x12 && wp->field_0x40 > 10) {
+    if (mario->currMotionId == MARIO_MOTION_HAMMER && wp->hammerFrames > 10) {
         f32 ang;
         f32 rad;
         f32 s;
@@ -2066,9 +2077,9 @@ static void ext_moamoa_main(void) {
     push = 0.0f;
     handled = 0;
     if (mario->currMotionId == MARIO_MOTION_HAMMER) {
-        wp->field_0x40++;
+        wp->hammerFrames++;
     } else {
-        wp->field_0x40 = 0;
+        wp->hammerFrames = 0;
     }
     if (mario->currMotionId == MARIO_MOTION_STAY) {
         wp->idleFrames++;
@@ -2133,9 +2144,9 @@ static void ext_moamoa_main(void) {
                 entry->target = vec3_rsh_00013d88;
                 len = frand() * randRange(0.1f, 0.2f) + 0.1f;
                 rad = 6.2831855f * f / 360.0f;
-                entry->field_0x14 = len * moamoa_sin(rad);
-                entry->field_0x1C = randf(0.03f, 0.06f);
-                entry->field_0x20 = len * -moamoa_cos(rad);
+                entry->flyAccelX = len * moamoa_sin(rad);
+                entry->flyAccelY = randf(0.03f, 0.06f);
+                entry->flyAccelZ = len * -moamoa_cos(rad);
                 entry->frames = 0x78;
                 wp->hitCount++;
                 moamoa_pose_change(entry, "c_n_moa_a", "D_1");
@@ -2262,8 +2273,8 @@ static void ext_moamoa_main(void) {
         case 0x33: {
             f32 ty, f, tx, dist;
 
-            entry->field_0x1C = randf(0.0f, 200.0f);
-            entry->field_0x20 = randf(0.0f, 300.0f * entry->field_0x1C / 200.0f);
+            entry->hoverHeight = randf(0.0f, 200.0f);
+            entry->hoverRadius = randf(0.0f, 300.0f * entry->hoverHeight / 200.0f);
             entry->state++;
             entry->stateTimer = 0;
             /* fallthrough */
@@ -2284,10 +2295,10 @@ static void ext_moamoa_main(void) {
             tx = MOA_TARGET(i).x;
             ty = MOA_TARGET(i).y;
             tz = MOA_TARGET(i).z;
-            dist = entry->field_0x20 * (f32)sin((f32)(i + gp->retraceCount) / 4.0f);
-            ty = entry->field_0x1C * f + ty;
+            dist = entry->hoverRadius * (f32)sin((f32)(i + gp->retraceCount) / 4.0f);
+            ty = entry->hoverHeight * f + ty;
             tx = f * dist + tx;
-            tz = f * (-entry->field_0x20 * (f32)cos((f32)(i + gp->retraceCount) / 4.0f)) + tz;
+            tz = f * (-entry->hoverRadius * (f32)cos((f32)(i + gp->retraceCount) / 4.0f)) + tz;
             (*ep->matrix)[0][3] += (tx - (*ep->matrix)[0][3]) / 15.0f;
             (*ep->matrix)[1][3] += (ty - (*ep->matrix)[1][3]) / 15.0f;
             (*ep->matrix)[2][3] += (tz - (*ep->matrix)[2][3]) / 15.0f;
@@ -2346,12 +2357,12 @@ static void ext_moamoa_main(void) {
         case 0x3: {
             f32 rad3;
 
-            (*ep->matrix)[1][3] += entry->field_0x14;
-            entry->field_0x14 -= entry->field_0x20;
+            (*ep->matrix)[1][3] += entry->jumpVelY;
+            entry->jumpVelY -= entry->jumpGravity;
             rad3 = 6.2831855f * angleABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], entry->target.x, entry->target.z)
                    / 360.0f;
-            (*ep->matrix)[0][3] = entry->field_0x1C * moamoa_sin(rad3) + (*ep->matrix)[0][3];
-            (*ep->matrix)[2][3] = entry->field_0x1C * -moamoa_cos(rad3) + (*ep->matrix)[2][3];
+            (*ep->matrix)[0][3] = entry->jumpSpeed * moamoa_sin(rad3) + (*ep->matrix)[0][3];
+            (*ep->matrix)[2][3] = entry->jumpSpeed * -moamoa_cos(rad3) + (*ep->matrix)[2][3];
             if (--entry->frames < 0) {
                 (*ep->matrix)[0][3] = entry->target.x;
                 (*ep->matrix)[1][3] = entry->target.y;
@@ -2435,9 +2446,9 @@ static void ext_moamoa_main(void) {
         }
         case 0x30:
             if (--entry->frames > 0) {
-                entry->target.x += entry->field_0x14;
-                entry->target.y += entry->field_0x1C;
-                entry->target.z += entry->field_0x20;
+                entry->target.x += entry->flyAccelX;
+                entry->target.y += entry->flyAccelY;
+                entry->target.z += entry->flyAccelZ;
                 (*ep->matrix)[0][3] += entry->target.x;
                 (*ep->matrix)[1][3] += entry->target.y;
                 (*ep->matrix)[2][3] += entry->target.z;
