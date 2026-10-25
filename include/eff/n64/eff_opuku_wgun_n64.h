@@ -11,13 +11,13 @@ typedef struct EffOpukuWgunData {
 	s32 duration;       // 0x28
 	s32 timer;          // 0x2C
 	s32 frame;          // 0x30
-	s32 field_0x34;     // 0x34
-	s32 field_0x38;     // 0x38
-	s32 field_0x3C;     // 0x3C
-	s32 field_0x40;     // 0x40
-	s32 field_0x44;     // 0x44
-	s32 field_0x48;     // 0x48
-	s32 field_0x4C;     // 0x4C
+	s32 color1R;        // 0x34, GX_TEVREG0
+	s32 color1G;        // 0x38
+	s32 color1B;        // 0x3C
+	s32 color1A;        // 0x40
+	s32 color2R;        // 0x44, GX_TEVREG1 (alpha fixed at 0xC8)
+	s32 color2G;        // 0x48
+	s32 color2B;        // 0x4C
 	f32 scale;          // 0x50
 	s32 field_0x54;     // 0x54
 	f32 field_0x58[12]; // 0x58

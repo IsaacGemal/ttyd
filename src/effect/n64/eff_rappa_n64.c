@@ -80,9 +80,9 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 yaw,
 		sinTheta = (f32)sin(theta);
 		phi = float_6p2832_8041faf8 * (pitch + (f32)((i & 2) * (i / 2) * 4)) / 360.0f;
 		cosPhi = (f32)cos(phi);
-		p->velX = cosPhi * sinTheta;
-		p->velY = (f32)sin(phi);
-		p->velZ = (f32)cos(phi) * (f32)cos(theta);
+		p->dirX = cosPhi * sinTheta;
+		p->dirY = (f32)sin(phi);
+		p->dirZ = (f32)cos(phi) * (f32)cos(theta);
 		p->speed = speed;
 		p->scale = speed / float_10_8041faf4;
 	}
@@ -113,9 +113,9 @@ void effRappaMain(EffectEntry* effect) {
 
 	data++;
 	for (i = 1; i < e->count; i++, data++) {
-		data->position.x += data->speed * data->velX;
-		data->position.y += data->speed * data->velY;
-		data->position.z += data->speed * data->velZ;
+		data->position.x += data->speed * data->dirX;
+		data->position.y += data->speed * data->dirY;
+		data->position.z += data->speed * data->dirZ;
 		data->speed *= float_0p9_8041faf0;
 		if (life < 10) {
 			data->scale += data->speed / float_10_8041faf4;

@@ -67,9 +67,9 @@ EffectEntry* effOpukuWgunN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f
 	}
 	data->duration = duration;
 	if (type == 0) {
-		data->field_0x40 = 200;
+		data->color1A = 200;
 	} else {
-		data->field_0x40 = 255;
+		data->color1A = 255;
 	}
 	data->start.x = x;
 	data->start.y = y;
@@ -78,12 +78,12 @@ EffectEntry* effOpukuWgunN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f
 	data->end.y = endY;
 	data->end.z = endZ;
 	data->scale = scale;
-	data->field_0x34 = 210;
-	data->field_0x38 = 230;
-	data->field_0x3C = 255;
-	data->field_0x44 = 0;
-	data->field_0x48 = 30;
-	data->field_0x4C = 205;
+	data->color1R = 210;
+	data->color1G = 230;
+	data->color1B = 255;
+	data->color2R = 0;
+	data->color2G = 30;
+	data->color2B = 205;
 	data->field_0x54 = 0;
 	data->position.x = data->start.x;
 	data->position.y = data->start.y;
@@ -202,8 +202,8 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	type = data->type;
 	scale = data->scale;
 
-	GXSetTevColor(GX_TEVREG0, (GXColor){ data->field_0x34, data->field_0x38, data->field_0x3C, data->field_0x40 });
-	GXSetTevColor(GX_TEVREG1, (GXColor){ data->field_0x44, data->field_0x48, data->field_0x4C, 0xC8 });
+	GXSetTevColor(GX_TEVREG0, (GXColor){ data->color1R, data->color1G, data->color1B, data->color1A });
+	GXSetTevColor(GX_TEVREG1, (GXColor){ data->color2R, data->color2G, data->color2B, 0xC8 });
 
 	GXSetCullMode(GX_CULL_NONE);
 

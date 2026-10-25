@@ -7,7 +7,7 @@
 
 extern GlobalWork* gp;
 
-EffectEntry* effScanningEntry(s32 int2, f32 float3, f32 float4, f32 float5) {
+EffectEntry* effScanningEntry(s32 int2, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	effScanningData* data;
 	
@@ -21,9 +21,9 @@ EffectEntry* effScanningEntry(s32 int2, f32 float3, f32 float4, f32 float5) {
 	entry->flags |= 2;
 
 	data->field_0x0 = int2;
-	data->position.x = float3;
-	data->position.y = float4;
-	data->position.z = float5;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
 	data->scale = 1.0f;
 	data->animId = -1;
 	data->state = 0;

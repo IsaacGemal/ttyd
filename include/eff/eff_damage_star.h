@@ -13,14 +13,14 @@ typedef struct DamageStarData {
     f32 vz;         // 0x18
     f32 rot;        // 0x1C
     s32 alpha;      // 0x20
-    s32 field_0x24; // 0x24
+    s32 timer;      // 0x24 header: countdown, deletes the effect below 0; 100+ never counts down
     s32 frame;      // 0x28
     f32 scaleX;     // 0x2C
     f32 scaleY;     // 0x30
     f32 scaleZ;     // 0x34
     f32 angle;      // 0x38
-    s32 field_0x3C; // 0x3C
-    s32 field_0x40; // 0x40
+    s32 damage;     // 0x3C header: number drawn by effNumberGX
+    u32 prevRetraceCount; // 0x40 header: gp->retraceCount at the last Main
     void* anim;     // 0x44
 } DamageStarData;
 EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 speed, f32 angle);

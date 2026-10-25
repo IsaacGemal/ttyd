@@ -9,7 +9,7 @@ typedef struct effQueen2Data {
 	f32 scale;                // 0x10
 	f32 baseScale;            // 0x14
 	s32 alpha;                // 0x18
-	s32 field_0x1C;           // 0x1C
+	u8 pad_0x1C[4];           // 0x1C
 	s32 phaseTimer;           // 0x20
 	s32 state;                // 0x24
 	EffectEntry* chargeEntry; // 0x28

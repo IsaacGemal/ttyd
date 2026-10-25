@@ -7,11 +7,10 @@
 typedef struct effRappaData {
 	s32 type;        // 0x00
 	Vec position;    // 0x04
-	f32 velX;       // 0x10
-	f32 velY;       // 0x14
-	f32 velZ;       // 0x18
-	f32 field_0x1C;  // 0x1C
-	f32 field_0x20;  // 0x20
+	f32 dirX;       // 0x10, unit direction; Main moves position by speed * dir
+	f32 dirY;       // 0x14
+	f32 dirZ;       // 0x18
+	u8 pad_0x1C[8];  // 0x1C
 	f32 scale;      // 0x24
 	f32 speed;      // 0x28
 	s32 alpha;       // 0x2C

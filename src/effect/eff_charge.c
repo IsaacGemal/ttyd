@@ -39,26 +39,26 @@ EffectEntry* effChargeEntry(s32 type, s32 timer, f32 x, f32 y, f32 z, f32 scale)
         data->colorR = 0xff;
         data->colorG = 0;
         data->colorB = 0xff;
-        data->field_0x3C = 0xff;
-        data->field_0x40 = 0xff;
-        data->field_0x44 = 0xff;
+        data->color2R = 0xff;
+        data->color2G = 0xff;
+        data->color2B = 0xff;
         break;
     case 1:
         data->colorR = 0xff;
         data->colorG = 0x14;
         data->colorB = 0x21;
-        data->field_0x3C = 0x32;
-        data->field_0x40 = 0x14;
-        data->field_0x44 = 0x0a;
+        data->color2R = 0x32;
+        data->color2G = 0x14;
+        data->color2B = 0x0a;
         break;
     case 2:
     default:
         data->colorR = 0;
         data->colorG = 0;
         data->colorB = 0;
-        data->field_0x3C = 0xff;
-        data->field_0x40 = 0xff;
-        data->field_0x44 = 0xff;
+        data->color2R = 0xff;
+        data->color2G = 0xff;
+        data->color2B = 0xff;
         break;
     }
 
@@ -176,7 +176,7 @@ void effChargeDisp(CameraId cameraId, void* param) {
     effGetTexObj(0x1e, &tex);
     GXLoadTexObj(&tex, GX_TEXMAP0);
 
-    GXSetTevColor(GX_TEVREG1, (GXColor){ data->field_0x3C, data->field_0x40, data->field_0x44, 0 });
+    GXSetTevColor(GX_TEVREG1, (GXColor){ data->color2R, data->color2G, data->color2B, 0 });
 
     GXSetNumChans(0);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);

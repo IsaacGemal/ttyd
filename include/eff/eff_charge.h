@@ -20,10 +20,10 @@ typedef struct ChargeEffectData {
     s32 colorR;     // 0x30
     s32 colorG;     // 0x34
     s32 colorB;     // 0x38
-    s32 field_0x3C; // 0x3C
-    s32 field_0x40; // 0x40
-    s32 field_0x44; // 0x44
+    s32 color2R;    // 0x3C TEVREG1; stage 1 lerps TEVREG0 -> TEVREG1 by texture colour
+    s32 color2G;    // 0x40
+    s32 color2B;    // 0x44
 } ChargeEffectData;
-EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale);
+EffectEntry* effChargeEntry(s32 type, s32 timer, f32 x, f32 y, f32 z, f32 scale);
 void effChargeMain(EffectEntry* effect);
 void effChargeDisp(CameraId cameraId, void* param);
