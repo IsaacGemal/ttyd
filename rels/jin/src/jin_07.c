@@ -177,26 +177,26 @@ static void senteresa_ext_init(void) {
         pose->flags = EXT_POSE_BILLBOARD;
         pose->heading = 270.0f;
         PSMTXIdentity(*pose->matrix);
-        pTeresa[i].field_0x00 = 0.0f;
+        pTeresa[i].startX = 0.0f;
         (*pose->matrix)[0][3] = 0.0f;
-        pTeresa[i].field_0x04 = 6.0f;
+        pTeresa[i].startY = 6.0f;
         (*pose->matrix)[1][3] = 6.0f;
-        pTeresa[i].field_0x08 = 80.0f;
+        pTeresa[i].startZ = 80.0f;
         (*pose->matrix)[2][3] = 80.0f;
         a = (f32)rand() / 32767.0f;
         b = (f32)rand() / 32767.0f;
-        pTeresa[i].field_0x0C = 200.0f;
+        pTeresa[i].endX = 200.0f;
         angle = scale(a, 0.0f, 360.0f);
-        pTeresa[i].field_0x10 = pTeresa[i].field_0x04 + randf(27.0f, 170.0f);
+        pTeresa[i].endY = pTeresa[i].startY + randf(27.0f, 170.0f);
         c = (f32)cos(angle);
         bscale = scale(b, 10.0f, 30.0f);
-        pTeresa[i].field_0x14 = pTeresa[i].field_0x08 + bscale * c;
+        pTeresa[i].endZ = pTeresa[i].startZ + bscale * c;
         pTeresa[i].field_0x1C = 0.0f;
         pTeresa[i].field_0x20 = randf(-0.1f, 0.1f);
-        pTeresa[i].field_0x18 = 0.0f;
-        pTeresa[i].field_0x28 = (s32)(1.7f * (f32)(i + 1));
-        pTeresa[i].field_0x2C = 0;
-        pTeresa[i].field_0x24 = randf(0.0f, 350.0f);
+        pTeresa[i].progress = 0.0f;
+        pTeresa[i].delay = (s32)(1.7f * (f32)(i + 1));
+        pTeresa[i].state = 0;
+        pTeresa[i].startTangentX = randf(0.0f, 350.0f);
     }
     g_nNumOutBox[0] = 0;
     g_nNumEndProc[0] = 0;
@@ -207,11 +207,11 @@ static f32 computePos(f32 a, f32 b, f32 t) {
 }
 
 // va/vb start as vec3_jin_00007f9c/vec3_jin_00007fa8 and va.x/va.y are then
-// overwritten with p[9] and 3.4*p[4]. The parenthesization of h00/h10 keeps the
+// overwritten with startTangentX and 3.4*endY. The parenthesization of h00/h10 keeps the
 // t*omt intermediate shared and puts the 1.0/2.0/3.0 constants in the registers
 // the target uses.
-void computePosHermite(ExtPose* pose, f32* p) {
-    f32 t = p[6];
+void computePosHermite(ExtPose* pose, TeresaEntry* p) {
+    f32 t = p->progress;
     f32 omt = 1.0f - t;
     f32 two_t = 2.0f * t;
     f32 t2 = t * t;
@@ -221,12 +221,12 @@ void computePosHermite(ExtPose* pose, f32* p) {
     f32 h01 = (3.0f - two_t) * t2;
     Vec va = vec3_jin_00007f9c;
     Vec vb = vec3_jin_00007fa8;
-    va.x = p[9];
-    va.y = 3.4f * p[4];
+    va.x = p->startTangentX;
+    va.y = 3.4f * p->endY;
 
-    (*pose->matrix)[0][3] = p[0] * h00 + va.x * h10 + vb.x * h11 + p[3] * h01;
-    (*pose->matrix)[1][3] = p[1] * h00 + va.y * h10 + vb.y * h11 + p[4] * h01;
-    (*pose->matrix)[2][3] = p[2] * h00 + va.z * h10 + vb.z * h11 + p[5] * h01;
+    (*pose->matrix)[0][3] = p->startX * h00 + va.x * h10 + vb.x * h11 + p->endX * h01;
+    (*pose->matrix)[1][3] = p->startY * h00 + va.y * h10 + vb.y * h11 + p->endY * h01;
+    (*pose->matrix)[2][3] = p->startZ * h00 + va.z * h10 + vb.z * h11 + p->endZ * h01;
 }
 
 
@@ -235,7 +235,7 @@ void computePosHermite(ExtPose* pose, f32* p) {
 // register pressure than the out-of-line body, so it inlines the `2.0f * t`
 // product and keeps `t * t` inline instead of using a shared t2 local.
 static inline void senteresa_ext_main_computePosHermite(ExtPose* pose, TeresaEntry* p) {
-    f32 t = p->field_0x18;
+    f32 t = p->progress;
     f32 omt = 1.0f - t;
     f32 h00 = ((1.0f + 2.0f * t) * omt) * omt;
     f32 h10 = t * omt * omt;
@@ -243,12 +243,12 @@ static inline void senteresa_ext_main_computePosHermite(ExtPose* pose, TeresaEnt
     f32 h01 = (3.0f - 2.0f * t) * (t * t);
     Vec va = vec3_jin_00007f9c;
     Vec vb = vec3_jin_00007fa8;
-    va.x = p->field_0x24;
-    va.y = 3.4f * p->field_0x10;
+    va.x = p->startTangentX;
+    va.y = 3.4f * p->endY;
 
-    (*pose->matrix)[0][3] = p->field_0x00 * h00 + va.x * h10 + vb.x * h11 + p->field_0x0C * h01;
-    (*pose->matrix)[1][3] = p->field_0x04 * h00 + va.y * h10 + vb.y * h11 + p->field_0x10 * h01;
-    (*pose->matrix)[2][3] = p->field_0x08 * h00 + va.z * h10 + vb.z * h11 + p->field_0x14 * h01;
+    (*pose->matrix)[0][3] = p->startX * h00 + va.x * h10 + vb.x * h11 + p->endX * h01;
+    (*pose->matrix)[1][3] = p->startY * h00 + va.y * h10 + vb.y * h11 + p->endY * h01;
+    (*pose->matrix)[2][3] = p->startZ * h00 + va.z * h10 + vb.z * h11 + p->endZ * h01;
 }
 
 
@@ -262,29 +262,29 @@ static void senteresa_ext_main(void) {
     marioGetPtr();
     count = extGetPoseNum();
     for (i = 0; i < count; i++, pose++) {
-        switch (pTeresa[i].field_0x2C) {
+        switch (pTeresa[i].state) {
             case 0:
                 pose->texId = 0;
-                pTeresa[i].field_0x28--;
-                if (pTeresa[i].field_0x28 == 0) {
+                pTeresa[i].delay--;
+                if (pTeresa[i].delay == 0) {
                     pose->flags |= EXT_POSE_VISIBLE;
                     g_nNumOutBox[0]++;
-                    pTeresa[i].field_0x2C++;
+                    pTeresa[i].state++;
                 }
                 break;
             case 1: {
                 pose->texId = (gp->retraceCount + i * i) % 3 + 1;
                 senteresa_ext_main_computePosHermite(pose, &pTeresa[i]);
-                pTeresa[i].field_0x18 += 0.015f;
-                if (pTeresa[i].field_0x18 >= 1.0f) {
-                    pTeresa[i].field_0x00 = (*pose->matrix)[0][3];
-                    pTeresa[i].field_0x04 = (*pose->matrix)[1][3];
-                    pTeresa[i].field_0x08 = (*pose->matrix)[2][3];
-                    pTeresa[i].field_0x0C = 200.0f;
-                    pTeresa[i].field_0x10 = (*pose->matrix)[1][3];
-                    pTeresa[i].field_0x14 = 50.0f;
-                    pTeresa[i].field_0x18 = 0.01f;
-                    pTeresa[i].field_0x2C = 99;
+                pTeresa[i].progress += 0.015f;
+                if (pTeresa[i].progress >= 1.0f) {
+                    pTeresa[i].startX = (*pose->matrix)[0][3];
+                    pTeresa[i].startY = (*pose->matrix)[1][3];
+                    pTeresa[i].startZ = (*pose->matrix)[2][3];
+                    pTeresa[i].endX = 200.0f;
+                    pTeresa[i].endY = (*pose->matrix)[1][3];
+                    pTeresa[i].endZ = 50.0f;
+                    pTeresa[i].progress = 0.01f;
+                    pTeresa[i].state = 99;
                     g_nNumEndProc[0]++;
                 }
                 break;
