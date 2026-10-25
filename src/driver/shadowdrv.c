@@ -192,7 +192,7 @@ __declspec(section ".rodata") const char str_result_scene_8bit_depth[] = "result
 __declspec(section ".rodata") const char str_actual_depth_from_the_light_8bit_depth[] = "actual depth from the light (8bit depth)";
 __declspec(section ".rodata") const char str_projected_shadow_depth_map_8bit_depth[] = "projected shadow depth map (8bit depth)";
 __declspec(section ".rodata") const char str_result_scene_16bit_depth[] = "result scene (16bit depth)";
-__declspec(section ".rodata") const char str_802C1B88[] = "actual depth from the light (16bit depth)";
+__declspec(section ".rodata") const char str_actual_depth_from_the_light_16bit_depth[] = "actual depth from the light (16bit depth)";
 __declspec(section ".rodata") const char str_projected_shadow_depth_map_16bit_depth[] = "projected shadow depth map (16bit depth)";
 #pragma force_active reset
 extern const f32 float_0_804198f4;

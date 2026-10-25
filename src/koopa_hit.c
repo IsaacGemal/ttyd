@@ -96,7 +96,7 @@ s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
 }
 
 const Vec vec3_802fe338 = { 0.0f, 0.0f, 0.0f };
-const char str_802FE344[] = "MOBJ_HiddenHatenaBlock";
+const char str_MOBJ_HiddenHatenaBlock[] = "MOBJ_HiddenHatenaBlock";
 
 s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     MarioWork* mp = marioGetPtr();
@@ -666,7 +666,7 @@ void* kpaHitCheck(void) {
 
 BOOL kpaFlameHitFilter(HitCheckQuery* query, HitEntry* entry) {
     MapObjectEntry* obj = mobjHitObjPtrToPtr(entry);
-    if (strcmp(obj->animName, str_802FE344) == 0) {
+    if (strcmp(obj->animName, str_MOBJ_HiddenHatenaBlock) == 0) {
         return FALSE;
     }
     return strcmp(obj->animName, "MOBJ_Block") != 0;

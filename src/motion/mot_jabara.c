@@ -1071,7 +1071,7 @@ __declspec(section ".sdata2") const char str_M_W_6[8] = "M_W_6";
 __declspec(section ".sdata2") const f32 float_90_8041aba0 = 90.0f;
 __declspec(section ".sdata2") const f32 float_270_8041aba4 = 270.0f;
 __declspec(section ".sdata2") const f32 float_neg0p5_8041aba8 = -0.5f;
-__declspec(section ".sdata2") const char str_8041ABAC[8] = "M_I_Y";
+__declspec(section ".sdata2") const char str_M_I_Y[8] = "M_I_Y";
 const u32 gap_09_8041ABB4_sdata2 = 0;
 
 BOOL marioChkJabara(void) {
@@ -1098,7 +1098,7 @@ BOOL marioChkJabara(void) {
     }
     if (!(mario->buttonHeld & 0x100)) {
         if (!(mario->buttonHeld & 0x200)) {
-            if (strcmp(mario->animName, str_8041ABAC) == 0 && mario->currMotionId == 0) {
+            if (strcmp(mario->animName, str_M_I_Y) == 0 && mario->currMotionId == 0) {
                 marioChgPose(str_8041AB70);
                 marioVoiceGlareOff();
             }
@@ -1109,14 +1109,14 @@ BOOL marioChkJabara(void) {
     mario->wMotionTimer = mario->wMotionTimer + 1;
     if (mario->controlStickSensitivity) {
         if (mario->wMotionTimer > 10 && mario->currMotionId == 0 && !(mario->dispFlags & 0x40000000)) {
-            marioChgPose(str_8041ABAC);
+            marioChgPose(str_M_I_Y);
             marioVoiceGlareOn();
         }
     }
     if (mario->wMotionTimer >= 0x32) {
         mario->wMotionTimer = 0x32;
         if (mario->currMotionId == 0 && !(mario->dispFlags & 0x40000000)) {
-            marioChgPose(str_8041ABAC);
+            marioChgPose(str_M_I_Y);
             marioVoiceGlareOn();
         }
     }
