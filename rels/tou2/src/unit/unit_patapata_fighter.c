@@ -67,7 +67,7 @@ BattleUnitKind unit_patapata_fighter = {
     { 0.0f, 24.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 9.0f, 6.0f, -10.0f },     // field_0x3C
+    { 9.0f, 6.0f, -10.0f },     // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -116,7 +116,7 @@ static BattleWeapon weapon_patapata_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -210,7 +210,7 @@ static BattleUnitKindPart parts_patapata[1] = {
         { 0.0f, 0.0f, 0.0f },      // positionOffset
         { 0.0f, 30.0f, 0.0f },     // hitBaseOffset
         { 0.0f, 40.0f, 0.0f },     // hitCursorBaseOffset
-        20,                        // field_0x30
+        20,                        // shadowSize
         30,                        // field_0x32
         255,                       // baseAlpha
         &defence_patapata,         // defense
@@ -550,7 +550,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f },      // positionOffset
         { 0.0f, 30.0f, 0.0f },     // hitBaseOffset
         { 0.0f, 40.0f, 0.0f },     // hitCursorBaseOffset
-        20,                        // field_0x30
+        20,                        // shadowSize
         30,                        // field_0x32
         255,                       // baseAlpha
         &defence,                  // defense
@@ -582,7 +582,7 @@ static BattleWeapon weapon_nokonoko_attack = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    8,                                        // field_0x6D
+    8,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

@@ -25,14 +25,14 @@
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 
 #define TECH_MENU_ENTRY(table)                                                        \
-    cmd->mWeaponTable[*count].mIndex = -1;                                            \
-    cmd->mWeaponTable[*count].mItem = 0;                                              \
-    cmd->mWeaponTable[*count].mWeaponParams = (table);                                \
-    cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
-    cmd->mWeaponTable[*count].mIcon =                                                 \
-        cmd->mWeaponTable[*count].mWeaponParams->icon;                                \
-    cmd->mWeaponTable[*count].mName =                                                 \
-        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                      \
+    cmd->weaponTable[*count].mIndex = -1;                                            \
+    cmd->weaponTable[*count].mItem = 0;                                              \
+    cmd->weaponTable[*count].mWeaponParams = (table);                                \
+    cmd->weaponTable[*count].mEnabled = 0;                                           \
+    cmd->weaponTable[*count].mIcon =                                                 \
+        cmd->weaponTable[*count].mWeaponParams->icon;                                \
+    cmd->weaponTable[*count].mName =                                                 \
+        msgSearch(cmd->weaponTable[*count].mWeaponParams->name);                      \
     (*count)++;
 
 extern s32 _check_aud_item_type[];
@@ -41,7 +41,7 @@ extern s32 evt_audience_acrobat_notry[];
 extern s32 negone_one[];
 extern s32 one_negone[];
 extern s32 subset_attack_ready_jump_event[];
-static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
+static void __makeTechMenuFunc(BattleCommand* cmd, s32* count);
 static s32 _clauda_breath_effect_ready(EventEntry* event, BOOL isFirstCall);
 static s32 _clauda_breath_effect_fire(EventEntry* event, BOOL isFirstCall);
 BattleWeapon partyWeapon_ClaudaNormalAttack;
@@ -78,7 +78,7 @@ USER_FUNC(_clauda_make_extra_work_area) {
 }
 
 
-static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
+static void __makeTechMenuFunc(BattleCommand* cmd, s32* count) {
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 
@@ -338,7 +338,7 @@ BattleWeapon partyWeapon_ClaudaNormalAttack = {
     0x01001260,                                    // targetClassFlags
     0x20000000,                                    // targetPropertyFlags
     0,                                             // element
-    10,                                            // field_0x6D
+    10,                                            // damagePattern
     3,                                             // actionLevel
     2,                                             // field_0x6F
     "msg_ac_body_press",                           // acHelpMsg
@@ -416,7 +416,7 @@ BattleWeapon partyWeapon_ClaudaBreathAttack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    25,                                       // field_0x6D
+    25,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_breath",                          // acHelpMsg
@@ -494,7 +494,7 @@ BattleWeapon partyWeapon_ClaudaPredationAttack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_sexy_kiss",                       // acHelpMsg
@@ -572,7 +572,7 @@ BattleWeapon partyWeapon_ClaudaKumogakureAttack = {
     0x01101160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_kumogakure",                      // acHelpMsg
@@ -676,7 +676,7 @@ BattleUnitKindPart unitpartsdata_Party_Clauda[1] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 44.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 44.0f, 0.0f },                // hitCursorBaseOffset
-        26,                                   // field_0x30
+        26,                                   // shadowSize
         50,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -707,7 +707,7 @@ BattleUnitKind unitdata_Party_Clauda = {
     { 0.0f, 12.0f, 0.0f },           // centerOffset
     { 0, 0 },                        // hpGaugeOffset
     { 0.0f, 40.0f, 0.0f },           // talkTogeBaseOffset
-    { 0.0f, 40.0f, 0.0f },           // field_0x3C
+    { 0.0f, 40.0f, 0.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
     0.0f,                            // field_0x54
     0.0f,                            // field_0x58

@@ -9,7 +9,7 @@
 #include <string.h>
 #include "battle/ac/ac_crane_timing.h"
 
-// Action-command work area for CraneTiming, at BattleWork+0x1F4C (inside BattleActions.field_0x2BC).
+// Action-command work area for CraneTiming, at BattleWork+0x1F4C (inside BattleActions.acWork).
 // No header declares it.
 typedef struct CraneTimingWork {
 	s32 trigger;   // 0x00, BattlePadCheckTrigger mask
@@ -24,7 +24,7 @@ typedef struct CraneTimingWork {
 
 s32 battleAcMain_CraneTiming(BattleWork* work) {
 	BattleActions* ac = &work->actionCommands;
-	CraneTimingWork* dec = (CraneTimingWork*)&ac->field_0x2BC[0];
+	CraneTimingWork* dec = (CraneTimingWork*)&ac->acWork[0];
 	BattleACDispParams* disp = &ac->dispParams;
 	BattleUnit* unit;
 	s32 flag;

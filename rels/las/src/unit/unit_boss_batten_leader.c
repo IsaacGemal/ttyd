@@ -127,7 +127,7 @@ BattleWeapon weapon_batten_leader_thunder = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     4,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -205,7 +205,7 @@ BattleWeapon weapon_batten_leader_fire = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     1,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -283,7 +283,7 @@ BattleWeapon weapon_batten_leader_ice = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     2,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -361,7 +361,7 @@ BattleWeapon weapon_batten_leader_shikaeshi = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -439,7 +439,7 @@ BattleWeapon weapon_batten_leader_yokeyoke = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -517,7 +517,7 @@ BattleWeapon weapon_batten_leader_stop = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -594,7 +594,7 @@ BattleUnitKind unit_boss_batten_leader = {
     { 0.0f, 33.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 34.0f, 0.0f, -10.0f },    // field_0x3C
+    { 34.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -714,7 +714,7 @@ static BattleUnitKindPart parts[7] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 0.0f, 56.0f, 0.0f },  // hitBaseOffset
         { -6.0f, 55.0f, 0.0f }, // hitCursorBaseOffset
-        53,                     // field_0x30
+        53,                     // shadowSize
         69,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -730,7 +730,7 @@ static BattleUnitKindPart parts[7] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 18.0f, 9.0f, 0.0f },  // hitBaseOffset
         { 16.0f, 15.0f, 0.0f }, // hitCursorBaseOffset
-        64,                     // field_0x30
+        64,                     // shadowSize
         36,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -746,7 +746,7 @@ static BattleUnitKindPart parts[7] = {
         { 0.0f, 80.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        15,                    // field_0x30
+        15,                    // shadowSize
         15,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -762,7 +762,7 @@ static BattleUnitKindPart parts[7] = {
         { 0.0f, 80.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        15,                    // field_0x30
+        15,                    // shadowSize
         15,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -778,7 +778,7 @@ static BattleUnitKindPart parts[7] = {
         { 0.0f, 80.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        15,                    // field_0x30
+        15,                    // shadowSize
         15,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -794,7 +794,7 @@ static BattleUnitKindPart parts[7] = {
         { 0.0f, 80.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        15,                    // field_0x30
+        15,                    // shadowSize
         15,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -810,7 +810,7 @@ static BattleUnitKindPart parts[7] = {
         { 0.0f, 80.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f },  // hitBaseOffset
         { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
-        15,                    // field_0x30
+        15,                    // shadowSize
         15,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -3032,7 +3032,7 @@ USER_FUNC(unk_las_0000d538) {
 
     unit = BattleGetUnitPtr(wp, BattleTransID(event, arg));
     if (unit != NULL) {
-        unit->hpGauge.field_0x2 |= 1;
+        unit->hpGauge.flags |= 1;
     }
     return EVT_RETURN_DONE;
 }

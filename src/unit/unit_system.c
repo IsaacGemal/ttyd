@@ -20,7 +20,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -51,7 +51,7 @@ BattleUnitKind unit_system = {
     { 0.0f, 0.0f, 0.0f },                                       // centerOffset
     { 0, 0 },                                                   // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },                                       // talkTogeBaseOffset
-    { 0.0f, 0.0f, 0.0f },                                       // field_0x3C
+    { 0.0f, 0.0f, 0.0f },                                       // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },                                       // burnFlameOffset
     0.0f,                                                       // field_0x54
     0.0f,                                                       // field_0x58

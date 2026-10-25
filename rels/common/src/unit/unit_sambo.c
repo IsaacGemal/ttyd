@@ -75,7 +75,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     { 0.0f, 40.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 13.0f, 0.0f, -10.0f },    // field_0x3C
+    { 13.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -153,7 +153,7 @@ static BattleWeapon weapon_sambo_head_attack_4 = {
     0x01101260,                               // targetClassFlags
     0x21000004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -231,7 +231,7 @@ static BattleWeapon weapon_sambo_head_attack_3 = {
     0x01101260,                               // targetClassFlags
     0x21000004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -309,7 +309,7 @@ static BattleWeapon weapon_sambo_head_attack_2 = {
     0x01101260,                               // targetClassFlags
     0x21004004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -387,7 +387,7 @@ static BattleWeapon weapon_sambo_head_attack_1 = {
     0x01101260,                               // targetClassFlags
     0x21004004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -465,7 +465,7 @@ static BattleWeapon weapon_sambo_spike_attack_4 = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -543,7 +543,7 @@ static BattleWeapon weapon_sambo_spike_attack_3 = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -621,7 +621,7 @@ static BattleWeapon weapon_sambo_spike_attack_2 = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -793,7 +793,7 @@ static BattleUnitKindPart parts[5] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 84.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 90.0f, 0.0f }, // hitCursorBaseOffset
-        20,                    // field_0x30
+        20,                    // shadowSize
         90,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -809,7 +809,7 @@ static BattleUnitKindPart parts[5] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 64.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 70.0f, 0.0f }, // hitCursorBaseOffset
-        20,                    // field_0x30
+        20,                    // shadowSize
         70,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -825,7 +825,7 @@ static BattleUnitKindPart parts[5] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 44.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 50.0f, 0.0f }, // hitCursorBaseOffset
-        20,                    // field_0x30
+        20,                    // shadowSize
         50,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -841,7 +841,7 @@ static BattleUnitKindPart parts[5] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 24.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f }, // hitCursorBaseOffset
-        20,                    // field_0x30
+        20,                    // shadowSize
         30,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -857,7 +857,7 @@ static BattleUnitKindPart parts[5] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense

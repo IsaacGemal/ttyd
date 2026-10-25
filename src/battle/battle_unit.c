@@ -30,7 +30,7 @@ u32 _enemy_can_use_item_table[] = {
     0x00000000,
 };
 
-// 30-byte status block copied between BattleWorkPartyInfo::field_4 and BattleUnit::mSleepTurns.
+// 30-byte status block copied between BattleWorkPartyInfo.statusBlock and BattleUnit.mSleepTurns.
 #ifdef MUST_MATCH
 // For the struct-copy below: MWCC emits the original's lwzu/stwu copy loop for a struct
 // assignment, but a plain memcpy of the 30-byte blob compiles to a call.
@@ -89,7 +89,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         unit->mLevel = pouchGetPtr()->level;
     }
 
-    unit->seqPhase = setup->field_0x8;
+    unit->seqPhase = setup->seqPhase;
     unit->unisonPhaseEventCode = NULL;
     unit->phaseEventCode = NULL;
     unit->phaseEventId = 0;
@@ -108,7 +108,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     BtlUnit_SetBaseScale(unit, 1.0f, 1.0f, 1.0f);
 
     unit->offsetCenter = unit->mKindParams->centerOffset;
-    unit->field_0xB4 = unit->mKindParams->field_0x3C;
+    unit->heldItemBaseOffset = unit->mKindParams->heldItemBaseOffset;
     unit->bintaHitOffset = unit->mKindParams->bintaHitOffset;
     unit->kissHitOffset = unit->mKindParams->kissHitOffset;
 
@@ -167,7 +167,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         }
         part->defense = part->mKindPartParams->defense;
         part->defenseAttr = part->mKindPartParams->defenseAttr;
-        part->field_0x1A2 = part->mKindPartParams->field_0x30;
+        part->shadowSize = part->mKindPartParams->shadowSize;
         part->field_0x1A4 = part->mKindPartParams->field_0x32;
         part->shadowScale = 1.0f;
         part->moveDirection = 0;
@@ -182,7 +182,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         BtlUnit_SetPartsRotate(part, 0.0f, 0.0f, 0.0f);
         BtlUnit_SetPartsRotateOffset(part, 0.0f, 0.0f, 0.0f);
 
-        part->field_0x4FC = 0;
+        part->rotationOrder = 0;
         part->mHitBaseOffset.x = part->mKindPartParams->hitBaseOffset.x;
         part->mHitBaseOffset.y = part->mKindPartParams->hitBaseOffset.y;
         part->mHitBaseOffset.z = part->mKindPartParams->hitBaseOffset.z;
@@ -196,7 +196,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
         part->mHitCursorOffset.y = 0.0f;
         part->mHitCursorOffset.z = 0.0f;
         part->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
-        part->detectOffsetX = setup->field_0x18;
+        part->detectOffsetX = setup->detectOffsetX;
         part->poseTable = kindPart->poseTable;
         part->poseId = -1;
         part->poseName[0] = 0;
@@ -1616,12 +1616,12 @@ void BtlUnit_SetParamFromPouch(BattleUnit* unit) {
 #endif
         BtlUnit_ReviseHpFp(unit);
         info = &wp->partyInfo[unit->currentKind - TYPE_PARTNER_MIN];
-        unit->mSizeMultiplier = info->field_0;
-        unit->mStatusFlags = info->field_24;
+        unit->mSizeMultiplier = info->sizeMultiplier;
+        unit->mStatusFlags = info->statusFlags;
 #ifdef MUST_MATCH
-        *(UnitStatusBlock*)&unit->mSleepTurns = *(UnitStatusBlock*)info->field_4;
+        *(UnitStatusBlock*)&unit->mSleepTurns = *(UnitStatusBlock*)info->statusBlock;
 #else
-        memcpy(&unit->mSleepTurns, info->field_4, sizeof(info->field_4));
+        memcpy(&unit->mSleepTurns, info->statusBlock, sizeof(info->statusBlock));
 #endif
         if (unit->currentHp <= 0) {
             BtlUnit_SetStatus(unit, STATUS_INSTANT_KILL, 1, 1);
@@ -1679,12 +1679,12 @@ void BtlUnit_SetParamToPouch(BattleUnit* unit) {
         party = BattleTransPartyId(unit->currentKind);
         *(s16*)((u8*)pouch + party * 0xE + 6) = unit->currentHp;
         info = &wp->partyInfo[unit->currentKind - TYPE_PARTNER_MIN];
-        info->field_0 = unit->mSizeMultiplier;
-        info->field_24 = unit->mStatusFlags;
+        info->sizeMultiplier = unit->mSizeMultiplier;
+        info->statusFlags = unit->mStatusFlags;
 #ifdef MUST_MATCH
-        *(UnitStatusBlock*)info->field_4 = *(UnitStatusBlock*)&unit->mSleepTurns;
+        *(UnitStatusBlock*)info->statusBlock = *(UnitStatusBlock*)&unit->mSleepTurns;
 #else
-        memcpy(info->field_4, &unit->mSleepTurns, sizeof(info->field_4));
+        memcpy(info->statusBlock, &unit->mSleepTurns, sizeof(info->statusBlock));
 #endif
     }
 }
@@ -2196,28 +2196,28 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* po
     return handle;
 }
 
-// The gauge type is compared with `lhz`/`cmpwi`; a `switch` (not an if/else) reproduces the
+// The gauge style is compared with `lhz`/`cmpwi`; a `switch` (not an if/else) reproduces the
 // original's `beq then; b else` dispatch.
 void BtlUnit_HpGaugeInit(BattleUnit* unit) {
     BattleWorkHpGauge* gauge = &unit->hpGauge;
     f32 ratio;
 
-    gauge->field_0x4 = 0;
-    gauge->field_0x8 = 0;
-    gauge->field_0x0 = 0;
-    gauge->field_0xC = unit->currentHp;
-    gauge->field_0x10 = unit->currentHp;
+    gauge->drainTimer = 0;
+    gauge->dispTimer = 0;
+    gauge->style = 0;
+    gauge->fromHp = unit->currentHp;
+    gauge->toHp = unit->currentHp;
     ratio = (f32)unit->currentHp / (f32)unit->maxHp;
-    gauge->field_0x14 = ratio;
-    gauge->field_0x18 = ratio;
-    switch (gauge->field_0x0) {
+    gauge->fillRatio = ratio;
+    gauge->drainRatio = ratio;
+    switch (gauge->style) {
     case 1:
-        gauge->field_0x6 = 0x28;
-        gauge->field_0xA = gauge->field_0x6 + 0x1E;
+        gauge->drainFrames = 0x28;
+        gauge->dispFrames = gauge->drainFrames + 0x1E;
         break;
     default:
-        gauge->field_0x6 = 0x14;
-        gauge->field_0xA = gauge->field_0x6 + 0x1E;
+        gauge->drainFrames = 0x14;
+        gauge->dispFrames = gauge->drainFrames + 0x1E;
         break;
     }
 }
@@ -2228,38 +2228,38 @@ void BtlUnit_HpGaugeMain(BattleUnit* unit) {
     f32 ratio;
     s32 maxHp;
 
-    if (gauge->field_0x4 > 0) {
-        gauge->field_0x4--;
-        if (gauge->field_0x4 <= 0) {
-            gauge->field_0xC = gauge->field_0x10;
+    if (gauge->drainTimer > 0) {
+        gauge->drainTimer--;
+        if (gauge->drainTimer <= 0) {
+            gauge->fromHp = gauge->toHp;
             ratio = (f32)unit->currentHp / (f32)unit->maxHp;
-            gauge->field_0x18 = ratio;
-            gauge->field_0x14 = ratio;
+            gauge->drainRatio = ratio;
+            gauge->fillRatio = ratio;
         } else {
-            switch (gauge->field_0x0) {
+            switch (gauge->style) {
             case 1:
-                gauge->field_0x14 = (f32)unit->currentHp / (f32)unit->maxHp;
-                gauge->field_0x18 = (f32)(gauge->field_0xC - gauge->field_0x10) *
-                    intplGetValue(2, gauge->field_0x4, gauge->field_0x6, 0.0f, 1.0f) /
-                    (f32)unit->maxHp + gauge->field_0x14;
+                gauge->fillRatio = (f32)unit->currentHp / (f32)unit->maxHp;
+                gauge->drainRatio = (f32)(gauge->fromHp - gauge->toHp) *
+                    intplGetValue(2, gauge->drainTimer, gauge->drainFrames, 0.0f, 1.0f) /
+                    (f32)unit->maxHp + gauge->fillRatio;
                 break;
             default:
-                gauge->field_0x18 = 0.0f;
+                gauge->drainRatio = 0.0f;
                 maxHp = unit->maxHp;
-                gauge->field_0x14 = (f32)unit->currentHp / (f32)maxHp +
-                    (f32)(gauge->field_0xC - gauge->field_0x10) *
-                    intplGetValue(0, gauge->field_0x4, gauge->field_0x6, 0.0f, 1.0f) /
+                gauge->fillRatio = (f32)unit->currentHp / (f32)maxHp +
+                    (f32)(gauge->fromHp - gauge->toHp) *
+                    intplGetValue(0, gauge->drainTimer, gauge->drainFrames, 0.0f, 1.0f) /
                     (f32)maxHp;
                 break;
             }
         }
     }
-    if (gauge->field_0x8 > 0) {
-        gauge->field_0x8--;
+    if (gauge->dispTimer > 0) {
+        gauge->dispTimer--;
     }
-    if ((unit->flags & 1) && gauge->field_0x8 <= 0 && (gauge->field_0x2 & 1)) {
+    if ((unit->flags & 1) && gauge->dispTimer <= 0 && (gauge->flags & 1)) {
         unit->flags &= ~1;
-        gauge->field_0x2 &= ~1;
+        gauge->flags &= ~1;
     }
 }
 

@@ -25,8 +25,8 @@ static USER_FUNC(bubble_copy_status) {
     }
     dst->mSizeChangeTurns = src->mSizeChangeTurns;
     dst->mSizeChangeStrength = src->mSizeChangeStrength;
-    dst->hpGauge.field_0xC = dst->currentHp;
-    dst->hpGauge.field_0x10 = dst->currentHp;
-    dst->hpGauge.field_0x14 = dst->hpGauge.field_0x18 = (f32)dst->currentHp / (f32)dst->maxHp;
+    dst->hpGauge.fromHp = dst->currentHp;
+    dst->hpGauge.toHp = dst->currentHp;
+    dst->hpGauge.fillRatio = dst->hpGauge.drainRatio = (f32)dst->currentHp / (f32)dst->maxHp;
     return EVT_RETURN_DONE;
 }

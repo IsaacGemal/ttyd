@@ -17,34 +17,34 @@ typedef struct BattleCameraWork {
     f32 zoom;               // 0x24
     s16 moveSpeedLv;        // 0x28
     s16 zoomSpeedLv;        // 0x2A
-    Vec field_0x2C;         // 0x2C, cameraPos as battleCameraMain last set it
-    Vec field_0x38;         // 0x38, cameraPos at the start of battleCameraMain (restored per axis by flags 4/8/0x10)
-    Vec field_0x44;         // 0x44, cameraAt as battleCameraMain last set it
-    Vec field_0x50;         // 0x50, cameraAt at the start of battleCameraMain (restored with field_0x38)
+    Vec cameraPos;          // 0x2C, the camera's cameraPos as battleCameraMain last set it; copied back at its start
+    Vec prevCameraPos;      // 0x38, cameraPos at the start of battleCameraMain (restored per axis by flags 4/8/0x10)
+    Vec cameraAt;           // 0x44, the camera's cameraAt as battleCameraMain last set it; copied back at its start
+    Vec prevCameraAt;       // 0x50, cameraAt at the start of battleCameraMain (restored with prevCameraPos)
     Vec position;           // 0x5C
     Vec unk68;              // 0x68 (speed / delta)
     Vec field_0x74;         // 0x74, battleCameraMain's o4-o6 (unk68 gets o1-o3)
-    s32 unk80;              // 0x80
-    s32 unk84;              // 0x84
-    s32 unk88;              // 0x88
-    Vec unk8C;              // 0x8C
-    Vec unk98;              // 0x98
-    Vec unkA4;              // 0xA4
-    Vec unkB0;              // 0xB0
+    s32 moveToMode;         // 0x80, intplGetValue mode of a btl_camera_set_moveto move (battleCameraMain mode 3 runs it)
+    s32 moveToTimer;        // 0x84, frames left of that move
+    s32 moveToFrames;       // 0x88, its length in frames
+    Vec moveToPosFrom;      // 0x8C, cameraPos when the move was set
+    Vec moveToPosTo;        // 0x98, the cameraPos it moves to
+    Vec moveToAtFrom;       // 0xA4, cameraAt when the move was set
+    Vec moveToAtTo;         // 0xB0, the cameraAt it moves to
     Vec unkBC;              // 0xBC
     Vec unkC8;              // 0xC8
-    s32 unkD4;              // 0xD4
-    s32 unkD8;              // 0xD8
-    s32 unkDC;              // 0xDC
-    s32 unkE0;              // 0xE0
-    s32 unkE4;              // 0xE4
-    s32 unkE8;              // 0xE8
-    f32 unkEC;              // 0xEC
-    f32 unkF0;              // 0xF0
-    f32 unkF4;              // 0xF4
-    f32 unkF8;              // 0xF8
-    f32 field_0xFC;         // 0xFC, the current x offset of a btl_camera_shake_w shake (flag 1)
-    f32 field_0x100;        // 0x100, the current y offset of a btl_camera_shake_h shake (flag 2)
+    s32 shakeXMode;         // 0xD4, intplGetValue mode of the btl_camera_shake_w offset
+    s32 shakeYMode;         // 0xD8, intplGetValue mode of the btl_camera_shake_h offset
+    s32 shakeXFrames;       // 0xDC, length of the shake_w shake in frames
+    s32 shakeYFrames;       // 0xE0, length of the shake_h shake in frames
+    s32 shakeXTimer;        // 0xE4, frames left of the shake_w shake; flag 1 clears at 0
+    s32 shakeYTimer;        // 0xE8, frames left of the shake_h shake; flag 2 clears at 0
+    f32 shakeXFrom;         // 0xEC, shake_w offset at the start
+    f32 shakeXTo;           // 0xF0, and at the end
+    f32 shakeYFrom;         // 0xF4, shake_h offset at the start
+    f32 shakeYTo;           // 0xF8, and at the end
+    f32 shakeOffsetX;       // 0xFC, the current x offset of a btl_camera_shake_w shake (flag 1)
+    f32 shakeOffsetY;       // 0x100, the current y offset of a btl_camera_shake_h shake (flag 2)
 } BattleCameraWork;
 
 void battleCameraInit(void);

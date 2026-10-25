@@ -60,10 +60,10 @@ static USER_FUNC(mahorn_copy_status) {
     unit2 = BattleGetUnitPtr(wp, id2);
     unit2->currentHp = unit1->currentHp;
     memcpy(&unit2->mSleepTurns, &unit1->mSleepTurns, 0x1E);
-    unit2->hpGauge.field_0xC = unit2->currentHp;
-    unit2->hpGauge.field_0x10 = unit2->currentHp;
+    unit2->hpGauge.fromHp = unit2->currentHp;
+    unit2->hpGauge.toHp = unit2->currentHp;
     ratio = (f32)unit2->currentHp / (f32)unit2->maxHp;
-    unit2->hpGauge.field_0x18 = ratio;
-    unit2->hpGauge.field_0x14 = ratio;
+    unit2->hpGauge.drainRatio = ratio;
+    unit2->hpGauge.fillRatio = ratio;
     return EVT_RETURN_DONE;
 }

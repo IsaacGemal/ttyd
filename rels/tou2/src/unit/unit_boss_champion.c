@@ -83,7 +83,7 @@ BattleUnitKind unit_boss_champion = {
     { 0.0f, 32.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 8.0f, 36.0f, 0.0f },      // talkTogeBaseOffset
-    { 25.0f, 0.0f, -10.0f },    // field_0x3C
+    { 25.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -196,7 +196,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 50.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 55.0f, 0.0f }, // hitCursorBaseOffset
-        35,                    // field_0x30
+        35,                    // shadowSize
         70,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -228,7 +228,7 @@ BattleWeapon weapon_champion_drop_kick_attack = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -306,7 +306,7 @@ BattleWeapon weapon_champion_screw_attack = {
     0x02101260,                               // targetClassFlags
     0x20001000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -384,7 +384,7 @@ BattleWeapon weapon_champion_flying_chop_attack = {
     0x01101260,                               // targetClassFlags
     0x20001000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -462,7 +462,7 @@ BattleWeapon weapon_champion_foot_stamp_attack = {
     0x01101260,                               // targetClassFlags
     0x20001000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -540,7 +540,7 @@ BattleWeapon weapon_champion_healing = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -618,7 +618,7 @@ BattleWeapon weapon_champion_roof_shake_attack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -696,7 +696,7 @@ BattleWeapon weapon_champion_roof_shake_last_attack = {
     0x02101260,                                 // targetClassFlags
     0x20000000,                                 // targetPropertyFlags
     0,                                          // element
-    27,                                         // field_0x6D
+    27,                                         // damagePattern
     3,                                          // actionLevel
     2,                                          // field_0x6F
     NULL,                                       // acHelpMsg

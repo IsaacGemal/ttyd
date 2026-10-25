@@ -20,7 +20,7 @@ __declspec(section ".sdata2") s32 dat_8041e7f0 = -1;
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// RepeatedlyLv's action-command work area at BattleWork+0x1F4C (inside BattleActions.field_0x2BC).
+// RepeatedlyLv's action-command work area at BattleWork+0x1F4C (inside BattleActions.acWork).
 typedef struct RepeatedlyLvWork {
     s32 curMask;     // 0x00, button mask being checked; modes 0xB-0xF alternate it between maskA and maskB by presses
     s32 maskA;       // 0x04
@@ -52,7 +52,7 @@ typedef struct RepeatedlyLvWork {
 // limit r6). Both together match byte-for-byte.
 static void _init_param(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
-    RepeatedlyLvWork* dec = (RepeatedlyLvWork*)&ac->field_0x2BC[0];
+    RepeatedlyLvWork* dec = (RepeatedlyLvWork*)&ac->acWork[0];
 
     dec->padCheck = 0;
     dec->releaseMode = 1;
@@ -156,7 +156,7 @@ static void _init_param(BattleWork* work) {
 
 s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
-    RepeatedlyLvWork* dec = (RepeatedlyLvWork*)&ac->field_0x2BC[0];
+    RepeatedlyLvWork* dec = (RepeatedlyLvWork*)&ac->acWork[0];
     BattleACDispParams* disp = &ac->dispParams;
     s32 stateChanged = 0;
     s32 autoCommand = 0;
@@ -171,7 +171,7 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
         disp->iconX = -300.0f;
         disp->iconY = 0.0f;
         disp->counter = 0x14;
-        disp->field_0xC = dat_8041e7f0;
+        disp->gaugeColor.rgba = dat_8041e7f0;
         disp->field_0x10 = 0;
         disp->dg = -0x10;
         disp->db = -0x10;
@@ -184,7 +184,7 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
     case 0x63:
         break;
     case 0x64:
-        if (!((ac->field_0x4 & 1) && (ac->mAcUnit->mTokenFlags & 0x10)) &&
+        if (!((ac->autoFlags & 1) && (ac->mAcUnit->mTokenFlags & 0x10)) &&
             dec->padCheck != 0 &&
             BattlePadCheckNow(dec->padCheck) == 0 &&
             autoCommand == 0) {
@@ -202,10 +202,10 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
         ac->mAcState = 0x3E8;
         // fall through
     case 0x3E8:
-        if ((ac->field_0x4 & 1) && (ac->mAcUnit->mTokenFlags & 0x10)) {
-            if (ac->field_0x4 & 2) {
-                ac->field_0x8--;
-                if (ac->field_0x8 >= 0) {
+        if ((ac->autoFlags & 1) && (ac->mAcUnit->mTokenFlags & 0x10)) {
+            if (ac->autoFlags & 2) {
+                ac->autoTimer--;
+                if (ac->autoTimer >= 0) {
                     break;
                 }
             }
@@ -391,8 +391,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
-    RepeatedlyLvWork* dec = (RepeatedlyLvWork*)&ac->field_0x2BC[0];
-    u8* p = (u8*)disp;
+    RepeatedlyLvWork* dec = (RepeatedlyLvWork*)&ac->acWork[0];
     s32 iconA;
     s32 iconB;
     s32 iconC;
@@ -414,7 +413,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     numIcons = 1;
     offB = 0;
     offA = 0;
-    disp->field_0x0++;
+    disp->dispFrame++;
 
     iconA = BattleACGetButtonIcon(dec->curMask, 1);
     {
@@ -445,7 +444,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         break;
     }
 
-    div7 = disp->field_0x0 / 7;
+    div7 = disp->dispFrame / 7;
     if (numIcons == 1) {
         if ((div7 & 1) == 1) {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};
@@ -523,13 +522,13 @@ static void actionCommandDisp(f32 x, f32 y) {
     flags = 0;
     if (dec->fillState == 1 && disp->value >= float_1_8041e800) {
         flags |= 1;
-        p[0xD] += disp->dg;
-        p[0xE] += disp->db;
-        if (p[0xD] <= 0x80 && disp->dg < 0) {
+        disp->gaugeColor.color.g += disp->dg;
+        disp->gaugeColor.color.b += disp->db;
+        if (disp->gaugeColor.color.g <= 0x80 && disp->dg < 0) {
             disp->db = 0x10;
             disp->dg = 0x10;
         }
-        if (p[0xD] >= 0xF5 && disp->dg > 0) {
+        if (disp->gaugeColor.color.g >= 0xF5 && disp->dg > 0) {
             disp->db = -0x10;
             disp->dg = -0x10;
         }

@@ -61,7 +61,7 @@ BattleWeapon weapon_data_akikan = {
     0x01100060,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -138,7 +138,7 @@ BattleWeapon weapon_data_brick = {
     0x01100060,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -215,7 +215,7 @@ BattleWeapon weapon_data_bone = {
     0x01100060,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -292,7 +292,7 @@ BattleWeapon weapon_data_hammer = {
     0x01100060,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1246,10 +1246,10 @@ u8 BattleAudience_CheckReactionPerPhase(void) {
 		for (i = 0; i < 200; i++) {
 			member = BattleAudienceGetPtr(i);
 			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->status == 0xD) {
-				member->field_0xF4 -= 1;
-				if (member->field_0xF4 <= 0) {
+				member->singCount -= 1;
+				if (member->singCount <= 0) {
 					BattleAudience_ChangeStatus(i, 3);
-					member->field_0xF4 = 0;
+					member->singCount = 0;
 				}
 			}
 		}
@@ -3329,9 +3329,9 @@ void BattleAudience_ChangeStatus(s32 index, s32 status) {
 			member->motionTimer = zero;
 			member->step = zero;
 			member->counter = zero;
-			member->field_0x14 = zeroF;
-			member->field_0x10 = zeroF;
-			member->field_0xC = zeroF;
+			member->enterLength = zeroF;
+			member->enterSpeed = zeroF;
+			member->repeatCount = zeroF; // clears the whole 0xC union (enterDist, intrudeDir)
 			member->status = status;
 		}
 	}
@@ -4013,10 +4013,10 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 			if (member->type == AUDIENCE_PIRANHA_PLANT) {
 				BattleAudience_ChangeStatus(i, 4);
 				if (d == 3) {
-					member->field_0xC = 3.0f;
+					member->repeatCount = 3.0f;
 				}
 				else {
-					member->field_0xC = 2.0f;
+					member->repeatCount = 2.0f;
 				}
 			}
 			else {
@@ -4025,10 +4025,10 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 				if (r < limit) {
 					BattleAudience_ChangeStatus(i, 4);
 					if (d == 3) {
-						member->field_0xC = 3.0f;
+						member->repeatCount = 3.0f;
 					}
 					else {
-						member->field_0xC = 2.0f;
+						member->repeatCount = 2.0f;
 					}
 				}
 				else {

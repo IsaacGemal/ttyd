@@ -81,7 +81,7 @@ USER_FUNC(unk_8010ee30) {
     value = evtGetValue(event, event->args[0]);
     unit = BattleGetUnitPtr(wp, BattleTransID(event, value));
     if (unit) {
-        unit->hpGauge.field_0x2 |= 1;
+        unit->hpGauge.flags |= 1;
     }
     return EVT_RETURN_DONE;
 }

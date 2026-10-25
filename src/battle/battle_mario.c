@@ -472,7 +472,7 @@ BattleWeapon marioDefaultWeapon_Jump = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_jump",                            // acHelpMsg
@@ -550,7 +550,7 @@ BattleWeapon marioWeapon_KururinJump = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_k_jump",                          // acHelpMsg
@@ -628,7 +628,7 @@ BattleWeapon marioWeapon_KururinJump2 = {
     0x01001260,                                 // targetClassFlags
     0x20001004,                                 // targetPropertyFlags
     0,                                          // element
-    0,                                          // field_0x6D
+    0,                                          // damagePattern
     3,                                          // actionLevel
     2,                                          // field_0x6F
     "msg_ac_k_jump",                            // acHelpMsg
@@ -706,7 +706,7 @@ BattleWeapon marioWeapon_JyabaraJump = {
     0x01001260,                                 // targetClassFlags
     0x20001004,                                 // targetPropertyFlags
     0,                                          // element
-    0,                                          // field_0x6D
+    0,                                          // damagePattern
     3,                                          // actionLevel
     2,                                          // field_0x6F
     "msg_ac_j_jump",                            // acHelpMsg
@@ -784,7 +784,7 @@ BattleWeapon marioWeapon_JyabaraJumpFailed = {
     0x01001260,                                  // targetClassFlags
     0x20001004,                                  // targetPropertyFlags
     0,                                           // element
-    0,                                           // field_0x6D
+    0,                                           // damagePattern
     3,                                           // actionLevel
     2,                                           // field_0x6F
     NULL,                                        // acHelpMsg
@@ -862,7 +862,7 @@ BattleWeapon marioDefaultWeapon_FirstAttackKaitenHammer = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    14,                                       // field_0x6D
+    14,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -940,7 +940,7 @@ BattleWeapon marioDefaultWeapon_FirstAttackUltraHammer = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    16,                                       // field_0x6D
+    16,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1018,7 +1018,7 @@ BattleWeapon marioDefaultWeapon_Hammer = {
     0x01001260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_hammer",                          // acHelpMsg
@@ -1096,7 +1096,7 @@ BattleWeapon marioWeapon_KaitenHammer = {
     0x01001260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    14,                                       // field_0x6D
+    14,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_kaiten_hammer",                   // acHelpMsg
@@ -1174,7 +1174,7 @@ BattleWeapon marioWeapon_KaitenHammerInvolved = {
     0x02100060,                               // targetClassFlags
     0x20102000,                               // targetPropertyFlags
     0,                                        // element
-    15,                                       // field_0x6D
+    15,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1252,7 +1252,7 @@ BattleWeapon marioWeapon_UltraHammer = {
     0x01001260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    16,                                       // field_0x6D
+    16,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_ultra_hammer",                    // acHelpMsg
@@ -1330,7 +1330,7 @@ BattleWeapon marioWeapon_UltraHammerInvolved = {
     0x02100060,                               // targetClassFlags
     0x20102000,                               // targetPropertyFlags
     0,                                        // element
-    17,                                       // field_0x6D
+    17,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1408,7 +1408,7 @@ BattleWeapon marioWeapon_UltraHammerFinish = {
     0x01100060,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    19,                                       // field_0x6D
+    19,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1486,7 +1486,7 @@ BattleWeapon badgeWeapon_TugitugiJump = {
     0x02101260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_jump",                            // acHelpMsg
@@ -1564,7 +1564,7 @@ BattleWeapon badgeWeapon_GatsunJump = {
     0x01001260,                                     // targetClassFlags
     0x20001004,                                     // targetPropertyFlags
     0,                                              // element
-    0,                                              // field_0x6D
+    0,                                              // damagePattern
     3,                                              // actionLevel
     2,                                              // field_0x6F
     "msg_ac_jump",                                  // acHelpMsg
@@ -1642,7 +1642,7 @@ BattleWeapon badgeWeapon_DokanJump = {
     0x01001260,                                  // targetClassFlags
     0x20001004,                                  // targetPropertyFlags
     0,                                           // element
-    0,                                           // field_0x6D
+    0,                                           // damagePattern
     3,                                           // actionLevel
     2,                                           // field_0x6F
     "msg_ac_jump",                               // acHelpMsg
@@ -1720,7 +1720,7 @@ BattleWeapon badgeWeapon_RenzokuJump = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_jump",                            // acHelpMsg
@@ -1798,7 +1798,7 @@ BattleWeapon badgeWeapon_TatsumakiJump = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_tatsumaki_jump",                  // acHelpMsg
@@ -1876,7 +1876,7 @@ BattleWeapon badgeWeapon_TatsumakiJumpInvolved = {
     0x02101260,                               // targetClassFlags
     0x20000010,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1954,7 +1954,7 @@ BattleWeapon badgeWeapon_MiniminiFumi = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_jump",                            // acHelpMsg
@@ -2032,7 +2032,7 @@ BattleWeapon badgeWeapon_NemuraseFumi = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_jump",                            // acHelpMsg
@@ -2110,7 +2110,7 @@ BattleWeapon badgeWeapon_FunyafunyaJump = {
     0x01001260,                               // targetClassFlags
     0x20001004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_jump",                            // acHelpMsg
@@ -2188,7 +2188,7 @@ BattleWeapon badgeWeapon_GatsunHammer = {
     0x01001260,                                     // targetClassFlags
     0x21002000,                                     // targetPropertyFlags
     0,                                              // element
-    0,                                              // field_0x6D
+    0,                                              // damagePattern
     3,                                              // actionLevel
     2,                                              // field_0x6F
     "msg_ac_hammer",                                // acHelpMsg
@@ -2266,7 +2266,7 @@ BattleWeapon badgeWeapon_DokanHammer = {
     0x01001260,                                  // targetClassFlags
     0x21002000,                                  // targetPropertyFlags
     0,                                           // element
-    0,                                           // field_0x6D
+    0,                                           // damagePattern
     3,                                           // actionLevel
     2,                                           // field_0x6F
     "msg_ac_hammer",                             // acHelpMsg
@@ -2344,7 +2344,7 @@ BattleWeapon badgeWeapon_JishinHammer = {
     0x02101260,                                              // targetClassFlags
     0x20000008,                                              // targetPropertyFlags
     0,                                                       // element
-    0,                                                       // field_0x6D
+    0,                                                       // damagePattern
     3,                                                       // actionLevel
     2,                                                       // field_0x6F
     "msg_ac_hammer",                                         // acHelpMsg
@@ -2422,7 +2422,7 @@ BattleWeapon badgeWeapon_UltraJishinHammer = {
     0x02101260,                                  // targetClassFlags
     0x20000008,                                  // targetPropertyFlags
     0,                                           // element
-    0,                                           // field_0x6D
+    0,                                           // damagePattern
     3,                                           // actionLevel
     2,                                           // field_0x6F
     "msg_ac_ultra_jishin_hammer",                // acHelpMsg
@@ -2500,7 +2500,7 @@ BattleWeapon badgeWeapon_HammerNageru = {
     0x01001260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_hammer_nageru",                   // acHelpMsg
@@ -2578,7 +2578,7 @@ BattleWeapon badgeWeapon_TsuranukiNaguri = {
     0x01001260,                                 // targetClassFlags
     0x21002000,                                 // targetPropertyFlags
     0,                                          // element
-    0,                                          // field_0x6D
+    0,                                          // damagePattern
     3,                                          // actionLevel
     2,                                          // field_0x6F
     "msg_ac_hammer",                            // acHelpMsg
@@ -2656,7 +2656,7 @@ BattleWeapon badgeWeapon_ConfuseHammer = {
     0x01001260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_hammer",                          // acHelpMsg
@@ -2734,7 +2734,7 @@ BattleWeapon badgeWeapon_FireNaguri = {
     0x02001260,                               // targetClassFlags
     0x20002000,                               // targetPropertyFlags
     1,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_fire_naguri",                     // acHelpMsg
@@ -2812,7 +2812,7 @@ BattleWeapon badgeWeapon_FireNaguriFailed = {
     0x02100160,                               // targetClassFlags
     0x10002000,                               // targetPropertyFlags
     1,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2890,7 +2890,7 @@ BattleWeapon badgeWeapon_IceNaguri = {
     0x01001260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     2,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_hammer",                          // acHelpMsg
@@ -2968,7 +2968,7 @@ BattleWeapon badgeWeapon_Charge = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3046,7 +3046,7 @@ BattleWeapon badgeWeapon_ChargeP = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3124,7 +3124,7 @@ BattleWeapon badgeWeapon_SuperCharge = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3202,7 +3202,7 @@ BattleWeapon badgeWeapon_SuperChargeP = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3280,7 +3280,7 @@ BattleWeapon badgeWeapon_2KaiItem = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3358,7 +3358,7 @@ BattleWeapon badgeWeapon_3KaiItem = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3436,7 +3436,7 @@ BattleWeapon badgeWeapon_DefenceCommand = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3514,7 +3514,7 @@ BattleWeapon badgeWeapon_DefenceCommandP = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3592,7 +3592,7 @@ BattleWeapon marioWeapon_BakuGame = {
     0x02100060,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_sac_3",                              // acHelpMsg
@@ -3670,7 +3670,7 @@ BattleWeapon marioWeapon_Scissor = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_sac_5",                              // acHelpMsg
@@ -3748,7 +3748,7 @@ BattleWeapon marioWeapon_ZubaStar = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_sac_8",                              // acHelpMsg
@@ -3826,7 +3826,7 @@ BattleWeapon marioWeapon_Genki0 = {
     0x02100070,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_sac_1",                              // acHelpMsg
@@ -3904,7 +3904,7 @@ BattleWeapon marioWeapon_Genki1 = {
     0x02100070,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_sac_6",                              // acHelpMsg
@@ -3982,7 +3982,7 @@ BattleWeapon marioWeapon_Deka = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_sac_2",                              // acHelpMsg
@@ -4060,7 +4060,7 @@ BattleWeapon marioWeapon_Muki = {
     0x02100070,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_sac_4",                              // acHelpMsg
@@ -4138,7 +4138,7 @@ BattleWeapon marioWeapon_Suki = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_sac_7",                              // acHelpMsg

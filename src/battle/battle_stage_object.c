@@ -174,16 +174,16 @@ void BattleStageObjectInit(void) {
 	case 1:
 	case 2:
 	case 3:
-		base->field_0x34 = battle_stage_nozzle_data + pouchGetPtr()->rank;
+		base->nozzleData = battle_stage_nozzle_data + pouchGetPtr()->rank;
 		break;
 	default:
-		base->field_0x34 = NULL;
+		base->nozzleData = NULL;
 		break;
 	}
-	base->field_0x38 = battle_stage_fall_object_data + pouchGetPtr()->rank;
-	base->field_0x1CA = -1;
-	base->field_0x1DC = 0;
-	base->field_0x1E0 = NULL;
+	base->fallObjectData = battle_stage_fall_object_data + pouchGetPtr()->rank;
+	base->nozzleType = -1;
+	base->fogTurns = 0;
+	base->fogEffect = NULL;
 
 	mapGrpFlagOff(mapGetWork()->entries[0].rootMapObj->joints->name, 2);
 	if (mapGetMapObj(BSO_STR_A1) != NULL) {
@@ -344,16 +344,16 @@ void BattleStageObjectInit(void) {
 		evtEntry(stage->initEvent, 10, 0);
 	}
 	if (layer0 != 0 && stage->layerEvents[0] != NULL) {
-		wp->field_180C0.field_0x24 = evtEntry(stage->layerEvents[0], 10, 0)->eventId;
+		wp->field_180C0.layerEventId[0] = evtEntry(stage->layerEvents[0], 10, 0)->eventId;
 	}
 	if (layer1 != 0 && stage->layerEvents[1] != NULL) {
-		wp->field_180C0.field_0x28 = evtEntry(stage->layerEvents[1], 10, 0)->eventId;
+		wp->field_180C0.layerEventId[1] = evtEntry(stage->layerEvents[1], 10, 0)->eventId;
 	}
 	if (layer2 != 0 && stage->layerEvents[2] != NULL) {
-		wp->field_180C0.field_0x2C = evtEntry(stage->layerEvents[2], 10, 0)->eventId;
+		wp->field_180C0.layerEventId[2] = evtEntry(stage->layerEvents[2], 10, 0)->eventId;
 	}
 	if (layer3 != 0 && stage->layerEvents[3] != NULL) {
-		wp->field_180C0.field_0x30 = evtEntry(stage->layerEvents[3], 10, 0)->eventId;
+		wp->field_180C0.layerEventId[3] = evtEntry(stage->layerEvents[3], 10, 0)->eventId;
 	}
 	if (layer0 == 0) {
 		wp->field_180C0.stageFlags |= 2;
@@ -467,7 +467,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -544,7 +544,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -621,7 +621,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -698,7 +698,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -781,7 +781,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -858,7 +858,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 2,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -935,7 +935,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1012,7 +1012,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1095,7 +1095,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1172,7 +1172,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 2,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1249,7 +1249,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 3,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1326,7 +1326,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1409,7 +1409,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1486,7 +1486,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 2,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1563,7 +1563,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 3,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1640,7 +1640,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 1,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1722,7 +1722,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             0x02100060,                               // targetClassFlags
             0x20000000,                               // targetPropertyFlags
             0,                                        // element
-            10,                                       // field_0x6D
+            10,                                       // damagePattern
             3,                                        // actionLevel
             2,                                        // field_0x6F
             NULL,                                     // acHelpMsg
@@ -1802,7 +1802,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1879,7 +1879,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -1956,7 +1956,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                1,                                        // field_0x6D
+                1,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2033,7 +2033,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2110,7 +2110,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2187,7 +2187,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2264,7 +2264,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2341,7 +2341,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2418,7 +2418,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2498,7 +2498,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             0x02100060,                               // targetClassFlags
             0x20000000,                               // targetPropertyFlags
             0,                                        // element
-            10,                                       // field_0x6D
+            10,                                       // damagePattern
             3,                                        // actionLevel
             2,                                        // field_0x6F
             NULL,                                     // acHelpMsg
@@ -2578,7 +2578,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2655,7 +2655,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2732,7 +2732,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                1,                                        // field_0x6D
+                1,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2809,7 +2809,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2886,7 +2886,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -2963,7 +2963,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3040,7 +3040,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3117,7 +3117,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3194,7 +3194,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3274,7 +3274,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             0x02100060,                               // targetClassFlags
             0x20000000,                               // targetPropertyFlags
             0,                                        // element
-            10,                                       // field_0x6D
+            10,                                       // damagePattern
             3,                                        // actionLevel
             2,                                        // field_0x6F
             NULL,                                     // acHelpMsg
@@ -3354,7 +3354,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3431,7 +3431,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3508,7 +3508,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                1,                                        // field_0x6D
+                1,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3585,7 +3585,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3662,7 +3662,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3739,7 +3739,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3816,7 +3816,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3893,7 +3893,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -3970,7 +3970,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -4050,7 +4050,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
             0x02100060,                               // targetClassFlags
             0x20000000,                               // targetPropertyFlags
             0,                                        // element
-            10,                                       // field_0x6D
+            10,                                       // damagePattern
             3,                                        // actionLevel
             2,                                        // field_0x6F
             NULL,                                     // acHelpMsg
@@ -4130,7 +4130,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -4207,7 +4207,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -4284,7 +4284,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                1,                                        // field_0x6D
+                1,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -4361,7 +4361,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -4438,7 +4438,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -4515,7 +4515,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                0,                                        // field_0x6D
+                0,                                        // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -4592,7 +4592,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -4669,7 +4669,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x02100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -4746,7 +4746,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
                 0x01100060,                               // targetClassFlags
                 0x20000000,                               // targetPropertyFlags
                 0,                                        // element
-                10,                                       // field_0x6D
+                10,                                       // damagePattern
                 3,                                        // actionLevel
                 2,                                        // field_0x6F
                 NULL,                                     // acHelpMsg
@@ -5089,8 +5089,8 @@ void BattleStageObjectMain(void) {
 
 		switch (obj->data->mLayer) {
 			case 2: {
-				Vec* a = &base->field_0x4;
-				Vec* b = &base->field_0x10;
+				Vec* a = &base->layer2Rotation;
+				Vec* b = &base->layer2RotationApplied;
 				if (a->x != b->x || a->y != b->y || a->z != b->z) {
 					*b = *a;
 					changed = 1;
@@ -5122,7 +5122,7 @@ void BattleStageObjectMain(void) {
 					                obj->mPosition.y + obj->mPositionOffset1.y + obj->mPositionOffset2.y,
 					                obj->mPosition.z + obj->mPositionOffset1.z + obj->mPositionOffset2.z);
 					mapObjTranslate(obj->data->name, 0.0f, -obj->mPositionOffset1.y, 0.0f);
-					mapObjRotate(obj->data->name, base->field_0x4.x, base->field_0x4.y, base->field_0x4.z);
+					mapObjRotate(obj->data->name, base->layer2Rotation.x, base->layer2Rotation.y, base->layer2Rotation.z);
 					mapObjTranslate(obj->data->name, 0.0f, obj->mPositionOffset1.y, 0.0f);
 				}
 				break;
@@ -5161,10 +5161,10 @@ void BattleStage_DestroyA1(void) {
 	BattleWork* wp = _battleWorkPointer;
 	void* evt = wp->fbatInfo->setup->stageData->objectTurnEventA1;
 
-	evtDeleteID(wp->field_180C0.field_0x24);
-	wp->field_180C0.field_0x24 = 0;
-	if (wp->field_180C0.field_0x20 != 0 && evtCheckID(wp->field_180C0.field_0x20)) {
-		evtDeleteID(wp->field_180C0.field_0x20);
+	evtDeleteID(wp->field_180C0.layerEventId[0]);
+	wp->field_180C0.layerEventId[0] = 0;
+	if (wp->field_180C0.objectTurnEventId != 0 && evtCheckID(wp->field_180C0.objectTurnEventId)) {
+		evtDeleteID(wp->field_180C0.objectTurnEventId);
 	}
 	if (evt == NULL) {
 		evt = _object_turn_event_A1;
@@ -5172,7 +5172,7 @@ void BattleStage_DestroyA1(void) {
 	{
 		EventEntry* e = evtEntry(evt, 10, 0);
 		if (e != NULL) {
-			wp->field_180C0.field_0x20 = e->eventId;
+			wp->field_180C0.objectTurnEventId = e->eventId;
 		}
 	}
 }
@@ -5181,8 +5181,8 @@ void BattleStage_DestroyA2(void) {
 	BattleWork* wp = _battleWorkPointer;
 	void* evt = wp->fbatInfo->setup->stageData->objectTurnEventA2;
 
-	evtDeleteID(wp->field_180C0.field_0x28);
-	wp->field_180C0.field_0x28 = 0;
+	evtDeleteID(wp->field_180C0.layerEventId[1]);
+	wp->field_180C0.layerEventId[1] = 0;
 	if (evt == NULL) {
 		evt = _object_turn_event_A2;
 	}
@@ -5193,10 +5193,10 @@ void BattleStage_DestroyB(void) {
 	BattleWork* wp = _battleWorkPointer;
 	void* evt = wp->fbatInfo->setup->stageData->objectTurnEventB;
 
-	evtDeleteID(wp->field_180C0.field_0x2C);
-	wp->field_180C0.field_0x2C = 0;
-	if (wp->field_180C0.field_0x20 != 0 && evtCheckID(wp->field_180C0.field_0x20)) {
-		evtDeleteID(wp->field_180C0.field_0x20);
+	evtDeleteID(wp->field_180C0.layerEventId[2]);
+	wp->field_180C0.layerEventId[2] = 0;
+	if (wp->field_180C0.objectTurnEventId != 0 && evtCheckID(wp->field_180C0.objectTurnEventId)) {
+		evtDeleteID(wp->field_180C0.objectTurnEventId);
 	}
 	if (evt == NULL) {
 		evt = _object_turn_event_B;
@@ -5204,7 +5204,7 @@ void BattleStage_DestroyB(void) {
 	{
 		EventEntry* e = evtEntry(evt, 10, 0);
 		if (e != NULL) {
-			wp->field_180C0.field_0x20 = e->eventId;
+			wp->field_180C0.objectTurnEventId = e->eventId;
 		}
 	}
 }
@@ -5286,7 +5286,7 @@ USER_FUNC(_set_mobj_rotate_x) {
 					psndSFXOn_3D("SFX_BTL_STAGE_SET_FALL2", &v);
 				}
 				event->field_84++;
-				base->field_0x4.x = (s32)intpl_sub(2, event->field_84, event->userdata[2], 0.0f, 90.0f);
+				base->layer2Rotation.x = (s32)intpl_sub(2, event->field_84, event->userdata[2], 0.0f, 90.0f);
 				if ((s32)event->field_84 < event->userdata[2]) {
 					changed = 1;
 				}
@@ -5469,8 +5469,8 @@ USER_FUNC(_set_mobj_shake) {
 	s32 i;
 
 	if (BattleWaitAllActiveEvtEnd_NoBgSetEndWait(wp)
-	    && !(w->field_0x1D8 != 0 && evtCheckID(w->field_0x1D8))
-	    && !(w->field_0x1E8 != 0 && evtCheckID(w->field_0x1E8))) {
+	    && !(w->nozzleWorkEventId != 0 && evtCheckID(w->nozzleWorkEventId))
+	    && !(w->fallFrameEventId != 0 && evtCheckID(w->fallFrameEventId))) {
 		return EVT_RETURN_DONE;
 	}
 	switch (layer) {
@@ -5504,9 +5504,9 @@ void BattleStage_NozzleDirChangeCheck(void) {
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
 	u8 i;
 
-	if (w->field_0x34 != NULL) {
+	if (w->nozzleData != NULL) {
 		for (i = 0; i < 3; i++) {
-			_Nozzle_Change_Check(i, w->field_0x34->field_0x0[i]);
+			_Nozzle_Change_Check(i, w->nozzleData->dirWeight[i]);
 		}
 	}
 }
@@ -5515,7 +5515,7 @@ void _Nozzle_Change_Check(u8 index, u8* nozzle) {
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
 #ifdef MUST_MATCH
 	// The element pointer, taken before the loop, keeps base and index apart for the original's lbzx.
-	u8* dir = &w->field_0x1C4[index];
+	u8* dir = &w->nozzleDir[index];
 #endif
 	u8* data = nozzle;
 	s32 sum = 0;
@@ -5538,16 +5538,16 @@ void _Nozzle_Change_Check(u8 index, u8* nozzle) {
 #ifdef MUST_MATCH
 	if (i != *dir) {
 #else
-	if (i != w->field_0x1C4[index]) {
+	if (i != w->nozzleDir[index]) {
 #endif
-		if (w->field_0x1CC[index] != 0 && !evtCheckID(w->field_0x1CC[index])) {
-			w->field_0x1CC[index] = 0;
+		if (w->nozzleTurnEventId[index] != 0 && !evtCheckID(w->nozzleTurnEventId[index])) {
+			w->nozzleTurnEventId[index] = 0;
 		}
-		if (w->field_0x1CC[index] == 0) {
-			w->field_0x1C7[index] = i;
+		if (w->nozzleTurnEventId[index] == 0) {
+			w->nozzleTargetDir[index] = i;
 			{
 				EventEntry* e = evtEntry(_nozzle_turn_event, 10, 0);
-				w->field_0x1CC[index] = e->eventId;
+				w->nozzleTurnEventId[index] = e->eventId;
 				if (e != NULL) {
 					e->unitId = index;
 				}
@@ -5566,7 +5566,7 @@ USER_FUNC(_nozzle_turn) {
 	if (isFirstCall) {
 		event->userdata[2] = 0;
 		event->field_84 = 0;
-		if (base->field_0x1C4[unitId] != 0) {
+		if (base->nozzleDir[unitId] != 0) {
 			event->userdata[2] = 0x1E;
 		}
 	}
@@ -5598,7 +5598,7 @@ USER_FUNC(_nozzle_turn) {
 		f32 newAngle;
 
 		event->field_84++;
-		switch (base->field_0x1C4[unitId]) {
+		switch (base->nozzleDir[unitId]) {
 			case 1:
 				oldAngle = 45.0f;
 				break;
@@ -5613,7 +5613,7 @@ USER_FUNC(_nozzle_turn) {
 				oldAngle = 0.0f;
 				break;
 		}
-		switch (base->field_0x1C7[unitId]) {
+		switch (base->nozzleTargetDir[unitId]) {
 			case 1:
 				newAngle = 45.0f;
 				break;
@@ -5644,8 +5644,8 @@ USER_FUNC(_nozzle_turn) {
 	}
 
 	if (event->userdata[2] >= 0x1E && (s32)event->field_84 >= 0x1E) {
-		base->field_0x1C4[unitId] = base->field_0x1C7[unitId];
-		base->field_0x1CC[unitId] = 0;
+		base->nozzleDir[unitId] = base->nozzleTargetDir[unitId];
+		base->nozzleTurnEventId[unitId] = 0;
 		return 2;
 	}
 	return 0;
@@ -5657,7 +5657,7 @@ void BattleStage_WallCloseCheck(void) {
 
 	if (!(flags & 0x10)) {
 		w->stageFlags = flags | 0x10;
-		w->field_0x1E4 = evtEntry(_close_wall_event, 10, 0)->eventId;
+		w->closeWallEventId = evtEntry(_close_wall_event, 10, 0)->eventId;
 	}
 }
 
@@ -5693,7 +5693,7 @@ void BattleStage_IronFrameFallCheck(void) {
 
 	if (!(flags & 0x40) && !(flags & 0x20)) {
 		w->stageFlags = flags | 0x20;
-		w->field_0x1E8 = evtEntry(_fall_frame_event, 10, 0)->eventId;
+		w->fallFrameEventId = evtEntry(_fall_frame_event, 10, 0)->eventId;
 	}
 }
 
@@ -5703,11 +5703,11 @@ s32 _fall_frame_wait(void) {
 	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait(_battleWorkPointer)) {
 		return 0;
 	}
-	if (w->field_0x1D8 != 0) {
-		if (evtCheckID(w->field_0x1D8)) {
+	if (w->nozzleWorkEventId != 0) {
+		if (evtCheckID(w->nozzleWorkEventId)) {
 			return 0;
 		}
-		w->field_0x1D8 = 0;
+		w->nozzleWorkEventId = 0;
 	}
 	return 1;
 }
@@ -5762,7 +5762,7 @@ USER_FUNC(_fall_frame) {
 	if (event->userdata[2] < 0x3C) {
 		return EVT_RETURN_BLOCK;
 	}
-	evtSetValue(event, layer, (s32)w->field_0x38);
+	evtSetValue(event, layer, (s32)w->fallObjectData);
 	return EVT_RETURN_DONE;
 }
 
@@ -5777,7 +5777,7 @@ USER_FUNC(_fall_frame_delete) {
 	if (event->userdata[2] > 0) {
 		return EVT_RETURN_BLOCK;
 	}
-	w->field_0x1E8 = 0;
+	w->fallFrameEventId = 0;
 	return EVT_RETURN_DONE;
 }
 
@@ -5786,18 +5786,18 @@ void BattleStage_NozzleWorkCheck(s32 flag) {
 
 	if (pouchGetPtr()->rank > 0) {
 		_nozzle_type_init();
-		if (flag != 0 || w->field_0x1CA != 0) {
-			if (w->field_0x1D8 != 0 && !evtCheckID(w->field_0x1D8)) {
-				w->field_0x1D8 = 0;
+		if (flag != 0 || w->nozzleType != 0) {
+			if (w->nozzleWorkEventId != 0 && !evtCheckID(w->nozzleWorkEventId)) {
+				w->nozzleWorkEventId = 0;
 			}
-			if (w->field_0x1D8 == 0) {
+			if (w->nozzleWorkEventId == 0) {
 				EventEntry* e;
 				if (flag != 0) {
 					e = evtEntry(_nozzle_work_event_1, 10, 0);
 				} else {
 					e = evtEntry(_nozzle_work_event_0, 10, 0);
 				}
-				w->field_0x1D8 = e->eventId;
+				w->nozzleWorkEventId = e->eventId;
 			}
 		}
 	}
@@ -5805,23 +5805,23 @@ void BattleStage_NozzleWorkCheck(s32 flag) {
 
 void _nozzle_type_init(void) {
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
-	BattleStageNozzleData* data = w->field_0x34;
+	BattleStageNozzleData* data = w->nozzleData;
 	s8 i;
 	s32 sum;
 
-	if (w->field_0x1CA == -1) {
+	if (w->nozzleType == -1) {
 		sum = 0;
 		for (i = 0; i < 4; i++) {
-			sum += data->field_0xC[i];
+			sum += data->typeWeight[i];
 		}
 		sum = irand(sum);
 		for (i = 0; i < 4; i++) {
-			sum -= data->field_0xC[i];
+			sum -= data->typeWeight[i];
 			if (sum < 0) {
 				break;
 			}
 		}
-		w->field_0x1CA = i;
+		w->nozzleType = i;
 	}
 }
 
@@ -5833,11 +5833,11 @@ s32 _nozzle_work_wait(void) {
 		return 0;
 	}
 	for (i = 0; i < 3; i++) {
-		if (w->field_0x1CC[i] != 0) {
-			if (evtCheckID(w->field_0x1CC[i])) {
+		if (w->nozzleTurnEventId[i] != 0) {
+			if (evtCheckID(w->nozzleTurnEventId[i])) {
 				return 0;
 			}
-			w->field_0x1CC[i] = 0;
+			w->nozzleTurnEventId[i] = 0;
 		}
 	}
 	return 2;
@@ -5845,7 +5845,7 @@ s32 _nozzle_work_wait(void) {
 
 f32 _get_nozzle_dir(s32 index) {
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
-	s32 dir = w->field_0x1C4[index];
+	s32 dir = w->nozzleDir[index];
 
 	switch (dir) {
 		case 1:
@@ -5862,7 +5862,7 @@ f32 _get_nozzle_dir(s32 index) {
 #define NOZZLE_WORK_BODY(IDX, NAME, SFXLV, EFFLV)                                                       \
 	obj = BattleSearchObjectPtr(NAME);                                                                     \
 	angle = _get_nozzle_dir(IDX);                                                                                     \
-	if (base->field_0x1C4[IDX] != 0) {                                                                           \
+	if (base->nozzleDir[IDX] != 0) {                                                                                  \
 		if (sfx != NULL) {                                                                                               \
 			(SFXLV) = psndSFXOn_3D(sfx, &obj->mPosition);                                                                   \
 		} else {                                                                                                         \
@@ -5911,7 +5911,7 @@ USER_FUNC(_nozzle_work_effect) {
 			return 2;
 		}
 		event->userdata[0] = 0x5A;
-		type = base->field_0x1CA;
+		type = base->nozzleType;
 		switch (type) {
 			case 1:
 				sfx = "SFX_BTL_STAGE_SMOKE1";
@@ -5936,14 +5936,14 @@ USER_FUNC(_nozzle_work_effect) {
 				done = 1;
 				break;
 			default:
-				if (val != 0 && base->field_0x1E0 == NULL) {
+				if (val != 0 && base->fogEffect == NULL) {
 					event->userdata[0] = 0x78;
 					event->userdata[1] = 0;
 					event->field_84 = 0;
 					event->userdata[2] = 0;
-					base->field_0x1E0 = effNozleEntry(3, 0x3E8, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-					event->field_84 = (s32)base->field_0x1E0;
-					base->field_0x1DC = 2;
+					base->fogEffect = effNozleEntry(3, 0x3E8, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+					event->field_84 = (s32)base->fogEffect;
+					base->fogTurns = 2;
 					obj = BattleSearchObjectPtr("nozzle_c");
 					event->userdataEx[1] = psndSFXOn_3D("SFX_BTL_STAGE_DRYICE1", &obj->mPosition);
 					event->field_0x90[0] = -1;
@@ -5981,16 +5981,16 @@ USER_FUNC(_nozzle_work_effect) {
 s32 BattleFogEndCheck(void) {
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
 
-	if (w->field_0x1DC == 0) {
+	if (w->fogTurns == 0) {
 		return 1;
 	}
-	w->field_0x1DC = w->field_0x1DC - 1;
-	if (w->field_0x1DC > 0) {
+	w->fogTurns = w->fogTurns - 1;
+	if (w->fogTurns > 0) {
 		return 0;
 	}
-	if (w->field_0x1E0 != NULL) {
-		effSoftDelete(w->field_0x1E0);
-		w->field_0x1E0 = NULL;
+	if (w->fogEffect != NULL) {
+		effSoftDelete(w->fogEffect);
+		w->fogEffect = NULL;
 	}
 	return 1;
 }
@@ -5998,12 +5998,12 @@ s32 BattleFogEndCheck(void) {
 BOOL BattleFogForceStop(void) {
 	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
 
-	if (w->field_0x1DC == 0) {
+	if (w->fogTurns == 0) {
 		return 0;
 	}
-	if (w->field_0x1E0 != NULL) {
-		effSoftDelete(w->field_0x1E0);
-		w->field_0x1E0 = NULL;
+	if (w->fogEffect != NULL) {
+		effSoftDelete(w->fogEffect);
+		w->fogEffect = NULL;
 	}
 	return 1;
 }
@@ -6014,17 +6014,17 @@ s32 _nozzle_work_attack_set(void) {
 
 	base->weaponAddr[0] = NULL;
 	base->weaponAddr[1] = NULL;
-	memset(&base->field_0x44[0], 0, sizeof(BattleWeapon));
-	memset(&base->field_0x44[1], 0, sizeof(BattleWeapon));
-	_combine_nozzle_weapon(1, &base->field_0x44[0], (BattleWeapon*)_nozzle_at_base_mario);
-	_combine_nozzle_weapon(1, &base->field_0x44[1], (BattleWeapon*)_nozzle_at_base_monster);
+	memset(&base->nozzleWeapon[0], 0, sizeof(BattleWeapon));
+	memset(&base->nozzleWeapon[1], 0, sizeof(BattleWeapon));
+	_combine_nozzle_weapon(1, &base->nozzleWeapon[0], (BattleWeapon*)_nozzle_at_base_mario);
+	_combine_nozzle_weapon(1, &base->nozzleWeapon[1], (BattleWeapon*)_nozzle_at_base_monster);
 	for (i = 0; i < 3; i++) {
 		s32 idx = _get_nozzle_attack_index(i);
 		if (idx >= 0) {
 			if (base->weaponAddr[idx] == NULL) {
-				base->weaponAddr[idx] = &base->field_0x44[idx];
+				base->weaponAddr[idx] = &base->nozzleWeapon[idx];
 			}
-			_combine_nozzle_weapon(0, base->weaponAddr[idx], &base->field_0x34->field_0x10[base->field_0x1CA]);
+			_combine_nozzle_weapon(0, base->weaponAddr[idx], &base->nozzleData->typeWeapon[base->nozzleType]);
 		}
 	}
 	return 2;
@@ -6040,7 +6040,7 @@ s32 _get_nozzle_attack_index(u8 index) {
 
 	switch (index) {
 		case 0:
-			type = base->field_0x1C4[index];
+			type = base->nozzleDir[index];
 			switch (type) {
 				case 1:
 					return -1;
@@ -6050,7 +6050,7 @@ s32 _get_nozzle_attack_index(u8 index) {
 					return 1;
 			}
 		case 2:
-			type = base->field_0x1C4[index];
+			type = base->nozzleDir[index];
 			switch (type) {
 				case 1:
 					return 0;
@@ -6060,7 +6060,7 @@ s32 _get_nozzle_attack_index(u8 index) {
 					return -1;
 			}
 		case 1:
-			type = base->field_0x1C4[index];
+			type = base->nozzleDir[index];
 			switch (type) {
 				case 1:
 					return 0;
@@ -6183,7 +6183,7 @@ s32 BattleStage_ObjectFallCheck(void) {
 		return 0;
 	}
 	evt = evtEntry(_object_fall_event, 10, 0);
-	w->field_0x1EC = evt->eventId;
+	w->objectFallEventId = evt->eventId;
 	return evt->eventId;
 }
 
@@ -6193,23 +6193,23 @@ s32 _object_fall_wait(void) {
 	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait(_battleWorkPointer)) {
 		return 0;
 	}
-	if (w->field_0x1D8 != 0) {
-		if (evtCheckID(w->field_0x1D8)) {
+	if (w->nozzleWorkEventId != 0) {
+		if (evtCheckID(w->nozzleWorkEventId)) {
 			return 0;
 		}
-		w->field_0x1D8 = 0;
+		w->nozzleWorkEventId = 0;
 	}
-	if (w->field_0x1E8 != 0) {
-		if (evtCheckID(w->field_0x1E8)) {
+	if (w->fallFrameEventId != 0) {
+		if (evtCheckID(w->fallFrameEventId)) {
 			return 0;
 		}
-		w->field_0x1E8 = 0;
+		w->fallFrameEventId = 0;
 	}
-	if (w->field_0x20 != 0) {
-		if (evtCheckID(w->field_0x20)) {
+	if (w->objectTurnEventId != 0) {
+		if (evtCheckID(w->objectTurnEventId)) {
 			return 0;
 		}
-		w->field_0x20 = 0;
+		w->objectTurnEventId = 0;
 	}
 	return 2;
 }
@@ -6256,7 +6256,7 @@ USER_FUNC(_object_fall_attack) {
 
 	// `wp` is the BattleWork base; typeTable is this rank's fall-object data.
 	wp = _battleWorkPointer;
-	typeTable = wp->field_180C0.field_0x38;
+	typeTable = wp->field_180C0.fallObjectData;
 	dst = *args++;
 	flag = 0;
 	if (isFirstCall) {
@@ -6287,12 +6287,12 @@ USER_FUNC(_object_fall_attack) {
 			} else {
 				sum = 0;
 				for (j = 0; j < 9; j++) {
-					sum += typeTable->field_0xC0[j];
+					sum += typeTable->typeWeight[j];
 				}
 				sum = irand(sum);
 				newEntry->type = 0;
 				while (newEntry->type < 8) {
-					sum -= typeTable->field_0xC0[newEntry->type];
+					sum -= typeTable->typeWeight[newEntry->type];
 					if (sum < 0) {
 						break;
 					}
@@ -6302,7 +6302,7 @@ USER_FUNC(_object_fall_attack) {
 			}
 			{
 				s32 t = newEntry->type;
-				newEntry->weapon = typeTable->field_0xCC[t];
+				newEntry->weapon = typeTable->typeWeapon[t];
 			}
 			if (newEntry->type == 6) {
 				if (irand(100) < 0x32) {

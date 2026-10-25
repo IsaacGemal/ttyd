@@ -68,7 +68,7 @@ s32 _GetInputDir(void) {
 
 s8 _CalcRollDir(void) {
     BattleWork* work = _battleWorkPointer;
-    StickRotateWork* sr = (StickRotateWork*)&work->actionCommands.field_0x2BC[0];
+    StickRotateWork* sr = (StickRotateWork*)&work->actionCommands.acWork[0];
     s8 input = sr->inputDir;
     s8 prev = sr->prevDir;
 
@@ -98,7 +98,7 @@ s8 _CalcRollDir(void) {
 
 s32 battleAcMain_StickRotate(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
-    StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
+    StickRotateWork* sr = (StickRotateWork*)&ac->acWork[0];
     BattleACDispParams* disp = &ac->dispParams;
     s32 cont;
 
@@ -133,11 +133,11 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 }
                 // fallthrough
             case 0x3E8:
-                if ((work->actionCommands.field_0x4 & 1) &&
+                if ((work->actionCommands.autoFlags & 1) &&
                     (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
-                    if (work->actionCommands.field_0x4 & 2) {
-                        work->actionCommands.field_0x8--;
-                        if (work->actionCommands.field_0x8 >= 0) {
+                    if (work->actionCommands.autoFlags & 2) {
+                        work->actionCommands.autoTimer--;
+                        if (work->actionCommands.autoTimer >= 0) {
                             break;
                         }
                     }
@@ -429,7 +429,7 @@ s32 _get_icon_id(s8 id) {
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
-    StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
+    StickRotateWork* sr = (StickRotateWork*)&ac->acWork[0];
 
     switch (ac->mAcState) {
         case 0x63:
@@ -488,7 +488,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 void actionCommandDisp2(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
-    StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
+    StickRotateWork* sr = (StickRotateWork*)&ac->acWork[0];
 
     switch (ac->mAcState) {
         case 0x63:

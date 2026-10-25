@@ -17,8 +17,7 @@ typedef struct BattleCommandCursor {
     s32 unk8;    // 0x8
 } BattleCursor;
 
-// Element layouts of the battle command menu tables inside BattleCommand. Each mirrors the matching
-// BattleWorkCommand* entry in battle.h (same offsets and strides) and is named by the reader in
+// Element layouts of the battle command menu tables inside BattleCommand, each named by the reader in
 // battle_seq_command.c that uses it.
 typedef struct BattleCommandAction {
     s32 mType;          // 0x0, 0 jump, 1 hammer, 2 item, 4 super action, 5 operation, 6 tech/party, 0xD lecture end

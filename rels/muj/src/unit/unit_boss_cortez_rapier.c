@@ -67,7 +67,7 @@ BattleUnitKind unit_boss_cortez_rapier = {
     { 0.0f, 15.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 70.0f, 0.0f, -10.0f },    // field_0x3C
+    { 70.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -145,7 +145,7 @@ BattleWeapon weapon_cortez_rapier_float_attack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -243,7 +243,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense

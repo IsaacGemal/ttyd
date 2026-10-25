@@ -101,7 +101,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     { 0.0f, 0.0f, 0.0f },       // centerOffset
     { 0, -40 },                 // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 20.0f, 0.0f, -10.0f },    // field_0x3C
+    { 20.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -141,7 +141,7 @@ static BattleUnitKindPart parts[11] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 12.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 22.0f, 0.0f }, // hitCursorBaseOffset
-        20,                    // field_0x30
+        20,                    // shadowSize
         30,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -157,7 +157,7 @@ static BattleUnitKindPart parts[11] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -173,7 +173,7 @@ static BattleUnitKindPart parts[11] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -189,7 +189,7 @@ static BattleUnitKindPart parts[11] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -205,7 +205,7 @@ static BattleUnitKindPart parts[11] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -221,7 +221,7 @@ static BattleUnitKindPart parts[11] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -237,7 +237,7 @@ static BattleUnitKindPart parts[11] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        10,                   // field_0x30
+        10,                   // shadowSize
         10,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -253,7 +253,7 @@ static BattleUnitKindPart parts[11] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        10,                   // field_0x30
+        10,                   // shadowSize
         10,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -269,7 +269,7 @@ static BattleUnitKindPart parts[11] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        10,                   // field_0x30
+        10,                   // shadowSize
         10,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -285,7 +285,7 @@ static BattleUnitKindPart parts[11] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        10,                   // field_0x30
+        10,                   // shadowSize
         10,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -301,7 +301,7 @@ static BattleUnitKindPart parts[11] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        10,                   // field_0x30
+        10,                   // shadowSize
         10,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -358,7 +358,7 @@ static BattleWeapon weapon_wakka_attack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -436,7 +436,7 @@ static BattleWeapon weapon_wawawa_attack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

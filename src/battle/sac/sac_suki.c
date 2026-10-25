@@ -589,7 +589,7 @@ static void disp_3D_alpha(CameraId camera, void* param) {
 
 // .text:0x658 | 0x80249F78 | size: 0xC
 static SukiWork* get_ptr(void) {
-    return (SukiWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
+    return (SukiWork*)&_battleWorkPointer->actionCommands.acWork[0];
 }
 
 // .text:0x62C | 0x80249F4C | size: 0x2C
@@ -806,7 +806,7 @@ BattleWeapon weapon_words = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     str_msg_sac_7,                            // acHelpMsg

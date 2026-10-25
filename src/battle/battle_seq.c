@@ -412,7 +412,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		if (party < 9) {
 			weapon = _GetFirstAttackWeapon(party);
 			unit1->attackEventCode = weapon->mAttackEvtScript;
-			unit1->field_0x2A8 = 0;
+			unit1->attackEventFlags = 0;
 			BattleStatusWindowEventOff();
 		}
 		if (BtlUnit_GetBelong(unit1) == 0) {
@@ -544,7 +544,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		break;
 
 	case 0x2000009: {
-		s32* p = &wp->field_180C0.field_0x1E4;
+		s32* p = &wp->field_180C0.closeWallEventId;
 		if (*p) {
 			if (!evtCheckID(*p)) {
 				*p = 0;
@@ -1598,12 +1598,12 @@ void btlseqTurn(BattleWork* wp) {
 					BtlUnit_GetStatus(unit, STATUS_HP_REGEN, &turns, &strength);
 					if (strength > 0) {
 						if (!(unit->mAttributeFlags & 0x40000000)) {
-							unit->hpGauge.field_0xC = unit->currentHp;
+							unit->hpGauge.fromHp = unit->currentHp;
 							BtlUnit_RecoverHp(unit, strength);
-							unit->hpGauge.field_0x10 = unit->currentHp;
-							unit->hpGauge.field_0x4 = unit->hpGauge.field_0x6;
-							unit->hpGauge.field_0x8 = unit->hpGauge.field_0xA;
-							unit->hpGauge.field_0x2 |= 1;
+							unit->hpGauge.toHp = unit->currentHp;
+							unit->hpGauge.drainTimer = unit->hpGauge.drainFrames;
+							unit->hpGauge.dispTimer = unit->hpGauge.dispFrames;
+							unit->hpGauge.flags |= 1;
 						} else {
 							BtlUnit_RecoverHp(unit, strength);
 						}
@@ -2026,7 +2026,7 @@ void btlseqMove(BattleWork* wp) {
 					unit->fpDamageTaken = 0;
 					unit->field_0x268 = 0;
 					unit->field_0x26E = 0;
-					unit->field_0x27C = 0;
+					unit->hitCount = 0;
 				}
 			}
 			for (i = 0; i < 64; i++) {
@@ -2192,8 +2192,8 @@ void btlseqAct(BattleWork* wp) {
 	case 0x6000000: {
 		BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		effNiceAsync(1);
-		unit->field_0x280 = 0;
-		unit->field_0x2CC = NULL;
+		unit->damageDealt = 0;
+		unit->superguardEventCode = NULL;
 		BattleAudience_ActInit();
 		v = TRUE;
 		switch (unit->currentKind) {
@@ -2252,13 +2252,13 @@ void btlseqAct(BattleWork* wp) {
 	case 0x6000005:
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		unit->attackEventCode = BtlUnit_GetData(unit, 2);
-		unit->field_0x2A8 = 1;
+		unit->attackEventFlags = 1;
 		BattleSetSeq(wp, SEQ_ACT, 0x6000006);
 		break;
 
 	case 0x6000003:
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-		unit->field_0x2A8 = 1;
+		unit->attackEventFlags = 1;
 		unit->flags |= 0x04000000;
 		BattleSetSeq(wp, SEQ_ACT, 0x6000006);
 		break;
@@ -2266,24 +2266,24 @@ void btlseqAct(BattleWork* wp) {
 	case 0x6000004:
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		unit->attackEventCode = BtlUnit_GetData(unit, 3);
-		unit->field_0x2A8 = 0x1B;
+		unit->attackEventFlags = 0x1B;
 		BattleSetSeq(wp, SEQ_ACT, 0x6000006);
 		break;
 
 	case 0x6000006: {
-		if ((BattleGetUnitPtr(wp, wp->activeUnitId)->field_0x2A8 & 1) == 0) {
+		if ((BattleGetUnitPtr(wp, wp->activeUnitId)->attackEventFlags & 1) == 0) {
 			BattleStatusWindowSystemOff();
 		}
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		event = NULL;
 		if ((wp->flags & 0x40000000) && !(unit->mAttributeFlags & 0x2000) &&
-			!(unit->field_0x2A8 & 8) && !(unit->field_0x2A8 & 0x10)) {
+			!(unit->attackEventFlags & 8) && !(unit->attackEventFlags & 0x10)) {
 			event = evtEntry(btldefaultevt_CantMoveZeroGravity, 0xA, 0);
-		} else if (unit->field_0x2A8 & 0x10) {
+		} else if (unit->attackEventFlags & 0x10) {
 			if (unit->attackEventCode != NULL) {
 				event = evtEntry(unit->attackEventCode, 0xA, 0);
 			}
-		} else if (unit->field_0x2A8 & 2) {
+		} else if (unit->attackEventFlags & 2) {
 			event = evtEntry(unit->attackEventCode, 0xA, 0);
 		} else if (!(BtlUnit_CheckStatus(unit, 1) || BtlUnit_CheckStatus(unit, 2) ||
 			BtlUnit_CheckStatus(unit, 9)) &&
@@ -2418,11 +2418,11 @@ void btlseqAct(BattleWork* wp) {
 		}
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 		if (unit != NULL) {
-			unit->field_0x2C8 = 0;
+			unit->actEndEventId = 0;
 			if (unit->actEndEventCode != NULL) {
 				event = evtEntry(unit->actEndEventCode, 0xA, 0);
 				if (event != NULL) {
-					unit->field_0x2C8 = event->eventId;
+					unit->actEndEventId = event->eventId;
 					event->unitId = unit->unitId;
 					if (unit->waitEventId != 0) {
 						evtDeleteID(unit->waitEventId);
@@ -2436,11 +2436,11 @@ void btlseqAct(BattleWork* wp) {
 	}
 	case 0x600000D:
 		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-		if (unit != NULL && unit->field_0x2C8 != 0) {
-			if (evtCheckID(unit->field_0x2C8)) {
+		if (unit != NULL && unit->actEndEventId != 0) {
+			if (evtCheckID(unit->actEndEventId)) {
 				break;
 			}
-			unit->field_0x2C8 = 0;
+			unit->actEndEventId = 0;
 		}
 		BattleIncSeq(wp, SEQ_ACT);
 		// fallthrough
@@ -2471,7 +2471,7 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 			unit->activeTurns++;
 			BtlUnit_ResetMoveStatus(unit);
 			kind = unit->mKindParams;
-			unit->field_0x28 = kind->turnOrder
+			unit->turnOrder = kind->turnOrder
 				+ irand(kind->turnOrderVariance)
 				- kind->turnOrderVariance / 2;
 			if (BtlUnit_CheckStatusFlag(unit, 0x01000000)) {
@@ -2564,7 +2564,7 @@ void battleSortPhaseMoveTable(BattleWork* wp, s32 count) { //1:1
 		for (j = 0; j < count - i - 1; j++) {
 			a = BattleGetUnitPtr(work, work->unitIdTable[j]);
 			b = BattleGetUnitPtr(work, work->unitIdTable[j + 1]);
-			if (a->field_0x28 < b->field_0x28) {
+			if (a->turnOrder < b->turnOrder) {
 				s32 tmp = work->unitIdTable[j];
 				work->unitIdTable[j] = work->unitIdTable[j + 1];
 				work->unitIdTable[j + 1] = tmp;
@@ -2625,35 +2625,35 @@ BOOL BattleWaitAllActiveEvtEnd(BattleWork* wp) { //1:1
 	if (!ret) {
 		return ret;
 	}
-	if (p->field_0x1D8) {
-		if (evtCheckID(p->field_0x1D8)) {
+	if (p->nozzleWorkEventId) {
+		if (evtCheckID(p->nozzleWorkEventId)) {
 			return FALSE;
 		}
-		p->field_0x1D8 = 0;
+		p->nozzleWorkEventId = 0;
 	}
-	if (p->field_0x1E8) {
-		if (evtCheckID(p->field_0x1E8)) {
+	if (p->fallFrameEventId) {
+		if (evtCheckID(p->fallFrameEventId)) {
 			return FALSE;
 		}
-		p->field_0x1E8 = 0;
+		p->fallFrameEventId = 0;
 	}
-	if (p->field_0x20) {
-		if (evtCheckID(p->field_0x20)) {
+	if (p->objectTurnEventId) {
+		if (evtCheckID(p->objectTurnEventId)) {
 			return FALSE;
 		}
-		p->field_0x20 = 0;
+		p->objectTurnEventId = 0;
 	}
-	if (p->field_0x1EC) {
-		if (evtCheckID(p->field_0x1EC)) {
+	if (p->objectFallEventId) {
+		if (evtCheckID(p->objectFallEventId)) {
 			return FALSE;
 		}
-		p->field_0x1EC = 0;
+		p->objectFallEventId = 0;
 	}
-	if (p->field_0x1E4) {
-		if (evtCheckID(p->field_0x1E4)) {
+	if (p->closeWallEventId) {
+		if (evtCheckID(p->closeWallEventId)) {
 			return FALSE;
 		}
-		p->field_0x1E4 = 0;
+		p->closeWallEventId = 0;
 	}
 	return TRUE;
 }

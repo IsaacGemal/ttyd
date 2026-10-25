@@ -55,7 +55,7 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
 
 void BattleInitCounterPreCheckWork(CounterPreCheckWork* work);
 void BattleDamageDirect(s32 damageCode, BattleUnit* unit, BattleUnitPart* part, s32 arg3, s32 arg4,
-                        s32 arg5, s32 arg6, s32 arg7);
+                        s32 arg5, s32 damagePattern, s32 arg7);
 void BattleAttackDeclare(s32* out1, s32* out2);
 s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out);
 s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags);

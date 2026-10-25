@@ -14,12 +14,15 @@ typedef s32 (*BattleACResultCallback)(BattleWork* work);
 typedef void (*BattleACDeleteCallback)(BattleWork* work);
 
 typedef struct BattleACDispParams {
-    s32 field_0x0;              // 0x0, frame counter the disp functions increment
+    s32 dispFrame;              // 0x0, frames the disp functions have run; / 7 & 1 alternates ac_repeatedly's icons
     s32 field_0x4;              // 0x4
     u8 field_0x8[0xC - 0x8];    // 0x8
-    s32 field_0xC;              // 0xC, RGBA tint of the gauge (BattleAcDrawGauge flag 1), stored whole from each AC's constant
+    union {
+        s32 rgba;               // stored whole from each AC's constant
+        GXColor color;          // BattleAcDrawGauge's flag 1 scales the gauge colour by it
+    } gaugeColor;               // 0xC
     u8 field_0x10;              // 0x10
-    s8 dg;                      // 0x11, step added to field_0xC's g byte while the gauge flashes (-0x10 or 0x10)
+    s8 dg;                      // 0x11, step added to gaugeColor's g byte while the gauge flashes (-0x10 or 0x10)
     s8 db;                      // 0x12, and to its b byte
     u8 field_0x13;              // 0x13
     f32 iconX;                  // 0x14, see actionCommandDisp
@@ -32,8 +35,9 @@ typedef struct BattleACDispParams {
 
 typedef struct BattleActions {
     struct BattleUnit* mAcUnit;      // 0x0
-    s32 field_0x4;                   // 0x4
-    s32 field_0x8;                   // 0x8
+    s32 autoFlags;                   // 0x4, BattleActionCommandSetup's 4th argument. Bit 0: the AC resolves itself,
+                                     // with no input, for a confused (kConfusedAction) unit; bit 1: after autoTimer
+    s32 autoTimer;                   // 0x8, frames before that self-resolved result
     s32 mAcState;                    // 0xC
     BattleACMainCallback maincb;     // 0x10
     BattleACResultCallback resultcb; // 0x14
@@ -44,23 +48,25 @@ typedef struct BattleActions {
     s32 result;                      // 0x28
     s8 mBaseAcDifficulty;            // 0x2C
     u8 mAcDifficulty;                // 0x2D
-    u8 field_0x2E[2];                // 0x2E
-    s32 field_0x30;                  // 0x30
+    u8 pad_0x2E[2];                  // 0x2E
+    s32 endFlags;                    // 0x30, bit 0 set once the AC reaches its end state; the delete callbacks
+                                     // force that state only while it is clear
     s32 acFlag;                      // 0x34 (BattleWork 0x1CC4), set by btlevtcmd_AcSetFlag, bit 0 read by ac_power_gauge
     s32 acParams[8];                 // 0x38 (BattleWork 0x1CC8), set by btlevtcmd_AcSetParam(All)/AcGet
     s32 outputParams[8];             // 0x58
     s32 acGaugeParams[4];            // 0x78 (BattleWork 0x1D08), set by btlevtcmd_AcSetGaugeParam
     s16 guardFrames;                 // 0x88 (BattleWork 0x1D18), counted down by ac_button_down/ac_stick_rotate
-    u8 field_0x8A[0x8C - 0x8A];      // 0x8A
+    u8 pad_0x8A[0x8C - 0x8A];        // 0x8A
     BattleWorkPad pad;               // 0x8C
     s32 gaugeSe;                     // 0x288
-    f32 field_0x28C;                 // 0x28C, gauge sound pitch value (BattleAcGaugeSeUpdate)
+    f32 gaugeSePitch;                // 0x28C, BattleAcGaugeSeUpdate's value, the gaugeSe pitch (psndSFX_pit)
     BattleACDispParams dispParams;   // 0x290 (BattleWork+0x1F20), used by ac_button_down and ac_air_gauge
-    u8 field_0x2BC[0x30C - 0x2BC];   // 0x2BC
+    u8 acWork[0x30C - 0x2BC];        // 0x2BC, the running AC's work (each ac_*.c casts it to its own struct; the
+                                     // sac_* works run on into BattleWork.field_1F9C)
 } BattleActions;
 // NB: 0x308 is as far as I can pin to this struct (0x1F98 in battleAcMain_PendulumCraneTiming, TODO?)
 
-// TimingA's action-command work area in BattleActions.field_0x2BC (BattleWork+0x1F4C); battle_event_cmd's
+// TimingA's action-command work area in BattleActions.acWork (BattleWork+0x1F4C); battle_event_cmd's
 // btlevtcmd_ac_timing_flag_onoff sets and clears its flags.
 typedef struct AcTimingADecWork {
     s32 pad_0x00;   // 0x0, never accessed

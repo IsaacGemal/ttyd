@@ -28,7 +28,7 @@ typedef struct BattleWeapon {
     u32 targetClassFlags;             // 0x64
     u32 targetPropertyFlags;          // 0x68
     u8 element;                       // 0x6C, 1, 3 and 4 bypass the special-property check in BattleCheckDamage
-    u8 field_0x6D;                    // 0x6D, passed to BattleDamageDirect
+    u8 damagePattern;                 // 0x6D, BattleDamageDirect stores it in the target's damagePattern
     u8 actionLevel;                   // 0x6E, btlevtcmd_GetWeaponActionLv
     s8 field_0x6F;                    // 0x6F
     const char* acHelpMsg;            // 0x70

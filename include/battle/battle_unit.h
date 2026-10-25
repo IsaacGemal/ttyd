@@ -341,8 +341,8 @@ typedef struct BattleUnitKindPart {
     Vec positionOffset;                            // 0xC, TODO: shorter name?
     Vec hitBaseOffset;                             // 0x18, TODO: better name?
     Vec hitCursorBaseOffset;                       // 0x24, copied to BattleUnitPart.mHitCursorBaseOffset
-    s16 field_0x30;                                // 0x30, copied to BattleUnitPart+0x1A2
-    s16 field_0x32;                                // 0x32, copied to BattleUnitPart+0x1A4
+    s16 shadowSize;                                // 0x30, copied to BattleUnitPart.shadowSize
+    s16 field_0x32;                                // 0x32, copied to BattleUnitPart.field_0x1A4
     s16 baseAlpha;                                 // 0x34
     BattleUnitDefense* defense;                    // 0x38
     BattleUnitDefenseAttr* defenseAttr;            // 0x3C
@@ -356,12 +356,12 @@ typedef struct BattleWorkUnitPartBlurEntry {
     Mtx orientation; // 0x4
     f32 rotation;    // 0x34
     GXColor base;    // 0x38
-    u8 blurColor[8]; // 0x3C, copy of BattleWorkUnitPartBlur.color: RGBA tints from the newest ([0-3]) to the oldest ([4-7]) slot
+    GXColor blurColor[2]; // 0x3C, copy of BattleWorkUnitPartBlur.color: slot i's tint runs from [0] (newest) toward [1]
 } BattleWorkUnitPartBlurEntry;
 
 typedef struct BattleWorkUnitPartBlur {
     s32 flags;                            // 0x0
-    s8 color[8];                          // 0x4
+    GXColor color[2];                     // 0x4, the two blur tints btlevtcmd_SetPartsBlur sets
     BattleWorkUnitPartBlurEntry work[10]; // 0xC
 } BattleWorkUnitPartBlur;
 
@@ -440,7 +440,7 @@ typedef struct BattleWorkUnitPart {
     f32 moveProgress;                              // 0xB8
     s8 moveDirection;                              // 0xBC
     s8 faceDirection;                              // 0xBD
-    u8 field_0xBE[0xC0 - 0xBE];                    // 0xBE
+    u8 pad_0xBE[0xC0 - 0xBE];                      // 0xBE
     BtlUnitSeMode seMode;                          // 0xC0, move sound (BtlUnit_LoadSeMode's dst, _MoveSoundControlCore)
     u8 field_0xDC[0xF8 - 0xDC];                    // 0xDC
     BtlUnitSeModeSrc seModeSrc;                    // 0xF8, LoadSeMode's source presets
@@ -450,11 +450,12 @@ typedef struct BattleWorkUnitPart {
     Vec mHitCursorBaseOffset;                      // 0x188, guess
     Vec mHitCursorOffset;                          // 0x194
     s16 detectOffsetX;                             // 0x1A0, x offset added to the part's sampling position, times facing (battle_detect)
-    s16 field_0x1A2;                               // 0x1A2
-    s16 field_0x1A4;                               // 0x1A4
-    u16 field_0x1A6;                               // 0x1A6, gravityOffsetControl's frame count (getGravityDispOffset)
-    u16 field_0x1A8;                               // 0x1A8, frame counter of floatOffsetControl (getFloatDispOffset)
-    u8 field_0x1AA[0x1AC - 0x1AA];                 // 0x1AA
+    s16 shadowSize;                                // 0x1A2, base size of the part's shadowEntry, times the unit and part
+                                                   // x scales, mSizeMultiplier and shadowScale (btlDispMain)
+    s16 field_0x1A4;                               // 0x1A4, BattleUnitKindPart.field_0x32's copy, never read
+    u16 gravityFrame;                              // 0x1A6, gravityOffsetControl's frame count, the phase of getGravityDispOffset's sine
+    u16 floatFrame;                                // 0x1A8, floatOffsetControl's frame count, the phase of getFloatDispOffset's sine
+    u8 pad_0x1AA[0x1AC - 0x1AA];                   // 0x1AA
     PartsAttribute_Flags attributes;               // 0x1AC
     PartsCounterAttribute_Flags counterAttributes; // 0x1B0
     BattleUnitDefense* defense;                    // 0x1B4
@@ -476,11 +477,12 @@ typedef struct BattleWorkUnitPart {
     s32 poseSoundEventId;                          // 0x4E8, -1 when no pose sound event is queued
     struct BattleUnit* mOwner;                     // 0x4EC
     GXColor color;                                 // 0x4F0
-    GXColor field_0x4F4;                           // 0x4F4, btlDispMain's draw colour: color's rgb and the kind's
-                                                   // baseAlpha scaled by color.a, copied to evtColor (btlUnitPartsDisp)
-    f32 field_0x4F8;                               // 0x4F8, z offset btlDispMain adds to the part's world position
-    s8 field_0x4FC;                                // 0x4FC, rotation order (0-5) of btlUnitPartsDisp's matrix concat
-    u8 field_0x4FD[0x500 - 0x4FD];                 // 0x4FD
+    GXColor dispColor;                             // 0x4F4, btlDispMain's draw colour: color's rgb and the kind's
+                                                   // baseAlpha scaled by color.a; alpha < 0xFF draws it translucent,
+                                                   // and btlUnitPartsDisp copies it to evtColor
+    f32 sortOffsetZ;                               // 0x4F8, z offset btlDispMain adds to the part's world position for dispCalcZ
+    s8 rotationOrder;                              // 0x4FC, order (0-5) btlUnitPartsDisp concatenates the x/y/z rotations in
+    u8 pad_0x4FD[0x500 - 0x4FD];                   // 0x4FD
 } BattleUnitPart;
 
 typedef struct BattleWorkUnitBadgesEquipped {
@@ -527,16 +529,18 @@ typedef struct BattleWorkUnitBadgesEquipped {
 } BattleWorkUnitBadgesEquipped;
 
 typedef struct BattleWorkHpGauge { // TODO: diff header file?
-    u16 field_0x0;                 // 0x0, style; BtlUnit_HpGaugeInit/Main and BattleDrawEnemyHPBar switch on it
-    u16 field_0x2;                 // 0x2, TODO: double check u16
-    s16 field_0x4;                 // 0x4
-    s16 field_0x6;                 // 0x6
-    s16 field_0x8;                 // 0x8
-    s16 field_0xA;                 // 0xA
-    s32 field_0xC;                 // 0xC
-    s32 field_0x10;                // 0x10
-    f32 field_0x14;                // 0x14
-    f32 field_0x18;                // 0x18
+    u16 style;                     // 0x0, BtlUnit_HpGaugeInit/Main and BattleDrawEnemyHPBar switch on it (1, or the
+                                   // default); BtlUnit_HpGaugeInit sets 0 and nothing sets 1
+    u16 flags;                     // 0x2, bit 0: BtlUnit_HpGaugeMain hides the gauge (unit flag 1) once dispTimer runs out
+    s16 drainTimer;                // 0x4, frames left of the drain from fromHp to toHp (intplGetValue's step)
+    s16 drainFrames;               // 0x6, length of that drain (0x14, or 0x28 in style 1); drainTimer restarts from it
+    s16 dispTimer;                 // 0x8, frames left before the gauge hides; it fades over the last 0x14
+    s16 dispFrames;                // 0xA, drainFrames + 0x1E; dispTimer restarts from it
+    s32 fromHp;                    // 0xC, HP before the change being drained; set to toHp when the drain ends
+    s32 toHp;                      // 0x10, HP after it
+    f32 fillRatio;                 // 0x14, filled width of the bar (0-1), btlDispTexPlane's x scale in BattleDrawEnemyHPBar
+    f32 drainRatio;                // 0x18, style 1: width of the black quad for the HP still draining (the default
+                                   // style zeroes it during a drain)
 } BattleWorkHpGauge;
 
 // TODO: move somewhere more sensible
@@ -567,8 +571,10 @@ typedef struct BattleUnit {
     s8 activeTurns;                              // 0x24
     s8 swallowRate;                              // 0x25
     s8 swallowAttribute;                         // 0x26
-    u8 field_0x27;                               // 0x27
-    s32 field_0x28;                              // 0x28, battle_seq sorts units by it
+    u8 pad_0x27;                                 // 0x27
+    s32 turnOrder;                               // 0x28, this turn's order (btlseqTurnFirstProcess: the kind's turnOrder
+                                                 // plus a random turnOrderVariance spread); battleSortPhaseMoveTable
+                                                 // sorts units by it, highest first
     s32 seqPhase;                                // 0x2C, SEQ_PHASE value the unit acts in (battle_seq)
     Vec mHomePosition;                           // 0x30
     Vec mPosition;                               // 0x3C
@@ -581,7 +587,8 @@ typedef struct BattleUnit {
     Vec mScale;                                  // 0x90
     Vec mBaseScale;                              // 0x9C
     Vec togeOffset;                              // 0xA8
-    Vec field_0xB4;                              // 0xB4
+    Vec heldItemBaseOffset;                      // 0xB4, the kind's heldItemBaseOffset; added with heldItemOffset to
+                                                 // the position btlUnitItemDisp draws the held item's icon at
     Vec heldItemOffset;                          // 0xC0
     s16 mWidth;                                  // 0xCC
     s16 mHeight;                                 // 0xCE
@@ -646,7 +653,7 @@ typedef struct BattleUnit {
     f32 moveProgress;                            // 0x180, frames run in an interpolated move; the hop routine reuses it as height
     s8 moveDirection;                            // 0x184
     s8 faceDirection;                            // 0x185
-    u8 field_0x186[0x188 - 0x186];               // 0x186
+    u8 pad_0x186[0x188 - 0x186];                 // 0x186
     BtlUnitSeMode seMode;                        // 0x188, move sound (BtlUnit_LoadSeMode's dst, _MoveSoundControlCore)
     Vec moveStep;                                // 0x1A4, added to mMoveCurrentPos each frame of a hop
     f32 hopAngle;                                // 0x1B0, degrees; sin(hopAngle) scales the hop's vertical speed
@@ -659,19 +666,22 @@ typedef struct BattleUnit {
     BattleUnitPart* currentTarget;           // 0x254
     s32 field_0x258;                             // 0x258
     s16 hpDamageCount;                           // 0x25C, number of damaging moves
-    u8 field_0x25E[0x260 - 0x25E];               // 0x25E
+    u8 pad_0x25E[0x260 - 0x25E];                 // 0x25E
     s32 totalHpDamageTaken;                      // 0x260
     s32 field_0x264;                             // 0x264, sum of fpDamageTaken (BattleDamageDirect)
     s32 field_0x268;                             // 0x268, sum of field_0x26E, the FP actually lost
     s8 hpDamageTaken;                            // 0x26C
     s8 fpDamageTaken;                            // 0x26D
     s8 field_0x26E;                              // 0x26E, FP lost to the last hit (fpDamageTaken capped at the FP left)
-    s8 field_0x26F;                              // 0x26F, the attacker's field_0x27C after a superguard
+    s8 field_0x26F;                              // 0x26F, the attacker's hitCount after each hit on this unit
     s32 damagePattern;                           // 0x270, TODO: rename?
     s32 damageCode;                              // 0x274
     BattleUnitToken_Flags mTokenFlags;           // 0x278
-    s32 field_0x27C;                             // 0x27C
-    s32 field_0x280;                             // 0x280
+    s32 hitCount;                                // 0x27C, attacks of this unit resolved since btlseqMove cleared it
+                                                 // (BattleCheckDamage adds 1 per call, superguarded and missed ones
+                                                 // too); BattleCalculateDamage takes it off a weapon special 0x20 hit
+    s32 damageDealt;                             // 0x280, damage this unit has dealt in the current act (BattleDamageDirect
+                                                 // adds it, btlseqAct clears it); HP Drain and FP Drain recover at most this
     s32 initEventId;                             // 0x284
     void* waitEventCode;                         // 0x288
     s32 waitEventId;                             // 0x28C
@@ -682,7 +692,11 @@ typedef struct BattleUnit {
     void* confusionEventCode;                    // 0x2A0, btlevtcmd_SetEventConfusion; battle_seq starts it instead of
                                                  // attackEventCode on a confused unit's 50% roll
     s32 attackEventId;                           // 0x2A4
-    s32 field_0x2A8;                             // 0x2A8
+    s32 attackEventFlags;                        // 0x2A8, how btlseqAct starts attackEventCode, set with it (by
+                                                 // _btlcmd_SetAttackEvent, btlevtcmd_SetEventAttack, btlseqAct): 0x2 and
+                                                 // 0x10 skip the status checks, 0x8/0x10 the zero-gravity check, bit 0
+                                                 // clear hides the status window; with 0x4 the shell shield in
+                                                 // btlDispMain ignores the running attack event
     void* damageEventCode;                       // 0x2AC
     s32 damageEventId;                           // 0x2B0
     void* entryEventCode;                        // 0x2B4, btlevtcmd_SetEventEntry; battle_seq runs it at battle start
@@ -690,8 +704,8 @@ typedef struct BattleUnit {
     void* ceilFallEventCode;                     // 0x2BC, btlevtcmd_SetEventCeilFall; _fall_frame_wait_unit_ready starts it
     s32 ceilFallEventId;                         // 0x2C0, its event id; _fall_frame_wait_unit_ready blocks while it runs
     void* actEndEventCode;                       // 0x2C4, gor's _set_actend_event; battle_seq runs it as the act ends
-    s32 field_0x2C8;                             // 0x2C8, event id of that actEndEventCode run, 0 once it has finished
-    void* field_0x2CC;                           // 0x2CC, event a superguard (superguardType 4) runs on the attacker
+    s32 actEndEventId;                           // 0x2C8, event id of that actEndEventCode run, 0 once it has finished
+    void* superguardEventCode;                   // 0x2CC, event a superguard (superguardType 4) runs on the attacker
                                                  // (BattleRunHitEventDirect); battle_seq clears it as each act starts
     s32 mBodyPartsId;                            // 0x2D0
     char* mTalkPoseName;                         // 0x2D4, BtlUnit_GetPoseNameFromType of the talk pose
@@ -752,7 +766,7 @@ typedef struct BattleUnitKind {
     Vec centerOffset;                  // 0x20
     s16 hpGaugeOffset[2];              // 0x2C
     Vec talkTogeBaseOffset;            // 0x30, BtlUnit_GetTalkTogePos
-    Vec field_0x3C;                    // 0x3C, copied to BattleUnit+0xB4
+    Vec heldItemBaseOffset;            // 0x3C, copied to BattleUnit.heldItemBaseOffset (the held item's icon)
     Vec burnFlameOffset;               // 0x48, BSE_Fire
     f32 field_0x54;                    // 0x54
     f32 field_0x58;                    // 0x58
@@ -783,9 +797,9 @@ typedef struct BattleUnitKind {
 typedef struct BattleUnitSetup {
     BattleUnitKind* mUnitKindParams; // 0x0
     s8 alliance;                     // 0x4
-    s32 field_0x8;                   // 0x8, copied to BattleUnit+0x2C
+    s32 seqPhase;                    // 0x8, copied to BattleUnit.seqPhase
     Vec position;                    // 0xC
-    s32 field_0x18;                  // 0x18, copied to BattleUnitPart+0x1A0
+    s32 detectOffsetX;               // 0x18, copied to each part's detectOffsetX
     s32 unitWork[4];                 // 0x1C, copied to BattleUnit.work
     struct ItemDropData* itemDropTable; // 0x2C
 } BattleUnitSetup;

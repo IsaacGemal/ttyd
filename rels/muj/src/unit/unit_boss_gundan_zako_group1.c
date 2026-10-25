@@ -74,7 +74,7 @@ BattleUnitKind unit_boss_gundan_zako_group1 = {
     { 0.0f, 0.0f, 0.0f },          // centerOffset
     { 0, 0 },                      // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },          // talkTogeBaseOffset
-    { 25.0f, 0.0f, -10.0f },       // field_0x3C
+    { 25.0f, 0.0f, -10.0f },       // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },          // burnFlameOffset
     0.0f,                          // field_0x54
     0.0f,                          // field_0x58
@@ -153,7 +153,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f },        // positionOffset
         { 0.0f, 35.0f, 0.0f },       // hitBaseOffset
         { 0.0f, 40.0f, 0.0f },       // hitCursorBaseOffset
-        20,                          // field_0x30
+        20,                          // shadowSize
         30,                          // field_0x32
         255,                         // baseAlpha
         &defence,                    // defense
@@ -185,7 +185,7 @@ BattleWeapon weapon_gundan_zako_group1_attack = {
     0x01101260,                               // targetClassFlags
     0x21002000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

@@ -58,7 +58,7 @@ extern s32 evt_audience_acrobat_notry[];
 
 extern s32 one_negone[];
 extern s32 subset_attack_ready_jump_event[];
-static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
+static void __makeTechMenuFunc(BattleCommand* cmd, s32* count);
 static s32 init_event[68];
 static s32 damage_event[16];
 s32 vivian_hide_event[209];
@@ -182,7 +182,7 @@ BattleUnitKindPart unitpartsdata_Party_Vivian[1] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 24.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 24.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         24,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -213,7 +213,7 @@ BattleUnitKind unitdata_Party_Vivian = {
     { 0.0f, 12.0f, 0.0f },           // centerOffset
     { 0, 0 },                        // hpGaugeOffset
     { 0.0f, 40.0f, 0.0f },           // talkTogeBaseOffset
-    { 0.0f, 40.0f, 0.0f },           // field_0x3C
+    { 0.0f, 40.0f, 0.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
     0.0f,                            // field_0x54
     0.0f,                            // field_0x58
@@ -450,7 +450,7 @@ BattleWeapon partyWeapon_VivianNormalAttack = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_kagenuke",                        // acHelpMsg
@@ -528,7 +528,7 @@ BattleWeapon partyWeapon_VivianShadowGuard = {
     0x01101160,                               // targetClassFlags
     0x10000002,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_kagegakure",                      // acHelpMsg
@@ -606,7 +606,7 @@ BattleWeapon partyWeapon_VivianMagicalPowder = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     1,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_mahou_no_kona",                   // acHelpMsg
@@ -684,7 +684,7 @@ BattleWeapon partyWeapon_VivianCharmKissAttack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_meromero_kiss",                   // acHelpMsg
@@ -1552,17 +1552,17 @@ USER_FUNC(_vivian_make_extra_work_area) {
 // clang-format off
 
 #define TECH_MENU_ENTRY(table)                                                             \
-    cmd->mWeaponTable[*count].mIndex = -1;                                                 \
-    cmd->mWeaponTable[*count].mItem = 0;                                                   \
-    cmd->mWeaponTable[*count].mWeaponParams = (table);                                     \
-    cmd->mWeaponTable[*count].field_0x4 = 0;                                               \
-    cmd->mWeaponTable[*count].mIcon =                                                      \
-        cmd->mWeaponTable[*count].mWeaponParams->icon;                                     \
-    cmd->mWeaponTable[*count].mName =                                                      \
-        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                          \
+    cmd->weaponTable[*count].mIndex = -1;                                                 \
+    cmd->weaponTable[*count].mItem = 0;                                                   \
+    cmd->weaponTable[*count].mWeaponParams = (table);                                     \
+    cmd->weaponTable[*count].mEnabled = 0;                                                \
+    cmd->weaponTable[*count].mIcon =                                                      \
+        cmd->weaponTable[*count].mWeaponParams->icon;                                     \
+    cmd->weaponTable[*count].mName =                                                      \
+        msgSearch(cmd->weaponTable[*count].mWeaponParams->name);                          \
     (*count)++;
 
-static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
+static void __makeTechMenuFunc(BattleCommand* cmd, s32* count) {
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 

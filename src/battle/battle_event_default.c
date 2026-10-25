@@ -185,8 +185,8 @@ USER_FUNC(_get_heart_suitoru_point) {
     value = 0;
     if (unit) {
         value = unit->badgesEquipped.HpDrain;
-        if (value > unit->field_0x280) {
-            value = unit->field_0x280;
+        if (value > unit->damageDealt) {
+            value = unit->damageDealt;
         }
     }
     evtSetValue(event, arg1, value);
@@ -210,8 +210,8 @@ USER_FUNC(_get_flower_suitoru_point) {
     value = 0;
     if (unit) {
         value = unit->badgesEquipped.FpDrain;
-        if (value > unit->field_0x280) {
-            value = unit->field_0x280;
+        if (value > unit->damageDealt) {
+            value = unit->damageDealt;
         }
     }
     evtSetValue(event, arg1, value);

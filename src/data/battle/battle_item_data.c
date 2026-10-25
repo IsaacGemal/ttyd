@@ -321,7 +321,7 @@ BattleWeapon ItemWeaponData_CookingItem = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -399,7 +399,7 @@ BattleWeapon ItemWeaponData_Kinoko = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -477,7 +477,7 @@ BattleWeapon ItemWeaponData_Kinkyuu_Kinoko = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -555,7 +555,7 @@ BattleWeapon ItemWeaponData_Super_Kinoko = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -633,7 +633,7 @@ BattleWeapon ItemWeaponData_Ultra_Kinoko = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -711,7 +711,7 @@ BattleWeapon ItemWeaponData_Sinabita_Kinoko = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -789,7 +789,7 @@ BattleWeapon ItemWeaponData_Honey_Syrup = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -867,7 +867,7 @@ BattleWeapon ItemWeaponData_Maple_Syrup = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -945,7 +945,7 @@ BattleWeapon ItemWeaponData_Royal_Jelly = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1023,7 +1023,7 @@ BattleWeapon ItemWeaponData_Tankobu = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1211,7 +1211,7 @@ BattleWeapon ItemWeaponData_Pow_Block = {
     0x02101260,                                     // targetClassFlags
     0x20000000,                                     // targetPropertyFlags
     0,                                              // element
-    0,                                              // field_0x6D
+    0,                                              // damagePattern
     3,                                              // actionLevel
     2,                                              // field_0x6F
     NULL,                                           // acHelpMsg
@@ -1362,7 +1362,7 @@ BattleWeapon ItemWeaponData_Fire_Flower = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     1,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1531,7 +1531,7 @@ BattleWeapon ItemWeaponData_Kaminari_Dokkan = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     4,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1609,7 +1609,7 @@ BattleWeapon ItemWeaponData_Kaminari_Gorogoro = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     4,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -1868,7 +1868,7 @@ BattleWeapon ItemWeaponData_Kirakira_Otoshi = {
     0x02101260,                                  // targetClassFlags
     0x20000000,                                  // targetPropertyFlags
     0,                                           // element
-    0,                                           // field_0x6D
+    0,                                           // damagePattern
     3,                                           // actionLevel
     2,                                           // field_0x6F
     NULL,                                        // acHelpMsg
@@ -2035,7 +2035,7 @@ BattleWeapon ItemWeaponData_Koorino_Ibuki = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     2,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2204,7 +2204,7 @@ BattleWeapon ItemWeaponData_Yurayura_Jishin = {
     0x02101260,                                     // targetClassFlags
     0x20000008,                                     // targetPropertyFlags
     0,                                              // element
-    0,                                              // field_0x6D
+    0,                                              // damagePattern
     3,                                              // actionLevel
     2,                                              // field_0x6F
     NULL,                                           // acHelpMsg
@@ -2356,7 +2356,7 @@ BattleWeapon ItemWeaponData_Teresano_Fuku = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2452,7 +2452,7 @@ BattleWeapon ItemWeaponData_Biribiri_Kinoko = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2548,7 +2548,7 @@ BattleWeapon ItemWeaponData_Teki_Yokeeru = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2626,7 +2626,7 @@ BattleWeapon ItemWeaponData_Madowaseno_Kona = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2722,7 +2722,7 @@ BattleWeapon ItemWeaponData_Nemure_Yoikoyo = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2866,7 +2866,7 @@ BattleWeapon ItemWeaponData_Stop_Watch = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2980,7 +2980,7 @@ BattleWeapon ItemWeaponData_Guruguru_Memawashi = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3058,7 +3058,7 @@ BattleWeapon ItemWeaponData_Dekadeka_Drink = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3136,7 +3136,7 @@ BattleWeapon ItemWeaponData_Katikati_Koura = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3297,7 +3297,7 @@ BattleWeapon ItemWeaponData_Suitooru = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3457,7 +3457,7 @@ BattleWeapon ItemWeaponData_Teki_Kyouka = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3535,7 +3535,7 @@ BattleWeapon ItemWeaponData_Minimini_Kun = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3613,7 +3613,7 @@ BattleWeapon ItemWeaponData_Funyafunya_Kun = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3691,7 +3691,7 @@ BattleWeapon ItemWeaponData_Sukkiri_Drink = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3787,7 +3787,7 @@ BattleWeapon ItemWeaponData_Jiwajiwa_Kinoko = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -3883,7 +3883,7 @@ BattleWeapon ItemWeaponData_Jiwajiwa_Syrup = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4044,7 +4044,7 @@ BattleWeapon ItemWeaponData_Irekaeeru = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    27,                                       // field_0x6D
+    27,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4165,7 +4165,7 @@ BattleWeapon ItemWeaponData_Attiike_Shisshi = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4396,7 +4396,7 @@ BattleWeapon ItemWeaponData_Naniga_Okorukana = {
     0x02100060,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4482,7 +4482,7 @@ BattleWeapon ItemWeaponData_Shikaeshino_Kona = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4560,7 +4560,7 @@ BattleWeapon ItemWeaponData_Kameno_Noroi = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4719,7 +4719,7 @@ BattleWeapon ItemWeaponData_SpaceFood = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4797,7 +4797,7 @@ BattleWeapon ItemWeaponData_IceCandy = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4875,7 +4875,7 @@ BattleWeapon ItemWeaponData_NancyFrappe = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -4953,7 +4953,7 @@ BattleWeapon ItemWeaponData_SnowRabbit = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5031,7 +5031,7 @@ BattleWeapon ItemWeaponData_TeaKinoko = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5109,7 +5109,7 @@ BattleWeapon ItemWeaponData_FirstLovePuddingBiribiri = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5187,7 +5187,7 @@ BattleWeapon ItemWeaponData_FirstLovePuddingTrans = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5265,7 +5265,7 @@ BattleWeapon ItemWeaponData_FirstLovePuddingSleep = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5343,7 +5343,7 @@ BattleWeapon ItemWeaponData_StarryDinner = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5421,7 +5421,7 @@ BattleWeapon ItemWeaponData_KararinaPasta = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5499,7 +5499,7 @@ BattleWeapon ItemWeaponData_MeromeroCake = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5577,7 +5577,7 @@ BattleWeapon ItemWeaponData_PeachTaltBiribiri = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5655,7 +5655,7 @@ BattleWeapon ItemWeaponData_PeachTaltDodge = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5733,7 +5733,7 @@ BattleWeapon ItemWeaponData_PeachTaltSleep = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5811,7 +5811,7 @@ BattleWeapon ItemWeaponData_BiribiriCandy = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5889,7 +5889,7 @@ BattleWeapon ItemWeaponData_HealthySalad = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -5967,7 +5967,7 @@ BattleWeapon ItemWeaponData_FreshJuice = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -6045,7 +6045,7 @@ BattleWeapon ItemWeaponData_RedKararing = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -6123,7 +6123,7 @@ BattleWeapon ItemWeaponData_FutarideForever = {
     0x01101160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -6414,7 +6414,7 @@ BattleWeapon ItemWeaponData_NancyDynamite = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     3,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -6492,7 +6492,7 @@ BattleWeapon ItemWeaponData_CoconutsBomb = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     3,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -6570,7 +6570,7 @@ BattleWeapon ItemWeaponData_KachikachiDish = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -6648,7 +6648,7 @@ BattleWeapon ItemWeaponData_BomberEgg = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     3,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -6754,7 +6754,7 @@ BattleWeapon ItemWeaponData_PoisonKinoko = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -6903,7 +6903,7 @@ BattleWeapon ItemWeaponData_LastDinner = {
     0x01100160,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

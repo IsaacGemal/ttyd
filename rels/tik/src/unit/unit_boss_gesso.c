@@ -78,7 +78,7 @@ BattleUnitKind unit_boss_gesso = {
     { 0.0f, 0.0f, 0.0f },       // centerOffset
     { 5, -175 },                // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 60.0f, 0.0f, -10.0f },    // field_0x3C
+    { 60.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -248,7 +248,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        103,                  // field_0x30
+        103,                  // shadowSize
         -175,                 // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -620,7 +620,7 @@ BattleWeapon weapon_gesso_ikasumi_attack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    13,                                       // field_0x6D
+    13,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

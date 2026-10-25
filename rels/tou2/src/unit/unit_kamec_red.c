@@ -100,7 +100,7 @@ BattleUnitKind unit_kamec_red = {
     { 0.0f, 21.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 21.0f, 0.0f, -10.0f },    // field_0x3C
+    { 21.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -148,7 +148,7 @@ BattleUnitKind unit_kamec_red_bunsin = {
     { 0.0f, 21.0f, 0.0f },      // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
-    { 21.0f, 0.0f, -10.0f },    // field_0x3C
+    { 21.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -308,7 +308,7 @@ static BattleUnitKindPart parts[2] = {
         { 0.0f, 0.0f, 0.0f },  // positionOffset
         { 0.0f, 35.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 45.0f, 0.0f }, // hitCursorBaseOffset
-        20,                    // field_0x30
+        20,                    // shadowSize
         30,                    // field_0x32
         255,                   // baseAlpha
         &defence,              // defense
@@ -324,7 +324,7 @@ static BattleUnitKindPart parts[2] = {
         { 0.0f, 0.0f, 0.0f }, // positionOffset
         { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
         { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
-        20,                   // field_0x30
+        20,                   // shadowSize
         30,                   // field_0x32
         255,                  // baseAlpha
         &defence,             // defense
@@ -356,7 +356,7 @@ static BattleWeapon weapon_kamec_attack_magic = {
     0x01101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -434,7 +434,7 @@ static BattleWeapon weapon_kamec_dekadeka_magic = {
     0x01100160,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -512,7 +512,7 @@ static BattleWeapon weapon_kamec_biribiri_magic = {
     0x01100160,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -590,7 +590,7 @@ static BattleWeapon weapon_kamec_trans_magic = {
     0x01100160,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -668,7 +668,7 @@ static BattleWeapon weapon_kamec_katikati_magic = {
     0x01100160,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -746,7 +746,7 @@ static BattleWeapon weapon_kamec_recover_magic = {
     0x01100160,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -824,7 +824,7 @@ static BattleWeapon weapon_kamec_all_recover_magic = {
     0x02100160,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -2059,11 +2059,11 @@ static USER_FUNC(kamec_copy_status) {
 
     dst->currentHp = src->currentHp;
     memcpy(&dst->mSleepTurns, &src->mSleepTurns, 0x1E);
-    dst->hpGauge.field_0xC = dst->currentHp;
-    dst->hpGauge.field_0x10 = dst->currentHp;
+    dst->hpGauge.fromHp = dst->currentHp;
+    dst->hpGauge.toHp = dst->currentHp;
     ratio = (f32)dst->currentHp / (f32)dst->maxHp;
-    dst->hpGauge.field_0x18 = ratio;
-    dst->hpGauge.field_0x14 = ratio;
+    dst->hpGauge.drainRatio = ratio;
+    dst->hpGauge.fillRatio = ratio;
     return EVT_RETURN_DONE;
 }
 

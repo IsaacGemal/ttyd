@@ -129,7 +129,7 @@ BattleUnitKindPart unitpartsdata_Mario[3] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 36.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 40.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         36,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -145,7 +145,7 @@ BattleUnitKindPart unitpartsdata_Mario[3] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 36.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 40.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         36,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -161,7 +161,7 @@ BattleUnitKindPart unitpartsdata_Mario[3] = {
         { 0.0f, 0.0f, 0.0f },                 // positionOffset
         { 16.0f, 36.0f, 5.0f },               // hitBaseOffset
         { 0.0f, 40.0f, 0.0f },                // hitCursorBaseOffset
-        20,                                   // field_0x30
+        20,                                   // shadowSize
         36,                                   // field_0x32
         255,                                  // baseAlpha
         (BattleUnitDefense*)defence,          // defense
@@ -192,7 +192,7 @@ BattleUnitKind unitdata_Mario = {
     { 0.0f, 0.0f, 0.0f },            // centerOffset
     { 0, 0 },                        // hpGaugeOffset
     { 0.0f, 40.0f, 0.0f },           // talkTogeBaseOffset
-    { 0.0f, 40.0f, 0.0f },           // field_0x3C
+    { 0.0f, 40.0f, 0.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
     0.0f,                            // field_0x54
     0.0f,                            // field_0x58

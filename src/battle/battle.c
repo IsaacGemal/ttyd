@@ -332,9 +332,9 @@ void BattlePartyInfoWorkInit(BattleWork* wp) {
     // TODO: add macros for Party IDs
     for (i = 0xE0; i < 0xE7; i++) {
         partyInfo = &wp->partyInfo[i - 0xE0];
-        partyInfo->field_0 = 1.0;
-        partyInfo->field_24 = 0;
-        memset(partyInfo->field_4, 0, sizeof(partyInfo->field_4));
+        partyInfo->sizeMultiplier = 1.0;
+        partyInfo->statusFlags = 0;
+        memset(partyInfo->statusBlock, 0, sizeof(partyInfo->statusBlock));
     }
 }
 

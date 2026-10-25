@@ -31,16 +31,16 @@ USER_FUNC(btlevtcmd_AnnounceMessage) {
     }
     if (isFirstCall) {
         event->userdata[0] = duration;
-        announce->field_0x0 = x;
-        announce->field_0x2 = y;
+        announce->x = x;
+        announce->y = y;
         {
             const char* msg = msgSearch(tag);
             switch (kind) {
             case 1:
-                sprintf(announce->field_0x14, msg, itemDataTable[announce->param[0]].id);
+                sprintf(announce->message, msg, itemDataTable[announce->param[0]].id);
                 break;
             default:
-                sprintf(announce->field_0x14, msg);
+                sprintf(announce->message, msg);
                 break;
             }
         }
@@ -53,13 +53,13 @@ USER_FUNC(btlevtcmd_AnnounceMessage) {
 void _disp(CameraId cameraId, void* param) {
     BattleWork* wp = _battleWorkPointer;
     BattleWorkField18C70* announce = &wp->announce;
-    s16 x = announce->field_0x0;
-    s16 y = announce->field_0x2;
+    s16 x = announce->x;
+    s16 y = announce->y;
     f32 fx = (f32)x;
     f32 fy = (f32)(y + 0x78);
     GXColor color;
     u16 lines;
-    u16 width = FontGetMessageWidthLine(announce->field_0x14, &lines);
+    u16 width = FontGetMessageWidthLine(announce->message, &lines);
 
     lines++;
     color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
@@ -79,7 +79,7 @@ void _disp(CameraId cameraId, void* param) {
                           color);
 #endif
     FontDrawStart();
-    FontDrawMessage((s32)fx, (s32)fy - 0x1d, announce->field_0x14);
+    FontDrawMessage((s32)fx, (s32)fy - 0x1d, announce->message);
 }
 
 //s32 index, s32 value

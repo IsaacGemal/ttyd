@@ -28,7 +28,7 @@ static void actionCommandDisp(f32 x, f32 y);
 // written 5,0,1,2,3 so the compiler lays the bodies out in the original's order.
 s32 battleAcMain_TimingWide(BattleWork* work) {
 	BattleActions* ac = &work->actionCommands;
-	TimingWideDecWork* dec = (TimingWideDecWork*)ac->field_0x2BC;
+	TimingWideDecWork* dec = (TimingWideDecWork*)ac->acWork;
 	BattleACDispParams* disp = &ac->dispParams;
 	s32 autoCommand = 0;
 	s32 cond;
@@ -78,21 +78,21 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 		ac->result = 1;
 		break;
 	case 0x64:
-		if ((ac->field_0x4 & 1) &&
+		if ((ac->autoFlags & 1) &&
 		    (ac->mAcUnit->mTokenFlags & 0x10)) {
 			if (irand(100) >= 0) {
-				ac->field_0x8 = 0;
+				ac->autoTimer = 0;
 				if (ac->acParams[2] > 0) {
-					ac->field_0x8 = irand(ac->acParams[2]);
+					ac->autoTimer = irand(ac->acParams[2]);
 				}
-				if (ac->field_0x8 <= 0) {
-					ac->field_0x8 = ac->acParams[1] + 2;
+				if (ac->autoTimer <= 0) {
+					ac->autoTimer = ac->acParams[1] + 2;
 				}
 			}
 			else {
 				s32 r = irand(ac->acParams[3] -
 				                   ac->acParams[2]);
-				ac->field_0x8 = ac->acParams[2] + r;
+				ac->autoTimer = ac->acParams[2] + r;
 			}
 			ac->mAcState = 0x3EA;
 			dec->phase = 2;
@@ -178,12 +178,12 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 		break;
 	case 0x3EA:
 		dec->frame++;
-		ac->field_0x8--;
+		ac->autoTimer--;
 		if (dec->frame > ac->acParams[1]) {
 			ac->result = 0;
 			return 0;
 		}
-		if (ac->field_0x8 < 0) {
+		if (ac->autoTimer < 0) {
 			if (dec->frame >= ac->acParams[2] &&
 			    dec->frame < ac->acParams[3]) {
 				ac->result = 2;
@@ -232,7 +232,7 @@ void battleAcDisp_TimingWide(CameraId camId, void* param) {
 	BattleWork* work = param;
 	BattleActions* ac = &work->actionCommands;
 	BattleACDispParams* disp = &ac->dispParams;
-	TimingWideDecWork* dec = (TimingWideDecWork*)&ac->field_0x2BC[0];
+	TimingWideDecWork* dec = (TimingWideDecWork*)&ac->acWork[0];
 	s32 flag;
 
 	switch (dec->phase) {
@@ -299,7 +299,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	s32 down;
 
 	camGetPtr(CAMERA_2D);
-	dec = (TimingWideDecWork*)&ac->field_0x2BC[0];
+	dec = (TimingWideDecWork*)&ac->acWork[0];
 
 	switch (dec->buttonMask) {
 	case 0x100:
@@ -432,5 +432,5 @@ static void actionCommandDisp(f32 x, f32 y) {
 		break;
 	}
 
-	disp->field_0x0++;
+	disp->dispFrame++;
 }

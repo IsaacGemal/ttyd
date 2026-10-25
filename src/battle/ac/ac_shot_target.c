@@ -12,7 +12,7 @@
 #define fabsf(x) __fabsf(x)
 #include <string.h>
 
-// Per-action-command work area at BattleWork + 0x1F4C (inside BattleActions.field_0x2BC).
+// Per-action-command work area at BattleWork + 0x1F4C (inside BattleActions.acWork).
 // No header declares it: the exact fields are only used by this file.
 typedef struct ShotTargetWork {
     s32 countdown;      // 0x00, frames left in the shot, loaded from acParams[2]
@@ -85,7 +85,7 @@ static void _ac_disp_init(BattleWork* work);
 s32 battleAcMain_ShotTarget(BattleWork* work) {
     const char* sfx;
     BattleActions* ac = &work->actionCommands;
-    ShotTargetWork* st = (ShotTargetWork*)&ac->field_0x2BC[0];
+    ShotTargetWork* st = (ShotTargetWork*)&ac->acWork[0];
     s32 cont;
     s32 smooth = 0;
     u32 rumbleType;
@@ -186,7 +186,7 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                     st->inRange = 0;
                 }
                 st->countdown--;
-                if ((ac->field_0x4 & 1) &&
+                if ((ac->autoFlags & 1) &&
                     (ac->mAcUnit->mTokenFlags & kConfusedAction)) {
                     if (irand(100) >= 0) {
                         ac->result = 0;
@@ -323,10 +323,10 @@ static void _ac_disp_init(BattleWork* work) {
     // Match-only: the volatile accesses stop MWCC hoisting the dat_804218f8 load into r5 (and
     // reordering the counter store after it); the emitted instructions are byte-identical.
     *(volatile u32*)&disp->counter = 0x14;
-    disp->field_0xC = *(volatile const u32*)&dat_804218f8;
+    disp->gaugeColor.rgba = *(volatile const u32*)&dat_804218f8;
 #else
     disp->counter = 0x14;
-    disp->field_0xC = dat_804218f8;
+    disp->gaugeColor.rgba = dat_804218f8;
 #endif
     disp->field_0x10 = 0;
     disp->dg = -0x10;
@@ -348,7 +348,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
     s32 state = ac->mAcState;
-    ShotTargetWork* st = (ShotTargetWork*)&ac->field_0x2BC[0];
+    ShotTargetWork* st = (ShotTargetWork*)&ac->acWork[0];
     Vec screen;
     Vec screen2;
 

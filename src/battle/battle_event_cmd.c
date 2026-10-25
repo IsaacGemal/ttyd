@@ -1488,11 +1488,11 @@ USER_FUNC(btlevtcmd_SetHp) { //1:1
     }
     unit = BattleGetUnitPtr(wp, id);
     unit->currentHp = (s16)evtGetValue(event, args[1]);
-    unit->hpGauge.field_0xC = unit->currentHp;
-    unit->hpGauge.field_0x10 = unit->currentHp;
+    unit->hpGauge.fromHp = unit->currentHp;
+    unit->hpGauge.toHp = unit->currentHp;
     value = (f32)unit->currentHp / (f32)unit->maxHp;
-    unit->hpGauge.field_0x18 = value;
-    unit->hpGauge.field_0x14 = value;
+    unit->hpGauge.drainRatio = value;
+    unit->hpGauge.fillRatio = value;
     return EVT_RETURN_DONE;
 }
 
@@ -1659,12 +1659,12 @@ USER_FUNC(btlevtcmd_RecoverHp) {
     evtGetValue(event, args[1]); //unused, debug?
     hp = evtGetValue(event, args[2]);
     if (!(unit->mAttributeFlags & kUnk_ImmageToOHKO)) {
-        unit->hpGauge.field_0xC = unit->currentHp;
+        unit->hpGauge.fromHp = unit->currentHp;
         BtlUnit_RecoverHp(unit, hp);
-        unit->hpGauge.field_0x10 = unit->currentHp;
-        unit->hpGauge.field_0x4 = unit->hpGauge.field_0x6;
-        unit->hpGauge.field_0x8 = unit->hpGauge.field_0xA;
-        unit->hpGauge.field_0x2 |= 1;
+        unit->hpGauge.toHp = unit->currentHp;
+        unit->hpGauge.drainTimer = unit->hpGauge.drainFrames;
+        unit->hpGauge.dispTimer = unit->hpGauge.dispFrames;
+        unit->hpGauge.flags |= 1;
     }
     else {
         BtlUnit_RecoverHp(unit, hp);
@@ -2541,14 +2541,14 @@ USER_FUNC(btlevtcmd_SetPartsBlur) {
     color7 = (u8)evtGetValue(event, args[9]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     part = BtlUnit_GetPartsPtr(unit, partId);
-    part->blurWork.color[0] = color0;
-    part->blurWork.color[1] = color1;
-    part->blurWork.color[2] = color2;
-    part->blurWork.color[3] = color3;
-    part->blurWork.color[4] = color4;
-    part->blurWork.color[5] = color5;
-    part->blurWork.color[6] = color6;
-    part->blurWork.color[7] = color7;
+    part->blurWork.color[0].r = color0;
+    part->blurWork.color[0].g = color1;
+    part->blurWork.color[0].b = color2;
+    part->blurWork.color[0].a = color3;
+    part->blurWork.color[1].r = color4;
+    part->blurWork.color[1].g = color5;
+    part->blurWork.color[1].b = color6;
+    part->blurWork.color[1].a = color7;
     return EVT_RETURN_DONE;
 }
 
@@ -4046,7 +4046,7 @@ USER_FUNC(btlevtcmd_SetEventAttack) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
 
     unit->attackEventCode = (void*)args[1];
-    unit->field_0x2A8 = 0;
+    unit->attackEventFlags = 0;
     return EVT_RETURN_DONE;
 }
 
@@ -5291,7 +5291,7 @@ USER_FUNC(btlevtcmd_ac_timing_flag_onoff) {
 
     onoff = evtGetValue(event, args[0]);
     flags = args[1];
-    p = &((AcTimingADecWork*)_battleWorkPointer->actionCommands.field_0x2BC)->flags;
+    p = &((AcTimingADecWork*)_battleWorkPointer->actionCommands.acWork)->flags;
     if (onoff) {
         *p |= flags;
     }

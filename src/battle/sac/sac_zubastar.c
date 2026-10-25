@@ -228,7 +228,7 @@ void zubaStarDispStar(CameraId cameraId, void* param) {
 
 // .text:0x2078 | 0x80230608 | size: 0xC
 ZubaStarWork* GetZubaStarPtr(void) {
-    return (ZubaStarWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
+    return (ZubaStarWork*)&_battleWorkPointer->actionCommands.acWork[0];
 }
 
 // .text:0x203C | 0x802305CC | size: 0x3C
@@ -1203,7 +1203,7 @@ BattleWeapon weapon_zubastar = {
     /* targetClassFlags */ 0x02101260,
     /* targetPropertyFlags */ 0x20000000,
     /* element */ 0,
-    /* field_0x6D */ 0,
+    /* damagePattern */ 0,
     /* actionLevel */ 3,
     /* field_0x6F */ 2,
     /* acHelpMsg */ str_msg_sac_8,

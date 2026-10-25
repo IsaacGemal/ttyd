@@ -113,7 +113,7 @@ typedef struct StarTrail {
 } StarTrail;
 
 ScissorWork* GetScissorPtr(void) {
-    return (ScissorWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
+    return (ScissorWork*)&_battleWorkPointer->actionCommands.acWork[0];
 }
 
 // fabsf as the SDK defines it (fake_tgmath.h); math_ext.h only declares it.
@@ -563,7 +563,7 @@ BattleWeapon weapon_scissor = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_sac_5",                              // acHelpMsg
@@ -642,7 +642,7 @@ BattleWeapon weapon_scissor_finish = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    27,                                       // field_0x6D
+    27,                                       // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg

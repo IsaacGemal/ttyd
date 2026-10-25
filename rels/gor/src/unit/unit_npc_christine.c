@@ -54,7 +54,7 @@ BattleUnitKind unit_npc_christine = {
     { 0.0f, 0.0f, 0.0f },       // centerOffset
     { 0, 0 },                   // hpGaugeOffset
     { 0.0f, 30.0f, 0.0f },      // talkTogeBaseOffset
-    { 0.0f, 30.0f, 0.0f },      // field_0x3C
+    { 0.0f, 30.0f, 0.0f },      // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -129,7 +129,7 @@ static BattleUnitKindPart parts = {
     { 0.0f, 0.0f, 0.0f },   // positionOffset
     { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
     { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
-    20,                     // field_0x30
+    20,                     // shadowSize
     30,                     // field_0x32
     255,                    // baseAlpha
     &defence,               // defense

@@ -67,7 +67,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
     s32 cont;
     s32 autoCommand = 0;
     s32 k;
-    bd = (AcSignalTimingWork*)&ac->field_0x2BC[0];
+    bd = (AcSignalTimingWork*)&ac->acWork[0];
     disp = &ac->dispParams;
     if (ac->mAcUnit->badgesEquipped.AutoCommand != 0) {
         autoCommand = 1;
@@ -165,11 +165,11 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
             bd->signalEnd = (bd->signalCount + 1) * ac->acParams[2] - 1;
             bd->signalCount = bd->signalCount + 1;
             if (bd->signalCount < ac->acParams[6] + 1) {
-                if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
+                if (!(ac->autoFlags & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                     psndSFXOn(sfxPi1);
                 }
             } else {
-                if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
+                if (!(ac->autoFlags & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                     psndSFXOn(sfxPone1);
                 }
             }
@@ -225,7 +225,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                     if (idx >= ac->acParams[6] &&
                         idx < ac->acParams[0] + ac->acParams[6]) {
                         bd->states[idx - ac->acParams[6]] = 1;
-                        if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
+                        if (!(ac->autoFlags & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                             psndSFXOn(sfxOk);
                         }
                     }
@@ -244,7 +244,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                         bd->misses = bd->misses + 1;
                         if (bd->frame >= bd->windowStart) {
                             bd->states[bd->curSignal - ac->acParams[6]] = -1;
-                            if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
+                            if (!(ac->autoFlags & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                                 psndSFXOn(sfxNg);
                             }
                             ac->outputParams[1] = -1;
@@ -261,7 +261,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                     bd->curSignal < ac->acParams[0] + ac->acParams[6]) {
                     bd->misses = bd->misses + 1;
                     bd->states[bd->curSignal - ac->acParams[6]] = -1;
-                    if (!(ac->field_0x4 & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
+                    if (!(ac->autoFlags & 1) || !(ac->mAcUnit->mTokenFlags & 0x10)) {
                         psndSFXOn(sfxNg);
                     }
                 }
@@ -303,7 +303,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
         case 0x3eb:
             break;
         case 0x3ec:
-            ac->field_0x30 |= 1;
+            ac->endFlags |= 1;
             bd->inWindow = 0;
             bd->endTimer = 0x3c;
             ac->mAcState = 0x3ed;
@@ -409,7 +409,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     ac = &work->actionCommands;
     camGetPtr(CAMERA_2D);
     num = ac->acParams[0];
-    bd = (AcSignalTimingWork*)&ac->field_0x2BC[0];
+    bd = (AcSignalTimingWork*)&ac->acWork[0];
     count = bd->signalCount;
 
     if (!(ac->acFlag & 1)) {

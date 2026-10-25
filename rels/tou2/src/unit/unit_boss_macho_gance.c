@@ -89,7 +89,7 @@ BattleUnitKind unit_boss_macho_gance = {
     { 0.0f, 62.0f, 0.0f },      // centerOffset
     { 0, -3 },                  // hpGaugeOffset
     { 40.0f, 80.0f, 0.0f },     // talkTogeBaseOffset
-    { 58.0f, 0.0f, -10.0f },    // field_0x3C
+    { 58.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
     0.0f,                       // field_0x54
     0.0f,                       // field_0x58
@@ -214,7 +214,7 @@ static BattleUnitKindPart parts[1] = {
         { 0.0f, 0.0f, 0.0f },   // positionOffset
         { 26.0f, 77.0f, 0.0f }, // hitBaseOffset
         { 25.0f, 81.0f, 0.0f }, // hitCursorBaseOffset
-        20,                     // field_0x30
+        20,                     // shadowSize
         30,                     // field_0x32
         255,                    // baseAlpha
         &defence,               // defense
@@ -246,7 +246,7 @@ BattleWeapon weapon_gance_macho_speed = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -324,7 +324,7 @@ BattleWeapon weapon_gance_build_up = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -402,7 +402,7 @@ BattleWeapon weapon_gance_body = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -480,7 +480,7 @@ BattleWeapon weapon_gance_footwork = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -558,7 +558,7 @@ BattleWeapon weapon_gance_attack = {
     0x01101260,                               // targetClassFlags
     0x20001000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -636,7 +636,7 @@ BattleWeapon weapon_gance_posing = {
     0x01004020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -714,7 +714,7 @@ BattleWeapon weapon_gance_rariat_attack = {
     0x02101260,                               // targetClassFlags
     0x20000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -792,7 +792,7 @@ BattleWeapon weapon_gance_body_attack = {
     0x01101260,                                 // targetClassFlags
     0x20001000,                                 // targetPropertyFlags
     0,                                          // element
-    10,                                         // field_0x6D
+    10,                                         // damagePattern
     3,                                          // actionLevel
     2,                                          // field_0x6F
     NULL,                                       // acHelpMsg

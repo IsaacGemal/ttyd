@@ -23,31 +23,31 @@
 
 
 #define TECH_MENU_ENTRY(table)                                                        \
-    cmd->mWeaponTable[*count].mIndex = -1;                                            \
-    cmd->mWeaponTable[*count].mItem = 0;                                              \
-    cmd->mWeaponTable[*count].mWeaponParams = (table);                                \
-    cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
-    cmd->mWeaponTable[*count].mIcon =                                                 \
-        cmd->mWeaponTable[*count].mWeaponParams->icon;                                \
-    cmd->mWeaponTable[*count].mName =                                                 \
-        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                      \
+    cmd->weaponTable[*count].mIndex = -1;                                            \
+    cmd->weaponTable[*count].mItem = 0;                                              \
+    cmd->weaponTable[*count].mWeaponParams = (table);                                \
+    cmd->weaponTable[*count].mEnabled = 0;                                           \
+    cmd->weaponTable[*count].mIcon =                                                 \
+        cmd->weaponTable[*count].mWeaponParams->icon;                                \
+    cmd->weaponTable[*count].mName =                                                 \
+        msgSearch(cmd->weaponTable[*count].mWeaponParams->name);                      \
     (*count)++;
 
 #define TECH_MENU_ENTRY_ICON(table, icon)                                             \
-    cmd->mWeaponTable[*count].mIndex = -1;                                            \
-    cmd->mWeaponTable[*count].mItem = 0;                                              \
-    cmd->mWeaponTable[*count].mWeaponParams = (table);                                \
-    cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
-    cmd->mWeaponTable[*count].mIcon = (icon);                                         \
-    cmd->mWeaponTable[*count].mName =                                                 \
-        msgSearch(cmd->mWeaponTable[*count].mWeaponParams->name);                      \
+    cmd->weaponTable[*count].mIndex = -1;                                            \
+    cmd->weaponTable[*count].mItem = 0;                                              \
+    cmd->weaponTable[*count].mWeaponParams = (table);                                \
+    cmd->weaponTable[*count].mEnabled = 0;                                           \
+    cmd->weaponTable[*count].mIcon = (icon);                                         \
+    cmd->weaponTable[*count].mName =                                                 \
+        msgSearch(cmd->weaponTable[*count].mWeaponParams->name);                      \
     (*count)++;
 
 extern s32 btldefaultevt_avoid_counter_event[];
 extern s32 evt_audience_acrobat_notry[];
 extern s32 subset_attack_ready_jump_event[];
 extern BattleUnitKind unit_koura;
-static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
+static void __makeTechMenuFunc(BattleCommand* cmd, s32* count);
 static USER_FUNC(_check_guard_koura);
 static s32 init_event[78];
 s32 change_party_spawn_init_event[28];
@@ -78,7 +78,7 @@ BattleUnitSetup entry_koura[1];
 // The tables are reached only from other units, so keep the data linked.
 #pragma force_active on
 // clang-format off
-static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
+static void __makeTechMenuFunc(BattleCommand* cmd, s32* count) {
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 
@@ -307,7 +307,7 @@ BattleUnitKindPart unitpartsdata_Party_Nokotarou[1] = {
         { 0.0f, 0.0f, 0.0f },      // positionOffset
         { 12.0f, 30.0f, 5.0f },    // hitBaseOffset
         { 0.0f, 30.0f, 0.0f },     // hitCursorBaseOffset
-        20,                        // field_0x30
+        20,                        // shadowSize
         30,                        // field_0x32
         255,                       // baseAlpha
         &defence,                  // defense
@@ -338,7 +338,7 @@ BattleUnitKind unitdata_Party_Nokotarou = {
     { 0.0f, 12.0f, 0.0f },         // centerOffset
     { 0, 0 },                      // hpGaugeOffset
     { 0.0f, 40.0f, 0.0f },         // talkTogeBaseOffset
-    { 0.0f, 40.0f, 0.0f },         // field_0x3C
+    { 0.0f, 40.0f, 0.0f },         // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },          // burnFlameOffset
     0.0f,                          // field_0x54
     0.0f,                          // field_0x58
@@ -469,7 +469,7 @@ BattleWeapon partyWeapon_NokotarouFirstAttack = {
     0x01101260,                               // targetClassFlags
     0x21004004,                               // targetPropertyFlags
     0,                                        // element
-    8,                                        // field_0x6D
+    8,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     NULL,                                     // acHelpMsg
@@ -547,7 +547,7 @@ BattleWeapon partyWeapon_NokotarouKouraAttack = {
     0x01001260,                               // targetClassFlags
     0x21004004,                               // targetPropertyFlags
     0,                                        // element
-    8,                                        // field_0x6D
+    8,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_hammer",                          // acHelpMsg
@@ -625,7 +625,7 @@ BattleWeapon partyWeapon_NokotarouSyubibinKoura = {
     0x02101260,                               // targetClassFlags
     0x20004004,                               // targetPropertyFlags
     0,                                        // element
-    8,                                        // field_0x6D
+    8,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_koura_shubibin",                  // acHelpMsg
@@ -703,7 +703,7 @@ BattleWeapon partyWeapon_NokotarouKouraGuard = {
     0x01110020,                               // targetClassFlags
     0x10000000,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_koura_no_mamori",                 // acHelpMsg
@@ -781,7 +781,7 @@ BattleWeapon partyWeapon_NokotarouTsuranukiKoura = {
     0x02101260,                               // targetClassFlags
     0x20004004,                               // targetPropertyFlags
     0,                                        // element
-    0,                                        // field_0x6D
+    0,                                        // damagePattern
     3,                                        // actionLevel
     2,                                        // field_0x6F
     "msg_ac_tsuranuki_koura",                 // acHelpMsg
