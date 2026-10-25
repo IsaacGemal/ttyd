@@ -1701,7 +1701,7 @@ __declspec(section ".data") BattleStageNozzleData battle_stage_nozzle_data[4] = 
 };
 __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_data[4] = {
     {
-        { // field_0x0
+        { // fallFrameWeapon
             NULL,                                     // name
             0,                                        // icon
             ITEM_NULL,                                // item
@@ -2477,7 +2477,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
         },
     },
     {
-        { // field_0x0
+        { // fallFrameWeapon
             NULL,                                     // name
             0,                                        // icon
             ITEM_NULL,                                // item
@@ -3253,7 +3253,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
         },
     },
     {
-        { // field_0x0
+        { // fallFrameWeapon
             NULL,                                     // name
             0,                                        // icon
             ITEM_NULL,                                // item
@@ -4029,7 +4029,7 @@ __declspec(section ".data") BattleStageFallObjectData battle_stage_fall_object_d
         },
     },
     {
-        { // field_0x0
+        { // fallFrameWeapon
             NULL,                                     // name
             0,                                        // icon
             ITEM_NULL,                                // item
@@ -5747,7 +5747,7 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 }
 
 USER_FUNC(_fall_frame) {
-	s32 layer = event->args[0];
+	s32 dest = event->args[0];
 	BattleWork* wp = _battleWorkPointer;
 	BattleWorkField180C0* w = &wp->field_180C0;
 	BattleStageObject* obj = BattleSearchObjectPtr("if_body");
@@ -5762,7 +5762,7 @@ USER_FUNC(_fall_frame) {
 	if (event->userdata[2] < 0x3C) {
 		return EVT_RETURN_BLOCK;
 	}
-	evtSetValue(event, layer, (s32)w->fallObjectData);
+	evtSetValue(event, dest, (s32)&w->fallObjectData->fallFrameWeapon);
 	return EVT_RETURN_DONE;
 }
 
