@@ -109,7 +109,7 @@ EffectEntry* effShockN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
 	data->age = 0;
 	data->life = 30;
 	data->field_0x10 = 0xFF;
-	data->tev1AType1 = 0xFF;
+	data->type1Alpha = 0xFF;
 	data->tev1A = 0xFF;
 	data->x = x;
 	data->y = y;
@@ -184,7 +184,7 @@ void effShockMain(EffectEntry* effect) {
 		data->scale += 0.05f * (8.0f - data->scale);
 	}
 
-	data->tev1AType1 = (s32)((f32)data->tev1AType1 * k9);
+	data->type1Alpha = (s32)((f32)data->type1Alpha * k9);
 	if (life < 5) {
 		data->tev1A = (s32)((f32)data->tev1A * k8);
 	}
@@ -226,7 +226,7 @@ void effShockDisp(CameraId cameraId, void* param) {
 
 	if ((u32)(type - 1) <= 1 || type == 3) {
 		if (type == 1) {
-			GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0x00, data->tev1AType1 });
+			GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0x00, data->type1Alpha });
 		}
 
 		PSMTXTrans(trans, 0.0f, data->offsetY, 0.0f);

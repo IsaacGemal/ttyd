@@ -96,7 +96,7 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 yaw) {
 			ptr->velZ = 1.1f * -cosYaw;
 			ptr->riseSpeed = 0.95f;
 			ptr->riseAccel = -0.04f;
-			ptr->riseDamp = 0.94f;
+			ptr->riseAccelDecay = 0.94f;
 			ptr->r = 0xff;
 			ptr->g = 0xff;
 			ptr->b = 0xff;
@@ -167,7 +167,7 @@ void effMistMain(EffectEntry* effect) {
 			work->velZ *= 0.9f;
 			work->y += work->riseSpeed;
 			work->riseSpeed += work->riseAccel;
-			work->riseAccel *= work->riseDamp;
+			work->riseAccel *= work->riseAccelDecay;
 			work->scaleX *= 1.02f;
 			work->scaleY *= 1.02f;
 			work->scaleZ *= 1.02f;

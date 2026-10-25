@@ -11,8 +11,8 @@ typedef struct EffShockData {
 	f32 y;            // 0x8
 	f32 z;            // 0xC
 	s32 field_0x10;   // 0x10 0xFF at init, down 13 a frame after frame 6; nothing else reads it
-	s32 tev1AType1;   // 0x14 type 1: alpha of the yellow TEVREG1, x0.9 each frame
-	s32 tev1A;        // 0x18 TEVREG1 alpha, x0.8 each frame in the last 5 frames
+	s32 type1Alpha;   // 0x14 type 1: alpha of its yellow TEVREG0 colour, x0.9 each frame
+	s32 tev1A;        // 0x18 TEVREG0 alpha, x0.8 each frame in the last 5 frames
 	s32 life;         // 0x1C frames left (30 at init, counts down below 100); deleted below 0
 	s32 age;          // 0x20 frames elapsed
 	f32 scale;        // 0x24 x/y scale of the shock mesh (times 0.25)

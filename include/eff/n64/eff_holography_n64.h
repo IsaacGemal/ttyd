@@ -10,10 +10,10 @@ typedef struct EffHolographyData {
 	f32 z;          // 0xC
 	s32 lifetime;   // 0x10: frames left (1000 = held, 16 once told to close); deleted below 0
 	s32 frame;      // 0x14: counts up; picks Disp's vertex table and xlu_data entry
-	s32 colorR;     // 0x18: TEVREG1 red
-	s32 colorG;     // 0x1C: TEVREG1 green
-	s32 colorB;     // 0x20: TEVREG1 blue
-	s32 alpha;      // 0x24: fade-in over the first 16 frames, fade-out over the last 16; Disp's TEVREG1 alpha base
+	s32 colorR;     // 0x18: TEVREG0 red
+	s32 colorG;     // 0x1C: TEVREG0 green
+	s32 colorB;     // 0x20: TEVREG0 blue
+	s32 alpha;      // 0x24: fade-in over the first 16 frames, fade-out over the last 16; Disp's TEVREG0 alpha base
 	f32 scale;      // 0x28: PSMTXScale (x mirrored)
 } EffHolographyData;
 void effHolographyMain(EffectEntry* effect);

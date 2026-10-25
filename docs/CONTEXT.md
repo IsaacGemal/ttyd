@@ -7407,10 +7407,10 @@ fcommon ran in parallel on rels/common. Data layout was not touched.
   over all 2,461 objects against the snapshot, every one equivalent; the 193 objects built from a changed .c or a user
   of a changed header compile under `configure.py --non-matching` (the two headers the review touched afterwards, snow_dust and toiki, were rechecked with try.py `--nat` over all their users); fncast_lint and local_prototypes clean. Each of the
   nine commits was checked out on its own and passed `tools/ci.py --base <parent>` with `build/G8MJ01/ok` recreated.
-- **Counts** (`tools/cleanup_index.py`, 60c9f36d -> this branch, same script): index **14.798 -> 13.795** per kLOC
-  (10337 -> 9636 weighted); field_0x 3141 -> 2459, struct_ptr_cast 1243 -> 1224 (the (Vec*) casts); nothing else changed.
-  `field_0x` in the index (code only): src/effect 798 -> 264, include/eff 249 -> 102; by grep (comments
-  included) src/effect 805 -> 265, include/eff 249 -> 103.
+- **Counts** (`tools/cleanup_index.py`, origin/main 5619c3bf -> this branch rebased onto it, same script): index
+  **13.669 -> 12.666** per kLOC (9548 -> 8847 weighted); field_0x 2403 -> 1721, struct_ptr_cast 1245 -> 1226 (the (Vec*)
+  casts); nothing else changed. `field_0x` in the index (code only): src/effect 794 -> 260, include/eff 249 -> 102; by grep (comments
+  included) src/effect 801 -> 261, include/eff 249 -> 103.
 
 **Names, per struct** (field -> name: the consumer that proves it; file is the effect's .c unless named).
 - EffSheepWork (eff_sheep.h): 0x2C velX (Main `x += velX` until x reaches 500), 0x18 velY (added to y, minus gravity,
@@ -7425,7 +7425,7 @@ fcommon ran in parallel on rels/common. Data layout was not touched.
 - EffStarPowerData: x/y/z -> Vec position; 0x14 counter (drives the fade-in and the type-1 sines), 0x30 color2B
   (TEVREG1 blue beside color2G/A), 0x38 scale and 0x3C-0x44 rotX/Y/Z (Disp's PSMTXScale(0.4 * scale), PSMTXRotRad),
   0x48-0x50 prevRotX/Y/Z and 0x54 prevScale (the trailing half-alpha star's matrices; Main copies last frame's values).
-- effWangFlushData (local): 0x28 pulseAlpha (type 0 quad's TEVREG1 alpha, 144 + 64 sin), `alphaScale` -> pulseScale
+- effWangFlushData (local): 0x28 pulseAlpha (type 0 quad's TEVREG0 alpha, 144 + 64 sin), `alphaScale` -> pulseScale
   (only ever PSMTXScale's argument).
 - effStageClearWork: x/y/z -> Vec position; 0x1C age (++ per frame: the head's value scrolls the rainbow texture
   matrix, each piece's indexes scale_dt); 0x10 pad.
@@ -7437,18 +7437,18 @@ fcommon ran in parallel on rels/common. Data layout was not touched.
 - PeachDustParticle 0x28 frame (Disp: `frame & 7` picks the texture slice, < 0 hides the particle).
 - EffRadiationData, effMagicHoraoData: no names (see Left); magic_horao x/y/z -> Vec position.
 - MistWork: 0x28 riseSpeed (type 4: `y += riseSpeed`, besides velY), 0x2C riseAccel (added to riseSpeed), 0x30
-  riseDamp (riseAccel *= it; from 0.95 / -0.04 / 0.94 the speed stays positive), 0x40 yaw (sin/cos of it aim
+  riseAccelDecay (riseAccel *= it, as kemuri1's velYAccelDecay; from 0.95 / -0.04 / 0.94 the speed stays positive), 0x40 yaw (sin/cos of it aim
   velX/velZ; the Entry argument minus viewYaw; Entry's `w` -> yaw).
 - effNanigaData: posX/Y/Z -> Vec pos; 0x10 screenPos (the CAMERA_2D reel's translation and scissor centre, projected
   in Entry), 0x34 scroll (icon i at `scroll - 40 * i`; eased and wrapped by 40 * count), `color` -> alpha (only the
   pose material alpha).
-- effSandarsData 0x34 delay (counts to 0 before a cone starts). EffShockData: 0x14 tev1AType1 (alpha of type 1's fixed
-  yellow TEVREG1), 0x18 tev1A (TEVREG1 alpha beside tev1R/G/B), 0x1C life, 0x20 age (compared with 20 and 6), 0x24
+- effSandarsData 0x34 delay (counts to 0 before a cone starts). EffShockData: 0x14 type1Alpha (alpha of type 1's fixed
+  yellow TEVREG0), 0x18 tev1A (TEVREG0 alpha beside tev1R/G/B; `tev1` is GXSetTevColor's id 1, GX_TEVREG0), 0x1C life, 0x20 age (compared with 20 and 6), 0x24
   scale (PSMTXScale(0.25 * scale)), 0x2C offsetY (PSMTXTrans(0, offsetY, 0)).
 - effPacknBfireData (local): `vx/vy/vz` -> targetX/Y/Z (Entry's `vel = (target - pos) / a1`; passed on to the child
   flames as their target).
 - effBomheiData: x/y/z -> Vec position; 0x10 scale (PSMTXScale), 0x14 life (delete below 0), 0x18 age and 0x1C
-  lifetime (`animFrame = 9 * age / lifetime`), 0x20 animFrame (integer part the texture row, fraction the TEVREG2 blend
+  lifetime (`animFrame = 9 * age / lifetime`), 0x20 animFrame (integer part the texture row, fraction the TEVREG1 blend
   to the next row), 0x24 rotZ, 0x28 rotZVel.
 - effPokopiPchargeData 0x38: union { velX (particles: `x += velX`), offsetX (root: added to every particle's x in
   Disp's PSMTXTrans) }.
@@ -7462,9 +7462,9 @@ fcommon ran in parallel on rels/common. Data layout was not touched.
 - effTorchData: 0x10 scale, 0x14/0x18 scaleX/scaleY (PSMTXScale(scale * scaleX, scale * scaleY, scale)).
 - effBalloonN64Data: x/y/z -> Vec position; 0x10 rotZ, 0x14 targetRadius and 0x18 radius (`radius += 0.1 * (target -
   radius)`, the ring points' radius), 0x1C life, 0x20 phase (the wobble sines' phase; wraps 324000 -> 256), 0x24 segs.
-- effBlowData 0x58 alpha (u32 -> s32: TEVREG1 alpha, effBlowParticle's alpha at the same offset). effCoinData (local)
+- effBlowData 0x58 alpha (u32 -> s32: TEVREG0 alpha, effBlowParticle's alpha at the same offset). effCoinData (local)
   0x1C scale. effHagetakaFlushData: 0x10 life, 0x14 frame (scale and the color_rotation_data index), 0x24 alpha
-  (TEVREG1), 0x28 baseScale and 0x2C scale (their product is PSMTXScale's; 0x2C grows and halves at the end).
+  (TEVREG0), 0x28 baseScale and 0x2C scale (their product is PSMTXScale's; 0x2C grows and halves at the end).
 - effMiniGameWork: posX/Y/Z -> Vec pos.
 - ChargeEffectData 0x3C-0x44 color2R/G/B (TEVREG1, beside colorR/G/B in TEVREG0). DamageStarData: 0x24 timer
   (deletes below 0), 0x3C damage (sprintf "%d" and effNumberGX: the number on the star), 0x40 prevRetraceCount (s32
@@ -7485,7 +7485,7 @@ fcommon ran in parallel on rels/common. Data layout was not touched.
   255), 0x1C lifetime (header countdown, 1000 holds, deletes below 0), 0x20 age (segment frame counter, fades past 5),
   0x24 delay (the segment's pose isn't created until it reaches 0). Header prototype a/b/c -> type/segmentCount/lifetime.
 - EffPeachFukidashiData 0x18 rotZ. EffHolographyData: 0x10 lifetime, 0x14 frame (the vertex table and xlu_data
-  index), 0x18-0x20 colorR/G/B (TEVREG1), 0x24 alpha, 0x28 scale (PSMTXScale(-scale, scale, scale)).
+  index), 0x18-0x20 colorR/G/B (TEVREG0), 0x24 alpha, 0x28 scale (PSMTXScale(-scale, scale, scale)).
 - effFireData `colorIndex1/2` -> frame/nextFrame (the TEXMTX0/TEXMTX1 offsets of the texture strip, wrapped at
   frameMax; no colour involved). SyuryouData (local) `color` -> alpha (only the material alpha). effOpukuWprotectData
   x/y/z -> Vec position.
@@ -7517,7 +7517,7 @@ not checked against the asm, so not made pads).
 **For a reviewer.** The existing names corrected (machinegun scale/speed swap, fire frame/nextFrame, syuryou and naniga
 alpha, packn_bfire target, splash velX/velZ, rappa dir, recover_heart offsetX, wangflush pulseScale, particle numLive)
 and the unions (kemuri1, pokopi_pcharge). Borderline but kept: sheep `hopFrames` (named from Entry's projectile formula,
-its only reader), mist `rise*` (from the sign of the chain), shock `tev1AType1`. One consumer edit outside src/effect:
+its only reader), mist `rise*` (from the sign of the chain), shock `type1Alpha`. One consumer edit outside src/effect:
 src/driver/npcdrv.c's `work->scale = 0.8f` (MajinaiWork); fmap may touch that file. Leads: effGlassData `angle`/
 `angleVel` is a 0..1 animation phase (Disp uses `4 * angle` as the sheet frame; renaming it touches eff_freeze);
 effBlowData duplicates effBlowParticle; kemuri2's `active` is written once and never read; SstarVtx keeps `s16 unk[4]`.

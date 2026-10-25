@@ -15,7 +15,7 @@ typedef struct MistWork {
 	f32 velZ;       // 0x24
 	f32 riseSpeed;  // 0x28 type 4: added to y each frame (0.95 at start)
 	f32 riseAccel;  // 0x2C type 4: added to riseSpeed each frame
-	f32 riseDamp;   // 0x30 type 4: riseAccel is multiplied by this each frame
+	f32 riseAccelDecay; // 0x30 type 4: riseAccel is multiplied by this each frame
 	f32 alpha;      // 0x34
 	s32 counter;    // 0x38
 	s32 life;       // 0x3C

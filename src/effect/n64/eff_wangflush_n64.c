@@ -25,7 +25,7 @@ typedef struct effWangFlushData {
 	f32 scaleSpeed;   // 0x1C
 	f32 pulseScale;   // 0x20, type 0: scale of the colour-cycling back quad, pulses with duration
 	s32 alpha;        // 0x24
-	s32 pulseAlpha;   // 0x28, type 0: GX_TEVREG1 alpha of the colour-cycling back quad
+	s32 pulseAlpha;   // 0x28, type 0: GX_TEVREG0 alpha of the colour-cycling back quad
 	s32 duration;     // 0x2C
 	s32 frame;        // 0x30
 } effWangFlushData;

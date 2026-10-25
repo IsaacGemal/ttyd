@@ -12,7 +12,7 @@ typedef struct effHagetakaFlushData {
 	s32 field_0x18; //0x18, set to 70; never read
 	s32 field_0x1C; //0x1C, set to 180; never read
 	s32 field_0x20; //0x20, set to 120; never read
-	s32 alpha;      //0x24, TEVREG1 alpha
+	s32 alpha;      //0x24, TEVREG0 alpha
 	f32 baseScale;  //0x28, the Entry's scale; multiplies scale
 	f32 scale;      //0x2C, grows as 0.2 * frame + 0.3
 } effHagetakaFlushData;
