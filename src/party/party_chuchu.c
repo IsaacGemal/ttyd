@@ -50,11 +50,11 @@ USER_FUNC(search_result) {
             return EVT_RETURN_DONE;
         }
         psndSFXOn_3D((const char*)0x945, &party->position);
-        event->field_84 = 0x2A;
+        event->field_0x84 = 0x2A;
         partyChgPose(party, "PCH_Y_1");
     }
     partyChkGnd(party);
-    if (--*(s32*)&event->field_84 > 0) {
+    if (--*(s32*)&event->field_0x84 > 0) {
         return 0;
     }
     if (party != NULL) {

@@ -729,14 +729,14 @@ USER_FUNC(kaizoku_fune_eff) {
         event->userdata[0] = (s32)effFunemizuEntry(0, 0.0f, -1000.0f, 0.0f, 0.0f, 0.0f);
         mapObjGetPos("S_b", &pos);
         event->userdataf[2] = pos.x;
-        *(f32*)&event->field_84 = pos.z;
+        *(f32*)&event->field_0x84 = pos.z;
     }
     eff = (EffectEntry*)event->userdata[0];
     x = event->userdataf[2];
-    z = *(f32*)&event->field_84;
+    z = *(f32*)&event->field_0x84;
     mapObjGetPos("S_b", &pos);
     event->userdataf[2] = pos.x;
-    *(f32*)&event->field_84 = pos.z;
+    *(f32*)&event->field_0x84 = pos.z;
     dist = distABf(x, z, pos.x, pos.z);
     angle = angleABf(x, z, pos.x, pos.z);
     dir = (angle < 180.0f) ? 1.0f : -1.0f;
@@ -775,15 +775,15 @@ USER_FUNC(fune_eff) {
         event->userdata[1] = (s32)effFunemizuEntry(2, 0.0f, -1000.0f, 0.0f, 0.0f, 0.0f);
         mapObjGetPos("S_fune_m", &pos);
         event->userdataf[2] = pos.x;
-        *(f32*)&event->field_84 = pos.z;
+        *(f32*)&event->field_0x84 = pos.z;
     }
     eff1 = (EffectEntry*)event->userdata[0];
     eff2 = (EffectEntry*)event->userdata[1];
     x = event->userdataf[2];
-    z = *(f32*)&event->field_84;
+    z = *(f32*)&event->field_0x84;
     mapObjGetPos("S_fune_m", &pos);
     event->userdataf[2] = pos.x;
-    *(f32*)&event->field_84 = pos.z;
+    *(f32*)&event->field_0x84 = pos.z;
     dist = distABf(x, z, pos.x, pos.z);
     angle = angleABf(x, z, pos.x, pos.z);
     (void)angle;

@@ -5573,16 +5573,16 @@ static USER_FUNC(fune_eff) {
         event->userdata[1] = (s32)effFunemizuEntry(2, 0.0f, -1000.0f, 0.0f, 0.0f, 0.0f);
         mapObjGetPos("S_fune_a", &pos);
         event->userdataf[2] = pos.x;
-        *(f32*)&event->field_84 = pos.z;
+        *(f32*)&event->field_0x84 = pos.z;
     }
 
     e1 = (EffectEntry*)event->userdata[0];
     e2 = (EffectEntry*)event->userdata[1];
     oldX = event->userdataf[2];
-    oldZ = *(f32*)&event->field_84;
+    oldZ = *(f32*)&event->field_0x84;
     mapObjGetPos("S_fune_a", &pos);
     event->userdataf[2] = pos.x;
-    *(f32*)&event->field_84 = pos.z;
+    *(f32*)&event->field_0x84 = pos.z;
     dist = distABf(oldX, oldZ, pos.x, pos.z);
     angle = angleABf(oldX, oldZ, pos.x, pos.z);
     sign = (angle < 180.0f) ? 1.0f : -1.0f;

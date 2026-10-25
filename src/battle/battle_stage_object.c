@@ -5238,7 +5238,7 @@ USER_FUNC(_set_mobj_rotate_x) {
 			case 2:
 				event->userdata[1] = 0;
 				event->userdata[2] = 0x3C;
-				event->field_84 = 0;
+				event->field_0x84 = 0;
 				break;
 		}
 	}
@@ -5281,13 +5281,13 @@ USER_FUNC(_set_mobj_rotate_x) {
 				event->userdata[1]--;
 				changed = 1;
 			} else {
-				if ((s32)event->field_84 == 0) {
+				if ((s32)event->field_0x84 == 0) {
 					Vec v = {0.0f, 0.0f, -100.0f};
 					psndSFXOn_3D("SFX_BTL_STAGE_SET_FALL2", &v);
 				}
-				event->field_84++;
-				base->layer2Rotation.x = (s32)intpl_sub(2, event->field_84, event->userdata[2], 0.0f, 90.0f);
-				if ((s32)event->field_84 < event->userdata[2]) {
+				event->field_0x84++;
+				base->layer2Rotation.x = (s32)intpl_sub(2, event->field_0x84, event->userdata[2], 0.0f, 90.0f);
+				if ((s32)event->field_0x84 < event->userdata[2]) {
 					changed = 1;
 				}
 			}
@@ -5565,7 +5565,7 @@ USER_FUNC(_nozzle_turn) {
 
 	if (isFirstCall) {
 		event->userdata[2] = 0;
-		event->field_84 = 0;
+		event->field_0x84 = 0;
 		if (base->nozzleDir[unitId] != 0) {
 			event->userdata[2] = 0x1E;
 		}
@@ -5593,11 +5593,11 @@ USER_FUNC(_nozzle_turn) {
 		angle1 = -80.0f;
 	}
 
-	if ((s32)event->field_84 < 0x1E) {
+	if ((s32)event->field_0x84 < 0x1E) {
 		f32 oldAngle;
 		f32 newAngle;
 
-		event->field_84++;
+		event->field_0x84++;
 		switch (base->nozzleDir[unitId]) {
 			case 1:
 				oldAngle = 45.0f;
@@ -5628,7 +5628,7 @@ USER_FUNC(_nozzle_turn) {
 				newAngle = 0.0f;
 				break;
 		}
-		angle2 = intpl_sub(0xC, event->field_84, 0x1E, oldAngle, newAngle);
+		angle2 = intpl_sub(0xC, event->field_0x84, 0x1E, oldAngle, newAngle);
 	}
 
 	switch (unitId) {
@@ -5643,7 +5643,7 @@ USER_FUNC(_nozzle_turn) {
 			break;
 	}
 
-	if (event->userdata[2] >= 0x1E && (s32)event->field_84 >= 0x1E) {
+	if (event->userdata[2] >= 0x1E && (s32)event->field_0x84 >= 0x1E) {
 		base->nozzleDir[unitId] = base->nozzleTargetDir[unitId];
 		base->nozzleTurnEventId[unitId] = 0;
 		return 2;
@@ -5754,11 +5754,11 @@ USER_FUNC(_fall_frame) {
 
 	if (isFirstCall) {
 		event->userdata[2] = 0;
-		event->field_84 = (s32)obj->mPosition.y;
+		event->field_0x84 = (s32)obj->mPosition.y;
 	}
 	event->userdata[2]++;
 	obj->mPosition.y = intpl_sub(2, event->userdata[2] * event->userdata[2] / 0x3C, 0x3C,
-	                             (f32)(s32)event->field_84, 0.0f);
+	                             (f32)(s32)event->field_0x84, 0.0f);
 	if (event->userdata[2] < 0x3C) {
 		return EVT_RETURN_BLOCK;
 	}
@@ -5932,17 +5932,17 @@ USER_FUNC(_nozzle_work_effect) {
 			case 3:
 				NOZZLE_WORK_BODY(0, "nozzle_l", event->userdataEx[1], event->userdata[1])
 				NOZZLE_WORK_BODY(1, "nozzle_c", event->field_0x90[0], event->userdata[2])
-				NOZZLE_WORK_BODY(2, "nozzle_r", event->field_0x90[1], event->field_84)
+				NOZZLE_WORK_BODY(2, "nozzle_r", event->field_0x90[1], event->field_0x84)
 				done = 1;
 				break;
 			default:
 				if (val != 0 && base->fogEffect == NULL) {
 					event->userdata[0] = 0x78;
 					event->userdata[1] = 0;
-					event->field_84 = 0;
+					event->field_0x84 = 0;
 					event->userdata[2] = 0;
 					base->fogEffect = effNozleEntry(3, 0x3E8, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-					event->field_84 = (s32)base->fogEffect;
+					event->field_0x84 = (s32)base->fogEffect;
 					base->fogTurns = 2;
 					obj = BattleSearchObjectPtr("nozzle_c");
 					event->userdataEx[1] = psndSFXOn_3D("SFX_BTL_STAGE_DRYICE1", &obj->mPosition);

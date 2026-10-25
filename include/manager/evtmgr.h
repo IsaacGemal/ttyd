@@ -174,10 +174,10 @@ struct EventEntry {
         s32 userdata[3];
         f32 userdataf[3];
     }; // 0x78, TODO check
-    u32 field_84;              // 0x84
+    u32 field_0x84;            // 0x84, a scratch word user functions use in their own ways
     union {
         OSTime wInterpRelatedTime; // 0x88
-        s32 userdataEx[2];         // 0x88, two more scratch words for user functions (after userdata, field_84)
+        s32 userdataEx[2];         // 0x88, two more scratch words for user functions (after userdata, field_0x84)
     };
     u32 field_0x90[2];         // 0x90, unknown
     UserFunction userfunc;     // 0x98

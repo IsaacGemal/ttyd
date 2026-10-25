@@ -530,11 +530,11 @@ USER_FUNC(tik_npc_buruburu) {
         if (npc == (NpcEntry*)-2) {
             event->userdataf[1] = party->position.x;
             event->userdataf[2] = party->position.y;
-            *(f32*)&event->field_84 = party->position.z;
+            *(f32*)&event->field_0x84 = party->position.z;
         } else {
             event->userdataf[1] = npc->position.x;
             event->userdataf[2] = npc->position.y;
-            *(f32*)&event->field_84 = npc->position.z;
+            *(f32*)&event->field_0x84 = npc->position.z;
         }
     }
 
@@ -586,13 +586,13 @@ USER_FUNC(tik_npc_buruburu) {
         Vec pos = vec3_tik_00009200;
         pos.x = event->userdataf[1];
         pos.y = event->userdataf[2];
-        pos.z = *(f32*)&event->field_84;
+        pos.z = *(f32*)&event->field_0x84;
         party->position = pos;
     } else {
         Vec pos = vec3_tik_0000920c;
         pos.x = event->userdataf[1];
         pos.y = event->userdataf[2];
-        pos.z = *(f32*)&event->field_84;
+        pos.z = *(f32*)&event->field_0x84;
         npc->prevPosition = pos;
         npc->position = npc->prevPosition;
     }

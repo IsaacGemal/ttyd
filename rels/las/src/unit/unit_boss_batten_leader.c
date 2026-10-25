@@ -2636,7 +2636,7 @@ USER_FUNC(evt_eff_firechange00) {
     pos.y = ((BattenEffUserdata*)eff->userdata)->posY;
     pos.z = 0.0f;
     if (isFirstCall) {
-        event->field_84 = 0;
+        event->field_0x84 = 0;
         if (mode == 0) {
             PSVECSubtract(&target, &pos, &nowv);
             PSVECNormalize(&nowv, &nowv);
@@ -2650,7 +2650,7 @@ USER_FUNC(evt_eff_firechange00) {
             ((BattenEffUserdata*)eff->userdata)->field_0x30 = 0x14;
         }
     }
-    switch (event->field_84) {
+    switch (event->field_0x84) {
         case 0:
             break;
         case 1:
@@ -2694,11 +2694,11 @@ USER_FUNC(evt_eff_firechange00) {
     }
     ((BattenEffUserdata*)eff->userdata)->posX = pos.x;
     ((BattenEffUserdata*)eff->userdata)->posY = pos.y;
-    switch (event->field_84) {
+    switch (event->field_0x84) {
         case 0:
             if (PSVECSquareDistance(&pos, &target) < 225.0f) {
                 if (mode != 0) {
-                    event->field_84 = 1;
+                    event->field_0x84 = 1;
                 } else {
                     return 1;
                 }

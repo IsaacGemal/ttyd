@@ -429,7 +429,7 @@ USER_FUNC(mri_npc_buruburu) {
         event->userdataf[0] = 0.0f;
         event->userdataf[1] = npc->position.x;
         event->userdataf[2] = npc->position.y;
-        *(f32*)&event->field_84 = npc->position.z;
+        *(f32*)&event->field_0x84 = npc->position.z;
     }
     elapsed = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime);
     if ((elapsed % (period * 2)) >= period) {
@@ -464,7 +464,7 @@ USER_FUNC(mri_npc_buruburu) {
 
         pos.x = event->userdataf[1];
         pos.y = event->userdataf[2];
-        pos.z = *(f32*)&event->field_84;
+        pos.z = *(f32*)&event->field_0x84;
         npc->prevPosition = pos;
         npc->position = npc->prevPosition;
     }

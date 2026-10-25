@@ -201,17 +201,17 @@ USER_FUNC(_tatsumaki_effect) {
         event->userdata[0]++;
         event->userdata[1] = 0;
         event->userdata[2] = (s32)unit->mPosition.x;
-        event->field_84 = (s32)unit->mPosition.y - 40;
+        event->field_0x84 = (s32)unit->mPosition.y - 40;
         event->userdataEx[0] = (s32)unit->mPosition.z;
         event->userdataEx[1] = (s32)effKamekiTornadeN64Entry(0, 0x5A,
-            (f32)event->userdata[2], (f32)(s32)event->field_84, (f32)event->userdataEx[0],
+            (f32)event->userdata[2], (f32)(s32)event->field_0x84, (f32)event->userdataEx[0],
             3.0f);
         event->field_0x90[0] = (s32)effKamekiTornadeN64Entry(0, 0x5A,
-            (f32)event->userdata[2], (f32)(s32)event->field_84, (f32)event->userdataEx[0],
+            (f32)event->userdata[2], (f32)(s32)event->field_0x84, (f32)event->userdataEx[0],
             3.0f);
         event->field_0x90[1] = psndSFXOn("SFX_BTL_JUMP_TATUMAKI2");
         pos.x = (f32)event->userdata[2];
-        pos.y = (f32)(s32)event->field_84;
+        pos.y = (f32)(s32)event->field_0x84;
         pos.z = (f32)event->userdataEx[0];
         psndSFX_pos(event->field_0x90[1], &pos);
     }
@@ -229,13 +229,13 @@ USER_FUNC(_tatsumaki_effect) {
         ((effKamekiTornadeData*)((EffectEntry*)event->userdataEx[1])->userdata)->x =
             (f32)event->userdata[2] + c;
         ((effKamekiTornadeData*)((EffectEntry*)event->userdataEx[1])->userdata)->y =
-            (f32)(s32)event->field_84;
+            (f32)(s32)event->field_0x84;
         ((effKamekiTornadeData*)((EffectEntry*)event->userdataEx[1])->userdata)->z =
             (f32)event->userdataEx[0] + s;
         ((effKamekiTornadeData*)((EffectEntry*)event->field_0x90[0])->userdata)->x =
             (f32)event->userdata[2] - c;
         ((effKamekiTornadeData*)((EffectEntry*)event->field_0x90[0])->userdata)->y =
-            (f32)(s32)event->field_84;
+            (f32)(s32)event->field_0x84;
         ((effKamekiTornadeData*)((EffectEntry*)event->field_0x90[0])->userdata)->z =
             (f32)event->userdataEx[0] - s;
         if (event->userdata[1] >= 90) {
@@ -372,14 +372,14 @@ USER_FUNC(_kaiten_hammer_acrobat_rotate) {
             event->userdata[1] = (s32)(360.0f + reviseAngle(y));
         }
         event->userdata[2] = (unit->faceDirection * event->userdata[1]) / count;
-        event->field_84 = 0;
+        event->field_0x84 = 0;
     }
     BtlUnit_AddRotate(unit, 0.0f, (f32)event->userdata[2], 0.0f);
     event->userdata[0]--;
-    if ((s32)event->field_84 == 0) {
+    if ((s32)event->field_0x84 == 0) {
         event->userdata[1] -= event->userdata[2];
         if (event->userdata[1] <= 0x10E) {
-            event->field_84 = 1;
+            event->field_0x84 = 1;
             BtlUnit_SetAnim(part, (const char*)anim);
         }
     }

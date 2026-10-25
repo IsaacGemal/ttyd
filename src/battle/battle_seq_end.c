@@ -1537,7 +1537,7 @@ s32 _lvup_spot_move(EventEntry* event, BOOL isFirstCall) {
         event->userdata[0] = 0;
         event->userdata[1] = 0;
         event->userdata[2] = (s32)entry->pos.x;
-        event->field_84 = (s32)entry->pos.y;
+        event->field_0x84 = (s32)entry->pos.y;
         event->userdataEx[0] = 0;
     }
 
@@ -1554,31 +1554,31 @@ s32 _lvup_spot_move(EventEntry* event, BOOL isFirstCall) {
             break;
         case 1:
             entry->pos.x = float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_3_80420c6c * (f32)event->userdata[0]))) + (f32)event->userdata[2];
-            entry->pos.y = (f32)((s32)event->field_84 + 25) - float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_90_80420ca0));
+            entry->pos.y = (f32)((s32)event->field_0x84 + 25) - float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_90_80420ca0));
             break;
         case 2:
             entry->pos.x = float_65_80420ca8 * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_180_80420cac)) + (f32)event->userdata[2];
-            entry->pos.y = (f32)((s32)event->field_84 - 25) + float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_7p5_80420cb0 * (f32)event->userdata[0]) + float_90_80420ca0));
+            entry->pos.y = (f32)((s32)event->field_0x84 - 25) + float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_7p5_80420cb0 * (f32)event->userdata[0]) + float_90_80420ca0));
             break;
         case 3:
             entry->pos.x = (f32)event->userdata[2] - float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_4_80420c78 * (f32)event->userdata[0])));
-            entry->pos.y = (f32)((s32)event->field_84 + 25) - float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_90_80420ca0));
+            entry->pos.y = (f32)((s32)event->field_0x84 + 25) - float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_90_80420ca0));
             break;
         case 4:
             entry->pos.x = (f32)(event->userdata[2] - 50) - float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_3_80420c6c * (f32)event->userdata[0]) + float_270_80420cb4));
-            entry->pos.y = (f32)((s32)event->field_84 - 25) + float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_4p5_80420cb8 * (f32)event->userdata[0]) + float_90_80420ca0));
+            entry->pos.y = (f32)((s32)event->field_0x84 - 25) + float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_4p5_80420cb8 * (f32)event->userdata[0]) + float_90_80420ca0));
             break;
         }
         break;
     case 2:
         event->userdataEx[0] = 20;
         event->userdata[2] = (s32)entry->pos.x;
-        event->field_84 = (s32)entry->pos.y;
+        event->field_0x84 = (s32)entry->pos.y;
         event->userdata[1]++;
     case 3:
         --event->userdataEx[0];
         entry->pos.x = intplGetValue(2, event->userdataEx[0], 21, float_0_80420c7c, (f32)event->userdata[2]);
-        entry->pos.y = intplGetValue(2, event->userdataEx[0], 21, float_neg25_80420cbc, (f32)(s32)event->field_84);
+        entry->pos.y = intplGetValue(2, event->userdataEx[0], 21, float_neg25_80420cbc, (f32)(s32)event->field_0x84);
         {
             GXColor color = {0xFF, 0xFF, 0xFF, 0x00};
 
@@ -1663,14 +1663,14 @@ s32 _lvup_object_select_move(EventEntry* event, BOOL isFirstCall) {
         event->userdata[0] = 0;
         event->userdata[1] = 0x3C;
         event->userdata[2] = (s32)entry->pos.x;
-        event->field_84 = (s32)entry->pos.z;
+        event->field_0x84 = (s32)entry->pos.z;
         event->userdataEx[0] = (s32)mario->mPosition.x;
         event->userdataEx[1] = (s32)mario->mPosition.z;
     }
     event->userdata[0]++;
     if (event->userdata[0] < event->userdata[1]) {
         entry->pos.x = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->userdata[2], (f32)event->userdataEx[0]);
-        entry->pos.z = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->field_84, (f32)event->userdataEx[1]);
+        entry->pos.z = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->field_0x84, (f32)event->userdataEx[1]);
         entry->rot.y = reviseAngle(intplGetValue(5, event->userdata[0], event->userdata[1], float_0_80420c7c, float_2160_80420c84));
         return 0;
     }
@@ -1690,16 +1690,16 @@ s32 _lvup_object_decide_bound(EventEntry* event, BOOL isFirstCall) {
         event->userdata[0] = 0;
         event->userdata[1] = (s32)entry->pos.y;
         event->userdata[2] = 0x10;
-        event->field_84 = 0x1E;
+        event->field_0x84 = 0x1E;
         entry->state = 2;
     }
     event->userdata[0]++;
     if (event->userdata[0] < event->userdata[2]) {
         half = event->userdata[2] / 2;
         if (event->userdata[0] < half) {
-            entry->pos.y = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0], half, float_0_80420c7c, (f32)(s32)event->field_84);
+            entry->pos.y = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0], half, float_0_80420c7c, (f32)(s32)event->field_0x84);
         } else {
-            entry->pos.y = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0] - half, half, (f32)(s32)event->field_84, float_0_80420c7c);
+            entry->pos.y = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0] - half, half, (f32)(s32)event->field_0x84, float_0_80420c7c);
         }
         return 0;
     }

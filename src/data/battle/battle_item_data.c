@@ -6239,11 +6239,11 @@ s32 _throw_item_icon(EventEntry* event, BOOL isFirstCall) {
                       (f32)work->counter;
         event->userdata[1] = item;
         event->userdata[2] = 0;
-        event->field_84 = psndSFXOn_3D("SFX_ITEM_COOKING_THROW1", &pos);
+        event->field_0x84 = psndSFXOn_3D("SFX_ITEM_COOKING_THROW1", &pos);
     }
     work = (ThrowItemWork*)event->userdata[0];
     if (event->userdata[2] != 0) {
-        psndSFXOff(event->field_84);
+        psndSFXOff(event->field_0x84);
         BattleFree(work);
         return 2;
     }
@@ -6821,7 +6821,7 @@ s32 _nancy_mirage(EventEntry* event, BOOL isFirstCall) {
         event->userdata[0] = 60;
         event->userdata[1] = animPoseEntry("c_cook", 1);
         event->userdata[2] = 0;
-        event->field_84 = (s32)x;
+        event->field_0x84 = (s32)x;
         event->userdataEx[0] = (s32)y;
         event->userdataEx[1] = (s32)z;
         animPoseSetAnim(event->userdata[1], "A_2", 1);
@@ -7046,7 +7046,7 @@ void _nancy_disp(CameraId camera, void* param) {
         scaleValue = 4.0f;
         alpha = 0x80;
     }
-    PSMTXTrans(trans, (f32)(s32)event->field_84,
+    PSMTXTrans(trans, (f32)(s32)event->field_0x84,
                (f32)event->userdataEx[0],
                (f32)event->userdataEx[1]);
     PSMTXScale(scale, scaleValue, scaleValue, 1.0f);
