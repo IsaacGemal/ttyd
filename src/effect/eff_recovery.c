@@ -150,14 +150,14 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	data->anim = effMayaAnimAlloc(recovery_effAnimDt);
 	effPlayMayaAnim(data->anim);
 	data->type = type;
-	data->field_1 = count;
+	data->count = count;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->timer = 0;
 	data->timeBase = gp->retraceCount;
 	data->color = 0xFF;
-	data->field_40 = -30.0f;
+	data->targetY = -30.0f;
 
 	pos = recoveryZeroVec();
 	pos.x = data->x;
@@ -168,9 +168,9 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	switch (data->type) {
 	case 0:
 	case 7:
-		if (data->field_1 <= 5) {
+		if (data->count <= 5) {
 			psndSFXOn_3D(str_SFX_HP_RECOVER_SMALL1, &disp);
-		} else if (data->field_1 <= 0xA) {
+		} else if (data->count <= 0xA) {
 			psndSFXOn_3D(str_SFX_HP_RECOVER_MID1, &disp);
 		} else {
 			psndSFXOn_3D(str_SFX_HP_RECOVER_BIG1, &disp);
@@ -178,9 +178,9 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 		break;
 	case 1:
 	case 8:
-		if (data->field_1 <= 5) {
+		if (data->count <= 5) {
 			psndSFXOn_3D(str_SFX_FP_RECOVER_SMALL1, &disp);
-		} else if (data->field_1 <= 0xA) {
+		} else if (data->count <= 0xA) {
 			psndSFXOn_3D(str_SFX_FP_RECOVER_MID1, &disp);
 		} else {
 			psndSFXOn_3D(str_SFX_FP_RECOVER_BIG1, &disp);
@@ -269,7 +269,7 @@ void effRecoveryMain(EffectEntry* effect) {
 	Vec pos3;
 	s32 i;
 	s32 srcState;
-	s32 field_1;
+	s32 count;
 	s32 total;
 	s32 type;
 	u32 field;
@@ -282,7 +282,7 @@ void effRecoveryMain(EffectEntry* effect) {
 	srcState = 0;
 	total = 0;
 	field = 0;
-	f28 = data->field_40;
+	f28 = data->targetY;
 	effCalcMayaAnim(data->anim);
 	if (gp->retraceCount > data->timeBase) {
 		field = gp->retraceCount - data->timeBase;
@@ -292,12 +292,12 @@ void effRecoveryMain(EffectEntry* effect) {
 	}
 	while (field-- != 0) {
 		ptr = effect->userdata;
-		field_1 = ptr->field_1;
+		count = ptr->count;
 		f31 = ptr->x;
 		f30 = ptr->y;
 		f29 = ptr->z;
 		if (type == 4 || type == 5) {
-			field_1 = 10;
+			count = 10;
 		}
 		ptr->timer++;
 		if (ptr->timer > 10) {
@@ -310,7 +310,7 @@ void effRecoveryMain(EffectEntry* effect) {
 					break;
 				}
 				{
-					f32 ang = ((f32)(i - 1) * 360.0f / (f32)field_1 + 90.0f) * 6.2831855f / 360.0f;
+					f32 ang = ((f32)(i - 1) * 360.0f / (f32)count + 90.0f) * 6.2831855f / 360.0f;
 					ptr->velX = 12.0f * (f32)sin(ang);
 					ptr->velY = 0.0f;
 					{
@@ -352,7 +352,7 @@ void effRecoveryMain(EffectEntry* effect) {
 					t = intplGetValue(0xB, timer, 0x28, 0.0f, 360.0f);
 					{
 						f32 radius = distABf(0.0f, 0.0f, ptr->x, ptr->z);
-						f32 ang = ((f32)(i - 2) * 360.0f / (f32)field_1 + t + 90.0f) * 6.2831855f / 360.0f;
+						f32 ang = ((f32)(i - 2) * 360.0f / (f32)count + t + 90.0f) * 6.2831855f / 360.0f;
 						radius *= 0.99f;
 						ptr->x = radius * (f32)sin(ang);
 						ptr->z = radius * -(f32)cos(ang);
@@ -388,7 +388,7 @@ void effRecoveryMain(EffectEntry* effect) {
 				break;
 			}
 		}
-		if (((u32)type <= 1 || (u32)(type - 7) <= 1 || type == 4 || type == 5) && total >= field_1) {
+		if (((u32)type <= 1 || (u32)(type - 7) <= 1 || type == 4 || type == 5) && total >= count) {
 			RecoveryData* center = effect->userdata;
 			if (type != 7 && type != 8) {
 				effStardustEntry(2, 2, 0x1E, f31, f30 - 20.0f, f29, 30.0f, 30.0f);
@@ -399,18 +399,18 @@ void effRecoveryMain(EffectEntry* effect) {
 				soundArg = sound;
 				switch (center->type) {
 				case 0:
-					if (center->field_1 <= 5) {
+					if (center->count <= 5) {
 						psndSFXOn_3D(str_SFX_HP_RECOVER_SHINE1, &soundArg);
-					} else if (center->field_1 <= 10) {
+					} else if (center->count <= 10) {
 						psndSFXOn_3D(str_SFX_HP_RECOVER_SHINE2, &soundArg);
 					} else {
 						psndSFXOn_3D(str_SFX_HP_RECOVER_SHINE3, &soundArg);
 					}
 					break;
 				case 1:
-					if (center->field_1 <= 5) {
+					if (center->count <= 5) {
 						psndSFXOn_3D(str_SFX_FP_RECOVER_SHINE1, &soundArg);
-					} else if (center->field_1 <= 10) {
+					} else if (center->count <= 10) {
 						psndSFXOn_3D(str_SFX_FP_RECOVER_SHINE2, &soundArg);
 					} else {
 						psndSFXOn_3D(str_SFX_FP_RECOVER_SHINE3, &soundArg);
@@ -648,7 +648,7 @@ void effRecoveryDisp2(CameraId camId, void* param) {
 	f32 k05;
 
 	camGetPtr(camId);
-	num = data->field_1;
+	num = data->count;
 	type = data->type;
 	sprintf(buf, "%d", num);
 	len = strlen(buf);
