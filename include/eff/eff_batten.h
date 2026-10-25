@@ -12,10 +12,10 @@ typedef struct BattenData {
     u8 pad_0x15[3]; // 0x15
     s32 state;      // 0x18
     s32 timer;      // 0x1C
-    f32 field_0x20; // 0x20
+    u8 pad_0x20[4]; // 0x20
     s32 animPoseId; // 0x24
     Mtx matrix;     // 0x28
-    f32 field_0x58; // 0x58
+    u8 pad_0x58[4]; // 0x58
 } BattenData;
 EffectEntry* effBattenEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale);
 void effBattenMain(EffectEntry* effect);

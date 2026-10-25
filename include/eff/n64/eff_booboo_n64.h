@@ -5,7 +5,7 @@
 #include "driver/effdrv.h"
 
 typedef struct BoobooData {
-	s32 field_0x0;   // 0x0
+	s32 field_0x0;   // 0x0 written 1000 at init, never read
 	s32 timer;       // 0x4
 	s32 flags[11];   // 0x8
 	f32 x[11];       // 0x34

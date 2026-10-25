@@ -42,9 +42,9 @@ typedef struct effPacknBfireData {
 	f32 x;           // 0x04
 	f32 y;           // 0x08
 	f32 z;           // 0x0C
-	f32 vx;          // 0x10: target point (the flame flies from x/y/z toward it)
-	f32 vy;          // 0x14
-	f32 vz;          // 0x18
+	f32 targetX;      // 0x10: target point (the flame flies from x/y/z toward it)
+	f32 targetY;      // 0x14
+	f32 targetZ;      // 0x18
 	s32 travelFrames; // 0x1C: frames to reach the target
 	s32 lifetime;    // 0x20
 	s32 timer;       // 0x24
@@ -53,7 +53,7 @@ typedef struct effPacknBfireData {
 	s32 colorB0;     // 0x30
 	s32 alpha;       // 0x34: TEVREG0 alpha
 	s32 colorR1;     // 0x38: TEVREG1 colour
-	s32 field_0x3C;  // 0x3C
+	s32 field_0x3C;  // 0x3C: written with the TEVREG1 colours, never read (Disp uses colorG)
 	s32 colorB1;     // 0x40
 	s32 colorA1;     // 0x44
 	f32 scale;       // 0x48
@@ -61,7 +61,7 @@ typedef struct effPacknBfireData {
 	f32 texScrollY;  // 0x50
 	f32 texSpeedX;   // 0x54: set each frame from sin(omega)
 	f32 texSpeedY;   // 0x58: set each frame from cos(omega)
-	f32 field_0x5C;  // 0x5C
+	u8 pad_0x5C[4];  // 0x5C
 	f32 velX;        // 0x60: per-frame motion
 	f32 velY;        // 0x64
 	f32 velZ;        // 0x68
@@ -71,7 +71,7 @@ typedef struct effPacknBfireData {
 	f32 rotSpeed;    // 0x78: added to rotZ each frame
 } effPacknBfireData;
 
-EffectEntry* effPacknBfireN64Entry(s32 type, s32 a1, s32 a2, f32 x, f32 y, f32 z, f32 vx, f32 vy, f32 vz, f32 scale) {
+EffectEntry* effPacknBfireN64Entry(s32 type, s32 a1, s32 a2, f32 x, f32 y, f32 z, f32 targetX, f32 targetY, f32 targetZ, f32 scale) {
 	EffectEntry* effect;
 	effPacknBfireData* data;
 	s32 count;
@@ -99,12 +99,12 @@ EffectEntry* effPacknBfireN64Entry(s32 type, s32 a1, s32 a2, f32 x, f32 y, f32 z
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->vx = vx;
-	data->vy = vy;
-	data->vz = vz;
-	data->velX = (data->vx - data->x) / (f32)a1;
-	data->velY = (data->vy - data->y) / (f32)a1;
-	data->velZ = (data->vz - data->z) / (f32)a1;
+	data->targetX = targetX;
+	data->targetY = targetY;
+	data->targetZ = targetZ;
+	data->velX = (data->targetX - data->x) / (f32)a1;
+	data->velY = (data->targetY - data->y) / (f32)a1;
+	data->velZ = (data->targetZ - data->z) / (f32)a1;
 	data->scale = scale;
 
 	switch (type) {
@@ -187,7 +187,7 @@ void effPacknBfireMain(EffectEntry* effect) {
 	}
 	data->timer++;
 	if (data->lifetime == 1 && type == 1) {
-		effPacknBfireN64Entry(2, 0x20, 0x20, data->x, data->y, data->z, data->vx, data->vy, data->vz, float_1_8041f900);
+		effPacknBfireN64Entry(2, 0x20, 0x20, data->x, data->y, data->z, data->targetX, data->targetY, data->targetZ, float_1_8041f900);
 	}
 	if (data->lifetime < 0) {
 		effDelete(effect);
@@ -198,8 +198,8 @@ void effPacknBfireMain(EffectEntry* effect) {
 	switch (type) {
 	case 0:
 		if ((timer & 3) == 0) {
-			effPacknBfireN64Entry(1, data->travelFrames, data->travelFrames, data->x, data->y, data->z, data->vx, data->vy,
-			                      data->vz, float_1_8041f900);
+			effPacknBfireN64Entry(1, data->travelFrames, data->travelFrames, data->x, data->y, data->z, data->targetX, data->targetY,
+			                      data->targetZ, float_1_8041f900);
 		}
 		break;
 	case 1:

@@ -106,23 +106,23 @@ EffectEntry* effShockN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
 	effect->callback = effShockMain;
 
 	data->type = type;
-	data->field_0x20 = 0;
-	data->field_0x1C = 30;
+	data->age = 0;
+	data->life = 30;
 	data->field_0x10 = 0xFF;
-	data->field_0x14 = 0xFF;
-	data->field_0x18 = 0xFF;
+	data->tev1AType1 = 0xFF;
+	data->tev1A = 0xFF;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 
 	if (type == 2) {
-		data->field_0x24 = 1.0f;
+		data->scale = 1.0f;
 	} else {
-		data->field_0x24 = 0.0f;
+		data->scale = 0.0f;
 	}
 
 	data->field_0x28 = 0.5f * a5;
-	data->field_0x2C = 0.5f * a6;
+	data->offsetY = 0.5f * a6;
 
 	switch (type) {
 	case 0:
@@ -165,28 +165,28 @@ void effShockMain(EffectEntry* effect) {
 	position2 = position;
 
 	type = data->type;
-	if (data->field_0x1C < 100) {
-		data->field_0x1C--;
+	if (data->life < 100) {
+		data->life--;
 	}
-	data->field_0x20++;
-	life = data->field_0x1C;
+	data->age++;
+	life = data->life;
 	if (life < 0) {
 		effDelete(effect);
 		return;
 	}
 
-	frame = data->field_0x20;
+	frame = data->age;
 	if (type == 2) {
 		if (frame <= 20) {
-			data->field_0x24 *= 1.1f;
+			data->scale *= 1.1f;
 		}
 	} else {
-		data->field_0x24 += 0.05f * (8.0f - data->field_0x24);
+		data->scale += 0.05f * (8.0f - data->scale);
 	}
 
-	data->field_0x14 = (s32)((f32)data->field_0x14 * k9);
+	data->tev1AType1 = (s32)((f32)data->tev1AType1 * k9);
 	if (life < 5) {
-		data->field_0x18 = (s32)((f32)data->field_0x18 * k8);
+		data->tev1A = (s32)((f32)data->tev1A * k8);
 	}
 
 	if (frame > 6) {
@@ -219,18 +219,18 @@ void effShockDisp(CameraId cameraId, void* param) {
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(cam->view, trans, viewMtx);
 
-	GXSetTevColor(1, (GXColor){ data->tev1R, data->tev1G, data->tev1B, data->field_0x18 });
+	GXSetTevColor(1, (GXColor){ data->tev1R, data->tev1G, data->tev1B, data->tev1A });
 	GXSetTevColor(2, (GXColor){ data->tev2R, data->tev2G, data->tev2B, 0x00 });
 
 	GXSetCullMode(0);
 
 	if ((u32)(type - 1) <= 1 || type == 3) {
 		if (type == 1) {
-			GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0x00, data->field_0x14 });
+			GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0x00, data->tev1AType1 });
 		}
 
-		PSMTXTrans(trans, 0.0f, data->field_0x2C, 0.0f);
-		PSMTXScale(scale, 0.25f * data->field_0x24, 0.25f * data->field_0x24, 1.0f);
+		PSMTXTrans(trans, 0.0f, data->offsetY, 0.0f);
+		PSMTXScale(scale, 0.25f * data->scale, 0.25f * data->scale, 1.0f);
 		PSMTXConcat(trans, scale, trans);
 		PSMTXConcat(viewMtx, trans, trans);
 		GXLoadPosMtxImm(trans, 0);

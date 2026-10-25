@@ -76,7 +76,7 @@ void effNanigaDisp3(CameraId camId, void* param) {
 
 	camGetPtr(camId);
 	item = &itemDataTable[data->itemId];
-	PSMTXTrans(trans, data->posX, data->posY - 16.0f, data->posZ);
+	PSMTXTrans(trans, data->pos.x, data->pos.y - 16.0f, data->pos.z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXConcat(trans, rot, trans);
@@ -100,13 +100,13 @@ void effNanigaDisp2(CameraId camId, void* param) {
 	GXColor color;
 
 	camGetPtr(camId);
-	PSMTXTrans(trans, data->posX, data->posY - 20.f, data->posZ);
+	PSMTXTrans(trans, data->pos.x, data->pos.y - 20.f, data->pos.z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, mtx);
 	animPoseSetMaterialFlagOn(data->poseId, 0x40);
-	color = effNanigaMaterialColor(data->color);
+	color = effNanigaMaterialColor(data->alpha);
 	animPoseSetMaterialEvtColor(data->poseId, color);
 	animPoseMain(data->poseId);
 	animPoseDrawMtx(data->poseId, mtx, 1, 0.0f, 10.f);
@@ -152,7 +152,7 @@ void effNanigaDisp(CameraId camId, void* param) {
 	savedScale = data->scale;
 	scaleBoost = 1.5f;
 	data->scale = savedScale * scaleBoost;
-	PSMTXTrans(mtx, data->field_0x10.x, data->field_0x10.y, data->field_0x10.z);
+	PSMTXTrans(mtx, data->screenPos.x, data->screenPos.y, data->screenPos.z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx, rot, mtx);
@@ -163,8 +163,8 @@ void effNanigaDisp(CameraId camId, void* param) {
 	scissorSize = (u32)(iconSize * sizeScale);
 	extent = 20.f * sizeScale;
 	half = 0.5f;
-	centerY = (u32)((f32)gp->efbHeight * half - data->field_0x10.y);
-	centerX = (u32)((f32)gp->fbWidth * half + data->field_0x10.x);
+	centerY = (u32)((f32)gp->efbHeight * half - data->screenPos.y);
+	centerX = (u32)((f32)gp->fbWidth * half + data->screenPos.x);
 	GXSetScissor((u32)((f32)centerX - extent), (u32)((f32)centerY - extent), scissorSize, scissorSize);
 
 	effGetTexObj(0x57, &tex);
@@ -199,7 +199,7 @@ void effNanigaDisp(CameraId camId, void* param) {
 	for (i = 0; i < data->count + 5; i++) {
 		iconGetTexObj(&tex, itemDataTable[data->itemList[i % data->count]].icon_id);
 		GXLoadTexObj(&tex, 0);
-		PSMTXTrans(mtx, 0.0f, data->field_0x34 + -40.f * (f32)i, 0.0f);
+		PSMTXTrans(mtx, 0.0f, data->scroll + -40.f * (f32)i, 0.0f);
 		PSMTXScale(scale, 0.9f, 0.9f, 0.9f);
 		PSMTXConcat(base, mtx, mtx);
 		PSMTXConcat(mtx, scale, mtx);
@@ -236,9 +236,9 @@ void effNanigaMain(EffectEntry* effect) {
 	s32 state;
 
 #ifdef MUST_MATCH
-	vec = initializeVec2((Vec*)&data->posX);
+	vec = initializeVec2(&data->pos);
 #else
-	vec = initializeVec((Vec*)&data->posX);
+	vec = initializeVec(&data->pos);
 #endif
 	inBattle = gp->inBattle != 0;
 
@@ -260,7 +260,7 @@ void effNanigaMain(EffectEntry* effect) {
 		if (data->timer == 30) {
 			for (i = 0; i < 4; i++) {
 				scale = 0.5f + (f32)irand(200) / 100.f;
-				effKemuTestDrawCam(effKemuTestEntry(2, data->field_0x10.x, data->field_0x10.y, data->field_0x10.z, scale), 8);
+				effKemuTestDrawCam(effKemuTestEntry(2, data->screenPos.x, data->screenPos.y, data->screenPos.z, scale), 8);
 			}
 			psndSFXOn_3D("SFX_ITEM_WHAT1", &vec);
 		}
@@ -278,7 +278,7 @@ void effNanigaMain(EffectEntry* effect) {
 		}
 		break;
 	case 3:
-		data->field_0x34 = intplGetValue(5, data->timer, 300, data->start, data->end);
+		data->scroll = intplGetValue(5, data->timer, 300, data->start, data->end);
 		data->timer++;
 		if (data->timer > 300) {
 			psndSFXOff(data->sfxId);
@@ -303,11 +303,11 @@ void effNanigaMain(EffectEntry* effect) {
 			data->timer++;
 		}
 		else if (data->timer < 20) {
-			data->field_0x34 -= 4.0f;
+			data->scroll -= 4.0f;
 			data->timer++;
 		}
 		else {
-			data->field_0x34 = data->end - 40.f;
+			data->scroll = data->end - 40.f;
 			data->timer = 60;
 			data->state = 10;
 		}
@@ -317,12 +317,12 @@ void effNanigaMain(EffectEntry* effect) {
 			data->timer++;
 		}
 		else if (data->timer < 20) {
-			data->field_0x34 += 4.0f;
+			data->scroll += 4.0f;
 			data->timer++;
 		}
 		else {
 			// The addend is on the left so MWCC loads float_40 before data->end.
-			data->field_0x34 = 40.f + data->end;
+			data->scroll = 40.f + data->end;
 			data->timer = 60;
 			data->state = 10;
 		}
@@ -343,13 +343,13 @@ void effNanigaMain(EffectEntry* effect) {
 		break;
 	case 11:
 		if (animPoseGetLoopTimes(data->poseId) > 0.8f) {
-			effItemGetEntry(10, data->posX, data->posY, data->posZ);
+			effItemGetEntry(10, data->pos.x, data->pos.y, data->pos.z);
 			data->state++;
 		}
 		break;
 	case 12:
-		data->color -= 4;
-		if (data->color < 0) {
+		data->alpha -= 4;
+		if (data->alpha < 0) {
 			animPoseRelease(data->poseId);
 			data->poseId = -1;
 			data->timer = 30;
@@ -367,13 +367,13 @@ void effNanigaMain(EffectEntry* effect) {
 		break;
 	}
 
-	while (data->field_0x34 < 0.0f) {
-		data->field_0x34 += 40.f * (f32)data->count;
+	while (data->scroll < 0.0f) {
+		data->scroll += 40.f * (f32)data->count;
 	}
 	// Writing this loop's constant as the literal 40.0f (== 40.f) makes MWCC hoist
 	// that load before the shared int->float magic pair, matching the original's loop-setup order.
-	while (data->field_0x34 >= 40.0f * (f32)(data->count + 2)) {
-		data->field_0x34 -= 40.0f * (f32)data->count;
+	while (data->scroll >= 40.0f * (f32)(data->count + 2)) {
+		data->scroll -= 40.0f * (f32)data->count;
 	}
 
 	// A local keeps the second switch's selector live into the default case (the original has no reload).
@@ -420,9 +420,9 @@ EffectEntry* effNanigaEntry(s32 type, s32* itemList, s32 itemId, f32 x, f32 y, f
 	entry->callback = effNanigaMain;
 	entry->flags |= 2;
 	data->type = type;
-	data->posX = x;
-	data->posY = 20.f + y;
-	data->posZ = z;
+	data->pos.x = x;
+	data->pos.y = 20.f + y;
+	data->pos.z = z;
 	data->scale = 1.0f;
 	data->state = 0;
 	data->timer = 0;
@@ -434,7 +434,7 @@ EffectEntry* effNanigaEntry(s32 type, s32* itemList, s32 itemId, f32 x, f32 y, f
 	data->itemId = itemId;
 	ptr = itemList;
 	data->start = 0.0f;
-	data->field_0x34 = 0.0f;
+	data->scroll = 0.0f;
 	index = 0;
 	for (i = data->count; i > 0; i--) {
 		if (itemId == *ptr) {
@@ -458,14 +458,14 @@ EffectEntry* effNanigaEntry(s32 type, s32* itemList, s32 itemId, f32 x, f32 y, f
 	}
 	animGroupBaseAsync("EFF_naniga", inBattle, 0);
 	data->poseId = -1;
-	data->color = 0xFF;
-	vec = initializeVec((Vec*)&data->posX);
-	data->field_0x10 = vec;
-	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &data->field_0x10, &data->field_0x10);
-	PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &data->field_0x10, &data->field_0x10);
+	data->alpha = 0xFF;
+	vec = initializeVec(&data->pos);
+	data->screenPos = vec;
+	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &data->screenPos, &data->screenPos);
+	PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &data->screenPos, &data->screenPos);
 	half = 0.5f;
-	data->field_0x10.x *= gp->fbWidth * half;
-	data->field_0x10.y *= gp->efbHeight * half;
+	data->screenPos.x *= gp->fbWidth * half;
+	data->screenPos.y *= gp->efbHeight * half;
 	return entry;
 }
 

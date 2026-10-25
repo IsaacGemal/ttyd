@@ -8,7 +8,7 @@ typedef struct effSweatData {
 	s32 type;       // 0x00
 	Vec position;   // 0x04
 	f32 angle;      // 0x10
-	f32 field_0x14; // 0x14
+	u8 pad_0x14[4]; // 0x14
 	Vec velocity;   // 0x18
 	s32 life;       // 0x24
 	s32 age;        // 0x28
