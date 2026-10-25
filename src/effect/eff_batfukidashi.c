@@ -13,7 +13,7 @@
 const Vec vec3_802fd498 = { 0.0f, 0.0f, 0.0f };
 
 
-EffectEntry* effCoinFukidashiEntry(s32 type, f32 x, f32 y, f32 z, s32 coinNum, s32 count) {
+EffectEntry* effCoinFukidashiEntry(s32 type, f32 x, f32 y, f32 z, s32 coinNum, s32 life) {
     EffectEntry* entry;
     CoinFukidashiData* data;
 
@@ -29,16 +29,16 @@ EffectEntry* effCoinFukidashiEntry(s32 type, f32 x, f32 y, f32 z, s32 coinNum, s
     data->position.x = x;
     data->position.y = y;
     data->position.z = z;
-    data->field_0x10 = 0.0f;
+    data->offsetY = 0.0f;
     data->scale = 1.0f;
-    data->field_0x14 = coinNum;
+    data->coinNum = coinNum;
 
-    if (count <= 0) {
-        data->field_0x20 = 1000;
+    if (life <= 0) {
+        data->life = 1000;
     } else {
-        data->field_0x20 = count;
+        data->life = life;
     }
-    data->field_0x24 = 0;
+    data->offsetIdx = 0;
     data->alpha = 0;
 
     return entry;
@@ -65,15 +65,15 @@ void effCoinFukidashiMain(EffectEntry* effect) {
 
     if (effect->flags & 4) {
         effect->flags &= ~4;
-        data->field_0x20 = 16;
+        data->life = 16;
     }
 
-    if (data->field_0x20 < 1000) {
-        data->field_0x20--;
+    if (data->life < 1000) {
+        data->life--;
     }
 
-    if (data->field_0x20 < 16) {
-        data->alpha = data->field_0x20 * 16;
+    if (data->life < 16) {
+        data->alpha = data->life * 16;
     } else {
         data->alpha += 16;
         if (data->alpha > 255) {
@@ -81,15 +81,15 @@ void effCoinFukidashiMain(EffectEntry* effect) {
         }
     }
 
-    if (data->field_0x20 < 0) {
+    if (data->life < 0) {
         effDelete(effect);
         return;
     }
 
-    data->field_0x10 = (f32)offset_tbl[data->field_0x24] / 100.f;
-    data->field_0x24++;
-    if ((u32)data->field_0x24 >= 61) {
-        data->field_0x24 = 0;
+    data->offsetY = (f32)offset_tbl[data->offsetIdx] / 100.f;
+    data->offsetIdx++;
+    if ((u32)data->offsetIdx >= 61) {
+        data->offsetIdx = 0;
     }
 
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effCoinFukidashiDisp, effect);
@@ -123,7 +123,7 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
     GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, alpha });
 
-    PSMTXTrans(m0, data->position.x, data->position.y + data->field_0x10, data->position.z);
+    PSMTXTrans(m0, data->position.x, data->position.y + data->offsetY, data->position.z);
     PSMTXScale(m1, data->scale, data->scale, data->scale);
     PSMTXRotRad(m2, 'y', -camGetPtr(cameraId)->viewYaw * 0.017453292f);
     PSMTXConcat(m0, m1, m0);
@@ -150,7 +150,7 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     GXPosition3f32(-w * half, 0.0f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
 
-    sprintf(buf, "%d", data->field_0x14);
+    sprintf(buf, "%d", data->coinNum);
     textW = data->scale * (f32)FontGetMessageWidth(buf) / 3.0f;
     PSMTXTrans(m0, -textW * half, -28.0f, 0.0f);
     PSMTXScale(m1, data->scale / 3.0f, data->scale / 3.0f, data->scale / 3.0f);
@@ -160,7 +160,7 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
     PSMTXRotRad(m2, 'y', -camGetPtr(cameraId)->viewYaw * 0.017453292f);
     PSMTXConcat(m0, m2, m2);
-    PSMTXTrans(m0, 3.0f, 34.0f + data->field_0x10, 0.0f);
+    PSMTXTrans(m0, 3.0f, 34.0f + data->offsetY, 0.0f);
     PSMTXConcat(m2, m0, m0);
     PSMTXConcat(m0, m1, m0);
     FontDrawStart_alpha(alpha);

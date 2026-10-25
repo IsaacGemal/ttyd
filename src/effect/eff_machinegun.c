@@ -4,7 +4,7 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 
-EffectEntry* effMachinegunEntry(s32 type, f32 x, f32 y, f32 z, f32 angle, f32 scale, f32 field_0x10) {
+EffectEntry* effMachinegunEntry(s32 type, f32 x, f32 y, f32 z, f32 angle, f32 speed, f32 scale) {
 	EffectEntry* entry;
 	effMachinegunData* data;
 
@@ -19,9 +19,9 @@ EffectEntry* effMachinegunEntry(s32 type, f32 x, f32 y, f32 z, f32 angle, f32 sc
 	data->position.y = y;
 	data->position.z = z;
 	data->angle = angle;
-	data->field_0x10 = field_0x10;
-	data->lifetime = 0xFF;
 	data->scale = scale;
+	data->lifetime = 0xFF;
+	data->speed = speed;
 	return entry;
 }
 
@@ -34,9 +34,9 @@ void effMachinegunMain(EffectEntry* effect) {
 	disp.y = data->position.y;
 	disp.z = data->position.z;
 	position = disp;
-	data->position.x += data->scale * (f32)cos(6.2831855f * data->angle / 360.f);
-	data->position.y += data->scale * (f32)sin(6.2831855f * data->angle / 360.f);
-	data->scale *= 0.9f;
+	data->position.x += data->speed * (f32)cos(6.2831855f * data->angle / 360.f);
+	data->position.y += data->speed * (f32)sin(6.2831855f * data->angle / 360.f);
+	data->speed *= 0.9f;
 	data->lifetime -= 10;
 	if (data->lifetime < 0) {
 		effDelete(effect);
@@ -86,7 +86,7 @@ void effMachinegunDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
 	PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
-	PSMTXScale(scale, data->field_0x10, data->field_0x10, data->field_0x10);
+	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, rot, mtx);
 	PSMTXRotRad(rot, 'z', (180.f + data->angle) * 0.017453292f);

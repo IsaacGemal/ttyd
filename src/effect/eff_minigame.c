@@ -52,9 +52,9 @@ EffectEntry* effMiniGameEntry(s32 type, f32 x, f32 y, f32 z) {
 	entry->callback = effMiniGameMain;
 	entry->flags |= 2;
 	data->type = type;
-	data->posX = x;
-	data->posY = y;
-	data->posZ = z;
+	data->pos.x = x;
+	data->pos.y = y;
+	data->pos.z = z;
 	data->scaleY = 1.0f;
 	data->scaleX = 1.0f;
 	data->swing = 0.0f;
@@ -67,10 +67,10 @@ EffectEntry* effMiniGameEntry(s32 type, f32 x, f32 y, f32 z) {
 		data->alpha = 0xFF;
 		switch (data->state) {
 		case 0:
-			data->posX = 0.0f;
+			data->pos.x = 0.0f;
 			data->timer = (i - 1) * gp->framerate;
-			data->posY = 0.0f;
-			data->posZ = 0.0f;
+			data->pos.y = 0.0f;
+			data->pos.z = 0.0f;
 			data->scaleY = 0.0f;
 			data->scaleX = 0.0f;
 			data->rotZ = 0.0f;
@@ -84,16 +84,16 @@ EffectEntry* effMiniGameEntry(s32 type, f32 x, f32 y, f32 z) {
 // `* 26.0f / 2.0f` rather than `* 26.0f * 0.5f`, which keeps the product as the first fmuls operand
 // (same idiom as effMiniGameMain).
 			if (0x28 == data->state) {
-				data->posX =
+				data->pos.x =
 					(f32)(i - 1) * 26.0f - (f32)(entry->count - 1) * 26.0f / 2.0f;
 				data->timer = (i - 1) * 10;
 				data->state = 50;
 			} else {
-				data->posX = 0.0f;
+				data->pos.x = 0.0f;
 				data->timer = (i - 1) * gp->framerate;
 			}
-			data->posY = 500.0f;
-			data->posZ = 0.0f;
+			data->pos.y = 500.0f;
+			data->pos.z = 0.0f;
 			data->scaleY = 1.0f;
 			data->scaleX = 1.0f;
 			data->rotZ = 0.0f;
@@ -103,9 +103,9 @@ EffectEntry* effMiniGameEntry(s32 type, f32 x, f32 y, f32 z) {
 			break;
 		case 0x0A:
 		case 0x14:
-			data->posX = 1000.0f;
-			data->posY = 0.0f;
-			data->posZ = 0.0f;
+			data->pos.x = 1000.0f;
+			data->pos.y = 0.0f;
+			data->pos.z = 0.0f;
 			data->scaleY = 1.0f;
 			data->scaleX = 1.0f;
 			data->rotZ = 0.0f;
@@ -115,7 +115,7 @@ EffectEntry* effMiniGameEntry(s32 type, f32 x, f32 y, f32 z) {
 				data->timer = gp->framerate * 3;
 				data->scaleY = 0.0f;
 				data->scaleX = 0.0f;
-				data->posX =
+				data->pos.x =
 					(f32)(i - 3) * 26.0f - (f32)(entry->count - 3) * 26.0f / 2.0f;
 				data->alpha = 0;
 			}
@@ -140,7 +140,7 @@ static inline Vec initializeMiniGameVec(Vec* input) {
 // first fmadd/fmuls operand, which is what the original does.
 void effMiniGameMain(EffectEntry* effect) {
 	effMiniGameWork* data = effect->userdata;
-	Vec disp = initializeMiniGameVec((Vec*)&data->posX);
+	Vec disp = initializeMiniGameVec(&data->pos);
 	s32 i;
 	s32 retired = 0;
 
@@ -195,11 +195,11 @@ void effMiniGameMain(EffectEntry* effect) {
 			}
 			break;
 		case 11:
-			data->posX += data->vel;
+			data->pos.x += data->vel;
 			data->vel -= data->accel;
-			if (data->posX <
+			if (data->pos.x <
 				(f32)(i - 1) * 26.0f - (f32)(effect->count - 1) * 26.0f / 2.0f) {
-				data->posX =
+				data->pos.x =
 					(f32)(i - 1) * 26.0f - (f32)(effect->count - 1) * 26.0f / 2.0f;
 				data->timer = 0;
 				data->state++;
@@ -225,9 +225,9 @@ void effMiniGameMain(EffectEntry* effect) {
 			}
 			break;
 		case 14:
-			data->posX += data->vel;
+			data->pos.x += data->vel;
 			data->vel -= data->accel;
-			if (data->posX < -1000.0f) {
+			if (data->pos.x < -1000.0f) {
 				data->state++;
 			}
 			break;
@@ -265,9 +265,9 @@ void effMiniGameMain(EffectEntry* effect) {
 			}
 			break;
 		case 24:
-			data->posX += data->vel;
+			data->pos.x += data->vel;
 			data->vel -= data->accel;
-			if (data->posX < -1000.0f) {
+			if (data->pos.x < -1000.0f) {
 				data->state++;
 			}
 			break;
@@ -282,10 +282,10 @@ void effMiniGameMain(EffectEntry* effect) {
 			}
 			break;
 		case 31:
-			data->posY += data->vel;
+			data->pos.y += data->vel;
 			data->vel -= data->accel;
-			if (data->posY < 0.0f) {
-				data->posY = 0.0f;
+			if (data->pos.y < 0.0f) {
+				data->pos.y = 0.0f;
 				data->timer = 0;
 				data->state++;
 			}
@@ -310,10 +310,10 @@ void effMiniGameMain(EffectEntry* effect) {
 			}
 			break;
 		case 34:
-			data->posX -= 10.0f;
-			data->posY += 10.0f;
+			data->pos.x -= 10.0f;
+			data->pos.y += 10.0f;
 			data->swing += 30.0f;
-			if (data->posY > 300.0f) {
+			if (data->pos.y > 300.0f) {
 				data->state++;
 			}
 			break;
@@ -328,10 +328,10 @@ void effMiniGameMain(EffectEntry* effect) {
 			}
 			break;
 		case 51:
-			data->posY += data->vel;
+			data->pos.y += data->vel;
 			data->vel -= data->accel;
-			if (data->posY < 0.0f) {
-				data->posY = 0.0f;
+			if (data->pos.y < 0.0f) {
+				data->pos.y = 0.0f;
 				data->timer = 0;
 				data->state++;
 			}
@@ -356,10 +356,10 @@ void effMiniGameMain(EffectEntry* effect) {
 			}
 			break;
 		case 54:
-			data->posY += data->vel;
+			data->pos.y += data->vel;
 			data->vel -= data->accel;
 			data->rotZ += 3.0f;
-			if (data->posY < -500.0f) {
+			if (data->pos.y < -500.0f) {
 				data->state++;
 			}
 			break;
@@ -406,7 +406,7 @@ void effMiniGameDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	type = data->type;
 	GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
-	PSMTXTrans(mtx, data->posX, data->posY, data->posZ);
+	PSMTXTrans(mtx, data->pos.x, data->pos.y, data->pos.z);
 	PSMTXRotRad(rot, 'y', MTXDegToRad(-camGetPtr(camId)->viewYaw));
 	PSMTXScale(tmp, data->scaleX, data->scaleY, 1.0f);
 	PSMTXConcat(mtx, rot, base);
@@ -445,7 +445,7 @@ void effMiniGameDisp(CameraId camId, void* param) {
 			PSMTXConcat(mtx, rot, rot);
 			PSMTXTrans(mtx, 0.0f, -20.0f, 0.0f);
 			PSMTXConcat(rot, mtx, rot);
-			PSMTXTrans(mtx, entry->posX, entry->posY, entry->posZ);
+			PSMTXTrans(mtx, entry->pos.x, entry->pos.y, entry->pos.z);
 			PSMTXConcat(mtx, rot, mtx);
 			PSMTXScale(tmp, entry->scaleX, entry->scaleY, 1.0f);
 			PSMTXRotRad(rot, 'z', MTXDegToRad(entry->rotZ));

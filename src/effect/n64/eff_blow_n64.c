@@ -394,7 +394,7 @@ void effBlowDisp(CameraId camId, void* param) {
     PSMTXTrans(base, data->x, data->y, data->z);
     deg2rad = float_deg2rad_8041e98c;
     for (i = 1, data++; i < effect->count; i++, data++) {
-        GXSetTevColor(1, (GXColor){ 0xC8, 0xFF, 0xFF, data->field_0x58 });
+        GXSetTevColor(1, (GXColor){ 0xC8, 0xFF, 0xFF, data->alpha });
 
         PSMTXTrans(trans, data->x, data->y, data->z);
         PSMTXRotRad(rot, 'y', deg2rad * -camGetPtr(CAMERA_3D)->viewYaw);

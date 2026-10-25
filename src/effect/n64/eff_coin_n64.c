@@ -8,12 +8,12 @@
 #include <dolphin/mtx.h>
 
 typedef struct effCoinData {
-	s32 field_0x0;  // 0x0
+	s32 field_0x0;  // 0x0, the Entry's first argument; never read
 	s32 anim;       // 0x4
 	Vec position;   // 0x8
 	s32 counter;    // 0x14
 	s32 frame;      // 0x18
-	f32 field_0x1C; // 0x1C
+	f32 scale;      // 0x1C, coin's X/Y scale (PSMTXScale)
 	s32 timer;      // 0x20
 } effCoinData;
 
@@ -68,7 +68,7 @@ EffectEntry* effCoinN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale) {
 		p->position.z = (f32)src->z;
 		p->anim = -1;
 		p->timer = src->timer;
-		p->field_0x1C = scale * (f32)src->scale * 0.01f;
+		p->scale = scale * (f32)src->scale * 0.01f;
 	}
 	return effect;
 }
@@ -145,7 +145,7 @@ void effCoinDisp(CameraId camId, void* param) {
 		if (data->timer != 0) {
 			continue;
 		}
-		scale = data->field_0x1C;
+		scale = data->scale;
 		PSMTXTrans(mtx0, data->position.x, data->position.y, data->position.z);
 		if (1.0f != scale) {
 			PSMTXScale(scaleMtx, scale, scale, 1.0f);

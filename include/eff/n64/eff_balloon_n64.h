@@ -9,16 +9,14 @@ typedef struct BalloonSeg {
 } BalloonSeg;
 typedef struct effBalloonN64Data {
 	s32 type;       // 0x00
-	f32 x;          // 0x04
-	f32 y;          // 0x08
-	f32 z;          // 0x0C
-	f32 field_0x10; // 0x10
-	f32 field_0x14; // 0x14
-	f32 field_0x18; // 0x18
-	s32 field_0x1C; // 0x1C
-	s32 field_0x20; // 0x20
-	BalloonSeg field_0x24[21]; // 0x24, 20 ring points, then the tip offset
+	Vec position;   // 0x04
+	f32 rotZ;         // 0x10, tilt about Z (degrees)
+	f32 targetRadius; // 0x14, radius eases towards this
+	f32 radius;       // 0x18, ring radius before the wobble
+	s32 life;         // 0x1C, 100 while held (effect flag 4 sets 99); below 100 counts down, deleted below 0; Disp picks texture and mesh from it
+	s32 phase;        // 0x20, frame counter for the wobble sines; wraps from 324000 to 256
+	BalloonSeg segs[21]; // 0x24, 20 ring points, then the tip offset
 } effBalloonN64Data;
-EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5);
+EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 targetRadius, f32 angleDeg);
 void effBalloonMain(EffectEntry* effect);
 void effBalloonDisp(CameraId camId, void* param);
