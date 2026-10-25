@@ -77,8 +77,8 @@ BattleUnitKind UNIT_DATA_SYM = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 18.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 15.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 10.0f, 28.0f, 0.0f },     // kissHitOffset
     { 0.0f, 22.0f, 0.0f },      // cutBaseOffset
@@ -88,7 +88,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_ENM_HUMMER_DAMAGED1",  // damageSfxName

@@ -79,8 +79,8 @@ BattleUnitKind unit_yami_togekuri = {
     { 0.0f, 0.0f, 0.0f },        // talkTogeBaseOffset
     { 12.0f, 0.0f, -10.0f },     // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },        // burnFlameOffset
-    0.0f,                        // field_0x54
-    0.0f,                        // field_0x58
+    0.0f,                        // kagenukeOffsetX
+    0.0f,                        // kagenukeOffsetZ
     { 11.5f, 0.0f, 0.0f },       // bintaHitOffset
     { 11.5f, 18.0f, 0.0f },      // kissHitOffset
     { 0.0f, 15.0f, 0.0f },       // cutBaseOffset
@@ -90,7 +90,7 @@ BattleUnitKind unit_yami_togekuri = {
     0,                           // turnOrderVariance
     0,                           // swallowRate
     2,                           // swallowAttribute
-    100,                         // field_0x8C
+    100,                         // shotDamageRate
     20,                          // itemStealParam
     { 0.0f, 0.0f, 0.0f },        // starPointDispOffset
     "SFX_ENM_TOGEKURI_DAMAGED1", // damageSfxName

@@ -65,8 +65,8 @@ BattleUnitKind unit_pansy = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 11.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 11.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 6.0f, 20.8f, 0.0f },      // kissHitOffset
     { 0.0f, 16.0f, 0.0f },      // cutBaseOffset
@@ -76,7 +76,7 @@ BattleUnitKind unit_pansy = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_ENM_PANSY_DAMAGED1",   // damageSfxName

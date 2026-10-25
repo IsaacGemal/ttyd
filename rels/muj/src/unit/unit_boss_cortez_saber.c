@@ -68,8 +68,8 @@ BattleUnitKind unit_boss_cortez_saber = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 60.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 60.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 60.0f, 32.5f, 0.0f },     // kissHitOffset
     { 0.0f, 25.0f, 0.0f },      // cutBaseOffset
@@ -79,7 +79,7 @@ BattleUnitKind unit_boss_cortez_saber = {
     0,                          // turnOrderVariance
     -1,                         // swallowRate
     0,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_KOR_DAMAGED1",    // damageSfxName

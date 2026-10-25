@@ -194,8 +194,8 @@ BattleUnitKind unitdata_Mario = {
     { 0.0f, 40.0f, 0.0f },           // talkTogeBaseOffset
     { 0.0f, 40.0f, 0.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
-    0.0f,                            // field_0x54
-    0.0f,                            // field_0x58
+    0.0f,                            // kagenukeOffsetX
+    0.0f,                            // kagenukeOffsetZ
     { 11.0f, 0.0f, 0.0f },           // bintaHitOffset
     { 11.0f, 23.4f, 0.0f },          // kissHitOffset
     { 0.0f, 0.0f, 0.0f },            // cutBaseOffset
@@ -205,7 +205,7 @@ BattleUnitKind unitdata_Mario = {
     0,                               // turnOrderVariance
     -1,                              // swallowRate
     0,                               // swallowAttribute
-    100,                             // field_0x8C
+    100,                             // shotDamageRate
     20,                              // itemStealParam
     { 0.0f, 0.0f, 0.0f },            // starPointDispOffset
     "SFX_MARIO_DAMAGE1",             // damageSfxName

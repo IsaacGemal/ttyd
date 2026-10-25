@@ -72,8 +72,8 @@ BattleUnitKind unit_iron_sinemon2 = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 26.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 26.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 16.0f, 36.0f, 0.0f },     // kissHitOffset
     { 0.0f, 27.0f, 0.0f },      // cutBaseOffset
@@ -83,7 +83,7 @@ BattleUnitKind unit_iron_sinemon2 = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_ISIN_DAMAGED1",   // damageSfxName

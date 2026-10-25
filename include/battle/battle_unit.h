@@ -770,8 +770,10 @@ typedef struct BattleUnitKind {
     Vec talkTogeBaseOffset;            // 0x30, BtlUnit_GetTalkTogePos
     Vec heldItemBaseOffset;            // 0x3C, copied to BattleUnit.heldItemBaseOffset (the held item's icon)
     Vec burnFlameOffset;               // 0x48, BSE_Fire
-    f32 field_0x54;                    // 0x54
-    f32 field_0x58;                    // 0x58
+    f32 kagenukeOffsetX;               // 0x54, unk_8017d03c (Vivian's Shade Fist, the _make_kagenuke_weapon attack):
+                                       //       added to the target's hit x she dives to, times the target's facing
+                                       //       and x scale
+    f32 kagenukeOffsetZ;               // 0x58, added to the hit z, times the target's z scale
     Vec bintaHitOffset;                // 0x5C, Love Slap
     Vec kissHitOffset;                 // 0x68, Lip Lock
     Vec cutBaseOffset;                 // 0x74
@@ -781,7 +783,9 @@ typedef struct BattleUnitKind {
     s8 turnOrderVariance;              // 0x89
     s8 swallowRate;                    // 0x8A
     s8 swallowAttribute;               // 0x8B
-    u8 field_0x8C;                     // 0x8C, a chance (%) rolled in BattleCheckDamage
+    u8 shotDamageRate;                 // 0x8C, BattleCheckDamage: chance (%) that damage patterns 0xE/0x10 apply
+                                       //       (subsetevt_shot_damage: the kaiten/ultra hammer shoots the target
+                                       //       into the others); else the hit uses pattern 0
     u8 itemStealParam;                 // 0x8D, _get_itemsteal_param
     Vec starPointDispOffset;           // 0x90
     const char* damageSfxName;         // 0x9C, BattleDamageDirect

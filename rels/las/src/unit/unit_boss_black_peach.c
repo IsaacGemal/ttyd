@@ -177,8 +177,8 @@ BattleUnitKind unit_boss_black_peach = {
     { 0.0f, 40.0f, 0.0f },      // talkTogeBaseOffset
     { 20.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 15.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 15.0f, 45.0f, 0.0f },     // kissHitOffset
     { 0.0f, 27.0f, 0.0f },      // cutBaseOffset
@@ -188,7 +188,7 @@ BattleUnitKind unit_boss_black_peach = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     0,                          // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_BPCH_DAMAGED1",   // damageSfxName
@@ -1331,8 +1331,8 @@ BattleUnitKind unit_boss_shadow_queen = {
     { 0.0f, 40.0f, 0.0f },      // talkTogeBaseOffset
     { 20.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 25.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 50.0f, 40.0f, 0.0f },     // kissHitOffset
     { 0.0f, 27.0f, 0.0f },      // cutBaseOffset
@@ -1342,7 +1342,7 @@ BattleUnitKind unit_boss_shadow_queen = {
     0,                          // turnOrderVariance
     -1,                         // swallowRate
     0,                          // swallowAttribute
-    0,                          // field_0x8C
+    0,                          // shotDamageRate
     0,                          // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_QWEN_DAMAGED1",   // damageSfxName
@@ -1732,8 +1732,8 @@ BattleUnitKind unit_boss_shadow_hand_1 = {
     { 40.0f, 40.0f, 0.0f },            // talkTogeBaseOffset
     { 45.0f, 0.0f, -10.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },              // burnFlameOffset
-    0.0f,                              // field_0x54
-    0.0f,                              // field_0x58
+    0.0f,                              // kagenukeOffsetX
+    0.0f,                              // kagenukeOffsetZ
     { 25.0f, 0.0f, 0.0f },             // bintaHitOffset
     { 45.0f, 71.5f, 0.0f },            // kissHitOffset
     { -30.0f, 55.0f, 0.0f },           // cutBaseOffset
@@ -1743,7 +1743,7 @@ BattleUnitKind unit_boss_shadow_hand_1 = {
     0,                                 // turnOrderVariance
     -1,                                // swallowRate
     0,                                 // swallowAttribute
-    0,                                 // field_0x8C
+    0,                                 // shotDamageRate
     0,                                 // itemStealParam
     { 0.0f, 0.0f, 0.0f },              // starPointDispOffset
     "SFX_BOSS_QWEN_DAMAGED1",          // damageSfxName
@@ -1844,8 +1844,8 @@ BattleUnitKind unit_boss_shadow_hand_2 = {
     { 40.0f, 40.0f, 0.0f },            // talkTogeBaseOffset
     { 45.0f, 0.0f, -10.0f },           // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },              // burnFlameOffset
-    0.0f,                              // field_0x54
-    0.0f,                              // field_0x58
+    0.0f,                              // kagenukeOffsetX
+    0.0f,                              // kagenukeOffsetZ
     { 25.0f, 0.0f, 0.0f },             // bintaHitOffset
     { 45.0f, 71.5f, 0.0f },            // kissHitOffset
     { -30.0f, 55.0f, 0.0f },           // cutBaseOffset
@@ -1855,7 +1855,7 @@ BattleUnitKind unit_boss_shadow_hand_2 = {
     0,                                 // turnOrderVariance
     -1,                                // swallowRate
     0,                                 // swallowAttribute
-    0,                                 // field_0x8C
+    0,                                 // shotDamageRate
     0,                                 // itemStealParam
     { 0.0f, 0.0f, 0.0f },              // starPointDispOffset
     "SFX_BOSS_QWEN_DAMAGED1",          // damageSfxName
@@ -1956,8 +1956,8 @@ BattleUnitKind unit_boss_shadow_hand_small = {
     { 40.0f, 40.0f, 0.0f },       // talkTogeBaseOffset
     { 110.0f, 0.0f, -10.0f },     // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },         // burnFlameOffset
-    0.0f,                         // field_0x54
-    0.0f,                         // field_0x58
+    0.0f,                         // kagenukeOffsetX
+    0.0f,                         // kagenukeOffsetZ
     { 110.0f, 0.0f, 0.0f },       // bintaHitOffset
     { 110.0f, 29.25f, 0.0f },     // kissHitOffset
     { 0.0f, 22.0f, 0.0f },        // cutBaseOffset
@@ -1967,7 +1967,7 @@ BattleUnitKind unit_boss_shadow_hand_small = {
     0,                            // turnOrderVariance
     -1,                           // swallowRate
     0,                            // swallowAttribute
-    0,                            // field_0x8C
+    0,                            // shotDamageRate
     0,                            // itemStealParam
     { 0.0f, 0.0f, 0.0f },         // starPointDispOffset
     "SFX_BOSS_QWEN_DAMAGED1",     // damageSfxName

@@ -65,8 +65,8 @@ BattleUnitKind unit_boss_moamoa_mouth = {
     { 280.0f, 40.0f, 0.0f },    // talkTogeBaseOffset
     { 100.0f, 0.0f, -10.0f },   // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 100.0f, 0.0f, 0.0f },     // bintaHitOffset
     { 80.0f, 80.0f, 20.0f },    // kissHitOffset
     { 0.0f, 120.0f, 0.0f },     // cutBaseOffset
@@ -76,7 +76,7 @@ BattleUnitKind unit_boss_moamoa_mouth = {
     0,                          // turnOrderVariance
     -1,                         // swallowRate
     0,                          // swallowAttribute
-    0,                          // field_0x8C
+    0,                          // shotDamageRate
     0,                          // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_MOA_G_DAMAGED1",  // damageSfxName

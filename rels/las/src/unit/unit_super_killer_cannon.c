@@ -69,8 +69,8 @@ BattleUnitKind unit_super_killer_cannon = {
     { 0.0f, 0.0f, 0.0f },            // talkTogeBaseOffset
     { 26.0f, 0.0f, -10.0f },         // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
-    20.0f,                           // field_0x54
-    10.0f,                           // field_0x58
+    20.0f,                           // kagenukeOffsetX
+    10.0f,                           // kagenukeOffsetZ
     { 26.0f, 0.0f, 0.0f },           // bintaHitOffset
     { 26.0f, 24.7f, 0.0f },          // kissHitOffset
     { -10.0f, 19.0f, 0.0f },         // cutBaseOffset
@@ -80,7 +80,7 @@ BattleUnitKind unit_super_killer_cannon = {
     0,                               // turnOrderVariance
     0,                               // swallowRate
     2,                               // swallowAttribute
-    100,                             // field_0x8C
+    100,                             // shotDamageRate
     20,                              // itemStealParam
     { 0.0f, 0.0f, 0.0f },            // starPointDispOffset
     "SFX_ENM_KILLER_CANON_DAMAGED1", // damageSfxName

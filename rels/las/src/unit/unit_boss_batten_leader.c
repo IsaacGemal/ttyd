@@ -596,8 +596,8 @@ BattleUnitKind unit_boss_batten_leader = {
     { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
     { 34.0f, 0.0f, -10.0f },    // heldItemBaseOffset
     { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
-    0.0f,                       // field_0x54
-    0.0f,                       // field_0x58
+    0.0f,                       // kagenukeOffsetX
+    0.0f,                       // kagenukeOffsetZ
     { 34.0f, 0.0f, 0.0f },      // bintaHitOffset
     { 20.0f, 42.9f, 10.0f },    // kissHitOffset
     { 0.0f, 33.0f, 0.0f },      // cutBaseOffset
@@ -607,7 +607,7 @@ BattleUnitKind unit_boss_batten_leader = {
     0,                          // turnOrderVariance
     0,                          // swallowRate
     2,                          // swallowAttribute
-    100,                        // field_0x8C
+    100,                        // shotDamageRate
     20,                         // itemStealParam
     { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
     "SFX_BOSS_SRYO_DAMAGED1",   // damageSfxName
