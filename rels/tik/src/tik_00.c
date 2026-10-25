@@ -45,20 +45,19 @@
 #include "math_ext.h"
 #include "driver/mapdrv.h"
 
-// Work area for the fortune-teller (uranai) card rendering. Only the fields
-// reached by this file are named; the rest is the copy of the event's LW/GW
-// area that uranai_init_func stores here (0x0..0xBF).
+// Work area for the fortune-teller (uranai) card rendering, with the copy of
+// the event's LW/GW area that uranai_init_func stores here (0x0..0xBF).
 typedef struct UranaiWork {
-    s32 field_0x0[16];      // 0x0, the init event's lwData, copied back to the exit event
-    s32 field_0x40[32];     // 0x40, gwData, saved by init and restored on exit
+    s32 savedLw[16];        // 0x0, the init event's lwData, copied back to the exit event
+    s32 savedGw[32];        // 0x40, gwData, saved by init and restored on exit
     smartEntry* buffer;     // 0xC0, render target from smartAlloc
     GXTexObj texObj;        // 0xC4
-    s32 field_0xE4;         // 0xE4, texture valid flag
-    EventEntry* field_0xE8; // 0xE8, the evt_uranai_cap event
+    s32 texValid;           // 0xE4, set once uranai_cap has copied the texture; card_tev loads it only then
+    EventEntry* capEvent;   // 0xE8, the evt_uranai_cap event (evtDelete on exit)
     s32 field_0xEC;         // 0xEC
     s32 field_0xF0;         // 0xF0
-    s32 field_0xF4;         // 0xF4, viewport width (low 16 bits)
-    s32 field_0xF8;         // 0xF8, viewport height (low 16 bits)
+    s32 width;              // 0xF4, uranai_cap's viewport and texture width (low 16 bits)
+    s32 height;             // 0xF8, uranai_cap's viewport and texture height (low 16 bits)
 } UranaiWork;
 
 #pragma pool_data off
@@ -159,8 +158,8 @@ USER_FUNC(uranai_init_func) {
 
     uranai_wp = _mapAlloc(0xFC);
     memset(uranai_wp, 0, 0xFC);
-    memcpy(uranai_wp->field_0x0, event->lwData, 0x40);
-    memcpy(uranai_wp->field_0x40, evtGetWork()->gwData, 0x80);
+    memcpy(uranai_wp->savedLw, event->lwData, 0x40);
+    memcpy(uranai_wp->savedGw, evtGetWork()->gwData, 0x80);
     for (i = 0; i < 9; i++) {
         sprintf(name, "card_omote_%d", i + 1);
         if (mapGetMapObj(name) != NULL) {
@@ -171,14 +170,14 @@ USER_FUNC(uranai_init_func) {
             mapGetMapObj(name)->cameraId = 5;
         }
     }
-    uranai_wp->field_0xE8 = evtEntry(evt_uranai_cap, 0, 0);
+    uranai_wp->capEvent = evtEntry(evt_uranai_cap, 0, 0);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(uranai_exit_func) {
-    memcpy(event->lwData, uranai_wp->field_0x0, 0x40);
-    memcpy(evtGetWork()->gwData, uranai_wp->field_0x40, 0x80);
-    evtDelete(uranai_wp->field_0xE8);
+    memcpy(event->lwData, uranai_wp->savedLw, 0x40);
+    memcpy(evtGetWork()->gwData, uranai_wp->savedGw, 0x80);
+    evtDelete(uranai_wp->capEvent);
     _mapFree(uranai_wp);
     return EVT_RETURN_DONE;
 }
@@ -362,8 +361,8 @@ void uranai_cap(CameraId cameraId, void* param) {
     u32 ht;
 
     camGetPtr(CAMERA_3D);
-    width = (u16)uranai_wp->field_0xF4;
-    height = (u16)uranai_wp->field_0xF8;
+    width = (u16)uranai_wp->width;
+    height = (u16)uranai_wp->height;
     GXGetViewportv(viewport);
     GXGetProjectionv(proj);
     GXGetScissor(&left, &top, &wd, &ht);
@@ -404,7 +403,7 @@ void uranai_cap(CameraId cameraId, void* param) {
     GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
     GXSetProjectionv(proj);
     GXSetScissor(left, top, wd, ht);
-    uranai_wp->field_0xE4 = 1;
+    uranai_wp->texValid = 1;
 }
 
 USER_FUNC(uranai_cap_evt) {
@@ -413,7 +412,7 @@ USER_FUNC(uranai_cap_evt) {
 }
 
 void card_tev(MapTevCallback* param) {
-    if (uranai_wp->field_0xE4 != 0) {
+    if (uranai_wp->texValid != 0) {
         GXLoadTexObj(smartTexObj(&uranai_wp->texObj, &uranai_wp->buffer->address), GX_TEXMAP0);
         GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
         GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -442,8 +441,8 @@ USER_FUNC(uranai_bbox) {
     evtGetValue(event, args[3]);
     uranai_wp->field_0xEC = value;
     uranai_wp->field_0xF0 = value;
-    uranai_wp->field_0xF4 = value;
-    uranai_wp->field_0xF8 = value;
+    uranai_wp->width = value;
+    uranai_wp->height = value;
     return EVT_RETURN_DONE;
 }
 
