@@ -2,19 +2,17 @@
 
 #include <dolphin/types.h>
 #include "driver/camdrv.h"
-// Only the fields used by effPokopiThunderMain are named; the reserved runs cover the
-// per-particle arrays the other functions of this file use.
 typedef struct EffPokopiThunderData {
 	s32 type;        // 0x0
 	f32 x;           // 0x4
 	f32 y;           // 0x8
 	f32 z;           // 0xC
-	f32 field_0x10;  // 0x10
-	f32 field_0x14;  // 0x14
-	f32 field_0x18;  // 0x18
-	f32 field_0x1C;  // 0x1C
-	f32 field_0x20;  // 0x20
-	f32 field_0x24;  // 0x24
+	f32 startX;      // 0x10 bolt start; Disp spaces the 12 points from start to end
+	f32 startY;      // 0x14
+	f32 startZ;      // 0x18
+	f32 endX;        // 0x1C bolt end
+	f32 endY;        // 0x20
+	f32 endZ;        // 0x24
 	s32 lifetime;    // 0x28
 	s32 timer;       // 0x2C
 	s32 tev1R;  // 0x30
@@ -24,13 +22,13 @@ typedef struct EffPokopiThunderData {
 	s32 tev2R;  // 0x40
 	s32 tev2G;  // 0x44
 	s32 tev2B;  // 0x48
-	f32 field_0x4C;  // 0x4C
+	f32 scale;       // 0x4C multiplies the strip's half-width (with ptScale)
 	f32 ptX[12];     // 0x50
 	f32 ptY[12];     // 0x80
 	f32 ptZ[12];     // 0xB0
 	f32 ptScale[12]; // 0xE0
-	s32 field_0x110; // 0x110
-	f32 field_0x114; // 0x114
+	s32 phase;       // 0x110 random 0..359; offsets the per-point wobble angle in Disp
+	f32 field_0x114; // 0x114 0.005 * the start-end distance; never read
 	s32 cameraId;    // 0x118
 } EffPokopiThunderData;
 void effPokopiThunderDisp(CameraId camId, void* param);

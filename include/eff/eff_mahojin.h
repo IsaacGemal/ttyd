@@ -7,7 +7,7 @@ typedef struct MahojinWork {
     s32 type;        // 0x0
     Vec position;    // 0x4
     s32 timer;       // 0x10
-    s32 field_0x14;  // 0x14
+    s32 field_0x14;  // 0x14 cleared by effMahojinEntry, never read
     s32 animId[2];   // 0x18
     s32 alpha;       // 0x20
     s32 state;       // 0x24

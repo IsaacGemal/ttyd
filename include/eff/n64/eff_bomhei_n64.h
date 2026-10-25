@@ -6,17 +6,15 @@
 typedef struct effBomheiData {
 	s16 type;       // 0x00
 	u8 pad_02[2];   // 0x02
-	f32 x;          // 0x04
-	f32 y;          // 0x08
-	f32 z;          // 0x0C
-	f32 field_0x10; // 0x10
-	s32 field_0x14; // 0x14
-	s32 field_0x18; // 0x18
-	s32 field_0x1C; // 0x1C
-	f32 field_0x20; // 0x20
-	f32 field_0x24; // 0x24
-	f32 field_0x28; // 0x28
+	Vec position;   // 0x04
+	f32 scale;      // 0x10 x/y scale of the quad
+	s32 life;       // 0x14 ticks left; the effect is deleted when it drops below 0
+	s32 age;        // 0x18 ticks since spawn
+	s32 lifetime;   // 0x1C total ticks (the Entry count); divides age into animFrame
+	f32 animFrame;  // 0x20 0..9 over the lifetime: integer part picks the texture row, fraction blends to the next
+	f32 rotZ;       // 0x24 z rotation in degrees
+	f32 rotZVel;    // 0x28 added to rotZ each tick (0 for type 0, else 40)
 } effBomheiData;
-EffectEntry* effBomheiN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a5);
+EffectEntry* effBomheiN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale);
 void effBomheiMain(EffectEntry* effect);
 void effBomheiDisp(CameraId camId, void* param);

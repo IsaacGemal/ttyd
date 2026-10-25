@@ -43,21 +43,21 @@ EffectEntry* effBomheiN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sca
 	data = __memAlloc(HEAP_EFFECT, sizeof(effBomheiData));
 	effect->userdata = data;
 	effect->callback = effBomheiMain;
-	data->field_0x14 = count;
-	data->field_0x18 = 0;
-	data->field_0x1C = count;
-	data->field_0x20 = float_0_8041ea38;
+	data->life = count;
+	data->age = 0;
+	data->lifetime = count;
+	data->animFrame = float_0_8041ea38;
 	data->type = type;
-	data->x = x;
-	data->y = y;
-	data->z = z;
-	data->field_0x10 = scale;
-	data->field_0x24 = float_0_8041ea38;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
+	data->scale = scale;
+	data->rotZ = float_0_8041ea38;
 	if (type == 0) {
-		data->field_0x28 = float_0_8041ea38;
+		data->rotZVel = float_0_8041ea38;
 	}
 	else {
-		data->field_0x28 = 40.0f;
+		data->rotZVel = 40.0f;
 	}
 	return effect;
 }
@@ -69,16 +69,16 @@ void effBomheiMain(EffectEntry* effect) {
 
 	e = effect;
 	data = e->userdata;
-	position = initializeVec((Vec*)&data->x);
-	data->field_0x20 = 9.0f * (f32)data->field_0x18 / (f32)data->field_0x1C;
-	data->field_0x18++;
-	data->field_0x14--;
-	if (data->field_0x14 < 0) {
+	position = initializeVec(&data->position);
+	data->animFrame = 9.0f * (f32)data->age / (f32)data->lifetime;
+	data->age++;
+	data->life--;
+	if (data->life < 0) {
 		effDelete(e);
 		return;
 	}
 
-	data->field_0x24 += data->field_0x28;
+	data->rotZ += data->rotZVel;
 	dispEntry(4, dispCalcZ(&position), 2, effBomheiDisp, e);
 }
 
@@ -98,8 +98,8 @@ void effBomheiDisp(CameraId camId, void* param) {
 	effect = param;
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	whole = (s32)data->field_0x20;
-	frac = (s32)(float_256_8041ea2c * (data->field_0x20 - (f32)whole));
+	whole = (s32)data->animFrame;
+	frac = (s32)(float_256_8041ea2c * (data->animFrame - (f32)whole));
 
 	GXSetNumChans(0);
 	GXSetNumTevStages(3);
@@ -153,18 +153,18 @@ void effBomheiDisp(CameraId camId, void* param) {
 	GXSetCullMode(0);
 	effSetVtxDescN64(size32x32_tex32x32_vtx);
 
-	PSMTXTrans(trans, data->x, data->y, data->z);
+	PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
-	PSMTXScale(scale, data->field_0x10, data->field_0x10, 1.0f);
+	PSMTXScale(scale, data->scale, data->scale, 1.0f);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, trans);
-	PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x24);
+	PSMTXRotRad(rot, 'z', 0.017453292f * data->rotZ);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(cam->view, trans, trans);
 	GXLoadPosMtxImm(trans, 0);
 	GXSetCurrentMtx(0);
 
-	if (data->field_0x20 > 4.0f) {
+	if (data->animFrame > 4.0f) {
 		GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, 0x7F });
 	}
 	else {

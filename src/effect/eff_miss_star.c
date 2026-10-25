@@ -18,10 +18,10 @@ typedef struct MissStarData {
     s32 delay;      // 0x28
     f32 angle;      // 0x2C
     f32 angleVel;   // 0x30
-    f32 field_0x34;  // 0x34
+    f32 field_0x34;  // 0x34 -viewYaw, stored every frame but never read
     f32 scale;      // 0x38
     s32 deleteTimer; // 0x3C
-    f32 field_0x40; // 0x40
+    f32 field_0x40; // 0x40 set to 255 by effMissStarEntry, never read
 } MissStarData;
 
 // .data: initial velocity vectors used to fan the stars out.

@@ -196,7 +196,7 @@ void effKemuri4Disp(CameraId camId, void* param) {
 		if (data->active == 0) {
 			continue;
 		}
-		if ((s8)data->textureIndex != 0) {
+		if (data->textureIndex != 0) {
 			effGetTexObjN64(0x4C, &texObj);
 		}
 		else {
