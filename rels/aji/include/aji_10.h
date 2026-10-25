@@ -6,7 +6,7 @@
 
 typedef struct MonitorWork {
     void* image;   // 0x0
-    s32 field_4;   // 0x4
+    s32 texValid;  // 0x4, set once monitor_cap_capture has copied the frame; monitor_cap_tev draws it only then
     s32 kanbuFlag; // 0x8, monitor_kanbu_flag_onoff
 } MonitorWork;
 
