@@ -803,7 +803,7 @@ USER_FUNC(ceil_exist) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
 
-    if (wp->field_180C0.stageFlags & 0x20) {
+    if (wp->stageObjectWork.stageFlags & 0x20) {
         evtSetValue(event, args[0], 0);
     } else {
         evtSetValue(event, args[0], 1);
@@ -812,7 +812,7 @@ USER_FUNC(ceil_exist) {
 }
 
 USER_FUNC(init_ceil) {
-    u8* wp = &_battleWorkPointer->field_180C0.stageFlags;
+    u8* wp = &_battleWorkPointer->stageObjectWork.stageFlags;
     BattleStageObject* body = BattleSearchObjectPtr("if_body");
     BattleStageObject* wire = BattleSearchObjectPtr("if_wire");
 
@@ -1003,7 +1003,7 @@ static EVT_BEGIN(dead_event)
 EVT_END()
 
 static USER_FUNC(down_ceil) {
-    u8* wp = &_battleWorkPointer->field_180C0.stageFlags;
+    u8* wp = &_battleWorkPointer->stageObjectWork.stageFlags;
     BattleStageObject* body = BattleSearchObjectPtr("if_body");
     BattleStageObject* wire = BattleSearchObjectPtr("if_wire");
     f32 y;
@@ -1158,7 +1158,7 @@ static EVT_BEGIN(phase_event)
 EVT_END()
 
 USER_FUNC(check_ceil) {
-    event->lwData[1] = _battleWorkPointer->field_180C0.stageFlags & 0x20;
+    event->lwData[1] = _battleWorkPointer->stageObjectWork.stageFlags & 0x20;
     return EVT_RETURN_DONE;
 }
 

@@ -242,10 +242,10 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 		}
 		count++;
 	}
-	cursor->unk8 = count;
+	cursor->num = count;
 	// The original compares these signed (cmpw), though the header declares them u32.
-	if (cursor->field_0 >= cursor->unk8) {
-		cursor->field_0 = cursor->unk8 - 1;
+	if (cursor->index >= cursor->num) {
+		cursor->index = cursor->num - 1;
 	}
 }
 
@@ -359,7 +359,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 	u16 mask;
 	s16* items;
 	s32 id;
-	s32 field_4;
+	s32 scrollTop;
 	ItemData* item;
 
 	if (cmd == NULL) {
@@ -593,16 +593,16 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 	if (count <= 0) {
 		return 0;
 	}
-	cursor->unk8 = count;
-	if (cursor->field_0 >= cursor->unk8) {
-		cursor->field_0 = cursor->unk8 - 1;
+	cursor->num = count;
+	if (cursor->index >= cursor->num) {
+		cursor->index = cursor->num - 1;
 	}
-	while (cursor->unk8 < cursor->field_4 + 6) {
-		field_4 = cursor->field_4;
-		if (field_4 <= 0) {
+	while (cursor->num < cursor->scrollTop + 6) {
+		scrollTop = cursor->scrollTop;
+		if (scrollTop <= 0) {
 			break;
 		}
-		cursor->field_4--;
+		cursor->scrollTop--;
 	}
 	_btlcmd_UpdateSelectWeaponTable(wp, arg);
 	return count;
@@ -616,7 +616,7 @@ void _btlcmd_UpdateSelectWeaponTable(BattleWork* wp, s32 arg) {
 	s32 count;
 
 	_btlcmd_GetCursorPtr(&wp->commandMenu, arg, &cursor);
-	count = cursor->unk8;
+	count = cursor->num;
 	for (i = 0; i < count; i++) {
 		BattleWeapon* params;
 		s32 check;
@@ -803,9 +803,9 @@ void _btlcmd_MakeOperationTable(BattleWork* wp) {
 		cmd->operationTable[escapeIdx].mEnabled = 0;
 		cmd->operationTable[escapeIdx].mDisableReason = 3;
 	}
-	cursor->unk8 = count + 2;
-	if (cursor->field_0 >= cursor->unk8) {
-		cursor->field_0 = cursor->unk8 - 1;
+	cursor->num = count + 2;
+	if (cursor->index >= cursor->num) {
+		cursor->index = cursor->num - 1;
 	}
 }
 
@@ -873,9 +873,9 @@ void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 			}
 			count++;
 		}
-		cursor->unk8 = count;
-		if (cursor->field_0 >= cursor->unk8) {
-			cursor->field_0 = cursor->unk8 - 1;
+		cursor->num = count;
+		if (cursor->index >= cursor->num) {
+			cursor->index = cursor->num - 1;
 		}
 	}
 }
@@ -973,8 +973,8 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 		}
 		count++;
 	}
-	cursor->unk8 = count;
-	cursor->field_0 = select;
+	cursor->num = count;
+	cursor->index = select;
 	return count;
 }
 
@@ -1174,7 +1174,7 @@ s32 BattleCommandInput(BattleWork* wp) {
 			break;
 		case 10:
 			_btlcmd_GetCursorPtr(cmd, cmd->actKind, &cursor);
-			BattleAcHelpSetHelp(cmd->weaponTable[cursor->field_0].mWeaponParams->acHelpMsg);
+			BattleAcHelpSetHelp(cmd->weaponTable[cursor->index].mWeaponParams->acHelpMsg);
 			BattleAcHelpSetDispType(1);
 			cmd->commandState = 0xB;
 			break;
@@ -1200,7 +1200,7 @@ s32 BattleCommandInput(BattleWork* wp) {
 				i = 0;
 			}
 			sampling->selectIdx = i;
-			if (cmd->weaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x01000000) {
+			if (cmd->weaponTable[cursor->index].mWeaponParams->targetClassFlags & 0x01000000) {
 				if (BattlePadCheckRepeat(0x80000)) {
 					sampling->selectIdx++;
 					if (sampling->selectIdx >= sampling->count) {
@@ -1395,8 +1395,8 @@ void BattleCommandDisplay(BattleWork* wp) {
 }
 
 void _cursor_init(BattleCursor* cursor) {
-	cursor->field_0 = 0;
-	cursor->field_4 = 0;
+	cursor->index = 0;
+	cursor->scrollTop = 0;
 }
 
 void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, u32 arg) {
@@ -1446,7 +1446,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 	while (BattleMenuKeyOKInACT(wp)) {
 		s32 i;
 		s32 t;
-		for (i = 0; i < cursor->unk8; i++) {
+		for (i = 0; i < cursor->num; i++) {
 			t = cmd->actionTable[i].mType;
 			switch (t) {
 			case 0:
@@ -1483,16 +1483,16 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 			}
 		}
 		if (wp->commandMenu.restoreState) {
-			s32 t2 = cmd->actionTable[cursor->field_0].mType;
+			s32 t2 = cmd->actionTable[cursor->index].mType;
 			if ((t2 == 0 && (wp->flags & 0x200)) || (t2 == 1 && (wp->flags & 0x400))) {
 				wp->commandMenu.restoreState = 0;
 				wp->commandMenu.restoreId = 0;
 			}
 		}
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-			if (cmd->actionTable[cursor->field_0].mEnabled) {
+			if (cmd->actionTable[cursor->index].mEnabled) {
 				psndSFXOn((char*)0x9D8);
-				cmd->actKind = cmd->actionTable[cursor->field_0].mType;
+				cmd->actKind = cmd->actionTable[cursor->index].mType;
 				switch (cmd->actKind) {
 				case 0:
 				case 1:
@@ -1529,32 +1529,32 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 				psndSFXOn("SFX_NOT_CHOICE1");
 			}
 			wp->commandMenu.restoreState = 0;
-			if (cmd->actionTable[cursor->field_0].mDisableReason != 0) {
+			if (cmd->actionTable[cursor->index].mDisableReason != 0) {
 				BattleCommandDisplay_ActMenuEnd(wp);
 				cmd->commandState = 3;
 				result = 1;
-				cmd->disableReason = cmd->actionTable[cursor->field_0].mDisableReason;
+				cmd->disableReason = cmd->actionTable[cursor->index].mDisableReason;
 				break;
 			}
 		}
 		if (BattlePadCheckRepeat(0x80000)) {
-			if (cursor->field_0 < cursor->unk8 - 1) {
-				cursor->field_0++;
+			if (cursor->index < cursor->num - 1) {
+				cursor->index++;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE1");
 				break;
 			}
 			psndSFXOn("SFX_BTL_CURSOR_MOVE1");
-			cursor->field_0 = 0;
+			cursor->index = 0;
 			break;
 		}
 		if (BattlePadCheckRepeat(0x40000)) {
-			if (cursor->field_0 > 0) {
-				cursor->field_0--;
+			if (cursor->index > 0) {
+				cursor->index--;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE1");
 				break;
 			}
 			psndSFXOn("SFX_BTL_CURSOR_MOVE1");
-			cursor->field_0 = cursor->unk8 - 1;
+			cursor->index = cursor->num - 1;
 			break;
 		}
 		if (BattleCommandAttackAudienceCheck()) {
@@ -1653,18 +1653,18 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 			wp->commandMenu.restoreId = 0;
 		}
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-			if (cmd->weaponTable[cursor->field_0].mEnabled != 0) {
+			if (cmd->weaponTable[cursor->index].mEnabled != 0) {
 				psndSFXOn((char*)0x9D8);
 				BattleCommandDisplay_WeaponSelectMenuEnd(wp);
-				_btlcmd_SelectWeaponDecide(wp, arg, cursor->field_0);
+				_btlcmd_SelectWeaponDecide(wp, arg, cursor->index);
 				BattleCommandDisplay_TargetSelectMenuSetup(wp);
 				cmd->commandState = 0xA;
-				if (!(cmd->weaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x200)) {
+				if (!(cmd->weaponTable[cursor->index].mWeaponParams->targetClassFlags & 0x200)) {
 					BattleStageOnLightFriendInCommand();
 				}
-				if (!(cmd->weaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x4000) &&
-				    !(cmd->weaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x100) &&
-				    !(cmd->weaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x10)) {
+				if (!(cmd->weaponTable[cursor->index].mWeaponParams->targetClassFlags & 0x4000) &&
+				    !(cmd->weaponTable[cursor->index].mWeaponParams->targetClassFlags & 0x100) &&
+				    !(cmd->weaponTable[cursor->index].mWeaponParams->targetClassFlags & 0x10)) {
 					BattleStageOnLightEnemyInCommand();
 				}
 				result = 1;
@@ -1674,36 +1674,36 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 				psndSFXOn("SFX_NOT_CHOICE1");
 			}
 			wp->commandMenu.restoreState = 0;
-			if (cmd->weaponTable[cursor->field_0].mDisableReason != 0) {
+			if (cmd->weaponTable[cursor->index].mDisableReason != 0) {
 				BattleCommandDisplay_WeaponSelectMenuEnd(wp);
 				result = 1;
 				cmd->commandState = 8;
-				cmd->disableReason = cmd->weaponTable[cursor->field_0].mDisableReason;
+				cmd->disableReason = cmd->weaponTable[cursor->index].mDisableReason;
 			}
 			break;
 		}
-		if (cursor->field_0 < cursor->unk8 - 1) {
+		if (cursor->index < cursor->num - 1) {
 			if (BattlePadCheckRepeat(0x20000)) {
-				cursor->field_0++;
+				cursor->index++;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 				break;
 			}
 		} else {
 			if (BattlePadCheckTrigger(0x20000)) {
-				cursor->field_0 = 0;
+				cursor->index = 0;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 				break;
 			}
 		}
-		if (cursor->field_0 > 0) {
+		if (cursor->index > 0) {
 			if (BattlePadCheckRepeat(0x10000)) {
-				cursor->field_0--;
+				cursor->index--;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 				break;
 			}
 		} else {
 			if (BattlePadCheckTrigger(0x10000)) {
-				cursor->field_0 = cursor->unk8 - 1;
+				cursor->index = cursor->num - 1;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 				break;
 			}
@@ -1746,9 +1746,9 @@ void BattleCommandDisplay_WeaponSelectMenuEnd(BattleWork* wp) {
 }
 
 void BattleCommandDisplay_WeaponMultiItemCancelCheckSetup(BattleWork* wp) {
-	wp->commandMenu.cursor[13].field_0 = 0;
-	wp->commandMenu.cursor[13].field_4 = 0;
-	wp->commandMenu.cursor[13].unk8 = 2;
+	wp->commandMenu.cursor[13].index = 0;
+	wp->commandMenu.cursor[13].scrollTop = 0;
+	wp->commandMenu.cursor[13].num = 2;
 }
 
 __declspec(section ".sdata") s32 _jump_badge_table[8] = {0xF0, 0xF1, 0xF4, 0xF5, 0xF6, 0xF3, 0xF2, 0x14C};
@@ -1764,28 +1764,28 @@ s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
 		return 0;
 	}
 	// goto: a failed pad check falls through to the next one; an else-if chain retests the cursor (object differs).
-	if (cursor->field_0 < cursor->unk8 - 1) {
+	if (cursor->index < cursor->num - 1) {
 		if (BattlePadCheckRepeat(0x20000)) {
-			cursor->field_0++;
+			cursor->index++;
 			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 			goto after;
 		}
 	} else {
 		if (BattlePadCheckTrigger(0x20000)) {
-			cursor->field_0 = 0;
+			cursor->index = 0;
 			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 			goto after;
 		}
 	}
-	if (cursor->field_0 > 0) {
+	if (cursor->index > 0) {
 		if (BattlePadCheckRepeat(0x10000)) {
-			cursor->field_0--;
+			cursor->index--;
 			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 			goto after;
 		}
 	} else {
 		if (BattlePadCheckTrigger(0x10000)) {
-			cursor->field_0 = cursor->unk8 - 1;
+			cursor->index = cursor->num - 1;
 			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 		}
 	}
@@ -1795,7 +1795,7 @@ after:
 		cancel = 0;
 	} else if (BattlePadCheckTrigger(0x100)) {
 		done = 1;
-		if (cursor->field_0 == 0) {
+		if (cursor->index == 0) {
 			cancel = 1;
 		}
 	}
@@ -1831,7 +1831,7 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	FontDrawString(-20.0f, -13.0f, "\202\315\202\242\201@");
 	FontDrawString(-20.0f, -38.0f, "\202\242\202\242\202\246");
 	pos.x = -40.0f;
-	pos.y = (f32)(-42 - wp->commandMenu.cursor[13].field_0 * 25);
+	pos.y = (f32)(-42 - wp->commandMenu.cursor[13].index * 25);
 	pos.z = 0.0f;
 	iconDispGx(1.0f, &pos, 0x14, 0x1F0);
 }
@@ -1854,9 +1854,9 @@ s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 	if (BattleMenuKeyOKInACT(wp)) {
 		_btlcmd_GetCursorPtr(cmd, 5, &cursor);
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-			if (cmd->operationTable[cursor->field_0].mEnabled) {
+			if (cmd->operationTable[cursor->index].mEnabled) {
 				psndSFXOn((char*)0x9D8);
-				cmd->operationKind = cmd->operationTable[cursor->field_0].mType;
+				cmd->operationKind = cmd->operationTable[cursor->index].mType;
 				switch (cmd->operationKind) {
 				case 1:
 				case 2:
@@ -1882,37 +1882,37 @@ s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 					psndSFXOn("SFX_NOT_CHOICE1");
 				}
 				wp->commandMenu.restoreState = 0;
-				if (cmd->operationTable[cursor->field_0].mDisableReason != 0) {
+				if (cmd->operationTable[cursor->index].mDisableReason != 0) {
 					BattleCommandDisplay_OperationMenuEnd(wp);
 					cmd->commandState = 0x16;
 					result = 1;
-					cmd->disableReason = cmd->operationTable[cursor->field_0].mDisableReason;
+					cmd->disableReason = cmd->operationTable[cursor->index].mDisableReason;
 				}
 			}
 		} else {
 			// goto: a failed pad check falls through to the next one; an else-if chain retests the cursor (object differs).
-			if (cursor->field_0 < cursor->unk8 - 1) {
+			if (cursor->index < cursor->num - 1) {
 				if (BattlePadCheckRepeat(0x20000)) {
-					cursor->field_0++;
+					cursor->index++;
 					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 					goto end;
 				}
 			} else {
 				if (BattlePadCheckTrigger(0x20000)) {
-					cursor->field_0 = 0;
+					cursor->index = 0;
 					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 					goto end;
 				}
 			}
-			if (cursor->field_0 > 0) {
+			if (cursor->index > 0) {
 				if (BattlePadCheckRepeat(0x10000)) {
-					cursor->field_0--;
+					cursor->index--;
 					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 					goto end;
 				}
 			} else {
 				if (BattlePadCheckTrigger(0x10000)) {
-					cursor->field_0 = cursor->unk8 - 1;
+					cursor->index = cursor->num - 1;
 					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 					goto end;
 				}
@@ -1956,9 +1956,9 @@ s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 	if (BattleMenuKeyOKInACT(wp)) {
 		_btlcmd_GetCursorPtr(cmd, 3, &cursor);
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-			if (cmd->multiItemTable[cursor->field_0].mEnabled) {
+			if (cmd->multiItemTable[cursor->index].mEnabled) {
 				psndSFXOn((char*)0x9D8);
-				cmd->multiItemKind = cmd->multiItemTable[cursor->field_0].mKind;
+				cmd->multiItemKind = cmd->multiItemTable[cursor->index].mKind;
 				cmd->commandState = 5;
 				BattleCommandDisplay_MultiItemMenuEnd(wp);
 				result = 1;
@@ -1967,37 +1967,37 @@ s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 					psndSFXOn("SFX_NOT_CHOICE1");
 				}
 				wp->commandMenu.restoreState = 0;
-				if (cmd->multiItemTable[cursor->field_0].mDisableReason != 0) {
+				if (cmd->multiItemTable[cursor->index].mDisableReason != 0) {
 					BattleCommandDisplay_MultiItemMenuEnd(wp);
 					cmd->commandState = 0x11;
 					result = 1;
-					cmd->disableReason = cmd->multiItemTable[cursor->field_0].mDisableReason;
+					cmd->disableReason = cmd->multiItemTable[cursor->index].mDisableReason;
 				}
 			}
 		} else {
 			// goto: a failed pad check falls through to the next one; an else-if chain retests the cursor (object differs).
-			if (cursor->field_0 < cursor->unk8 - 1) {
+			if (cursor->index < cursor->num - 1) {
 				if (BattlePadCheckRepeat(0x20000)) {
-					cursor->field_0++;
+					cursor->index++;
 					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 					goto end;
 				}
 			} else {
 				if (BattlePadCheckTrigger(0x20000)) {
-					cursor->field_0 = 0;
+					cursor->index = 0;
 					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 					goto end;
 				}
 			}
-			if (cursor->field_0 > 0) {
+			if (cursor->index > 0) {
 				if (BattlePadCheckRepeat(0x10000)) {
-					cursor->field_0--;
+					cursor->index--;
 					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 					goto end;
 				}
 			} else {
 				if (BattlePadCheckTrigger(0x10000)) {
-					cursor->field_0 = cursor->unk8 - 1;
+					cursor->index = cursor->num - 1;
 					psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 					goto end;
 				}
@@ -2040,10 +2040,10 @@ s32 BattleCommandDisplay_ChangePartySelectMenuMain(BattleWork* wp) {
 	if (BattleMenuKeyOKInACT(wp)) {
 		_btlcmd_GetCursorPtr(cmd, 0xA, &cursor);
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.restoreState != 0) {
-			if (cmd->partyTable[cursor->field_0].mEnabled) {
+			if (cmd->partyTable[cursor->index].mEnabled) {
 				psndSFXOn((char*)0x9D8);
 				BattleStageOffLightInCommand(0, 1);
-				cmd->partyChangeId = cmd->partyTable[cursor->field_0].mPartyId;
+				cmd->partyChangeId = cmd->partyTable[cursor->index].mPartyId;
 				cmd->commandState = 0x1D;
 				BattleCommandDisplay_ChangePartySelectMenuEnd(wp);
 				result = 1;
@@ -2055,28 +2055,28 @@ s32 BattleCommandDisplay_ChangePartySelectMenuMain(BattleWork* wp) {
 			wp->commandMenu.restoreState = 0;
 		}
 		// goto: a failed pad check falls through to the next one; an else-if chain retests the cursor (object differs).
-		if (cursor->field_0 < cursor->unk8 - 1) {
+		if (cursor->index < cursor->num - 1) {
 			if (BattlePadCheckRepeat(0x20000)) {
-				cursor->field_0++;
+				cursor->index++;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 				goto end;
 			}
 		} else {
 			if (BattlePadCheckTrigger(0x20000)) {
-				cursor->field_0 = 0;
+				cursor->index = 0;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 				goto end;
 			}
 		}
-		if (cursor->field_0 > 0) {
+		if (cursor->index > 0) {
 			if (BattlePadCheckRepeat(0x10000)) {
-				cursor->field_0--;
+				cursor->index--;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 				goto end;
 			}
 		} else {
 			if (BattlePadCheckTrigger(0x10000)) {
-				cursor->field_0 = cursor->unk8 - 1;
+				cursor->index = cursor->num - 1;
 				psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 				goto end;
 			}
@@ -2122,7 +2122,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, void* param) {
 	Vec iconPos;
 
 	_btlcmd_GetCursorPtr(cmd, cmd->actKind, &cursor);
-	weapon = cmd->weaponTable[cursor->field_0].mWeaponParams;
+	weapon = cmd->weaponTable[cursor->index].mWeaponParams;
 	if (weapon->targetClassFlags & 0x01000000) {
 		BattleSampling* sampling = &wp->sampling;
 		BattleUnit* unit;
@@ -2304,60 +2304,60 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 			unit->attackEventCode = btldefaultevt_Appeal;
 			unit->attackEventFlags = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x2D - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x2D - 0x1C]);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x2E - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x2E - 0x1C]);
 			}
 			break;
 		case 7:
 			unit->attackEventCode = btldefaultevt_Wait;
 			unit->attackEventFlags = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x2D - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x2D - 0x1C]);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x2E - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x2E - 0x1C]);
 			}
 			break;
 		case 3:
 			unit->attackEventCode = btldefaultevt_Escape;
 			unit->attackEventFlags = 1;
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x37 - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x37 - 0x1C]);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x38 - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x38 - 0x1C]);
 			}
 			break;
 		case 1:
 			unit->attackEventFlags = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_Charge.mAttackEvtScript;
-				BtlActRec_AddCount(&wp->field_16F1C[0x33 - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x33 - 0x1C]);
 			} else {
 				unit->attackEventCode = badgeWeapon_ChargeP.mAttackEvtScript;
-				BtlActRec_AddCount(&wp->field_16F1C[0x34 - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x34 - 0x1C]);
 			}
 			break;
 		case 2:
 			unit->attackEventFlags = 0;
 			if (unit->currentKind == 0xDE) {
 				unit->attackEventCode = badgeWeapon_SuperCharge.mAttackEvtScript;
-				BtlActRec_AddCount(&wp->field_16F1C[0x35 - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x35 - 0x1C]);
 			} else {
 				unit->attackEventCode = badgeWeapon_SuperChargeP.mAttackEvtScript;
-				BtlActRec_AddCount(&wp->field_16F1C[0x36 - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x36 - 0x1C]);
 			}
 			break;
 		case 0:
 			unit->attackEventCode = btldefaultevt_ChangeParty;
 			unit->attackEventFlags = 1;
-			cmd->cursor[1].field_0 = 0;
+			cmd->cursor[1].index = 0;
 			if (wp->badgeEquippedFlags & 1) {
 				unit->moveState = 3;
 			}
 			if (unit->currentKind == 0xDE) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x29 - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x29 - 0x1C]);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x2A - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x2A - 0x1C]);
 			}
 			break;
 		case 4:
@@ -2383,7 +2383,7 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		BattleWeapon* weapon;
 
 		_btlcmd_GetCursorPtr(cmd, command, &cursor);
-		weapon = cmd->weaponTable[cursor->field_0].mWeaponParams;
+		weapon = cmd->weaponTable[cursor->index].mWeaponParams;
 		unit->attackEventCode = weapon->mAttackEvtScript;
 		unit->attackEventFlags = 0;
 		if (unit->attackEventCode == NULL) {
@@ -2392,16 +2392,16 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 
 		switch (command) {
 		case 0:
-			BtlActRec_AddCount(&wp->field_16F1C[0x1C - 0x1C]);
+			BtlActRec_AddCount(&wp->actRecord[0x1C - 0x1C]);
 			break;
 		case 1:
-			BtlActRec_AddCount(&wp->field_16F1C[0x1D - 0x1C]);
+			BtlActRec_AddCount(&wp->actRecord[0x1D - 0x1C]);
 			break;
 		case 4:
 			if (_check_weapon_type_attack(weapon)) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x1E - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x1E - 0x1C]);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x1F - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x1F - 0x1C]);
 			}
 			break;
 		case 2:
@@ -2412,24 +2412,24 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 #endif
 				if (unit->currentKind == 0xDE) {
 					if (_check_weapon_type_attack(weapon)) {
-						BtlActRec_AddCount(&wp->field_16F1C[0x25 - 0x1C]);
+						BtlActRec_AddCount(&wp->actRecord[0x25 - 0x1C]);
 					} else {
-						BtlActRec_AddCount(&wp->field_16F1C[0x26 - 0x1C]);
+						BtlActRec_AddCount(&wp->actRecord[0x26 - 0x1C]);
 					}
 				} else {
 					if (_check_weapon_type_attack(weapon)) {
-						BtlActRec_AddCount(&wp->field_16F1C[0x27 - 0x1C]);
+						BtlActRec_AddCount(&wp->actRecord[0x27 - 0x1C]);
 					} else {
-						BtlActRec_AddCount(&wp->field_16F1C[0x28 - 0x1C]);
+						BtlActRec_AddCount(&wp->actRecord[0x28 - 0x1C]);
 					}
 				}
 			}
 			break;
 		case 6:
 			if (_check_weapon_type_attack(weapon)) {
-				BtlActRec_AddCount(&wp->field_16F1C[0x39 - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x39 - 0x1C]);
 			} else {
-				BtlActRec_AddCount(&wp->field_16F1C[0x3A - 0x1C]);
+				BtlActRec_AddCount(&wp->actRecord[0x3A - 0x1C]);
 			}
 			break;
 		}
@@ -2458,12 +2458,12 @@ void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
 		unit->attackEventCode = btlataudGetAttackEventPtr(unit->unitId);
 		unit->attackEventFlags = 3;
 		if (unit->currentKind == 0xDE) {
-			BtlActRec_AddCount(&wp->field_16F1C[0x2B - 0x1C]);
+			BtlActRec_AddCount(&wp->actRecord[0x2B - 0x1C]);
 		} else {
-			BtlActRec_AddCount(&wp->field_16F1C[0x2C - 0x1C]);
+			BtlActRec_AddCount(&wp->actRecord[0x2C - 0x1C]);
 		}
-		if (wp->field_19080 & 1) {
-			msgWindow_Continue(wp->field_19084);
+		if (wp->msgWindowFlags & 1) {
+			msgWindow_Continue(wp->msgWindowId);
 		}
 		break;
 	case 12:
@@ -2501,7 +2501,7 @@ BattleWeapon* BattleGetSelectWeapon(BattleWork* wp) {
 	BattleCursor* cursor;
 
 	_btlcmd_GetCursorPtr(cmd, cmd->actKind, &cursor);
-	return cmd->weaponTable[cursor->field_0].mWeaponParams;
+	return cmd->weaponTable[cursor->index].mWeaponParams;
 }
 
 CheckPartyTable _checkPartyTable[8] = {
@@ -2672,7 +2672,7 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 	_btlcmd_MakeActClassTable(wp);
 	_btlcmd_GetCursorPtr(cmd, 0xE, &cursor);
 	count = 0;
-	for (i = 0; i < cursor->unk8; i++) {
+	for (i = 0; i < cursor->num; i++) {
 		if (cmd->actionTable[i].mEnabled == 0) {
 			continue;
 		}
@@ -2686,12 +2686,12 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 	}
 	candidates[count] = -1;
 	if (count != 0) {
-		cursor->field_0 = candidates[irand(count)];
+		cursor->index = candidates[irand(count)];
 	} else {
 		return subsetevt_confuse_flustered;
 	}
-	cmd->actKind = cmd->actionTable[cursor->field_0].mType;
-	if (cmd->actionTable[cursor->field_0].mEnabled == 0) {
+	cmd->actKind = cmd->actionTable[cursor->index].mType;
+	if (cmd->actionTable[cursor->index].mEnabled == 0) {
 		return subsetevt_confuse_flustered;
 	}
 	switch (cmd->actKind) {
@@ -2708,7 +2708,7 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 		{
 			u8 n;
 
-			for (n = 0; n < cursor->unk8; n++) {
+			for (n = 0; n < cursor->num; n++) {
 				weapon = cmd->weaponTable[n].mWeaponParams;
 				if (cmd->weaponTable[n].mEnabled == 0) {
 					continue;
@@ -2727,15 +2727,15 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 		}
 		candidates[count] = -1;
 		if (count != 0) {
-			cursor->field_0 = candidates[irand(count)];
+			cursor->index = candidates[irand(count)];
 		} else {
 			return NULL;
 		}
-		if (cmd->weaponTable[cursor->field_0].mEnabled == 0) {
+		if (cmd->weaponTable[cursor->index].mEnabled == 0) {
 			return subsetevt_confuse_flustered;
 		}
-		_btlcmd_SelectWeaponDecide(wp, cmd->actKind, cursor->field_0);
-		weapon = cmd->weaponTable[cursor->field_0].mWeaponParams;
+		_btlcmd_SelectWeaponDecide(wp, cmd->actKind, cursor->index);
+		weapon = cmd->weaponTable[cursor->index].mWeaponParams;
 		if (!(weapon->special & 0x10000)) {
 			return subsetevt_confuse_flustered;
 		}
@@ -2759,7 +2759,7 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 		{
 			u8 n;
 
-			for (n = 0; n < cursor->unk8; n++) {
+			for (n = 0; n < cursor->num; n++) {
 				if (cmd->operationTable[n].mEnabled == 0) {
 					continue;
 				}
@@ -2772,14 +2772,14 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 		}
 		candidates[count] = -1;
 		if (count != 0) {
-			cursor->field_0 = candidates[irand(count)];
+			cursor->index = candidates[irand(count)];
 		} else {
 			return subsetevt_confuse_flustered;
 		}
-		if (cmd->operationTable[cursor->field_0].mEnabled == 0) {
+		if (cmd->operationTable[cursor->index].mEnabled == 0) {
 			return subsetevt_confuse_flustered;
 		}
-		cmd->operationKind = cmd->operationTable[cursor->field_0].mType;
+		cmd->operationKind = cmd->operationTable[cursor->index].mType;
 		switch (cmd->operationKind) {
 		case 6:
 			if (unit->currentKind == 0xDE) {
@@ -2810,7 +2810,7 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 			{
 				u8 n;
 
-				for (n = 0; n < cursor->unk8; n++) {
+				for (n = 0; n < cursor->num; n++) {
 					if (cmd->partyTable[n].mEnabled == 0) {
 						continue;
 					}
@@ -2819,15 +2819,15 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 			}
 			candidates[count] = -1;
 			if (count != 0) {
-				cursor->field_0 = candidates[irand(count)];
+				cursor->index = candidates[irand(count)];
 			} else {
 				return NULL;
 			}
-			if (cmd->partyTable[cursor->field_0].mEnabled == 0) {
+			if (cmd->partyTable[cursor->index].mEnabled == 0) {
 				return subsetevt_confuse_flustered;
 			}
-			cmd->partyChangeId = cmd->partyTable[cursor->field_0].mPartyId;
-			cmd->cursor[1].field_0 = 0;
+			cmd->partyChangeId = cmd->partyTable[cursor->index].mPartyId;
+			cmd->cursor[1].index = 0;
 			return btldefaultevt_ChangeParty;
 		case 4:
 			return subsetevt_confuse_flustered;

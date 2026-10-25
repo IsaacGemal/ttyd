@@ -593,7 +593,7 @@ BattleUnit* zakogun_get_ptr(void) {
 }
 
 void zakogun_ext_init(void) {
-    u8* flag = &_battleWorkPointer->field_180C0.stageFlags;
+    u8* flag = &_battleWorkPointer->stageObjectWork.stageFlags;
     BattleStageObject* obj;
     BattleStageObject* obj2;
 

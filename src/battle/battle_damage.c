@@ -253,11 +253,11 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, BattleUnitPart* part, 
     }
     if (damage > 0) {
         if (unit->currentKind == 0xde) {
-            BtlActRec_AddCount(wp->field_16F1C + 6);
-            BtlActRec_AddPoint(wp->field_16F1C + 4, (u8)damage);
+            BtlActRec_AddCount(wp->actRecord + 6);
+            BtlActRec_AddPoint(wp->actRecord + 4, (u8)damage);
         } else if (unit->currentKind >= 0xe0 && unit->currentKind < 0xe7) {
-            BtlActRec_AddCount(wp->field_16F1C + 7);
-            BtlActRec_AddPoint(wp->field_16F1C + 5, (u8)damage);
+            BtlActRec_AddCount(wp->actRecord + 7);
+            BtlActRec_AddPoint(wp->actRecord + 5, (u8)damage);
         }
     }
     if (arg7 != 0 && (damage > 0 || arg4 > 0)) {
@@ -440,7 +440,7 @@ s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* 
     if (weapon->hpDamageFn != 0) {
         damage = weapon->hpDamageFn(unit1, weapon, unit2, part);
     }
-    if (wp->field_18FE1 == 1 && (weapon->special & 2)) {
+    if (wp->merleeCurseType == 1 && (weapon->special & 2)) {
         damage += 3;
     }
     if (weapon->special & 1) {
@@ -562,7 +562,7 @@ calculate_defense:
                 defense = 0;
             }
         }
-        if (wp->field_18FE1 == 2 && unit2->currentKind == 0xde) {
+        if (wp->merleeCurseType == 2 && unit2->currentKind == 0xde) {
             defense += 3;
         }
         if (part->attributes & 0x20) {
@@ -1590,7 +1590,7 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
     if (BtlUnit_CheckStatus(attacker, 3)) {
         rate = rate * 0x32 / 100;
     }
-    if (wp->field_180C0.fogEffect != NULL) {
+    if (wp->stageObjectWork.fogEffect != NULL) {
         rate = (s32)((f32)rate / 2.0f);
     }
     if (irand(100) >= rate) {

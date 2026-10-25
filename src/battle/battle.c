@@ -208,7 +208,7 @@ BOOL BattleAfterReactionMain(void) {
         id = q[i].id;
 
         if (id != -1) {
-            data = q[i].field_4;
+            data = q[i].dataTag;
             unit = BattleGetUnitPtr(wp, id);
 
             if (unit == NULL) {
@@ -241,13 +241,13 @@ void BattleAfterReactionRelease(s32 id, s32 data) {
     BattleAfterReactionWork* q = _battleWorkPointer->afterReaction;
 
     for (i = 0; i < 64; i++) {
-        if (q[i].id != -1 && q[i].id == id && q[i].field_4 == data) {
+        if (q[i].id != -1 && q[i].id == id && q[i].dataTag == data) {
             for (j = i; j < 63; j++) {
                 q[j].id = q[j + 1].id;
-                q[j].field_4 = q[j + 1].field_4;
+                q[j].dataTag = q[j + 1].dataTag;
             }
             q[63].id = -1;
-            q[63].field_4 = 0;
+            q[63].dataTag = 0;
             i--;
         }
     }
@@ -271,7 +271,7 @@ void BattleAfterReactionEntry(s32 id, s32 data) {
 
     if (i < 64) {
         q[i].id = id;
-        q[i].field_4 = data;
+        q[i].dataTag = data;
     }
 }
 
@@ -281,7 +281,7 @@ void BattleAfterReactionQueueInit(void) {
 
     for (i = 0; i < 64; i++) {
         q[i].id = -1;
-        q[i].field_4 = 0;
+        q[i].dataTag = 0;
     }
 }
 
@@ -958,7 +958,7 @@ void BattleEnd(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
     int i;
-    void* field_55C;
+    void* menuWork;
 
     for (i = 0; i < 64; i++) {
         unit = BattleGetUnitPtr(wp, i);
@@ -971,9 +971,9 @@ void BattleEnd(void) {
     BattleStageEnd();
     BattleAudience_End();
     BattleBreakSlot_End();
-    field_55C = wp->commandMenu.field_55C;
-    if (field_55C) {
-        BattleFree(field_55C);
+    menuWork = wp->commandMenu.menuWork;
+    if (menuWork) {
+        BattleFree(menuWork);
     }
     _mapFree(wp);
     _battleWorkPointer = NULL;
@@ -1013,7 +1013,7 @@ void BattleInit(FieldBattleInfo* info) {
 
     wp = _battleWorkPointer = _mapAlloc(sizeof(BattleWork));
     memset(_battleWorkPointer, 0, sizeof(BattleWork));
-    wp->field_19060 = -1;
+    wp->curtainSfxId = -1;
     wp->lectureUnitId = -1;
     wp->fbatInfo = info;
     BattlePadInit();
@@ -1027,27 +1027,27 @@ void BattleInit(FieldBattleInfo* info) {
     BattleSetSeq(wp, SEQ_INIT, 0x1000000);
     wp->seqEndWork = NULL;
     wp->commandMenu.menuFlags = 0;
-    wp->commandMenu.cursor[0].field_0 = 0;
-    wp->commandMenu.cursor[0].field_4 = 0;
-    wp->commandMenu.cursor[1].field_0 = 0;
-    wp->commandMenu.cursor[1].field_4 = 0;
-    wp->commandMenu.cursor[2].field_0 = 0;
-    wp->commandMenu.cursor[2].field_4 = 0;
-    wp->commandMenu.cursor[3].field_0 = 0;
-    wp->commandMenu.cursor[3].field_4 = 0;
-    wp->commandMenu.cursor[4].field_0 = 0;
-    wp->commandMenu.cursor[4].field_4 = 0;
-    wp->commandMenu.cursor[5].field_0 = 0;
-    wp->commandMenu.cursor[5].field_4 = 0;
-    wp->commandMenu.cursor[6].field_0 = 0;
-    wp->commandMenu.cursor[6].field_4 = 0;
-    wp->commandMenu.cursor[7].field_0 = 0;
-    wp->commandMenu.cursor[7].field_4 = 0;
-    wp->commandMenu.cursor[8].field_0 = 0;
-    wp->commandMenu.cursor[8].field_4 = 0;
-    wp->commandMenu.cursor[9].field_0 = 0;
-    wp->commandMenu.cursor[9].field_4 = 0;
-    wp->commandMenu.field_55C = 0;
+    wp->commandMenu.cursor[0].index = 0;
+    wp->commandMenu.cursor[0].scrollTop = 0;
+    wp->commandMenu.cursor[1].index = 0;
+    wp->commandMenu.cursor[1].scrollTop = 0;
+    wp->commandMenu.cursor[2].index = 0;
+    wp->commandMenu.cursor[2].scrollTop = 0;
+    wp->commandMenu.cursor[3].index = 0;
+    wp->commandMenu.cursor[3].scrollTop = 0;
+    wp->commandMenu.cursor[4].index = 0;
+    wp->commandMenu.cursor[4].scrollTop = 0;
+    wp->commandMenu.cursor[5].index = 0;
+    wp->commandMenu.cursor[5].scrollTop = 0;
+    wp->commandMenu.cursor[6].index = 0;
+    wp->commandMenu.cursor[6].scrollTop = 0;
+    wp->commandMenu.cursor[7].index = 0;
+    wp->commandMenu.cursor[7].scrollTop = 0;
+    wp->commandMenu.cursor[8].index = 0;
+    wp->commandMenu.cursor[8].scrollTop = 0;
+    wp->commandMenu.cursor[9].index = 0;
+    wp->commandMenu.cursor[9].scrollTop = 0;
+    wp->commandMenu.menuWork = 0;
     wp->turnCount = 0;
     memset(wp->reserveItems, 0, sizeof(wp->reserveItems));
     wp->flags = 0;

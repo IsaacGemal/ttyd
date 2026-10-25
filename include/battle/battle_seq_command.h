@@ -12,9 +12,9 @@ typedef struct BattleWork BattleWork;
 #include "mario/mario_pouch.h"
 
 typedef struct BattleCommandCursor {
-    s32 field_0; // 0x0
-    s32 field_4; // 0x4
-    s32 unk8;    // 0x8
+    s32 index;     // 0x0, the selected entry
+    s32 scrollTop; // 0x4, first entry of the 6-row window (DrawMenuCursorAndScrollArrow draws the cursor at index - scrollTop)
+    s32 num;       // 0x8, entry count; index wraps at num - 1
 } BattleCursor;
 
 // Element layouts of the battle command menu tables inside BattleCommand, each named by the reader in
@@ -91,7 +91,7 @@ typedef struct BattleCommand {
     s32 restoreId;                            // 0x554, commandState saved by the restore path, compared with it to clear restoreState
     u8 restoreState;                          // 0x558, set to 1 or 2 when a sub-menu opens; tested by BattleMenuKeyOKInACT
     u8 pad_0x559[0x55C - 0x559];              // 0x559
-    struct BattleMenuWork* field_55C;         // 0x55C, menu window work battle_menu_disp allocates and frees
+    struct BattleMenuWork* menuWork;          // 0x55C, menu window work battle_menu_disp allocates and frees
     s32 idleFrames;                           // 0x560, reset while a button is held, counts up otherwise; 0x384 switches the idle camera
     s32 disableReason;                        // 0x564, mDisableReason of the rejected entry; _get_msg picks the error text
     s32 eventId;                              // 0x568, pending event checked with evtCheckID

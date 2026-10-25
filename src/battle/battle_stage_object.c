@@ -157,7 +157,7 @@ void BattleStageObjectInit(void) {
 	BOOL hasLayer6 = FALSE;
 
 	wp = _battleWorkPointer;
-	base = &wp->field_180C0;
+	base = &wp->stageObjectWork;
 	stage = wp->fbatInfo->setup->stageData;
 	count = stage->mNumObjects;
 	data = stage->mObjects;
@@ -344,37 +344,37 @@ void BattleStageObjectInit(void) {
 		evtEntry(stage->initEvent, 10, 0);
 	}
 	if (layer0 != 0 && stage->layerEvents[0] != NULL) {
-		wp->field_180C0.layerEventId[0] = evtEntry(stage->layerEvents[0], 10, 0)->eventId;
+		wp->stageObjectWork.layerEventId[0] = evtEntry(stage->layerEvents[0], 10, 0)->eventId;
 	}
 	if (layer1 != 0 && stage->layerEvents[1] != NULL) {
-		wp->field_180C0.layerEventId[1] = evtEntry(stage->layerEvents[1], 10, 0)->eventId;
+		wp->stageObjectWork.layerEventId[1] = evtEntry(stage->layerEvents[1], 10, 0)->eventId;
 	}
 	if (layer2 != 0 && stage->layerEvents[2] != NULL) {
-		wp->field_180C0.layerEventId[2] = evtEntry(stage->layerEvents[2], 10, 0)->eventId;
+		wp->stageObjectWork.layerEventId[2] = evtEntry(stage->layerEvents[2], 10, 0)->eventId;
 	}
 	if (layer3 != 0 && stage->layerEvents[3] != NULL) {
-		wp->field_180C0.layerEventId[3] = evtEntry(stage->layerEvents[3], 10, 0)->eventId;
+		wp->stageObjectWork.layerEventId[3] = evtEntry(stage->layerEvents[3], 10, 0)->eventId;
 	}
 	if (layer0 == 0) {
-		wp->field_180C0.stageFlags |= 2;
+		wp->stageObjectWork.stageFlags |= 2;
 	}
 	if (layer1 == 0) {
-		wp->field_180C0.stageFlags |= 4;
+		wp->stageObjectWork.stageFlags |= 4;
 	}
 	if (layer2 == 0) {
-		wp->field_180C0.stageFlags |= 8;
+		wp->stageObjectWork.stageFlags |= 8;
 	}
 	if (stage->layerDestroyed[0]) {
-		wp->field_180C0.stageFlags |= 2;
+		wp->stageObjectWork.stageFlags |= 2;
 	}
 	if (stage->layerDestroyed[1]) {
-		wp->field_180C0.stageFlags |= 4;
+		wp->stageObjectWork.stageFlags |= 4;
 	}
 	if (stage->layerDestroyed[2]) {
-		wp->field_180C0.stageFlags |= 8;
+		wp->stageObjectWork.stageFlags |= 8;
 	}
 	if (!hasLayer6) {
-		wp->field_180C0.stageFlags |= 0x20;
+		wp->stageObjectWork.stageFlags |= 0x20;
 		mapGrpFlagOn(BSO_STR_IF_BODY, 1);
 		mapGrpFlagOn(BSO_STR_IF_WIRE, 1);
 	}
@@ -5049,7 +5049,7 @@ __declspec(section ".sdata") static u32 gap_07_80411F3C_sdata[1] = { 0x00000000 
 // BattleStageObjectMain: per-object transform bookkeeping.
 void BattleStageObjectMain(void) {
 	BattleWork* wp = _battleWorkPointer;
-	BattleWorkField180C0* base = &wp->field_180C0;
+	BattleWorkField180C0* base = &wp->stageObjectWork;
 	BattleStageObject* obj;
 	s32 i;
 	s32 changed;
@@ -5161,10 +5161,10 @@ void BattleStage_DestroyA1(void) {
 	BattleWork* wp = _battleWorkPointer;
 	void* evt = wp->fbatInfo->setup->stageData->objectTurnEventA1;
 
-	evtDeleteID(wp->field_180C0.layerEventId[0]);
-	wp->field_180C0.layerEventId[0] = 0;
-	if (wp->field_180C0.objectTurnEventId != 0 && evtCheckID(wp->field_180C0.objectTurnEventId)) {
-		evtDeleteID(wp->field_180C0.objectTurnEventId);
+	evtDeleteID(wp->stageObjectWork.layerEventId[0]);
+	wp->stageObjectWork.layerEventId[0] = 0;
+	if (wp->stageObjectWork.objectTurnEventId != 0 && evtCheckID(wp->stageObjectWork.objectTurnEventId)) {
+		evtDeleteID(wp->stageObjectWork.objectTurnEventId);
 	}
 	if (evt == NULL) {
 		evt = _object_turn_event_A1;
@@ -5172,7 +5172,7 @@ void BattleStage_DestroyA1(void) {
 	{
 		EventEntry* e = evtEntry(evt, 10, 0);
 		if (e != NULL) {
-			wp->field_180C0.objectTurnEventId = e->eventId;
+			wp->stageObjectWork.objectTurnEventId = e->eventId;
 		}
 	}
 }
@@ -5181,8 +5181,8 @@ void BattleStage_DestroyA2(void) {
 	BattleWork* wp = _battleWorkPointer;
 	void* evt = wp->fbatInfo->setup->stageData->objectTurnEventA2;
 
-	evtDeleteID(wp->field_180C0.layerEventId[1]);
-	wp->field_180C0.layerEventId[1] = 0;
+	evtDeleteID(wp->stageObjectWork.layerEventId[1]);
+	wp->stageObjectWork.layerEventId[1] = 0;
 	if (evt == NULL) {
 		evt = _object_turn_event_A2;
 	}
@@ -5193,10 +5193,10 @@ void BattleStage_DestroyB(void) {
 	BattleWork* wp = _battleWorkPointer;
 	void* evt = wp->fbatInfo->setup->stageData->objectTurnEventB;
 
-	evtDeleteID(wp->field_180C0.layerEventId[2]);
-	wp->field_180C0.layerEventId[2] = 0;
-	if (wp->field_180C0.objectTurnEventId != 0 && evtCheckID(wp->field_180C0.objectTurnEventId)) {
-		evtDeleteID(wp->field_180C0.objectTurnEventId);
+	evtDeleteID(wp->stageObjectWork.layerEventId[2]);
+	wp->stageObjectWork.layerEventId[2] = 0;
+	if (wp->stageObjectWork.objectTurnEventId != 0 && evtCheckID(wp->stageObjectWork.objectTurnEventId)) {
+		evtDeleteID(wp->stageObjectWork.objectTurnEventId);
 	}
 	if (evt == NULL) {
 		evt = _object_turn_event_B;
@@ -5204,7 +5204,7 @@ void BattleStage_DestroyB(void) {
 	{
 		EventEntry* e = evtEntry(evt, 10, 0);
 		if (e != NULL) {
-			wp->field_180C0.objectTurnEventId = e->eventId;
+			wp->stageObjectWork.objectTurnEventId = e->eventId;
 		}
 	}
 }
@@ -5219,7 +5219,7 @@ USER_FUNC(_set_mobj_rotate_x) {
 	s32 changed = 0;
 
 	wp = _battleWorkPointer;
-	base = &_battleWorkPointer->field_180C0;
+	base = &_battleWorkPointer->stageObjectWork;
 	args = event->args;
 	layer = evtGetValue(event, *args++);
 
@@ -5349,13 +5349,13 @@ USER_FUNC(_mobj_destroy) {
 	}
 	switch (layer) {
 		case 0:
-			wp->field_180C0.stageFlags |= 0x2;
+			wp->stageObjectWork.stageFlags |= 0x2;
 			break;
 		case 1:
-			wp->field_180C0.stageFlags |= 0x4;
+			wp->stageObjectWork.stageFlags |= 0x4;
 			break;
 		case 2:
-			wp->field_180C0.stageFlags |= 0x8;
+			wp->stageObjectWork.stageFlags |= 0x8;
 			break;
 	}
 	return EVT_RETURN_DONE;
@@ -5463,7 +5463,7 @@ USER_FUNC(_set_mobj_shake_init) {
 
 USER_FUNC(_set_mobj_shake) {
 	BattleWork* wp = _battleWorkPointer;
-	BattleWorkField180C0* w = &wp->field_180C0;
+	BattleWorkField180C0* w = &wp->stageObjectWork;
 	s32 layer = evtGetValue(event, *event->args);
 	BattleStageObject* obj;
 	s32 i;
@@ -5501,7 +5501,7 @@ void _mobj_shake_main(BattleStageObject* obj) {
 }
 
 void BattleStage_NozzleDirChangeCheck(void) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 	u8 i;
 
 	if (w->nozzleData != NULL) {
@@ -5512,7 +5512,7 @@ void BattleStage_NozzleDirChangeCheck(void) {
 }
 
 void _Nozzle_Change_Check(u8 index, u8* nozzle) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 #ifdef MUST_MATCH
 	// The element pointer, taken before the loop, keeps base and index apart for the original's lbzx.
 	u8* dir = &w->nozzleDir[index];
@@ -5557,7 +5557,7 @@ void _Nozzle_Change_Check(u8 index, u8* nozzle) {
 }
 
 USER_FUNC(_nozzle_turn) {
-	BattleWorkField180C0* base = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* base = &_battleWorkPointer->stageObjectWork;
 	s32 unitId = event->unitId;
 	const char* name;
 	f32 angle1;
@@ -5652,7 +5652,7 @@ USER_FUNC(_nozzle_turn) {
 }
 
 void BattleStage_WallCloseCheck(void) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 	u8 flags = w->stageFlags;
 
 	if (!(flags & 0x10)) {
@@ -5688,7 +5688,7 @@ void _disp_escape_wall_message(CameraId cameraId, void* param) {
 }
 
 void BattleStage_IronFrameFallCheck(void) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 	u8 flags = w->stageFlags;
 
 	if (!(flags & 0x40) && !(flags & 0x20)) {
@@ -5698,7 +5698,7 @@ void BattleStage_IronFrameFallCheck(void) {
 }
 
 s32 _fall_frame_wait(void) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 
 	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait(_battleWorkPointer)) {
 		return 0;
@@ -5749,7 +5749,7 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 USER_FUNC(_fall_frame) {
 	s32 dest = event->args[0];
 	BattleWork* wp = _battleWorkPointer;
-	BattleWorkField180C0* w = &wp->field_180C0;
+	BattleWorkField180C0* w = &wp->stageObjectWork;
 	BattleStageObject* obj = BattleSearchObjectPtr("if_body");
 
 	if (isFirstCall) {
@@ -5767,7 +5767,7 @@ USER_FUNC(_fall_frame) {
 }
 
 USER_FUNC(_fall_frame_delete) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 
 	if (isFirstCall) {
 		event->userdata[2] = 0xFF;
@@ -5782,7 +5782,7 @@ USER_FUNC(_fall_frame_delete) {
 }
 
 void BattleStage_NozzleWorkCheck(s32 flag) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 
 	if (pouchGetPtr()->rank > 0) {
 		_nozzle_type_init();
@@ -5804,7 +5804,7 @@ void BattleStage_NozzleWorkCheck(s32 flag) {
 }
 
 void _nozzle_type_init(void) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 	BattleStageNozzleData* data = w->nozzleData;
 	s8 i;
 	s32 sum;
@@ -5826,7 +5826,7 @@ void _nozzle_type_init(void) {
 }
 
 s32 _nozzle_work_wait(void) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 	s32 i;
 
 	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait(_battleWorkPointer)) {
@@ -5844,7 +5844,7 @@ s32 _nozzle_work_wait(void) {
 }
 
 f32 _get_nozzle_dir(s32 index) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 	s32 dir = w->nozzleDir[index];
 
 	switch (dir) {
@@ -5891,7 +5891,7 @@ f32 _get_nozzle_dir(s32 index) {
 USER_FUNC(_nozzle_work_effect) {
 	BattleWork* wp = _battleWorkPointer;
 	s32* args = event->args;
-	BattleWorkField180C0* base = &wp->field_180C0;
+	BattleWorkField180C0* base = &wp->stageObjectWork;
 	BattleStageObject* obj;
 	char* sfx;
 	f32 angle;
@@ -5979,7 +5979,7 @@ USER_FUNC(_nozzle_work_effect) {
 #undef NOZZLE_WORK_BODY
 
 s32 BattleFogEndCheck(void) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 
 	if (w->fogTurns == 0) {
 		return 1;
@@ -5996,7 +5996,7 @@ s32 BattleFogEndCheck(void) {
 }
 
 BOOL BattleFogForceStop(void) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 
 	if (w->fogTurns == 0) {
 		return 0;
@@ -6009,7 +6009,7 @@ BOOL BattleFogForceStop(void) {
 }
 
 s32 _nozzle_work_attack_set(void) {
-	BattleWorkField180C0* base = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* base = &_battleWorkPointer->stageObjectWork;
 	s32 i;
 
 	base->weaponAddr[0] = NULL;
@@ -6035,7 +6035,7 @@ s32 _nozzle_work_attack_set(void) {
 // r3; without the cast it caches the extension in r4. The three cases fall through 0 -> 2 -> 1 (no
 // `return -1` after the inner switches), which is the original's control flow.
 s32 _get_nozzle_attack_index(u8 index) {
-	BattleWorkField180C0* base = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* base = &_battleWorkPointer->stageObjectWork;
 	u8 type;
 
 	switch (index) {
@@ -6165,7 +6165,7 @@ void _combine_nozzle_weapon(s32 mode, BattleWeapon* dst, BattleWeapon* src) {
 }
 
 USER_FUNC(_nozzle_work_get_weapon_address) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 	s32* args = event->args;
 	s32 idx;
 
@@ -6176,7 +6176,7 @@ USER_FUNC(_nozzle_work_get_weapon_address) {
 
 s32 BattleStage_ObjectFallCheck(void) {
 	BattleWork* wp = _battleWorkPointer;
-	BattleWorkField180C0* w = &wp->field_180C0;
+	BattleWorkField180C0* w = &wp->stageObjectWork;
 	EventEntry* evt;
 
 	if (wp->flags & 0x1000) {
@@ -6188,7 +6188,7 @@ s32 BattleStage_ObjectFallCheck(void) {
 }
 
 s32 _object_fall_wait(void) {
-	BattleWorkField180C0* w = &_battleWorkPointer->field_180C0;
+	BattleWorkField180C0* w = &_battleWorkPointer->stageObjectWork;
 
 	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait(_battleWorkPointer)) {
 		return 0;
@@ -6256,7 +6256,7 @@ USER_FUNC(_object_fall_attack) {
 
 	// `wp` is the BattleWork base; typeTable is this rank's fall-object data.
 	wp = _battleWorkPointer;
-	typeTable = wp->field_180C0.fallObjectData;
+	typeTable = wp->stageObjectWork.fallObjectData;
 	dst = *args++;
 	flag = 0;
 	if (isFirstCall) {
@@ -6318,7 +6318,7 @@ USER_FUNC(_object_fall_attack) {
 			if (pouchGetPtr()->mStarPowersObtained != 0
 			    && (BattleAudienceBaseGetPtr()->flags & 0x4000) == 0
 			    && newEntry->type != 6 && newEntry->type != 7
-			    && ((wp->field_19068.forceFlags & 2) != 0 || irand(100) < 10)) {
+			    && ((wp->force.forceFlags & 2) != 0 || irand(100) < 10)) {
 				newEntry->mode = 1;
 				newEntry->partId = -1;
 				newEntry->unitId = BattleAudience_HaitiRandForFallObject();

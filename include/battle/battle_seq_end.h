@@ -44,7 +44,7 @@ typedef struct LvupSelectObj {
 typedef struct BattleSeqEndWork {
     s32 unk0;                // 0x0, zeroed when created; _audience_Whistle_control compares it with SEQ_END_* steps, nothing sets it
     s32 timer;               // 0x4, frame counter for the current end-of-battle step
-    s16 stockExp;            // 0x8, exp earned this battle (BattleGetStockExp; doubled when field_18FE1 == 3, capped at 100)
+    s16 stockExp;            // 0x8, exp earned this battle (BattleGetStockExp; doubled when merleeCurseType == 3, capped at 100)
     s16 expRemaining;        // 0xA, exp not yet turned into star points; the exp icons show this
     s32 lvupPending;         // 0xC, set when 100 star points were earned (a level-up is due)
     s32 lvupSelect;          // 0x10, highlighted level-up choice: 0 HP, 1 FP, 2 BP

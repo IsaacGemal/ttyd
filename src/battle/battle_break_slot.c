@@ -322,7 +322,7 @@ void BattleBreakSlot_Init(void) {
 void BattleBreakSlot_Main(void) {
     static f32 updown;
     BattleWork* wp = _battleWorkPointer;
-    BattleWorkField19068* force = &wp->field_19068;
+    BattleWorkField19068* force = &wp->force;
     BattleAudience* audience = BattleAudienceBaseGetPtr();
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleBreakSlotReel* reel;
@@ -908,7 +908,7 @@ void BattleBreakSlot_End(void) {
 	//stubbed in retail
 }
 void BattleBreakSlot_PointInc(void) {
-    BattleWorkField19068* force = &_battleWorkPointer->field_19068;
+    BattleWorkField19068* force = &_battleWorkPointer->force;
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleBreakSlotReel* reel;
     PouchData* pouch;

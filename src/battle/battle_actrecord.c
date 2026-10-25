@@ -17,7 +17,7 @@ void BtlActRec_AddPoint(u8* p, u8 value) {
 
 void BtlActRec_JudgeTurnRuleKeep(void) {
     BattleWork* wp = _battleWorkPointer;
-    u8* f = wp->field_16F1C;
+    u8* f = wp->actRecord;
     FieldBattleInfo* info = wp->fbatInfo;
     u8 cond = info->ruleKind;
 
@@ -61,7 +61,7 @@ void BtlActRec_JudgeTurnRuleKeep(void) {
 
 void BtlActRec_JudgeRuleKeep(void) {
     BattleWork* wp = _battleWorkPointer;
-    u8* f = wp->field_16F1C;
+    u8* f = wp->actRecord;
     FieldBattleInfo* info = wp->fbatInfo;
     u8 cond;
     BattleUnit* mario;
@@ -345,7 +345,7 @@ s32 _check_no_use(s32 arg) {
 u8 _check_turn_count_0_turn(s32 flag) {
     BattleWork* wp = _battleWorkPointer;
     FieldBattleInfo* info = wp->fbatInfo;
-    u8* turn = &wp->field_16F1C[0x3B - 0x1C];
+    u8* turn = &wp->actRecord[0x3B - 0x1C];
 
     if (*turn <= info->field_0x1B || info->field_0x1B == 0xFF) {
         if (flag == 0) {
@@ -367,7 +367,7 @@ u8 _check_turn_count_0_turn(s32 flag) {
 u8 _check_turn_count_0_end(s32 flag) {
     BattleWork* wp = _battleWorkPointer;
     FieldBattleInfo* info = wp->fbatInfo;
-    u8* turn = &wp->field_16F1C[0x3B - 0x1C];
+    u8* turn = &wp->actRecord[0x3B - 0x1C];
 
     if (*turn <= info->field_0x1B || info->field_0x1B == 0xFF) {
         if (flag == 0) {

@@ -349,7 +349,7 @@ void btlseqFirstAct(BattleWork* wp) {
 	case 0x2000000:
 		switch (party) {
 		case 0:
-			wp->field_EFC = 0;
+			wp->seqWaitFrames = 0;
 			evtEntry(_default_haikei_set_entry_event, 10, 0);
 			setup = wp->fbatInfo->setup;
 			for (i = 0; i < 64; i++) {
@@ -385,17 +385,17 @@ void btlseqFirstAct(BattleWork* wp) {
 		case 1:
 		case 2:
 		case 3:
-			wp->field_EFC = 10;
+			wp->seqWaitFrames = 10;
 			break;
 		case 4:
 		case 5:
 		case 6:
 		case 7:
 		case 8:
-			wp->field_EFC = 0;
+			wp->seqWaitFrames = 0;
 			break;
 		default:
-			wp->field_EFC = 0;
+			wp->seqWaitFrames = 0;
 			break;
 		}
 		wp->flags |= 2;
@@ -455,18 +455,18 @@ void btlseqFirstAct(BattleWork* wp) {
 		break;
 
 	case 0x2000001:
-		if (--wp->field_EFC > 0) {
+		if (--wp->seqWaitFrames > 0) {
 			break;
 		}
 		fadeEntry(0x17, 0xC8, dat_8041c268);
-		wp->field_19060 = psndSFXOn("SFX_OFF_BTL_START_CURTAIN_UP1");
+		wp->curtainSfxId = psndSFXOn("SFX_OFF_BTL_START_CURTAIN_UP1");
 		BattleSetSeq(wp, 2, 0x2000002);
 		/* fallthrough */
 	case 0x2000002:
 		if (fadeIsFinish()) {
-			if ((u32)wp->field_19060 != 0xFFFFFFFF) {
-				psndSFXOff(wp->field_19060);
-				wp->field_19060 = -1;
+			if ((u32)wp->curtainSfxId != 0xFFFFFFFF) {
+				psndSFXOff(wp->curtainSfxId);
+				wp->curtainSfxId = -1;
 			}
 		}
 		if (BattleWaitAllActiveEvtEnd(wp)) {
@@ -544,7 +544,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		break;
 
 	case 0x2000009: {
-		s32* p = &wp->field_180C0.closeWallEventId;
+		s32* p = &wp->stageObjectWork.closeWallEventId;
 		if (*p) {
 			if (!evtCheckID(*p)) {
 				*p = 0;
@@ -561,7 +561,7 @@ void btlseqFirstAct(BattleWork* wp) {
 		BattleUnit* u;
 		BOOL found;
 		int j;
-		wp->field_1904C = 0;
+		wp->nanikaLuckEventId = 0;
 		found = FALSE;
 		for (j = 0; j < 64; j++) {
 			u = BattleGetUnitPtr(wp, j);
@@ -579,11 +579,11 @@ void btlseqFirstAct(BattleWork* wp) {
 		if (found) {
 			evt = evtEntry(nanika_luck_event, 10, 0);
 			evt->unitId = -5;
-			wp->field_1904C = evt->eventId;
+			wp->nanikaLuckEventId = evt->eventId;
 			wp->statusChangeMsg.mAnnouncedFlags |= 0xFFFFFFFFFFFFFFFFULL;
 			BattleStatusChangeMsgAdjust(wp);
 			BattleSetSeq(wp, 2, 0x200000B);
-			wp->field_18FE2 = 0;
+			wp->field_0x18FE2 = 0;
 			break;
 		}
 		BattleSetSeq(wp, 2, 0x200000C);
@@ -593,14 +593,14 @@ void btlseqFirstAct(BattleWork* wp) {
 	case 0x200000B: {
 		BOOL result;
 		result = TRUE;
-		if (wp->field_18FE2 < 0x12C) {
-			wp->field_18FE2++;
+		if (wp->field_0x18FE2 < 0x12C) {
+			wp->field_0x18FE2++;
 		}
-		if (wp->field_1904C) {
-			if (evtCheckID(wp->field_1904C)) {
+		if (wp->nanikaLuckEventId) {
+			if (evtCheckID(wp->nanikaLuckEventId)) {
 				result = FALSE;
 			} else {
-				wp->field_1904C = 0;
+				wp->nanikaLuckEventId = 0;
 			}
 		}
 		if (!BattleWaitAllActiveEvtEnd(wp)) {
@@ -750,17 +750,17 @@ void btlseqTurn(BattleWork* wp) {
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
 			} else {
-				wp->field_EFC = 0x78;
+				wp->seqWaitFrames = 0x78;
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
 			}
 			break;
 
 		case 0x3000004:
-			if (wp->field_EFC != 0) {
-				(wp->field_EFC)--;
+			if (wp->seqWaitFrames != 0) {
+				(wp->seqWaitFrames)--;
 			}
-			if (wp->field_EFC <= 0 || BattlePadCheckTrigger(0x300)) {
+			if (wp->seqWaitFrames <= 0 || BattlePadCheckTrigger(0x300)) {
 				BattleIncSeq(wp, SEQ_TURN);
 			} else {
 				dispEntry(CAMERA_2D, 900.0f, 1, (DispCallback)_rule_disp, NULL);
@@ -1543,16 +1543,16 @@ void btlseqTurn(BattleWork* wp) {
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
 			} else {
-				wp->field_2 = 0;
+				wp->field_0x2 = 0;
 				BattleIncSeq(wp, SEQ_TURN);
 				btlseqTurn(wp);
 			}
 			break;
 
 		case 0x3000009:
-			switch (wp->field_2) {
+			switch (wp->field_0x2) {
 				case 0:
-					(wp->field_2)++;
+					(wp->field_0x2)++;
 					for (i = 0; i < 64; i++) {
 						unit = BattleGetUnitPtr(wp, i);
 						if (unit != NULL && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) &&
@@ -1573,7 +1573,7 @@ void btlseqTurn(BattleWork* wp) {
 						}
 					}
 					if (done) {
-						(wp->field_2)++;
+						(wp->field_0x2)++;
 					}
 					break;
 				}
@@ -1942,7 +1942,7 @@ void btlseqMove(BattleWork* wp) {
 				changed = TRUE;
 				break;
 			}
-			wp->field_18FE1 = 2;
+			wp->merleeCurseType = 2;
 			BattleMajinaiDone();
 			BattleMajinaiEndCheck();
 			{
@@ -2122,8 +2122,8 @@ void btlseqMove(BattleWork* wp) {
 				end = TRUE;
 			}
 			if (end) {
-				if (wp->field_18FE1 == 2) {
-					wp->field_18FE1 = 0;
+				if (wp->merleeCurseType == 2) {
+					wp->merleeCurseType = 0;
 				}
 				BattleAudience_PerPhase(BattleGetSeq(wp, SEQ_PHASE));
 				BattleIncSeq(wp, SEQ_MOVE);
@@ -2336,8 +2336,8 @@ void btlseqAct(BattleWork* wp) {
 				BtlUnit_SetStatus(unit, 0x10, 1, -0x63);
 				unit->mTokenFlags &= ~8;
 			}
-			if (wp->field_18FE1 == 1) {
-				wp->field_18FE1 = 0;
+			if (wp->merleeCurseType == 1) {
+				wp->merleeCurseType = 0;
 			}
 			unit->field_0x258 = 0;
 			switch (unit->moveState) {
@@ -2463,7 +2463,7 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 		BattleMajinaiCheck();
 	}
 	wp->statusChangeMsg.mAnnouncedFlags = 0;
-	BtlActRec_AddCount(&wp->field_16F1C[0x3B - 0x1C]);
+	BtlActRec_AddCount(&wp->actRecord[0x3B - 0x1C]);
 
 	for (i = 0; i < 64; i++) {
 		unit = BattleGetUnitPtr(wp, i);
@@ -2619,7 +2619,7 @@ void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
 }
 
 BOOL BattleWaitAllActiveEvtEnd(BattleWork* wp) { //1:1
-	BattleWorkField180C0* p = &wp->field_180C0;
+	BattleWorkField180C0* p = &wp->stageObjectWork;
 	s32 ret = BattleWaitAllActiveEvtEnd_NoBgSetEndWait(wp);
 
 	if (!ret) {
