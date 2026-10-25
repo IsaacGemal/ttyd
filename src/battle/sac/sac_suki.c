@@ -458,8 +458,9 @@ static void main_star(void) {
 // .text:0x9DC | 0x8024A2FC | size: 0x48
 s32 end_suki(EventEntry* event, BOOL isFirstCall) {
     SukiWork* work = get_ptr();
+    effStarStoneData* data = work->effect->userdata;
 
-    effDelete(((effStarStoneData*)work->effect->userdata)->dustEffect);
+    effDelete(data->dustEffect);
     effDelete(work->effect);
     return 2;
 }
@@ -747,11 +748,13 @@ s32 eff_crystal(EventEntry* event) {
     f32 f1;
     f32 f2;
     EffectEntry* effect;
+    EffCrystalData* crystal;
 
     f1 = evtGetFloat(event, args[0]);
     f2 = evtGetFloat(event, args[1]);
     effect = effCrystalN64Entry(6, 0x3C, f1, f2, 30.0f, 1.0f);
-    ((EffCrystalData*)effect->userdata)->camId = 7;
+    crystal = effect->userdata;
+    crystal->camId = 7;
     return EVT_RETURN_DONE;
 }
 
@@ -886,16 +889,16 @@ EVT_BEGIN(marioAttackEvent_Suki)
     END_SIBLING_EVENT
     CALL_CHILD(sac_start_camera_evt)
     WAIT_MS(500)
-    CALL(btlevtcmd_snd_se, -2, STRING((char*)"SFX_BTL_SAC_START1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     CALL_CHILD(sac_mario_item_on_evt)
     WAIT_MS(500)
-    CALL(btlevtcmd_snd_se, -2, STRING((char*)"SFX_BTL_SAC_START2"), EVTDAT_POINTER_MAX, 0, LW(11))
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START2"), EVTDAT_POINTER_MAX, 0, LW(11))
     CALL(star_stone_appear)
     BEGIN_SIBLING_EVENT
         CALL_CHILD(sac_start_stardust)
     END_SIBLING_EVENT
     WAIT_FRAMES(100)
-    CALL(btlevtcmd_snd_se, -2, STRING((char*)"SFX_BTL_SAC_START3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_SAC_START3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     CALL(evt_snd_sfxoff, LW(11))
     WAIT_FRAMES(40)
     CALL_CHILD(sac_mario_item_on_end_evt)
@@ -918,12 +921,12 @@ EVT_BEGIN(marioAttackEvent_Suki)
     WAIT_MS(1000)
     SET_VALUE(LW(10), 0)
     SET_VALUE(LW(11), LW(0))
-    CALL(evt_paper_entry, STRING((char*)"OFF_d_yabu_small"))
+    CALL(evt_paper_entry, STRING("OFF_d_yabu_small"))
     LOOP(LW(11))
         CALL(star_stone_get_attack_point, LW(10), LW(1), LW(2), LW(3))
         CALL(get_img_name, LW(10), LW(13))
         CALL(evt_img_entry, LW(13))
-        CALL(evt_img_set_paper, LW(13), STRING((char*)"OFF_d_yabu_small"))
+        CALL(evt_img_set_paper, LW(13), STRING("OFF_d_yabu_small"))
         CALL(get_screen_point, LW(1), LW(2), LW(3), LW(4), LW(5))
         ADD(LW(4), 256)
         MULTIPLY(LW(5), -1)
@@ -937,9 +940,9 @@ EVT_BEGIN(marioAttackEvent_Suki)
             CALL(evt_btl_camera_shake_h, 0, 8, 0, 10, 0)
         END_SIBLING_EVENT
         CALL(eff_crystal, LW(1), LW(2))
-        CALL(evt_eff, STRING(""), STRING((char*)"indirect"), 0, LW(1), LW(2), 30, 60, 0, 0, 0, 0, 0, 0, 0)
-        CALL(evt_snd_sfxon, STRING((char*)"SFX_BTL_SAC_SUKKIRI4"), 0)
-        CALL(evt_snd_sfxon, STRING((char*)"SFX_BTL_SAC_SUKKIRI4_2"), 0)
+        CALL(evt_eff, STRING(""), STRING("indirect"), 0, LW(1), LW(2), 30, 60, 0, 0, 0, 0, 0, 0, 0)
+        CALL(evt_snd_sfxon, STRING("SFX_BTL_SAC_SUKKIRI4"), 0)
+        CALL(evt_snd_sfxon, STRING("SFX_BTL_SAC_SUKKIRI4_2"), 0)
         IF_INT_EQUAL(LW(10), 0)
             CALL(btlevtcmd_GetEnemyBelong, -2, LW(1))
             CALL(btlevtcmd_SamplingEnemy, -2, LW(1), PTR(&weapon_words))
@@ -961,7 +964,7 @@ EVT_BEGIN(marioAttackEvent_Suki)
         CALL(wait_star_stone_attack_end)
         ADD(LW(10), 1)
     END_LOOP
-    CALL(evt_paper_delete, STRING((char*)"OFF_d_yabu_small"))
+    CALL(evt_paper_delete, STRING("OFF_d_yabu_small"))
     SET_VALUE(LW(10), 0)
     SET_VALUE(LW(11), LW(0))
     LOOP(LW(11))
@@ -972,7 +975,7 @@ EVT_BEGIN(marioAttackEvent_Suki)
     CALL_CHILD(flash_evt)
     SET_VALUE(LW(10), 3)
     LOOP(4)
-        CALL(evt_snd_sfxon, STRING((char*)"SFX_BTL_SAC_SUKKIRI5"), 0)
+        CALL(evt_snd_sfxon, STRING("SFX_BTL_SAC_SUKKIRI5"), 0)
         LOOP(4)
             ADD(LW(10), 63)
             CALL(flash_update, LW(10))

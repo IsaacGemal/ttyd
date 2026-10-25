@@ -666,6 +666,7 @@ s32 _set_effect_luck(void) {
 	BattleUnitPart* part;
 	s32 i;
 	EffectEntry* eff;
+	NiceEffectWork* nice;
 	for (i = 0; i < 64; i++) {
 		unit = BattleGetUnitPtr(wp, i);
 
@@ -717,7 +718,8 @@ s32 _set_effect_luck(void) {
 		BtlUnit_GetPos(unit, &x, py, pz);
 		psndSFXOn(sfxName);
 		eff = effNiceEntry(6, x - 45.0f, 60.0f + y, z);
-		((NiceEffectWork*)eff->userdata)->scale = 0.75f;
+		nice = eff->userdata;
+		nice->scale = 0.75f;
 	}
 	return 2;
 }

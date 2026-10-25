@@ -849,8 +849,9 @@ static void main_star(void) {
 s32 end_muki(EventEntry* event, BOOL isFirstCall) {
     MukiWork* work = get_ptr();
     s32 i;
+    effStarStoneData* data = work->starStone->userdata;
 
-    effDelete(((effStarStoneData*)work->starStone->userdata)->dustEffect);
+    effDelete(data->dustEffect);
     effDelete(work->starStone);
     for (i = 0; i < 9; i++) {
         effDelete(work->entries[i].effect);

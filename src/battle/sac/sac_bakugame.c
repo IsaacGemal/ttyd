@@ -239,7 +239,8 @@ s32 init_bakugame(EventEntry* event, BOOL isFirstCall) {
 
 s32 end_bakugame(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
-    effDelete(((effStarStoneData*)baku->starStone->userdata)->dustEffect);
+    effStarStoneData* data = baku->starStone->userdata;
+    effDelete(data->dustEffect);
     effDelete(baku->starStone);
     return EVT_RETURN_DONE;
 }

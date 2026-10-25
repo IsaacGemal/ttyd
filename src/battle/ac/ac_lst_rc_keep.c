@@ -24,8 +24,8 @@ typedef struct LstRcKeepWork {
 
 // sdata tables.
 s32 ac_lstrckeep_ok_frame[7] = {0x50, 0x46, 0x3C, 0x28, 0x14, 0x0A, 0x05};
-char* ac_lstrckeep_iconname[4] = {(char*)"_AcSkl1", (char*)"_AcSkl2", (char*)"_AcSkl3",
-                                   (char*)"_AcSkl4"};
+char* ac_lstrckeep_iconname[4] = {"_AcSkl1", "_AcSkl2", "_AcSkl3",
+                                   "_AcSkl4"};
 
 static void actionCommandDisp(f32 x, f32 y, s32 type);
 

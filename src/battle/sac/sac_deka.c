@@ -881,7 +881,8 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
 // .text:0x1158 | 0x80244150 | size: 0x48
 s32 end_deka(EventEntry* event) {
     DekaWork* p = get_ptr();
-    effDelete(((effStarStoneData*)p->starEffect->userdata)->dustEffect);
+    effStarStoneData* data = p->starEffect->userdata;
+    effDelete(data->dustEffect);
     effDelete(p->starEffect);
     return 2;
 }
