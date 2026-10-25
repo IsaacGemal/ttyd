@@ -42,7 +42,7 @@ void battleCameraInit(void) {
   camera->moveSpeedLv = 1;
   camera->zoomSpeedLv = 1;
   camera->position = (Vec){ 0.0f, 0.0f, 0.0f };
-  camera->unk4 = 0;
+  camera->modeFrames = 0;
 }
 
 #ifdef MUST_MATCH
@@ -173,15 +173,15 @@ void battleCameraMain(void) {
     f32 w;
 
 #ifdef MUST_MATCH
-    unit2 = bcam_get_unit(wp, wp->cameraWork.unk10);
+    unit2 = bcam_get_unit(wp, wp->cameraWork.homingUnitId);
 #else
-    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.homingUnitId);
 #endif
     if (unit2 == NULL) {
       btl_camera_set_mode(0, 0);
       break;
     }
-    part2 = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
+    part2 = BattleGetUnitPartsPtr(wp->cameraWork.homingUnitId, wp->cameraWork.homingPartId);
     BtlUnit_GetPos(unit2, &vv.x, &vv.y, &vv.z);
     {
       f32 hh = ((f32)BtlUnit_GetHeight(unit2) - 50.0f) / 2.0f;
@@ -221,14 +221,14 @@ void battleCameraMain(void) {
     f32 base;
     f32 f11;
 
-    unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
-    unit3 = BattleGetUnitPtr(wp, wp->cameraWork.unk14);
+    unit = BattleGetUnitPtr(wp, wp->cameraWork.homingUnitId);
+    unit3 = BattleGetUnitPtr(wp, wp->cameraWork.homingUnitId2);
     if (unit == NULL || unit3 == NULL) {
       btl_camera_set_mode(0, 0);
       break;
     }
-    part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
-    part = BattleGetUnitPartsPtr(wp->cameraWork.unk14, wp->cameraWork.unk1C);
+    part = BattleGetUnitPartsPtr(wp->cameraWork.homingUnitId, wp->cameraWork.homingPartId);
+    part = BattleGetUnitPartsPtr(wp->cameraWork.homingUnitId2, wp->cameraWork.homingPartId2);
     BtlUnit_GetPos(unit, &vv.x, &vv.y, &vv.z);
     BtlUnit_GetHitPos(unit3, part, &hv.x, &hv.y, &hv.z);
     wa = (f32)BtlUnit_GetWidth(unit) - 24.0f;
@@ -239,7 +239,7 @@ void battleCameraMain(void) {
     if (wb < 0.0f) {
       wb = 0.0f;
     }
-    dxc = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x;
+    dxc = wp->cameraWork.homingPos2.x - wp->cameraWork.homingPos.x;
     num = hv.x - vv.x;
     if (dxc == 0.0f) {
       t = 0.5f;
@@ -258,8 +258,8 @@ void battleCameraMain(void) {
 #else
     base = 2.0f * wp->cameraWork.zoom - 1.5f * (wa + wb);
 #endif
-    f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
-    xv = (1.0f - t) * wp->cameraWork.unkC8.x;
+    f9 = (vv.y - wp->cameraWork.homingPos2.y) * (wp->cameraWork.homingPos2.y / 80.0f);
+    xv = (1.0f - t) * wp->cameraWork.homingPos2.x;
     v = (1.0f - t) * base;
     f11 = -v / 10.0f;
     if (f9 > 100.0f) {
@@ -284,14 +284,14 @@ void battleCameraMain(void) {
     f32 xc;
     BattleUnitPart* pt;
 
-    unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
-    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk14);
+    unit = BattleGetUnitPtr(wp, wp->cameraWork.homingUnitId);
+    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.homingUnitId2);
     if (unit == NULL || unit2 == NULL) {
       btl_camera_set_mode(0, 0);
       break;
     }
-    pt = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
-    pt = BattleGetUnitPartsPtr(wp->cameraWork.unk14, wp->cameraWork.unk1C);
+    pt = BattleGetUnitPartsPtr(wp->cameraWork.homingUnitId, wp->cameraWork.homingPartId);
+    pt = BattleGetUnitPartsPtr(wp->cameraWork.homingUnitId2, wp->cameraWork.homingPartId2);
     BtlUnit_GetPos(unit, &vv.x, &vv.y, &vv.z);
     BtlUnit_GetHitPos(unit2, pt, &hv.x, &hv.y, &hv.z);
     w = (f32)BtlUnit_GetWidth(unit) - 24.0f;
@@ -328,12 +328,12 @@ void battleCameraMain(void) {
     f32 cvy;
     f32 y;
 
-    unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+    unit = BattleGetUnitPtr(wp, wp->cameraWork.homingUnitId);
     if (unit == NULL) {
       btl_camera_set_mode(0, 0);
       break;
     }
-    part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
+    part = BattleGetUnitPartsPtr(wp->cameraWork.homingUnitId, wp->cameraWork.homingPartId);
     if (part == NULL) {
       btl_camera_set_mode(0, 0);
       break;
@@ -376,14 +376,14 @@ void battleCameraMain(void) {
     f32 base;
     f32 f11;
 
-    unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
-    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk14);
+    unit = BattleGetUnitPtr(wp, wp->cameraWork.homingUnitId);
+    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.homingUnitId2);
     if (unit == NULL || unit2 == NULL) {
       btl_camera_set_mode(0, 0);
       break;
     }
-    part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
-    part2 = BattleGetUnitPartsPtr(wp->cameraWork.unk14, wp->cameraWork.unk1C);
+    part = BattleGetUnitPartsPtr(wp->cameraWork.homingUnitId, wp->cameraWork.homingPartId);
+    part2 = BattleGetUnitPartsPtr(wp->cameraWork.homingUnitId2, wp->cameraWork.homingPartId2);
     if (part == NULL || part2 == NULL) {
       btl_camera_set_mode(0, 0);
       break;
@@ -398,7 +398,7 @@ void battleCameraMain(void) {
     if (wb < 0.0f) {
       wb = 0.0f;
     }
-    dxc = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x;
+    dxc = wp->cameraWork.homingPos2.x - wp->cameraWork.homingPos.x;
     num = hv.x - vv.x;
     if (dxc == 0.0f) {
       dxc = 1e-05f;
@@ -416,8 +416,8 @@ void battleCameraMain(void) {
 #else
     base = 2.0f * wp->cameraWork.zoom - 1.5f * (wa + wb);
 #endif
-    f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
-    xv = (1.0f - t) * wp->cameraWork.unkC8.x;
+    f9 = (vv.y - wp->cameraWork.homingPos2.y) * (wp->cameraWork.homingPos2.y / 80.0f);
+    xv = (1.0f - t) * wp->cameraWork.homingPos2.x;
     v = (1.0f - t) * base;
     f11 = -v / 10.0f;
     if (f9 > 100.0f) {
@@ -434,7 +434,7 @@ void battleCameraMain(void) {
     break;
   }
   case 12:
-    member = &audience->members[wp->cameraWork.unk20];
+    member = &audience->members[wp->cameraWork.homingMemberId];
     battleCameraMoveTo(1, 0, &o1, &o2, &o3, &o4, &o5, &o6, member->position.x, 200.0f,
                        400.0f + member->position.z, member->position.x, 0.0f, member->position.z);
     strcpy(name,
@@ -451,20 +451,20 @@ void battleCameraMain(void) {
     f32 zz;
     f32 t;
 
-    unit3 = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+    unit3 = BattleGetUnitPtr(wp, wp->cameraWork.homingUnitId);
     if (unit3 == NULL) {
       btl_camera_set_mode(0, 0);
       break;
     }
-    part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
+    part = BattleGetUnitPartsPtr(wp->cameraWork.homingUnitId, wp->cameraWork.homingPartId);
     if (part == NULL) {
       btl_camera_set_mode(0, 0);
       break;
     }
-    wp->cameraWork.unk20 = 10;
-    dx = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x;
+    wp->cameraWork.homingMemberId = 10;
+    dx = wp->cameraWork.homingPos2.x - wp->cameraWork.homingPos.x;
     BtlUnit_GetPos(unit3, &vv.x, &vv.y, &vv.z);
-    dxn = wp->cameraWork.unkC8.x - vv.x;
+    dxn = wp->cameraWork.homingPos2.x - vv.x;
     if (dx == 0.0f) {
       t = 0.5f;
     } else {
@@ -477,11 +477,11 @@ void battleCameraMain(void) {
       t = 0.5f;
     }
     // The split subtraction keeps the intermediate in cy's register.
-    cy = vv.y - wp->cameraWork.unkBC.y;
+    cy = vv.y - wp->cameraWork.homingPos.y;
     u = 1.0f - t;
     cy -= 100.0f;
     zz = 2.0f * wp->cameraWork.zoom;
-    v = u * wp->cameraWork.unkC8.x;
+    v = u * wp->cameraWork.homingPos2.x;
     if (cy > 0.0f) {
       cy = 0.0f;
     }
@@ -497,8 +497,8 @@ void battleCameraMain(void) {
     break;
   }
   case 14:
-    wp->cameraWork.unk4++;
-    if (wp->cameraWork.unk4 == 1) {
+    wp->cameraWork.modeFrames++;
+    if (wp->cameraWork.modeFrames == 1) {
       pouch = pouchGetPtr();
       switch (pouch->rank) {
       case 0:
@@ -518,8 +518,8 @@ void battleCameraMain(void) {
       wp->cameraWork.zoomSpeedLv = 3;
       battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, 0.0f, 110.0f, zc, 0.0f, 60.0f, 0.0f);
     }
-    if (wp->cameraWork.unk4 == 10) {
-      wp->cameraWork.unk4 = 0;
+    if (wp->cameraWork.modeFrames == 10) {
+      wp->cameraWork.modeFrames = 0;
       btl_camera_set_mode(0, 3);
       btl_camera_set_moveto(0, 120, 4, 0.0f, 110.0f, 750.0f, 0.0f, 60.0f, 0.0f);
     }
@@ -616,8 +616,8 @@ void battleCameraMain(void) {
   wp->cameraWork.cameraAt.x = cam->cameraAt.x;
   wp->cameraWork.cameraAt.y = cam->cameraAt.y;
   wp->cameraWork.cameraAt.z = cam->cameraAt.z;
-  wp->cameraWork.unk68 = (Vec){ o1, o2, o3 };
-  wp->cameraWork.field_0x74 = (Vec){ o4, o5, o6 };
+  wp->cameraWork.posVel = (Vec){ o1, o2, o3 };
+  wp->cameraWork.atVel = (Vec){ o4, o5, o6 };
   if (!(wp->cameraWork.flags & 1) && !(wp->cameraWork.flags & 2)) {
     padRumbleOff(0);
   }
@@ -856,9 +856,9 @@ void battleCameraMoveTo(s32 id, s32 a, f32* p1, f32* p2, f32* p3, f32* p4,
 
 f32 battleCameraGetPosMoveSpeed(void) {
   BattleCameraWork *camera = &_battleWorkPointer->cameraWork;
-  f32 x = camera->unk68.x;
-  f32 y = camera->unk68.y;
-  f32 z = camera->unk68.z;
+  f32 x = camera->posVel.x;
+  f32 y = camera->posVel.y;
+  f32 z = camera->posVel.z;
   return (f32)sqrt((x * x) + (y * y) + (z * z));
 }
 
@@ -883,7 +883,7 @@ void btl_camera_set_mode(s32 id, s32 mode) {
   camera->zoom = 0.0f;
   camera->moveSpeedLv = 1;
   camera->zoomSpeedLv = 1;
-  camera->unk4 = 0;
+  camera->modeFrames = 0;
   btl_camera_nomove_x_onoff(0, 0);
   btl_camera_nomove_y_onoff(0, 0);
   btl_camera_nomove_z_onoff(0, 0);
@@ -915,19 +915,19 @@ USER_FUNC(evt_btl_camera_set_homing_unit) {
   wp = _battleWorkPointer;
   camera = &wp->cameraWork;
   (void)priority;
-  camera->unk10 = BattleTransID(event, type);
-  unit = BattleGetUnitPtr(wp, camera->unk10);
-  camera->unk18 = BtlUnit_GetBodyPartsId(unit);
-  part = BattleGetUnitPartsPtr(camera->unk10, camera->unk18);
+  camera->homingUnitId = BattleTransID(event, type);
+  unit = BattleGetUnitPtr(wp, camera->homingUnitId);
+  camera->homingPartId = BtlUnit_GetBodyPartsId(unit);
+  part = BattleGetUnitPartsPtr(camera->homingUnitId, camera->homingPartId);
   BtlUnit_GetHomePos(unit, &pos.x, &pos.y, &pos.z);
-  camera->unkBC = (Vec){ pos.x, pos.y, pos.z };
+  camera->homingPos = (Vec){ pos.x, pos.y, pos.z };
   if (type2 != -1) {
-    camera->unk14 = BattleTransID(event, type2);
-    unit2 = BattleGetUnitPtr(wp, camera->unk14);
-    camera->unk1C = BtlUnit_GetBodyPartsId(unit2);
-    part = BattleGetUnitPartsPtr(camera->unk14, camera->unk1C);
+    camera->homingUnitId2 = BattleTransID(event, type2);
+    unit2 = BattleGetUnitPtr(wp, camera->homingUnitId2);
+    camera->homingPartId2 = BtlUnit_GetBodyPartsId(unit2);
+    part = BattleGetUnitPartsPtr(camera->homingUnitId2, camera->homingPartId2);
     BtlUnit_GetHitPos(unit2, part, &pos2.x, &pos2.y, &pos2.z);
-    camera->unkC8 = (Vec){ pos2.x, pos2.y, pos2.z };
+    camera->homingPos2 = (Vec){ pos2.x, pos2.y, pos2.z };
   }
   return EVT_RETURN_DONE;
 }
@@ -959,27 +959,27 @@ USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   if (priority < camera->priLimit) {
     return EVT_RETURN_DONE;
   }
-  camera->unk10 = BattleTransID(event, type);
-  camera->unk18 = partId;
+  camera->homingUnitId = BattleTransID(event, type);
+  camera->homingPartId = partId;
 #ifdef MUST_MATCH
-  unit = getUnitPtr(wp, camera->unk10);
+  unit = getUnitPtr(wp, camera->homingUnitId);
 #else
-  unit = BattleGetUnitPtr(wp, camera->unk10);
+  unit = BattleGetUnitPtr(wp, camera->homingUnitId);
 #endif
-  part = BattleGetUnitPartsPtr(camera->unk10, camera->unk18);
+  part = BattleGetUnitPartsPtr(camera->homingUnitId, camera->homingPartId);
   BtlUnit_GetHomePos(unit, &pos.x, &pos.y, &pos.z);
-  camera->unkBC = (Vec){ pos.x, pos.y, pos.z };
+  camera->homingPos = (Vec){ pos.x, pos.y, pos.z };
   if (type2 != -1) {
-    camera->unk14 = BattleTransID(event, type2);
-    camera->unk1C = partId2;
+    camera->homingUnitId2 = BattleTransID(event, type2);
+    camera->homingPartId2 = partId2;
 #ifdef MUST_MATCH
-    unit = getUnitPtr(wp, camera->unk14);
+    unit = getUnitPtr(wp, camera->homingUnitId2);
 #else
-    unit = BattleGetUnitPtr(wp, camera->unk14);
+    unit = BattleGetUnitPtr(wp, camera->homingUnitId2);
 #endif
-    part = BattleGetUnitPartsPtr(camera->unk14, camera->unk1C);
+    part = BattleGetUnitPartsPtr(camera->homingUnitId2, camera->homingPartId2);
     BtlUnit_GetHitPos(unit, part, &pos2.x, &pos2.y, &pos2.z);
-    camera->unkC8 = (Vec){ pos2.x, pos2.y, pos2.z };
+    camera->homingPos2 = (Vec){ pos2.x, pos2.y, pos2.z };
   }
   return EVT_RETURN_DONE;
 }
@@ -1006,16 +1006,16 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   if (priority < camera->priLimit) {
     return EVT_RETURN_DONE;
   }
-  camera->unk10 = BattleTransID(event, type);
-  camera->unk18 = partId;
-  unit = BattleGetUnitPtr(wp, camera->unk10);
-  part = BattleGetUnitPartsPtr(camera->unk10, camera->unk18);
+  camera->homingUnitId = BattleTransID(event, type);
+  camera->homingPartId = partId;
+  unit = BattleGetUnitPtr(wp, camera->homingUnitId);
+  part = BattleGetUnitPartsPtr(camera->homingUnitId, camera->homingPartId);
   BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
   BtlUnit_GetHitPos(unit, part, &pos2.x, &pos2.y, &pos2.z);
-  camera->unkBC = (Vec){ pos.x, pos.y, pos.z };
-  camera->unk20 = memberId;
+  camera->homingPos = (Vec){ pos.x, pos.y, pos.z };
+  camera->homingMemberId = memberId;
   member = &audience->members[memberId];
-  camera->unkC8 = (Vec){ member->position.x, member->position.y, member->position.z };
+  camera->homingPos2 = (Vec){ member->position.x, member->position.y, member->position.z };
   return EVT_RETURN_DONE;
 }
 

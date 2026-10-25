@@ -212,7 +212,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 typedef struct GaugeTableEntry {
 	s32 threshold; // 0x0
 	f32 value;     // 0x4
-	s32 unk8;      // 0x8
+	s32 flag;      // 0x8, _GetGaugeDecValue copies it to the decrement's flag
 } GaugeTableEntry;
 
 extern GaugeTableEntry _table_0[5];
@@ -280,7 +280,7 @@ f32 _GetGaugeDecValue(void) {
 		return max;
 	}
 
-	dec->flag = table->unk8;
+	dec->flag = table->flag;
 	max = max - intplGetValue(0, dec->heldFrames - (table - 1)->threshold, table->threshold - (table - 1)->threshold,
 	                          (table - 1)->value, table->value);
 	return max;

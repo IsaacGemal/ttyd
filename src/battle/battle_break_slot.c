@@ -259,7 +259,7 @@ __declspec(section ".data") BattleWeapon weapon_doku_kinoko_fp = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 __declspec(section ".data") EVT_BEGIN(doku_kinoko_effect)
     CALL(btlevtcmd_GetUnitId, -3, LW(3))
@@ -322,7 +322,7 @@ void BattleBreakSlot_Init(void) {
 void BattleBreakSlot_Main(void) {
     static f32 updown;
     BattleWork* wp = _battleWorkPointer;
-    BattleWorkField19068* force = &wp->field_19068;
+    BattleWorkField19068* force = &wp->force;
     BattleAudience* audience = BattleAudienceBaseGetPtr();
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleBreakSlotReel* reel;
@@ -478,25 +478,25 @@ void BattleBreakSlot_Main(void) {
             case 0:
                 evtEntry(kinoko_effect, 0, 0x20);
                 slot->breakTurn = 4;
-                slot->field_14 = 2.0f;
+                slot->apMultiplier = 2.0f;
                 break;
             case 1:
                 evtEntry(flower_effect, 0, 0x20);
                 slot->breakTurn = 4;
-                slot->field_14 = 2.0f;
+                slot->apMultiplier = 2.0f;
                 break;
             case 2:
                 evtEntry(star_effect, 0, 0x20);
                 pouchSetAP(pouchGetMaxAP());
                 psndSFXOn("SFX_HP_RECOVER_BIG1");
                 slot->breakTurn = 4;
-                slot->field_14 = 2.0f;
+                slot->apMultiplier = 2.0f;
                 break;
             case 3:
                 evtEntry(shine_effect, 0, 0x20);
                 pouchSetAP(pouchGetMaxAP());
                 slot->breakTurn = 6;
-                slot->field_14 = 3.0f;
+                slot->apMultiplier = 3.0f;
                 break;
             case 4:
                 evtEntry(doku_kinoko_effect, 0, 0x20);
@@ -908,7 +908,7 @@ void BattleBreakSlot_End(void) {
 	//stubbed in retail
 }
 void BattleBreakSlot_PointInc(void) {
-    BattleWorkField19068* force = &_battleWorkPointer->field_19068;
+    BattleWorkField19068* force = &_battleWorkPointer->force;
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleBreakSlotReel* reel;
     PouchData* pouch;

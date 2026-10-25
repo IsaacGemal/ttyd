@@ -34,7 +34,7 @@ typedef struct YuuMinigame3Data {
     u32 flags;                     // 0x00
     s32 phase;                     // 0x04
     s32 counter;                   // 0x08
-    s32 field_0C;                  // 0x0C, decremented per fall; at the end turned into the ranking's mult
+    s32 field_0xC;              // 0x0C, decremented per fall; at the end turned into the ranking's mult
     s32 index;                     // 0x10
     EventEntry* event;             // 0x14
     Vec position;                  // 0x18

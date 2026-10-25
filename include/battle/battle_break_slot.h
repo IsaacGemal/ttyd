@@ -28,7 +28,7 @@ struct BattleBreakSlotReel {
     f32 scrollStep; // 0x50
     f32 scrollDelta; // 0x54
     u8 alpha;      // 0x58
-    u8 field_59[3]; // 0x59
+    u8 pad_0x59[3]; // 0x59
 };
 
 struct BattleBreakSlot {
@@ -37,7 +37,8 @@ struct BattleBreakSlot {
     s32 timer;      // 0x08
     s32 counter;    // 0x0C
     s32 breakTurn;  // 0x10
-    f32 field_14;   // 0x14
+    f32 apMultiplier; // 0x14, BattleBreakSlot_Main sets 2 or 3 with breakTurn;
+                      // BattleAudience_ApRecoveryBuild multiplies the apGauge gain by it while breakTurn lasts
     BattleBreakSlotReel reels[3]; // 0x18
     s32 sound;      // 0x12C
     EventEntry* event; // 0x130

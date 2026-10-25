@@ -527,7 +527,7 @@ BattleWeapon partyWeapon_SandersFirstAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partySandersAttack_FirstAttack,           // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_SandersNormalAttack = {
@@ -605,7 +605,7 @@ BattleWeapon partyWeapon_SandersNormalAttack = {
     0,                                              // fpRegenTime
     0,                                              // fpRegenStrength
     partySandersAttack_NormalAttack,                // mAttackEvtScript
-    { 0, 10, 10, 100, 10, 10, 10, 5, 10, 0, 0, 0 }, // field_B4
+    { 0, 10, 10, 100, 10, 10, 10, 5, 10, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_SandersTimeBombSet = {
@@ -683,7 +683,7 @@ BattleWeapon partyWeapon_SandersTimeBombSet = {
     0,                                      // fpRegenTime
     0,                                      // fpRegenStrength
     partySandersAttack_TimeBombSet,         // mAttackEvtScript
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_SandersCounterSet = {
@@ -761,7 +761,7 @@ BattleWeapon partyWeapon_SandersCounterSet = {
     0,                                         // fpRegenTime
     0,                                         // fpRegenStrength
     partySandersAttack_CounterSet,             // mAttackEvtScript
-    { 0, 5, 5, 100, 20, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 5, 5, 100, 20, 5, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_SandersSuperBombAttack = {
@@ -839,7 +839,7 @@ BattleWeapon partyWeapon_SandersSuperBombAttack = {
     0,                                               // fpRegenTime
     0,                                               // fpRegenStrength
     partySandersAttack_SuperBombAttack,              // mAttackEvtScript
-    { 0, 50, 50, 100, 20, 25, 25, 10, 10, 5, 0, 0 }, // field_B4
+    { 0, 50, 50, 100, 20, 25, 25, 10, 10, 5, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(partySandersAttack_FirstAttack)

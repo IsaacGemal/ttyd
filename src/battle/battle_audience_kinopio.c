@@ -130,7 +130,7 @@ static BattleWeapon weapon_teresa_trans = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 static s32 intrudeSound;
 
@@ -1352,7 +1352,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		f32 dz;
 		f32 dx;
 		BattleStage_NozzleWorkCheck(1);
-		member->evtId = work->field_180C0.nozzleWorkEventId;
+		member->evtId = work->stageObjectWork.nozzleWorkEventId;
 		member->step = 0x4b;
 		dir = member->intrudeDir;
 		t = 300.0f * dir;

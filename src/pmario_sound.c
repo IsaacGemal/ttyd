@@ -6255,7 +6255,7 @@ void psndSFXMain(void) {
             }
         }
     }
-    psnd.unk5B = numSounds;
+    psnd.field_0x5B = numSounds;
     psnd.repeatDelay = 0;
 }
 
@@ -6377,7 +6377,7 @@ s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 delay, Vec* position, u32 a6, s32 
         }
     }
     slot->dist = (u16)dist;
-    slot->unk16 = 0x7D00;
+    slot->field_0x16 = 0x7D00;
     psnd.sfxSerial += 1;
     slot->serial = psnd.sfxSerial;
     slotIndex |= psnd.sfxSerial << 8;
@@ -6600,7 +6600,7 @@ static inline void psndSFX_lpf(u32 id, u16 lpf) {
 	if (no == -1) {
 		return;
 	}
-	sfx->unk16 = lpf;
+	sfx->field_0x16 = lpf;
 	entry = &pssfxlist[no & 0x1FFF];
 	if (!(sfx->flags & 1)) {
 #ifdef MUST_MATCH

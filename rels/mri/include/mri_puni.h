@@ -97,7 +97,7 @@ typedef struct PuniWork {
     u32 sfx;                            // 0x458, an SFX handle evt_puni_force_se_off stops; nothing in mri sets it
     s32 soundNum;                       // 0x45C, puniSound's count
     s32 soundLevel;                     // 0x460, 0..6 bucket of soundNum
-    u8 unk464[0x468 - 0x464];           // 0x464
+    u8 field_0x464[0x468 - 0x464];           // 0x464
     u32 moveSfx;                        // 0x468, SFX_STG2_TOGE_MOVE handle
     s32 moveCount;                      // 0x46C
     s32 moveLevel;                      // 0x470, 0..3 bucket of moveCount
@@ -106,13 +106,13 @@ typedef struct PuniWork {
     s32 field_0x47C;                    // 0x47C
     Vec arrivePos;                      // 0x480
     Vec arrivePos2;                     // 0x48C
-    u8 unk498[0x4B0 - 0x498];           // 0x498
+    u8 field_0x498[0x4B0 - 0x498];           // 0x498
     f32 arriveDistSq;                   // 0x4B0, squared radius around arrivePos
     f32 arriveDistSq2;                  // 0x4B4, squared radius around arrivePos2
-    u8 unk4B8[0x4C0 - 0x4B8];           // 0x4B8
+    u8 field_0x4B8[0x4C0 - 0x4B8];           // 0x4B8
     s32 fightSfxCount0;                 // 0x4C0, SFX_STG2_FIGHT_TOGE1 plays
     s32 fightSfxCount1;                 // 0x4C4, SFX_STG2_FIGHT_TOGE2 plays
-    u8 unk4C8[0x4CC - 0x4C8];           // 0x4C8
+    u8 field_0x4C8[0x4CC - 0x4C8];           // 0x4C8
     s32 windDisabled;                   // 0x4CC, evt_puni_winddisable_onoff; nonzero skips the cloudGetBreathPower wind
 } PuniWork;  // 0x4D0
 
@@ -122,7 +122,7 @@ typedef struct PuniData {
     u32 statusFlags;                    // 0x8, PUNI_STATUS_*
     u16 mode;                           // 0xC, PuniMode
     u16 prevMode;                       // 0xE, PuniMode to return to after an interruption such as PUNI_MODE_WIND
-    u8 unk10[0x114 - 0x10];             // 0x10
+    u8 field_0x10[0x114 - 0x10];             // 0x10
     u16 state;                          // 0x114
     s16 angle;                          // 0x116
     s16 treeId;                         // 0x118, swarm tree the puni belongs to, copied from the parent (searchParent); -1 when unlinked
@@ -131,7 +131,7 @@ typedef struct PuniData {
     u16 prevAnimIdx;                    // 0x11E
     u8 animDebounce;                    // 0x120, frames a new animIdx waits before it sticks (puniModeParent, counts to 8)
     s8 healIconTime;                    // 0x121, frames the heal icon (statusFlags 0x1) has been up; cleared after 30 (evt_icon_disp_func)
-    u8 unk122[0x124 - 0x122];           // 0x122
+    u8 field_0x122[0x124 - 0x122];           // 0x122
     s32 animTime;                       // 0x124
     s32 timer;                          // 0x128
     Vec pos;                            // 0x12C
@@ -142,7 +142,7 @@ typedef struct PuniData {
     Vec awayDir;                        // 0x168, escape direction; -hitNormal after a wall or water hit
     f32 maxSpeed;                       // 0x174, clamp on the vel magnitude (puniMoveLimitedNormal, puniMoveDecel)
     f32 gravity;                        // 0x178
-    u8 unk17C[0x180 - 0x17C];           // 0x17C
+    u8 field_0x17C[0x180 - 0x17C];           // 0x17C
     f32 direction;                      // 0x180
     f32 rotZ;                           // 0x184, npc->rotation.z / PuniPose rotZ; evt_puni_korokoro spins it
     f32 rotOffsetY;                     // 0x188, npc->rotationOffset.y / PuniPose rotOffsetY, the spin pivot (8.0 while korokoro spins)
@@ -160,7 +160,7 @@ typedef struct PuniData {
     f32 nearAttractDistSq;              // 0x1B8, squared distance to it
     s32 nearRepelIdx;                   // 0x1BC, nearest PUNI_TARGET_REPEL entry, -1 for none
     f32 nearRepelDistSq;                // 0x1C0, squared distance to it
-    u8 unk1C4[0x1C8 - 0x1C4];           // 0x1C4
+    u8 field_0x1C4[0x1C8 - 0x1C4];           // 0x1C4
     OSTime modeStartTime;               // 0x1C8
     struct PuniData* parentPuni;        // 0x1D0
     struct PuniData* leftPuni;          // 0x1D4
@@ -177,9 +177,9 @@ typedef struct PuniData {
     struct HitEntry* hitVel;            // 0x210, HitEntry from puniMoveAtari's first check, along vel
     struct HitEntry* hitDir;            // 0x214, HitEntry from puniMoveAtari's second check, from the start point
     struct EffectEntry* effect;         // 0x218
-    u8 unk21C[0x2AC - 0x21C];           // 0x21C
+    u8 field_0x21C[0x2AC - 0x21C];           // 0x21C
     Vec fukidashiPos;                   // 0x2AC, puniModeHagure's fukidashi reads it as the position of a MarioWork at 0x220 (y -1000 hides it)
-    u8 unk2B8[0x560 - 0x2B8];           // 0x2B8
+    u8 field_0x2B8[0x560 - 0x2B8];           // 0x2B8
     Vec hitNormal;                      // 0x560, surface normal of the last puniMoveAtari hit
     void (*modeFunc)(struct PuniData*); // 0x56C, PUNI_MODE_CUSTOM handler (puniModeCustom), set by the map RELs
     void (*moveFunc)(struct PuniData*); // 0x570, per-puni move callback (puniMoveCustom), set by the map RELs

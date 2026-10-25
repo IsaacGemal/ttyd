@@ -204,17 +204,17 @@ void SoundInit(void) {
         stream->entries[1].buffer = ptr;
     }
 
-    slot = sound.unk108;
+    slot = sound.field_0x108;
     slot->callback = sndAuxCallbackReverbHI;
     slot->data = &revH;
-    slot->unk8 = 0xFF;
-    slot->unkC = 0;
+    slot->field_0x8 = 0xFF;
+    slot->field_0xC = 0;
 
     slot++;
     slot->callback = sndAuxCallbackChorus;
     slot->data = &cho;
-    slot->unk8 = 0xFF;
-    slot->unkC = 0;
+    slot->field_0x8 = 0xFF;
+    slot->field_0xC = 0;
 }
 
 void SoundMain(void) {
@@ -566,7 +566,7 @@ static inline void _ssDropSeq(void) {
         if (dvd->flags & 3) {
             AISetStreamPlayState(0);
             dvd->flags = 0;
-            sound.unkFC = -1;
+            sound.field_0xFC = -1;
             DVDCancelStream(&dvd->info.cb);
             DVDClose(&dvd->info);
         }
@@ -593,7 +593,7 @@ static inline void _ssDropSeq(void) {
                     OSRestoreInterrupts(sound.interrupts);
                 }
             }
-            sound.unk104 = -1;
+            sound.field_0x104 = -1;
         }
     }
 }
@@ -648,7 +648,7 @@ BOOL SoundDropData(void) {
         if (dvd->flags & 3) {
             AISetStreamPlayState(0);
             dvd->flags = 0;
-            sound.unkFC = -1;
+            sound.field_0xFC = -1;
             DVDCancelStream(&dvd->info.cb);
             DVDClose(&dvd->info);
         }
@@ -675,7 +675,7 @@ BOOL SoundDropData(void) {
                     OSRestoreInterrupts(sound.interrupts);
                 }
             }
-            sound.unk104 = -1;
+            sound.field_0x104 = -1;
         }
     }
     for (i = 0; i < sound.dataId; i++) {
@@ -1178,8 +1178,8 @@ void SoundEfxMain(void) {
                 if (!sndCheckEmitter(&effect->emitter)) {
                     SoundEfxMuteCh(i);
                 }
-                if (effect->unkA) {
-                    effect->unkA--;
+                if (effect->field_0xA) {
+                    effect->field_0xA--;
                 } else {
                     SoundEfxCheckCh(i);
                 }
@@ -1193,7 +1193,7 @@ inline void SoundDVDStopCh(u32 chan) {
     if (dvd->flags & 3) {
         AISetStreamPlayState(0);
         dvd->flags = 0;
-        sound.unkFC = -1;
+        sound.field_0xFC = -1;
         DVDCancelStream(&dvd->info.cb);
         DVDClose(&dvd->info);
     }
@@ -1729,7 +1729,7 @@ void SoundSSPlayChEx(s32 chan, const char* name, BOOL useAram) {
         }
     }
 
-    sound.unk104 = chan;
+    sound.field_0x104 = chan;
     stream->entries[0].curBuffer = 0;
     stream->entries[0].bufferPos = 0;
     stream->entries[0].bytesLoaded = 0;
@@ -1966,7 +1966,7 @@ void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
             if (sound.interruptDepth && !--sound.interruptDepth) {            \
                 OSRestoreInterrupts(sound.interrupts);        \
             }                                                 \
-            sound.unk104 = -1;                                \
+            sound.field_0x104 = -1;                                \
         }                                                     \
     } while (0)
 

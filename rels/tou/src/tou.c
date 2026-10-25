@@ -72,7 +72,7 @@ typedef struct RuleEntry {
     const char* msg;  // 0x04 rule description msg id
     s32 kind;         // 0x08 rule kind: the _rule_msg_table index (NpcBattleInfo.battleRules[0])
     s32 param;        // 0x0C the value printed by the rule display (battleRules[1])
-    s32 field_10;     // 0x10 battleRules[2]
+    s32 field_0x10;   // 0x10 battleRules[2]
 } RuleEntry;
 
 typedef struct RankEntry {
@@ -3279,7 +3279,7 @@ static USER_FUNC(evt_tou_get_rule_info) {
     evtSetValue(event, args[1], (s32)dt[i].name);
     evtSetValue(event, args[2], dt[i].kind);
     evtSetValue(event, args[3], dt[i].param);
-    evtSetValue(event, args[4], dt[i].field_10);
+    evtSetValue(event, args[4], dt[i].field_0x10);
     return EVT_RETURN_DONE;
 }
 

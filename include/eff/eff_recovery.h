@@ -6,7 +6,7 @@
 
 typedef struct RecoveryMayaAnim {
 	u16 flags;       // 0x00
-	u8 pad_02[2];    // 0x02
+	u8 pad_0x2[2];   // 0x02
 	f32 frame;       // 0x04
 	u32 timeLo;      // 0x08
 	u32 timeHi;      // 0x0C
@@ -16,9 +16,9 @@ typedef struct RecoveryMayaAnim {
 
 typedef struct RecoveryData {
 	s8 type;         // 0x00
-	s8 field_1;      // 0x01
+	s8 count;        // 0x01, effRecoveryEntry's count (effect->count - 1); effRecoveryDisp2 prints it, the SFX size follows it
 	s8 state;        // 0x02
-	u8 pad_03;       // 0x03
+	u8 pad_0x3;      // 0x03
 	s32 color;       // 0x04
 	f32 x;           // 0x08
 	f32 y;           // 0x0C
@@ -30,12 +30,12 @@ typedef struct RecoveryData {
 	f32 scaleY;      // 0x24
 	f32 scaleZ;      // 0x28
 	s16 timer;       // 0x2C
-	u8 pad_2E[2];    // 0x2E
+	u8 pad_0x2E[2];  // 0x2E
 	f32 angle;       // 0x30
 	u32 timeBase;    // 0x34
 	RecoveryMayaAnim* anim; // 0x38
 	s32 delay;       // 0x3C
-	f32 field_40;    // 0x40
+	f32 targetY;     // 0x40, head: the y the elements close in on in state 5
 } RecoveryData;
 
 struct EffectEntry;

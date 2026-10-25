@@ -34,41 +34,41 @@ EffectEntry* effMist2Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 rang
 	data->y = y;
 	data->z = z;
 	if (lifetime <= 0) {
-		data->unk34 = 1000;
+		data->lifetime = 1000;
 	} else {
-		data->unk34 = lifetime;
+		data->lifetime = lifetime;
 	}
-	data->unk30 = 0;
-	data->unk2C = float_255_80421cb0;
-	data->unk18 = 1.0f;
+	data->field_0x30 = 0;
+	data->alpha = float_255_80421cb0;
+	data->scale = 1.0f;
 	data->colorR = 0;
 	data->colorG = 0;
 	data->colorB = 0;
 
 	elem = &data[1];
 	for (i = 1; i < entry->count; i++, elem++) {
-		elem->unk1C = range;
-		elem->unk20 = yOffset;
-		fRange = (f32)irand((s32)elem->unk1C);
+		elem->range = range;
+		elem->yOffset = yOffset;
+		fRange = (f32)irand((s32)elem->range);
 		fAngle = 6.2831855f * (f32)irand(360) / 360.f;
 		elem->x = fRange * (f32)sin(fAngle);
 		elem->y = 0.0f;
 		elem->z = fRange * (f32)cos(fAngle);
-		elem->unk18 = 0.0f;
-		elem->unk14 = float_0p5_80421cb4 + (f32)irand(100) / 100.f;
-		elem->unk2C = float_255_80421cb0;
-		elem->unk34 = irand(60) + 60;
-		elem->unk30 = 0;
-		elem->unk28 = (f32)(5 - irand(10));
-		elem->unk24 = 0.0f;
-		elem->unk3C = irand(30);
-		elem->unk40 = 0.2f;
-		elem->unk44 = 0.0f;
+		elem->scale = 0.0f;
+		elem->targetScale = float_0p5_80421cb4 + (f32)irand(100) / 100.f;
+		elem->alpha = float_255_80421cb0;
+		elem->lifetime = irand(60) + 60;
+		elem->field_0x30 = 0;
+		elem->rotZVel = (f32)(5 - irand(10));
+		elem->rotZ = 0.0f;
+		elem->delay = irand(30);
+		elem->gravity = 0.2f;
+		elem->velY = 0.0f;
 		if (type == 1) {
 			f32 fA = 6.2831855f * (f32)irand(360) / 360.f;
-			elem->x = elem->unk1C * (f32)sin(fA);
-			elem->y = elem->unk20;
-			elem->z = elem->unk1C * (f32)cos(fA);
+			elem->x = elem->range * (f32)sin(fA);
+			elem->y = elem->yOffset;
+			elem->z = elem->range * (f32)cos(fA);
 		}
 	}
 	return entry;
@@ -91,52 +91,52 @@ void effMist2Main(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->unk34 = 0x20;
+		data->lifetime = 0x20;
 	}
-	if (data->unk34 < 1000) {
-		data->unk34--;
+	if (data->lifetime < 1000) {
+		data->lifetime--;
 	}
-	if (data->unk34 < 0) {
+	if (data->lifetime < 0) {
 		effDelete(effect);
 		return;
 	}
-	if (data->unk34 < 0x20) {
-		data->unk2C = (f32)(data->unk34 << 3);
+	if (data->lifetime < 0x20) {
+		data->alpha = (f32)(data->lifetime << 3);
 	}
 
-	data->unk30++;
+	data->field_0x30++;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		if (data->unk3C != 0) {
-			data->unk3C--;
+		if (data->delay != 0) {
+			data->delay--;
 			continue;
 		}
-		data->unk34--;
-		if (data->unk34 < 0x20) {
-			data->unk2C = (f32)(data->unk34 << 3);
+		data->lifetime--;
+		if (data->lifetime < 0x20) {
+			data->alpha = (f32)(data->lifetime << 3);
 		}
-		if (data->unk2C <= 0.0f) {
-			fRange = (f32)irand((s32)data->unk1C);
+		if (data->alpha <= 0.0f) {
+			fRange = (f32)irand((s32)data->range);
 			fAngle = 6.2831855f * (f32)irand(360) / 360.f;
 			data->x = fRange * (f32)sin(fAngle);
 			data->y = 0.0f;
 			data->z = fRange * (f32)cos(fAngle);
-			data->unk18 = 0.0f;
-			data->unk14 = float_0p5_80421cb4 + (f32)irand(100) / 100.f;
-			data->unk2C = float_255_80421cb0;
-			data->unk34 = irand(60) + 60;
-			data->unk30 = 0;
-			data->unk28 = (f32)(5 - irand(10));
-			data->unk24 = 0.0f;
-			data->unk3C = irand(30);
-			data->unk40 = 0.2f;
-			data->unk44 = 0.0f;
+			data->scale = 0.0f;
+			data->targetScale = float_0p5_80421cb4 + (f32)irand(100) / 100.f;
+			data->alpha = float_255_80421cb0;
+			data->lifetime = irand(60) + 60;
+			data->field_0x30 = 0;
+			data->rotZVel = (f32)(5 - irand(10));
+			data->rotZ = 0.0f;
+			data->delay = irand(30);
+			data->gravity = 0.2f;
+			data->velY = 0.0f;
 		} else {
-			data->unk24 += data->unk28;
-			data->unk18 += (data->unk14 - data->unk18) / 10.f;
+			data->rotZ += data->rotZVel;
+			data->scale += (data->targetScale - data->scale) / 10.f;
 			if (type == 1) {
-				data->y += data->unk44;
-				data->unk44 -= data->unk40;
+				data->y += data->velY;
+				data->velY -= data->gravity;
 				if (data->y < 0.0f) {
 					data->y = 0.0f;
 				}
@@ -164,7 +164,7 @@ void effMist2Disp(CameraId cameraId, void* param) {
 	f32 f27;
 
 	cam = camGetPtr(cameraId);
-	alpha = (s32)work->unk2C;
+	alpha = (s32)work->alpha;
 	cr = work->colorR;
 	cg = work->colorG;
 	cb = work->colorB;
@@ -182,7 +182,7 @@ void effMist2Disp(CameraId cameraId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO);
 	PSMTXTrans(mtxTrans, work->x, work->y, work->z);
 	PSMTXRotRad(mtxRot, 'y', float_deg2rad_80421ca8 * -camGetPtr(cameraId)->viewYaw);
-	PSMTXScale(mtxScale, work->unk18, work->unk18, work->unk18);
+	PSMTXScale(mtxScale, work->scale, work->scale, work->scale);
 	PSMTXConcat(mtxTrans, mtxRot, mtxView);
 	PSMTXConcat(mtxView, mtxScale, mtxView);
 	PSMTXConcat(cam->view, mtxView, mtxView);
@@ -197,15 +197,15 @@ void effMist2Disp(CameraId cameraId, void* param) {
 	work = &work[1];
 	for (i = 1; i < effect->count; i++, work++) {
 		PSMTXTrans(mtxTrans, work->x, work->y, work->z);
-		PSMTXScale(mtxScale, work->unk18, work->unk18, work->unk18);
-		PSMTXRotRad(mtxRot, 'z', float_deg2rad_80421ca8 * work->unk24);
+		PSMTXScale(mtxScale, work->scale, work->scale, work->scale);
+		PSMTXRotRad(mtxRot, 'z', float_deg2rad_80421ca8 * work->rotZ);
 		PSMTXConcat(mtxTrans, mtxScale, mtxTrans);
 		PSMTXConcat(mtxTrans, mtxRot, mtxTrans);
 		PSMTXConcat(mtxView, mtxTrans, mtxTrans);
 		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		f27 = 8.0f;
-		GXSetChanMatColor(GX_COLOR0A0, (GXColor){ cr, cg, cb, (u8)(work->unk2C * (f32)alpha / float_255_80421cb0) });
+		GXSetChanMatColor(GX_COLOR0A0, (GXColor){ cr, cg, cb, (u8)(work->alpha * (f32)alpha / float_255_80421cb0) });
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(f28, f27, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);

@@ -13,7 +13,7 @@ typedef struct Yuuminigame4Data {
     s32 stateTimer;                // 0x14, frames left in the state
     f32 puroAngle;                 // 0x18, z rotation of the puro_* map objects
     f32 peraAngle;                 // 0x1C, z rotation of the pera_* map objects
-    s32 unk20;                     // 0x20
+    s32 field_0x20;                // 0x20
     EventEntry* subEvent;          // 0x24
 } Yuuminigame4Data;
 
@@ -36,7 +36,7 @@ typedef struct Yuuminigame4Work {
 
 // The ryushi particle buffer (xwp): entry 0 is the emitter, entries 1 to ryuwp - 1 the particles.
 typedef struct RyushiEntry {
-    s32 unk0;                   // 0x00
+    s32 field_0x0;              // 0x00
     s32 direction;              // 0x04, emitter: evt_ryushi moves the particles toward -z when 0, +z when 1
     union {
         f32 spacingX;           // 0x08, emitter: particle grid spacing (evt_ryushi_clr)
@@ -56,7 +56,7 @@ typedef struct RyushiEntry {
     s32 alpha;                  // 0x20, particle: ryushi_disp's TEVREG0 alpha (the emitter's is written, not read)
     s32 age;                    // 0x24, emitter: counts evt_ryushi calls; the emitter alpha ramps in over the first 0x14
     f32 scale;                  // 0x28
-    s32 unk2C;                  // 0x2C
+    s32 field_0x2C;             // 0x2C
     s32 tev0G;                  // 0x30, emitter: ryushi_disp's TEVREG0 green
     s32 tev0B;                  // 0x34, emitter: TEVREG0 blue
     s32 tev1R;                  // 0x38, emitter: ryushi_disp's TEVREG1 colour

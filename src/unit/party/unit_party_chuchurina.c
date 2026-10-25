@@ -780,7 +780,7 @@ BattleWeapon partyWeapon_ChuchurinaNormalAttackLeft = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyChuchurinaAttack_NormalAttack,       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 2, 3, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 2, 3, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ChuchurinaNormalAttackRight = {
@@ -858,7 +858,7 @@ BattleWeapon partyWeapon_ChuchurinaNormalAttackRight = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyChuchurinaAttack_NormalAttack,       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 2, 3, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 2, 3, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ChuchurinaNormalAttackLeftLast = {
@@ -936,7 +936,7 @@ BattleWeapon partyWeapon_ChuchurinaNormalAttackLeftLast = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyChuchurinaAttack_NormalAttack,       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ChuchurinaNormalAttackRightLast = {
@@ -1014,7 +1014,7 @@ BattleWeapon partyWeapon_ChuchurinaNormalAttackRightLast = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyChuchurinaAttack_NormalAttack,       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ChuchurinaMadowaseAttack = {
@@ -1092,7 +1092,7 @@ BattleWeapon partyWeapon_ChuchurinaMadowaseAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyChuchurinaAttack_MadowaseAttack,     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ChuchurinaItemSteal = {
@@ -1170,7 +1170,7 @@ BattleWeapon partyWeapon_ChuchurinaItemSteal = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyChuchurinaAttack_ItemSteal,          // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_ChuchurinaKiss = {
@@ -1249,7 +1249,7 @@ BattleWeapon partyWeapon_ChuchurinaKiss = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyChuchurinaAttack_Kiss,               // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 

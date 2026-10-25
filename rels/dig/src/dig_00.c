@@ -59,7 +59,7 @@ DigestWork* wp = &work;
 typedef struct AnimTblUnknown {
     const char* npcName; // 0x0, evtNpcNameToPtr_NoAssert / npcGetTribe
     s32 animMask;        // 0x4, bits 0-5: the animations evt_action_sub picks one from
-    s32 field_8;         // 0x8
+    s32 field_0x8;       // 0x8
 } AnimTblUnknown;
 AnimTblUnknown anim_tbl[] = {
     { "ダイジェストマリオ", 7, 0 },
@@ -457,7 +457,7 @@ USER_FUNC(evt_action_sub) {
         evtSetValue(event, *args++, (s32)"にせマリオ２");
     }
     evtSetValue(event, *args++, mask);
-    evtSetValue(event, *args++, anim_tbl[index].field_8);
+    evtSetValue(event, *args++, anim_tbl[index].field_0x8);
 
     return EVT_RETURN_DONE;
 }

@@ -44,7 +44,7 @@ EffectEntry* effMugiKemuriEntry(f32 x, f32 y, f32 z, f32 baseAngle) {
 		work->active = 1;
 		work->scale = 0.29999998f;
 		work->speed = float_0_8041ca74;
-		work->unk38 = float_0_8041ca74;
+		work->field_0x38 = float_0_8041ca74;
 		work->x = x;
 		work->y = y;
 		work->z = z;
@@ -96,7 +96,7 @@ EffectEntry* effMugiKemuri2Entry(s32 type, f32 x, f32 y, f32 z, f32 baseAngle, f
 	for (i = 0; i < 5; i++, work++) {
 		work->active = 1;
 		work->type = type;
-		work->unk38 = float_0_8041ca74;
+		work->field_0x38 = float_0_8041ca74;
 		work->x = x;
 		work->y = y;
 		work->z = z;

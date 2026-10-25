@@ -7,30 +7,30 @@
 typedef struct KpaWork {
     u32 flags;              // 0x0 (KpaFlags)
     s32 level;              // 0x4
-    u8 unk08[0x10 - 0x08];  // 0x8
+    u8 pad_0x8[0x10 - 0x08]; // 0x8
     f32 field_0x10;         // 0x10 (kpa_walk sets +0.02; no reader in the koopa files)
     f32 field_0x14;         // 0x14 (kpa_walk sets -0.02; no reader in the koopa files)
     void* hitFlame;         // 0x18 (kpaGetHitFlame, kpaFireMain)
     void* hitobj;           // 0x1C (kpaGetHitobj, kpaHitCheck)
     void* head[10];         // 0x20
-    u8 unk48[0x4C - 0x48];  // 0x48
+    u8 pad_0x48[0x4C - 0x48]; // 0x48
     void* ride[10];         // 0x4C
-    u8 unk74[0x78 - 0x74];  // 0x74
+    u8 pad_0x74[0x78 - 0x74]; // 0x74
     f32 headDist[10];       // 0x78
-    u8 unkA0[0xA4 - 0xA0];  // 0xA0
+    u8 pad_0xA0[0xA4 - 0xA0]; // 0xA0
     f32 rideDist[10];       // 0xA4
-    u8 unkCC[0xD0 - 0xCC];  // 0xCC
+    u8 pad_0xCC[0xD0 - 0xCC]; // 0xCC
     s32 moveRate;           // 0xD0 (kpa_walk/kpa_dash, from _rateTbl/_rateTbl2)
-    u8 unkD4[0xD8 - 0xD4];  // 0xD4
-    s32 unkD8;              // 0xD8
-    u8 unkDC[0xE0 - 0xDC];  // 0xDC
-    s32 unkE0;              // 0xE0
-    u8 unkE4[0x138 - 0xE4]; // 0xE4
+    u8 pad_0xD4[0xD8 - 0xD4]; // 0xD4
+    s32 field_0xD8;         // 0xD8
+    u8 pad_0xDC[0xE0 - 0xDC]; // 0xDC
+    s32 field_0xE0;         // 0xE0
+    u8 pad_0xE4[0x138 - 0xE4]; // 0xE4
     s32 mutekiTimer;        // 0x138
     s32 attackMode;         // 0x13C
     s32 attackTimer;        // 0x140 (counts down each attack step)
     s32 evtFireHold;        // 0x144 (1 while evt_koopa_fire's count runs: the breath steps 0x17/0x2B keep going as if B were held)
-    u8 unk148[0x14C - 0x148];
+    u8 pad_0x148[0x14C - 0x148];
     u32 sfxId;              // 0x14C (KPA_SFX_NONE when silent)
     s32 bubbleTimer;        // 0x150 (kpa_swim frames until the next bubble)
 } KpaWork;
@@ -46,13 +46,22 @@ typedef enum KpaFlags {
 
 #define KPA_SFX_NONE 0xFFFFFFFFu
 
-// userdata of the fire effect (fireefp->userdata); nodes are 0x50 bytes apart
+// userdata of the fire effect (fireefp->userdata, effGonbabaBreathData's layout); nodes are 0x50 bytes apart
 typedef struct KpaFireNode {
-    u8 unk00[0x04];
+    s32 type;       // 0x00
     Vec pos;        // 0x04
-    u8 unk10[0x1C - 0x10];
-    s32 unk1C;      // 0x1C
-    u8 unk20[0x40 - 0x20];
+    f32 velX;       // 0x10
+    f32 velY;       // 0x14
+    s32 field_0x18; // 0x18
+    s32 lifetime;   // 0x1C (the effect counts it down; the fire hit checks skip nodes at 0x10 or less)
+    s32 counter;    // 0x20
+    s32 colorR;     // 0x24
+    s32 colorG;     // 0x28
+    s32 colorB;     // 0x2C
+    s32 targetR;    // 0x30
+    s32 targetG;    // 0x34
+    s32 targetB;    // 0x38
+    s32 alpha;      // 0x3C
     f32 radius;     // 0x40
     s32 noHit;      // 0x44 (nonzero: skipped by the fire hit checks)
     f32 yaw;        // 0x48

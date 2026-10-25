@@ -62,12 +62,12 @@ typedef struct PaperSoundBGM {
     u32 bgmNo;               // 0x0, psbgmlist index, -1 when the slot is free
     u32 streamId;            // 0x4, the SoundSS or SoundSong channel it plays on
     u32 flags;               // 0x8
-    u8 unkC;                 // 0xC
+    u8 field_0xC;            // 0xC
     u8 group;                // 0xD, BGMListEntry.group
     u8 volume;               // 0xE
     u8 pan;                  // 0xF
     u8 scopeTimer;           // 0x10, psndBGMScope: 0xFF in scope (level 100), 0 out (follows psnd.bgmLevel), else frames left
-    u8 unk11[0x20 - 0x11];   // 0x11
+    u8 pad_0x11[0x20 - 0x11]; // 0x11
     PaperSoundEnvWork fade;  // 0x20
     u8 pad_0x2C[4];          // 0x2C
     s64 startTime;           // 0x30
@@ -86,7 +86,7 @@ typedef struct PaperSoundEffect {
     u16 attenuation;       // 0x10, taken off every volume psndSFXMain sets
     u16 dist;              // 0x12, psndSFX_dist
     s16 pitch;             // 0x14, psndSFX_pit; SoundEfxSetPitch's pitch
-    u16 unk16;             // 0x16
+    u16 field_0x16;        // 0x16
     u32 channel;           // 0x18, the SoundSS, SoundSong or SoundEfx channel it plays on, -1 for none
     Vec position;          // 0x1C
 } PaperSoundEffect;
@@ -125,9 +125,9 @@ typedef struct PaperSoundWork {
     s8 bgmLevel;                  // 0x58, percent applied to every BGM volume (psndBGMMain), eases towards 100 or 65
     s8 sfxLevel;                  // 0x59, percent applied to positioned effects' volumes (psndSFXMain)
     s8 envLevel;                  // 0x5A, percent applied to env volumes (psndENVGetVol)
-    u8 unk5B;                     // 0x5B
+    u8 field_0x5B;                // 0x5B
     s8 lockTimer;                 // 0x5C, __psndSFXOn: while nonzero five effect ids are refused (set to 6, counted down by psndMain)
-    u8 unk5D[0x60 - 0x5D];        // 0x5D
+    u8 pad_0x5D[0x60 - 0x5D];     // 0x5D
 } PaperSoundWork;
 
 s32 searchPSSFXList(const char* name);

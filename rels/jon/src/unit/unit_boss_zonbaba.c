@@ -267,7 +267,7 @@ BattleWeapon weapon_zonbaba_fumituke_attack = {
     0,                                         // fpRegenTime
     0,                                         // fpRegenStrength
     NULL,                                      // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 10, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 10, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_zonbaba_kamituki_attack = {
@@ -345,7 +345,7 @@ BattleWeapon weapon_zonbaba_kamituki_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_zonbaba_cold_attack = {
@@ -423,7 +423,7 @@ BattleWeapon weapon_zonbaba_cold_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_zonbaba_confuze_attack = {
@@ -501,7 +501,7 @@ BattleWeapon weapon_zonbaba_confuze_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_zonbaba_sleep_attack = {
@@ -579,7 +579,7 @@ BattleWeapon weapon_zonbaba_sleep_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_zonbaba_minimini_attack = {
@@ -657,7 +657,7 @@ BattleWeapon weapon_zonbaba_minimini_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon weapon_zonbaba_recover = {
@@ -735,7 +735,7 @@ BattleWeapon weapon_zonbaba_recover = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static EVT_BEGIN(battle_entry_event)

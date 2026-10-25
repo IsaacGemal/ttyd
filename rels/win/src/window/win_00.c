@@ -53,13 +53,13 @@ USER_FUNC(win_item_move_3d_position) {
         event->userdata[0] = (s32)gp->renderTime;
         event->userdataf[1] = item->position.x;
         event->userdataf[2] = item->position.y;
-        *(f32*)&event->field_84 = item->position.z;
+        *(f32*)&event->field_0x84 = item->position.z;
     }
     curStep = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]);
     if (curStep < steps) {
         item->position.x = intplGetValue(mode, curStep, steps, event->userdataf[1], targetX);
         item->position.y = intplGetValue(mode, curStep, steps, event->userdataf[2], targetY) + yOffset;
-        item->position.z = intplGetValue(mode, curStep, steps, *(f32*)&event->field_84, targetZ);
+        item->position.z = intplGetValue(mode, curStep, steps, *(f32*)&event->field_0x84, targetZ);
         return EVT_RETURN_BLOCK;
     }
     item->position.x = targetX;

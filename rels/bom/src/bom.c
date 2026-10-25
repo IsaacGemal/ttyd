@@ -65,11 +65,11 @@ USER_FUNC(bress) {
         event->userdata[1] = 30;
         event->userdata[2] = 30;
         timers = _mapAlloc(npcWork->total * 4);
-        event->field_84 = (u32)timers;
+        event->field_0x84 = (u32)timers;
         memset(timers, 0, npcWork->total * 4);
     }
 
-    timers = (s32*)event->field_84;
+    timers = (s32*)event->field_0x84;
 
     if (event->userdata[0] != 0) {
         event->userdata[0]--;

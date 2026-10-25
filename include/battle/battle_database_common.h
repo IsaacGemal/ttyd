@@ -84,5 +84,17 @@ typedef struct BattleWeapon {
     s8 fpRegenTime;                   // 0xAC
     s8 fpRegenStrength;               // 0xAD
     void* mAttackEvtScript;           // 0xB0
-    u8 field_B4[0xC0 - 0xB4];         // 0xB4
+    struct {                          // 0xB4, the stage aftereffects btlevtcmd_WeaponAftereffect rolls
+        u8 destroyA1A2Weight;         // 0xB4, these four weight one random pick: BattleStage_DestroyA1 and A2,
+        u8 destroyA1Weight;           // 0xB5, A1 only,
+        u8 destroyA2Weight;           // 0xB6, A2 only,
+        u8 destroyNoneWeight;         // 0xB7, or neither
+        u8 destroyBChance;            // 0xB8, percent: BattleStage_DestroyB (stageFlags 0x2 without 0x8)
+        u8 nozzleDirChangeChance;     // 0xB9, percent: BattleStage_NozzleDirChangeCheck
+        u8 nozzleWorkChance;          // 0xBA, percent: BattleStage_NozzleWorkCheck
+        u8 ironFrameFallChance;       // 0xBB, percent: BattleStage_IronFrameFallCheck
+        u8 objectFallChance;          // 0xBC, percent: BattleStage_ObjectFallCheck (stageFlags 0x20)
+        u8 field_0xBD;                // 0xBD
+        u8 pad_0xBE[0xC0 - 0xBE];     // 0xBE
+    } stageEffect;
 } BattleWeapon;

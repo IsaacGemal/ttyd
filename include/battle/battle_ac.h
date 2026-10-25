@@ -62,7 +62,7 @@ typedef struct BattleActions {
     f32 gaugeSePitch;                // 0x28C, BattleAcGaugeSeUpdate's value, the gaugeSe pitch (psndSFX_pit)
     BattleACDispParams dispParams;   // 0x290 (BattleWork+0x1F20), used by ac_button_down and ac_air_gauge
     u8 acWork[0x30C - 0x2BC];        // 0x2BC, the running AC's work (each ac_*.c casts it to its own struct; the
-                                     // sac_* works run on into BattleWork.field_1F9C)
+                                     // sac_* works run on into BattleWork.field_0x1F9C)
 } BattleActions;
 // NB: 0x308 is as far as I can pin to this struct (0x1F98 in battleAcMain_PendulumCraneTiming, TODO?)
 

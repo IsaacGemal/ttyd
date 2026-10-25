@@ -461,7 +461,7 @@ EffectEntry* effUltraHammerEntry(BOOL arg0, s32 counter, f32 x, f32 y, f32 z, f3
     data = __memAlloc(HEAP_EFFECT, sizeof(EffUltraHammerData) * 4);
     effect->userdata = data;
     effect->callback = effUltraHammerMain;
-    data->unk0 = arg0;
+    data->flipX = arg0;
     data->position.x = x;
     data->position.y = y;
     data->position.z = z;
@@ -548,7 +548,7 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
     CameraEntry *temp_r31;
     EffUltraHammerData *data;
     int i;
-    s32 temp_r24;
+    s32 flipX;
     Mtx spC0;
     Mtx sp90;
     Mtx sp60;
@@ -558,7 +558,7 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
     effect = param;
     data = effect->userdata;
     temp_r31 = camGetPtr(camId);
-    temp_r24 = data->unk0;
+    flipX = data->flipX;
     
     PSMTXTrans(spC0, data->position.x, data->position.y, data->position.z);
     PSMTXScale(sp60, data->scale, data->scale, data->scale);
@@ -590,7 +590,7 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
             PSMTXTrans(spC0, data->position.x, data->position.y, data->position.z);
             PSMTXScale(sp60, 0.6f * data->scale, 0.6f * data->scale, 0.6f * data->scale);
             PSMTXConcat(spC0, sp60, spC0);
-            if (temp_r24 != 0) {
+            if (flipX != 0) {
                 PSMTXScale(sp60, -1.0f, 1.0f, 1.0f);
                 PSMTXConcat(spC0, sp60, spC0);
             }

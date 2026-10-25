@@ -15,10 +15,10 @@ typedef struct IndirectData {
 	f32 rotZ;              // 0x18
 	f32 scale;             // 0x1C
 	u8 alpha;              // 0x20
-	u8 pad_21[7];          // 0x21
+	u8 pad_0x21[7];        // 0x21
 	s32 timer;             // 0x28
-	s32 field_2C;          // 0x2C
-	f32 field_30;          // 0x30
+	s32 field_0x2C;        // 0x2C
+	f32 field_0x30;        // 0x30
 	smartEntry* texBuffer; // 0x34
 } IndirectData;
 
@@ -45,8 +45,8 @@ EffectEntry* effIndirectEntry(s32 type, s32 timer, f32 x, f32 y, f32 z) {
 	data->rotY = 0.0f;
 	data->rotZ = 0.0f;
 	data->timer = timer;
-	data->field_2C = 0;
-	data->field_30 = -0.05f;
+	data->field_0x2C = 0;
+	data->field_0x30 = -0.05f;
 
 	return entry;
 }

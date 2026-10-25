@@ -205,7 +205,7 @@ BattleWeapon _lec_weapon_jump = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     lecAttackEvent_Jump,                      // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon _lec_weapon_hammer = {
@@ -283,7 +283,7 @@ BattleWeapon _lec_weapon_hammer = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     lecAttackEvent_Hammer,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleDataEntry data_table[4] = {

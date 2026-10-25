@@ -2762,7 +2762,7 @@ USER_FUNC(kemuri_set_color) {
     ((EffMist2Data*)entry->userdata)->colorR = r;
     ((EffMist2Data*)entry->userdata)->colorG = g;
     ((EffMist2Data*)entry->userdata)->colorB = b;
-    ((EffMist2Data*)entry->userdata)->unk18 = 1.0f + (f32)irand(0x1E) / 10.0f;
+    ((EffMist2Data*)entry->userdata)->scale = 1.0f + (f32)irand(0x1E) / 10.0f;
     return EVT_RETURN_DONE;
 }
 

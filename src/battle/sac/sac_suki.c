@@ -51,23 +51,23 @@ extern s32 sac_start_stardust[];
 extern BattleWork* _battleWorkPointer;
 
 typedef struct SukiButton {
-    s32 state;   // 0x0
-    s32 field_4; // 0x4
-    s32 button;  // 0x8
-    Vec pos;     // 0xC
+    s32 state;     // 0x0
+    s32 field_0x4; // 0x4
+    s32 button;    // 0x8
+    Vec pos;       // 0xC
 } SukiButton;
 
 typedef struct SukiWork {
     s32 state;               // 0x0
     s32 counter;             // 0x4
-    s32 field_8;             // 0x8
+    s32 field_0x8;           // 0x8
     s32 count;               // 0xC
     s32 selected;            // 0x10
     s32 prevSelected;        // 0x14
     s32 max;                 // 0x18
     s32 timer;               // 0x1C
     u8 flash;                // 0x20
-    u8 pad_21[3];            // 0x21
+    u8 pad_0x21[3];          // 0x21
     f32 alpha;               // 0x24
     Vec table[6];            // 0x28
     char img[6][0x10];       // 0x70
@@ -79,13 +79,13 @@ typedef struct SukiWork {
     Vec starCur;             // 0x234
     Vec starStart;           // 0x240
     Vec starEnd;             // 0x24C
-    u8 field_258[0xC];       // 0x258
-    Vec scale1;              // 0x264
-    Vec scale2;              // 0x270
+    u8 pad_0x258[0xC];       // 0x258
+    Vec scale;               // 0x264, x times 1.5 is the star stone's scale
+    Vec rot;                 // 0x270, the star stone's tipRotY/rotY/tipRotZ
     EffectEntry* effect;     // 0x27C
     s32 flag;                // 0x280
-    u8 weapon[0xC0];         // 0x284
-    u8 field_344[0x4C8 - 0x344]; // 0x344
+    BattleWeapon weapon;     // 0x284, set_weapon's copy of weapon_words
+    u8 pad_0x344[0x4C8 - 0x344]; // 0x344
 } SukiWork;
 
 typedef struct SukiBytes6 {
@@ -133,7 +133,7 @@ s32 main_suki(EventEntry* event, BOOL isFirstCall) {
 
     if (isFirstCall) {
         memset(work, 0, sizeof(SukiWork));
-        work->field_8 = evtGetValue(event, args[0]);
+        work->field_0x8 = evtGetValue(event, args[0]);
         memcpy(work->table, &table, 0x48);
         strcpy(work->img[0], "sac_suki_img0");
         strcpy(work->img[1], "sac_suki_img1");
@@ -340,8 +340,8 @@ static void main_star(void) {
         work->starEnd = work->starCur;
         work->starEnd.y += 50.0f;
         work->starEnd.z += -1.0f;
-        work->scale1 = (Vec){0.0f, 0.0f, 0.0f};
-        work->scale2 = (Vec){0.0f, 0.0f, 0.0f};
+        work->scale = (Vec){0.0f, 0.0f, 0.0f};
+        work->rot = (Vec){0.0f, 0.0f, 0.0f};
         work->flag = 4;
         // fall through
     case 2:
@@ -353,20 +353,20 @@ static void main_star(void) {
             {
                 f32 s = intplGetValue(0, work->starCounter, 100, 0.0f, 2.0f);
 
-                work->scale1.z = s;
-                work->scale1.y = s;
-                work->scale1.x = s;
+                work->scale.z = s;
+                work->scale.y = s;
+                work->scale.x = s;
             }
         }
         else {
             work->starCur.x = work->starEnd.x;
             work->starCur.y = work->starEnd.y;
             work->starCur.z = work->starEnd.z;
-            work->scale1.z = 2.0f;
-            work->scale1.y = 2.0f;
-            work->scale1.x = 2.0f;
+            work->scale.z = 2.0f;
+            work->scale.y = 2.0f;
+            work->scale.x = 2.0f;
         }
-        work->scale2.y = intplGetValue(4, work->starCounter, 120, 0.0f, 2160.0f);
+        work->rot.y = intplGetValue(4, work->starCounter, 120, 0.0f, 2160.0f);
         if (work->starCounter >= 120) {
             work->starState = 3;
             work->starCounter = 0;
@@ -381,8 +381,8 @@ static void main_star(void) {
             work->starState = 4;
             work->starCounter = 0;
             work->starCur = (Vec){0.0f, 300.0f, 0.0f};
-            work->scale1 = (Vec){2.0f, 2.0f, 2.0f};
-            work->scale2 = (Vec){0.0f, 0.0f, 0.0f};
+            work->scale = (Vec){2.0f, 2.0f, 2.0f};
+            work->rot = (Vec){0.0f, 0.0f, 0.0f};
         }
         break;
     case 4:
@@ -392,15 +392,15 @@ static void main_star(void) {
         work->starCounter = 0;
         BtlUnit_GetPos(mario, &work->starCur.x, &work->starCur.y, &work->starCur.z);
         work->starCur.y += 100.0f;
-        work->scale1 = (Vec){1.5f, 1.5f, 1.5f};
-        work->scale2 = (Vec){0.0f, 0.0f, 0.0f};
+        work->scale = (Vec){1.5f, 1.5f, 1.5f};
+        work->rot = (Vec){0.0f, 0.0f, 0.0f};
         work->starStart.y = work->starCur.y;
         work->starEnd.y = 300.0f;
         effStardustN64Entry(0, work->starCur.x, work->starCur.y, work->starCur.z, 32.0f);
         break;
     case 6:
         work->starCounter++;
-        work->scale2.y = intplGetValue(0, work->starCounter, 40, 0.0f, 1440.0f);
+        work->rot.y = intplGetValue(0, work->starCounter, 40, 0.0f, 1440.0f);
         if (work->starCounter >= 40) {
             work->starState = 7;
             work->starCounter = 0;
@@ -417,8 +417,8 @@ static void main_star(void) {
             work->starState = 4;
             work->starCounter = 0;
             work->starCur = (Vec){0.0f, 300.0f, 0.0f};
-            work->scale1 = (Vec){2.0f, 2.0f, 2.0f};
-            work->scale2 = (Vec){0.0f, 0.0f, 0.0f};
+            work->scale = (Vec){2.0f, 2.0f, 2.0f};
+            work->rot = (Vec){0.0f, 0.0f, 0.0f};
         }
         break;
     case 8:
@@ -447,10 +447,10 @@ static void main_star(void) {
         data->x = work->starCur.x;
         data->y = work->starCur.y;
         data->z = work->starCur.z;
-        data->tipRotY = work->scale2.x;
-        data->rotY = work->scale2.y;
-        data->tipRotZ = work->scale2.z;
-        data->scale = 1.5f * work->scale1.x;
+        data->tipRotY = work->rot.x;
+        data->rotY = work->rot.y;
+        data->tipRotZ = work->rot.z;
+        data->scale = 1.5f * work->scale.x;
         data->camId = work->flag;
     }
 }
@@ -676,16 +676,16 @@ static s32 set_weapon(EventEntry* event, BOOL isFirstCall) {
     SukiBytes6 tbl;
 
     tbl = *(SukiBytes6*)N_ohko_rate_tbl;
-    memcpy(work->weapon, &weapon_words, 0xC0);
-    work->weapon[0x9E] = tbl.x[index - 1];
+    memcpy(&work->weapon, &weapon_words, 0xC0);
+    work->weapon.ohkoChance = tbl.x[index - 1];
 #else
     u8 tbl[6];
 
     memcpy(tbl, N_ohko_rate_tbl, 6);
-    memcpy(work->weapon, &weapon_words, 0xC0);
-    work->weapon[0x9E] = tbl[index - 1];
+    memcpy(&work->weapon, &weapon_words, 0xC0);
+    work->weapon.ohkoChance = tbl[index - 1];
 #endif
-    evtSetValue(event, args[1], (s32)work->weapon);
+    evtSetValue(event, args[1], (s32)&work->weapon);
     return EVT_RETURN_DONE;
 }
 
@@ -860,7 +860,7 @@ BattleWeapon weapon_words = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_Suki,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(marioAttackEvent_Suki)

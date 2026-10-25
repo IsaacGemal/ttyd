@@ -42,7 +42,7 @@ typedef struct MonteEntryField8 {
 
 typedef struct MonteEntry {
     u8 hidden;                  // 0x00, monte_disp draws the chip only while 0; set when Mario picks it up
-    u8 unk1;                    // 0x01
+    u8 field_0x1;               // 0x01
     s16 count;                  // 0x02
     u8 state;                   // 0x04, fall_rtn: 0 until Mario picks the chip up, then 1
     u8 pad_05[0x08 - 0x05];     // 0x05
@@ -857,7 +857,7 @@ void yuuminigame_main_2fune(EventEntry* event, BOOL isFirstCall) {
     case 2:
         data->objIndex = 0x15;
         data->phase = 3;
-        data->unk0C = 0;
+        data->field_0xC = 0;
         /* fallthrough */
     case 3:
         if (yuuminigame2_gamerule(event, isFirstCall, work, data)) {
@@ -867,12 +867,12 @@ void yuuminigame_main_2fune(EventEntry* event, BOOL isFirstCall) {
     case 4:
         work->childEvent = evtEntry(minigame02_end, 0, 0);
         work->childEvent->lwData[0] = data->counterData;
-        if (data->unk0C + 5 <= 0) {
-            data->unk0C = 1;
+        if (data->field_0xC + 5 <= 0) {
+            data->field_0xC = 1;
         } else {
-            data->unk0C += 0x105;
+            data->field_0xC += 0x105;
         }
-        work->childEvent->lwData[1] = data->unk0C;
+        work->childEvent->lwData[1] = data->field_0xC;
         work->childEvent->lwData[2] = data->monteCount;
         data->phase++;
         break;
@@ -939,7 +939,7 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
                     data->startY = mario->position.y;
                     mario->dispFlags |= 0x100;
                     psndSFXOn_3D((const char*)0x8DB, &mario->position);
-                    data->unk0C--;
+                    data->field_0xC--;
                     break;
                 }
             }
@@ -957,7 +957,7 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
                     if (PSVECSquareDistance(&near[j], &pos) <= radius2) {
                         if (marioChkSwirlPower() == 0) {
                             psndSFXOn_3D((const char*)0x8DC, &mario->position);
-                            data->unk0C--;
+                            data->field_0xC--;
                         }
                         data->objIndex = i;
                         {

@@ -164,7 +164,7 @@ static BattleWeapon enemyWeapon_ClaudaNormalAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static BattleUnitDefense defence_clauda = { { 0, 0, 0, 0, 0 } };

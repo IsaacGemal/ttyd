@@ -115,7 +115,7 @@ BattleWeapon weapon_data_akikan = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 BattleWeapon weapon_data_brick = {
     NULL,                                     // name
@@ -192,7 +192,7 @@ BattleWeapon weapon_data_brick = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 BattleWeapon weapon_data_bone = {
     NULL,                                     // name
@@ -269,7 +269,7 @@ BattleWeapon weapon_data_bone = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 BattleWeapon weapon_data_hammer = {
     NULL,                                     // name
@@ -346,7 +346,7 @@ BattleWeapon weapon_data_hammer = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 // Per-pouch-rank audience counts (indexed by pouch rank; 10 seats per side).
@@ -1344,7 +1344,7 @@ void BattleAudienceSettingAudience(void) {
 	s32 listTotal;
 	BattleAudience* audience;
 
-	force = &_battleWorkPointer->field_19068;
+	force = &_battleWorkPointer->force;
 	audience = BattleAudienceBaseGetPtr();
 	setupBase = &_battleWorkPointer->fbatInfo->setup->audienceMode;
 	pouch = pouchGetPtr();
@@ -1669,12 +1669,12 @@ void BattleAudienceGuestTPLRead(s32 id, AudienceMemberType member, const char* p
 }
 
 // 100%: writing the first loop's index as `j + i * 20 + 10` (instead of `i * 20 + 10 + j`) and
-// declaring `s32 r;` immediately after `wp` (before every other local) put `force` (&wp->field_19068)
+// declaring `s32 r;` immediately after `wp` (before every other local) put `force` (&wp->force)
 // in r27 and `r` in r28 as the original does.
 void BattleAudienceCtrlProcess(void) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 r;
-	BattleWorkField19068* force = &wp->field_19068;
+	BattleWorkField19068* force = &wp->force;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member;
 	s32 order[200];
@@ -3683,7 +3683,7 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	if (BattleBreakSlot_GetBreakTurn() >= 1) {
 		audience->apGauge += (s32)(rate * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
 		                           crowdKindSum * marioMultiplier * partyMultiplier *
-		                           BattleBreakSlotGetPtr()->field_14);
+		                           BattleBreakSlotGetPtr()->apMultiplier);
 	}
 	else {
 		audience->apGauge += (s32)(rate * sqrtWeight * (spAcMultiplier + stylishMultiplier) *

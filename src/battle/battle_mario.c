@@ -153,7 +153,7 @@ USER_FUNC(_jump_star_effect) {
 
 USER_FUNC(_bgset_iron_frame_check) {
     s32* args = event->args;
-    u8 flags = _battleWorkPointer->field_180C0.stageFlags;
+    u8 flags = _battleWorkPointer->stageObjectWork.stageFlags;
     s32 value = args[0];
 
     if (flags & 0x20) {
@@ -201,17 +201,17 @@ USER_FUNC(_tatsumaki_effect) {
         event->userdata[0]++;
         event->userdata[1] = 0;
         event->userdata[2] = (s32)unit->mPosition.x;
-        event->field_84 = (s32)unit->mPosition.y - 40;
+        event->field_0x84 = (s32)unit->mPosition.y - 40;
         event->userdataEx[0] = (s32)unit->mPosition.z;
         event->userdataEx[1] = (s32)effKamekiTornadeN64Entry(0, 0x5A,
-            (f32)event->userdata[2], (f32)(s32)event->field_84, (f32)event->userdataEx[0],
+            (f32)event->userdata[2], (f32)(s32)event->field_0x84, (f32)event->userdataEx[0],
             3.0f);
         event->field_0x90[0] = (s32)effKamekiTornadeN64Entry(0, 0x5A,
-            (f32)event->userdata[2], (f32)(s32)event->field_84, (f32)event->userdataEx[0],
+            (f32)event->userdata[2], (f32)(s32)event->field_0x84, (f32)event->userdataEx[0],
             3.0f);
         event->field_0x90[1] = psndSFXOn("SFX_BTL_JUMP_TATUMAKI2");
         pos.x = (f32)event->userdata[2];
-        pos.y = (f32)(s32)event->field_84;
+        pos.y = (f32)(s32)event->field_0x84;
         pos.z = (f32)event->userdataEx[0];
         psndSFX_pos(event->field_0x90[1], &pos);
     }
@@ -229,13 +229,13 @@ USER_FUNC(_tatsumaki_effect) {
         ((effKamekiTornadeData*)((EffectEntry*)event->userdataEx[1])->userdata)->x =
             (f32)event->userdata[2] + c;
         ((effKamekiTornadeData*)((EffectEntry*)event->userdataEx[1])->userdata)->y =
-            (f32)(s32)event->field_84;
+            (f32)(s32)event->field_0x84;
         ((effKamekiTornadeData*)((EffectEntry*)event->userdataEx[1])->userdata)->z =
             (f32)event->userdataEx[0] + s;
         ((effKamekiTornadeData*)((EffectEntry*)event->field_0x90[0])->userdata)->x =
             (f32)event->userdata[2] - c;
         ((effKamekiTornadeData*)((EffectEntry*)event->field_0x90[0])->userdata)->y =
-            (f32)(s32)event->field_84;
+            (f32)(s32)event->field_0x84;
         ((effKamekiTornadeData*)((EffectEntry*)event->field_0x90[0])->userdata)->z =
             (f32)event->userdataEx[0] - s;
         if (event->userdata[1] >= 90) {
@@ -258,7 +258,7 @@ USER_FUNC(_record_renzoku_count) {
     u8* record;
 
     count = evtGetValue(event, args[0]);
-    record = &_battleWorkPointer->field_16F1C[0x24 - 0x1C];
+    record = &_battleWorkPointer->actRecord[0x24 - 0x1C];
     pouch = pouchGetPtr();
     if (count > record[0]) {
         if (count > pouch->mPowerBounceRecord) {
@@ -372,14 +372,14 @@ USER_FUNC(_kaiten_hammer_acrobat_rotate) {
             event->userdata[1] = (s32)(360.0f + reviseAngle(y));
         }
         event->userdata[2] = (unit->faceDirection * event->userdata[1]) / count;
-        event->field_84 = 0;
+        event->field_0x84 = 0;
     }
     BtlUnit_AddRotate(unit, 0.0f, (f32)event->userdata[2], 0.0f);
     event->userdata[0]--;
-    if ((s32)event->field_84 == 0) {
+    if ((s32)event->field_0x84 == 0) {
         event->userdata[1] -= event->userdata[2];
         if (event->userdata[1] <= 0x10E) {
-            event->field_84 = 1;
+            event->field_0x84 = 1;
             BtlUnit_SetAnim(part, (const char*)anim);
         }
     }
@@ -444,7 +444,7 @@ USER_FUNC(_majinai_powerup_check) {
         evtSetValue(event, var, 0);
     } else {
         evtSetValue(event, var, 1);
-        wp->field_18FE1 = 1;
+        wp->merleeCurseType = 1;
         BattleMajinaiDone();
         BattleMajinaiEndCheck();
     }
@@ -526,7 +526,7 @@ BattleWeapon marioDefaultWeapon_Jump = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_NormalJump,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 2, 2, 1, 1, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 2, 2, 1, 1, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_KururinJump = {
@@ -604,7 +604,7 @@ BattleWeapon marioWeapon_KururinJump = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_KururinJump,             // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 2, 5, 1, 1, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 2, 5, 1, 1, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_KururinJump2 = {
@@ -682,7 +682,7 @@ BattleWeapon marioWeapon_KururinJump2 = {
     0,                                          // fpRegenTime
     0,                                          // fpRegenStrength
     marioAttackEvent_KururinJump,               // mAttackEvtScript
-    { 0, 5, 5, 100, 0, 10, 10, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 5, 5, 100, 0, 10, 10, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_JyabaraJump = {
@@ -760,7 +760,7 @@ BattleWeapon marioWeapon_JyabaraJump = {
     0,                                          // fpRegenTime
     0,                                          // fpRegenStrength
     marioAttackEvent_JyabaraJump,               // mAttackEvtScript
-    { 0, 5, 5, 100, 0, 10, 10, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 5, 5, 100, 0, 10, 10, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_JyabaraJumpFailed = {
@@ -838,7 +838,7 @@ BattleWeapon marioWeapon_JyabaraJumpFailed = {
     0,                                           // fpRegenTime
     0,                                           // fpRegenStrength
     marioAttackEvent_JyabaraJump,                // mAttackEvtScript
-    { 0, 50, 50, 100, 0, 0, 0, 50, 0, 0, 0, 0 }, // field_B4
+    { 0, 50, 50, 100, 0, 0, 0, 50, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioDefaultWeapon_FirstAttackKaitenHammer = {
@@ -916,7 +916,7 @@ BattleWeapon marioDefaultWeapon_FirstAttackKaitenHammer = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_FirstAttackKaitenHammer, // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioDefaultWeapon_FirstAttackUltraHammer = {
@@ -994,7 +994,7 @@ BattleWeapon marioDefaultWeapon_FirstAttackUltraHammer = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_FirstAttackKaitenHammer, // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioDefaultWeapon_Hammer = {
@@ -1072,7 +1072,7 @@ BattleWeapon marioDefaultWeapon_Hammer = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_NormalHammer,            // mAttackEvtScript
-    { 0, 3, 3, 100, 3, 3, 2, 3, 3, 0, 0, 0 }, // field_B4
+    { 0, 3, 3, 100, 3, 3, 2, 3, 3, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_KaitenHammer = {
@@ -1150,7 +1150,7 @@ BattleWeapon marioWeapon_KaitenHammer = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_KaitenHammer,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 3, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 3, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_KaitenHammerInvolved = {
@@ -1228,7 +1228,7 @@ BattleWeapon marioWeapon_KaitenHammerInvolved = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_UltraHammer = {
@@ -1306,7 +1306,7 @@ BattleWeapon marioWeapon_UltraHammer = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_KaitenHammer,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 3, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 3, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_UltraHammerInvolved = {
@@ -1384,7 +1384,7 @@ BattleWeapon marioWeapon_UltraHammerInvolved = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_UltraHammerFinish = {
@@ -1462,7 +1462,7 @@ BattleWeapon marioWeapon_UltraHammerFinish = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_KaitenHammer,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 5, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_TugitugiJump = {
@@ -1540,7 +1540,7 @@ BattleWeapon badgeWeapon_TugitugiJump = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_TugiTugiJump,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 2, 2, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 2, 2, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_GatsunJump = {
@@ -1618,7 +1618,7 @@ BattleWeapon badgeWeapon_GatsunJump = {
     0,                                              // fpRegenTime
     0,                                              // fpRegenStrength
     marioAttackEvent_GatsunJump,                    // mAttackEvtScript
-    { 0, 25, 25, 100, 25, 25, 25, 5, 25, 5, 0, 0 }, // field_B4
+    { 0, 25, 25, 100, 25, 25, 25, 5, 25, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_DokanJump = {
@@ -1696,7 +1696,7 @@ BattleWeapon badgeWeapon_DokanJump = {
     0,                                           // fpRegenTime
     0,                                           // fpRegenStrength
     marioAttackEvent_DokanJump,                  // mAttackEvtScript
-    { 0, 25, 25, 100, 25, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 25, 25, 100, 25, 5, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_RenzokuJump = {
@@ -1774,7 +1774,7 @@ BattleWeapon badgeWeapon_RenzokuJump = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_RenzokuJump,             // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 2, 2, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 2, 2, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_TatsumakiJump = {
@@ -1852,7 +1852,7 @@ BattleWeapon badgeWeapon_TatsumakiJump = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_TatsumakiJump,           // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_TatsumakiJumpInvolved = {
@@ -1930,7 +1930,7 @@ BattleWeapon badgeWeapon_TatsumakiJumpInvolved = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_MiniminiFumi = {
@@ -2008,7 +2008,7 @@ BattleWeapon badgeWeapon_MiniminiFumi = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_MiniminiFumi,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 3, 5, 1, 1, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 3, 5, 1, 1, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_NemuraseFumi = {
@@ -2086,7 +2086,7 @@ BattleWeapon badgeWeapon_NemuraseFumi = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_NemuraseFumi,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 3, 5, 1, 1, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 3, 5, 1, 1, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_FunyafunyaJump = {
@@ -2164,7 +2164,7 @@ BattleWeapon badgeWeapon_FunyafunyaJump = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_FunyafunyaJump,          // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 3, 5, 1, 1, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 3, 5, 1, 1, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_GatsunHammer = {
@@ -2242,7 +2242,7 @@ BattleWeapon badgeWeapon_GatsunHammer = {
     0,                                              // fpRegenTime
     0,                                              // fpRegenStrength
     marioAttackEvent_GatsunHammer,                  // mAttackEvtScript
-    { 0, 25, 25, 100, 25, 25, 25, 5, 25, 5, 0, 0 }, // field_B4
+    { 0, 25, 25, 100, 25, 25, 25, 5, 25, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_DokanHammer = {
@@ -2320,7 +2320,7 @@ BattleWeapon badgeWeapon_DokanHammer = {
     0,                                           // fpRegenTime
     0,                                           // fpRegenStrength
     marioAttackEvent_GatsunHammer,               // mAttackEvtScript
-    { 0, 25, 25, 100, 25, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 25, 25, 100, 25, 5, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_JishinHammer = {
@@ -2398,7 +2398,7 @@ BattleWeapon badgeWeapon_JishinHammer = {
     0,                                                       // fpRegenTime
     0,                                                       // fpRegenStrength
     marioAttackEvent_JishinHammer,                           // mAttackEvtScript
-    { 0, 50, 50, 100, 50, 25, 25, 5, 25, 5, 0, 0 },          // field_B4
+    { 0, 50, 50, 100, 50, 25, 25, 5, 25, 5, 0, 0 },          // stageEffect
 };
 
 BattleWeapon badgeWeapon_UltraJishinHammer = {
@@ -2476,7 +2476,7 @@ BattleWeapon badgeWeapon_UltraJishinHammer = {
     0,                                           // fpRegenTime
     0,                                           // fpRegenStrength
     marioAttackEvent_UltraJishinHammer,          // mAttackEvtScript
-    { 0, 50, 50, 100, 50, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 50, 50, 100, 50, 5, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_HammerNageru = {
@@ -2554,7 +2554,7 @@ BattleWeapon badgeWeapon_HammerNageru = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_HammerNageru,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_TsuranukiNaguri = {
@@ -2632,7 +2632,7 @@ BattleWeapon badgeWeapon_TsuranukiNaguri = {
     0,                                          // fpRegenTime
     0,                                          // fpRegenStrength
     marioAttackEvent_TsuranukiHammer,           // mAttackEvtScript
-    { 0, 25, 25, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 25, 25, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_ConfuseHammer = {
@@ -2710,7 +2710,7 @@ BattleWeapon badgeWeapon_ConfuseHammer = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_NormalHammer,            // mAttackEvtScript
-    { 0, 5, 5, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 5, 5, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_FireNaguri = {
@@ -2788,7 +2788,7 @@ BattleWeapon badgeWeapon_FireNaguri = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_FireNaguri,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_FireNaguriFailed = {
@@ -2866,7 +2866,7 @@ BattleWeapon badgeWeapon_FireNaguriFailed = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_FireNaguri,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_IceNaguri = {
@@ -2944,7 +2944,7 @@ BattleWeapon badgeWeapon_IceNaguri = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_IceNaguri,               // mAttackEvtScript
-    { 0, 5, 5, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 5, 5, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_Charge = {
@@ -3022,7 +3022,7 @@ BattleWeapon badgeWeapon_Charge = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_NormalCharge,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_ChargeP = {
@@ -3100,7 +3100,7 @@ BattleWeapon badgeWeapon_ChargeP = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_NormalChargeP,           // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_SuperCharge = {
@@ -3178,7 +3178,7 @@ BattleWeapon badgeWeapon_SuperCharge = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_SuperCharge,             // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_SuperChargeP = {
@@ -3256,7 +3256,7 @@ BattleWeapon badgeWeapon_SuperChargeP = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_SuperChargeP,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_2KaiItem = {
@@ -3334,7 +3334,7 @@ BattleWeapon badgeWeapon_2KaiItem = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_3KaiItem = {
@@ -3412,7 +3412,7 @@ BattleWeapon badgeWeapon_3KaiItem = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_DefenceCommand = {
@@ -3490,7 +3490,7 @@ BattleWeapon badgeWeapon_DefenceCommand = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon badgeWeapon_DefenceCommandP = {
@@ -3568,7 +3568,7 @@ BattleWeapon badgeWeapon_DefenceCommandP = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_BakuGame = {
@@ -3646,7 +3646,7 @@ BattleWeapon marioWeapon_BakuGame = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_BakuGame,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_Scissor = {
@@ -3724,7 +3724,7 @@ BattleWeapon marioWeapon_Scissor = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_Scissor,                 // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_ZubaStar = {
@@ -3802,7 +3802,7 @@ BattleWeapon marioWeapon_ZubaStar = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_ZubaStar,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_Genki0 = {
@@ -3880,7 +3880,7 @@ BattleWeapon marioWeapon_Genki0 = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_Genki0,                  // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_Genki1 = {
@@ -3958,7 +3958,7 @@ BattleWeapon marioWeapon_Genki1 = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_Genki1,                  // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_Deka = {
@@ -4036,7 +4036,7 @@ BattleWeapon marioWeapon_Deka = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_Deka,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_Muki = {
@@ -4114,7 +4114,7 @@ BattleWeapon marioWeapon_Muki = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_Muki,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon marioWeapon_Suki = {
@@ -4192,7 +4192,7 @@ BattleWeapon marioWeapon_Suki = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     marioAttackEvent_Suki,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon* superActionTable[18] = {

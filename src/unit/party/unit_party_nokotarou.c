@@ -523,7 +523,7 @@ BattleWeapon partyWeapon_NokotarouFirstAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyNokotarouAttack_FirstAttack,         // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_NokotarouKouraAttack = {
@@ -601,7 +601,7 @@ BattleWeapon partyWeapon_NokotarouKouraAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyNokotarouAttack_NormalAttack,        // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_NokotarouSyubibinKoura = {
@@ -679,7 +679,7 @@ BattleWeapon partyWeapon_NokotarouSyubibinKoura = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyNokotarouAttack_SyubibinKoura,       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_NokotarouKouraGuard = {
@@ -757,7 +757,7 @@ BattleWeapon partyWeapon_NokotarouKouraGuard = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyNokotarouAttack_KouraGuard,          // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_NokotarouTsuranukiKoura = {
@@ -835,7 +835,7 @@ BattleWeapon partyWeapon_NokotarouTsuranukiKoura = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyNokotarouAttack_TsuranukiKoura,      // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static EVT_BEGIN(_change_koura_pose)

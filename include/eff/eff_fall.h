@@ -26,9 +26,9 @@ typedef struct FallWork {
 	f32 wave;                // 0x44 type-2 impact wobble amplitude
 	f32 spin;                // 0x48 rotation angle in degrees
 	f32 roll;                // 0x4C type-6 rotation about the pivot at x = -200, used while spin is clamped to 0
-	f32 unk50;               // 0x50 per-type vector: type 3 texture pan, type 6 velocity, type 7 waypoint
-	f32 unk54;               // 0x54
-	f32 unk58;               // 0x58
+	f32 field_0x50;          // 0x50 per-type vector: type 3 texture pan, type 6 velocity, type 7 waypoint
+	f32 field_0x54;          // 0x54
+	f32 field_0x58;          // 0x58
 	s32 poseId;              // 0x5C animPoseEntry handle, -1 = none
 	s32 poseId2;             // 0x60 second animPoseEntry handle (type 7)
 	s32 sfxId;               // 0x64 psndSFXOn_3D handle

@@ -10,7 +10,7 @@
 typedef struct YuunpcEntry {
     u16 index;        //0x0, the entry's number; varies lanes and timing per runner (index % 101, index & 3)
     u16 flags;        //0x2
-    s16 field_4;      //0x4
+    s16 field_0x4;    //0x4
     u16 pad_06;       //0x6
     f32 errper;       //0x8, set by errper_set_rtn (+-0.25 or +-0.1); minigame 4 shifts the runner's lane bounds by 150 * errper
     Vec goal;         //0xC, finish point; goalincheck moves target to it, and stops the runner there
@@ -37,7 +37,7 @@ typedef struct YuunpcEntry {
 typedef struct YuunpcPoseEntry {
     char name[0x10];  //0x0
     char anim[8];     //0x10
-    s16 field_18;     //0x18
+    s16 field_0x18;   //0x18
     u16 pad_1A;       //0x1A
     f32 cycleFrames;  //0x1C, frames for one pass through the group's poses
     f32 jumpFrame;    //0x20, yuunpc_set_jump_pose: the frame a jumpPose is held at

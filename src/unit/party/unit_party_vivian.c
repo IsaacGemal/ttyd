@@ -504,7 +504,7 @@ BattleWeapon partyWeapon_VivianNormalAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyVivianAttack_NormalAttack,           // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_VivianShadowGuard = {
@@ -582,7 +582,7 @@ BattleWeapon partyWeapon_VivianShadowGuard = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyVivianAttack_ShadowGuard,            // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_VivianMagicalPowder = {
@@ -660,7 +660,7 @@ BattleWeapon partyWeapon_VivianMagicalPowder = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyVivianAttack_MagicalPowder,          // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon partyWeapon_VivianCharmKissAttack = {
@@ -738,7 +738,7 @@ BattleWeapon partyWeapon_VivianCharmKissAttack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     partyVivianAttack_CharmKissAttack,        // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(partyVivianAttack_NormalAttack)
@@ -1710,7 +1710,7 @@ USER_FUNC(_disp_heart_entry) {
         event->userdata[0] = (s32)unit;
         event->userdata[1] = 0;
         event->userdata[2] = evtGetValue(event, args[0]);
-        event->field_84 = evtGetValue(event, args[1]);
+        event->field_0x84 = evtGetValue(event, args[1]);
         *(s32*)&event->wInterpRelatedTime = evtGetValue(event, args[2]);
         event->userdataEx[1] = 0;
         event->field_0x90[0] = evtGetValue(event, args[3]);
@@ -1754,8 +1754,8 @@ void _disp_heart(CameraId cameraId, void* param) {
     b = event->userdata[2];
     if (a <= b) {
         scale = intplGetValue(5, a, b, 0.0f, 1.2f);
-    } else if (a <= (s32)event->field_84) {
-        scale = intplGetValue(0xB, a - b, (s32)event->field_84 - b, 1.2f, 1.0f);
+    } else if (a <= (s32)event->field_0x84) {
+        scale = intplGetValue(0xB, a - b, (s32)event->field_0x84 - b, 1.2f, 1.0f);
     } else {
         scale = 1.0f;
     }

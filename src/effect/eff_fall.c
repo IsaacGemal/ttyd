@@ -202,9 +202,9 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 num, f32 z, s32 timerMax, 
 			elem->x = 0.0f;
 			elem->y = 200.f;
 			elem->z = 0.0f;
-			elem->unk50 = 0.0f;
-			elem->unk54 = 0.0f;
-			elem->unk58 = 0.0f;
+			elem->field_0x50 = 0.0f;
+			elem->field_0x54 = 0.0f;
+			elem->field_0x58 = 0.0f;
 			elem->scale = 1.0f;
 			pos = (Vec){0.0f, 0.0f, 0.0f};
 			pos.x = x;
@@ -232,9 +232,9 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 num, f32 z, s32 timerMax, 
 			elem->x = 0.0f;
 			elem->y = 200.f;
 			elem->z = 0.0f;
-			elem->unk50 = -elem->x / 30.f;
-			elem->unk54 = -elem->y / 30.f;
-			elem->unk58 = -elem->z / 30.f;
+			elem->field_0x50 = -elem->x / 30.f;
+			elem->field_0x54 = -elem->y / 30.f;
+			elem->field_0x58 = -elem->z / 30.f;
 			elem->scale = 1.3f;
 			elem->spin = 30.f;
 			elem->roll = 0.0f;
@@ -580,7 +580,7 @@ void effFallMain(EffectEntry* effect) {
 				}
 				break;
 			}
-			elem->unk54 -= 0.2f; // pan value for the splash texture in effFallDispWater
+			elem->field_0x54 -= 0.2f; // pan value for the splash texture in effFallDispWater
 			break;
 		case 4:
 		case 5:
@@ -693,9 +693,9 @@ void effFallMain(EffectEntry* effect) {
 					animPoseSetAnim(elem->poseId, "Z_1", 1);
 					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_KOOPA1"), &pos);
 				}
-				elem->x += elem->unk50;
-				elem->y += elem->unk54;
-				elem->z += elem->unk58;
+				elem->x += elem->field_0x50;
+				elem->y += elem->field_0x54;
+				elem->z += elem->field_0x58;
 				elem->timer++;
 				if (elem->timer > 30) {
 					elem->timer = 0;
@@ -765,14 +765,14 @@ void effFallMain(EffectEntry* effect) {
 					{ -140.0f, 40.0f, -10.0f },
 					{ -400.0f, 40.0f, -40.0f },
 				};
-				elem->unk50 = tbl[elem->state / 2].x;
-				elem->unk54 = tbl[elem->state / 2].y;
-				elem->unk58 = tbl[elem->state / 2].z;
+				elem->field_0x50 = tbl[elem->state / 2].x;
+				elem->field_0x54 = tbl[elem->state / 2].y;
+				elem->field_0x58 = tbl[elem->state / 2].z;
 				elem->gravity = 0.4f;
-				elem->timer = (s32)(distABf(elem->unk50, elem->unk58, elem->x, elem->z) / 5.0f);
-				elem->velY = (elem->unk54 - elem->y) / (f32)elem->timer +
+				elem->timer = (s32)(distABf(elem->field_0x50, elem->field_0x58, elem->x, elem->z) / 5.0f);
+				elem->velY = (elem->field_0x54 - elem->y) / (f32)elem->timer +
 				              elem->gravity * (f32)elem->timer / 2.0f;
-				elem->angle = angleABf(elem->x, elem->z, elem->unk50, elem->unk58);
+				elem->angle = angleABf(elem->x, elem->z, elem->field_0x50, elem->field_0x58);
 				elem->spin = 0.0f;
 				elem->state++;
 				break;
@@ -786,9 +786,9 @@ void effFallMain(EffectEntry* effect) {
 				elem->x += 5.0f * effFallSinf(6.2831855f * elem->angle / 360.f);
 				elem->z += 5.0f * -effFallCosf(elem->angle * 6.2831855f / 360.f);
 				if (--elem->timer < 0) {
-					elem->x = elem->unk50;
-					elem->y = elem->unk54;
-					elem->z = elem->unk58;
+					elem->x = elem->field_0x50;
+					elem->y = elem->field_0x54;
+					elem->z = elem->field_0x58;
 					elem->state++;
 					if (elem->state == 2) {
 						elem->sfxId = psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_DAMAGE_METEOR2"), &pos);
@@ -1245,7 +1245,7 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	f30 = 704.0f;
 	f31 *= 0.5f;
 	f30 *= 0.5f;
-	PSMTXTrans(mtxPos, work[1].unk50, work[1].unk54, work[1].unk58);
+	PSMTXTrans(mtxPos, work[1].field_0x50, work[1].field_0x54, work[1].field_0x58);
 	height = GXGetTexObjHeight(&texObj);
 	PSMTXScale(mtxScale, 1.0f, f30 / (f32)height, 1.0f);
 	PSMTXConcat(mtxPos, mtxScale, mtxPos);
@@ -1281,7 +1281,7 @@ void effFallDispWater(CameraId cameraId, void* param) {
 		GXLoadPosMtxImm(mtxPos, 0);
 		{
 			f32 k = 0.125f;
-			PSMTXTrans(mtxPos, work[1].unk54 * k, 0.0f, 0.0f);
+			PSMTXTrans(mtxPos, work[1].field_0x54 * k, 0.0f, 0.0f);
 		}
 		GXLoadTexMtxImm(mtxPos, 0x1e, 1);
 		GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, work[1].alpha });
@@ -1314,7 +1314,7 @@ void effFallDispWater(CameraId cameraId, void* param) {
 		GXLoadPosMtxImm(mtxPos, 0);
 		{
 			f32 k = 0.25f;
-			PSMTXTrans(mtxPos, 0.0f, -work[1].unk54 * k, 0.0f);
+			PSMTXTrans(mtxPos, 0.0f, -work[1].field_0x54 * k, 0.0f);
 		}
 		GXLoadTexMtxImm(mtxPos, 0x1e, 1);
 		GXSetTevColor(1, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });

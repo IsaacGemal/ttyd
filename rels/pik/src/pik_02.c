@@ -379,7 +379,7 @@ USER_FUNC(hoshi_jump) {
         event->userdataf[1] = t;
         event->userdataf[2] = scale;
 #endif
-        event->field_84 = 0;
+        event->field_0x84 = 0;
     }
 
     d = event->userdataf[0];

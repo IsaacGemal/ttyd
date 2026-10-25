@@ -544,7 +544,7 @@ USER_FUNC(itemUseFunc) {
                 break;
             }
             data = effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + party->height, party->position.z)->userdata;
-            target = &data->field_40;
+            target = &data->targetY;
             *target = (-party->height) * MATCH_F32(float_0p5_8041dc98);
             cnt++;
             break;

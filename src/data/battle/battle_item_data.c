@@ -375,7 +375,7 @@ BattleWeapon ItemWeaponData_CookingItem = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Recovery,                       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Kinoko = {
@@ -453,7 +453,7 @@ BattleWeapon ItemWeaponData_Kinoko = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Recovery,                       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Kinkyuu_Kinoko = {
@@ -531,7 +531,7 @@ BattleWeapon ItemWeaponData_Kinkyuu_Kinoko = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Recovery,                       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Super_Kinoko = {
@@ -609,7 +609,7 @@ BattleWeapon ItemWeaponData_Super_Kinoko = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Recovery,                       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Ultra_Kinoko = {
@@ -687,7 +687,7 @@ BattleWeapon ItemWeaponData_Ultra_Kinoko = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Recovery,                       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Sinabita_Kinoko = {
@@ -765,7 +765,7 @@ BattleWeapon ItemWeaponData_Sinabita_Kinoko = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Recovery,                       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Honey_Syrup = {
@@ -843,7 +843,7 @@ BattleWeapon ItemWeaponData_Honey_Syrup = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Recovery,                       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Maple_Syrup = {
@@ -921,7 +921,7 @@ BattleWeapon ItemWeaponData_Maple_Syrup = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Recovery,                       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Royal_Jelly = {
@@ -999,7 +999,7 @@ BattleWeapon ItemWeaponData_Royal_Jelly = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Recovery,                       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Tankobu = {
@@ -1077,7 +1077,7 @@ BattleWeapon ItemWeaponData_Tankobu = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Recovery,                       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Pow_Block)
@@ -1265,7 +1265,7 @@ BattleWeapon ItemWeaponData_Pow_Block = {
     0,                                              // fpRegenTime
     0,                                              // fpRegenStrength
     ItemEvent_Pow_Block,                            // mAttackEvtScript
-    { 0, 100, 100, 100, 75, 10, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 100, 100, 100, 75, 10, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Fire_Flower_Core)
@@ -1416,7 +1416,7 @@ BattleWeapon ItemWeaponData_Fire_Flower = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Fire_Flower,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Kaminari_Core)
@@ -1585,7 +1585,7 @@ BattleWeapon ItemWeaponData_Kaminari_Dokkan = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Kaminari_Dokkan,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Kaminari_Gorogoro = {
@@ -1663,7 +1663,7 @@ BattleWeapon ItemWeaponData_Kaminari_Gorogoro = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Kaminari_Gorogoro,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // stageEffect
 };
 
 s32 _sampling_random_target(EventEntry* event, BOOL isFirstCall) {
@@ -1922,7 +1922,7 @@ BattleWeapon ItemWeaponData_Kirakira_Otoshi = {
     0,                                           // fpRegenTime
     0,                                           // fpRegenStrength
     ItemEvent_Kirakira_Otoshi,                   // mAttackEvtScript
-    { 0, 10, 10, 100, 10, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 10, 10, 100, 10, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Koorino_Ibuki)
@@ -2089,7 +2089,7 @@ BattleWeapon ItemWeaponData_Koorino_Ibuki = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Koorino_Ibuki,                  // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Yurayura_Jishin)
@@ -2258,7 +2258,7 @@ BattleWeapon ItemWeaponData_Yurayura_Jishin = {
     0,                                              // fpRegenTime
     0,                                              // fpRegenStrength
     ItemEvent_Yurayura_Jishin,                      // mAttackEvtScript
-    { 0, 100, 100, 100, 75, 10, 5, 5, 5, 5, 0, 0 }, // field_B4
+    { 0, 100, 100, 100, 75, 10, 5, 5, 5, 5, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Teresano_Fuku)
@@ -2410,7 +2410,7 @@ BattleWeapon ItemWeaponData_Teresano_Fuku = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Teresano_Fuku,                  // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Biribiri_Kinoko_Core)
@@ -2506,7 +2506,7 @@ BattleWeapon ItemWeaponData_Biribiri_Kinoko = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Biribiri_Kinoko,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Teki_Yokeeru_Core)
@@ -2602,7 +2602,7 @@ BattleWeapon ItemWeaponData_Teki_Yokeeru = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Teki_Yokeeru,                   // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Madowaseno_Kona = {
@@ -2680,7 +2680,7 @@ BattleWeapon ItemWeaponData_Madowaseno_Kona = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Madowaseno_Kona,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Nemure_Yoikoyo)
@@ -2776,7 +2776,7 @@ BattleWeapon ItemWeaponData_Nemure_Yoikoyo = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Nemure_Yoikoyo,                 // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Stop_Watch_Core)
@@ -2920,7 +2920,7 @@ BattleWeapon ItemWeaponData_Stop_Watch = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Stop_Watch,                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 s32 _cam_rot(EventEntry* event, BOOL isFirstCall) {
@@ -3034,7 +3034,7 @@ BattleWeapon ItemWeaponData_Guruguru_Memawashi = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Guruguru_Memawashi,             // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Dekadeka_Drink = {
@@ -3112,7 +3112,7 @@ BattleWeapon ItemWeaponData_Dekadeka_Drink = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Dekadeka_Drink,                 // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Katikati_Koura = {
@@ -3190,7 +3190,7 @@ BattleWeapon ItemWeaponData_Katikati_Koura = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Katikati_Koura,                 // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Suitooru)
@@ -3351,7 +3351,7 @@ BattleWeapon ItemWeaponData_Suitooru = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Suitooru,                       // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 s32 _rank_up(EventEntry* event, BOOL isFirstCall) {
@@ -3511,7 +3511,7 @@ BattleWeapon ItemWeaponData_Teki_Kyouka = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Teki_Kyouka,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Minimini_Kun = {
@@ -3589,7 +3589,7 @@ BattleWeapon ItemWeaponData_Minimini_Kun = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Minimini_Kun,                   // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Funyafunya_Kun = {
@@ -3667,7 +3667,7 @@ BattleWeapon ItemWeaponData_Funyafunya_Kun = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Funyafunya_Kun,                 // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Sukkiri_Drink = {
@@ -3745,7 +3745,7 @@ BattleWeapon ItemWeaponData_Sukkiri_Drink = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Sukkiri_Drink,                  // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Jiwajiwa_Kinoko_Core)
@@ -3841,7 +3841,7 @@ BattleWeapon ItemWeaponData_Jiwajiwa_Kinoko = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Jiwajiwa_Kinoko,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Jiwajiwa_Syrup_Core)
@@ -3937,7 +3937,7 @@ BattleWeapon ItemWeaponData_Jiwajiwa_Syrup = {
     10,                                       // fpRegenTime
     2,                                        // fpRegenStrength
     ItemEvent_Jiwajiwa_Syrup,                 // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 s32 _hpfp_change_declare_1(EventEntry* event, BOOL isFirstCall) {
@@ -4098,7 +4098,7 @@ BattleWeapon ItemWeaponData_Irekaeeru = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Irekaeeru,                      // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Attiike_Shisshi)
@@ -4219,7 +4219,7 @@ BattleWeapon ItemWeaponData_Attiike_Shisshi = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Attiike_Shisshi,                // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 // Hoisting the effect lookup into `EffectEntry* e` fixes both the `lmw` placement (which was
@@ -4257,11 +4257,11 @@ s32 _naniga_okorukana_check(EventEntry* event, BOOL isFirstCall) {
         effSetName((EffectEntry*)event->userdata[0], "effNaniga");
         evtSetValue(event, outIdx, item);
         if (unit->currentKind == UNIT_MARIO) {
-            countA = &wp->field_16F1C[0x25 - 0x1C];
-            countB = &wp->field_16F1C[0x26 - 0x1C];
+            countA = &wp->actRecord[0x25 - 0x1C];
+            countB = &wp->actRecord[0x26 - 0x1C];
         } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
-            countA = &wp->field_16F1C[0x27 - 0x1C];
-            countB = &wp->field_16F1C[0x28 - 0x1C];
+            countA = &wp->actRecord[0x27 - 0x1C];
+            countB = &wp->actRecord[0x28 - 0x1C];
         } else {
             goto done; // neither Mario nor a partner: no counter to bump
         }
@@ -4450,7 +4450,7 @@ BattleWeapon ItemWeaponData_Naniga_Okorukana = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Naniga_Okorukana,               // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 // TODO: type
@@ -4536,7 +4536,7 @@ BattleWeapon ItemWeaponData_Shikaeshino_Kona = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Shikaeshino_Kona,               // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_Kameno_Noroi = {
@@ -4614,7 +4614,7 @@ BattleWeapon ItemWeaponData_Kameno_Noroi = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Kameno_Noroi,                   // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_RecoveryAndStatus)
@@ -4773,7 +4773,7 @@ BattleWeapon ItemWeaponData_SpaceFood = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_IceCandy = {
@@ -4851,7 +4851,7 @@ BattleWeapon ItemWeaponData_IceCandy = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_NancyFrappe = {
@@ -4929,7 +4929,7 @@ BattleWeapon ItemWeaponData_NancyFrappe = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_SnowRabbit = {
@@ -5007,7 +5007,7 @@ BattleWeapon ItemWeaponData_SnowRabbit = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_TeaKinoko = {
@@ -5085,7 +5085,7 @@ BattleWeapon ItemWeaponData_TeaKinoko = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_FirstLovePuddingBiribiri = {
@@ -5163,7 +5163,7 @@ BattleWeapon ItemWeaponData_FirstLovePuddingBiribiri = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_FirstLovePuddingTrans = {
@@ -5241,7 +5241,7 @@ BattleWeapon ItemWeaponData_FirstLovePuddingTrans = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_FirstLovePuddingSleep = {
@@ -5319,7 +5319,7 @@ BattleWeapon ItemWeaponData_FirstLovePuddingSleep = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_StarryDinner = {
@@ -5397,7 +5397,7 @@ BattleWeapon ItemWeaponData_StarryDinner = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_KararinaPasta = {
@@ -5475,7 +5475,7 @@ BattleWeapon ItemWeaponData_KararinaPasta = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_MeromeroCake = {
@@ -5553,7 +5553,7 @@ BattleWeapon ItemWeaponData_MeromeroCake = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_PeachTaltBiribiri = {
@@ -5631,7 +5631,7 @@ BattleWeapon ItemWeaponData_PeachTaltBiribiri = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_PeachTaltDodge = {
@@ -5709,7 +5709,7 @@ BattleWeapon ItemWeaponData_PeachTaltDodge = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_PeachTaltSleep = {
@@ -5787,7 +5787,7 @@ BattleWeapon ItemWeaponData_PeachTaltSleep = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_BiribiriCandy = {
@@ -5865,7 +5865,7 @@ BattleWeapon ItemWeaponData_BiribiriCandy = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_HealthySalad = {
@@ -5943,7 +5943,7 @@ BattleWeapon ItemWeaponData_HealthySalad = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_FreshJuice = {
@@ -6021,7 +6021,7 @@ BattleWeapon ItemWeaponData_FreshJuice = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_RedKararing = {
@@ -6099,7 +6099,7 @@ BattleWeapon ItemWeaponData_RedKararing = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_FutarideForever = {
@@ -6177,7 +6177,7 @@ BattleWeapon ItemWeaponData_FutarideForever = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_RecoveryAndStatus,              // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 s32 _get_throw_first_pos(EventEntry* event, BOOL isFirstCall) {
@@ -6239,11 +6239,11 @@ s32 _throw_item_icon(EventEntry* event, BOOL isFirstCall) {
                       (f32)work->counter;
         event->userdata[1] = item;
         event->userdata[2] = 0;
-        event->field_84 = psndSFXOn_3D("SFX_ITEM_COOKING_THROW1", &pos);
+        event->field_0x84 = psndSFXOn_3D("SFX_ITEM_COOKING_THROW1", &pos);
     }
     work = (ThrowItemWork*)event->userdata[0];
     if (event->userdata[2] != 0) {
-        psndSFXOff(event->field_84);
+        psndSFXOff(event->field_0x84);
         BattleFree(work);
         return 2;
     }
@@ -6468,7 +6468,7 @@ BattleWeapon ItemWeaponData_NancyDynamite = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_ThrowAttack,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_CoconutsBomb = {
@@ -6546,7 +6546,7 @@ BattleWeapon ItemWeaponData_CoconutsBomb = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_ThrowAttack,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_KachikachiDish = {
@@ -6624,7 +6624,7 @@ BattleWeapon ItemWeaponData_KachikachiDish = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_ThrowAttack,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // stageEffect
 };
 
 BattleWeapon ItemWeaponData_BomberEgg = {
@@ -6702,7 +6702,7 @@ BattleWeapon ItemWeaponData_BomberEgg = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_ThrowAttack,                    // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Poison_Kinoko)
@@ -6808,7 +6808,7 @@ BattleWeapon ItemWeaponData_PoisonKinoko = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_Poison_Kinoko,                  // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // stageEffect
 };
 
 s32 _nancy_mirage(EventEntry* event, BOOL isFirstCall) {
@@ -6821,7 +6821,7 @@ s32 _nancy_mirage(EventEntry* event, BOOL isFirstCall) {
         event->userdata[0] = 60;
         event->userdata[1] = animPoseEntry("c_cook", 1);
         event->userdata[2] = 0;
-        event->field_84 = (s32)x;
+        event->field_0x84 = (s32)x;
         event->userdataEx[0] = (s32)y;
         event->userdataEx[1] = (s32)z;
         animPoseSetAnim(event->userdata[1], "A_2", 1);
@@ -6957,7 +6957,7 @@ BattleWeapon ItemWeaponData_LastDinner = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     ItemEvent_LastDinner,                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 EVT_BEGIN(ItemEvent_Kaminari_Dokkan)
@@ -7046,7 +7046,7 @@ void _nancy_disp(CameraId camera, void* param) {
         scaleValue = 4.0f;
         alpha = 0x80;
     }
-    PSMTXTrans(trans, (f32)(s32)event->field_84,
+    PSMTXTrans(trans, (f32)(s32)event->field_0x84,
                (f32)event->userdataEx[0],
                (f32)event->userdataEx[1]);
     PSMTXScale(scale, scaleValue, scaleValue, 1.0f);

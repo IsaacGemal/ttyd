@@ -113,13 +113,13 @@ void BattleStageInit(void) {
 	BattleStage* stage = &_battleWorkPointer->stage;
 	BattleStageLight* light;
 	memset(stage, 0, sizeof(BattleStage));
-	stage->field_0 = 0;
+	stage->field_0x0 = 0;
 	for (i = 0; i < 12; i++) {
 		light = &stage->lights[i];
 		light->flags = 0;
 		light->spline = NULL;
 	}
-	stage->stgDark.field_0 = 1;
+	stage->stgDark.field_0x0 = 1;
 	stage->stgDark.baseAlpha = 0;
 	stage->stgDark.alpha = 0;
 	stage->stgDark.alphaFrom = 0;
@@ -127,7 +127,7 @@ void BattleStageInit(void) {
 	stage->stgDark.alphaFrames = 0;
 	stage->stgDark.alphaFramesTotal = 0;
 
-	stage->audDark.field_0 = 1;
+	stage->audDark.field_0x0 = 1;
 	stage->audDark.baseAlpha = 0x8C;
 	stage->audDark.alpha = 0x8C;
 	stage->audDark.alphaFrom = 0;

@@ -32,7 +32,7 @@ typedef struct JabaraWork {
     u32 flags;          // 0x0
     f32 swingAccel;     // 0x4, swingMain: added to jabaraSpeed while jabaraTimer runs (capped at 40)
     f32 swingDecel;     // 0x8, swingMain: added to jabaraSpeed once jabaraTimer is 0, until the speed reaches 0 (negative)
-    f32 unkC;           // 0xC
+    f32 field_0xC;      // 0xC
     f32 accelStep;      // 0x10, swingMain: added to or taken from jabaraAccel
     s32 ofsStepFlips;   // 0x14, times the dispOfs step changed (state 0x32); the 1st, 2nd and 3rd play sounds 0x189-0x18B
     f32 prevOfsStep;    // 0x18, last frame's dispOfs step (+-0.6), compared to count ofsStepFlips
@@ -764,7 +764,7 @@ void mot_jabara(void) {
         marioPaperLightOff();
         mario->currSubMotionId = 0x32;
         mario->jabaraAnimTime = 0;
-        marioGetPtr()->jabaraWork->unkC = 0.0f;
+        marioGetPtr()->jabaraWork->field_0xC = 0.0f;
         /* fallthrough */
     case 0x32:
     {

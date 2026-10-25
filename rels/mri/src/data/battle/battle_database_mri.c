@@ -170,7 +170,7 @@ BattleStageData mri_btlstage_data[4] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -247,7 +247,7 @@ BattleStageData mri_btlstage_data[4] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         &stg_02_1_init_evt,                         // initEvent
         NULL,                                       // objectTurnEventA1
@@ -337,7 +337,7 @@ BattleStageData mri_btlstage_data[4] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -414,7 +414,7 @@ BattleStageData mri_btlstage_data[4] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         &stg_02_1_init_evt,                         // initEvent
         NULL,                                       // objectTurnEventA1
@@ -504,7 +504,7 @@ BattleStageData mri_btlstage_data[4] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -581,7 +581,7 @@ BattleStageData mri_btlstage_data[4] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         &stg_02_1_init_evt,                         // initEvent
         NULL,                                       // objectTurnEventA1
@@ -671,7 +671,7 @@ BattleStageData mri_btlstage_data[4] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         {  // bgsetAttackB
             NULL,                                       // name
@@ -748,7 +748,7 @@ BattleStageData mri_btlstage_data[4] = {
             0,                                          // fpRegenTime
             0,                                          // fpRegenStrength
             NULL,                                       // mAttackEvtScript
-            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // field_B4
+            { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 },   // stageEffect
         },
         &stg_02_1_init_evt,                         // initEvent
         NULL,                                       // objectTurnEventA1

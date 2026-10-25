@@ -44,7 +44,7 @@
 // Position table entry shared by the senkaron "ext" callbacks.
 typedef struct KaronPoseEntry {
     s8 type;       // 0x0
-    u8 field_1;    // 0x1
+    u8 field_0x1;  // 0x1
     u16 area;      // 0x2
     s32 timer;     // 0x4, frames left in the current state (drop delay, walk leg, escape run)
     f32 velX;      // 0x8, added to the pose's x each frame

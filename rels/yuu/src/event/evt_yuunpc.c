@@ -465,7 +465,7 @@ void yuunpc_pose_init(YuunpcPoseArg* arg) {
         yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].firstPose = idx;
         yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].numPoses = (i - idx) + 1;
         yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].cycleFrames += 1.0f;
-        yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].field_18 = 1;
+        yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].field_0x18 = 1;
         yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].jumpFrame = 0.0f;
         yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].walkCycleScale = 2.0f;
         i++;
@@ -480,7 +480,7 @@ void yuunpc_pose_init(YuunpcPoseArg* arg) {
         yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].firstPose = idx;
         yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].numPoses = 1;
         yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].cycleFrames = arg->cycleFrames;
-        yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].field_18 = 1;
+        yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].field_0x18 = 1;
         yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].jumpFrame = 0.0f;
         yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].walkCycleScale = 1.0f;
         yuunpc_wp->poseEntries[yuunpc_wp->poseEntryCount].flags |= 1;
@@ -1316,7 +1316,7 @@ s32 goalincheck(YuunpcEntry* p) {
 }
 
 void errper_set_rtn(YuunpcEntry* p) {
-    switch (p->field_4) {
+    switch (p->field_0x4) {
         case 0:
         case 2:
         case 4:
@@ -1564,14 +1564,14 @@ void ext_yuunpc_minigame4_init_sub(void) {
                         entry->npc->rotation.y = t - (f32)((s32)(t / 360.0f) * 0x168);
                     }
                     animPosePeraOff(entry->npc->poseId);
-                    entry->field_4 = 7;
+                    entry->field_0x4 = 7;
                     entry->standPose = yuunpc_pose_check("c_luigi", "S_1");
                     entry->walkPose = yuunpc_pose_check("c_luigi", "W_1");
                     entry->runPose = yuunpc_pose_check("c_luigi", "R_1");
                     entry->jumpPose = yuunpc_pose_check("c_luigi", "R_1");
                     break;
                 case 0x200:
-                    entry->field_4 = 6;
+                    entry->field_0x4 = 6;
                     entry->npc = npcNameToPtr("yuusp1");
                     entry->npc->position = entry->position;
                     {
@@ -1592,7 +1592,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
                         entry->npc->rotation.y = t - (f32)((s32)(t / 360.0f) * 0x168);
                     }
                     animPosePeraOff(entry->npc->poseId);
-                    entry->field_4 = -1;
+                    entry->field_0x4 = -1;
                     entry->standPose = yuunpc_pose_check("c_joho_a", "S_1");
                     entry->walkPose = yuunpc_pose_check("c_joho_a", "W_1");
                     entry->runPose = yuunpc_pose_check("c_joho_a", "R_1");
@@ -1611,21 +1611,21 @@ void ext_yuunpc_minigame4_init_sub(void) {
                     }
                     switch (n) {
                         case 0:
-                            entry->field_4 = irand(6);
+                            entry->field_0x4 = irand(6);
                             entry->standPose = yuunpc_pose_check("c_kinopio", "KNP_S_1");
                             entry->walkPose = yuunpc_pose_check("c_kinopio", "KNP_R_1");
                             entry->runPose = yuunpc_pose_check("c_kinopio", "KNP_R_1");
                             entry->jumpPose = yuunpc_pose_check("c_kinopio", "KNP_R_1");
                             break;
                         case 1:
-                            entry->field_4 = irand(6);
+                            entry->field_0x4 = irand(6);
                             entry->standPose = yuunpc_pose_check("c_bom_n", "S_1");
                             entry->walkPose = yuunpc_pose_check("c_bom_n", "R_1");
                             entry->runPose = yuunpc_pose_check("c_bom_n", "R_1");
                             entry->jumpPose = yuunpc_pose_check("c_bom_n", "R_1");
                             break;
                         case 2:
-                            entry->field_4 = irand(6);
+                            entry->field_0x4 = irand(6);
                             entry->standPose = yuunpc_pose_check("c_tyusan", "CHU_S_1");
                             entry->walkPose = yuunpc_pose_check("c_tyusan", "CHU_R_1");
                             entry->runPose = yuunpc_pose_check("c_tyusan", "CHU_R_1");
@@ -2126,7 +2126,7 @@ void yuunpc_pose_minigame4_main(void) {
                         entry->moveState = 0;
                         yuunpc_pose_change(entry, entry->standPose, 1.0f, (f32)rand() / 32767.0f);
                         entry->speed = 0.0f;
-                        switch (entry->field_4) {
+                        switch (entry->field_0x4) {
                         case 0:
                         case 2:
                         case 4:
@@ -2167,7 +2167,7 @@ void yuunpc_pose_minigame4_main(void) {
                     }
                     entry->flags &= ~0x8;
                     entry->spinTimer = 0x1e;
-                    switch (entry->field_4) {
+                    switch (entry->field_0x4) {
                     case 0:
                     case 2:
                     case 4:
@@ -2287,7 +2287,7 @@ void yuunpc_pose_minigame4_main(void) {
                         s32 r0v;
                         r0v = goalincheck(entry);
                         if (r0v == -1 || (yuunpc_wp->flags & 1) ||
-                            (entry->field_4 < 2 && !(entry->field_4 <= 1 && irand(0x24) == 0))) {
+                            (entry->field_0x4 < 2 && !(entry->field_0x4 <= 1 && irand(0x24) == 0))) {
                             break;
                         }
                         {
@@ -2296,7 +2296,7 @@ void yuunpc_pose_minigame4_main(void) {
                             f27 = (f32)h1;
                             h2 = ((75.0f + entry->position.x) < -1800.0f || (75.0f + entry->position.x) >= 1800.0f || entry->position.z < -150.0f || entry->position.z >= 150.0f) ? -500 : yuunpc_wp->map[(s32)(((75.0f + entry->position.x) - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->position.z - (-150.0f)) / 50.0f)];
                             f28 = (f32)h2;
-                            if (entry->field_4 <= 3 && irand(2) != 0) {
+                            if (entry->field_0x4 <= 3 && irand(2) != 0) {
                                 if (f27 >= entry->position.y) {
                                     entry->moveState = 1;
                                     yuunpc_pose_change(entry, entry->walkPose,
@@ -2374,7 +2374,7 @@ void yuunpc_pose_minigame4_main(void) {
                                 yuunpc_pose_change(entry, entry->standPose, 1.0f, (f32)rand() / 32767.0f);
                                 entry->speed = 0.0f;
                             } else if (irand(0x3c) == 0) {
-                                if (entry->field_4 <= 1 && irand(3) == 0) {
+                                if (entry->field_0x4 <= 1 && irand(3) == 0) {
                                     entry->moveState = 0;
                                     yuunpc_pose_change(entry, entry->standPose, 1.0f, (f32)rand() / 32767.0f);
                                     entry->speed = 0.0f;
@@ -2422,8 +2422,8 @@ void yuunpc_pose_minigame4_main(void) {
                                     yuunpc_pose_change(entry, entry->standPose, 1.0f, (f32)rand() / 32767.0f);
                                     entry->speed = 0.0f;
                                 }
-                            } else if ((f27 < entry->position.y && f0 == entry->position.y) || (entry->field_4 <= 3 && irand(0x3c) == 0)) {
-                                if (entry->field_4 <= 1 && irand(3) == 0) {
+                            } else if ((f27 < entry->position.y && f0 == entry->position.y) || (entry->field_0x4 <= 3 && irand(0x3c) == 0)) {
+                                if (entry->field_0x4 <= 1 && irand(3) == 0) {
                                     entry->moveState = 0;
                                     yuunpc_pose_change(entry, entry->standPose, 1.0f, (f32)rand() / 32767.0f);
                                     entry->speed = 0.0f;
@@ -2494,8 +2494,8 @@ void yuunpc_pose_minigame4_main(void) {
                                 entry->moveState = 0;
                                 yuunpc_pose_change(entry, entry->standPose, 1.0f, (f32)rand() / 32767.0f);
                                 entry->speed = 0.0f;
-                            } else if (entry->field_4 <= 3 && irand(0x3c) == 0) {
-                                if (entry->field_4 <= 1 && irand(3) == 0) {
+                            } else if (entry->field_0x4 <= 3 && irand(0x3c) == 0) {
+                                if (entry->field_0x4 <= 1 && irand(3) == 0) {
                                     entry->moveState = 0;
                                     yuunpc_pose_change(entry, entry->standPose, 1.0f, (f32)rand() / 32767.0f);
                                     entry->speed = 0.0f;
@@ -2543,8 +2543,8 @@ void yuunpc_pose_minigame4_main(void) {
                                     yuunpc_pose_change(entry, entry->standPose, 1.0f, (f32)rand() / 32767.0f);
                                     entry->speed = 0.0f;
                                 }
-                            } else if (entry->field_4 <= 3 && irand(0x3c) == 0) {
-                                if (entry->field_4 <= 1 && irand(3) == 0) {
+                            } else if (entry->field_0x4 <= 3 && irand(0x3c) == 0) {
+                                if (entry->field_0x4 <= 1 && irand(3) == 0) {
                                     entry->moveState = 0;
                                     yuunpc_pose_change(entry, entry->standPose, 1.0f, (f32)rand() / 32767.0f);
                                     entry->speed = 0.0f;

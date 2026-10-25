@@ -3,7 +3,7 @@
 #include "evt/evt_cmd.h"
 
 typedef struct {
-    s16 unk0;    //0x0
+    s16 field_0x0; //0x0
     s16 labelId; //0x2
     s16 storyId; //0x4
 } KeijibanInfo;

@@ -239,7 +239,7 @@ BattleWeapon weapon_gundan_zako_group1_attack = {
     0,                                        // fpRegenTime
     0,                                        // fpRegenStrength
     NULL,                                     // mAttackEvtScript
-    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // stageEffect
 };
 
 static EVT_BEGIN(init_event)
@@ -593,7 +593,7 @@ BattleUnit* zakogun_get_ptr(void) {
 }
 
 void zakogun_ext_init(void) {
-    u8* flag = &_battleWorkPointer->field_180C0.stageFlags;
+    u8* flag = &_battleWorkPointer->stageObjectWork.stageFlags;
     BattleStageObject* obj;
     BattleStageObject* obj2;
 

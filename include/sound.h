@@ -56,10 +56,10 @@ typedef struct SoundEffect {
     u16 vol;               // 0x4
     u16 pan;               // 0x6
     u16 span;              // 0x8
-    u16 unkA;              // 0xA
+    u16 field_0xA;         // 0xA, SoundEfxMain skips SoundEfxCheckCh while it is nonzero, counting it down
     SND_VOICEID voiceId;   // 0xC
     u16 fid;               // 0x10
-    u8 unk12[0x14 - 0x12]; // 0x12
+    u8 pad_0x12[0x14 - 0x12]; // 0x12
     SND_EMITTER emitter;   // 0x14
     SND_FVECTOR pos;       // 0x64
     SND_FVECTOR prevPos;   // 0x70
@@ -72,7 +72,7 @@ typedef struct SoundDVD {
     f32 vol;                // 0x4, the volume a fade-in (flags 0x10) stops at
     f32 curVol;             // 0x8, the faded volume SoundDVDSetPanCh splits into AISetStreamVolLeft/Right
     f32 fadeStep;           // 0xC, added to or taken from curVol each SoundDVDMain
-    u8 unk10[0x114 - 0x10]; // 0x10
+    u8 pad_0x10[0x114 - 0x10]; // 0x10
     u32 samples;            // 0x114
     DVDFileInfo info;       // 0x118
 } SoundDVD;
@@ -112,7 +112,7 @@ typedef struct SoundStream {
     u16 dataOffset;              // 0x4, the header's size (0x40, ADPCM 0x100), added to every file read offset
     u16 pan;                     // 0x6
     u16 span;                    // 0x8
-    u8 unkA[0xC - 0xA];          // 0xA
+    u8 pad_0xA[0xC - 0xA];       // 0xA
     f32 vol;                     // 0xC
     f32 curVol;                  // 0x10, the faded volume passed to sndStreamMixParameter
     f32 fadeStep;                // 0x14, added to or taken from curVol each SoundSSMain
@@ -127,9 +127,9 @@ typedef struct SoundStream {
 typedef struct SoundTemp {
     void* callback; // 0x0
     void* data;     // 0x4
-    u8 unk8;        // 0x8
-    u8 pad9[3];     // 0x9
-    s32 unkC;       // 0xC
+    u8 field_0x8;   // 0x8
+    u8 pad_0x9[3];  // 0x9
+    s32 field_0xC;  // 0xC
 } SoundTemp;
 
 typedef struct SoundWork {
@@ -147,10 +147,10 @@ typedef struct SoundWork {
     SoundSong* songs;          // 0xF0
     SoundEffect* effects;      // 0xF4
     SoundDVD* dvds;            // 0xF8
-    s32 unkFC;                 // 0xFC
+    s32 field_0xFC;            // 0xFC
     SoundStream* streams;      // 0x100
-    s32 unk104;                // 0x104
-    SoundTemp unk108[2];       // 0x108
+    s32 field_0x104;           // 0x104
+    SoundTemp field_0x108[2];  // 0x108, sndAuxCallbackReverbHI and sndAuxCallbackChorus with their data
     SND_LISTENER listener;     // 0x128
     SND_FVECTOR pos;           // 0x1B8
     SND_FVECTOR prevPos;       // 0x1C4
@@ -158,15 +158,15 @@ typedef struct SoundWork {
     SND_FVECTOR heading;       // 0x1DC
     SND_FVECTOR up;            // 0x1E8
     f32 headingAngle;          // 0x1F4, degrees; SoundEfxMain turns it into the listener heading
-    u8 unk1F8[0x204 - 0x1F8];  // 0x1F8
+    u8 pad_0x1F8[0x204 - 0x1F8]; // 0x1F8
     u32 listenerVol;           // 0x204
     u16 fadeIn;                // 0x208
     u16 fadeOut;               // 0x20A
     u16 interruptDepth;        // 0x20C, nesting count of the OSDisableInterrupts/OSRestoreInterrupts pairs
-    u8 unk20E[0x210 - 0x20E];  // 0x20E
+    u8 pad_0x20E[0x210 - 0x20E]; // 0x20E
     BOOL interrupts;           // 0x210
     u16 cover;                 // 0x214, SoundOpenCover sets 1, SoundCloseCover 2 or 0
-    u8 pad216[2];              // 0x216
+    u8 pad_0x216[2];           // 0x216
     SND_OUTPUTMODE outputMode; // 0x218
     u32 cacheAram[2];          // 0x21C, ARAM address of each stream cache slot
     u16 cacheCount;            // 0x224, cache slots SoundSSPlayChEx may hand out

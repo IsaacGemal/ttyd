@@ -110,7 +110,7 @@ USER_FUNC(evt_cam_shake) {
         event->userdata[0] = 0;
         event->userdata[1] = (start >> 32) & 0xFFFFFFFF;
         event->userdata[2] = start & 0xFFFFFFFF;
-        event->field_84 = 0;
+        event->field_0x84 = 0;
         event->userdataEx[0] = (start >> 32) & 0xFFFFFFFF;
         event->userdataEx[1] = start & 0xFFFFFFFF;
     }
@@ -137,17 +137,17 @@ USER_FUNC(evt_cam_shake) {
                       (u32)event->userdataEx[1];
 
         if (onTime != 0 && offTime != 0) {
-            if ((s32)event->field_84 == 0) {
+            if ((s32)event->field_0x84 == 0) {
                 padRumbleOn(0);
                 if (OSTicksToMilliseconds(start - wInterp) > onTime) {
-                    event->field_84 = 1 - event->field_84;
+                    event->field_0x84 = 1 - event->field_0x84;
                     event->userdataEx[0] = (start >> 32) & 0xFFFFFFFF;
                     event->userdataEx[1] = start & 0xFFFFFFFF;
                 }
             } else {
                 padRumbleOff(0);
                 if (OSTicksToMilliseconds(start - wInterp) > offTime) {
-                    event->field_84 = 1 - event->field_84;
+                    event->field_0x84 = 1 - event->field_0x84;
                     event->userdataEx[0] = (start >> 32) & 0xFFFFFFFF;
                     event->userdataEx[1] = start & 0xFFFFFFFF;
                 }

@@ -631,7 +631,7 @@ USER_FUNC(evt_ryushi_init) {
     wp->y = 0.0f;
     wp->z = 0.0f;
     wp->scale = 1.0f;
-    wp->unk2C = 0xFF;
+    wp->field_0x2C = 0xFF;
     wp->tev0G = 0;
     wp->tev0B = 0xFF;
     wp->tev1R = 0xFF;
@@ -639,7 +639,7 @@ USER_FUNC(evt_ryushi_init) {
     wp->tev1B = 0xFF;
     wp = &wp[1];
     for (i = 0xF0; i != 0; i--) {
-        wp->unk0 = 0;
+        wp->field_0x0 = 0;
         wp++;
     }
     return EVT_RETURN_DONE;
@@ -670,7 +670,7 @@ USER_FUNC(evt_ryushi_clr) {
         f32 lo;
         f32 zSpacing;
 
-        entry->unk0 = 0;
+        entry->field_0x0 = 0;
         gridX = (i - 1) % 10;
         gridY = ((i - 1) / 10) % 6;
         gridZ = (i - 1) / 60;
@@ -891,7 +891,7 @@ void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
     entry->y = 0.0f;
     entry->z = 0.0f;
     entry->scale = 1.0f;
-    entry->unk2C = 0xFF;
+    entry->field_0x2C = 0xFF;
     entry->tev0G = 0;
     entry->tev0B = 0xFF;
     entry->tev1R = 0xFF;
@@ -899,7 +899,7 @@ void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
     entry->tev1B = 0xFF;
     entry = &entry[1];
     for (i = 0xF0; i != 0; i--) {
-        entry->unk0 = 0;
+        entry->field_0x0 = 0;
         entry++;
     }
 }

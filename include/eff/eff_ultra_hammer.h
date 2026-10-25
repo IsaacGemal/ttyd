@@ -6,7 +6,7 @@
 #include "driver/effdrv.h"
 
 typedef struct EffUltraHammerData {
-    BOOL unk0; //0x0, doesn't actually get read
+    BOOL flipX; //0x0, effUltraHammerEntry's first argument; effUltraHammerDisp mirrors the pieces in x when set
     Vec position; //0x4
     f32 scale; //0x10
     f32 offsetX; //0x14

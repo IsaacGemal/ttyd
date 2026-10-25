@@ -805,7 +805,7 @@ USER_FUNC(evt_npc_jump_position_nohit) {
 
         event->userdataf[1] = -4.0f * arcHeight;
         event->userdataf[2] = (targetY - npc->jumpStartPos.y) - event->userdataf[1];
-        event->field_84 = npc->flags & 0x80000;
+        event->field_0x84 = npc->flags & 0x80000;
         npc->flags &= ~0x80000;
 
         if (psndGetFlag() & 0x100) {
@@ -829,7 +829,7 @@ USER_FUNC(evt_npc_jump_position_nohit) {
     }
 
     npc->position = (Vec){ targetX, targetY, targetZ };
-    npc->flags |= event->field_84;
+    npc->flags |= event->field_0x84;
 
     sfxFlag = 0;
     if (psndGetFlag() & 0x100) {

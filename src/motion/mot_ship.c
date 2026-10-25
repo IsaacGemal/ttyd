@@ -47,7 +47,7 @@ EVT_END()
 // Motion data allocated as mario->motStruct (size 0x48).
 typedef struct MotionShipData {
     u32 flags;        // 0x00
-    f32 unk04;        // 0x04
+    f32 field_0x4;    // 0x04
     f32 bobAngle;     // 0x08, phase of the bob: dispOfs.y = 3 sin(bobAngle) - 13; also picks the stopped wake's speed
     f32 bobSpeed;     // 0x0C, taken from bobAngle each frame (4.25)
     f32 wakeSpeed;    // 0x10, the wake effect's speed while the ship is stopped, eased toward 0.3 or 0.6 (shipWakeUpdate)
@@ -59,7 +59,7 @@ typedef struct MotionShipData {
     f32 swirlDir;     // 0x28, marioSetSwirlPower's direction: shipMove's movePos angle while swirlTimer runs
     f32 swirlSpeed;   // 0x2C, marioSetSwirlPower's speed: shipMove's movePos distance while swirlTimer runs
     s32 swirlTimer;   // 0x30
-    f32 unk34;        // 0x34
+    f32 field_0x34;   // 0x34
     u32 sfxId;        // 0x38
     Vec harborPos;    // 0x3C, the harbor point checkHarbor/shipHarborTarget find; the landing moves to it
 } MotionShipData;     // size 0x48
@@ -175,7 +175,7 @@ void marioReInit_ship(void) {
     marioSetPaperAnimeLocalTime(mario->paperAnimeTime);
     marioGetPtr()->motionShipData->sfxId = 0xFFFFFFFFu;
     marioGetPtr()->motionShipData->flags = 0;
-    marioGetPtr()->motionShipData->unk04 = 0.0f;
+    marioGetPtr()->motionShipData->field_0x4 = 0.0f;
     marioGetPtr()->motionShipData->velX = 0.0f;
     marioGetPtr()->motionShipData->velY = 0.0f;
     marioGetPtr()->motionShipData->turnRate = 0.0f;
@@ -442,7 +442,7 @@ void mot_ship(void) {
             mario->directionView = angleABf(mario->position.x, mario->position.z, marioGetPtr()->motionShipData->harborPos.x, marioGetPtr()->motionShipData->harborPos.z);
             mario->moveDir = mario->directionView;
             f30 = marioGetPtr()->motionShipData->harborPos.y;
-            marioGetPtr()->motionShipData->unk04 = f30;
+            marioGetPtr()->motionShipData->field_0x4 = f30;
             // The distance is doubled as `d + d`, not `2.0f * d`.
             dy = marioGetPtr()->motionShipData->harborPos.y - mario->position.y;
             mario->jumpVelY = 0.0f;
@@ -539,7 +539,7 @@ void mot_ship(void) {
         camFollowYOff();
         mario->dispFlags &= ~0x1000;
         {
-            marioGetPtr()->motionShipData->unk04 = marioGetPtr()->motionShipData->harborPos.y;
+            marioGetPtr()->motionShipData->field_0x4 = marioGetPtr()->motionShipData->harborPos.y;
             mario->baseSpeed = 2.8f;
             {
                 // Keeping the rounding factor first in the expression tree pools 10 before 2.

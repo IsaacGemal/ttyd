@@ -1929,7 +1929,7 @@ USER_FUNC(gor_npc_fuwafuwa) {
             event->savedTime = gp->renderTime;
             event->userdataf[1] = npc->position.x;
             event->userdataf[2] = npc->position.y;
-            *(f32*)&event->field_84 = npc->position.z;
+            *(f32*)&event->field_0x84 = npc->position.z;
         }
         time = OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime);
         elapsed = sysMsec2FrameFloat((f32)time);

@@ -599,9 +599,9 @@ static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
 // The outer-loop prologue hoists `(i / 4) * 32` and `i % 4`; MWCC's list scheduler and the
 // callee-saved colouring it induces are sensitive to the front-end expression tree here.
 static void sun_tev(MapTevCallback* param) {
-    s32 field_C = param->tevStage;
+    s32 tevStage = param->tevStage;
     s32 texMapId = param->texMap;
-    s32 field_14 = param->texCoord;
+    s32 texCoord = param->texCoord;
     s32 indTexStage = param->numIndStage;
     u8* buf;
     GXTexObj texObj;
@@ -647,8 +647,8 @@ static void sun_tev(MapTevCallback* param) {
     GXSetIndTexOrder(indTexStage, GX_TEXCOORD0, texMapId);
     GXSetIndTexCoordScale(indTexStage, GX_ITS_1, GX_ITS_1);
     GXSetTevIndWarp(GX_TEVSTAGE0, indTexStage, 1, 0, GX_ITM_0);
-    param->tevStage = field_C;
-    param->texCoord = field_14;
+    param->tevStage = tevStage;
+    param->texCoord = texCoord;
     param->numIndStage = indTexStage + 1;
     param->texMap = texMapId + 1;
 }
