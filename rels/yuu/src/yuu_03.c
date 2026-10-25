@@ -93,7 +93,7 @@ void yuuminigame4_entry_disp(CameraId cameraId, void* param) {
     if (entries != NULL) {
         // The icon bobs during the first 9 frames of each 32-frame cycle.
         for (i = 0; i < entries->count; i++) {
-            if (entries[i].unk0 == 0) {
+            if (entries[i].hidden == 0) {
                 Vec iconPos = entries[i].field_0x8.position;
                 if ((gp->retraceCount & 0x1F) < 9) {
                     iconPos.y += 5.0f;
@@ -152,7 +152,7 @@ USER_FUNC(yuuminigame4_entry_init) {
         s32 i;
         for (i = 0; i < yuuminigame4_entries->count; i++) {
             Yuuminigame4Work* entry = &yuuminigame4_entries[i];
-            switch (entry->unk4) {
+            switch (entry->state) {
             case 0:
                 entry->field_0x8.position = mario->position;
                 entry->field_0x8.position.y += 40.0f;

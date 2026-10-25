@@ -12,10 +12,10 @@ typedef struct MonteEntryField8 {
 } MonteEntryField8;                // 0x38
 
 typedef struct MonteEntry {
-    u8 active;                     // 0x00
+    u8 hidden;                     // 0x00, monte_disp/monte_single_disp draw the chip only while 0
     u8 pad_01;                     // 0x01
     s16 count;                     // 0x02
-    u8 hit;                        // 0x04
+    u8 state;                      // 0x04, fall_rtn: 0 until Mario picks the chip up (or it is left out), then 1
     u8 pad_05[0x08 - 0x05];        // 0x05
     MonteEntryField8 field_0x8;    // 0x08
     struct YuuminigameWork* work;  // 0x40

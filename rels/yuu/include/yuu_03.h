@@ -25,10 +25,10 @@ typedef struct Yuuminigame4WorkField8 {
 } Yuuminigame4WorkField8;       // 0x38
 
 typedef struct Yuuminigame4Work {
-    u8 unk0;                    // 0x00
+    u8 hidden;                  // 0x00, yuuminigame4_entry_disp draws the icon only while 0
     u8 pad_01;                  // 0x01
     s16 count;                  // 0x02
-    u8 unk4;                    // 0x04
+    u8 state;                   // 0x04, yuuminigame4_entry_init: 0 keeps the icon 40 above Mario, 1 leaves it
     u8 pad_05[0x08 - 0x05];     // 0x05
     Yuuminigame4WorkField8 field_0x8; // 0x08
     YuuminigameWork* work;      // 0x40

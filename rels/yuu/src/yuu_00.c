@@ -59,10 +59,10 @@ typedef struct YuuMonteField8 {
 
 // One monte (chip) entry, stride 0x44.
 typedef struct YuuMonte {
-    u8 flag;                  // 0x00
+    u8 hidden;                // 0x00, monte_disp draws the chip only while 0; set when Mario picks it up
     u8 pad_01;
     s16 count;                // 0x02
-    u8 state;                 // 0x04
+    u8 state;                 // 0x04, fall_rtn: 0 until Mario picks the chip up, then 1
     u8 pad_05[3];             // 0x05
     YuuMonteField8 field_0x8; // 0x08
     YuuminigameWork* work;    // 0x40
@@ -568,7 +568,7 @@ static void monte_disp(CameraId cameraId, void* param) {
 
     if (monte != NULL) {
         for (i = 0; i < monte->count; i++) {
-            if (monte[i].flag == 0) {
+            if (monte[i].hidden == 0) {
                 iconDispGx(1.0f, &monte[i].field_0x8.pos, 0, 0x13F);
             }
         }
@@ -678,7 +678,7 @@ static USER_FUNC(fall_rtn) {
 #else
                         psndSFXOn_3D(sfx, &marioGetPtr()->position);
 #endif
-                        p->flag = 1;
+                        p->hidden = 1;
                         p->state = 1;
                     }
                     break;

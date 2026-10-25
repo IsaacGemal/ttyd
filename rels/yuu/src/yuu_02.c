@@ -130,11 +130,11 @@ USER_FUNC(minigame03_cam_reset) {
 }
 
 void fn_31_112C(s32 index) {
-    monte_p[index].active = 0;
+    monte_p[index].hidden = 0;
 }
 
 void unk_yuu_000011e0(s32 index) {
-    monte_p[index].active = 1;
+    monte_p[index].hidden = 1;
 }
 
 USER_FUNC(unk_yuu_00001160) {
@@ -144,9 +144,9 @@ USER_FUNC(unk_yuu_00001160) {
 
     if (monte_p != NULL) {
         if (on != 0) {
-            monte_p[index].active = 0;
+            monte_p[index].hidden = 0;
         } else {
-            monte_p[index].active = 1;
+            monte_p[index].hidden = 1;
         }
     }
     return EVT_RETURN_DONE;
@@ -161,7 +161,7 @@ void monte_single_disp(CameraId cameraId, void* param) {
     if (entries != NULL) {
         for (i = 0; i < entries->count; i++) {
             f32 dir = mario->position.z >= 0.0f ? 1.0f : -1.0f;
-            if (entries[i].active == 0) {
+            if (entries[i].hidden == 0) {
                 Vec pos = entries[i].field_0x8.pos;
                 if ((gp->retraceCount & 0x1F) < 9) {
                     pos.x -= 5.0f * dir;
@@ -188,7 +188,7 @@ static inline void monte_fill(void) {
         base2 = &arr[i].field_0x8;
         base->pos = vec3_yuu_00014008;
         base2->scale = 1.0f;
-        monte_p[i].active = 1;
+        monte_p[i].hidden = 1;
     }
 }
 #endif
@@ -220,7 +220,7 @@ USER_FUNC(monte_single_init) {
             MonteEntryField8* base = &monte_p[i].field_0x8;
             base->pos = vec3_yuu_00014008;
             base->scale = 1.0f;
-            monte_p[i].active = 1;
+            monte_p[i].hidden = 1;
         }
 #endif
     }
@@ -246,7 +246,7 @@ static void monte_disp(CameraId cameraId, void* param) {
 
     if (entries != NULL) {
         for (i = 0; i < entries->count; i++) {
-            if (entries[i].active == 0) {
+            if (entries[i].hidden == 0) {
                 iconDispGx(1.0f, &entries[i].field_0x8.pos, 0, 0x13F);
             }
         }
@@ -364,16 +364,16 @@ USER_FUNC(fall_rtn) {
                     s32 n;
                     s32 r;
                     for (n = 0; n < placedThisTable; n++) {
-                        monte_entries[i - n].active = 1;
-                        monte_entries[i - n].hit = 1;
+                        monte_entries[i - n].hidden = 1;
+                        monte_entries[i - n].state = 1;
                     }
                     n = 0;
                     while (n < montetable[tableIdx].count) {
                         do {
                             r = irand(placedThisTable);
-                        } while (monte_entries[i - r].active == 0);
-                        monte_entries[i - r].active = 0;
-                        monte_entries[i - r].hit = 0;
+                        } while (monte_entries[i - r].hidden == 0);
+                        monte_entries[i - r].hidden = 0;
+                        monte_entries[i - r].state = 0;
                         n++;
                     }
                     placedThisTable = 0;
@@ -396,7 +396,7 @@ USER_FUNC(fall_rtn) {
 #endif
         for (i = 0; i < monte_entries->count; i++) {
             MonteEntry* p = &monte_entries[i];
-            switch (p->hit) {
+            switch (p->state) {
             case 0:
                 if (get_monte_check(&p->field_0x8.pos, &marioGetPtr()->position) == 1) {
                     data->field_24++;
@@ -407,8 +407,8 @@ USER_FUNC(fall_rtn) {
                         sfx,
 #endif
                         &marioGetPtr()->position);
-                    p->active = 1;
-                    p->hit = 1;
+                    p->hidden = 1;
+                    p->state = 1;
                 }
                 break;
             case 1:
@@ -575,7 +575,7 @@ s32 yuuminigame3_gamerule(EventEntry* event, BOOL isFirstCall, void* work, YuuMi
             if (data->index < 0xE) {
                 data->index++;
             }
-            monte_p->active = 1;
+            monte_p->hidden = 1;
         }
         if (mario->position.z * fukkipoint[data->index * 3 + 2] >= 0.0f &&
             ((mario->position.z < 0.0f &&
@@ -587,7 +587,7 @@ s32 yuuminigame3_gamerule(EventEntry* event, BOOL isFirstCall, void* work, YuuMi
             if (data->index > 0) {
                 data->index--;
             }
-            monte_p->active = 0;
+            monte_p->hidden = 0;
         }
         data->position = mario->position;
         if (yuucounter_get_data() < 0 || data->index >= 0xD) {
@@ -596,7 +596,7 @@ s32 yuuminigame3_gamerule(EventEntry* event, BOOL isFirstCall, void* work, YuuMi
             marioKeyOff();
             partyKeyOff();
             yuucounter_flag_on(2);
-            monte_p->active = 1;
+            monte_p->hidden = 1;
             return 1;
         }
     } else {

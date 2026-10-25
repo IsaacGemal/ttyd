@@ -41,10 +41,10 @@ typedef struct MonteEntryField8 {
 } MonteEntryField8;             // 0x38
 
 typedef struct MonteEntry {
-    u8 unk0;                    // 0x00
+    u8 hidden;                  // 0x00, monte_disp draws the chip only while 0; set when Mario picks it up
     u8 unk1;                    // 0x01
     s16 count;                  // 0x02
-    u8 unk4;                    // 0x04
+    u8 state;                   // 0x04, fall_rtn: 0 until Mario picks the chip up, then 1
     u8 pad_05[0x08 - 0x05];     // 0x05
     MonteEntryField8 field_0x8; // 0x08
     YuuminigameWork* work;      // 0x40
@@ -640,7 +640,7 @@ static void monte_disp(CameraId cameraId, void* param) {
 
     if (param != NULL) {
         for (i = 0; i < entries->count; i++) {
-            if (entries[i].unk0 == 0) {
+            if (entries[i].hidden == 0) {
                 iconDispGx(1.0f, &entries[i].field_0x8.position, 0, 0x13f);
             }
         }
@@ -748,7 +748,7 @@ static USER_FUNC(fall_rtn) {
     {
         for (i = 0; i < monte_p->count; i++) {
             MonteEntry* p = &monte_p[i];
-            switch (p->unk4) {
+            switch (p->state) {
             case 0:
                 if (get_monte_check(&p->field_0x8.position, &marioGetPtr()->position) == 1) {
                     data->unk34++;
@@ -761,8 +761,8 @@ static USER_FUNC(fall_rtn) {
                         sfx,
 #endif
                         &marioGetPtr()->position);
-                    p->unk0 = 1;
-                    p->unk4 = 1;
+                    p->hidden = 1;
+                    p->state = 1;
                 }
                 break;
             case 1:
