@@ -529,6 +529,7 @@ void write_header_main(void) {
 }
 
 void read_main(void) {
+    CardSaveSlot* save;
     s32 saveType; //invalid = -1, main = 0, backup = 1
 
     if (wp->result) {
@@ -563,14 +564,16 @@ void read_main(void) {
                 break;
             case 7:
                 wp->validSave1 = dataCheck();
-                wp->lastSaveTime1 = ((CardSaveSlot*)wp->readBuf)->data.global.saveTime;
+                save = wp->readBuf;
+                wp->lastSaveTime1 = save->data.global.saveTime;
                 break;
             case 8:
                 memcard_read(wp->readBuf, sizeof(CardSaveSlot), (s32)((wp->readSlot * sizeof(CardSaveSlot)) + sizeof(CardData)));
                 break;
             case 9:
                 wp->validSave2 = dataCheck();
-                wp->lastSaveTime2 = ((CardSaveSlot*)wp->readBuf)->data.global.saveTime;
+                save = wp->readBuf;
+                wp->lastSaveTime2 = save->data.global.saveTime;
                 break;
             case 10:
                 if (wp->validSave1 != 0 && wp->validSave2 != 0) {
@@ -630,6 +633,7 @@ void cardReadAll(void) {
 }
 
 void read_all_main(void) {
+    CardSaveSlot* save;
     s32 saveType; //invalid = -1, main = 0, backup = 1
 
     if (wp->result) {
@@ -669,14 +673,16 @@ void read_all_main(void) {
                 break;
             case 7:
                 wp->validSave1 = dataCheck();
-                wp->lastSaveTime1 = ((CardSaveSlot*)wp->readBuf)->data.global.saveTime;
+                save = wp->readBuf;
+                wp->lastSaveTime1 = save->data.global.saveTime;
                 break;
             case 8:
                 memcard_read(wp->readBuf, sizeof(CardSaveSlot), (wp->readSlot << 0xE) + 0x12000);
                 break;
             case 9:
                 wp->validSave2 = dataCheck();
-                wp->lastSaveTime2 = ((CardSaveSlot*)wp->readBuf)->data.global.saveTime;
+                save = wp->readBuf;
+                wp->lastSaveTime2 = save->data.global.saveTime;
                 break;
             case 10:
                 if (wp->validSave1 != 0 && wp->validSave2 != 0) {

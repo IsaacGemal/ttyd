@@ -110,7 +110,7 @@ void DVDMgrMain(void) { //1:1
             } else {
                 entry->bytesLeft -= size;
                 entry->position += size;
-                entry->address = (void*)((s32)entry->address + size);
+                entry->address += size;
                 if (entry->bytesLeft == 0) {
                     entry->status &= ~DVDMGR_READING;
                     entry->status |= DVDMGR_FINISHED;
