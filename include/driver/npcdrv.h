@@ -40,9 +40,9 @@ typedef struct NpcDeadInfo {
 typedef struct BattleGroupSetup {
     s32 numEnemies;             // 0x0
     BattleUnitSetup* enemyData; // 0x4
-    s32 field_0x8;              // 0x8
-    s32 field_0xC;              // 0xC
-    s32 field_0x10;             // 0x10
+    s32 heldItemWeight;         // 0x8, the held-item band of BattleInformation's drop roll (irand over the three)
+    s32 dropTableWeight;        // 0xC, the drop-table band
+    s32 noDropWeight;           // 0x10, the no-drop band
     s32* heartDropParams;       // 0x14, battle_heart_drop_param_default*
     s32* flowerDropParams;      // 0x18, battle_flower_drop_param_default*
     s32 field_0x1C;             // 0x1C
@@ -260,9 +260,10 @@ typedef struct FieldBattleInfo {
     NpcBattleInfo* setup;    // 0xC
     s32 result;              // 0x10
     s32 storeCoin;           // 0x14, coins added by BattleStoreCoin; npcdrv copies it to NpcEntry.btlCoinDropCount
-    u8 field_0x18;           // 0x18, battleRules[0] (seq_battle), the rule kind battle_actrecord judges
+    u8 ruleKind;             // 0x18, battleRules[0] (seq_battle), the rule kind BtlActRec_JudgeTurnRuleKeep switches on
     u8 ruleKeepResult;       // 0x19, written by battle_actrecord, read by evt_npc_get_battle_rule_keep_result
-    u8 field_0x1A;           // 0x1A, battleRules[1] (seq_battle)
+    u8 ruleCount;            // 0x1A, battleRules[1] (seq_battle): the count the rule message prints (battle_seq) and
+                             //       BtlActRec_JudgeTurnRuleKeep/_check_use compare with
     u8 field_0x1B;           // 0x1B, battleRules[2] (seq_battle)
 } FieldBattleInfo;
 
@@ -286,7 +287,7 @@ typedef struct FieldBattleData {
     s32 field_44;                // 0x44
     s32 majinaiEvtId;            // 0x48, event waited on in state 3 (the Merlee curse coin-up effect)
     NpcDeadInfo deadInfo[64];    // 0x4C
-    u8 field_0x54C;              // 0x54C
+    u8 majinaiCoinBonus;         // 0x54C, set when Merlee's coin curse (type 4) fires on a win; npcdrv then triples the coin drop
     u8 sandersBombTrigger;       // 0x54D
     u8 field_54E[0x550 - 0x54E]; // 0x54E
     FirstStrikeInfo firstStrike; // 0x550

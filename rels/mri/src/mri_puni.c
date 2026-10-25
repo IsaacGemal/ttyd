@@ -5128,7 +5128,7 @@ void puni_puni_disp(CameraId cameraId, void* param) {
             pyami->texMap = 1;
             pyami->texCoord = 1;
             pyami->numIndStage = 0;
-            pyami->unk4 = (MtxPtr)pose->matrix;
+            pyami->mtx = (MtxPtr)pose->matrix;
             envSetYami(pyami);
             GXSetNumTexGens(pyami->texCoord);
             GXSetNumTevStages(pyami->tevStage);

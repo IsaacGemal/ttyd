@@ -2416,12 +2416,12 @@ void fbatBattleMode(void) {
                 NpcEntry* npc2;
                 s32 total2;
                 s32 i2;
-                fbatData->field_0x54C = 0;
+                fbatData->majinaiCoinBonus = 0;
                 info2 = &fbatData->field_20;
                 result = BattleInformationGetResult(info2);
                 if (pouch->mMerleeNextCurseType == 4 && result == 1) {
                     fbatData->state = 3;
-                    fbatData->field_0x54C = 1;
+                    fbatData->majinaiCoinBonus = 1;
                     evt = evtEntry(_evt_majinai_coin_up_effect, 0, 0);
                     fbatData->majinaiEvtId = evt->eventId;
                     BattleMajinaiDone();
@@ -2490,7 +2490,7 @@ void fbatBattleMode(void) {
                         entry->btlCoinDropCount = 0;
                         goto after;
                     }
-                    if (fbatData->field_0x54C) {
+                    if (fbatData->majinaiCoinBonus) {
                         mult = 3;
                     }
                     if (pouchEquipCheckBadge(ITEM_MONEY_MONEY)) {

@@ -3050,8 +3050,8 @@ u32 anim_ext_tex_size;
 
 extern GXColor dat_80419a3c;
 extern GXColor dat_80419a40;
-void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 f1, void* texObj, void* base,
-                                 f32 f2, s32* out0, s32* out1, s32* out2, s32* out3) {
+void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 frame, void* texObj, void* base,
+                                 f32 scale, s32* out0, s32* out1, s32* out2, s32* out3) {
     s32 i;
     s32 found;
     AnimationPose* pose;
@@ -3110,7 +3110,7 @@ void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 f1,
         // declared before `time =` so the compiler schedules the fmuls above it and the (OSTime)
         // conversion below it, as the target does; moving it after costs ~1.4%.
         AnimationPose* p2 = &wp->poses[i];
-        time = (OSTime)(16.666666f * f1);
+        time = (OSTime)(16.666666f * frame);
         p2->localTime = animTimeGetTime(p2->type) - time;
         p2->mLocalTimeInit = p2->localTime;
         if (p2->paperId != -1) {
@@ -3135,9 +3135,9 @@ void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 f1,
     pose->materialFlag = 0;
     pose->materialColor = dat_80419a3c;
     pose->materialColor2 = dat_80419a40;
-    _animPoseDrawMtx(pose, mtx, 1, 0.0f, f2);
-    _animPoseDrawMtx(pose, mtx, 2, 0.0f, f2);
-    _animPoseDrawMtx(pose, mtx, 3, 0.0f, f2);
+    _animPoseDrawMtx(pose, mtx, 1, 0.0f, scale);
+    _animPoseDrawMtx(pose, mtx, 2, 0.0f, scale);
+    _animPoseDrawMtx(pose, mtx, 3, 0.0f, scale);
     pose->materialColor = color0;
     pose->materialColor2 = color1;
     pose->flags = flags;

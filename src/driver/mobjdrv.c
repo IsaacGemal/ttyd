@@ -517,51 +517,51 @@ void mobjMain(void) {
 
     if (gp->inBattle == 0) {
         if (mario->hitobjHammer != NULL) {
-            if (wp->field_0x8 == NULL ||
-                strcmp(hitGetName(wp->field_0x8), hitGetName(mario->hitobjHammer)) != 0) {
-                wp->field_0x8 = mario->hitobjHammer;
+            if (wp->hitobjHammer == NULL ||
+                strcmp(hitGetName(wp->hitobjHammer), hitGetName(mario->hitobjHammer)) != 0) {
+                wp->hitobjHammer = mario->hitobjHammer;
             }
         } else {
-            wp->field_0x8 = NULL;
+            wp->hitobjHammer = NULL;
         }
 
         if (mario->hitobjHead != NULL) {
-            if (wp->field_0xC == NULL ||
-                strcmp(hitGetName(wp->field_0xC), hitGetName(mario->hitobjHead)) != 0) {
+            if (wp->hitobjHead == NULL ||
+                strcmp(hitGetName(wp->hitobjHead), hitGetName(mario->hitobjHead)) != 0) {
                 HitEntry* tmp = mario->hitobjHead;
 
-                wp->field_0xC = tmp;
+                wp->hitobjHead = tmp;
                 v24 = tmp;
             }
         } else {
-            wp->field_0xC = NULL;
+            wp->hitobjHead = NULL;
         }
 
         if (mario->hitobjStandOn != NULL) {
-            if (wp->field_0x10 == NULL ||
-                strcmp(hitGetName(wp->field_0x10), hitGetName(mario->hitobjStandOn)) != 0) {
-                wp->field_0x10 = mario->hitobjStandOn;
+            if (wp->hitobjStandOn == NULL ||
+                strcmp(hitGetName(wp->hitobjStandOn), hitGetName(mario->hitobjStandOn)) != 0) {
+                wp->hitobjStandOn = mario->hitobjStandOn;
             }
         } else {
-            wp->field_0x10 = NULL;
+            wp->hitobjStandOn = NULL;
         }
 
         if (mario->hitobjFront != NULL) {
-            if (wp->field_0x14 == NULL ||
-                strcmp(hitGetName(wp->field_0x14), hitGetName(mario->hitobjFront)) != 0) {
-                wp->field_0x14 = mario->hitobjFront;
+            if (wp->hitobjFront == NULL ||
+                strcmp(hitGetName(wp->hitobjFront), hitGetName(mario->hitobjFront)) != 0) {
+                wp->hitobjFront = mario->hitobjFront;
             }
         } else {
-            wp->field_0x14 = NULL;
+            wp->hitobjFront = NULL;
         }
 
         if (party != NULL && party->frontHit != NULL) {
-            if (wp->field_0x18 == NULL ||
-                strcmp(hitGetName(wp->field_0x18), hitGetName(party->frontHit)) != 0) {
-                wp->field_0x18 = party->frontHit;
+            if (wp->partyFrontHit == NULL ||
+                strcmp(hitGetName(wp->partyFrontHit), hitGetName(party->frontHit)) != 0) {
+                wp->partyFrontHit = party->frontHit;
             }
         } else {
-            wp->field_0x18 = NULL;
+            wp->partyFrontHit = NULL;
         }
     }
 

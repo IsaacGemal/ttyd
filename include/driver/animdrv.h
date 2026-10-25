@@ -412,8 +412,8 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z);
 void pushGXModelMtx_TransformNode__(void* node);
 void animPaperPoseDisp(CameraId camId, void* param);
 void animPaperPoseDispSub(s32 unused, void* param);
-void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 f1, void* texObj, void* base,
-                                        f32 f2, s32* out0, s32* out1, s32* out2, s32* out3);
+void animPoseDisp_MakeExtTexture(const char* name, const char* animName, f32 frame, void* texObj, void* base,
+                                        f32 scale, s32* out0, s32* out1, s32* out2, s32* out3);
 void animPoseAutoRelease(s32 type);
 void animPoseVivianMain(s32 poseId, Vec* pos);
 void materialProc(s32 shapeId, s32 keyFrame1);
