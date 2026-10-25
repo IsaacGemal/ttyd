@@ -33,7 +33,13 @@ s32 peach_evt_pato_on[46];
 s32 peach_evt_pato_off[18];
 s32 peach_evt_tyogo_entry[6];
 s32 peach_evt_wait_memo[18];
-u32 yuka_anim[2];
+// yuka_anim_reverse_play's state: the "yuka" map animation it plays backwards, and
+// bit 0 pause (yuka_anim_reverse_pause/_replay), bit 1 end (yuka_anim_reverse_end).
+typedef struct YukaAnim {
+    MapEntryAnimData* anim; // 0x0
+    u32 flags;              // 0x4
+} YukaAnim;
+YukaAnim yuka_anim;
 u32 g_Kusuri1_No[1];
 s32 g_Kusuri_B[1];
 s32 g_Kusuri_G[1];
@@ -444,28 +450,28 @@ USER_FUNC(yuka_anim_reverse_play) {
     OSTime now;
 
     if (isFirstCall) {
-        yuka_anim[0] = (u32)mapSearchAnmObj("yuka");
-        yuka_anim[1] = 0;
-        ((MapEntryAnimData*)yuka_anim[0])->startTime =
+        yuka_anim.anim = mapSearchAnmObj("yuka");
+        yuka_anim.flags = 0;
+        yuka_anim.anim->startTime =
             OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
-        ((MapEntryAnimData*)yuka_anim[0])->flags |= MAPANIM_FLAG_PAUSE;
-        ((MapEntryAnimData*)yuka_anim[0])->flags &= ~MAPANIM_FLAG_RESTART;
+        yuka_anim.anim->flags |= MAPANIM_FLAG_PAUSE;
+        yuka_anim.anim->flags &= ~MAPANIM_FLAG_RESTART;
     }
-    if (yuka_anim[1] & 2) {
+    if (yuka_anim.flags & 2) {
         return EVT_RETURN_DONE;
     }
-    if (!(yuka_anim[1] & 1)) {
+    if (!(yuka_anim.flags & 1)) {
         MapEntryAnimData* anim;
         f32 rate;
         f32 frame;
 
         now = OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
-        anim = (MapEntryAnimData*)yuka_anim[0];
+        anim = yuka_anim.anim;
         rate = anim->rate;
         frame = 60.0f * (f32)(u64)(now - anim->startTime) / 1000.0f;
         anim->frame -= frame * rate;
-        if (((MapEntryAnimData*)yuka_anim[0])->frame <= 0.0f) {
-            MapEntryAnimData* anim = (MapEntryAnimData*)yuka_anim[0];
+        if (yuka_anim.anim->frame <= 0.0f) {
+            MapEntryAnimData* anim = yuka_anim.anim;
             f32 localTime = anim->frame;
             while (localTime < 0.0f) {
                 localTime += anim->data->duration;
@@ -473,23 +479,23 @@ USER_FUNC(yuka_anim_reverse_play) {
             anim->frame = localTime;
         }
     }
-    ((MapEntryAnimData*)yuka_anim[0])->startTime =
+    yuka_anim.anim->startTime =
         OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
     return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(yuka_anim_reverse_replay) {
-    yuka_anim[1] &= ~1;
+    yuka_anim.flags &= ~1;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(yuka_anim_reverse_pause) {
-    yuka_anim[1] |= 1;
+    yuka_anim.flags |= 1;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(yuka_anim_reverse_end) {
-    yuka_anim[1] |= 2;
+    yuka_anim.flags |= 2;
     return EVT_RETURN_DONE;
 }
 
