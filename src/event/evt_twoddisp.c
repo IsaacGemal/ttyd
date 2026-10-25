@@ -32,8 +32,7 @@ typedef struct TwoDDisplayer {
 	f32 baseY;       // 0x20
 	s32 data;        // 0x24, text pointer or icon id
 	f32 scale;       // 0x28
-	u32 field_0x2C;  // 0x2c
-	u32 field_0x30;  // 0x30
+	u8 pad_0x2C[0x34 - 0x2C]; // 0x2c
 } TwoDDisplayer;     // 0x34
 
 TwoDDisplayer* twodPtr;

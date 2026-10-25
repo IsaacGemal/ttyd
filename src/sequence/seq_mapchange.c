@@ -90,11 +90,11 @@ void seq_mapChangeInit(SequenceWork* work) {
     notGor = strcmp(gp->currentMapName, "gor_01");
     nextNotGor = strcmp(_next_map, "gor_01");
     if (notEmpty && notGor && nextNotGor) {
-        bdsw->field_0x114 |= 1;
-    } else if (!nextNotGor && bdsw->field_0x114 & 1) {
+        bdsw->flags |= 1;
+    } else if (!nextNotGor && bdsw->flags & 1) {
         badgeShop_bargainGeneration();
         badgeShop_bottakuruGeneration();
-        bdsw->field_0x114 &= 0xFFFE;
+        bdsw->flags &= 0xFFFE;
     }
 }
 

@@ -30,7 +30,7 @@ typedef struct WinCoinWork {
 
 typedef struct WinOneMsgWork {
     s32 state;     // 0x0
-    s32 field_0x4; // 0x4
+    s32 msgType;   // 0x4, picks the message (oneMessageDisp) and the sound
     s32 id;        // 0x8
 } WinOneMsgWork;
 
@@ -196,7 +196,7 @@ void oneMessageDisp(WinMgrEntry* entry) {
         GXColor color;
         u16 width;
 
-        switch (work->field_0x4) {
+        switch (work->msgType) {
         case 0:
             msg = msgSearch("msg_you_gotta_mail\0");
             break;
@@ -218,7 +218,7 @@ USER_FUNC(evt_win_one_message) {
         memset(work, 0, 0xC);
         work->id = winMgrEntry(&one_msg_desc);
         work->state = 0;
-        work->field_0x4 = value;
+        work->msgType = value;
         winMgrSetParam(work->id, work);
     }
     work = (WinOneMsgWork*)event->userdata[0];
@@ -234,7 +234,7 @@ USER_FUNC(evt_win_one_message) {
         break;
     case 2:
         if (keyGetButtonTrg(0) & 0x100) {
-            switch (work->field_0x4) {
+            switch (work->msgType) {
             case 0:
                 psndSFXOn_3D("SFX_MAIL_RECEPTION1", &marioGetPtr()->position);
                 break;

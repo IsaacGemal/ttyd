@@ -1593,15 +1593,15 @@ void mot_bottomless(void) {
             vec2.y += 10.0f;
         }
         mario->position.y = vec2.y;
-        mario->field_0x2AC = 8.0f;
+        mario->bottomlessSpeed = 8.0f;
         mario->multiTimer = (s16)(distABf(f31, f29, mario->position.x, mario->position.z) /
-                                  mario->field_0x2AC);
-        mario->field_0x2B0 = angleABf(mario->position.x, mario->position.z, f31, f29);
+                                  mario->bottomlessSpeed);
+        mario->bottomlessDir = angleABf(mario->position.x, mario->position.z, f31, f29);
     }
     switch (mario->currSubMotionId) {
     case 0:
-        movePos(&mario->position.x, &mario->position.z, mario->field_0x2AC,
-                mario->field_0x2B0);
+        movePos(&mario->position.x, &mario->position.z, mario->bottomlessSpeed,
+                mario->bottomlessDir);
         mario->camFollowPos.x = mario->position.x;
         mario->camFollowPos.z = mario->position.z;
         if (--mario->multiTimer <= 0) {

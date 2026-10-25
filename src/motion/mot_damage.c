@@ -204,9 +204,15 @@ void mot_damage(void) {
 		if (mario->flags & MARIO_FLAG_BG_MODE) {
 			Vec bgTmp = (Vec){ 0.0f, 0.0f, 0.0f };
 
+<<<<<<< HEAD
 			bgTmp.x = mario->fallReturnPos.x;
 			bgTmp.y = mario->fallReturnPos.y;
 			bgTmp.z = mario->fallReturnPos.z;
+=======
+			bgTmp.x = mario->fallReturnPos.x;
+			bgTmp.y = mario->fallReturnPos.y;
+			bgTmp.z = mario->fallReturnPos.z;
+>>>>>>> 95daa1a14 (Event and Mario fields: name urouro, one-message, badge shop and MarioWork words from their readers)
 			target = bgTmp;
 		}
 		spd = target.z;
