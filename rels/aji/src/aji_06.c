@@ -468,7 +468,7 @@ USER_FUNC(yuka_anim_reverse_play) {
             MapEntryAnimData* anim = (MapEntryAnimData*)yuka_anim[0];
             f32 localTime = anim->frame;
             while (localTime < 0.0f) {
-                localTime += anim->data->field_0x8;
+                localTime += anim->data->duration;
             }
             anim->frame = localTime;
         }
