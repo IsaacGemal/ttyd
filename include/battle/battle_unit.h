@@ -571,8 +571,9 @@ typedef struct BattleUnit {
     s8 swallowRate;                              // 0x25
     s8 swallowAttribute;                         // 0x26
     u8 pad_0x27;                                 // 0x27
-    s32 turnOrder;                               // 0x28, this turn's order: the kind's turnOrder plus a random
-                                                 // turnOrderVariance spread; btlseqTurn sorts units by it, highest first
+    s32 turnOrder;                               // 0x28, this turn's order (btlseqTurnFirstProcess: the kind's turnOrder
+                                                 // plus a random turnOrderVariance spread); battleSortPhaseMoveTable
+                                                 // sorts units by it, highest first
     s32 seqPhase;                                // 0x2C, SEQ_PHASE value the unit acts in (battle_seq)
     Vec mHomePosition;                           // 0x30
     Vec mPosition;                               // 0x3C
@@ -676,7 +677,7 @@ typedef struct BattleUnit {
     s32 damageCode;                              // 0x274
     BattleUnitToken_Flags mTokenFlags;           // 0x278
     s32 hitCount;                                // 0x27C, hits this unit has landed (BattleCheckDamage adds 1 per hit,
-                                                 // btlseqMove clears it); weapon special 0x20 takes it off the damage
+                                                 // btlseqMove clears it); BattleCalculateDamage takes it off a weapon special 0x20 hit
     s32 damageDealt;                             // 0x280, damage this unit has dealt in the current act (BattleDamageDirect
                                                  // adds it, btlseqAct clears it); HP Drain and FP Drain recover at most this
     s32 initEventId;                             // 0x284

@@ -110,9 +110,9 @@ typedef struct BattleStageNozzleData {
 // points BattleWorkField180C0.fallObjectData at the current rank's).
 typedef struct BattleStageFallObjectData {
     BattleWeapon field_0x0;        // 0x0, no reader
-    u8 typeWeight[9];              // 0xC0, weight of each fall-object type (_object_fall_wait)
+    u8 typeWeight[9];              // 0xC0, weight of each fall-object type (_object_fall_attack)
     u8 pad_0xC9[3];                // 0xC9
-    BattleWeapon typeWeapon[9];    // 0xCC, the weapon of each fall-object type (_object_fall_wait)
+    BattleWeapon typeWeapon[9];    // 0xCC, the weapon of each fall-object type (_object_fall_attack)
 } BattleStageFallObjectData;
 
 // BattleWork.field_180C0: the stage-object work of battle_stage_object.c (layer events, nozzles, fog, falling
@@ -140,8 +140,8 @@ typedef struct BattleWorkField180C0 {
     u8 pad_0x1CB;                  // 0x1CB
     s32 nozzleTurnEventId[3];      // 0x1CC, event id of each nozzle's _nozzle_turn_event
     s32 nozzleWorkEventId;         // 0x1D8, event id of the nozzle work event (BattleStage_NozzleWorkCheck)
-    s32 fogTurns;                  // 0x1DC, turns the fog has left; BattleFogEndCheck (once per turn, btlseqTurn)
-                                   // counts it down and deletes fogEffect at 0
+    s32 fogTurns;                  // 0x1DC, turns the fog has left; BattleFogEndCheck (run once per turn by
+                                   // btlseqTurnFirstProcess) counts it down and deletes fogEffect at 0
     EffectEntry* fogEffect;        // 0x1E0, the fog effect (effNozleEntry), deleted when the fog ends
     s32 closeWallEventId;          // 0x1E4, event id of _close_wall_event (BattleStage_WallCloseCheck)
     s32 fallFrameEventId;          // 0x1E8, event id of _fall_frame_event (BattleStage_IronFrameFallCheck)
