@@ -83,7 +83,7 @@ void battleCameraMain(void) {
   o6 = 0.0f;
 
   if (wp->cameraWork.mode != 3) {
-    wp->cameraWork.unk84 = 0;
+    wp->cameraWork.moveToTimer = 0;
   }
 
   cam->cameraPos.x = wp->cameraWork.cameraPos.x;
@@ -114,22 +114,22 @@ void battleCameraMain(void) {
     strcpy(name, "\202\251\202\337\202\347\201@\202\251\201[\202\273\202\351\202\252\202\244\202\246\202\311");
     /* fallthrough */
   case 3: {
-    if (wp->cameraWork.unk84 > 0) {
+    if (wp->cameraWork.moveToTimer > 0) {
       s16 save = wp->cameraWork.moveSpeedLv;
 
-      wp->cameraWork.unk84--;
-      vv.x = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
-                         wp->cameraWork.unk8C.x, wp->cameraWork.unk98.x);
-      vv.y = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
-                         wp->cameraWork.unk8C.y, wp->cameraWork.unk98.y);
-      vv.z = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
-                         wp->cameraWork.unk8C.z, wp->cameraWork.unk98.z);
-      t1 = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
-                         wp->cameraWork.unkA4.x, wp->cameraWork.unkB0.x);
-      t2 = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
-                         wp->cameraWork.unkA4.y, wp->cameraWork.unkB0.y);
-      t3 = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
-                         wp->cameraWork.unkA4.z, wp->cameraWork.unkB0.z);
+      wp->cameraWork.moveToTimer--;
+      vv.x = intplGetValue(wp->cameraWork.moveToMode, wp->cameraWork.moveToFrames - wp->cameraWork.moveToTimer, wp->cameraWork.moveToFrames,
+                         wp->cameraWork.moveToPosFrom.x, wp->cameraWork.moveToPosTo.x);
+      vv.y = intplGetValue(wp->cameraWork.moveToMode, wp->cameraWork.moveToFrames - wp->cameraWork.moveToTimer, wp->cameraWork.moveToFrames,
+                         wp->cameraWork.moveToPosFrom.y, wp->cameraWork.moveToPosTo.y);
+      vv.z = intplGetValue(wp->cameraWork.moveToMode, wp->cameraWork.moveToFrames - wp->cameraWork.moveToTimer, wp->cameraWork.moveToFrames,
+                         wp->cameraWork.moveToPosFrom.z, wp->cameraWork.moveToPosTo.z);
+      t1 = intplGetValue(wp->cameraWork.moveToMode, wp->cameraWork.moveToFrames - wp->cameraWork.moveToTimer, wp->cameraWork.moveToFrames,
+                         wp->cameraWork.moveToAtFrom.x, wp->cameraWork.moveToAtTo.x);
+      t2 = intplGetValue(wp->cameraWork.moveToMode, wp->cameraWork.moveToFrames - wp->cameraWork.moveToTimer, wp->cameraWork.moveToFrames,
+                         wp->cameraWork.moveToAtFrom.y, wp->cameraWork.moveToAtTo.y);
+      t3 = intplGetValue(wp->cameraWork.moveToMode, wp->cameraWork.moveToFrames - wp->cameraWork.moveToTimer, wp->cameraWork.moveToFrames,
+                         wp->cameraWork.moveToAtFrom.z, wp->cameraWork.moveToAtTo.z);
       wp->cameraWork.moveSpeedLv = 3;
       wp->cameraWork.zoomSpeedLv = 3;
       battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, vv.x, vv.y, vv.z, t1, t2, t3);
@@ -629,11 +629,11 @@ void battleCameraMain(void) {
     s16 saveZoom = wp->cameraWork.zoomSpeedLv;
     s32 odd;
 
-    odd = (wp->cameraWork.unkDC - wp->cameraWork.unkE4) & 2;
+    odd = (wp->cameraWork.shakeXFrames - wp->cameraWork.shakeXTimer) & 2;
     wp->cameraWork.moveSpeedLv = 3;
     wp->cameraWork.zoomSpeedLv = 3;
-    wp->cameraWork.shakeOffsetX = intplGetValue(wp->cameraWork.unkD4, (wp->cameraWork.unkDC - wp->cameraWork.unkE4) / 2, wp->cameraWork.unkDC / 2, wp->cameraWork.unkEC, wp->cameraWork.unkF0);
-    if (wp->cameraWork.unkE4 > 0) {
+    wp->cameraWork.shakeOffsetX = intplGetValue(wp->cameraWork.shakeXMode, (wp->cameraWork.shakeXFrames - wp->cameraWork.shakeXTimer) / 2, wp->cameraWork.shakeXFrames / 2, wp->cameraWork.shakeXFrom, wp->cameraWork.shakeXTo);
+    if (wp->cameraWork.shakeXTimer > 0) {
       if (odd == 0) {
         battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x + wp->cameraWork.shakeOffsetX,
                            cam->cameraPos.y, cam->cameraPos.z, cam->cameraAt.x + wp->cameraWork.shakeOffsetX, cam->cameraAt.y,
@@ -643,23 +643,23 @@ void battleCameraMain(void) {
                            cam->cameraPos.y, cam->cameraPos.z, cam->cameraAt.x - wp->cameraWork.shakeOffsetX, cam->cameraAt.y,
                            cam->cameraAt.z);
       }
-    } else if (wp->cameraWork.unkE4 == 0) {
+    } else if (wp->cameraWork.shakeXTimer == 0) {
       wp->cameraWork.flags &= ~1;
     }
     wp->cameraWork.moveSpeedLv = saveMove;
     wp->cameraWork.zoomSpeedLv = saveZoom;
-    wp->cameraWork.unkE4--;
+    wp->cameraWork.shakeXTimer--;
   }
   if (wp->cameraWork.flags & 2) {
     s16 saveMove = wp->cameraWork.moveSpeedLv;
     s16 saveZoom = wp->cameraWork.zoomSpeedLv;
     s32 odd;
 
-    odd = (wp->cameraWork.unkE0 - wp->cameraWork.unkE8) & 2;
+    odd = (wp->cameraWork.shakeYFrames - wp->cameraWork.shakeYTimer) & 2;
     wp->cameraWork.moveSpeedLv = 3;
     wp->cameraWork.zoomSpeedLv = 3;
-    wp->cameraWork.shakeOffsetY = intplGetValue(wp->cameraWork.unkD8, (wp->cameraWork.unkE0 - wp->cameraWork.unkE8) / 2, wp->cameraWork.unkE0 / 2, wp->cameraWork.unkF4, wp->cameraWork.unkF8);
-    if (wp->cameraWork.unkE8 > 0) {
+    wp->cameraWork.shakeOffsetY = intplGetValue(wp->cameraWork.shakeYMode, (wp->cameraWork.shakeYFrames - wp->cameraWork.shakeYTimer) / 2, wp->cameraWork.shakeYFrames / 2, wp->cameraWork.shakeYFrom, wp->cameraWork.shakeYTo);
+    if (wp->cameraWork.shakeYTimer > 0) {
       if (odd == 0) {
         battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x, cam->cameraPos.y + wp->cameraWork.shakeOffsetY,
                            cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.y + wp->cameraWork.shakeOffsetY, cam->cameraAt.z);
@@ -667,12 +667,12 @@ void battleCameraMain(void) {
         battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x, cam->cameraPos.y - wp->cameraWork.shakeOffsetY,
                            cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.y - wp->cameraWork.shakeOffsetY, cam->cameraAt.z);
       }
-    } else if (wp->cameraWork.unkE8 == 0) {
+    } else if (wp->cameraWork.shakeYTimer == 0) {
       wp->cameraWork.flags &= ~2;
     }
     wp->cameraWork.moveSpeedLv = saveMove;
     wp->cameraWork.zoomSpeedLv = saveZoom;
-    wp->cameraWork.unkE8--;
+    wp->cameraWork.shakeYTimer--;
   }
 }
 
@@ -1111,21 +1111,21 @@ void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,
   if (id < camera->priLimit) {
     return;
   }
-  camera->unk8C.x = cam->cameraPos.x;
-  camera->unk8C.y = cam->cameraPos.y;
-  camera->unk8C.z = cam->cameraPos.z;
-  camera->unk98.x = f1;
-  camera->unk98.y = f2;
-  camera->unk98.z = f3;
-  camera->unkA4.x = cam->cameraAt.x;
-  camera->unkA4.y = cam->cameraAt.y;
-  camera->unkA4.z = cam->cameraAt.z;
-  camera->unkB0.x = f4;
-  camera->unkB0.y = f5;
-  camera->unkB0.z = f6;
-  camera->unk84 = a;
-  camera->unk88 = a;
-  camera->unk80 = b;
+  camera->moveToPosFrom.x = cam->cameraPos.x;
+  camera->moveToPosFrom.y = cam->cameraPos.y;
+  camera->moveToPosFrom.z = cam->cameraPos.z;
+  camera->moveToPosTo.x = f1;
+  camera->moveToPosTo.y = f2;
+  camera->moveToPosTo.z = f3;
+  camera->moveToAtFrom.x = cam->cameraAt.x;
+  camera->moveToAtFrom.y = cam->cameraAt.y;
+  camera->moveToAtFrom.z = cam->cameraAt.z;
+  camera->moveToAtTo.x = f4;
+  camera->moveToAtTo.y = f5;
+  camera->moveToAtTo.z = f6;
+  camera->moveToTimer = a;
+  camera->moveToFrames = a;
+  camera->moveToMode = b;
 }
 
 USER_FUNC(evt_btl_camera_set_moveto) {
@@ -1152,11 +1152,11 @@ void btl_camera_shake_w(s32 id, s32 a, s32 b, f32 x, f32 y) {
     return;
   }
   camera->flags |= 0x1;
-  camera->unkEC = x;
-  camera->unkF0 = y;
-  camera->unkD4 = b;
-  camera->unkDC = a;
-  camera->unkE4 = a;
+  camera->shakeXFrom = x;
+  camera->shakeXTo = y;
+  camera->shakeXMode = b;
+  camera->shakeXFrames = a;
+  camera->shakeXTimer = a;
   if (!(camera->flags & 0x40)) {
     padRumbleOn(0);
   }
@@ -1182,11 +1182,11 @@ void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y) {
     return;
   }
   camera->flags |= 0x2;
-  camera->unkF4 = x;
-  camera->unkF8 = y;
-  camera->unkD8 = b;
-  camera->unkE0 = a;
-  camera->unkE8 = a;
+  camera->shakeYFrom = x;
+  camera->shakeYTo = y;
+  camera->shakeYMode = b;
+  camera->shakeYFrames = a;
+  camera->shakeYTimer = a;
   if (!(camera->flags & 0x40)) {
     padRumbleOn(0);
   }

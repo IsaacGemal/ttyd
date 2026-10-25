@@ -91,11 +91,13 @@ struct BattleAlliance {
     u32 clearConditionMet; // 0x4
 };
 
+// BattleWork.partyInfo[partner]: BtlUnit_SetParamToPouch saves these from the partner's BattleUnit and
+// BtlUnit_SetParamFromPouch restores them, next to the partner's HP in the pouch.
 typedef struct BattleWorkPartyInfo {
-    f32 field_0;              // 0x0
-    u8 field_4[0x1E];         // 0x4
-    u8 field_22[0x24 - 0x22]; // 0x22
-    s32 field_24;             // 0x24
+    f32 sizeMultiplier;       // 0x0, BattleUnit.mSizeMultiplier
+    u8 statusBlock[0x1E];     // 0x4, BattleUnit's status turns and strengths, mSleepTurns to mInstantKillStrength
+    u8 pad_0x22[0x24 - 0x22]; // 0x22
+    s32 statusFlags;          // 0x24, BattleUnit.mStatusFlags
 } BattleWorkPartyInfo;
 
 // One rank's block of battle_stage_nozzle_data (four 0x310-byte blocks, one per stage rank; BattleStageObjectInit

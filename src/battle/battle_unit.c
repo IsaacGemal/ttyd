@@ -30,7 +30,7 @@ u32 _enemy_can_use_item_table[] = {
     0x00000000,
 };
 
-// 30-byte status block copied between BattleWorkPartyInfo::field_4 and BattleUnit::mSleepTurns.
+// 30-byte status block copied between BattleWorkPartyInfo.statusBlock and BattleUnit.mSleepTurns.
 #ifdef MUST_MATCH
 // For the struct-copy below: MWCC emits the original's lwzu/stwu copy loop for a struct
 // assignment, but a plain memcpy of the 30-byte blob compiles to a call.
@@ -1616,12 +1616,12 @@ void BtlUnit_SetParamFromPouch(BattleUnit* unit) {
 #endif
         BtlUnit_ReviseHpFp(unit);
         info = &wp->partyInfo[unit->currentKind - TYPE_PARTNER_MIN];
-        unit->mSizeMultiplier = info->field_0;
-        unit->mStatusFlags = info->field_24;
+        unit->mSizeMultiplier = info->sizeMultiplier;
+        unit->mStatusFlags = info->statusFlags;
 #ifdef MUST_MATCH
-        *(UnitStatusBlock*)&unit->mSleepTurns = *(UnitStatusBlock*)info->field_4;
+        *(UnitStatusBlock*)&unit->mSleepTurns = *(UnitStatusBlock*)info->statusBlock;
 #else
-        memcpy(&unit->mSleepTurns, info->field_4, sizeof(info->field_4));
+        memcpy(&unit->mSleepTurns, info->statusBlock, sizeof(info->statusBlock));
 #endif
         if (unit->currentHp <= 0) {
             BtlUnit_SetStatus(unit, STATUS_INSTANT_KILL, 1, 1);
@@ -1679,12 +1679,12 @@ void BtlUnit_SetParamToPouch(BattleUnit* unit) {
         party = BattleTransPartyId(unit->currentKind);
         *(s16*)((u8*)pouch + party * 0xE + 6) = unit->currentHp;
         info = &wp->partyInfo[unit->currentKind - TYPE_PARTNER_MIN];
-        info->field_0 = unit->mSizeMultiplier;
-        info->field_24 = unit->mStatusFlags;
+        info->sizeMultiplier = unit->mSizeMultiplier;
+        info->statusFlags = unit->mStatusFlags;
 #ifdef MUST_MATCH
-        *(UnitStatusBlock*)info->field_4 = *(UnitStatusBlock*)&unit->mSleepTurns;
+        *(UnitStatusBlock*)info->statusBlock = *(UnitStatusBlock*)&unit->mSleepTurns;
 #else
-        memcpy(info->field_4, &unit->mSleepTurns, sizeof(info->field_4));
+        memcpy(info->statusBlock, &unit->mSleepTurns, sizeof(info->statusBlock));
 #endif
     }
 }
