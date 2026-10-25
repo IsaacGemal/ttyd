@@ -8064,10 +8064,10 @@ src/effect/**, src/window/**, src/manager/** and src/win*/ (there is no src/win*
 removed by typing the thing honestly, never by moving the cast; no new MUST_MATCH, pragmas, gotos or PAD_STACK; data
 definitions out of scope. Parallel branches: fsrcmisc (event/party/seq/mario/driver), funk (placeholder spellings).
 
-- **Counts** (`tools/cleanup_index.py`, d0f4bd7d -> this branch, same script). These directories, prim / struct /
+- **Counts** (`tools/cleanup_index.py`, 4bf43995 -> this branch, same script). These directories, prim / struct /
   deref / raw: effect 36/127/75/12 -> 35/110/74/7 (250 -> 226), window 93/24/6/4 -> 88/13/6/4 (127 -> 111), manager
-  46/22/13/0 -> 45/18/13/0 (81 -> 76); 458 -> 413 sites. Index **11.974 -> 11.902** per kLOC (8364 -> 8313 weighted):
-  prim_ptr_cast 1880 -> 1873, struct_ptr_cast 1224 -> 1192, deref_cast 483 -> 482, raw_offset 145 -> 140; every other
+  46/22/13/0 -> 45/18/13/0 (81 -> 76); 458 -> 413 sites. Index **11.568 -> 11.495** per kLOC (8080 -> 8029 weighted):
+  prim_ptr_cast 1880 -> 1873, struct_ptr_cast 1223 -> 1191, deref_cast 487 -> 486, raw_offset 117 -> 112; every other
   category unchanged.
 - **One record type for an effect's userdata array.** eff_gareki_n64 and eff_akari_pose_n64 allocate effect->count
   equal records and step one pointer over them; the head and the parts were two structs, so every part access cast
