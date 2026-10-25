@@ -5251,9 +5251,9 @@ void psndInit(void) {
     psnd.envFade[1].fadeState = 0;
     psnd.direction = 0.0f;
     psnd.sfxSerial = 0;
-    psnd.unk54 = 0;
+    psnd.repeatDelay = 0;
     psnd.flag = 0;
-    psnd.unk5C = 0;
+    psnd.lockTimer = 0;
     psnd.envLevel = 0x64;
     psnd.sfxLevel = 0x64;
     psnd.bgmLevel = 0x64;
@@ -5264,8 +5264,8 @@ void psndInit(void) {
 
 void psndMain(void) {
     if (init_f) {
-        if (psnd.unk5C) {
-            psnd.unk5C--;
+        if (psnd.lockTimer) {
+            psnd.lockTimer--;
         }
         psndBGMMain();
         psndENVMain();
@@ -6256,7 +6256,7 @@ void psndSFXMain(void) {
         }
     }
     psnd.unk5B = numSounds;
-    psnd.unk54 = 0;
+    psnd.repeatDelay = 0;
 }
 
 // The first scan loop reads the id through two views of the slot (MUST_MATCH), so the frontend does not merge the
@@ -6283,10 +6283,10 @@ s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 delay, Vec* position, u32 a6, s32 
         return -1;
     }
     if (sfxid == 0x5B || sfxid == 0x8CA || (u32)(sfxid - 0x1BE) <= 1 || sfxid == 0x205) {
-        if (psnd.unk5C != 0) {
+        if (psnd.lockTimer != 0) {
             return -1;
         }
-        psnd.unk5C = 6;
+        psnd.lockTimer = 6;
     }
     if (evtGetValue(0, 0xF5DE0180) <= 2 && sfxid == 0x365) {
         return -1;
@@ -6301,8 +6301,8 @@ s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 delay, Vec* position, u32 a6, s32 
 #else
         if (sfx->sfxNo != -1 && (sfx->sfxNo & 0x1FFF) == sfxid && (sfx->flags & 0x100) && extraDelay == 0) {
 #endif
-            psnd.unk54 += 8;
-            extraDelay = psnd.unk54;
+            psnd.repeatDelay += 8;
+            extraDelay = psnd.repeatDelay;
         }
         if (sfx->sfxNo == -1) {
             slot = sfx;

@@ -120,13 +120,13 @@ typedef struct PaperSoundWork {
     char mapName[0x10];           // 0x40, psndMapChange: the reverb is reset when the map's name changes
     u16 sfxSerial;                // 0x50, counts __psndSFXOn's effects; each id carries it in bits 8-23
     u16 reverb;                   // 0x52, psndSetReverb; added to each effect's reverb
-    u16 unk54;                    // 0x54
+    u16 repeatDelay;              // 0x54, __psndSFXOn: grows by 8 when an effect is queued again in the same frame, delaying the repeat; psndSFXMain clears it
     u16 flag;                     // 0x56, psndSetFlag/psndClearFlag/psndGetFlag
     s8 bgmLevel;                  // 0x58, percent applied to every BGM volume (psndBGMMain), eases towards 100 or 65
     s8 sfxLevel;                  // 0x59, percent applied to positioned effects' volumes (psndSFXMain)
     s8 envLevel;                  // 0x5A, percent applied to env volumes (psndENVGetVol)
     u8 unk5B;                     // 0x5B
-    s8 unk5C;                     // 0x5C
+    s8 lockTimer;                 // 0x5C, __psndSFXOn: while nonzero five effect ids are refused (set to 6, counted down by psndMain)
     u8 unk5D[0x60 - 0x5D];        // 0x5D
 } PaperSoundWork;
 

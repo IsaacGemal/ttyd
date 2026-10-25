@@ -197,7 +197,7 @@ void SoundSetOutputMode(SND_OUTPUTMODE mode);
 void SoundOpenCover(void);
 void SoundCloseCover(void);
 
-void SoundSongPlayCh(s32 id, u32 mask);
+void SoundSongPlayCh(s32 chan, u32 songData);
 void SoundSongContinueCh(s32 chan);
 void SoundSongStopCh(s32 chan);
 void SoundSongFadeoutCh(s32 chan);
