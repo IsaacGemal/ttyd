@@ -134,10 +134,10 @@ static EVT_BEGIN(baba_talk)
 EVT_END()
 
 static NpcSetupInfo npcEnt[] = {
-    {"シュリョー", 0x00000600, 0x00000000, (void*)syuryo_init},
-    {"クッパ", 0x00000600, 0x00000000, (void*)koopa_init},
-    {"ババ", 0x00000600, 0x00000000, (void*)baba_init},
-    {"ピーチ姫", 0x00000000, 0x00000000, (void*)npc_init_evt},
+    {"シュリョー", 0x00000600, 0x00000000, syuryo_init},
+    {"クッパ", 0x00000600, 0x00000000, koopa_init},
+    {"ババ", 0x00000600, 0x00000000, baba_init},
+    {"ピーチ姫", 0x00000000, 0x00000000, npc_init_evt},
     {NULL},
 };
 

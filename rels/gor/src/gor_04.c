@@ -1192,7 +1192,7 @@ static EVT_BEGIN(luigi_talk)
 EVT_END()
 
 static NpcSetupInfo luigiEnt[2] = {
-    {"ルイージ", 0x00080600, 0, (void*)&luigi_init, NULL, (void*)&luigi_talk},
+    {"ルイージ", 0x00080600, 0, luigi_init, NULL, luigi_talk},
     {NULL},
 };
 
@@ -1221,17 +1221,17 @@ EVT_BEGIN(scream_talk)
 EVT_END()
 
 NpcSetupInfo screamEnt[2] = {
-    {"ス・クリーミ", 0x00080600, 0, (void*)&scream_init, NULL, (void*)&scream_talk},
+    {"ス・クリーミ", 0x00080600, 0, scream_init, NULL, scream_talk},
     {NULL},
 };
 
 static NpcSetupInfo npcEnt[7] = {
-    {"飛行船係員", 0x00080600, 0, (void*)&hikosenkakari_init, NULL, (void*)&hikosenkakari_talk},
-    {"駅員", 0x00080600, 0, (void*)&ekiin_init, NULL, (void*)&ekiin_talk},
-    {"ジュゲムＡ", 0x00080600, 0, (void*)&jugemu_a_init, NULL, (void*)&jugemu_a_talk},
-    {"キノピオ女Ｂ", 0x00080600, 0, (void*)&kinopiko_b_init, NULL, (void*)&kinopiko_b_talk},
-    {"ババ", 0x00000600, 0, (void*)&baba_init, NULL, NULL},
-    {"飛クッパ", 0x00000600, 0, (void*)&hkoopa_init, NULL, NULL},
+    {"飛行船係員", 0x00080600, 0, hikosenkakari_init, NULL, hikosenkakari_talk},
+    {"駅員", 0x00080600, 0, ekiin_init, NULL, ekiin_talk},
+    {"ジュゲムＡ", 0x00080600, 0, jugemu_a_init, NULL, jugemu_a_talk},
+    {"キノピオ女Ｂ", 0x00080600, 0, kinopiko_b_init, NULL, kinopiko_b_talk},
+    {"ババ", 0x00000600, 0, baba_init, NULL, NULL},
+    {"飛クッパ", 0x00000600, 0, hkoopa_init, NULL, NULL},
     {NULL},
 };
 

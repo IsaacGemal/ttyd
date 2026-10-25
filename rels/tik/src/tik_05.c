@@ -2027,12 +2027,12 @@ static USER_FUNC(cam_kaiten_init) {
     f32 dz;
     f32 dist;
 
-    ckp0 = _mapAlloc(0x20);
-    memset(ckp0, 0, 0x20);
-    ckp1 = _mapAlloc(0x20);
-    memset(ckp1, 0, 0x20);
-    ckpw = _mapAlloc(0x20);
-    memset(ckp1, 0, 0x20);
+    ckp0 = _mapAlloc(sizeof(CamKaiten));
+    memset(ckp0, 0, sizeof(CamKaiten));
+    ckp1 = _mapAlloc(sizeof(CamKaiten));
+    memset(ckp1, 0, sizeof(CamKaiten));
+    ckpw = _mapAlloc(sizeof(CamKaiten));
+    memset(ckp1, 0, sizeof(CamKaiten));
 
     ckp0->pos.x = evtGetFloat(event, args[0]);
     ckp0->pos.y = evtGetFloat(event, args[1]);

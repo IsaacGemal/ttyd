@@ -773,7 +773,7 @@ static EVT_BEGIN(talk_unten)
 EVT_END()
 
 static NpcSetupInfo npc_data[2] = {
-    {"運転手", 0x40020610, 0, (void*)&init_unten, (void*)&regu_unten, (void*)&talk_unten},
+    {"運転手", 0x40020610, 0, init_unten, regu_unten, talk_unten},
     {NULL},
 };
 

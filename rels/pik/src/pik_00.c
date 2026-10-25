@@ -1376,12 +1376,12 @@ static EVT_BEGIN(talk_sarary)
 EVT_END()
 
 static NpcSetupInfo npc_data[7] = {
-    {"駅員", 0x40000600, 0, (void*)&init_ekiin, NULL, (void*)&talk_ekiin},
-    {"ナリキンママ", 0x40000600, 0, (void*)&init_mama, NULL, (void*)&talk_mama},
-    {"ナリキンパパ", 0x40000600, 0, (void*)&init_papa, NULL, (void*)&talk_papa},
-    {"コナリキン", 0x40000600, 0, (void*)&init_konari, NULL, (void*)&talk_konari},
-    {"マダム", 0x40000600, 0, (void*)&init_madam, NULL, (void*)&talk_madam},
-    {"サラリーマン", 0x40000600, 0, (void*)&init_sarary, NULL, (void*)&talk_sarary},
+    {"駅員", 0x40000600, 0, init_ekiin, NULL, talk_ekiin},
+    {"ナリキンママ", 0x40000600, 0, init_mama, NULL, talk_mama},
+    {"ナリキンパパ", 0x40000600, 0, init_papa, NULL, talk_papa},
+    {"コナリキン", 0x40000600, 0, init_konari, NULL, talk_konari},
+    {"マダム", 0x40000600, 0, init_madam, NULL, talk_madam},
+    {"サラリーマン", 0x40000600, 0, init_sarary, NULL, talk_sarary},
     {NULL},
 };
 

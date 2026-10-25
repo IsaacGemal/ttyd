@@ -55,7 +55,7 @@ static BeroEntry bero_entry_data[] = {
     {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "moo_05", "e_bero", 1, 1},
     {"dokan_1", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, NULL, "dokan_2", 1, 1},
     {"dokan_2", 0x1002, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, NULL, "dokan_1", 1, 1},
-    {"n_bero", 0x1003, 0, 0x4E20, 100000, 0, 0, -1, (s32*)&n_bero_in, 5, (s32*)&n_bero_out, "aji_00", "w_bero", 1, 1},
+    {"n_bero", 0x1003, 0, 0x4E20, 100000, 0, 0, -1, n_bero_in, 5, n_bero_out, "aji_00", "w_bero", 1, 1},
     {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "moo_06", "w_bero", 1, 1},
     {NULL},
 };
