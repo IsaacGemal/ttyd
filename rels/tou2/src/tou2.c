@@ -37,7 +37,7 @@ typedef struct RankEntry {
     s32 id;
     union {
         s16 score;
-        u8 field_0x8[2]; // rankingInit/rankingExit move it to and from GSW bytes one at a time
+        u8 scoreBytes[2]; // rankingInit/rankingExit move it to and from GSW bytes one at a time
     };
     // pad 2 bytes
 } RankEntry;
@@ -296,7 +296,7 @@ static void rankingInit(void) {
         if (swGet(2529)) {
             int j;
             for (j = 0; j < 2; j++) {
-                entry->field_0x8[j] = swByteGet(2 * entry->id + 519 + j);
+                entry->scoreBytes[j] = swByteGet(2 * entry->id + 519 + j);
             }
         } else {
             entry->score = fighterDt[entry->id].defaultScore;
@@ -354,7 +354,7 @@ static void rankingExit(void) {
             swClear(e->id + 0x9a1);
         }
         for (j = 0; j < 2; j++) {
-            swByteSet(e->id * 2 + 0x207 + j, e->field_0x8[j]);
+            swByteSet(e->id * 2 + 0x207 + j, e->scoreBytes[j]);
         }
     }
     _mapFree(rank_wp->entries);
