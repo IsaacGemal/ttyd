@@ -224,9 +224,9 @@ extern GaugeTableEntry _table_5[5];
 extern GaugeTableEntry _table_6[5];
 
 
-// The work area is reached through BattleActions.field_0x2BC so MWCC materialises it in its own register.
+// The work area is reached through BattleActions.acWork so MWCC materialises it in its own register.
 f32 _GetGaugeDecValue(void) {
-	// `ac` + field_0x2BC keeps the work area in its own base register (r6) instead of
+	// `ac` + acWork keeps the work area in its own base register (r6) instead of
 	// folding it into the BattleWork base (see ac_monosiri_target.c).
 	BattleActions* ac = &_battleWorkPointer->actionCommands;
 	AirGaugeDecWork* dec = (AirGaugeDecWork*)&ac->acWork[0];

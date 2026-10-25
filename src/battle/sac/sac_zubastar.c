@@ -1203,7 +1203,7 @@ BattleWeapon weapon_zubastar = {
     /* targetClassFlags */ 0x02101260,
     /* targetPropertyFlags */ 0x20000000,
     /* element */ 0,
-    /* field_0x6D */ 0,
+    /* damagePattern */ 0,
     /* actionLevel */ 3,
     /* field_0x6F */ 2,
     /* acHelpMsg */ str_msg_sac_8,

@@ -20,7 +20,7 @@ __declspec(section ".sdata2") s32 dat_8041e7f0 = -1;
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// RepeatedlyLv's action-command work area at BattleWork+0x1F4C (inside BattleActions.field_0x2BC).
+// RepeatedlyLv's action-command work area at BattleWork+0x1F4C (inside BattleActions.acWork).
 typedef struct RepeatedlyLvWork {
     s32 curMask;     // 0x00, button mask being checked; modes 0xB-0xF alternate it between maskA and maskB by presses
     s32 maskA;       // 0x04

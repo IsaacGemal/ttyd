@@ -29,7 +29,7 @@ __declspec(section ".sdata2") s32 dat_80421c20 = -1;
 const s32 dat_80421c20 = -1;
 #endif
 
-// Work area at BattleWork+0x1F4C (inside BattleActions.field_0x2BC). No header declares it.
+// Work area at BattleWork+0x1F4C (inside BattleActions.acWork). No header declares it.
 typedef struct PowerGaugeLv2DecWork {
     s32 frame;        // 0x00
     s32 frameLimit;   // 0x04

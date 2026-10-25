@@ -23,7 +23,7 @@ const s32 dat_80421588 = -1;
 #endif
 
 // Runtime work area of the power gauge action command, at BattleWork+0x1F4C (inside
-// BattleActions.field_0x2BC). No header declares it yet.
+// BattleActions.acWork). No header declares it yet.
 typedef struct PowerGaugeDecWork {
     s32 frame;        // 0x0
     f32 gaugePercent; // 0x4

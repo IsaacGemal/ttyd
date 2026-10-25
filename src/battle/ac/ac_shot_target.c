@@ -12,7 +12,7 @@
 #define fabsf(x) __fabsf(x)
 #include <string.h>
 
-// Per-action-command work area at BattleWork + 0x1F4C (inside BattleActions.field_0x2BC).
+// Per-action-command work area at BattleWork + 0x1F4C (inside BattleActions.acWork).
 // No header declares it: the exact fields are only used by this file.
 typedef struct ShotTargetWork {
     s32 countdown;      // 0x00, frames left in the shot, loaded from acParams[2]

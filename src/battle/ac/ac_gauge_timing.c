@@ -47,7 +47,7 @@ const s32 dat_80421870 = -1;
 #define float_180_804218d0 180.0f
 #define float_270_804218d4 270.0f
 
-// GaugeTiming work area at BattleWork+0x1F4C (inside BattleActions.field_0x2BC). No header declares it.
+// GaugeTiming work area at BattleWork+0x1F4C (inside BattleActions.acWork). No header declares it.
 typedef struct GaugeTimingWork {
     s32 frame;      // 0x00, frames since the state started
     f32 gauge;      // 0x04, needle position 0..100 (battleAcDisp reads it / 100 as the value)
