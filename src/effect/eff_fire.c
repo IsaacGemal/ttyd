@@ -106,8 +106,8 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 	data->scaleY = 1.0f;
 	data->sparkTimer = 0;
 	data->sparkInterval = rand() % 30 + 30;
-	data->colorIndex1 = 0;
-	data->colorIndex2 = 0;
+	data->frame = 0;
+	data->nextFrame = 0;
 	data->field_0x4C = 0.0f;
 	data->field_0x50 = 0.0f;
 	data->field_0x54 = 0.0f;
@@ -188,13 +188,13 @@ void effFireMain(EffectEntry* effect) {
 	case 6:
 	case 7:
 	case 8:
-		data->colorIndex1 = (s32)((f32)data->frameMax * (f32)data->counter / (f32)data->counterMax);
-		data->colorIndex2 = (s32)((f32)data->frameMax * (f32)(data->counter + 1) / (f32)data->counterMax);
-		if (data->colorIndex1 >= data->frameMax) {
-			data->colorIndex1 = 0;
+		data->frame = (s32)((f32)data->frameMax * (f32)data->counter / (f32)data->counterMax);
+		data->nextFrame = (s32)((f32)data->frameMax * (f32)(data->counter + 1) / (f32)data->counterMax);
+		if (data->frame >= data->frameMax) {
+			data->frame = 0;
 		}
-		if (data->colorIndex2 >= data->frameMax) {
-			data->colorIndex2 = 0;
+		if (data->nextFrame >= data->frameMax) {
+			data->nextFrame = 0;
 		}
 		data->frameBlend = 0x80;
 		break;
@@ -499,12 +499,12 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
 	PSMTXScale(scaleMtx, 1.0f / (f32)data->frameMax, 1.0f, 1.0f);
-	PSMTXTrans(transMtx, (f32)data->colorIndex1, 0.0f, 0.0f);
+	PSMTXTrans(transMtx, (f32)data->frame, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
 	GXLoadTexMtxImm(transMtx, GX_TEXMTX0, GX_MTX2x4);
 
 	PSMTXScale(scaleMtx, 1.0f / (f32)data->frameMax, 1.0f, 1.0f);
-	PSMTXTrans(transMtx, (f32)data->colorIndex2, 0.0f, 0.0f);
+	PSMTXTrans(transMtx, (f32)data->nextFrame, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
 	GXLoadTexMtxImm(transMtx, GX_TEXMTX1, GX_MTX2x4);
 
@@ -697,12 +697,12 @@ void effFireDisp3(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
 	PSMTXScale(scaleMtx, 1.0f / (f32)data->frameMax, 1.0f, 1.0f);
-	PSMTXTrans(transMtx, (f32)data->colorIndex1, 0.0f, 0.0f);
+	PSMTXTrans(transMtx, (f32)data->frame, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
 	GXLoadTexMtxImm(transMtx, GX_TEXMTX0, GX_MTX2x4);
 
 	PSMTXScale(scaleMtx, 1.0f / (f32)data->frameMax, 1.0f, 1.0f);
-	PSMTXTrans(transMtx, (f32)data->colorIndex2, 0.0f, 0.0f);
+	PSMTXTrans(transMtx, (f32)data->nextFrame, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
 	GXLoadTexMtxImm(transMtx, GX_TEXMTX1, GX_MTX2x4);
 

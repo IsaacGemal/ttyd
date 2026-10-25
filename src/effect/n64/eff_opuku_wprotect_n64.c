@@ -123,9 +123,9 @@ EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 		data->lifetime = duration;
 	}
 	data->alpha = 0;
-	data->x = x;
-	data->y = y;
-	data->z = z;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
 	data->scale = scale;
 	data->colorR = 0x2F;
 	data->colorG = 0x7F;
@@ -142,7 +142,7 @@ EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 // 0x98
 void effOpukuWprotectMain(EffectEntry* effect) {
 	effOpukuWprotectData* data = effect->userdata;
-	Vec pos = initializeVec((Vec*)&data->x);
+	Vec pos = initializeVec(&data->position);
 	s32 type = data->type;
 	s32 f14;
 	s32 i;
@@ -173,8 +173,8 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 
 	if (data->lifetime < 0) {
 		if (type == 1) {
-			effWaterDamageN64Entry(0, 30, data->x, 24.0f + data->y, data->z, 2.0f);
-			effWaterDamageN64Entry(1, 30, data->x, 24.0f + data->y, data->z, 2.0f);
+			effWaterDamageN64Entry(0, 30, data->position.x, 24.0f + data->position.y, data->position.z, 2.0f);
+			effWaterDamageN64Entry(1, 30, data->position.x, 24.0f + data->position.y, data->position.z, 2.0f);
 		}
 		effDelete(effect);
 		return;
@@ -272,7 +272,7 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	f32 t2;
 
 	alpha = data->alpha;
-	PSMTXTrans(trans, data->x, data->y, data->z);
+	PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
 	PSMTXConcat(cam->view, trans, trans);
 
 	p = smartAlloc(0x460, HEAP_EFFECT)->address;

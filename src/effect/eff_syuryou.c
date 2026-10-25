@@ -17,9 +17,9 @@ typedef struct SyuryouData {
 	Vec position;   // 0x04
 	f32 scale;      // 0x10
 	s32 poseId;     // 0x14
-	s32 color;      // 0x18
+	s32 alpha;      // 0x18, the pose material colour's alpha
 	s32 timer;      // 0x1C
-	s32 field_0x20; // 0x20
+	u8 pad_0x20[4]; // 0x20
 } SyuryouData;
 
 EffectEntry* effSyuryouEntry(s32 type, s32 duration, f32 x, f32 y, f32 z) {
@@ -38,14 +38,14 @@ EffectEntry* effSyuryouEntry(s32 type, s32 duration, f32 x, f32 y, f32 z) {
 	data->position.y = y;
 	data->position.z = z;
 	data->scale = 1.0f;
-	data->color = 0xFF;
+	data->alpha = 0xFF;
 	if (duration <= 0) {
 		data->timer = 1000;
 	} else {
 		data->timer = duration;
 	}
 	/* Retail stores 0xff here a second time; it is required to match. */
-	data->color = 0xFF;
+	data->alpha = 0xFF;
 	data->poseId = -1;
 	return effect;
 }
@@ -99,7 +99,7 @@ void effSyuryouMain(EffectEntry* effect) {
 		data->timer--;
 	}
 	if (data->timer < 0x20) {
-		data->color = data->timer * 8;
+		data->alpha = data->timer * 8;
 	}
 	if (data->timer < 0) {
 		if (data->poseId != -1) {
@@ -125,7 +125,7 @@ void effSyuryouDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx, rotMtx, mtx);
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		animPoseSetMaterialFlagOn(data->poseId, 0x40);
-		animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, data->color });
+		animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 		animPoseMain(data->poseId);
 		animPoseDrawMtx(data->poseId, mtx, 1, 0.0f, 10.0f);
 		animPoseDrawMtx(data->poseId, mtx, 2, 0.0f, 10.0f);

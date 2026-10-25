@@ -11,9 +11,7 @@ typedef struct effFireSmokeData {
 	s32 field_0x0;    // 0x0
 	Vec position;     // 0x4
 	Vec velocity;     // 0x10
-	s32 field_0x1C;   // 0x1C
-	s32 field_0x20;   // 0x20
-	f32 field_0x24;   // 0x24
+	u8 pad_0x1C[0xC]; // 0x1C
 	f32 angle;        // 0x28
 	f32 angleVel;     // 0x2C
 	GXColor color;    // 0x30
@@ -31,11 +29,11 @@ typedef struct effFireData {
 	s32 sparkTimer;    // 0x1C
 	s32 sparkInterval; // 0x20
 	f32 scale;         // 0x24
-	s32 colorIndex1;   // 0x28
-	s32 colorIndex2;   // 0x2C
+	s32 frame;         // 0x28, texture-strip frame (frameMax frames across the texture), TEXMTX0 offset
+	s32 nextFrame;     // 0x2C, the frame after it, TEXMTX1 offset
 	s32 counterMax;    // 0x30
 	s32 frameMax;      // 0x34
-	s32 frameBlend;    // 0x38: Disp2's crossfade weight from the colorIndex1 frame's alpha to the colorIndex2 frame's (TEVREG2 alpha; 0x80 = halfway)
+	s32 frameBlend;    // 0x38: Disp2's crossfade weight from frame's alpha to nextFrame's (TEVREG2 alpha; 0x80 = halfway)
 	s32 scaleIndex;    // 0x3C
 	s32 scaleCounter;  // 0x40
 	f32 curScale;      // 0x44

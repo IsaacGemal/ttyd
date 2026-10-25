@@ -1078,7 +1078,7 @@ typedef struct holographyVtxData {
 	u8 frames[55][0x134];
 } holographyVtxData;
 
-EffectEntry* effHolographyN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
+EffectEntry* effHolographyN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	EffHolographyData* data;
 
@@ -1090,20 +1090,20 @@ EffectEntry* effHolographyN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32
 	effect->callback = effHolographyMain;
 	effect->flags |= 2;
 	data->type = type;
-	data->field_0x14 = 0;
-	if (count <= 0) {
-		data->field_0x10 = 1000;
+	data->frame = 0;
+	if (duration <= 0) {
+		data->lifetime = 1000;
 	} else {
-		data->field_0x10 = count;
+		data->lifetime = duration;
 	}
-	data->field_0x24 = 0;
+	data->alpha = 0;
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x28 = 0.1f * scale;
-	data->field_0x18 = 70;
-	data->field_0x1C = 180;
-	data->field_0x20 = 120;
+	data->scale = 0.1f * scale;
+	data->colorR = 70;
+	data->colorG = 180;
+	data->colorB = 120;
 	return effect;
 }
 
@@ -1122,28 +1122,28 @@ void effHolographyMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		data->field_0x10 = 16;
+		data->lifetime = 16;
 	}
 
-	timer = data->field_0x10;
+	timer = data->lifetime;
 	if (timer < 1000) {
-		data->field_0x10 = timer - 1;
+		data->lifetime = timer - 1;
 	}
-	data->field_0x14++;
-	timer = data->field_0x10;
+	data->frame++;
+	timer = data->lifetime;
 
 	if (timer < 0) {
 		effDelete(effect);
 		return;
 	}
 
-	if (data->field_0x14 < 16) {
-		data->field_0x24 = data->field_0x14 * 16 + 15;
+	if (data->frame < 16) {
+		data->alpha = data->frame * 16 + 15;
 	} else {
-		data->field_0x24 = 0xFF;
+		data->alpha = 0xFF;
 	}
 	if (timer < 16) {
-		data->field_0x24 = timer * 16;
+		data->alpha = timer * 16;
 	}
 
 	dispEntry(4, dispCalcZ(&pos2), 2, effHolographyDisp, effect);
@@ -1157,9 +1157,9 @@ static inline void effHolographySetColor2(s32 frame) {
 
 static inline void effHolographySetColor1(EffHolographyData* data, f32 alpha) {
 	GXColor c = (GXColor){ 0, 0, 0, 0 };
-	c.r = data->field_0x18;
-	c.g = data->field_0x1C;
-	c.b = data->field_0x20;
+	c.r = data->colorR;
+	c.g = data->colorG;
+	c.b = data->colorB;
 	c.a = alpha;
 	GXSetTevColor(1, c);
 }
@@ -1180,12 +1180,12 @@ void effHolographyDisp(CameraId camId, void* param) {
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	frame = data->field_0x14;
-	alphaBase = data->field_0x24;
+	frame = data->frame;
+	alphaBase = data->alpha;
 
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
-	PSMTXScale(scaleMtx, -data->field_0x28, data->field_0x28, data->field_0x28);
+	PSMTXScale(scaleMtx, -data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	PSMTXConcat(cam->view, mtx, mtx);

@@ -58,7 +58,7 @@ EffectEntry* effPeachFukidashiEntry(s32 type, NpcEntry* npc, s32 lifetime, f32 a
     data->position.x = basePos.x + mtx[0][1] * scale;
     data->position.y = basePos.y + y + mtx[1][1] * scale;
     data->position.z = basePos.z + mtx[2][1] * scale;
-    data->field_0x18 = data->angle;
+    data->rotZ = data->angle;
 
     return entry;
 }
@@ -119,7 +119,7 @@ void effPeachFukidashiDisp(CameraId camId, void* param) {
     data->position.x = basePos1.x + mtx[0][1] * scale1;
     data->position.y = basePos1.y + y1 + mtx[1][1] * scale1;
     data->position.z = basePos1.z + mtx[2][1] * scale1;
-    data->field_0x18 = data->angle;
+    data->rotZ = data->angle;
 
     PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
     cam = camGetPtr(camId);
@@ -128,7 +128,7 @@ void effPeachFukidashiDisp(CameraId camId, void* param) {
     PSMTXRotRad(m1, 'y', rad);
     PSMTXConcat(m0, m1, m2);
     PSMTXScale(m3, 0.4f, 0.34f, 0.4f);
-    PSMTXRotRad(m1, 'z', 0.017453292f * data->field_0x18);
+    PSMTXRotRad(m1, 'z', 0.017453292f * data->rotZ);
     PSMTXConcat(m2, m3, m4);
     PSMTXConcat(m4, m1, m4);
     iconDispGx2(m4, 0, 0x1F2);
@@ -152,7 +152,7 @@ void effPeachFukidashiDisp(CameraId camId, void* param) {
     data->position.x = basePos2.x + mtx2[0][1] * scale2;
     data->position.y = basePos2.y + y2 + mtx2[1][1] * scale2;
     data->position.z = basePos2.z + mtx2[2][1] * scale2;
-    data->field_0x18 = data->angle;
+    data->rotZ = data->angle;
 
     PSMTXTrans(m0, data->position.x,
                7.25f + (data->position.y - 14.0f +
