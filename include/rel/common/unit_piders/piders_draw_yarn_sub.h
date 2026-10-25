@@ -21,7 +21,7 @@ static void piders_draw_yarn_sub(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetNumChans(1);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
-    GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, yarn->field_0x18 });
+    GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, yarn->alpha });
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
     GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -31,10 +31,10 @@ static void piders_draw_yarn_sub(CameraId cameraId, void* param) {
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
     GXLoadPosMtxImm(camera->view, 0);
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-    GXPosition3f32(yarn->field_0x0 - 1.0f, yarn->field_0x4, yarn->field_0x8 - 5.0f);
-    GXPosition3f32(1.0f + yarn->field_0x0, yarn->field_0x4, yarn->field_0x8 - 5.0f);
-    GXPosition3f32(1.0f + yarn->field_0xC, yarn->field_0x10, yarn->field_0x14 - 5.0f);
-    GXPosition3f32(yarn->field_0xC - 1.0f, yarn->field_0x10, yarn->field_0x14 - 5.0f);
+    GXPosition3f32(yarn->top.x - 1.0f, yarn->top.y, yarn->top.z - 5.0f);
+    GXPosition3f32(1.0f + yarn->top.x, yarn->top.y, yarn->top.z - 5.0f);
+    GXPosition3f32(1.0f + yarn->bottom.x, yarn->bottom.y, yarn->bottom.z - 5.0f);
+    GXPosition3f32(yarn->bottom.x - 1.0f, yarn->bottom.y, yarn->bottom.z - 5.0f);
 }
 
 static USER_FUNC(piders_draw_yarn) {
@@ -43,11 +43,11 @@ static USER_FUNC(piders_draw_yarn) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
     PidersYarnWork* yarn = unit->mExtraWork;
 
-    BtlUnit_GetHomePos(unit, &yarn->field_0xC, &yarn->field_0x10, &yarn->field_0x14);
-    yarn->field_0x10 = (f32)unit->work[2];
-    BtlUnit_GetHomePos(unit, &yarn->field_0x0, &yarn->field_0x4, &yarn->field_0x8);
-    yarn->field_0x4 = 400.0f;
-    yarn->field_0x18 = alpha;
+    BtlUnit_GetHomePos(unit, &yarn->bottom.x, &yarn->bottom.y, &yarn->bottom.z);
+    yarn->bottom.y = (f32)unit->work[2];
+    BtlUnit_GetHomePos(unit, &yarn->top.x, &yarn->top.y, &yarn->top.z);
+    yarn->top.y = 400.0f;
+    yarn->alpha = alpha;
     dispEntry(CAMERA_3D, 0.0f, 2, piders_draw_yarn_sub, yarn);
     return EVT_RETURN_DONE;
 }
