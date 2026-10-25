@@ -7981,7 +7981,7 @@ fbtlsrc (src/battle), frels1, frels2.
   evt_msg_print_insert/_add and evt_msg_select).
 - BadgeShopWork (evt_badgeshop.h): 0x10C bargainCount (badgeShop_bargainGeneration stores
   `bargainTable[bargainCount++]` and loops while it is below the pick target; badgeShop_ThrowCheck loops to it), 0x114
-  flags (bit 1 only: badgeShop_init sets it, seq_mapChangeInit sets it between two maps that are not gor_01 and, on
+  flags (0x1 only: badgeShop_init sets it, seq_mapChangeInit sets it between two maps that are not gor_01 and, on
   entering gor_01 with it set, regenerates the bargain and bottakuru tables and clears it).
 - BeroEntry (evt_bero.h): 0xC/0x10/0x14 (`field_0xC`, `unknown1`, `unknown2`) -> posX/posY/posZ (evt_bero_get_into_info
   and evt_bero_get_info_num pass &posX as lwData[6]; bero_get_position_normal reads p[0..2] as the start position,
@@ -7990,22 +7990,15 @@ fbtlsrc (src/battle), frels1, frels2.
   SFX_DOOR_OPEN_*/SHUT_* 1-14, door_down_se is silent for 0), 0x2C downEvt (evt_door_param case 6's second value; the
   door scripts, when it is set, SPAWN it every frame of a 0-180 evt_sub_intpl_msec run with door_down_se 500 ms in).
   The 70 `// field_0x8` / `// field_0x2C` labels on the DoorEntry initialisers in seven rels files follow.
-- EventEntry (include/manager/evtmgr.h): `EventEntryMsg unk184` (two f32) + `u32 unk18C` -> `Vec msgAnchor` at 0x184
-  (evt_msg_toge stores x, y, z, the z through `*(f32*)&unk18C`; _evt_msg_print copies it to window->anchor, WindowEntry's
-  "world point the message window hangs from", for balloon types 2 and 3 through a file-local EventVec overlay). The
-  pun, the overlay and EventEntryMsg go; evtChildEntry, evtDelete, evt_inline_evt and evt_inline_evt_id copy the Vec
-  in one assignment (MWCC's 12-byte copy is the same lwz/lwz/stw/stw/lwz/stw).
 - KpaWork (include/koopa.h): 0x144 evtFireHold (koopa.c's breath steps, attack modes 0x17 and 0x2B, stop only when B
   is up and it is 0; evt_koopa_fire holds it at 1 while its countdown runs).
-- MarioWork (mario.h): 0xE0 returnPos (mot_bottomless drops Mario back above it and walks him there, y < -2000 meaning
-  unset and a per-map point used instead; mot_damage's BG-mode walk target; mot_dokan stores position there when a
-  pipe exit finishes, marioReInit {0, -10000, 0}). Union members named by their motion: 0x128 yoshiRiseY (party_yoshi
-  0x3C-0x3F: jumpPara3 summed from the jump start until `>= 0.7 * marioGetJumpHeight()`, as mot_jump's jumpRiseY;
+- MarioWork (mario.h), beside #1138's names (0xE0 fallReturnPos, 0x2A0 hammerHitFrame, 0x2AC damageVelY/planeEndY).
+  Union members named by their motion: 0x128 yoshiRiseY (party_yoshi 0x3C-0x3F: jumpPara3 summed from the jump start until `>= 0.7 * marioGetJumpHeight()`, as mot_jump's jumpRiseY;
   `field_0x128` stays as the member for evt_mario's and mot_ship's write-only landing distance), 0x2A0
   yoshiFlutterVelY and 0x2A4 yoshiFlutterY (party_yoshi 0x14-0x16: the sine step is added to the height, Yoshi sits at
   wCamVal1 + yoshiFlutterY), 0x2AC bottomlessSpeed and 0x2B0 bottomlessDir (mot_bottomless's movePos toward
-  returnPos), 0x2B0 yoshiInertiaX and 0x2B4 yoshiInertiaZ (the `inertia` symbol decays and clamps both and adds
-  stickX * 0.01 to x; L_yoshiFlyMove's speed is 0.1 * |(x, -z)|, its direction angleABf(0, 0, x, -z)). party_yoshi's
+  fallReturnPos; `field_0x2AC` stays for mot_roll's and mot_jabara's raw s32 zero stores), 0x2B0 yoshiInertiaX and
+  0x2B4 yoshiInertiaZ (the `inertia` symbol decays and clamps both and adds stickX * 0.01 to x; L_yoshiFlyMove's speed is 0.1 * |(x, -z)|, its direction angleABf(0, 0, x, -z)). party_yoshi's
   M_F offset macro, its four `*(f32*)((u8*)mario + 0x2B4)` and its `spinSpeed` misuse go.
 - PartyEntry (party.h): 0x124 spinSpeed (partyDokanMain adds it to dispDir or dispRot.x, partyDokanInit sets +-26/30
   per dokanType, partyRideMain spins dispDir by it and raises it by 2 to 30), 0x15E -> `u8 unusedInput[2]` (zeroed with
@@ -8056,10 +8049,9 @@ fbtlsrc (src/battle), frels1, frels2.
 - Raw offsets tried and kept: party.c's `partyPoseTbl`/`partyDotPoseTbl` `+ id * 0x3c + 16` (the `[id][4]` form
   differs) and seq_load's `card + (cursor << 14) + 0x2000` (`card->saves[cursor].data.flags` differs).
 
-**For a reviewer.** Consumer edits outside this task's file set: src/motion/mot_damage.c and mot_dokan.c (returnPos),
-src/koopa.c (evtFireHold), src/manager/evtmgr.c and evtmgr_cmd.c (msgAnchor) are fmotion's files; the DoorEntry labels
-in bom_01, gor_01, gor_02, gor_03, tik_00, tou_01 and usu_00 are the rels branches'. Expect small conflicts in
-mario.h's unions if fmotion adds members there. The least direct names: PartyEntry `unusedInput` (named from the store
+**For a reviewer.** Consumer edits outside this task's file set: src/koopa.c (evtFireHold) is fmotion's file; the DoorEntry labels
+in bom_01, gor_01, gor_02, gor_03, tik_00, tou_01 and usu_00 are the rels branches'. Rebased onto #1138 (fmotion): its MarioWork and
+EventEntry names were kept and this branch's union members added beside them. The least direct names: PartyEntry `unusedInput` (named from the store
 pattern and MarioWork's precedent, not a reader), party_yoshi's case 0x33 now reads `yoshiFlutterVelY +=
 yoshiFlutterY` (what the code does; it was spelled `spinSpeed += field_0x2A4`), yoshiInertiaZ's axis (it reaches
 L_yoshiFlyMove negated as angleABf's z), and envdrv's dirYaw/dirPitch (from the direction vector they build; a light

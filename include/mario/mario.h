@@ -355,7 +355,7 @@ typedef struct MarioWork {
                                    //        sysMsec2Frame(10000)); marioChkDeepSleep tests the cap
         f32 yoshiInertiaZ;         // 0x2B4, party_yoshi: inertia's second component (decayed and clamped), negated in L_yoshiFlyMove
         f32 jabaraAccel;           // 0x2B4, mot_jabara: step added to jabaraSpeed each frame
-        f32 field_0x2B4;           // 0x2B4, mot_jump: x of the map object jumped from (its z goes to field_0x2B8), never read back; party_yoshi reads an f32 here raw
+        f32 field_0x2B4;           // 0x2B4, mot_jump: x of the map object jumped from (its z goes to field_0x2B8), never read back
         s16 hammer2Flags;          // 0x2B4, mot_hammer2: flag word (0x1, 0x10, 0x1000, 0x2000), cleared on entry
         struct {
             s16 slitTurnTimer;     // 0x2B4, mot_slit: set to 6 when a turn starts, counts down in state 0x15

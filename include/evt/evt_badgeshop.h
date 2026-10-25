@@ -13,7 +13,7 @@ typedef struct BadgeShopWork {
 	s32 bargainTable[5]; //0xF8, badgeShop_getBargainTable returns it
 	int bargainCount; //0x10C, bargainTable slots filled by badgeShop_bargainGeneration; badgeShop_ThrowCheck loops to it
 	u32 field_0x110; //0x110
-	u16 flags; //0x114, bit 1: regenerate the bargain and bottakuru tables on the next entry to gor_01 (seq_mapchange)
+	u16 flags; //0x114, 0x1: regenerate the bargain and bottakuru tables on the next entry to gor_01 (seq_mapchange)
 	u16 field_0x116; //0x116
 	u32 field_0x118; //0x118
 	u32 field_0x11C; //0x11C
