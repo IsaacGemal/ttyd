@@ -59,7 +59,7 @@ static s32 wait_event[6];
     cmd->weaponTable[*count].mIndex = -1;                                                 \
     cmd->weaponTable[*count].mItem = 0;                                                   \
     cmd->weaponTable[*count].mWeaponParams = (table);                                     \
-    cmd->weaponTable[*count].mEnabled = 0;                                               \
+    cmd->weaponTable[*count].mEnabled = 0;                                                \
     cmd->weaponTable[*count].mIcon =                                                      \
         cmd->weaponTable[*count].mWeaponParams->icon;                                     \
     cmd->weaponTable[*count].mName =                                                      \
@@ -92,7 +92,7 @@ static s32 wait_event[6];
     cmd->weaponTable[*count].mIndex = -1;                                                 \
     cmd->weaponTable[*count].mItem = 0;                                                   \
     cmd->weaponTable[*count].mWeaponParams = (table);                                     \
-    cmd->weaponTable[*count].mEnabled = 0;                                               \
+    cmd->weaponTable[*count].mEnabled = 0;                                                \
     cmd->weaponTable[*count].mIcon =                                                      \
         cmd->weaponTable[*count].mWeaponParams->icon;                                     \
     cmd->weaponTable[*count].mName =                                                      \

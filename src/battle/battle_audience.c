@@ -3331,7 +3331,7 @@ void BattleAudience_ChangeStatus(s32 index, s32 status) {
 			member->counter = zero;
 			member->enterLength = zeroF;
 			member->enterSpeed = zeroF;
-			member->repeatCount = zeroF;
+			member->repeatCount = zeroF; // clears the whole 0xC union (enterDist, intrudeDir)
 			member->status = status;
 		}
 	}

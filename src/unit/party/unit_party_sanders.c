@@ -61,7 +61,7 @@ static s32 party_win_reaction[9];
     cmd->weaponTable[*count].mIndex = -1;                                                 \
     cmd->weaponTable[*count].mItem = 0;                                                   \
     cmd->weaponTable[*count].mWeaponParams = (table);                                     \
-    cmd->weaponTable[*count].mEnabled = 0;                                               \
+    cmd->weaponTable[*count].mEnabled = 0;                                                \
     cmd->weaponTable[*count].mIcon =                                                      \
         cmd->weaponTable[*count].mWeaponParams->icon;                                     \
     cmd->weaponTable[*count].mName =                                                      \
