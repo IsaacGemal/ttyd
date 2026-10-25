@@ -445,9 +445,9 @@ typedef struct BattleWorkUnitPart {
     u8 pad_0xDC[0xF8 - 0xDC];                      // 0xDC
     BtlUnitSeModeSrc seModeSrc;                    // 0xF8, LoadSeMode's source presets
     s32 work[16];                                  // 0x130
-    Vec mHitBaseOffset;                            // 0x170, guess
+    Vec mHitBaseOffset;                            // 0x170, the kind part's hitBaseOffset; BtlUnit_GetHitPos adds it (sized)
     Vec mHitOffset;                                // 0x17C
-    Vec mHitCursorBaseOffset;                      // 0x188, guess
+    Vec mHitCursorBaseOffset;                      // 0x188, the kind part's; _btlSamplingEnemy adds it with mHitCursorOffset
     Vec mHitCursorOffset;                          // 0x194
     s16 detectOffsetX;                             // 0x1A0, x offset added to the part's sampling position, times facing (battle_detect)
     s16 shadowSize;                                // 0x1A2, base size of the part's shadowEntry, times the unit and part

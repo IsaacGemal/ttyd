@@ -210,7 +210,8 @@ typedef struct BattleAudience {
     Vec mItemOnMemberPos;              // 0x138C0, TODO better name?
     s32 phaseEvtList[14];              // 0x138CC
     s32 phaseEvtCount;                 // 0x13904, entries in phaseEvtList
-    s32 mTurnEndPhaseEventChance;      // 0x13908, TODO verify name
+    s32 mTurnEndPhaseEventChance;      // 0x13908, BattleAudience_Case_TurnEnd's irand(100) chance of queueing the phase
+                                       // events; +3 a turn (cap 100), back to 0 when they are queued
     s32 joyLevel;                      // 0x1390C, 0-4, picks the BattleAudienceJoy_Sub numbers for case 3
     BOOL excited;                      // 0x13910, if toads are cheering
 } BattleAudience;
