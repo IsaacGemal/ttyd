@@ -41,7 +41,8 @@ typedef struct BattleAudienceMember {
     s32 step;                      // 0x4, case of the current status's ctrl-process switch (kinopio); 0 after ChangeStatus
     s32 counter;                   // 0x8, per-status count: repeats left, or frames into an intplGetValue move (kinopio)
     union {
-        f32 repeatCount;           // 0xC, raise-arm/booing cycles left (KinopioJoyRaiseArm, KinopioBooing); 2 or 3
+        f32 repeatCount;           // 0xC, raise-arm cycles left (KinopioJoyRaiseArm; BattleAudienceJoy_Sub sets 2 or 3);
+                                   //      KinopioBooing counts it down too but finds 0, so it runs once
         f32 enterDist;             // 0xC, distance walked home so far (KinopioEnter)
         f32 intrudeDir;            // 0xC, +1 or -1, the side the intruder heads to (KinopioIntrude)
     };

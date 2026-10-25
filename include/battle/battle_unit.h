@@ -356,7 +356,7 @@ typedef struct BattleWorkUnitPartBlurEntry {
     Mtx orientation; // 0x4
     f32 rotation;    // 0x34
     GXColor base;    // 0x38
-    GXColor blurColor[2]; // 0x3C, copy of BattleWorkUnitPartBlur.color: tints of the newest ([0]) and the oldest ([1]) slot
+    GXColor blurColor[2]; // 0x3C, copy of BattleWorkUnitPartBlur.color: slot i's tint runs from [0] (newest) toward [1]
 } BattleWorkUnitPartBlurEntry;
 
 typedef struct BattleWorkUnitPartBlur {
@@ -539,7 +539,8 @@ typedef struct BattleWorkHpGauge { // TODO: diff header file?
     s32 fromHp;                    // 0xC, HP before the change being drained; set to toHp when the drain ends
     s32 toHp;                      // 0x10, HP after it
     f32 fillRatio;                 // 0x14, filled width of the bar (0-1), btlDispTexPlane's x scale in BattleDrawEnemyHPBar
-    f32 drainRatio;                // 0x18, style 1: width of the black quad for the HP still draining (0 in other styles)
+    f32 drainRatio;                // 0x18, style 1: width of the black quad for the HP still draining (the default
+                                   // style zeroes it during a drain)
 } BattleWorkHpGauge;
 
 // TODO: move somewhere more sensible
@@ -676,8 +677,9 @@ typedef struct BattleUnit {
     s32 damagePattern;                           // 0x270, TODO: rename?
     s32 damageCode;                              // 0x274
     BattleUnitToken_Flags mTokenFlags;           // 0x278
-    s32 hitCount;                                // 0x27C, hits this unit has landed (BattleCheckDamage adds 1 per hit,
-                                                 // btlseqMove clears it); BattleCalculateDamage takes it off a weapon special 0x20 hit
+    s32 hitCount;                                // 0x27C, attacks of this unit resolved since btlseqMove cleared it
+                                                 // (BattleCheckDamage adds 1 per call, superguarded and missed ones
+                                                 // too); BattleCalculateDamage takes it off a weapon special 0x20 hit
     s32 damageDealt;                             // 0x280, damage this unit has dealt in the current act (BattleDamageDirect
                                                  // adds it, btlseqAct clears it); HP Drain and FP Drain recover at most this
     s32 initEventId;                             // 0x284
@@ -690,9 +692,11 @@ typedef struct BattleUnit {
     void* confusionEventCode;                    // 0x2A0, btlevtcmd_SetEventConfusion; battle_seq starts it instead of
                                                  // attackEventCode on a confused unit's 50% roll
     s32 attackEventId;                           // 0x2A4
-    s32 attackEventFlags;                        // 0x2A8, how btlseqAct starts attackEventCode, set with it by
-                                                 // _btlcmd_SetAttackEvent: 0x2 and 0x10 skip the status checks, 0x8/0x10
-                                                 // the zero-gravity check, bit 0 clear hides the status window
+    s32 attackEventFlags;                        // 0x2A8, how btlseqAct starts attackEventCode, set with it (by
+                                                 // _btlcmd_SetAttackEvent, btlevtcmd_SetEventAttack, btlseqAct): 0x2 and
+                                                 // 0x10 skip the status checks, 0x8/0x10 the zero-gravity check, bit 0
+                                                 // clear hides the status window; with 0x4 the shell shield in
+                                                 // btlDispMain ignores the running attack event
     void* damageEventCode;                       // 0x2AC
     s32 damageEventId;                           // 0x2B0
     void* entryEventCode;                        // 0x2B4, btlevtcmd_SetEventEntry; battle_seq runs it at battle start
