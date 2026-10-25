@@ -75,7 +75,7 @@ s32 _getmaxcount(void) {
 // to r27 only when `unit` is declared first.
 s32 battleAcMain_MonosiriTarget(BattleWork* work) {
 	BattleActions* ac = &work->actionCommands;
-	MonosiriTargetWork* mt = (MonosiriTargetWork*)&ac->field_0x2BC[0];
+	MonosiriTargetWork* mt = (MonosiriTargetWork*)&ac->acWork[0];
 	BattleACDispParams* disp = &ac->dispParams;
 	BattleUnit* unit;
 	BattleUnitPart* part;
@@ -190,7 +190,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	Vec* vecs = (Vec*)vec3_80300880;
 #endif
 	BattleWork* work = _battleWorkPointer;
-	MonosiriTargetWork* mt = (MonosiriTargetWork*)&work->actionCommands.field_0x2BC[0];
+	MonosiriTargetWork* mt = (MonosiriTargetWork*)&work->actionCommands.acWork[0];
 	Vec screen;
 	Vec screen2;
 	f32 alpha = 0.0f;

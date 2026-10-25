@@ -1141,7 +1141,7 @@ void yuka_disp(CameraId cameraId, void* param) {
 
 // .text:0x5D8 | 0x802435D0 | size: 0xC
 static DekaWork* get_ptr(void) {
-    return (DekaWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
+    return (DekaWork*)&_battleWorkPointer->actionCommands.acWork[0];
 }
 
 // .text:0x4BC | 0x8024327C | size: 0x354

@@ -42,7 +42,7 @@ typedef struct PowerGaugeDecWork {
 // (fixed by the mutable dat declaration above).
 s32 battleAcMain_PowerGauge(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
-    PowerGaugeDecWork* dec = (PowerGaugeDecWork*)&ac->field_0x2BC[0];
+    PowerGaugeDecWork* dec = (PowerGaugeDecWork*)&ac->acWork[0];
     BattleACDispParams* disp = &ac->dispParams;
     s32 autoCommand = 0;
 
@@ -59,7 +59,7 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
         disp->iconY = 0.0f;
         disp->counter = 0x14;
         disp->value = 0.0f;
-        disp->field_0xC = dat_80421588;
+        disp->gaugeColor.rgba = dat_80421588;
         dec->frame = 0;
         dec->counter = 0;
         work->actionCommands.outputParams[0] = 0;
@@ -99,15 +99,15 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
         }
         break;
     case 0x64:
-        if ((work->actionCommands.field_0x4 & 1) &&
+        if ((work->actionCommands.autoFlags & 1) &&
             (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
             if (irand(100) >= 0) {
-                work->actionCommands.field_0x8 = 0x1E;
+                work->actionCommands.autoTimer = 0x1E;
                 dec->flag = 0;
             }
             else {
                 dec->flag = 1;
-                work->actionCommands.field_0x8 = 0x1E;
+                work->actionCommands.autoTimer = 0x1E;
             }
             work->actionCommands.outputParams[0] = 1;
             work->actionCommands.mAcState = 0x3EA;
@@ -207,8 +207,8 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
         }
         break;
     case 0x3EA:
-        work->actionCommands.field_0x8--;
-        if (work->actionCommands.field_0x8 < 0) {
+        work->actionCommands.autoTimer--;
+        if (work->actionCommands.autoTimer < 0) {
             if (dec->flag != 0) {
                 work->actionCommands.result = 2;
                 work->actionCommands.mResultCount++;
@@ -216,7 +216,7 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
             else {
                 work->actionCommands.result = 0;
             }
-            work->actionCommands.field_0x30 |= 1;
+            work->actionCommands.endFlags |= 1;
             dec->countdown = 0x3C;
             work->actionCommands.mAcState = 0x3ED;
             return 0;
@@ -226,7 +226,7 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
         work->actionCommands.mAcState = 0x3EC;
         // fallthrough
     case 0x3EC:
-        work->actionCommands.field_0x30 |= 1;
+        work->actionCommands.endFlags |= 1;
         BattleAcGaugeSeDelete();
         dec->countdown = 0x3C;
         work->actionCommands.mAcState = 0x3ED;
@@ -286,7 +286,7 @@ void battleAcDisp_PowerGauge(CameraId camId, void* param) {
 }
 
 void battleAcDelete_PowerGauge(BattleWork* work) {
-    if (!(work->actionCommands.field_0x30 & 1)) {
+    if (!(work->actionCommands.endFlags & 1)) {
         work->actionCommands.mAcState = 0x3EC;
     }
 }
@@ -307,7 +307,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     f32 py = y;
 
     camGetPtr(CAMERA_2D);
-    dec = (PowerGaugeDecWork*)&ac->field_0x2BC[0];
+    dec = (PowerGaugeDecWork*)&ac->acWork[0];
 
     ratio = dec->gaugePercent / 100.f;
     if (ratio > 1.0f) {

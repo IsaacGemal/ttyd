@@ -51,7 +51,7 @@ typedef struct StickKeepLeftWork {
 //    first `blt`.
 s32 battleAcMain_StickKeepLeft(BattleWork* work) {
     const char* sfxName[2];
-    StickKeepLeftWork* dec = (StickKeepLeftWork*)&work->actionCommands.field_0x2BC[0];
+    StickKeepLeftWork* dec = (StickKeepLeftWork*)&work->actionCommands.acWork[0];
     BattleACDispParams* disp = &work->actionCommands.dispParams;
     s32 stateChanged;
     s32 autoCommand = 0;
@@ -105,10 +105,10 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
             work->actionCommands.mAcState = 0x3E8;
             // fall through
         case 0x3E8:
-            if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
-                if (work->actionCommands.field_0x4 & 2) {
-                    work->actionCommands.field_0x8--;
-                    if (work->actionCommands.field_0x8 >= 0) {
+            if ((work->actionCommands.autoFlags & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
+                if (work->actionCommands.autoFlags & 2) {
+                    work->actionCommands.autoTimer--;
+                    if (work->actionCommands.autoTimer >= 0) {
                         break;
                     }
                 }
@@ -270,7 +270,7 @@ s32 battleAcResult_StickKeepLeft(BattleWork* work) {
 void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
     BattleWork* work = param;
     BattleActions* ac = &work->actionCommands;
-    StickKeepLeftWork* dec = (StickKeepLeftWork*)&ac->field_0x2BC[0];
+    StickKeepLeftWork* dec = (StickKeepLeftWork*)&ac->acWork[0];
     BattleACDispParams* disp = &ac->dispParams;
 
     switch (ac->mAcState) {
@@ -348,7 +348,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     camGetPtr(CAMERA_2D);
 
     count = ac->acParams[0];
-    idx = ((StickKeepLeftWork*)&ac->field_0x2BC[0])->note - 1;
+    idx = ((StickKeepLeftWork*)&ac->acWork[0])->note - 1;
 
     switch (ac->mAcState) {
     case 0:

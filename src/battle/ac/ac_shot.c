@@ -78,7 +78,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
     const char* sfx = "SFX_AC_CURSOR_MOVE1";
 #endif
     BattleActions* ac = &work->actionCommands;
-    AcShotWork* aw = (AcShotWork*)&ac->field_0x2BC[0];
+    AcShotWork* aw = (AcShotWork*)&ac->acWork[0];
     BattleUnit* unit;
     s32 i;
     s32 cont;
@@ -98,7 +98,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 aw->rotZ = aw->angleMin + (f32)irand((s32)(aw->angleMax - aw->angleMin));
                 aw->rotSpeed = 0.1f * (f32)work->actionCommands.acParams[6];
                 aw->index = 0;
-                work->actionCommands.field_0x8 = 0x1E;
+                work->actionCommands.autoTimer = 0x1E;
                 unit = BattleGetUnitPtr(work, work->actionCommands.acParams[0]);
                 BtlUnit_GetPos(unit, &aw->x, &aw->y, &aw->z);
                 aw->y += 0.5 * ((f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier);
@@ -119,11 +119,11 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 aw->sfx = psndSFXOn(sfx);
                 // fallthrough
             case 0x3E8:
-                if ((work->actionCommands.field_0x4 & 1) &&
+                if ((work->actionCommands.autoFlags & 1) &&
                     (work->actionCommands.mAcUnit->mTokenFlags & kConfusedAction)) {
-                    if (work->actionCommands.field_0x4 & 2) {
-                        work->actionCommands.field_0x8--;
-                        if (work->actionCommands.field_0x8 >= 0) {
+                    if (work->actionCommands.autoFlags & 2) {
+                        work->actionCommands.autoTimer--;
+                        if (work->actionCommands.autoTimer >= 0) {
                             break;
                         }
                     }
@@ -146,8 +146,8 @@ s32 battleAcMain_Shot(BattleWork* work) {
                         work->actionCommands.result = 2;
                         return 0;
                     }
-                    if (work->actionCommands.field_0x4 & 2) {
-                        work->actionCommands.field_0x8 = 0x1E;
+                    if (work->actionCommands.autoFlags & 2) {
+                        work->actionCommands.autoTimer = 0x1E;
                     }
                     break;
                 }
@@ -321,7 +321,7 @@ static void _ac_disp_init(BattleWork* work) {
     disp->iconX = -200.0f;
     disp->iconY = 0.0f;
     disp->counter = 0x14;
-    disp->field_0xC = dat_8041e4a8;
+    disp->gaugeColor.rgba = dat_8041e4a8;
     disp->field_0x10 = 0;
     disp->dg = -0x10;
     disp->db = -0x10;
@@ -332,7 +332,7 @@ static void _ac_disp_init(BattleWork* work) {
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
-    AcShotWork* aw = (AcShotWork*)&ac->field_0x2BC[0];
+    AcShotWork* aw = (AcShotWork*)&ac->acWork[0];
     BattleACDispParams* disp = &ac->dispParams;
     f32 target;
     f32 baseX;
@@ -358,7 +358,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 
     if (disp->value >= 1.0f) {
-        GXColor* tint = (GXColor*)&disp->field_0xC;
+        GXColor* tint = &disp->gaugeColor.color;
 
         tint->g += disp->dg;
         tint->b += disp->db;
@@ -373,7 +373,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 
     {
-        GXColor* tint = (GXColor*)&disp->field_0xC;
+        GXColor* tint = &disp->gaugeColor.color;
         Mtx mtx;
         Mtx trans;
         Mtx scale;
@@ -414,7 +414,7 @@ void _draw_target_mark(const GXColor* color, f32 x, f32 y, f32 z, f32 angle) {
 
 void _disp_target_mark(CameraId cameraId, void* param) {
     BattleWork* work = param;
-    TargetMarkWork* tm = (TargetMarkWork*)&work->actionCommands.field_0x2BC[0];
+    TargetMarkWork* tm = (TargetMarkWork*)&work->actionCommands.acWork[0];
     Vec pos;
     Vec screen;
     GXColor color;
@@ -430,7 +430,7 @@ void _disp_target_mark(CameraId cameraId, void* param) {
 void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
     BattleWork* work = param;
     BattleActions* ac = &work->actionCommands;
-    AcShotWork* aw = (AcShotWork*)&ac->field_0x2BC[0];
+    AcShotWork* aw = (AcShotWork*)&ac->acWork[0];
     s32 i;
 
     for (i = 0; i < 3; i++) {

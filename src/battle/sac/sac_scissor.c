@@ -113,7 +113,7 @@ typedef struct StarTrail {
 } StarTrail;
 
 ScissorWork* GetScissorPtr(void) {
-    return (ScissorWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
+    return (ScissorWork*)&_battleWorkPointer->actionCommands.acWork[0];
 }
 
 // fabsf as the SDK defines it (fake_tgmath.h); math_ext.h only declares it.

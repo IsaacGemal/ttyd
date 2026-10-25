@@ -36,7 +36,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type);
 // function pointer (as ac_stick_keep_left does) suppresses the `extsb`.
 s32 battleAcMain_LstRcKeep(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
-    LstRcKeepWork* dec = (LstRcKeepWork*)&ac->field_0x2BC[0];
+    LstRcKeepWork* dec = (LstRcKeepWork*)&ac->acWork[0];
     BattleACDispParams* disp = &ac->dispParams;
     s32 stateChanged = 0;
     s32 autoCommand = 0;
@@ -68,11 +68,11 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
             dec->cRightHold = 0;
             // fall through
         case 0x3E8:
-            if ((ac->field_0x4 & 1) &&
+            if ((ac->autoFlags & 1) &&
                 (ac->mAcUnit->mTokenFlags & 0x10)) {
-                if (ac->field_0x4 & 2) {
-                    ac->field_0x8--;
-                    if (ac->field_0x8 >= 0) {
+                if (ac->autoFlags & 2) {
+                    ac->autoTimer--;
+                    if (ac->autoTimer >= 0) {
                         break;
                     }
                 }
@@ -244,7 +244,7 @@ void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
     BattleWork* work = param;
     BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
-    LstRcKeepWork* dec = (LstRcKeepWork*)&ac->field_0x2BC[0];
+    LstRcKeepWork* dec = (LstRcKeepWork*)&ac->acWork[0];
     s32 state = ac->mAcState;
 
     switch (state) {

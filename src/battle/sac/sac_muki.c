@@ -1125,7 +1125,7 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
 
 // .text:0x198 | 0x80246F64 | size: 0xC
 static MukiWork* get_ptr(void) {
-    return (MukiWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
+    return (MukiWork*)&_battleWorkPointer->actionCommands.acWork[0];
 }
 
 // .text:0xDC | 0x80246EA8 | size: 0xBC

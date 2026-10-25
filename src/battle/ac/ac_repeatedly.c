@@ -46,7 +46,7 @@ typedef struct AcRepeatedlyWork {
 
 static void _init_param(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
-    AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->field_0x2BC[0];
+    AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->acWork[0];
     BattleACDispParams* disp = &ac->dispParams;
     s32 param;
     s32 timer;
@@ -135,7 +135,7 @@ static void _init_param(BattleWork* work) {
 }
 s32 battleAcMain_Repeatedly(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
-    AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->field_0x2BC[0];
+    AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->acWork[0];
     BattleACDispParams* disp = &ac->dispParams;
     s32 difficulty = BattleActionCommandGetDifficulty(work);
     s32 stateChanged;
@@ -154,7 +154,7 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
         disp->iconX = -300.0f;
         disp->iconY = 0.0f;
         disp->counter = 0x14;
-        disp->field_0xC = dat_8041c7a8;
+        disp->gaugeColor.rgba = dat_8041c7a8;
         disp->field_0x10 = 0;
         disp->dg = -0x10;
         disp->db = -0x10;
@@ -168,7 +168,7 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
     case 0x63:
         break;
     case 0x64:
-        if (!((ac->field_0x4 & 1) && (ac->mAcUnit->mTokenFlags & 0x10)) &&
+        if (!((ac->autoFlags & 1) && (ac->mAcUnit->mTokenFlags & 0x10)) &&
             dec->holdMask != 0 &&
             BattlePadCheckNow(dec->holdMask) == 0) {
             break;
@@ -356,8 +356,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
-    AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->field_0x2BC[0];
-    u8* p = (u8*)disp;
+    AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->acWork[0];
     f32 v;
     f32 target;
     s32 flags;
@@ -391,7 +390,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             iconB = 0x79;
             break;
         }
-        if (((disp->field_0x0 / 7) & 1) == 1) {
+        if (((disp->dispFrame / 7) & 1) == 1) {
             Vec vec = (Vec){0.0f, 0.0f, 0.0f};
             vec.x = -200.0f + x;
             vec.y = 70.0f + y;
@@ -403,7 +402,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             iconDispGx(1.0f, &vec, 0x10, iconA);
         }
     } else {
-        s32 alt = (disp->field_0x0 / 7) & 1;
+        s32 alt = (disp->dispFrame / 7) & 1;
         f32 baseX = -200.0f + x;
         f32 baseY = 70.0f + y;
         s32 i;
@@ -464,13 +463,13 @@ static void actionCommandDisp(f32 x, f32 y) {
     flags = 0;
     if (dec->full == 1 && disp->value >= 1.0f) {
         flags |= 1;
-        p[0xD] += disp->dg;
-        p[0xE] += disp->db;
-        if (p[0xD] <= 0x80 && disp->dg < 0) {
+        disp->gaugeColor.color.g += disp->dg;
+        disp->gaugeColor.color.b += disp->db;
+        if (disp->gaugeColor.color.g <= 0x80 && disp->dg < 0) {
             disp->db = 0x10;
             disp->dg = 0x10;
         }
-        if (p[0xD] >= 0xF5 && disp->dg > 0) {
+        if (disp->gaugeColor.color.g >= 0xF5 && disp->dg > 0) {
             disp->db = -0x10;
             disp->dg = -0x10;
         }
@@ -487,7 +486,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         vec.y = 45.0f + y;
         iconDispGx(1.0f, &vec, 0x10, 0x96);
     }
-    disp->field_0x0++;
+    disp->dispFrame++;
     disp->field_0x4++;
 }
 

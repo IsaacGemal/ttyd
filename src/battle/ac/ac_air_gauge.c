@@ -41,7 +41,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 	// Addressing the gauge work through the header's named field keeps `dec` in its own
 	// base register (r31) instead of folding it into the BattleWork base. See ac_monosiri_target.c.
 	BattleActions* ac = &work->actionCommands;
-	AirGaugeDecWork* dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
+	AirGaugeDecWork* dec = (AirGaugeDecWork*)&ac->acWork[0];
 	BattleACDispParams* disp = &ac->dispParams;
 
 	switch (work->actionCommands.mAcState) {
@@ -53,7 +53,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		disp->iconY = 0.0f;
 		disp->counter = 0x14;
 		disp->value = 0.0f;
-		disp->field_0xC = dat_80420a70;
+		disp->gaugeColor.rgba = dat_80420a70;
 		dec->frame = 0;
 		work->actionCommands.outputParams[0] = 0;
 		work->actionCommands.outputParams[2] = 0;
@@ -66,9 +66,9 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		dec->flag = 0;
 		break;
 	case 0x64:
-		if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
+		if ((work->actionCommands.autoFlags & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
 			if (irand(100) >= 0) {
-				work->actionCommands.field_0x8 = work->actionCommands.acParams[3] / 2;
+				work->actionCommands.autoTimer = work->actionCommands.acParams[3] / 2;
 				work->actionCommands.outputParams[0] = 0;
 				work->actionCommands.outputParams[2] = 0;
 			}
@@ -77,19 +77,19 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 				work->actionCommands.outputParams[0] = r;
 				switch (r) {
 				case 1:
-					work->actionCommands.field_0x8 = work->actionCommands.acParams[3] - 1;
+					work->actionCommands.autoTimer = work->actionCommands.acParams[3] - 1;
 					break;
 				case 2:
-					work->actionCommands.field_0x8 = work->actionCommands.acParams[4] - 1;
+					work->actionCommands.autoTimer = work->actionCommands.acParams[4] - 1;
 					break;
 				case 3:
-					work->actionCommands.field_0x8 = work->actionCommands.acParams[5] - 1;
+					work->actionCommands.autoTimer = work->actionCommands.acParams[5] - 1;
 					break;
 				// The empty case 4 sharing the default body makes MWCC pivot the
 				// decision tree on 3 and emit the original's extra `b default`.
 				case 4:
 				default:
-					work->actionCommands.field_0x8 = work->actionCommands.acParams[5] + 1;
+					work->actionCommands.autoTimer = work->actionCommands.acParams[5] + 1;
 					break;
 				}
 				work->actionCommands.outputParams[2] = 100;
@@ -175,8 +175,8 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		work->actionCommands.mAcState = 0x3EA;
 		break;
 	case 0x3E9:
-		work->actionCommands.field_0x8 = work->actionCommands.field_0x8 - 1;
-		if (work->actionCommands.field_0x8 < 0) {
+		work->actionCommands.autoTimer = work->actionCommands.autoTimer - 1;
+		if (work->actionCommands.autoTimer < 0) {
 			if (work->actionCommands.outputParams[0] > 0) {
 				work->actionCommands.result = 2;
 				work->actionCommands.mResultCount++;
@@ -229,7 +229,7 @@ f32 _GetGaugeDecValue(void) {
 	// `ac` + field_0x2BC keeps the work area in its own base register (r6) instead of
 	// folding it into the BattleWork base (see ac_monosiri_target.c).
 	BattleActions* ac = &_battleWorkPointer->actionCommands;
-	AirGaugeDecWork* dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
+	AirGaugeDecWork* dec = (AirGaugeDecWork*)&ac->acWork[0];
 	s32 type;
 	GaugeTableEntry* table;
 	f32 max;
@@ -340,7 +340,7 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 	f32 target;
 
 	camGetPtr(CAMERA_2D);
-	dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
+	dec = (AirGaugeDecWork*)&ac->acWork[0];
 
 	target = dec->gaugePercent;
 	target = target / 100.0f;

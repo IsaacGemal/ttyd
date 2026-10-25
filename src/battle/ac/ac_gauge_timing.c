@@ -72,7 +72,7 @@ static void actionCommandDisp(f32 x, f32 y);
 // constant is read plainly instead of through MATCH_F32's volatile (float_50 stays volatile).
 s32 battleAcMain_GaugeTiming(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
-    GaugeTimingWork* dec = (GaugeTimingWork*)&ac->field_0x2BC[0];
+    GaugeTimingWork* dec = (GaugeTimingWork*)&ac->acWork[0];
     BattleACDispParams* disp = &ac->dispParams;
     s32 autoFlag = 0;
 
@@ -95,7 +95,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             disp->counter = 0x14;
             disp->value = zero;
         }
-        disp->field_0xC = dat_80421870;
+        disp->gaugeColor.rgba = dat_80421870;
         dec->frame = 0;
         dec->sweep = 0;
         work->actionCommands.outputParams[0] = 0;
@@ -136,13 +136,13 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         }
         break;
     case 0x64:
-        if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
+        if ((work->actionCommands.autoFlags & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
             if (irand(100) >= 0) {
-                work->actionCommands.field_0x8 = 0x1E;
+                work->actionCommands.autoTimer = 0x1E;
                 dec->tokenHit = 0;
             } else {
                 dec->tokenHit = 1;
-                work->actionCommands.field_0x8 = 0x1E;
+                work->actionCommands.autoTimer = 0x1E;
             }
             work->actionCommands.mAcState = 0x3EA;
             break;
@@ -312,15 +312,15 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         }
         break;
     case 0x3EA:
-        work->actionCommands.field_0x8--;
-        if (work->actionCommands.field_0x8 < 0) {
+        work->actionCommands.autoTimer--;
+        if (work->actionCommands.autoTimer < 0) {
             if (dec->tokenHit != 0) {
                 work->actionCommands.result = 2;
                 work->actionCommands.mResultCount++;
             } else {
                 work->actionCommands.result = 0;
             }
-            work->actionCommands.field_0x30 |= 1;
+            work->actionCommands.endFlags |= 1;
             return 0;
         }
         break;
@@ -328,7 +328,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         work->actionCommands.mAcState = 0x3EC;
         // fallthrough
     case 0x3EC:
-        work->actionCommands.field_0x30 |= 1;
+        work->actionCommands.endFlags |= 1;
         dec->endTimer = 0x3C;
         work->actionCommands.mAcState = 0x3ED;
         if ((u32)dec->sfxId != 0xFFFFFFFF) {
@@ -390,7 +390,7 @@ void battleAcDisp_GaugeTiming(CameraId camId, void* param) {
     }
 }
 void battleAcDelete_GaugeTiming(BattleWork* work) {
-    if (!(work->actionCommands.field_0x30 & 1)) {
+    if (!(work->actionCommands.endFlags & 1)) {
         work->actionCommands.mAcState = 0x3EC;
     }
 }
@@ -427,7 +427,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     s32 icon3;
 
     camGetPtr(CAMERA_2D);
-    dec = (GaugeTimingWork*)&ac->field_0x2BC[0];
+    dec = (GaugeTimingWork*)&ac->acWork[0];
 
     value = dec->gauge / float_100_80421874;
     if (value > float_1_80421878) {

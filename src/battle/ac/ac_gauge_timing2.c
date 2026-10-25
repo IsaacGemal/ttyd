@@ -73,7 +73,7 @@ static void actionCommandDisp(f32 x, f32 y);
 s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	s32 triggered;
 	s32 m;
-	GaugeTiming2Work* dec = (GaugeTiming2Work*)&work->actionCommands.field_0x2BC[0];
+	GaugeTiming2Work* dec = (GaugeTiming2Work*)&work->actionCommands.acWork[0];
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
 	BattleUnit* unit = work->actionCommands.mAcUnit;
 	s32 autoFlag = 0;
@@ -90,7 +90,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		disp->iconY = 0.0f;
 		disp->counter = 0x14;
 		disp->value = 0.0f;
-		disp->field_0xC = dat_80421ad8;
+		disp->gaugeColor.rgba = dat_80421ad8;
 		dec->frame = 0;
 		dec->elapsed = 0;
 		work->actionCommands.mAcState = 0x63;
@@ -113,14 +113,14 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	case 0x63:
 		break;
 	case 0x64:
-		if ((work->actionCommands.field_0x4 & 1) && (unit->mTokenFlags & 0x10)) {
+		if ((work->actionCommands.autoFlags & 1) && (unit->mTokenFlags & 0x10)) {
 			if (irand(100) >= 0) {
-				work->actionCommands.field_0x8 = 0x1E;
+				work->actionCommands.autoTimer = 0x1E;
 				dec->tokenHit = 0;
 			}
 			else {
 				dec->tokenHit = 1;
-				work->actionCommands.field_0x8 = 0x1E;
+				work->actionCommands.autoTimer = 0x1E;
 			}
 			work->actionCommands.mAcState = 0x3E9;
 			break;
@@ -248,8 +248,8 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		break;
 	}
 	case 0x3E9:
-		work->actionCommands.field_0x8--;
-		if (work->actionCommands.field_0x8 < 0) {
+		work->actionCommands.autoTimer--;
+		if (work->actionCommands.autoTimer < 0) {
 			if (dec->tokenHit != 0) {
 				work->actionCommands.result = 2;
 				work->actionCommands.mResultCount++;
@@ -259,7 +259,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 				work->actionCommands.result = 0;
 				work->actionCommands.outputParams[0] = 0;
 			}
-			work->actionCommands.field_0x30 |= 1;
+			work->actionCommands.endFlags |= 1;
 			return 0;
 		}
 		break;
@@ -268,7 +268,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		// fallthrough
 	case 0x3EB:
 		work->actionCommands.outputParams[1] = 1;
-		work->actionCommands.field_0x30 |= 1;
+		work->actionCommands.endFlags |= 1;
 		dec->timer = 0x3C;
 		work->actionCommands.mAcState = 0x3EC;
 		// fallthrough
@@ -330,7 +330,7 @@ void battleAcDisp_GaugeTiming2(CameraId camId, void* param) {
 }
 
 void battleAcDelete_GaugeTiming2(BattleWork* work) {
-	if ((work->actionCommands.field_0x30 & 1) == 0) {
+	if ((work->actionCommands.endFlags & 1) == 0) {
 		work->actionCommands.mAcState = 0x3EB;
 	}
 }
@@ -357,7 +357,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	f32 f26;
 
 	camGetPtr(CAMERA_2D);
-	dec = (GaugeTiming2Work*)&ac->field_0x2BC[0];
+	dec = (GaugeTiming2Work*)&ac->acWork[0];
 	cam = camGetPtr(CAMERA_2D);
 
 	f31 = -288.0f + x;

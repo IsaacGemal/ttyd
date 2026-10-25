@@ -210,7 +210,7 @@ struct BattleWork {
     BattleWorkPad padWork[4];           // 0xF2C
     BattleCommand commandMenu;          // 0x171C
     BattleActions actionCommands;       // 0x1C90
-    u8 field_1F9C[0x271C - 0x1F9C];     // 0x1F9C, the special-move works that start at actionCommands.field_0x2BC
+    u8 field_1F9C[0x271C - 0x1F9C];     // 0x1F9C, the special-move works that start at actionCommands.acWork
                                         // (0x1F4C: sac_deka's DekaWork, sac_suki's SukiWork, ...) run on into it
     s32 mStylishCurFrame;               // 0x271C
     s32 mStylishWindowStart;            // 0x2720

@@ -24,7 +24,7 @@ typedef struct CraneTimingWork {
 
 s32 battleAcMain_CraneTiming(BattleWork* work) {
 	BattleActions* ac = &work->actionCommands;
-	CraneTimingWork* dec = (CraneTimingWork*)&ac->field_0x2BC[0];
+	CraneTimingWork* dec = (CraneTimingWork*)&ac->acWork[0];
 	BattleACDispParams* disp = &ac->dispParams;
 	BattleUnit* unit;
 	s32 flag;

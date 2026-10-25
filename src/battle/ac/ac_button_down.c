@@ -41,7 +41,7 @@ typedef struct ButtonDownWork {
 // pushes sfx above i in the allocator's order (r31, direct `addi r31, r3, @l`) and matches exactly.
 s32 battleAcMain_ButtonDown(BattleWork* work) {
     const char* sfx;
-    ButtonDownWork* bd = (ButtonDownWork*)&work->actionCommands.field_0x2BC[0];
+    ButtonDownWork* bd = (ButtonDownWork*)&work->actionCommands.acWork[0];
     BattleACDispParams* disp = &work->actionCommands.dispParams;
     s32 cont;
     s32 i;
@@ -138,10 +138,10 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                 bd->countdown = work->actionCommands.acParams[0];
                 // fallthrough
             case 1000:
-                if ((work->actionCommands.field_0x4 & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
-                    if (work->actionCommands.field_0x4 & 2) {
-                        work->actionCommands.field_0x8--;
-                        if (work->actionCommands.field_0x8 >= 0) {
+                if ((work->actionCommands.autoFlags & 1) && (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
+                    if (work->actionCommands.autoFlags & 2) {
+                        work->actionCommands.autoTimer--;
+                        if (work->actionCommands.autoTimer >= 0) {
                             break;
                         }
                     }
@@ -315,7 +315,7 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
     iconX = baseX - 40.0f;
     iconY = 70.0f + y;
     limit = work->actionCommands.acParams[2] * 3 + 2;
-    bd = (ButtonDownWork*)&work->actionCommands.field_0x2BC[0];
+    bd = (ButtonDownWork*)&work->actionCommands.acWork[0];
 
     iconDispGx(1.0f, &(Vec){iconX, iconY, -2.0f}, 0x10, 0x8F);
 

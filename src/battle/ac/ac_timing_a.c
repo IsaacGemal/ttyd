@@ -26,7 +26,7 @@ extern AcTimingAEntry* _ac_timing_a_timing_tbl[7];
 // clang-format off
 s32 battleAcMain_TimingA(BattleWork* work) {
 	BattleActions* ac = &work->actionCommands;
-	AcTimingADecWork* dec = (AcTimingADecWork*)&ac->field_0x2BC[0];
+	AcTimingADecWork* dec = (AcTimingADecWork*)&ac->acWork[0];
 	BattleACDispParams* disp = &ac->dispParams;
 
 	switch (ac->mAcState) {
@@ -40,7 +40,7 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 		// Match-only: the original reads the work-area flags with `lwz r3, 0x1f50(r30)` (work base),
 		// not through the dec pointer, which keeps dec out of the memset call's live range so it can
 		// live in volatile r4. `dec->flags` (below) makes dec live across the call and forces r31.
-		*(u32*)&ac->field_0x2BC[4] &= ~1;
+		*(u32*)&ac->acWork[4] &= ~1;
 #else
 		dec->flags &= ~1;
 #endif
@@ -72,7 +72,7 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 
 
 s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
-	AcTimingADecWork* dec = (AcTimingADecWork*)&work->actionCommands.field_0x2BC[0];
+	AcTimingADecWork* dec = (AcTimingADecWork*)&work->actionCommands.acWork[0];
 	AcTimingAEntry* entry = _ac_timing_a_timing_tbl[
 	    BattleActionCommandGetDifficulty(work)
 	];
@@ -101,7 +101,7 @@ s32 battleAcResult_TimingA(BattleWork* work) {
 	s32 count = 0;
 	s32 i;
 
-	if ((ac->field_0x4 & 1) && (ac->mAcUnit->mTokenFlags & kConfusedAction)) {
+	if ((ac->autoFlags & 1) && (ac->mAcUnit->mTokenFlags & kConfusedAction)) {
 		if (irand(100) >= 0) {
 			ac->result = 0;
 		}
@@ -207,7 +207,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
 	BattleActions* ac = &work->actionCommands;
 	BattleACDispParams* disp = &ac->dispParams;
-	AcTimingADecWork* dec = (AcTimingADecWork*)&ac->field_0x2BC[0];
+	AcTimingADecWork* dec = (AcTimingADecWork*)&ac->acWork[0];
 
 	camGetPtr(CAMERA_2D);
 
@@ -224,7 +224,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		iconDispGx(1.0f, &v, 0x10, 0x64);
 	}
 
-	disp->field_0x0++;
+	disp->dispFrame++;
 }
 
 // TODO: type

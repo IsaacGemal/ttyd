@@ -51,7 +51,7 @@ typedef struct BakuGameWorkEntry {
     f32 iconScale;   // 0x20, passed as the icon alpha/scale to iconDispGx
 } BakuGameWorkEntry;
 
-// Flash colour the gauge is tinted with once it is full: actionCommands.dispParams.field_0xC (BattleWork 0x1F2C).
+// Flash colour the gauge is tinted with once it is full: actionCommands.dispParams.gaugeColor (BattleWork 0x1F2C).
 // BattleAcDrawGauge reads bytes 0..3 as RGBA; bakuGameDisp2D sweeps g and b between 0x80 and 0xF5.
 typedef struct BakuGameGaugeColor {
     u8 r;
@@ -157,7 +157,7 @@ static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall);
 static USER_FUNC(main_star);
 
 BakuGameWork* GetBakuGamePtr(void) {
-    return (BakuGameWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
+    return (BakuGameWork*)&_battleWorkPointer->actionCommands.acWork[0];
 }
 
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall) {
@@ -1430,7 +1430,7 @@ static inline BakuGameWorkEntry* bakuGameEntry(BakuGameWork* work, s32 i) {
 void bakuGameDisp2D(void) {
     BakuGameWork* baku = GetBakuGamePtr();
     BattleACDispParams* disp = &_battleWorkPointer->actionCommands.dispParams;
-    BakuGameGaugeColor* color = (BakuGameGaugeColor*)&disp->field_0xC;
+    BakuGameGaugeColor* color = (BakuGameGaugeColor*)&disp->gaugeColor;
     s32 i;
     s32 flag;
 

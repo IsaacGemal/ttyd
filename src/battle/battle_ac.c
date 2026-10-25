@@ -75,7 +75,7 @@ void BattleActionCommandSetup(BattleWork* work, s32 id, BattleUnit* unit, s32 a4
 	ActionCommandEntry* entry = ActionCommandList; // r6
 
 	work->actionCommands.mAcUnit = unit;
-	work->actionCommands.field_0x4 = a4;
+	work->actionCommands.autoFlags = a4;
 	work->actionCommands.mAcState = 0;
 	work->actionCommands.mResultCount = 0;
 	work->actionCommands.result = 1;
@@ -83,8 +83,8 @@ void BattleActionCommandSetup(BattleWork* work, s32 id, BattleUnit* unit, s32 a4
 	work->actionCommands.dispcb = NULL;
 	work->actionCommands.resultcb = NULL;
 	work->actionCommands.deletecb = NULL;
-	work->actionCommands.field_0x8 = a5;
-	work->actionCommands.field_0x30 = 0;
+	work->actionCommands.autoTimer = a5;
+	work->actionCommands.endFlags = 0;
 	while (entry->id) {
 		if (entry->id == id) {
 			work->actionCommands.maincb = entry->main;
@@ -536,10 +536,10 @@ void BattleAcDrawGauge(s32 x, s32 y, f32 ratio, s32 type, s32 count, s32 t0, s32
 	if (!(ratio < 0.0f)) {
 		if (flags & 3) {
 			if (flags & 1) {
-				color.r = (u8)(color.r * ((u8*)work)[0x1F2C] / 255);
-				color.g = (u8)(color.g * ((u8*)work)[0x1F2D] / 255);
-				color.b = (u8)(color.b * ((u8*)work)[0x1F2E] / 255);
-				color.a = (u8)(color.a * ((u8*)work)[0x1F2F] / 255);
+				color.r = (u8)(color.r * work->actionCommands.dispParams.gaugeColor.color.r / 255);
+				color.g = (u8)(color.g * work->actionCommands.dispParams.gaugeColor.color.g / 255);
+				color.b = (u8)(color.b * work->actionCommands.dispParams.gaugeColor.color.b / 255);
+				color.a = (u8)(color.a * work->actionCommands.dispParams.gaugeColor.color.a / 255);
 			} else {
 				color = (GXColor){ 0xFF, 0x00, 0x00, 0xFF };
 			}
@@ -599,7 +599,7 @@ void BattleAcGaugeSeInit(void) {
 	BattleWork* work = _battleWorkPointer;
 
 	work->actionCommands.gaugeSe = psndSFXOn("SFX_AC_POWER_GAUGE1");
-	work->actionCommands.field_0x28C = 0.0f;
+	work->actionCommands.gaugeSePitch = 0.0f;
 }
 
 void BattleAcGaugeSeUpdate(f32 value) {
@@ -611,9 +611,9 @@ void BattleAcGaugeSeUpdate(f32 value) {
 	if (value > 100.0f) {
 		value = 100.0f;
 	}
-	work->actionCommands.field_0x28C = value;
+	work->actionCommands.gaugeSePitch = value;
 	if ((u32)work->actionCommands.gaugeSe != -1) {
-		psndSFX_pit(work->actionCommands.gaugeSe, (s32)(4092.0f * work->actionCommands.field_0x28C * 0.01f));
+		psndSFX_pit(work->actionCommands.gaugeSe, (s32)(4092.0f * work->actionCommands.gaugeSePitch * 0.01f));
 	}
 }
 

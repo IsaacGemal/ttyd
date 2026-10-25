@@ -1427,7 +1427,7 @@ static void disp_3D_alpha(CameraId camera, void* param) {
 }
 
 static GenkiWork* get_ptr(void) {
-    return (GenkiWork*)&_battleWorkPointer->actionCommands.field_0x2BC[0];
+    return (GenkiWork*)&_battleWorkPointer->actionCommands.acWork[0];
 }
 
 // The trailing block scope puts mario/parts in r31 and genki in r29, matching the original;

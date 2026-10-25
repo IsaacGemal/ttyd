@@ -84,7 +84,7 @@ static void actionCommandDisp(f32 x, f32 y);
 // original's saved-register set.
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
-	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)&work->actionCommands.field_0x2BC[0];
+	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)&work->actionCommands.acWork[0];
 	CameraEntry* cam;
 	Vec v;
 	Vec v2;
@@ -132,7 +132,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 }
 
 void battleAcDelete_PendulumCraneTiming(BattleWork* work) {
-	if (!(work->actionCommands.field_0x30 & 1)) {
+	if (!(work->actionCommands.endFlags & 1)) {
 		work->actionCommands.mAcState = 0x3EA;
 	}
 }
@@ -179,7 +179,7 @@ s32 battleAcResult_PendulumCraneTiming(BattleWork* work) {
 // `addis`/`cmplwi` and signed tests.
 s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
-	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)&work->actionCommands.field_0x2BC[0];
+	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)&work->actionCommands.acWork[0];
 	BattleUnit* unit;
 	s32 flag = 0;
 	s32 hit;
@@ -339,7 +339,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 		break;
 	}
 	case 0x3EA:
-		work->actionCommands.field_0x30 |= 1;
+		work->actionCommands.endFlags |= 1;
 		dec->timer = 0x3C;
 		if ((u32)dec->sfxId != 0xFFFFFFFFu) {
 			psndSFXOff(dec->sfxId);
