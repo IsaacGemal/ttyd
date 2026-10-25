@@ -7107,3 +7107,120 @@ mapdrv/animdrv/mario; none of their files was touched. Data layout was out of bo
   an s16 field with negative initialisers would drop the pun (a data-definition change). win_log.c's local
   WinLogEntry/WinLogWork overlay is LogWin's rows shifted by 4 bytes (its `field_0x1C` is rows[n+1].type): a duplicate
   struct to fold into LogRow.
+## Battle header fields named from their consumers: battle_unit, battle, battle_audience, battle_ac, camera, stage (2026-10-24, Claude Opus 5.5, n9-q-fbattle)
+
+Continues "BattleWork names", "BattleCommand names" and "battle_audience names". Every name below comes from the code
+that reads the field (CLEANUP_GUIDE section 3), checked against every user in src/ and rels/ found by a libclang
+member-reference index (both with and without MUST_MATCH; renames were applied at the indexed columns, macro arguments by
+hand). Build byte-identical at every commit (build/G8MJ01/ok recreated); every C object in src/ and rels/ compiles
+without -DMUST_MATCH (all 1,225, not only the changed ones, since the headers reach them all); fncast_lint and
+local_prototypes pass; `tools/ci.py` passed before each commit with its tools/tests step skipped (the 9 worktree
+environment failures recorded above) and its data step run as `uv run --with pyelftools tools/data_check.py` (running
+ci.py itself under uv rewrites build.ninja with uv's python and ninja then tries to re-download the tools). This
+worktree had no ratchet baseline, so `ci.py --init` ran first on a byte-identical build.
+
+**battle_unit.h** (field -> name -> consumer):
+- BattleUnitKindPart 0x30 -> `shadowSize`; BattleUnitPart 0x1A2 -> `shadowSize`: BtlUnit_Entry copies the kind's into the
+  part; btlDispMain multiplies it by the unit/part x scales, mSizeMultiplier and shadowScale and passes it to shadowEntry's
+  size. 0x32 and its copy 0x1A4 stay (never read).
+- Part 0x1A6 -> `gravityFrame`, 0x1A8 -> `floatFrame`: gravityOffsetControl/floatOffsetControl count them, and
+  getGravityDispOffset/getFloatDispOffset use them as the sine phase.
+- Part 0x4F4 -> `dispColor` (GXColor): btlDispMain builds it from color and the kind's baseAlpha, draws translucent when its
+  alpha < 0xFF, btlUnitPartsDisp copies it to evtColor. 0x4F8 -> `sortOffsetZ`: btlDispMain adds it to the world z it
+  passes to dispCalcZ, nothing else (black_peach sets it). 0x4FC -> `rotationOrder`: btlUnitPartsDisp's switch picks the
+  concat order of the x/y/z PSMTXRotRad matrices.
+- BattleWorkHpGauge 0x0 -> `style` (the switch in BtlUnit_HpGaugeInit/Main and BattleDrawEnemyHPBar; only 0 is ever
+  stored), 0x2 -> `flags` (bit 0: BtlUnit_HpGaugeMain clears the unit's flag 1, hiding the gauge, once dispTimer runs out),
+  0x4/0x6 -> `drainTimer`/`drainFrames` (intplGetValue's step and steps for the bar animation), 0x8/0xA ->
+  `dispTimer`/`dispFrames` (counted down by HpGaugeMain; BattleDrawEnemyHP fades the gauge over its last 0x14), 0xC/0x10 ->
+  `fromHp`/`toHp` (HP before and after the change; the drain interpolates their difference), 0x14 -> `fillRatio` (the bar
+  width btlDispTexPlane draws), 0x18 -> `drainRatio` (style 1's black quad width).
+- BattleUnit 0x28 -> `turnOrder`: btlseqTurnFirstProcess rolls it from the kind's turnOrder/turnOrderVariance,
+  battleSortPhaseMoveTable sorts by it. 0xB4 and BattleUnitKind 0x3C -> `heldItemBaseOffset`: copied by BtlUnit_Entry,
+  added with heldItemOffset to the position btlUnitItemDisp draws the held item at (as talkTogeBaseOffset + togeOffset).
+- BattleUnit 0x27C -> `hitCount` (BattleCheckDamage adds 1 per call, missed and superguarded attacks too; btlseqMove clears it; BattleCalculateDamage subtracts
+  it under weapon special 0x20); 0x280 -> `damageDealt` (BattleDamageDirect adds the attacker's damage, btlseqAct clears it
+  per act, _get_heart/flower_suitoru_point cap HP/FP Drain at it); 0x2A8 -> `attackEventFlags` (written with every
+  attackEventCode by _btlcmd_SetAttackEvent and btlseqAct; btlseqAct's 0x6000006 tests bits 1/2/8/0x10 to decide how to
+  start it, battle_disp's shell-shield follow tests 4); 0x2C8 -> `actEndEventId` (evtCheckID'd until actEndEventCode's
+  run ends); 0x2CC -> `superguardEventCode` (BattleCheckDamage runs it on the attacker for superguardType 4, through
+  BattleRunHitEventDirect).
+- BattleUnitSetup 0x8 -> `seqPhase`, 0x18 -> `detectOffsetX` (BtlUnit_Entry copies them into the unit / each part).
+- BattleWeapon 0x6D -> `damagePattern`: passed as BattleDamageDirect's 7th argument, which stores it in the target's
+  damagePattern; that parameter and battle_damage's local are renamed to match.
+- BattleWorkUnitPartBlur.color and BattleWorkUnitPartBlurEntry.blurColor: s8[8]/u8[8] -> `GXColor[2]` (newest, oldest
+  tint). _partsBlurControl copied them as two `*(u32*)&` words; the GXColor copies give the same lwz/stw, so the puns go.
+  btlevtcmd_SetPartsBlur stores the channels, btlUnitPartsBlurDisp reads them.
+- Alignment gaps -> `pad_`: unit 0x27, 0x186, 0x25E; part 0xBE, 0x1AA, 0x4FD (no access anywhere, each between a
+  narrower field and a 4-aligned one).
+
+**battle.h:**
+- BattleWorkField180C0: 0x4 `layer2Rotation` (mapObjRotate's angles for layer 2, _set_mobj_rotate_x), 0x10
+  `layer2RotationApplied` (BattleStageObjectMain's last-applied copy), 0x20 `objectTurnEventId`, 0x24-0x30 ->
+  `layerEventId[4]` (the four layerEvents[i] ids; constant indices, same code), 0x34 `nozzleData`, 0x38 `fallObjectData`,
+  0x44 `nozzleWeapon[2]`, 0x1C4 `nozzleDir`, 0x1C7 `nozzleTargetDir`, 0x1CA `nozzleType`, 0x1CC `nozzleTurnEventId`, 0x1D8
+  `nozzleWorkEventId`, 0x1DC `fogTurns` (BattleFogEndCheck, which btlseqTurnFirstProcess runs once per turn, counts it
+  down: turns, not frames as the old comment said), 0x1E0 `fogEffect`, 0x1E4/0x1E8/0x1EC `closeWallEventId`/
+  `fallFrameEventId`/`objectFallEventId` (each started from that event and polled with evtCheckID). 0x1D/0x1CB are
+  alignment pads.
+- BattleStageNozzleData `dirWeight`/`typeWeight`/`typeWeapon` (_Nozzle_Change_Check, _nozzle_type_init,
+  _nozzle_work_attack_set); BattleStageFallObjectData `typeWeight`/`typeWeapon` (_object_fall_attack; 0x0 still has no
+  reader). Announce (0x18C70) `x`/`y`/`message` (battle_message's _disp draws message at x, y).
+- BattleWorkPartyInfo `sizeMultiplier`/`statusBlock`/`statusFlags`: BtlUnit_SetParamToPouch saves the partner's
+  mSizeMultiplier, the mSleepTurns-mInstantKillStrength block and mStatusFlags; BtlUnit_SetParamFromPouch restores them.
+- The deprecated BattleWorkCommand family is gone: the seven party `__makeTechMenuFunc` builders now take
+  `BattleCommand*` (same layout, as the BattleCommand chapter said), `weaponTable[n].mEnabled` for the old `field_0x4`.
+  BattleWorkActRecord had no user and went.
+
+**battle_audience.h:** BattleAudienceMember 0xC is a union of its three users: `repeatCount` (KinopioJoyRaiseArm counts it
+down, BattleAudienceJoy_Sub sets 2 or 3; KinopioBooing counts it down too but always finds 0, so it runs once), `enterDist` (KinopioEnter adds enterSpeed until it reaches
+enterLength) and `intrudeDir` (+1/-1, the side KinopioIntrude walks to). 0x10/0x14 `enterSpeed`/`enterLength`
+(KinopioEnter only), 0x18 `colorBStep` (KinopioSleep adds it to colorB), 0xEC `targetUnit` (KinopioTransEvt, the unit a
+Boo flies at, from BattleAudienceDetectTargetAll), 0xF0 `eatTargetId` (KinopioEat, BattleAudienceDetectPakkunEatTarget's
+member), 0xF4 `singCount` (KinopioSingSub sets 3, the phase reaction's step 15 counts it down for status 0xD). Alignment
+pads at member 0x1E/0x45/0xF2, star 0x5D, sound 0x9/0x21. The commented-out copy of an old BattleAudience layout went.
+
+**battle_ac.h:** BattleActions 0x4 `autoFlags` / 0x8 `autoTimer` (every ac_* main tests bit 0 together with the acting
+unit's kConfusedAction: the AC then resolves itself without input, after autoTimer frames when bit 1 is set; both come
+from BattleActionCommandSetup's arguments), 0x30 `endFlags` (bit 0 set on reaching the end state; the delete callbacks
+force that state only while it is clear), 0x28C `gaugeSePitch` (BattleAcGaugeSeUpdate's value, psndSFX_pit of gaugeSe),
+0x2BC `acWork` (the running AC's work area, cast to each ac_*/sac_* work struct; kept a byte array, as effect userdata
+stays void*). BattleACDispParams 0x0 `dispFrame`; 0xC `gaugeColor`, a union of `s32 rgba` (each AC stores its constant as
+a word) and `GXColor color` (BattleAcDrawGauge's flag 1 tint, the flashing g/b): ac_shot's two `(GXColor*)` casts,
+ac_repeatedly(_lv)'s `u8* p = (u8*)disp; p[0xD]` and BattleAcDrawGauge's `((u8*)work)[0x1F2C..0x1F2F]` became member
+accesses, same object.
+
+**battle_camera.h, battle_stage.h:** BattleCameraWork 0x2C/0x44 `cameraPos`/`cameraAt` (battleCameraMain copies them into
+the camera at its start and back at its end), 0x38/0x50 `prevCameraPos`/`prevCameraAt` (its start-of-frame copy, put back
+per axis under flags 4/8/0x10), 0xFC/0x100 `shakeOffsetX/Y`; the `unkNN` move-to state (btl_camera_set_moveto's
+intplGetValue mode, timer, length and from/to pos/at: `moveToMode` ... `moveToAtTo`) and shake state (`shakeXMode`,
+`shakeXFrames`, `shakeXTimer`, `shakeXFrom`/`To` and the Y set). BattleStageLightSpline `knotCount`/`knots`/`coef`
+(getSpline's count/knots and coefficient tables).
+
+**Left, and why:** BattleUnit 0x258 (only cleared), 0x264/0x268/0x26E/0x26F (only accumulated or copied, never read),
+0x30C (borodo coin count, only written), 0x1BC and part 0xDC-0xF8 (untouched, not alignment: the part's band mirrors the
+unit's hop fields but nothing reads it); BattleUnitKind 0x14 (mario_get_renzoku_count_max's floor for the returned max:
+lead `renzokuCount...` once the function is understood), 0x54/0x58 (one user, unit_party_vivian's _hammer_star_effect, as
+x/z offsets), 0x8C (BattleCheckDamage's % chance that damage patterns 0xE/0x10 apply; those patterns lead to
+subsetevt_shot_damage in battle_event_subset, a lead); StarPowerInfo 0x9/0xB (copied from weapon 0x19/0x1B, never read);
+member 0xD8/0xE0, window 0x1-0x7 and 0x10; BattleACDispParams 0x4, 0x10, 0x13, 0x24 (actionCommandDisp's third argument,
+the stage index - 1 in two ACs); BattleWorkField19068 0x4, field_180C0 0x0; BattleIcon 0x14/0x18 (only their product
+reaches iconSetScale). BtlUnitSeMode sfxA/sfxB hold sound-name pointers as s32: retyping them moves the casts from the four
+psndSFXOn_3D calls to the evt-value stores. battle_audience.c's `((s8*)setupBase)[4 + kind]` read of
+NpcBattleInfo.audienceWeights stays: rewriting it through an NpcBattleInfo* broke the dol.
+
+**Review:** a fresh Claude Opus 5.5 read of every new name against its users (read-only) found no wrong names, union
+members or pads; it corrected five comments (hitCount counts resolved attacks, not landed hits; drainRatio is not 0 outside
+style 1; the blur tint interpolates toward [1]; attackEventFlags has more setters and bit 0x4; repeatCount is 2-3 only for
+raise-arm), all fixed.
+
+**For a reviewer:** the `attackEventFlags` bits and `autoFlags` are named as words, not their bits. The 0xC union's reset
+store in BattleAudience_ChangeStatus goes through `repeatCount` (all three are cleared together). `hitCount` is the
+attacker's count, `field_0x26F` the target's copy of it. The data-table labels (`// field_0x30`, `// field_0x3C`,
+`// field_0x6D`: 1,404 lines, matched by the label before them) follow the renames.
+
+Counts (`tools/cleanup_index.py`, 35dc3b78 -> this branch, same script): index 16.972 -> 15.879 per kLOC (11857 -> 11092
+weighted); field_0x 4624 -> 3879, raw_offset 177 -> 173, deref_cast 489 -> 485, prim_ptr_cast 1902 -> 1900,
+struct_ptr_cast 1245 -> 1243. `field_0x` occurrences per header (grep, comments included): battle_unit.h 49 -> 17,
+battle.h 47 -> 3, battle_audience.h 25 -> 6, battle_ac.h 17 -> 6, battle_camera.h 8 -> 1, battle_stage.h 4 -> 1,
+battle_database_common.h 5 -> 4.
