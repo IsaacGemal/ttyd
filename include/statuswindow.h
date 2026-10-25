@@ -71,7 +71,7 @@ typedef struct StatusWindowWork {
 } StatusWindowWork;
 
 typedef struct StatusValue {
-	u8 unk0[0x18]; //0x0
+	u8 field_0x0[0x18]; //0x0
 } StatusValue;
 
 void statusWinInit(void);

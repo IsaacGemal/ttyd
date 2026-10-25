@@ -10,9 +10,9 @@ typedef struct RomFontChar {
 } RomFontChar;                   // sizeof == 0x140
 
 typedef struct RomFontWork {
-    RomFontChar* unk0; // 0x0
-    s32 uniqueChars;   // 0x4
-    s32 language;      // 0x8, 0 = SJIS, 1 = ASCII
+    RomFontChar* glyphs; // 0x0, uniqueChars baked glyphs; romFontFindChar searches them by code
+    s32 uniqueChars;     // 0x4
+    s32 language;        // 0x8, 0 = SJIS, 1 = ASCII
 } RomFontWork;
 
 const char* romFontGetMessage(s32 msg);

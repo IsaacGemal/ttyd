@@ -33,10 +33,10 @@ typedef struct LinkDt {
     s16 targetX;          // 0x0
     s16 targetY;          // 0x2
     const char* poseAnim; // 0x4, pose anim when the window is not famicom (flags & 0x2000)
-    const char* field_8;  // 0x8
+    const char* field_0x8; // 0x8
     const char* starPoseAnim; // 0xC, famicom pose anim (compared with "S_1" to pick the S or R set)
     u16 reqItem;          // 0x10, pouch item that must be owned to land here (0 = always)
-    u16 field_12;         // 0x12
+    u16 field_0x12;       // 0x12
     const char* helpMsg;  // 0x14
     u8 next[4];           // 0x18, four 1-byte "next" indices, one per d-pad direction
 } LinkDt;

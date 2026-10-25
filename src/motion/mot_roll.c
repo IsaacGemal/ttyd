@@ -688,7 +688,7 @@ void mot_roll(void) {
         mario->camZoom = 2.0f;
         mario->camZoomFocusOfs = (Vec){ 0.0f, 40.0f, 0.0f };
 #endif
-        marioGetPtr()->motRoll->unk8 = 0;
+        marioGetPtr()->motRoll->field_0x8 = 0;
         marioGetPtr()->motRoll->state = 0;
         psndSFXOn_3D((char*)0x179, &mario->position);
         psndSFXOn_3D((char*)0x9F, &mario->position);
@@ -832,8 +832,8 @@ void mot_roll(void) {
     }
 
     f26 = mario->rollScaleY;
-    if (marioGetPtr()->motRoll->unk8 != 0) {
-        marioGetPtr()->motRoll->unk8 = 0;
+    if (marioGetPtr()->motRoll->field_0x8 != 0) {
+        marioGetPtr()->motRoll->field_0x8 = 0;
         marioGetPtr()->motRoll->state = 1;
         f26 = 1.0f;
     }

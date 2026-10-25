@@ -13,7 +13,7 @@
 typedef struct IceRSTEntry {
 	s32 count;      // 0x00
 	void* hermit;   // 0x04
-	s32 unk08;      // 0x08
+	s32 field_0x8;  // 0x08
 	void* pPlane;   // 0x0C
 } IceRSTEntry;
 
@@ -23,14 +23,14 @@ typedef struct IceAnimRSTData {
 } IceAnimRSTData;
 
 typedef struct IceAnimData {
-	u32 unk00;               // 0x00
-	f32 unk04;               // 0x04
+	u32 field_0x0;           // 0x00
+	f32 endFrame;            // 0x04, effIceMain deletes the effect once its frame passes it
 	IceAnimRSTData* rstData; // 0x08
 } IceAnimData;
 
 typedef struct IceMayaAnimEntry {
 	Mtx mtx; // 0x00
-	f32 unk; // 0x30
+	f32 field_0x30; // 0x30
 } IceMayaAnimEntry;
 
 typedef struct IceMayaAnim {
@@ -178,7 +178,7 @@ static void effIceMain(EffectEntry* effect) {
 	switch (data->state) {
 	case 0:
 	case 1:
-		if ((f32)data->frame > data->anim->animData->unk04) {
+		if ((f32)data->frame > data->anim->animData->endFrame) {
 			effDeleteMayaAnim(data->anim);
 			effDelete(effect);
 			return;

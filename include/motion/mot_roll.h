@@ -20,11 +20,11 @@ void roll_upstairs_on(void);
 extern f32 roll_grx;
 extern f32 roll_grz;
 typedef struct MotRoll {
-    f32 velX;   // 0x0
-    f32 velY;   // 0x4
-    s32 unk8;   // 0x8
-    s32 state;  // 0xC
-    f32 unk10;  // 0x10
+    f32 velX;       // 0x0
+    f32 velY;       // 0x4
+    s32 field_0x8;  // 0x8
+    s32 state;      // 0xC
+    f32 field_0x10; // 0x10
 } MotRoll;
 void roll_upstairs(void);
 void mot_roll(void);

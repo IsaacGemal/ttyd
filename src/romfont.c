@@ -46,7 +46,7 @@ const char* romFontGetMessage(s32 msg) {
 }
 
 void romFontInit(void) {
-    wp->unk0 = 0;
+    wp->glyphs = 0;
     wp->uniqueChars = 0;
     if (OSGetFontEncode() == OS_FONT_ENCODE_SJIS) {
         wp->language = 0;
@@ -135,9 +135,9 @@ void romFontMake(void) {
     OSLoadFont(fontData, fontTmp);
 
     /* 5. Bake each unique glyph into the cache. */
-    wp->unk0 = __memAlloc(HEAP_DEFAULT, wp->uniqueChars * sizeof(RomFontChar));
-    memset(wp->unk0, 0, wp->uniqueChars * sizeof(RomFontChar));
-    glyph = wp->unk0;
+    wp->glyphs = __memAlloc(HEAP_DEFAULT, wp->uniqueChars * sizeof(RomFontChar));
+    memset(wp->glyphs, 0, wp->uniqueChars * sizeof(RomFontChar));
+    glyph = wp->glyphs;
     for (i = 0; i < wp->uniqueChars; i++) {
         if (uniqueChars[i] < 0x100) {
             c[0] = (s8)uniqueChars[i];
@@ -152,7 +152,7 @@ void romFontMake(void) {
         glyph++;
     }
 
-    DCFlushRange(wp->unk0, wp->uniqueChars * sizeof(RomFontChar));
+    DCFlushRange(wp->glyphs, wp->uniqueChars * sizeof(RomFontChar));
 
     __memFree(HEAP_DEFAULT, fontTmp);
     __memFree(HEAP_DEFAULT, fontData);
@@ -164,11 +164,11 @@ void romFontMake(void) {
 static RomFontChar* romFontFindChar(u16 code) {
     RomFontChar* cur;
     s32 n;
-    for (n = 0, cur = wp->unk0; n < wp->uniqueChars; n++, cur++) {
+    for (n = 0, cur = wp->glyphs; n < wp->uniqueChars; n++, cur++) {
         if (cur->code == code)
             return cur;
     }
-    return wp->unk0;
+    return wp->glyphs;
 }
 
 // Matches 100%.
@@ -245,7 +245,7 @@ void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ..
             i += 1;
             continue; // no glyph drawn
         } else {      // ctrl / 0xA0-0xDF -> .notdef
-            glyph = wp->unk0;
+            glyph = wp->glyphs;
             i += 1;
         }
 

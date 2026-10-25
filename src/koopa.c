@@ -315,8 +315,8 @@ void kpaPreInit(void) {
     memset(KPA(mp), 0, 0x154);
     KPA(mp)->level = 1;
     KPA(mp)->moveRate = 1;
-    KPA(mp)->unkE0 = 0;
-    KPA(mp)->unkD8 = 1;
+    KPA(mp)->field_0xE0 = 0;
+    KPA(mp)->field_0xD8 = 1;
     mp = marioGetPtr();
     KPA(mp)->sfxId = KPA_SFX_NONE;
     mp = marioGetPtr();
@@ -777,8 +777,8 @@ void kpaFireAttack(void) {
     case 1:
         mp->flags &= ~0xF0000;
         mp->airTimer = 0;
-        KPA(mp)->unkD8 = (KPA(mp)->level == 0) ? 0xC : 8;
-        KPA(mp)->unkE0 = 0;
+        KPA(mp)->field_0xD8 = (KPA(mp)->level == 0) ? 0xC : 8;
+        KPA(mp)->field_0xE0 = 0;
         KPA(mp)->attackTimer = 0;
         KPA(mp)->attackMode = 0x14;
         if (!(mp->flags & 0x20)) {
@@ -857,8 +857,8 @@ void kpaFireAttack(void) {
 
     switch (KPA(mp)->attackMode) {
     case 0x1E:
-        KPA(mp)->unkD8 = (KPA(mp)->level == 0) ? 0xC : 8;
-        KPA(mp)->unkE0 = 0;
+        KPA(mp)->field_0xD8 = (KPA(mp)->level == 0) ? 0xC : 8;
+        KPA(mp)->field_0xE0 = 0;
         KPA(mp)->attackTimer = 0;
         KPA(mp)->attackMode = 0x28;
         if (!(mp->flags & 0x20)) {
@@ -1046,7 +1046,7 @@ void kpaFireMain(void) {
                 if (root->noHit != 0) {
                     continue;
                 }
-                if (root->unk1C <= 0x10) {
+                if (root->field_0x1C <= 0x10) {
                     continue;
                 }
                 f30 = float_7_804203dc * root->radius;

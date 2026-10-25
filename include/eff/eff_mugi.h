@@ -22,7 +22,7 @@ typedef struct MugiKemuriWork {
 	f32 scaleSpeed;  // 0x2C
 	f32 scale;       // 0x30
 	f32 speed;       // 0x34
-	f32 unk38;       // 0x38
+	f32 field_0x38;  // 0x38
 	f32 time;        // 0x3C
 	f32 timeAdd;     // 0x40
 	f32 timeVel;     // 0x44

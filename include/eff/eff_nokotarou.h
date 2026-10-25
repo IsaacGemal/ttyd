@@ -15,7 +15,7 @@ typedef struct NokotarouWork {
 	f32 scaleAnim; // 0x20
 	s32 alpha;     // 0x24
 	s32 lifetime;  // 0x28
-	u8 unk2C[0x4]; // 0x2C
+	u8 pad_0x2C[0x4]; // 0x2C
 	s32 animPose;  // 0x30
 	s32 animPose2; // 0x34
 } NokotarouWork;
