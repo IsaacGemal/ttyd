@@ -437,7 +437,7 @@ void mot_hammer2(void) {
     case 0:
         mario->flags |= 0x80;
         mario->dispFlags |= 4;
-        mario->jabaraRubCount = 0;
+        mario->rubCount = 0;
         mario->chargeLevel = 0;
         mario->baseSpeed = float_0_8041a9a8;
         mario->airTimer = 0;
@@ -488,12 +488,12 @@ void mot_hammer2(void) {
     case 0xA:
         if (marioGetRub(0x200, &rub1, &rub2, &rub3) == 1) {
             mario->hammer2Flags &= ~1;
-            mario->jabaraRubCount++;
-            if (mario->jabaraRubCount >= 0x14) {
-                mario->jabaraRubCount = 0x14;
+            mario->rubCount++;
+            if (mario->rubCount >= 0x14) {
+                mario->rubCount = 0x14;
             }
         }
-        if (mario->jabaraRubCount >= 4) {
+        if (mario->rubCount >= 4) {
             mario->hammer2AnimTime += 6.0f;
             if (mario->hammer2AnimTime >= 72.0f) {
                 mario->hammer2AnimTime = 72.0f;
@@ -512,7 +512,7 @@ void mot_hammer2(void) {
             m2->camZoomFocusOfs = vec3_802c5a80;
 #endif
             mario->hammer2Flags |= 0x1000;
-        } else if (mario->jabaraRubCount >= 3) {
+        } else if (mario->rubCount >= 3) {
             marioChgPaper("P_H_1A");
             level = mario->hammer2Flags;
             if (!(level & 1)) {
@@ -546,7 +546,7 @@ void mot_hammer2(void) {
                     mario->hammer2Flags &= ~0x10;
                 }
             }
-        } else if (mario->jabaraRubCount >= 2) {
+        } else if (mario->rubCount >= 2) {
             marioChgPaper("P_H_1A");
             level = mario->hammer2Flags;
             if (!(level & 1)) {

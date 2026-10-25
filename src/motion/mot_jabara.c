@@ -472,7 +472,7 @@ void mot_jabara(void) {
     switch (mario->currSubMotionId) {
     case 0:
         mario->dispFlags |= 0x100;
-        mario->jabaraRubCount = 1;
+        mario->rubCount = 1;
         mario->chargeLevel = 0;
         mario->airTimer = 0;
         mario->airTimerPeak = 0;
@@ -516,13 +516,13 @@ void mot_jabara(void) {
     case 12:
         sp3C = marioChkOverheadJabara(&sp40, &sp38);
         if (marioGetRub(0x100, &sp48, &sp4C, &sp44) == 1) {
-            mario->jabaraRubCount = mario->jabaraRubCount + 1;
-            if (mario->jabaraRubCount >= 0x14) {
-                mario->jabaraRubCount = 0x14;
+            mario->rubCount = mario->rubCount + 1;
+            if (mario->rubCount >= 0x14) {
+                mario->rubCount = 0x14;
             }
         }
         {
-            s8 jt = mario->jabaraRubCount;
+            s8 jt = mario->rubCount;
             if (jt == 3) {
                 if (!(marioGetPtr()->jabaraWork->flags & 0x40000)) {
                     marioGetPtr()->jabaraWork->flags |= 0x40000;

@@ -2704,15 +2704,15 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
     }
 }
 
-void animSetPaperTexObj(GXTexObj* a1, GXTexObj* a2, GXTexObj* a3, void* a4, void* a5, void* a6, s32 a7, s32 a8) {
-    wp->mpTexObjs[0] = a4 ? a1 : NULL;
-    wp->mpTexObjs[1] = a5 ? a2 : NULL;
-    wp->mpCurTexObj = a6 ? a3 : NULL;
-    wp->mpTexDatas[0] = a4;
-    wp->mpTexDatas[1] = a5;
-    wp->mpCurTexData = a6;
-    wp->useTexAlpha[0] = a7;
-    wp->useTexAlpha[1] = a7;
+void animSetPaperTexObj(GXTexObj* texObj0, GXTexObj* texObj1, GXTexObj* curTexObj, void* texData0, void* texData1, void* curTexData, s32 useTexAlpha, s32 unused) {
+    wp->mpTexObjs[0] = texData0 ? texObj0 : NULL;
+    wp->mpTexObjs[1] = texData1 ? texObj1 : NULL;
+    wp->mpCurTexObj = curTexData ? curTexObj : NULL;
+    wp->mpTexDatas[0] = texData0;
+    wp->mpTexDatas[1] = texData1;
+    wp->mpCurTexData = curTexData;
+    wp->useTexAlpha[0] = useTexAlpha;
+    wp->useTexAlpha[1] = useTexAlpha;
 }
 
 // animPoseRelease
@@ -3462,8 +3462,8 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
     AnimationPose* prevPose;
     AnimData* prevAnimData;
     AnimationPoseData* prevPoseData;
-    u32 prevD8;
-    u32 prevDC;
+    u32 prevUseTexAlpha0;
+    u32 prevUseTexAlpha1;
 
     prevPose = wp->mpCurPose;
     prevAnimData = wp->mpCurAnimData;
@@ -3477,8 +3477,8 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
     prevPaperMtx0 = wp->paperMtxPtr[0];
     prevPaperMtx1 = wp->paperMtxPtr[1];
     prevPaperMtx2 = wp->paperMtxPtr[2];
-    prevD8 = wp->useTexAlpha[0];
-    prevDC = wp->useTexAlpha[1];
+    prevUseTexAlpha0 = wp->useTexAlpha[0];
+    prevUseTexAlpha1 = wp->useTexAlpha[1];
 
     wp->mpCurPose = pose;
     wp->mpCurAnimData = animPoseGetBaseData(pose)->mpAnims[pose->animId].data;
@@ -3511,8 +3511,8 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
     wp->paperMtxPtr[0] = prevPaperMtx0;
     wp->paperMtxPtr[1] = prevPaperMtx1;
     wp->paperMtxPtr[2] = prevPaperMtx2;
-    wp->useTexAlpha[0] = prevD8;
-    wp->useTexAlpha[1] = prevDC;
+    wp->useTexAlpha[0] = prevUseTexAlpha0;
+    wp->useTexAlpha[1] = prevUseTexAlpha1;
 }
 
 s32 animPoseGetShapeIdx(s32 poseId, const char* name) {

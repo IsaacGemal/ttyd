@@ -154,7 +154,8 @@ typedef struct MarioWork {
     u8 wallPushCount;              // 0x3F, frames pressed against a (non-bero) front wall, capped at 20: at 20 the wall becomes
                                    //       hitobjPush (marioCheckWall); marioSearchFrontWall_staying clears it
 	s8 wMotionTimer;               // 0x40
-    s8 jabaraRubCount;             // 0x41, mot_jabara: stick rubs counted by marioGetRub (capped at 20); 2 and 3 raise the charge
+    s8 rubCount;                   // 0x41, stick rubs counted by marioGetRub (capped at 20) while charging: mot_jabara 2 and 3,
+                                   //       mot_hammer2 2, 3 and 4 raise chargeLevel
     s8 chargeLevel;                // 0x42, charge reached: mot_jabara 0, 2 or 3 (picks the launch's jump integrator values),
                                    //       mot_hammer2 1-3 (picks the release pose and swing)
     s8 dispHalfTurn;               // 0x43, 0/1 half-turn flag: mot_roll adds 180 to its display target, mot_hammer sets it from marioGetRub's side

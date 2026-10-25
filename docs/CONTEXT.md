@@ -7287,7 +7287,7 @@ win_root, winmgr).
 - **mario.h (MarioWork)**: `kpaStageFlags` (0x14, kpaPreInit's 2D-stage bits; s32 removes koopa.c's MW_S32 macros),
   `frameCount` (0x34, bumped once per main step; marioUpdateBlurPos records on odd counts), `hammerSfxIdx` (0x3A),
   `dokanType` (0x3E, evt_mario_paper_pose_dokan's type; mot_dokan, partyDokanInit), `wallPushCount` (0x3F, 20 frames
-  against a wall make it hitobjPush), `jabaraRubCount` (0x41) and `chargeLevel` (0x42, shared: mot_jabara's 0/2/3 and
+  against a wall make it hitobjPush), `rubCount` (0x41, marioGetRub's count) and `chargeLevel` (0x42; both shared: mot_jabara's 0/2/3 and
   mot_hammer2's 1-3 pick the release), `stayTimer` (0x5A), the camera block from mario_cam and camdrv
   (`camShiftSideTarget/Cur`, `camShiftUpTarget/Cur`, `camZoomWeightTarget/Cur` eased at `camShiftRate`, the names
   marioResetCamShift/marioResetCamShiftRate reset; `camZoomWeight`/`camZoom`/`camZoomFocusOfs`, camdrv's zoom blend;
@@ -7333,7 +7333,7 @@ win_root, winmgr).
 - **For a reviewer.** Files outside this task's set changed only where a renamed field's reader lives: battle_actrecord,
   battle_information, battle_seq (FieldBattleInfo/BattleGroupSetup) are fbattle's, win_root (one `clip->end`) is
   fsound's; expect small merge conflicts there. AnimData's z components and BLEND2/VER1_02 are the least direct
-  evidence (win_log's full-Vec copy; the original's mapSetBlend2 and the "ver1.02" string). `chargeLevel` replaced the
-  narrower `jabaraChargeLevel` once mot_hammer2's use showed up. The spline prototypes, mapObjGetPosSub's BOOL and the
+  evidence (win_log's full-Vec copy; the original's mapSetBlend2 and the "ver1.02" string). `rubCount` and `chargeLevel` carry
+  one meaning in both mot_jabara and mot_hammer2, so neither name has a motion prefix. The spline prototypes, mapObjGetPosSub's BOOL and the
   callbacks' CameraId change existing header declarations (the n9-q-o-proto precedent); the barriern tables stay u32
   data, so their stores take a `(Vec*)` cast (barriern v2's struct_ptr_cast 5 -> 17 while its field_0x goes 27 -> 0).
