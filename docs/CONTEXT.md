@@ -8467,8 +8467,8 @@ which is ScissorWork's pad_0x04, but only TimingA commands and unit scripts call
 battle_event_cmd computes `hopY - hopY` (battle_event_cmd.c ~4351/4411), which the matching build shows is the
 original's own offset, so BattleUnit 0x1BC stays untouched.
 
-Counts (`tools/cleanup_index.py`, bf361fce -> this branch, same script): index **11.962 -> 11.767** per kLOC
-(8355 -> 8219 weighted); field_0x 1340 -> 1272, prim_ptr_cast 1873 -> 1821, struct_ptr_cast 1191 -> 1175, every other category unchanged. In src/battle + include/battle: field_0x 278 -> 210,
+Counts (`tools/cleanup_index.py`, d3584632 -> this branch, same script): index **11.817 -> 11.622** per kLOC
+(8254 -> 8118 weighted); field_0x 1338 -> 1270, prim_ptr_cast 1798 -> 1746, struct_ptr_cast 1191 -> 1175, every other category unchanged. In src/battle + include/battle: field_0x 278 -> 210,
 prim_ptr_cast 201 -> 149, struct_ptr_cast 157 -> 141, weighted 1270 -> 1134; sac_genki.c
 151 -> 119 weighted (96.5 -> 75.6 per kLOC), still fifth of the worst ten: what is left there is the file's .rodata
 vec3 objects (46 address names, read through 14 deref casts; data definitions, not touched), the five guarded
