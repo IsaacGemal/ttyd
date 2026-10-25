@@ -49,10 +49,6 @@ MapWork* mapWork; //allocates two entries
 //forward decls for functions defined later in this file
 static MapObject* mapGetMapObjSub(const char* name);
 
-
-
-// the TEV-stage callback slots at mapWork[activeGroup]+0x110 (16 entries)
-
 // The CMPR texture the 0x800000 material pass samples (4x64).
 static u8 texture_0[0x100] ATTRIBUTE_ALIGN(32) = {
 	0xEB, 0x88, 0xE2, 0x28, 0x55, 0xFF, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -76,10 +72,8 @@ static u8 texture_0[0x100] ATTRIBUTE_ALIGN(32) = {
 
 extern int __float_nan[];
 #define SPLINE_NAN (*(f32*)__float_nan)
-//local prototypes
-//anim functions?
 
-void mapErrorEntry(s32 arg0, const char* arg1) { //1:1
+void mapErrorEntry(s32 arg0, const char* arg1) {
 	// Indexing error_data directly (rather than a saved base pointer) is what makes MWCC's inlined copies
 	// of this function allocate the index to r0; the saved-pointer form does not inline to the target code.
 	error_data[error_count].field_0x20 = arg0;
@@ -109,8 +103,7 @@ s32 mapGetActiveGroup(void) {
 	return activeGroup;
 }
 
-//heavily inlined
-void mapGetJointsSub(MapFileJoint* joint, s32* numJoints) { //1:1
+void mapGetJointsSub(MapFileJoint* joint, s32* numJoints) {
 	(*numJoints)++;
 	if (joint->child) {
 		mapGetJointsSub(joint->child, numJoints);
@@ -120,7 +113,7 @@ void mapGetJointsSub(MapFileJoint* joint, s32* numJoints) { //1:1
 	}
 }
 
-s32 mapGetJoints(MapFileJoint* joint) { //1:1
+s32 mapGetJoints(MapFileJoint* joint) {
 	s32 numJoints;
 
 	numJoints = 0;
@@ -133,9 +126,8 @@ s32 mapGetJoints(MapFileJoint* joint) { //1:1
 	return numJoints;
 }
 
-// MATCH. The original signature is by pointer: the caller passes two stack addresses in r3/r4 and the target
-// writes through them word-by-word with no local buffer. A by-value Vec parameter makes MWCC keep the struct
-// in registers and buffer the copy (90% match); `Vec*` plus this declaration order (wp first) gives 100%.
+// The original signature is by pointer: the caller passes two stack addresses in r3/r4 and the target writes
+// through them word by word with no local buffer.
 void mapGetBoundingBox(Vec* min, Vec* max) {
 	MapWork* wp;
 	MapObject* obj;
@@ -536,11 +528,6 @@ void mapCheckAnimation(const char* animName, BOOL* done, f32* remaining) {
 	}
 }
 
-// the 1.0f/1000.0f literals must be the named .sdata2 externs, and float_0/float_1 must be
-// declared `const` (they are read-only in the original) so the compiler hoists both loads ahead of
-// the stores and assigns f1=float_0, f0=float_1. objdiff still prints an arg_mismatch for the
-// compiler-generated int->float `double_to_int` constant (local @nnnn vs the named .rodata symbol);
-// it is a relocation-only difference and does not affect the instruction score.
 void mapPlayAnimationLv(const char* name, s32 a2, s32 level) {
 	MapWork* wp;
 	MapEntry* entry;
@@ -669,8 +656,6 @@ void mapSetPlayRate(const char* name, f32 rate) {
 		found->rate = rate;
 	}
 }
-
-//more animation functions
 
 // The loader searches the chunk table by name seven times; the search inlines into each caller.
 static inline void* mapLoadFindChunk(MapHeader* header, const char* name) {
@@ -927,8 +912,6 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	mapLoadDispFlags(group);
 	mapDispDisabled = 0;
 }
-
-// An empty string; symbols.txt names it as a float.
 
 // `i = 0; activeGroup = i;` plus `opt_propagation off` matched this; the pragma keeps the assignment
 // from constant-folding to a fresh r0 so i keeps r30.
@@ -2227,7 +2210,6 @@ void mapDispMapGrp_bbox(CameraId camId, MapObject* obj) {
 	GXReadBoundingBox(&obj->bboxLeft, &obj->bboxTop, &obj->bboxRight, &obj->bboxBottom);
 }
 
-// 1:1
 void mapDisp(void) {
 	MapWork* wp;
 	MapEntry* entry;
@@ -3441,7 +3423,6 @@ void mapResetPaperCraftAmbColor(void) {
 }
 
 
-// 1:1
 void mapSetMaterialLight(s32 flags, Vec position) {
 	LightEntry* lights[8];
 	LightEntry* light;
@@ -3577,11 +3558,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 	}
 }
 
-// vertex layout of an unpacked display list (stride 0x18)
-
-// per-mesh vtx-format block (entry->vcdTable)
-
-// The vertex loop writes x through `v->verts[n]` and y, z and the texture indices through `p`; reading all
+// The vertex loop writes posIdx through `v->verts[n]` and the other indices through `p`; reading all
 // of them through `p` schedules the first load one slot later.
 static const GXVtxAttrFmtList attr_fmt[] = {
 	{GX_VA_POS, GX_POS_XYZ, GX_F32, 0},
@@ -3764,28 +3741,28 @@ MapFileJoint* mapSearchDmdJoint(MapFileJoint* joint, const char* name) {
 	}
 }
 
-MapObject* mapGetMapObj(const char *name) { // 1:1
-    MapWork *wp;
-    MapEntry* entry;
-    int j;
-    int i;
-    MapObject *object;
-    
-    wp = mapGetWork();
-    if (!name) {
-        return 0;
-    }
+MapObject* mapGetMapObj(const char* name) {
+	MapWork* wp;
+	MapEntry* entry;
+	int j;
+	int i;
+	MapObject* object;
 
-    for (i = 0; i < wp->entries[0].count; i++) {
-        entry = &wp->entries[i];
-        object = entry->objects;
-        for (j = 0; j < entry->numJoints; j++, object++) {
-            if (!strcmp(object->joints->name, name)) {
-                return object;
-            }
-        }
-    }
-    return 0;
+	wp = mapGetWork();
+	if (name == NULL) {
+		return NULL;
+	}
+
+	for (i = 0; i < wp->entries[0].count; i++) {
+		entry = &wp->entries[i];
+		object = entry->objects;
+		for (j = 0; j < entry->numJoints; j++, object++) {
+			if (!strcmp(object->joints->name, name)) {
+				return object;
+			}
+		}
+	}
+	return NULL;
 }
 
 void mapObjFlagOn(const char* name, u32 flag) {
@@ -3886,7 +3863,7 @@ void mapGrpClearOffScreen(const char* name) {
 void mapObjRotate(const char* name, f32 x, f32 y, f32 z) {
 	MapObject* obj = mapGetMapObjSub(name);
 
-	if (obj) {
+	if (obj != NULL) {
 		Mtx mx;
 		Mtx my;
 		Mtx mz;
@@ -3909,7 +3886,7 @@ void mapObjRotate(const char* name, f32 x, f32 y, f32 z) {
 void mapObjTranslate(const char* name, f32 x, f32 y, f32 z) {
 	MapObject* obj = mapGetMapObjSub(name);
 
-	if (obj) {
+	if (obj != NULL) {
 		Mtx m;
 		u32* flags = &obj->flags;
 
@@ -3926,7 +3903,7 @@ void mapObjTranslate(const char* name, f32 x, f32 y, f32 z) {
 void mapObjScale(const char* name, f32 x, f32 y, f32 z) {
 	MapObject* obj = mapGetMapObjSub(name);
 
-	if (obj) {
+	if (obj != NULL) {
 		Mtx m;
 		u32* flags = &obj->flags;
 
@@ -4055,14 +4032,14 @@ void mapBlendOff2(void) {
 void mapObjSetColor(const char* name, GXColor* color) {
 	MapObject* obj = mapGetMapObjSub(name);
 
-	if (obj) {
+	if (obj != NULL) {
 		obj->color = *color;
 		obj->flags |= MAPOBJ_FLAG_COLOR;
 	}
 }
 
 void setColor(MapObject* obj, GXColor color, s32 withNext) {
-	if (obj == 0) return;
+	if (obj == NULL) return;
 	obj->color = color;
 	obj->flags |= MAPOBJ_FLAG_COLOR;
 	if (obj->child) {
@@ -4075,14 +4052,14 @@ void setColor(MapObject* obj, GXColor color, s32 withNext) {
 
 static MapObject* mapGetMapObjSub(const char* name) {
 	MapEntry* entry;
-	MapWork *wp;
+	MapWork* wp;
 	int j;
 	int i;
-	MapObject *object;
+	MapObject* object;
 
 	wp = mapGetWork();
-	if (!name) {
-		return 0;
+	if (name == NULL) {
+		return NULL;
 	}
 
 	for (i = 0; i < wp->entries[0].count; i++) {
@@ -4094,7 +4071,7 @@ static MapObject* mapGetMapObjSub(const char* name) {
 			}
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 void mapGrpSetColor(const char* name, GXColor color) {
@@ -4375,7 +4352,7 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 
 	color = (GXColor){r, g, b, a};
 	obj = mapGetMapObjSub(name);
-	if (obj) {
+	if (obj != NULL) {
 		obj->color = color;
 		obj->flags |= MAPOBJ_FLAG_COLOR;
 	}
@@ -4390,7 +4367,7 @@ void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 void mapObjGetFlushColor(const char* name, u8* r, u8* g, u8* b, u8* a) {
 	MapObject* obj = mapGetMapObjSub(name);
 
-	if (!obj) {
+	if (obj == NULL) {
 		mapErrorEntry(0, name);
 		return;
 	}
