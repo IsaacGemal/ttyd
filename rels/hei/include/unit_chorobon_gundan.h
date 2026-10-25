@@ -20,13 +20,6 @@ typedef struct ChorogunEntry {
 extern ChorogunEntry* chorogun;
 extern s32 chorogun_targetId;
 
-// One entry of the ext-entry table handed to evt_ext_entry for the chorogun horde.
-typedef struct ChorogunExtEntry {
-    const char* modelName; // 0x0
-    const char* poseName;  // 0x4
-    f32 field_0x8;         // 0x8
-} ChorogunExtEntry;
-
 USER_FUNC(chorogun_escape_all);
 USER_FUNC(chorogun_escape);
 USER_FUNC(chorogun_after_attack);

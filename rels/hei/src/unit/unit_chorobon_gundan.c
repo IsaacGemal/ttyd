@@ -794,7 +794,7 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-static ChorogunExtEntry chorogun_ext_entry_data[21] = {
+static ExtMakeTextureEntry chorogun_ext_entry_data[21] = {
     { "c_chorobon", "CBN_W_1", 0.0f },
     { "c_chorobon", "CBN_W_1", 2.0f },
     { "c_chorobon", "CBN_W_1", 4.0f },
