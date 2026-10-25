@@ -167,7 +167,7 @@ typedef struct MarioWork {
     s16 airTimerPeak;              // 0x52, airTimer when the jump peaks (marioJump, koopa_motion), cleared on landing; marioBoots and marioChkHipAttack test it
     s16 airTimerPrev;              // 0x54, airTimer copied at the end of the frame (mario.c, read by mario_kemuri)
     u8 field_0x56[0x58 - 0x56];    // 0x56
-    s16 field_0x58;                // 0x58
+    s16 lowHpPoseTimer;            // 0x58, mot_stay: frames into the M_S_3 pose it picks at HP <= 5 (wraps past 0xF0); sounds 0xE1 at 15, 0xE2 at 135
     s16 stayTimer;                 // 0x5A, mot_stay: frames standing (cleared on entry); after a second the idle poses are chosen
     s16 camZoomOffDelay;           // 0x5C, frames until marioCamZoomOff ends the zoom (marioCamZoomOffReq sets 32)
     s16 camZoomOffTimer;           // 0x5E, frames of the zoom-out evt_cam3d_evt_off runs; dispFlags 0x100000 clears at 0 (marioMain)
@@ -189,7 +189,9 @@ typedef struct MarioWork {
     Vec dispRot;                   // 0xBC, display rotation in degrees (x, z); y is not read: the y rotation comes from dispDir - targetYaw
     Vec scale;                     // 0xC8
     Vec lastGroundPos;             // 0xD4, position copied whenever airTimer is 0 (mot_jump, mot_roll)
-    Vec field_0xE0;                // 0xE0, bgTmp source in mot_damage
+    Vec fallReturnPos;             // 0xE0, where a fall puts Mario back: mot_bottomless's landing point (y < -2000, as marioReInit's
+                                   //       -10000, means none: a per-map fallback) and mot_damage's return target in bg mode;
+                                   //       mot_dokan stores position here at the end of each pipe exit
     Vec camFollowPos;              // 0xEC, the point the 3D camera follows: camdrv copies x/z into marioPos and eases y at camFollowRate
     Vec camCollision;              // 0xF8, marioUpdateCamCollision
     u8 unk104[0x110 - 0x104];      // 0x104
@@ -320,7 +322,11 @@ typedef struct MarioWork {
         s32 hammerSwingType;       // 0x2A8, mot_hammer: swing type stored at the start, switched on at impact for the effect offset
     };
     union {
-        f32 field_0x2AC;           // 0x2AC, f32 in mot_plane, mot_damage, mot_slit and mot_bottomless (s32 0 in mot_roll/mot_jabara resets)
+        f32 field_0x2AC;           // 0x2AC, f32 in mot_bottomless (movePos speed; s32 0 in mot_roll/mot_jabara resets)
+        f32 planeEndY;             // 0x2AC, mot_plane: y the flight ended at (chkCollision's hit y, or position.y on a cancel or stall);
+                                   //        the exit puts position.y 1 above it, 37 lower after a head hit
+        f32 damageVelY;            // 0x2AC, mot_damage: per-frame rise added to position.y out of the damage floor (20, or 4 in
+                                   //        mot_damageToge; 1 less each frame, at least 10)
         f32 slitPrevY;             // 0x2AC, mot_slit: position.y at the last slit state 10 frame (a change calls slitResetBounce)
     };
     union {
