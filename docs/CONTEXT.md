@@ -7224,3 +7224,116 @@ weighted); field_0x 4624 -> 3879, raw_offset 177 -> 173, deref_cast 489 -> 485, 
 struct_ptr_cast 1245 -> 1243. `field_0x` occurrences per header (grep, comments included): battle_unit.h 49 -> 17,
 battle.h 47 -> 3, battle_audience.h 25 -> 6, battle_ac.h 17 -> 6, battle_camera.h 8 -> 1, battle_stage.h 4 -> 1,
 battle_database_common.h 5 -> 4.
+## Driver and Mario header fields named from their consumers; mapdrv.c deep-cleaned (2026-10-24, Claude Opus 5.5, n9-q-fmap)
+
+Task (Isaac): name and type the `field_0xNN` members of include/driver/mapdrv.h, animdrv.h, include/mario/mario.h and
+the other include/driver and include/mario headers under CLEANUP_GUIDE section 3 (name from the reader, one name per
+meaning, evidence per name, placeholder when unsure), update every consumer, then deep-clean src/driver/mapdrv.c as
+#1110/#1114 did. Parallel branches: fbattle (include/battle, src/battle) and fsound (sound, pmario_sound, win_main,
+win_root, winmgr).
+
+- **Method.** Untracked harness in build/fmap/: every object saved before the branch (base/, 1,230); b.sh (full build,
+  BUILD-OK only when `build/G8MJ01/ok` is recreated), t.sh (one object, obj_equiv against base), fd.sh (one function's
+  disassembly against base), errsites.py (rename a header's fields to a sentinel and compile every includer with
+  `-maxerrors 200`, with and without MUST_MATCH, to list every consumer line), fixer.py (rewrite `->OLD` on exactly the
+  lines the compiler rejects, repeated until none are left), nat.py (every includer of the changed headers compiled
+  without MUST_MATCH; 999 sources at the end), gate.sh (all of that plus CI). CI ran through the tower's
+  `~/ci_notests.py` (tools/tests skipped: test_wave_launch and test_reloc_value_check fail here for environment reasons;
+  no tool changed); its baseline was `--init`ed from this tree's first build, byte-identical to 35dc3b78. Every commit:
+  BUILD-OK, nat.py 0 failed, CI PASS, fncast_lint and local_prototypes clean. At the end `obj_equiv --tree` over all
+  1,230 objects against the pre-branch ones: every one equivalent.
+- **Counts** (`tools/cleanup_index.py`, 35dc3b78 -> this branch): index **16.972 -> 15.948** per kLOC (11857 -> 11141
+  weighted): field_0x 4624 -> 3959, raw_offset 177 -> 160, prim_ptr_cast 1902 -> 1887, struct_ptr_cast 1245 -> 1247,
+  deref_cast 489 -> 488, must_match 703 -> 701. Per header, `field_0x` sites (weighted): mapdrv.h 64 -> 28 (65 -> 29),
+  animdrv.h 37 -> 11 (38 -> 12), mario.h 39 -> 22 (41 -> 24), npcdrv.h 8 -> 2, mobjdrv.h 5 -> 0, envdrv.h 6 -> 3,
+  effdrv.h 5 -> 2, casedrv.h 2 -> 1, extdrv.h 2 -> 1; mario_pouch, mariost, seqdrv, msgdrv, icondrv, imgdrv, lightdrv
+  and offscreendrv unchanged. src/driver/mapdrv.c 177 -> 53 weighted (field_0x 114 -> 10, prim_ptr_cast 13 -> 4,
+  struct_ptr_cast 12 -> 1); other big drops: mot_hammer 164 -> 67, animdrv.c 116 -> 61, koopa 62 -> 40, mot_stay
+  51 -> 22 (its MWS32 raw offsets), mario_balloon 22 -> 3.
+- **mapdrv.h** (field -> name -> reader):
+  - MapMatTexRef 0x0 -> `texture` (block: `name` mapMatSearchTex's key in mapSetMaterial/mapBuildTexture, `texFmtIdx`
+    the texfmt_tbl index mapBuildTexture's switch writes, `width`/`height`/`data` copies of TEXHeader's); 0xA and
+    MapMaterial 0xA -> `renderMode` (_mapEnt: 2 or 1 asks for MapObject render mode 2 or 1).
+  - MapMaterial 0x8 -> `matSrc` (mapSetMaterial: 0 GX_SRC_REG, 1 GX_SRC_VTX for GXSetChanCtrl), 0x10C -> `blendColor`
+    (mapSetMaterialLastStageBlend's color2, mapTestXLU, mapAnimAlphaObj), 0x110 -> `tevMode` (its first byte is
+    mapSetMaterialTev's drawMode). MapMatTexMtx's array view -> `channels` (mapAnimColorObj).
+  - MapJointDrawMode unk2 -> `flags`, unk4 -> `lightMask` (mapSetLight: bit i lights light_table entry i), unk8 ->
+    `attributes` (hitdrv copies it to HitEntry.attributes). MapAnimChannel unk4/unk8 -> `inTangent`/`outTangent` (the
+    Hermite tan1 of the later key and tan0 of the earlier one in mapCalcAnimMatrix and the mapAnim* steps).
+  - MapAnimTableEntry 0x8 -> `duration` (mapMain wraps at it, mapCheckAnimation and aji_06 read it; SPM's field and
+    its mapGetPlayDuration symbol agree), 0xC-0x1C -> `jointTracks`/`texMtxTracks`/`alphaTracks`/`lightPosTracks`/
+    `lightColorTracks` (what mapMain hands each list to); MapAnimTable `count`/`entries`; MapAnimTexMtxItem 0x4 ->
+    `texMtxIdx` (indexes MapMaterial.entries).
+  - MapVtxArray 0x4 -> `data`; MapVtxFmt -> `posArray`, `nrmArray`, `clrArray[2]`, `texArrayCount`, `texArray[8]`
+    (the GXSetArray calls in mapSetPolygon/mapSetPolygonVtxDesc; hitdrv's posArray read was a raw word). MapVtx and
+    MapVtxList moved here from mapdrv.c: `posIdx`/`nrmIdx`/`clrIdx`/`texIdx` (mapSetPolygon sends them as GX_INDEX16
+    POS, NRM, CLR0, TEXi in that order; hitdrv indexes posArray with posIdx), `count`; normalLists are MapVtxList*.
+    PackedDisplayList's first word is the relocated list, `u8* data`.
+  - MapEntry 0x170/0x174 -> `datAram`/`chunkBufAram` (bmapLoad's aramMgrToAram copies, bmapUnLoad's way back).
+    MapObject unkAC -> `userMtx` (mapObjRotate/Translate/Scale; hitdrv, evt_door, evt_light, aji_13, dou_11).
+    MapFileLight 0x3C/0x40 -> `flags`/`version` (_mapLoad passes flags to lightEntry only when version is 0x12D60D8).
+    The texture and material name tables' `count`/`names`, `name`/`material`, `count`/`entries`.
+  - New enums with a reader for every bit: MapEntryAnimFlags (ACTIVE, DONE, LOOP, PAUSE, RESTART, LV0-LV3 from
+    gp->systemLv*Time, HIT_UPDATED from hitdrv) and MapEntryFlags (FOG, BLEND, BLEND2, VER1_02: the "ver1.02" packed
+    format). MapEntry flag 0x8 (blend[2], set only by eff_majinai) stays hex.
+- **animdrv.h**: AnimDataClip `loop`/`start`/`end` (animPoseMain wraps or clamps; the window and effect files read
+  end/start), AnimFrame2 `value` (pose->evtValue), the delta records' `skip`/`dx`/`dy`/`dz`/`delta`, the node record's
+  `startTanIdx`/`endTanIdx` (tanfTbl indices of animHermite's two tangents) and the texture record's
+  `bindIdxDelta`/`transSDelta`/`transTDelta`; AnimData 0x44/0x50 -> `Vec bboxMin`/`bboxMax` (animPaperPoseDispSub's
+  paper left/right from x, bottom/top from y; win_log copies all three components), replacing the ANIMDATA_F* macros;
+  AnimationWork 0xD8/0xDC -> `s32 useTexAlpha[2]` (renderProc takes TEV stage 0 alpha from the raster when the paper
+  texture that replaced the pose's has 0). mbUseFloatScratch BOOL and mFloatScratchRP/WP s32, the types their readers
+  cast to (casts and a pun go).
+- **mario.h (MarioWork)**: `kpaStageFlags` (0x14, kpaPreInit's 2D-stage bits; s32 removes koopa.c's MW_S32 macros),
+  `frameCount` (0x34, bumped once per main step; marioUpdateBlurPos records on odd counts), `hammerSfxIdx` (0x3A),
+  `dokanType` (0x3E, evt_mario_paper_pose_dokan's type; mot_dokan, partyDokanInit), `wallPushCount` (0x3F, 20 frames
+  against a wall make it hitobjPush), `jabaraRubCount` (0x41) and `chargeLevel` (0x42, shared: mot_jabara's 0/2/3 and
+  mot_hammer2's 1-3 pick the release), `stayTimer` (0x5A), the camera block from mario_cam and camdrv
+  (`camShiftSideTarget/Cur`, `camShiftUpTarget/Cur`, `camZoomWeightTarget/Cur` eased at `camShiftRate`, the names
+  marioResetCamShift/marioResetCamShiftRate reset; `camZoomWeight`/`camZoom`/`camZoomFocusOfs`, camdrv's zoom blend;
+  `camZoomOffDelay`/`camZoomOffTimer`/`camZoomOffTime`; `camFollowPos`, camdrv's follow point; `prevCamPosX`),
+  `jumpFromPos` (0x11C, takeoff position), `stepUpY` (0x1C4, marioChkFrontStep's step top for UPSTAIRS), `sideHitNpc`
+  (0x1D8, NpcEntry* from npcCheckHitMarioSide), `hitobjEstimate` (0x200, mot_hammer's hitEstimate target),
+  `balloonEff`/`balloonNpc` (0x260/0x264, typed: mario_balloon's casts go). Union members named by their motion:
+  `kpaPoseCounter`, `planeTurnRate`, `hammerDir`, `jabaraDir`, `hammerSwingType`, `jumpRiseY`, `hammer2AnimTime`,
+  `shipDispStepY`, `stayJabaraWait`, `hammer2Flags`, `stayAHoldTimer`, and `sleepTimer` (0x2B4: mot_stay and
+  peach_stay count it, marioChkDeepSleep tests the 10 s cap; was `peachStayTimer`); mot_stay's MWS32 macro goes.
+- **Other headers**: BattleGroupSetup `heldItemWeight`/`dropTableWeight`/`noDropWeight` (BattleInformation's irand
+  bands), FieldBattleInfo `ruleKind`/`ruleCount` (BtlActRec_JudgeTurnRuleKeep, the rule messages), FieldBattleData
+  `majinaiCoinBonus` (npcdrv's coin multiplier after Merlee's coin curse); EnvironmentWork `viewMtx`/`modelMtx`/
+  `modelViewMtx` and EnvironmentYami.unk4 -> `mtx` (MapTevCallback.mtx at the same place); MapObjectWork's five hit
+  copies by the hits they copy; EffectMayaAnim `frame`, EffectMayaAnimData `duration`, EffectMayaAnimEntry `alpha`;
+  CaseEntry `evtId`; ExtMakeTextureEntry `frame` (the pose frame animPoseDisp_MakeExtTexture draws; the old comment
+  said scale).
+- **mapdrv.c.** spline_maketable/spline_getvalue take `Vec* points, f32* knots, Vec* tangents` (EQUIV; getvalue indexes
+  Vecs), so mapdrv's 13 table casts go and himo's two MUST_MATCH regions with them (its s32 table locals existed only
+  for the s32 prototype); evt_sub's SplineWork and the barriern/batten satellite works are typed to match (barriern's
+  `points` member was the knot table). _mapDispMapGrp_NoMaterial and the bbox callbacks take a CameraId (the
+  self-casts go), mapObjGetPosSub a BOOL, mapCalcAnimMatrix a MapAnimData*, mapSetMaterial a MapMaterial*.
+  Register-named locals (list19..15, f1/f5/f24/f25) are descriptive and mapSetTextureMatrix's copies go; GX and
+  CAMERA_* literals are enums; stale match-era comments, the OBJ_FLAGS macro and NULL-as-0 go.
+- **Left, and why.**
+  - mapdrv.c: `entry + 0x178` (the tpl ARAM copy lands in the next entry's `count`; retail's entry pointer is the work
+    base, so a count-first MapWork doesn't fit), _mapDispMapObj's `p + 0x10/0x14` packed walk (the indexed form swaps
+    r24/r25 in every declaration order tried, a typed pointer adds `addi 16`), the five `flag = !flag` regions, the
+    material search's `ofs`, case 8's `wave`, the stripped-function placeholder, the three pragma pairs, the
+    spline_fpclassifyf/sqrtf copies (a tree-wide family).
+  - mapdrv.h: MapMatTexMtx 0x14/0x18 and MapAnimTexMtxItem 0x8/0xC (only the rotation centre `0.5 * a * scaleX`,
+    `(1 - 0.5 * b) * scaleY` reads them), MapError (written by mapErrorEntry, never read), MapMaterial 0x0/0x9,
+    MapHeader 0x3C (only `|= 1`), MapFileLight 0x20, MapJointDrawMode unk0 (render mode request, one off from
+    MapObject.renderMode), MapFileAnimEntry (no user).
+  - animdrv: the `(u32)` on disableDraw/typeFlags `== 0` tests (the plain test differs and this task adds no guard);
+    endTanIdx stays u8 read through `(s8)` (as s8 it moves a register); paperAnim's name-or-index convention.
+  - MarioWork: 0x8 (one bit, set by mot_roll, waited on by evt_mario), 0x20/0x58/0x18C (stores only), 0xE0, 0x128
+    (landing distance in evt_mario/mot_ship, rise sum in party_yoshi), 0x164, unk60, 0x2A2, 0x2AC and the party_yoshi/
+    mario_motion/mot_dokan uses of 0x2A4/0x2B0/0x2B8, mot_hammer's M_S32(0x2A0)/M_S16(0x2A4) and mot_jabara's MW_S32
+    zero stores (an s32 member only for zero stores was rejected in n9-q-o-worst3).
+  - SequenceWork 0x10-0x1C (each sequence its own way), PouchData 0x7E/0x80 (zeroed only), LightEntry 0x3C (written
+    only), FieldBattleInfo 0x1B, the gap arrays.
+- **For a reviewer.** Files outside this task's set changed only where a renamed field's reader lives: battle_actrecord,
+  battle_information, battle_seq (FieldBattleInfo/BattleGroupSetup) are fbattle's, win_root (one `clip->end`) is
+  fsound's; expect small merge conflicts there. AnimData's z components and BLEND2/VER1_02 are the least direct
+  evidence (win_log's full-Vec copy; the original's mapSetBlend2 and the "ver1.02" string). `chargeLevel` replaced the
+  narrower `jabaraChargeLevel` once mot_hammer2's use showed up. The spline prototypes, mapObjGetPosSub's BOOL and the
+  callbacks' CameraId change existing header declarations (the n9-q-o-proto precedent); the barriern tables stay u32
+  data, so their stores take a `(Vec*)` cast (barriern v2's struct_ptr_cast 5 -> 17 while its field_0x goes 27 -> 0).
