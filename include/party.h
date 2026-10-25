@@ -57,6 +57,18 @@ typedef enum PartyFlags {
 } PartyFlags;
 #pragma enumsalwaysint on
 
+// PartyEntry.trigFlags bits that have one known meaning; the others stay numbers at their users.
+typedef enum PartyTrigFlags {
+    PARTY_TRIG_FLAG_CHG_PAPER_MOT = (1 << 0),  // allPartySlitOn/partyChgMotSlitFloor; party_slit/party_roll start on it
+    PARTY_TRIG_FLAG_CHG_MOT = (1 << 1),        // partyChgMot; the party_motion_* routine's first frame
+    PARTY_TRIG_FLAG_CHG_MOVE_MODE = (1 << 2),  // partyChgMoveMode; the party_move_mode_* routine's first frame
+    PARTY_TRIG_FLAG_CHG_RUN_MODE = (1 << 3),   // partyChgRunMode; the run mode's init (use, move, bye, hello)
+    PARTY_TRIG_FLAG_CHG_POSE = (1 << 13),      // partyChgPose; partyPreDisp reloads the pose
+    PARTY_TRIG_FLAG_CHG_PAPER = (1 << 14),     // partyChgPaper; partyPreDisp reloads the paper pose
+    PARTY_TRIG_FLAG_FOLLOW_CLOSE = (1 << 17),  // N_partyFollowCloseOn/Off
+    PARTY_TRIG_FLAG_SPLASH = (1 << 24)         // set on water (attr 0x200) when splashTimer is 0; party_move splashes
+} PartyTrigFlags;
+
 #pragma enumsalwaysint off
 typedef enum PartySlotId {
     PARTY_SLOT_PARTY = 0,    // 0x0
@@ -68,10 +80,9 @@ typedef enum PartySlotId {
 typedef struct PartyEntry {
     u32 flags;                   // 0x0
     u32 flags2;                  // 0x4
-    u32 trigFlags;               // 0x8, one-shot requests, as MarioWork.trigFlags: partyChgMot sets 0x2, partyChgMoveMode
-                                 //      0x4, partyChgRunMode 0x8, partyChgPose 0x2000, partyChgPaper 0x4000, and the motion,
-                                 //      move, run-mode or draw code they start tests and clears its bit; 0x1 starts the
-                                 //      paperMot motion; the other bits are follow and splash states (party_motion)
+    u32 trigFlags;               // 0x8, PartyTrigFlags: one-shot requests, as MarioWork.trigFlags (partyChgMot,
+                                 //      partyChgMoveMode, partyChgRunMode, partyChgPose and partyChgPaper set a bit, the code
+                                 //      they start tests and clears it), and party_motion's follow and splash states
     s32 paperAnimGroup;          // 0xC
     s32 field_0x10;              // 0x10
     s32 paperPoseId;             // 0x14

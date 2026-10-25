@@ -63,8 +63,8 @@ s32 nokonoko_holdItem(void) {
 }
 
 void nokonoko_bye(PartyEntry* party) {
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         partyGoodbyeInit(party);
     }
     if (partyGoodbyeMain(party)) {
@@ -82,8 +82,8 @@ void nokonoko_init(PartyEntry* party) {
 
 void nokonoko_move(PartyEntry* party) {
     marioGetPtr();
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         partyWalkInit(party, 1);
     }
     partyStepSpeed(party);
@@ -201,8 +201,8 @@ void nokonoko_use(PartyEntry* party) {
         }
     }
 
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         party->tail.koops.heldItem = NULL;
 #ifdef MUST_MATCH
         *(s32*)&party->tail.koops.slideDecay = 0;

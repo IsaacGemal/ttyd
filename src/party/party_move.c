@@ -311,7 +311,7 @@ f32 partyGetTargetMovespd2(PartyEntry* party) {
         }
         return mario->mBaseDashSpeed;
     }
-    if (party->trigFlags & 0x20000) {
+    if (party->trigFlags & PARTY_TRIG_FLAG_FOLLOW_CLOSE) {
         if (mario->baseSpeed > 0.0f) {
             return mario->baseSpeed;
         }
@@ -985,7 +985,7 @@ void partyChgMoveMode(PartyEntry* party, u8 mode) {
         break;
     }
     work->moveMode = mode;
-    work->trigFlags |= 4;
+    work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOVE_MODE;
 }
 
 void partyChgMot(PartyEntry* party, s32 mot) {
@@ -996,7 +996,7 @@ void partyChgMot(PartyEntry* party, s32 mot) {
         work->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
     }
     work->mot = mot;
-    work->trigFlags |= 2;
+    work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOT;
 }
 
 void partySetDir(PartyEntry* party, f32 x, f32 z) {
@@ -1030,7 +1030,7 @@ void partyMoveBehindMario3(PartyEntry* party, s32 mode, f32 dir) {
         party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
     }
     party->mot = 1;
-    party->trigFlags |= 0x2;
+    party->trigFlags |= PARTY_TRIG_FLAG_CHG_MOT;
 }
 
 void partyMoveBesideMario(PartyEntry* party, s32 mode) {
@@ -1196,7 +1196,7 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
                 work->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
             }
             work->mot = 1;
-            work->trigFlags |= 2;
+            work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOT;
         }
     }
     sincosf(&sinv, &cosv, work->dir);
@@ -1297,8 +1297,8 @@ void partyIdleMain(PartyEntry* party) {
     PartyEntry* work = party;
     s32 mot;
 
-    if (work->trigFlags & 0x4) {
-        work->trigFlags &= ~0x4;
+    if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+        work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
         partyChgPoseId(party, 1);
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
         if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
@@ -1322,15 +1322,15 @@ void partyIdleMain(PartyEntry* party) {
             party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
         }
         work->mot = 0;
-        work->trigFlags |= 2;
+        work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOT;
         break;
     case 3:
         party_motion_fall(party);
         break;
     }
     work->moveDir = work->dir;
-    if (work->trigFlags & 0x01000000) {
-        work->trigFlags &= ~0x01000000;
+    if (work->trigFlags & PARTY_TRIG_FLAG_SPLASH) {
+        work->trigFlags &= ~PARTY_TRIG_FLAG_SPLASH;
         {
             Vec pos = party->position;
             marioSetSplash(0, &pos);
@@ -1416,8 +1416,8 @@ void partyMoveWalk(PartyEntry* party) {
     MarioWork* mario;
     u32 i;
 
-    if (work->trigFlags & 0x8) {
-        work->trigFlags &= ~0x8;
+    if (work->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
         mario = work->playerPtr;
         party->flags |= PARTY_FLAG_IS_GROUNDED;
@@ -1477,14 +1477,14 @@ void partyMoveWalk(PartyEntry* party) {
                 break;
             }
             work->moveMode = 1;
-            work->trigFlags |= 4;
+            work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOVE_MODE;
             if (work->mot == 3) {
                 party->flags &= ~0x70;
                 party->flags &= ~0x3000000;
                 party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
             }
             work->mot = 0;
-            work->trigFlags |= 2;
+            work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOT;
         }
     }
     if (work->forceMoveFrames == 0 && work->mot != 2 && work->mot != 3 && work->mot != 6) {
@@ -1610,8 +1610,8 @@ void partyWalkMain(PartyEntry* party) {
 void party_move_mode_stay(PartyEntry* party) {
     PartyEntry* work = party;
 
-    if (work->trigFlags & 0x4) {
-        work->trigFlags &= ~0x4;
+    if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+        work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
         partyChgPoseId(party, 1);
         if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
             cloudBobInit(party);
@@ -1633,15 +1633,15 @@ void party_move_mode_stay(PartyEntry* party) {
             party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
         }
         work->mot = 0;
-        work->trigFlags |= 2;
+        work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOT;
         break;
     case 3:
         party_motion_fall(party);
         break;
     }
     work->moveDir = work->dir;
-    if (work->trigFlags & 0x01000000) {
-        work->trigFlags &= ~0x01000000;
+    if (work->trigFlags & PARTY_TRIG_FLAG_SPLASH) {
+        work->trigFlags &= ~PARTY_TRIG_FLAG_SPLASH;
         {
             Vec pos = party->position;
             marioSetSplash(0, &pos);
@@ -1665,8 +1665,8 @@ void party_move_mode_stay(PartyEntry* party) {
 void party_move_mode_walk(PartyEntry* party) {
     PartyEntry* work = party;
 
-    if (work->trigFlags & 0x4) {
-        work->trigFlags &= ~0x4;
+    if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+        work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
     }
     switch (work->mot) {
     case 0:
@@ -1695,8 +1695,8 @@ void party_move_mode_walk(PartyEntry* party) {
         break;
     }
     work->moveDir = work->dir;
-    if (work->trigFlags & 0x01000000) {
-        work->trigFlags &= ~0x01000000;
+    if (work->trigFlags & PARTY_TRIG_FLAG_SPLASH) {
+        work->trigFlags &= ~PARTY_TRIG_FLAG_SPLASH;
         {
             Vec pos = party->position;
             marioSetSplash(0, &pos);
@@ -1720,8 +1720,8 @@ void party_move_mode_walk(PartyEntry* party) {
 void party_move_mode_behind_mario(PartyEntry* party) {
     PartyEntry* work = party;
 
-    if (work->trigFlags & 0x4) {
-        work->trigFlags &= ~0x4;
+    if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+        work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
     }
     switch (work->mot) {
     case 0:
@@ -1753,8 +1753,8 @@ void party_move_mode_behind_mario(PartyEntry* party) {
 void party_move_mode_beside_mario(PartyEntry* party) {
     PartyEntry* work = party;
 
-    if (work->trigFlags & 0x4) {
-        work->trigFlags &= ~0x4;
+    if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+        work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
     }
     switch (work->mot) {
     case 0:
@@ -1789,8 +1789,8 @@ void partyForceWalk(PartyEntry* party) {
     HitEntry* wall;
     s32 attr;
 
-    if (work->trigFlags & 0x8) {
-        work->trigFlags &= ~0x8;
+    if (work->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         if (work->flags & PARTY_FLAG_IS_BEING_USED) {
             if (work->currentMemberId == PARTY_MEMBER_BOBBERY) {
                 bomhei_use_cancel();
@@ -1851,7 +1851,7 @@ void partyForceWalk(PartyEntry* party) {
                     work->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
                 }
                 work->mot = 2;
-                work->trigFlags |= 2;
+                work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOT;
             } else {
                 work->position.x = pos.x;
                 work->position.z = pos.z;
@@ -1877,7 +1877,7 @@ void partyForceWalk(PartyEntry* party) {
                         work->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
                     }
                     work->mot = 3;
-                    work->trigFlags |= 2;
+                    work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOT;
                     work->jumpPara2 = -1.0f;
                 } else {
                     if (attr & 0x100) {
@@ -1981,7 +1981,7 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
             party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
         }
         work->mot = 0;
-        work->trigFlags |= 2;
+        work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOT;
     }
 }
 
@@ -2068,8 +2068,8 @@ void walkMain(PartyEntry* party) {
 
     switch (work->moveMode) {
     case 0:
-        if (work->trigFlags & 0x4) {
-            work->trigFlags &= ~0x4;
+        if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
             partyChgPoseId(party, 1);
             if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
                 cloudBobInit(party);
@@ -2091,15 +2091,15 @@ void walkMain(PartyEntry* party) {
                 party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
             }
             work->mot = 0;
-            work->trigFlags |= 2;
+            work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOT;
             break;
         case 3:
             party_motion_fall(party);
             break;
         }
         work->moveDir = work->dir;
-        if (work->trigFlags & 0x01000000) {
-            work->trigFlags &= ~0x01000000;
+        if (work->trigFlags & PARTY_TRIG_FLAG_SPLASH) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_SPLASH;
             {
                 Vec pos = party->position;
                 marioSetSplash(0, &pos);
@@ -2120,8 +2120,8 @@ void walkMain(PartyEntry* party) {
         }
         break;
     case 1:
-        if (work->trigFlags & 0x4) {
-            work->trigFlags &= ~0x4;
+        if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
         }
         switch (work->mot) {
         case 0:
@@ -2150,8 +2150,8 @@ void walkMain(PartyEntry* party) {
             break;
         }
         work->moveDir = work->dir;
-        if (work->trigFlags & 0x01000000) {
-            work->trigFlags &= ~0x01000000;
+        if (work->trigFlags & PARTY_TRIG_FLAG_SPLASH) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_SPLASH;
             {
                 Vec pos = party->position;
                 marioSetSplash(0, &pos);
@@ -2172,8 +2172,8 @@ void walkMain(PartyEntry* party) {
         }
         break;
     case 2:
-        if (work->trigFlags & 0x4) {
-            work->trigFlags &= ~0x4;
+        if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
         }
         switch (work->mot) {
         case 0:
@@ -2202,8 +2202,8 @@ void walkMain(PartyEntry* party) {
         work->moveDir = work->dir;
         break;
     case 3:
-        if (work->trigFlags & 0x4) {
-            work->trigFlags &= ~0x4;
+        if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
         }
         switch (work->mot) {
         case 0:
@@ -2228,8 +2228,8 @@ void walkMain(PartyEntry* party) {
         work->moveDir = work->dir;
         break;
     case 6:
-        if (work->trigFlags & 0x4) {
-            work->trigFlags &= ~0x4;
+        if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
         }
         switch (work->mot) {
         case 0:
@@ -2267,8 +2267,8 @@ static void flyMain(PartyEntry* party) {
 
     switch (work->moveMode) {
     case 0:
-        if (work->trigFlags & 0x4) {
-            work->trigFlags &= ~0x4;
+        if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
             partyChgPoseId(party, 1);
             if (work->currentMemberId == PARTY_MEMBER_FLURRIE) {
                 cloudBobInit(party);
@@ -2290,15 +2290,15 @@ static void flyMain(PartyEntry* party) {
                 party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
             }
             work->mot = 0;
-            work->trigFlags |= 2;
+            work->trigFlags |= PARTY_TRIG_FLAG_CHG_MOT;
             break;
         case 3:
             party_motion_fall(party);
             break;
         }
         work->moveDir = work->dir;
-        if (work->trigFlags & 0x01000000) {
-            work->trigFlags &= ~0x01000000;
+        if (work->trigFlags & PARTY_TRIG_FLAG_SPLASH) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_SPLASH;
             {
                 Vec pos = party->position;
                 marioSetSplash(0, &pos);
@@ -2319,8 +2319,8 @@ static void flyMain(PartyEntry* party) {
         }
         break;
     case 1:
-        if (work->trigFlags & 0x4) {
-            work->trigFlags &= ~0x4;
+        if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
         }
         switch (work->mot) {
         case 0:
@@ -2349,8 +2349,8 @@ static void flyMain(PartyEntry* party) {
             break;
         }
         work->moveDir = work->dir;
-        if (work->trigFlags & 0x01000000) {
-            work->trigFlags &= ~0x01000000;
+        if (work->trigFlags & PARTY_TRIG_FLAG_SPLASH) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_SPLASH;
             {
                 Vec pos = party->position;
                 marioSetSplash(0, &pos);
@@ -2371,8 +2371,8 @@ static void flyMain(PartyEntry* party) {
         }
         break;
     case 2:
-        if (work->trigFlags & 0x4) {
-            work->trigFlags &= ~0x4;
+        if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
         }
         switch (work->mot) {
         case 0:
@@ -2401,8 +2401,8 @@ static void flyMain(PartyEntry* party) {
         work->moveDir = work->dir;
         break;
     case 3:
-        if (work->trigFlags & 0x4) {
-            work->trigFlags &= ~0x4;
+        if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
         }
         switch (work->mot) {
         case 0:
@@ -2427,8 +2427,8 @@ static void flyMain(PartyEntry* party) {
         work->moveDir = work->dir;
         break;
     case 6:
-        if (work->trigFlags & 0x4) {
-            work->trigFlags &= ~0x4;
+        if (work->trigFlags & PARTY_TRIG_FLAG_CHG_MOVE_MODE) {
+            work->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
         }
         switch (work->mot) {
         case 0:

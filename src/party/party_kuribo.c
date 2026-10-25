@@ -231,8 +231,8 @@ void kuribo_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     HitEntry* hit;
 
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
 
         if (PSVECDistance(&mario->position, &party->position) > 125.0f) {
             party->useMotionId = 0;
@@ -326,8 +326,8 @@ void kuribo_use(PartyEntry* party) {
 
 
 void kuribo_bye(PartyEntry* party) {
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         partyGoodbyeInit(party);
     }
     if (partyGoodbyeMain(party)) {

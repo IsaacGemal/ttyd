@@ -104,13 +104,13 @@ s32 evt_get_yoshi_frm(void) {
     return evt_yoshi_frm;
 }
 
-void L_sweatEntry(PartyEntry* party, void* param) {
-    party->groundHit = param;
+void L_sweatEntry(PartyEntry* party, HitEntry* hit) {
+    party->groundHit = hit;
 
     if (yoshiGetStatus() == 1) {
         MarioWork* mario = party->playerPtr;
         if ((mario->flags & 0xF0000) == 0) {
-            mario->hitobjStandOn = param;
+            mario->hitobjStandOn = hit;
         }
     }
 }
@@ -162,9 +162,9 @@ s32 yoshiGetStatus(void) {
 void marioRideYoshi(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
 
-    party->trigFlags &= ~0x8;
-    party->trigFlags &= ~0x4;
-    party->trigFlags &= ~0x2;
+    party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
+    party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOVE_MODE;
+    party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOT;
     party->flags |= PARTY_FLAG_IS_BEING_USED;
     party->runMode = 3;
     party->useMotionId = 0xB;
@@ -253,8 +253,8 @@ void marioYoshiForceCancel(void) {
 }
 
 void yoshi_bye(PartyEntry* party) {
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         partyGoodbyeInit(party);
     }
     if (party->flags & PARTY_FLAG_IS_BEING_USED) {
@@ -435,7 +435,6 @@ static inline void yoshiSearchHead(PartyEntry* party) {
 void yoshi_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     PartyEntry* extra;
-    PartyYoshiUse* use;
     HitEntry* hit;
     f32 outAngle;
     f32 outDist;
@@ -450,8 +449,8 @@ void yoshi_use(PartyEntry* party) {
         L_partyClearCont(party);
     }
 
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         party->flags &= ~0x70;
         party->flags &= ~0x03000000;
         party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
@@ -642,8 +641,7 @@ void yoshi_use(PartyEntry* party) {
                 mario->forceMoveTimer = 0;
                 mario->flags &= ~0x20;
             }
-            use = party->useStruct;
-            use->counter++;
+            party->partyYoshiUse->counter++;
             if (party->partyYoshiUse->counter % 10 == 0) {
                 psndSFXOn_3D((const char*)0x940, &party->position);
             }
@@ -679,8 +677,7 @@ void yoshi_use(PartyEntry* party) {
                     party->moveDir = outAngle;
                     marioChgPose("M_Y_2");
                     partyChgPose(party, YOSHI_R_2);
-                    use = party->useStruct;
-                    use->counter++;
+                    party->partyYoshiUse->counter++;
                     if (party->partyYoshiUse->counter % 10 == 0) {
                         psndSFXOn_3D((const char*)0x940, &party->position);
                     }
@@ -1620,16 +1617,16 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
             }
 
             {
-                f32 unk;
-                HitEntry* h2 = dou10_yoko_yari2(&unk);
+                f32 out;
+                HitEntry* h2 = dou10_yoko_yari2(&out);
 
                 if (h2 != NULL && (hitGetAttr(h2) & 0x800)) {
                     unk_800b474c(party);
                 }
             }
         } else {
-            f32 unk;
-            HitEntry* h2 = dou10_yoko_yari2(&unk);
+            f32 out;
+            HitEntry* h2 = dou10_yoko_yari2(&out);
 
             if (h2 != NULL && (hitGetAttr(h2) & 0x800)) {
                 unk_800b474c(party);

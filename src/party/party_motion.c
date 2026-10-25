@@ -325,11 +325,11 @@ void partyResetTouchWallCt(void) {
 }
 
 void N_partyFollowCloseOn(PartyEntry* party) {
-    party->trigFlags = (party->trigFlags | 0x20000);
+    party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_FOLLOW_CLOSE);
 }
 
 void N_partyFollowCloseOff(PartyEntry* party) {
-    party->trigFlags = (party->trigFlags & ~0x20000);
+    party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_FOLLOW_CLOSE);
 }
 
 void party_motion_stay(PartyEntry* party) {
@@ -349,8 +349,8 @@ void party_motion_stay(PartyEntry* party) {
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         partyChgPoseId(party, 1);
         if (!(party->trigFlags & 0x800000)) {
             if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
@@ -395,7 +395,7 @@ void party_motion_stay(PartyEntry* party) {
                 }
             }
             f31 = f30;
-            party->trigFlags = (party->trigFlags | 0x20000);
+            party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_FOLLOW_CLOSE);
         }
     }
     if ((party->trigFlags >> 17) & 1) {
@@ -533,8 +533,8 @@ void party_motion_stay(PartyEntry* party) {
 void party_motion_idle(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
 
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         partyChgPoseId(party, 1);
         if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
             partyClearFootmark();
@@ -611,7 +611,7 @@ void partyUpdateFloor(PartyEntry* party) {
         if (attr & 0x200) {
             hit = NULL;
             if (party->splashTimer == 0) {
-                party->trigFlags = (party->trigFlags | 0x1000000);
+                party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_SPLASH);
                 party->flags = (party->flags | PARTY_FLAG_FORCE_FALL);
             }
         }
@@ -810,8 +810,8 @@ void party_motion_homing_walk(PartyEntry* party) {
 
     id = partyGetFootmarkId(&party->flags);
     mario = party->playerPtr;
-    if (party->trigFlags & 0x2) {
-        party->trigFlags &= ~0x2;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_MOT;
         party->flags &= ~PARTY_FLAG_IS_BEHIND_MARIO;
     }
     f31 = (party->forceMoveFrames != 0) ? 28.0f : 37.5f;
@@ -827,7 +827,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                 f24 = (party->trigFlags & 0x200000) ? 8.0f : 30.0f;
             }
             f31 = f24;
-            party->trigFlags |= 0x20000;
+            party->trigFlags |= PARTY_TRIG_FLAG_FOLLOW_CLOSE;
         }
     }
     if (partyGetTargetDistY(id)) {
@@ -966,7 +966,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                 v64 = v58;
                 f25 = partyGetTargetDist3D(id, &v64);
                 if (f25 >= f31) {
-                    if (party->trigFlags & 0x20000) {
+                    if (party->trigFlags & PARTY_TRIG_FLAG_FOLLOW_CLOSE) {
                         f = 0.1f * (f25 - f30);
                         if (f > 4.0f) {
                             f = 4.0f;
@@ -992,7 +992,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                     break;
                 }
                 if (f25 > f30) {
-                    if (party->trigFlags & 0x20000) {
+                    if (party->trigFlags & PARTY_TRIG_FLAG_FOLLOW_CLOSE) {
                         f = 0.1f * (f25 - f30);
                         if (f > 4.0f) {
                             f = 4.0f;
@@ -1045,7 +1045,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                     if (hitGetAttr(groundHit) & 0x200) {
                         groundHit = NULL; // retail clears it before the splashTimer test, not only when it takes the flags
                         if (party->splashTimer == 0) {
-                            party->trigFlags |= 0x01000000;
+                            party->trigFlags |= PARTY_TRIG_FLAG_SPLASH;
                             party->flags |= PARTY_FLAG_FORCE_FALL;
                         }
                     }
@@ -1196,7 +1196,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                 if (party->paperMot != 1) {
                     if (party->playerPtr->trigFlags & 0x80000000) {
                     } else {
-                        party->trigFlags |= 0x1;
+                        party->trigFlags |= PARTY_TRIG_FLAG_CHG_PAPER_MOT;
                         party->paperMot = 1;
                     }
                 } else if (party->speed) {
@@ -1259,7 +1259,7 @@ void party_motion_homing_walk(PartyEntry* party) {
         if (attr & 0x200) {
             hit = NULL;
             if (party->splashTimer == 0) {
-                party->trigFlags |= 0x01000000;
+                party->trigFlags |= PARTY_TRIG_FLAG_SPLASH;
                 party->flags |= PARTY_FLAG_FORCE_FALL;
             }
         } else if (attr & 0x800) {
@@ -1321,8 +1321,8 @@ void party_motion_homing_fly(PartyEntry* party) {
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         party->flags = (party->flags & ~PARTY_FLAG_IS_BEHIND_MARIO);
         party->noFloorCount = 0;
     }
@@ -1351,7 +1351,7 @@ void party_motion_homing_fly(PartyEntry* party) {
                 }
             }
             f31 = f25;
-            party->trigFlags = (party->trigFlags | 0x20000);
+            party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_FOLLOW_CLOSE);
         }
     }
     if (partyGetTargetDistY(id)) {
@@ -1454,7 +1454,7 @@ void party_motion_homing_fly(PartyEntry* party) {
             tv2 = tv;
             f25 = partyGetTargetDist3D(id, &tv2);
             if (f25 >= f31) {
-                if (party->trigFlags & 0x20000) {
+                if (party->trigFlags & PARTY_TRIG_FLAG_FOLLOW_CLOSE) {
                     f32 v = 0.1f * (f25 - f30);
                     if (v > 4.0f) {
                         v = 4.0f;
@@ -1482,7 +1482,7 @@ void party_motion_homing_fly(PartyEntry* party) {
                 break;
             }
             if (f25 > f30) {
-                if (party->trigFlags & 0x20000) {
+                if (party->trigFlags & PARTY_TRIG_FLAG_FOLLOW_CLOSE) {
                     f32 v = 0.1f * (f25 - f30);
                     if (v > 4.0f) {
                         v = 4.0f;
@@ -1627,7 +1627,7 @@ void party_motion_homing_fly(PartyEntry* party) {
             if (b & 0x2000) {
                 if (party->paperMot != 1) {
                     if (!(party->playerPtr->trigFlags & 0x80000000)) {
-                        party->trigFlags = (party->trigFlags | 0x1);
+                        party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_CHG_PAPER_MOT);
                         party->paperMot = 1;
                     }
                 } else {
@@ -1715,8 +1715,8 @@ void party_motion_behind_mario(PartyEntry* party) {
     f32 ytmp;
 
     mario = party->playerPtr;
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         party->trigFlags = (party->trigFlags | 0x40000);
         if (!(party->trigFlags & 0x100000)) {
             if (!(party->trigFlags & 0x10000)) {
@@ -1842,7 +1842,7 @@ void party_motion_behind_mario(PartyEntry* party) {
             if (hitGetAttr(hit) & 0x200) {
                 hit = NULL;
                 if (party->splashTimer == 0) {
-                    party->trigFlags = (party->trigFlags | 0x1000000);
+                    party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_SPLASH);
                     party->flags = (party->flags | PARTY_FLAG_FORCE_FALL);
                 }
             }
@@ -1856,7 +1856,7 @@ void party_motion_behind_mario(PartyEntry* party) {
     } else {
         party->timer = 0;
         if (party->trigFlags & 0x200000) {
-            party->trigFlags = (party->trigFlags & ~0x20000);
+            party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_FOLLOW_CLOSE);
         }
         partyChgMoveMode(party, 1);
         partyChgMot(party, 0);
@@ -1907,8 +1907,8 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
     }
     dir += 180.0f;
     party->moveAngle = revise360(dir);
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         limit = 1.5f * mario->wPlayerCollisionBox.x;
         x = mario->position.x;
         z = mario->position.z;
@@ -1989,7 +1989,7 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
             if (hitGetAttr(hit2) & 0x200) {
                 hit2 = NULL;
                 if (party->splashTimer == 0) {
-                    party->trigFlags = (party->trigFlags | 0x1000000);
+                    party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_SPLASH);
                     party->flags = (party->flags | PARTY_FLAG_FORCE_FALL);
                 }
             }
@@ -2035,8 +2035,8 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
     Vec pos;
 
     mario = party->playerPtr;
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         party->trigFlags = (party->trigFlags | 0x40000);
         if (!(party->trigFlags & 0x100000)) {
             if (!(party->trigFlags & 0x10000)) {
@@ -2119,7 +2119,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
     } else {
         party->timer = 0;
         if (party->trigFlags & 0x200000) {
-            party->trigFlags = (party->trigFlags & ~0x20000);
+            party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_FOLLOW_CLOSE);
             if (party->isFlyer == 1) {
                 party->flags2 = (party->flags2 & ~0x10);
             }
@@ -2148,7 +2148,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             if (hitGetAttr(hit) & 0x200) {
                 hit = NULL;
                 if (party->splashTimer == 0) {
-                    party->trigFlags = (party->trigFlags | 0x1000000);
+                    party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_SPLASH);
                     party->flags = (party->flags | PARTY_FLAG_FORCE_FALL);
                 }
             }
@@ -2175,8 +2175,8 @@ void party_motion_beside_mario(PartyEntry* party) {
     f32 ytmp;
 
     mario = party->playerPtr;
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         mario2 = party->playerPtr;
         if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
             dir = toMovedir(mario2->dispDir);
@@ -2258,7 +2258,7 @@ void party_motion_beside_mario(PartyEntry* party) {
             if (hitGetAttr(hit) & 0x200) {
                 hit = NULL;
                 if (party->splashTimer == 0) {
-                    party->trigFlags = (party->trigFlags | 0x1000000);
+                    party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_SPLASH);
                     party->flags = (party->flags | PARTY_FLAG_FORCE_FALL);
                 }
             }
@@ -2327,8 +2327,8 @@ void party_motion_jump(PartyEntry* party) {
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         party->motionStep = 0;
     }
     switch (party->motionStep) {
@@ -2484,7 +2484,7 @@ void party_motion_jump(PartyEntry* party) {
             hit = partySearchGround(party, fabsf(party->jumpPara1), 0.0f);
             if (hit != NULL && (hitGetAttr(hit) & 0x200)) {
                 if (party->splashTimer == 0) {
-                    party->trigFlags = (party->trigFlags | 0x1000000);
+                    party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_SPLASH);
                     party->flags = (party->flags | PARTY_FLAG_FORCE_FALL);
                 }
                 party->groundHit = NULL;
@@ -2538,8 +2538,8 @@ void party_motion_jump2(PartyEntry* party) {
     HitEntry* hit;
     s32 mot;
 
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         party->timer = 0;
         party->jumpPara3 = -1.0f * mario->playerGravity;
         party->speed = 2.25f * mario->playerGravity;
@@ -2591,7 +2591,7 @@ void party_motion_jump2(PartyEntry* party) {
             position.y = party->groundY;
             if (hit != NULL && (hitGetAttr(hit) & 0x200)) {
                 if (party->splashTimer == 0) {
-                    party->trigFlags = (party->trigFlags | 0x1000000);
+                    party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_SPLASH);
                     party->flags = (party->flags | PARTY_FLAG_FORCE_FALL);
                 }
                 party->groundHit = NULL;
@@ -2635,8 +2635,8 @@ s32 party_motion_fall(PartyEntry* party) {
     if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
         partyNextReadId(partyGetFootmarkId(&party->flags));
     }
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         partyChgPoseId(party, 4);
         party->flags = (party->flags & ~PARTY_FLAG_IS_BEHIND_MARIO);
     }
@@ -2649,7 +2649,7 @@ s32 party_motion_fall(PartyEntry* party) {
         if (attr & 0x200) {
             hit = NULL;
             if (party->isFlyer == 0 && party->splashTimer == 0) {
-                party->trigFlags = (party->trigFlags | 0x1000000);
+                party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_SPLASH);
                 party->flags = (party->flags | PARTY_FLAG_FORCE_FALL);
             }
         }
@@ -2727,8 +2727,8 @@ s32 party_motion_fall(PartyEntry* party) {
 // Local declarations: not yet in a header.
 
 void party_motion_upstairs(PartyEntry* party) {
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         party->flags = (party->flags | PARTY_FLAG_IS_STEPPING);
         upstairs_frames = 3;
         upstairs_step_y = (party->stepUpY - party->position.y) / 3.0f;
@@ -2747,8 +2747,8 @@ void party_motion_damage(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     f32 x, y, z;
 
-    if (party->trigFlags & 0x2) {
-        party->trigFlags = (party->trigFlags & ~0x2);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_MOT);
         party->motionStep = 0;
     }
     switch (party->motionStep) {
@@ -2851,14 +2851,14 @@ void allPartySlitOn(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     if (party != NULL) {
         if ((party->playerPtr->trigFlags & 0x80000000) == 0) {
-            party->trigFlags = (party->trigFlags | 1);
+            party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_CHG_PAPER_MOT);
             party->paperMot = 1;
         }
     }
     party = partyGetPtr(marioGetExtraPartyId());
     if (party != NULL) {
         if ((party->playerPtr->trigFlags & 0x80000000) == 0) {
-            party->trigFlags = (party->trigFlags | 1);
+            party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_CHG_PAPER_MOT);
             party->paperMot = 1;
         }
     }
@@ -2940,7 +2940,7 @@ void partyChgMotSlitFloor(PartyEntry* party) {
         return;
     }
     if ((party->playerPtr->trigFlags & 0x80000000) == 0) {
-        party->trigFlags = (party->trigFlags | 1);
+        party->trigFlags = (party->trigFlags | PARTY_TRIG_FLAG_CHG_PAPER_MOT);
         party->paperMot = 1;
     }
     party->flags = (party->flags | PARTY_FLAG_MOT_SLIT_FLOOR);
@@ -2954,8 +2954,8 @@ BOOL party_slit(PartyEntry* party) {
     if (party->paperMot != 1) {
         return 1;
     }
-    if (party->trigFlags & 0x1) {
-        party->trigFlags = (party->trigFlags & ~0x1);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_PAPER_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_PAPER_MOT);
         party->flags2 = (party->flags2 | 0x100);
         partyPaperOn(party, "p_slit");
         partyChgPaper(party, "PM_S_1A");
@@ -3094,8 +3094,8 @@ s32 party_roll(PartyEntry* party) {
     if (party->paperMot != 2) {
         return 1;
     }
-    if (party->trigFlags & 0x1) {
-        party->trigFlags = (party->trigFlags & ~0x1);
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_PAPER_MOT) {
+        party->trigFlags = (party->trigFlags & ~PARTY_TRIG_FLAG_CHG_PAPER_MOT);
         partyPaperOn(party, "p_roll");
         partyChgPaper(party, "PM_R_1A");
         partyChgPoseId(party, 0);

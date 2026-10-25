@@ -359,8 +359,8 @@ void chuchu_exit(PartyEntry* party) {
 }
 
 void chuchu_move(PartyEntry* party) {
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
         partyWalkInit(party, 1);
     }
@@ -371,8 +371,8 @@ void chuchu_move(PartyEntry* party) {
 void chuchu_use(PartyEntry* party) {
     MarioWork* player = party->playerPtr;
 
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         party->useMotionId = 0;
         marioStSystemLevel(1);
     }

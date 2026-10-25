@@ -54,8 +54,8 @@ typedef struct BomheiWork {
 
 // .text:0x2BE4 | 0x800BFBE8 | size: 0xA4
 void bomhei_bye(PartyEntry* party) {
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         partyGoodbyeInit(party);
         party->playerPtr->flags &= ~0x2000;
         if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
@@ -260,7 +260,7 @@ void bomhei_use_post(PartyEntry* party) {
     party->flags &= ~PARTY_FLAG_IS_BEING_USED;
     if (party->runMode != 9) {
         party->moveMode = 0;
-        party->trigFlags |= 8;
+        party->trigFlags |= PARTY_TRIG_FLAG_CHG_RUN_MODE;
     }
     party->playerPtr->flags &= ~0x2000;
     if ((u32)party->tail.bobbery.countdownSfxId != 0xFFFFFFFF) {
@@ -463,8 +463,8 @@ void bomhei_use_main(PartyEntry* party) {
     f32 sx47, sy47, sz47;
     f32 sx51, sy51, sz51;
 
-    if ((party->trigFlags & 0x8) != 0) {
-        party->trigFlags &= ~0x8;
+    if ((party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) != 0) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         party->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
         party->flags &= ~0x03000000;
         party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;

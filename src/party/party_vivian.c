@@ -182,8 +182,8 @@ void vivianShadow(PartyEntry* party) {
 
 // 280 B
 void vivian_move(PartyEntry* party) {
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         partyMoveFlyInit(party, 1);
     }
     partyFlyMain(party);
@@ -260,8 +260,8 @@ static inline void vivianUseStep(PartyEntry* party) {
 void vivian_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
 
-    if (party->trigFlags & 0x8) {
-        party->trigFlags &= ~0x8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         party->useMotionId = 0;
         party->tail.vivian.charge = 10.0f;
         party->shadowPos = party->position;

@@ -202,8 +202,8 @@ void cloudBobUpdate(PartyEntry* party) {
 void cloud_move(PartyEntry* party) {
     f32 bob;
 
-    if ((party->trigFlags & 0x8) != 0) {
-        party->trigFlags &= ~0x8;
+    if ((party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) != 0) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         partyMoveFlyInit(party, 1);
         party->tail.flurrie.bobAngle = 0.0f;
         party->tail.flurrie.bobStep = 4.25f;
@@ -330,8 +330,8 @@ void N__cloud_use(PartyEntry* party) {
     s32 flag;
     s16 seq;
 
-    if ((party->trigFlags & 0x8) != 0) {
-        party->trigFlags &= ~0x8;
+    if ((party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) != 0) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         *(s32*)&party->tail.flurrie.bobAngle = 0;
         *(s32*)&party->tail.flurrie.bobStep = 0;
         marioAdjustMoveDir();

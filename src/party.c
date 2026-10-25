@@ -249,7 +249,7 @@ char* partyChgPoseId(PartyEntry* party, s32 poseId) {
     }
     party->pose = v6;
     party->poseTime = 0;
-    party->trigFlags |= 0x2000u;
+    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
     return v6;
 }
 
@@ -265,7 +265,7 @@ void partyChgPose(PartyEntry* party, char* pose) {
     }
     party->pose = pose;
     party->poseTime = 0;
-    party->trigFlags |= 0x2000;
+    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
 }
 
 void partyChgPaper(PartyEntry* party, char* paper) {
@@ -277,7 +277,7 @@ void partyChgPaper(PartyEntry* party, char* paper) {
     }
     party->paper = paper;
     party->poseTime = 0;
-    party->trigFlags |= 0x4000;
+    party->trigFlags |= PARTY_TRIG_FLAG_CHG_PAPER;
 }
 
 void partyCtrlOff(void) {
@@ -381,7 +381,7 @@ s32 partyEntry(s32 memberId) {
         if (!(party->pose && !strcmp(party->pose, pose))) {
             party->pose = pose;
             party->poseTime = 0;
-            party->trigFlags |= 0x2000;
+            party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
         }
     }
     party->runMode = 1;
@@ -431,7 +431,7 @@ s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
         if (!(prev && !strcmp(prev, pose))) {
             party->pose = pose;
             party->poseTime = 0;
-            party->trigFlags |= 0x2000;
+            party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
         }
     }
     party->runMode = 0;
@@ -863,7 +863,7 @@ void N__partyChgRunMode(PartyEntry* party, s32 oldMode, s32 newMode) {
                 if (!(party->pose && !strcmp(party->pose, pose))) {
                     party->pose = pose;
                     party->poseTime = 0;
-                    party->trigFlags |= 0x2000;
+                    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
                 }
             }
             party->flags2 &= ~0x10;
@@ -893,7 +893,7 @@ void N__partyChgRunMode(PartyEntry* party, s32 oldMode, s32 newMode) {
                 if (!(party->pose && !strcmp(party->pose, pose))) {
                     party->pose = pose;
                     party->poseTime = 0;
-                    party->trigFlags |= 0x2000;
+                    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
                 }
             }
             party->flags2 &= ~0x10;
@@ -926,7 +926,7 @@ void partyChgRunMode(PartyEntry* party, s32 mode) {
     }
     N__partyChgRunMode(party, party->runMode, mode);
     party->runMode = mode;
-    party->trigFlags |= 8;
+    party->trigFlags |= PARTY_TRIG_FLAG_CHG_RUN_MODE;
 }
 
 // Keep N_partyForceChgRunMode out of line: the original calls it rather than inlining.
@@ -936,7 +936,7 @@ void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk) {
     }
     N__partyChgRunMode(party, party->runMode, mode);
     party->runMode = mode;
-    party->trigFlags &= ~8;
+    party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
     party->motionStep = unk;
 }
 #pragma dont_inline reset
@@ -969,7 +969,7 @@ void unk_800ba2dc(PartyEntry* party) {
                 if (!(party->pose && !strcmp(party->pose, pose))) {
                     party->pose = pose;
                     party->poseTime = 0;
-                    party->trigFlags |= 0x2000;
+                    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
                 }
             }
             party->flags2 &= ~0x10;
@@ -1001,7 +1001,7 @@ void unk_800ba2dc(PartyEntry* party) {
                 if (!(party->pose && !strcmp(party->pose, pose))) {
                     party->pose = pose;
                     party->poseTime = 0;
-                    party->trigFlags |= 0x2000;
+                    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
                 }
             }
             party->flags2 &= ~0x10;
@@ -1027,7 +1027,7 @@ void unk_800ba2dc(PartyEntry* party) {
                 }
             }
             party->runMode = party->prevRunMode;
-            party->trigFlags |= 8;
+            party->trigFlags |= PARTY_TRIG_FLAG_CHG_RUN_MODE;
             partyChgMot(party, 0);
     }
 }
@@ -1121,8 +1121,8 @@ void driveParty(PartyEntry* party) {
     switch (party->runMode) {
         case 0:
             if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
-                if (party->trigFlags & 8) {
-                    party->trigFlags &= ~8;
+                if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+                    party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
                     partyChgPoseId(party, 1);
                     party->speed = 0.0f;
                     party->flags &= ~PARTY_FLAG_IS_BEING_USED;
@@ -1169,8 +1169,8 @@ void driveParty(PartyEntry* party) {
             party_dp->bye_func(party);
             break;
         case 10:
-            if (party->trigFlags & 8) {
-                party->trigFlags &= ~8;
+            if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+                party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
                 partyDokanInit(party);
                 party->flags &= ~PARTY_FLAG_IS_BEING_USED;
             }
@@ -1178,8 +1178,8 @@ void driveParty(PartyEntry* party) {
             break;
         case 11:
             if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
-                if (party->trigFlags & 8) {
-                    party->trigFlags &= ~8;
+                if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+                    party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
                     party->motionStep = 0;
                     party->flags &= ~PARTY_FLAG_IS_BEING_USED;
                     L_partyForceSlitOff(party);
@@ -1189,8 +1189,8 @@ void driveParty(PartyEntry* party) {
             break;
         case 12:
             if (!(party->flags & PARTY_FLAG_CTRL_OFF) || (party->flags & PARTY_FLAG_RUN_OFF)) {
-                if (party->trigFlags & 8) {
-                    party->trigFlags &= ~8;
+                if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+                    party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
                     party->motionStep = 0;
                     party->flags &= ~PARTY_FLAG_IS_BEING_USED;
                 }
@@ -1203,8 +1203,8 @@ void driveParty(PartyEntry* party) {
             }
             break;
         case 14:
-            if (party->trigFlags & 8) {
-                party->trigFlags &= ~8;
+            if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+                party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
             }
             {
                 player->prevPartyMemberId[party->currentSlotId] = party->currentMemberId;
@@ -1251,8 +1251,8 @@ s32 partyDoWork(void) {
 }
 
 void partyHello(PartyEntry* party) {
-    if (party->trigFlags & 8) {
-        party->trigFlags &= ~8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         partyHelloInit(party);
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
     }
@@ -1398,7 +1398,7 @@ s32 partyHelloMain(PartyEntry* party) {
                 if (!(party->pose && !strcmp(party->pose, pose))) {
                     party->pose = pose;
                     party->poseTime = 0;
-                    party->trigFlags |= 0x2000;
+                    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
                 }
             }
             party->flags2 &= ~0x10;
@@ -1432,7 +1432,7 @@ s32 partyHelloMain(PartyEntry* party) {
                 if (!(party->pose && !strcmp(party->pose, (char*)index))) {
                     party->pose = (char*)index;
                     party->poseTime = 0;
-                    party->trigFlags |= 0x2000;
+                    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
                 }
             }
             party->runMode = 1;
@@ -1462,7 +1462,7 @@ s32 partyHelloMain(PartyEntry* party) {
                 if (!(party->pose && !strcmp(party->pose, (char*)index))) {
                     party->pose = (char*)index;
                     party->poseTime = 0;
-                    party->trigFlags |= 0x2000;
+                    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
                 }
             }
             party->runMode = 0;
@@ -1569,7 +1569,7 @@ BOOL partyGoodbyeMain(PartyEntry* party) {
                 if (!(party->pose && !strcmp(party->pose, pose))) {
                     party->pose = pose;
                     party->poseTime = 0;
-                    party->trigFlags |= 0x2000;
+                    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
                 }
             }
             party->motionStep = 11;
@@ -1615,7 +1615,7 @@ BOOL partyGoodbyeMain(PartyEntry* party) {
                 if (!(party->pose && !strcmp(party->pose, pose))) {
                     party->pose = pose;
                     party->poseTime = 0;
-                    party->trigFlags |= 0x2000;
+                    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
                 }
             }
             party->jumpPara1 = 0.0f;
@@ -1701,7 +1701,7 @@ s32 partyDokanInit(PartyEntry* party) {
         if (!(party->pose && !strcmp(party->pose, pose))) {
             party->pose = pose;
             party->poseTime = 0;
-            party->trigFlags |= 0x2000;
+            party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
         }
     }
     party->flags2 |= 8;
@@ -2285,7 +2285,7 @@ s32 partyRideYoshiMain(PartyEntry* party) {
                 if (!(party->pose && !strcmp(party->pose, pose))) {
                     party->pose = pose;
                     party->poseTime = 0;
-                    party->trigFlags |= 0x2000;
+                    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
                 }
             }
             party->motionStep = 1;
@@ -2325,7 +2325,7 @@ s32 partyRideYoshiMain(PartyEntry* party) {
                 if (!(party->pose && !strcmp(party->pose, pose))) {
                     party->pose = pose;
                     party->poseTime = 0;
-                    party->trigFlags |= 0x2000;
+                    party->trigFlags |= PARTY_TRIG_FLAG_CHG_POSE;
                 }
             }
             party->jumpPara1 = 0.0f;
@@ -2363,10 +2363,10 @@ void party_damage_return(PartyEntry* party) {
     f32 marioY;
     f32 marioZ;
 
-    if (party->trigFlags & 8) {
-        party->trigFlags &= ~8;
+    if (party->trigFlags & PARTY_TRIG_FLAG_CHG_RUN_MODE) {
+        party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_RUN_MODE;
         party->flags &= ~PARTY_FLAG_IS_BEING_USED;
-        if (!(party->trigFlags & 0x1000000)) {
+        if (!(party->trigFlags & PARTY_TRIG_FLAG_SPLASH)) {
             party->motionStep = 10;
         } else {
             party->motionStep = 0;
@@ -2826,12 +2826,12 @@ void partyPreDisp(PartyEntry* party) {
         partyMakeDispDir(party);
     }
 
-    if (party->trigFlags & 0x6000) {
-        if (party->trigFlags & 0x2000) {
-            party->trigFlags &= ~0x2000;
+    if (party->trigFlags & (PARTY_TRIG_FLAG_CHG_POSE | PARTY_TRIG_FLAG_CHG_PAPER)) {
+        if (party->trigFlags & PARTY_TRIG_FLAG_CHG_POSE) {
+            party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_POSE;
         }
-        if (party->trigFlags & 0x4000) {
-            party->trigFlags &= ~0x4000;
+        if (party->trigFlags & PARTY_TRIG_FLAG_CHG_PAPER) {
+            party->trigFlags &= ~PARTY_TRIG_FLAG_CHG_PAPER;
         }
         animPoseSetAnim(party->paperAnimGroup, party->pose, 1);
         if (party->paper != NULL) {
