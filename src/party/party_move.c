@@ -373,7 +373,7 @@ void partyClearFootmark(void) {
 
     for (i = 0; i < 0x50; i++) {
         f->pos = pos;
-        f->field_0 = 0;
+        f->flags = 0;
         f++;
     }
     writeId[0] = 0;
@@ -404,7 +404,7 @@ void partyClearFootmark2(void) {
     f = footmarkBuf[1];
     for (i = 0; i < 0x50; i++) {
         f->pos = pos;
-        f->field_0 = 0;
+        f->flags = 0;
         f++;
     }
     writeId[1] = 0;
@@ -423,7 +423,7 @@ static inline void partyRecordFootmarkSub(PartyEntry* party, Vec* pos, s32 flags
     f = footmarkBuf[slot];
     id = writeId[slot];
     f = &f[id];
-    if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
+    if ((f->flags & 1) == 0 || (flags & 1) == 0) {
         if (f->pos.x != pos->x || f->pos.y != pos->y || f->pos.z != pos->z) {
             if (readId[slot] != writeId[slot] + 1) {
                 writeId[slot]++;
@@ -433,14 +433,14 @@ static inline void partyRecordFootmarkSub(PartyEntry* party, Vec* pos, s32 flags
                 f = &footmarkBuf[slot][writeId[slot]];
                 f->pos = *pos;
                 if (flags & 1) {
-                    f->field_0 |= 1;
+                    f->flags |= 1;
                 } else {
-                    f->field_0 &= ~1;
+                    f->flags &= ~1;
                 }
                 if (flags & 4) {
-                    f->field_0 |= 4;
+                    f->flags |= 4;
                 } else {
-                    f->field_0 &= ~4;
+                    f->flags &= ~4;
                 }
             }
         }
@@ -489,7 +489,7 @@ void partyRecordFootmark(PartyEntry* party) {
                 f = footmarkBuf[0];
                 for (i = 0; i < 0x50; i++) {
                     f->pos = mp;
-                    f->field_0 = 0;
+                    f->flags = 0;
                     f++;
                 }
                 writeId[0] = 0;
@@ -1140,7 +1140,7 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
             f1 = footmarkBuf[0];
             for (i1 = 0; i1 < 0x50; i1++) {
                 f1->pos = pos1;
-                f1->field_0 = 0;
+                f1->flags = 0;
                 f1++;
             }
             writeId[0] = 0;
@@ -1174,7 +1174,7 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
                 f = footmarkBuf[1];
                 for (i = 0; i < 0x50; i++) {
                     f->pos = pos;
-                    f->field_0 = 0;
+                    f->flags = 0;
                     f++;
                 }
                 writeId[1] = 0;
@@ -1365,7 +1365,7 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
         Footmark* f = footmarkBuf[0];
         for (i = 0; i < 0x50; i++) {
             f->pos = pos;
-            f->field_0 = 0;
+            f->flags = 0;
             f++;
         }
         writeId[0] = 0;
@@ -1389,7 +1389,7 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
         f = footmarkBuf[1];
         for (i = 0; i < 0x50; i++) {
             f->pos = pos;
-            f->field_0 = 0;
+            f->flags = 0;
             f++;
         }
         writeId[1] = 0;
@@ -1426,7 +1426,7 @@ void partyMoveWalk(PartyEntry* party) {
             Footmark* f = footmarkBuf[0];
             for (i = 0; i < 0x50; i++) {
                 f->pos = mp;
-                f->field_0 = 0;
+                f->flags = 0;
                 f++;
             }
             writeId[0] = 0;
@@ -1450,7 +1450,7 @@ void partyMoveWalk(PartyEntry* party) {
             f = footmarkBuf[1];
             for (i = 0; i < 0x50; i++) {
                 f->pos = pos;
-                f->field_0 = 0;
+                f->flags = 0;
                 f++;
             }
             writeId[1] = 0;
@@ -1524,7 +1524,7 @@ static inline void partyWalkFootmarkSub(Vec* pos, s32 flags, s32 slot) {
     marioGetPtr();
     id = writeId[slot];
     f = &footmarkBuf[slot][id];
-    if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
+    if ((f->flags & 1) == 0 || (flags & 1) == 0) {
         if (f->pos.x != pos->x || f->pos.y != pos->y || f->pos.z != pos->z) {
             /* the named temp makes the compiler keep readId in r3 and id + 1 in r0 */
             s32 readIdx = readId[slot];
@@ -1536,14 +1536,14 @@ static inline void partyWalkFootmarkSub(Vec* pos, s32 flags, s32 slot) {
                 f = &footmarkBuf[slot][writeId[slot]];
                 f->pos = *pos;
                 if (flags & 1) {
-                    f->field_0 |= 1;
+                    f->flags |= 1;
                 } else {
-                    f->field_0 &= ~1;
+                    f->flags &= ~1;
                 }
                 if (flags & 4) {
-                    f->field_0 |= 4;
+                    f->flags |= 4;
                 } else {
-                    f->field_0 &= ~4;
+                    f->flags &= ~4;
                 }
             }
         }
@@ -1927,7 +1927,7 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
         Footmark* f = footmarkBuf[0];
         for (i = 0; i < 0x50; i++) {
             f->pos = mp;
-            f->field_0 = 0;
+            f->flags = 0;
             f++;
         }
         writeId[0] = 0;
@@ -1951,7 +1951,7 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
         f = footmarkBuf[1];
         for (i = 0; i < 0x50; i++) {
             f->pos = pos;
-            f->field_0 = 0;
+            f->flags = 0;
             f++;
         }
         writeId[1] = 0;
@@ -1995,7 +1995,7 @@ static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot) {
     marioGetPtr();
     id = writeId[slot];
     f = &footmarkBuf[slot][id];
-    if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
+    if ((f->flags & 1) == 0 || (flags & 1) == 0) {
         if (f->pos.x != pos->x || f->pos.y != pos->y || f->pos.z != pos->z) {
             /* the named temp makes the compiler keep readId in r3 and id + 1 in r0 */
             s32 readIdx = readId[slot];
@@ -2007,14 +2007,14 @@ static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot) {
                 f = &footmarkBuf[slot][writeId[slot]];
                 f->pos = *pos;
                 if (flags & 1) {
-                    f->field_0 |= 1;
+                    f->flags |= 1;
                 } else {
-                    f->field_0 &= ~1;
+                    f->flags &= ~1;
                 }
                 if (flags & 4) {
-                    f->field_0 |= 4;
+                    f->flags |= 4;
                 } else {
-                    f->field_0 &= ~4;
+                    f->flags &= ~4;
                 }
             }
         }
@@ -2895,7 +2895,7 @@ BOOL partyGetAppearPos2(PartyEntry* party, Vec* position) {
 // With math_ext.h + pool_data the constants share str_MOBJ_TreasureBox, but every angle/Vec literal offset
 // still lands at 0x29c.. instead of 0x41c.. (0x180 of other functions' .rodata is missing until the
 // whole unit is finished), plus a few fpr/stack slots follow the same shift. Declaring `u32 i` first
-// and the `targetDist` initializer before `unk1AC` fixed the r26/r27 and f25/f26 swaps.
+// and the `targetDist` initializer before `marioDispDir` fixed the r26/r27 and f25/f26 swaps.
 // The `hitNormal = query.hitNormal;` copy originally sat in a function-scope local, which MWCC
 // assigned the top scratch slot (0x34) instead of retail's bottom one (0x10), rotating the three
 // compound-literal scratch Vecs below it. partyNrmToAngle takes the Vec by value, so MWCC
@@ -2907,7 +2907,7 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
     f32 bestX;
     f32 bestY;
     f32 bestZ;
-    f32 unk1AC;
+    f32 marioDispDir;
     f32 targetDist;
     HitCheckQuery query;
     s32 angles[9] = {45, 135, -135, 315, -315, 180, -180, 90, -90};
@@ -2920,13 +2920,13 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
 
     targetDist = 30.0f + party->radius;
     bestDist = -1.0f;
-    unk1AC = player->dispReqDir;
+    marioDispDir = player->dispReqDir;
     position->x = player->position.x;
     position->y = player->position.y;
     position->z = player->position.z;
 
     for (i = 0; i < 9; i++) {
-        angle = toMovedir2(unk1AC, (f32)angles[i]);
+        angle = toMovedir2(marioDispDir, (f32)angles[i]);
         sincosf(&sinv, &cosv, angle);
         query.targetDistance = targetDist;
         query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};

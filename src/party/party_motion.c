@@ -1067,7 +1067,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                     }
                 }
             }
-            if ((party->flags & PARTY_FLAG_IS_GROUNDED) && (fmark->field_0 & 0x1)) {
+            if ((party->flags & PARTY_FLAG_IS_GROUNDED) && (fmark->flags & 0x1)) {
                 ang = toMovedir(party->dispReqDir);
                 partyGetReadId(id, &rx, &ry, &rz);
                 L_getTargetPos(id, &v88);
@@ -1130,7 +1130,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                 partyChgMot(party, 2);
                 break;
             }
-            if (!(party->flags & PARTY_FLAG_IS_GROUNDED) || !(fmark->field_0 & 0x4)) {
+            if (!(party->flags & PARTY_FLAG_IS_GROUNDED) || !(fmark->flags & 0x4)) {
                 continue;
             }
             dist = distABf(px, pz, v94.x, v94.z);
@@ -1143,7 +1143,7 @@ void party_motion_homing_walk(PartyEntry* party) {
     }
     if (party->speed) {
         partyChgSpeedPose(party, party->speed);
-    } else if (!(fmark->field_0 & 0x4)) {
+    } else if (!(fmark->flags & 0x4)) {
         partyChgMot(party, 0);
     }
     party->dir = angle;

@@ -41,7 +41,7 @@ f32 jumpheight;
 
 // Sweat/smoke struct stored in PartyEntry::useStruct (0x170) while riding Yoshi.
 typedef struct PartyYoshiUse {
-    u8 field_00[0x4];
+    u8 pad_0x0[0x4];    // 0x0
     s32 direction;      // 0x4
     s32 counter;        // 0x8
     f32 anim;           // 0xC

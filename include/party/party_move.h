@@ -56,9 +56,10 @@ void partyGetReadId2(s32 index, Vec* out);
 void L_getTargetPos(s32 id, Vec* out);
 // Layout of a footmark record (0x10 bytes) inside footmarkBuf.
 typedef struct Footmark {
-    u8 field_0; // 0x0, flags (party_motion tests 0x1 and 0x4)
-    u8 pad[3];  // 0x1
-    Vec pos;    // 0x4, copied whole from the mario/party position (lwz/stw struct copy)
+    u8 flags;       // 0x0, partyRecordFootmark's flags: 0x1 the leader was jumping (party_motion_homing_walk jumps there),
+                    //      0x4 marioChkSlitThrouh was set (party_motion_homing_walk starts the slit floor motion near it)
+    u8 pad_0x1[3];  // 0x1
+    Vec pos;        // 0x4, copied whole from the mario/party position (lwz/stw struct copy)
 } Footmark;
 Footmark* partyGetFootmarkPtr(s32 index);
 f32 partyGetTargetDistYFrom(s32 id, f32 y);

@@ -5,13 +5,14 @@ typedef struct PartyEntry PartyEntry;
 #include <dolphin/mtx.h>
 
 typedef struct PartyCloud {
-    f32 unk0; //0x0
-    f32 unk4; //0x4
+    f32 field_0x0; //0x0, N__cloud_use sets it to 100, nothing reads it
+    f32 breathDispDir; //0x4, display direction of the breath, Mario's dispDir when it starts: N__cloud_use turns Mario and
+                       //     Flurrie to it, cloudGetBreathDir returns toMovedir of it, getHitBreatheout2 aims its rays by it
     f32 breathDist; //0x8, cloudGetBreathDist
     f32 maxDist; //0xC, cap for breathDist in getHitBreatheout2, set to 120 at init
-    f32 sweepOffset1; //0x10, angle offset from unk4 for the first hit ray in getHitBreatheout2 (-20..20, 1 per frame)
+    f32 sweepOffset1; //0x10, angle offset from breathDispDir for the first hit ray in getHitBreatheout2 (-20..20, 1 per frame)
     s32 sweepDown1; //0x14, 1 while sweepOffset1 is decreasing
-    f32 sweepOffset2; //0x18, angle offset from unk4 for the second hit ray in getHitBreatheout2, same motion as sweepOffset1
+    f32 sweepOffset2; //0x18, angle offset from breathDispDir for the second hit ray in getHitBreatheout2, same motion as sweepOffset1
     s32 sweepDown2; //0x1C, 1 while sweepOffset2 is decreasing
     struct HitEntry* hitBreathout[4]; //0x20, cloudGetHitBreathout(n) returns [n]
     s32 useTimer; //0x30, frames left in an event-driven use (cloud_use)

@@ -86,7 +86,7 @@ f32 cloudGetBreathDir() {
     }
     else {
         PartyCloud* cloud = party->partyCloud;
-        breathDir = toMovedir(cloud->unk4);
+        breathDir = toMovedir(cloud->breathDispDir);
     }
     
     return breathDir;
@@ -116,7 +116,7 @@ f32 cloudGetBreathPower(f32 param_1, Vec* param_2) {
         breathDist = cloud->breathDist;
         if (-((0.5f * param_1) - distABf(party->position.x, party->position.z, param_2->x, param_2->z)) <= breathDist) {
             PartyCloud* cloud = party->partyCloud;
-            dist = toMovedir(cloud->unk4);
+            dist = toMovedir(cloud->breathDispDir);
             angle = angleABf(party->position.x, party->position.z, param_2->x, param_2->z);
             dist = revise360(angle - dist);
             
@@ -338,7 +338,7 @@ void N__cloud_use(PartyEntry* party) {
         party->useMotionId = 0;
         party->useStruct = __memAlloc(HEAP_DEFAULT, 0x48);
         memset(party->useStruct, 0, 0x48);
-        party->partyCloud->unk0 = 100.0f;
+        party->partyCloud->field_0x0 = 100.0f;
         party->partyCloud->maxDist = 120.0f;
         party->partyCloud->sweepOffset1 = 0.0f;
         party->partyCloud->sweepDown1 = 0;
@@ -393,7 +393,7 @@ void N__cloud_use(PartyEntry* party) {
         mario->dispFlags |= 0x100;
         party->flags2 |= 0x10;
         party->partyCloud->breathDist = 0.0f;
-        party->partyCloud->unk4 = mario->dispDir;
+        party->partyCloud->breathDispDir = mario->dispDir;
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
             mario->camShiftRate.x = 0.03f;
             mario->camShiftSideTarget = 70.0f * ((revise360(270.0f - mario->dispReqDir) <= 180.0f) ? -1.0f : 1.0f);
@@ -416,10 +416,10 @@ void N__cloud_use(PartyEntry* party) {
         MOVE_TO_MARIO();
         party->position = party->targetPos;
         partyUpdateKeyData(party);
-        mario->dispDir = party->partyCloud->unk4;
-        mario->dispReqDir = party->partyCloud->unk4;
-        party->dispDir = party->partyCloud->unk4;
-        party->dispReqDir = party->partyCloud->unk4;
+        mario->dispDir = party->partyCloud->breathDispDir;
+        mario->dispReqDir = party->partyCloud->breathDispDir;
+        party->dispDir = party->partyCloud->breathDispDir;
+        party->dispReqDir = party->partyCloud->breathDispDir;
         sx = mario->position.x;
         sz = mario->position.z;
         f31 = mario->dispDir;
@@ -436,7 +436,7 @@ void N__cloud_use(PartyEntry* party) {
         if (party->partyCloud->breathDist >= party->partyCloud->maxDist) {
             party->partyCloud->breathDist = party->partyCloud->maxDist;
         }
-        angle = toMovedir(party->partyCloud->unk4);
+        angle = toMovedir(party->partyCloud->breathDispDir);
         sincosf(&sin1, &cos1, angle);
         sincosf(&sin2, &cos2, -45.0f);
         dist = party->partyCloud->breathDist;
@@ -591,7 +591,7 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
     }
 
     sincosf(&sin1, &cos1, angle);
-    f31 = toMovedir(party->partyCloud->unk4);
+    f31 = toMovedir(party->partyCloud->breathDispDir);
     sincosf(&sin2, &cos2, f31);
 
     distance = party->partyCloud->breathDist;
@@ -613,14 +613,14 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
         ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->scale =
             0.6f * (party->partyCloud->breathDist / party->partyCloud->maxDist);
 
-        if (party->partyCloud->unk4 >= 90.0f && party->partyCloud->unk4 <= 270.0f) {
+        if (party->partyCloud->breathDispDir >= 90.0f && party->partyCloud->breathDispDir <= 270.0f) {
             ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->rotation = -25.0f;
         } else {
             ((effKumokumoData*)party->tail.flurrie.breathFx->userdata)->rotation = 205.0f;
         }
     }
 
-    if (party->partyCloud->unk4 >= 90.0f && party->partyCloud->unk4 <= 270.0f) {
+    if (party->partyCloud->breathDispDir >= 90.0f && party->partyCloud->breathDispDir <= 270.0f) {
         f31 = 1.0f;
     } else {
         f31 = -1.0f;
@@ -640,7 +640,7 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
         }
     }
 
-    dir = toMovedir(party->partyCloud->unk4 + party->partyCloud->sweepOffset1 * f31);
+    dir = toMovedir(party->partyCloud->breathDispDir + party->partyCloud->sweepOffset1 * f31);
     sincosf(&sin2, &cos2, dir);
     distance = party->partyCloud->breathDist;
     hit = hitCheckFilter(NULL, party->position.x, mario->position.y + f30, party->position.z, sin2, sin1, cos2, &hitX,
@@ -665,7 +665,7 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
         }
     }
 
-    dir = toMovedir(party->partyCloud->unk4 + party->partyCloud->sweepOffset2 * f31);
+    dir = toMovedir(party->partyCloud->breathDispDir + party->partyCloud->sweepOffset2 * f31);
     sincosf(&sin2, &cos2, dir);
     distance = party->partyCloud->breathDist;
     hit = hitCheckFilter(NULL, party->position.x, mario->position.y + f30, party->position.z, sin2, sin1, cos2, &hitX,
