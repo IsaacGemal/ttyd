@@ -8670,10 +8670,12 @@ n2rels; none of their files was touched.
   with `--allow-pragma`: only the comment on envSetWater's opt_propagation line changed, it named `yami->unk0`). At
   the end `configure.py --non-matching` and the 867 objects built from a changed .c or a user of a changed header
   compiled with no errors; a normal reconfigure rebuilt to `ok`.
-- **Counts** (`tools/cleanup_index.py`, bf361fce -> this branch, same script): index **11.962 -> 11.863** per kLOC
-  (8355 -> 8286 weighted): prim_ptr_cast 1873 -> 1805, raw_offset 112 -> 108, struct_ptr_cast 1191 -> 1194, field_0x
-  1340 -> 1344 (honest respellings, below), the rest unchanged. The index doesn't count `unkNN` field names: in the
-  seven files and their seven headers, code only, `unkNN`/`field_N`/`padNN` placeholders went 178 -> 0. Per file
+- **Counts** (`tools/cleanup_index.py`, origin/main after #1147 -> this branch rebased onto it, same script): index
+  **11.710 -> 11.609** per kLOC (8179 -> 8109 weighted): prim_ptr_cast 1746 -> 1678, raw_offset 112 -> 108,
+  struct_ptr_cast 1175 -> 1178, field_0x 1331 -> 1334 (honest respellings, below), the rest unchanged (pool_constant,
+  weight 0, 4933 -> 4937). The index doesn't count `unkNN` field names: in the seven files and the five headers this
+  branch changes, code only, `unkNN`/`unk_NN`/`padNN`/`pad_N`/`field_N` placeholders went 173 -> 1 (MapObjectHitEntry's
+  `unk4`, below). Per file
   (weighted, per kLOC):
   - src/event/evt_mobj.c 273 -> 281 (54.589 -> 56.189): field_0x 0 -> 9 (MapObjectEntry's only-stored 0x1A4,
     formerly `unk1A0[1]`), prim_ptr_cast 172 -> 171
@@ -8684,7 +8686,7 @@ n2rels; none of their files was touched.
   - src/driver/envdrv.c 102 -> 102 (66.277 -> 66.277)
   - src/driver/shadowdrv.c 86 -> 84 (71.251 -> 69.594): raw_offset 4 -> 0, struct_ptr_cast 12 -> 18 (the offset
     macro's body is counted now that it is not an offset macro)
-  - headers: envdrv.h 0 -> 1, mobjdrv.h 0 -> 1, evt_johoya.h 0 -> 1 (one `field_0xNN` each, below)
+  - headers: envdrv.h 0 -> 1, mobjdrv.h 0 -> 1 (one `field_0xNN` each, below)
 
 **Names, per struct** (field -> name: the consumer that proves it).
 - MapObjectEntry (include/driver/mobjdrv.h; consumers in evt_mobj.c). 0x1A0 `unk1A0[0]` -> union `itemId` (the item
@@ -8723,17 +8725,9 @@ n2rels; none of their files was touched.
   `savedNpcFlags` (evt_npc_jump_position_nohit stores `npc->flags & 0x80000`, clears the bit for the jump and ORs it back
   on landing) and `winId` (evt_sub's coin-get function: winMgrEntry's id, passed to winMgrOpen, SetParam,
   CloseAutoDelete and Action).
-- FieldBattleData 0x20 (include/driver/npcdrv.h) `field_20` -> `fbatInfo`: the FieldBattleInfo seq_battle fills and
-  passes to BattleInit, which stores the pointer as BattleWork.fbatInfo; evt_npc_battle_start clears its result,
-  evt_npc_wait_battle_end and evt_npc_get_battle_result read it. npcdrv.c and seq_battle.c follow.
-- InformantWork (include/evt/evt_johoya.h; consumers in winmgr.c, evt_johoya.c, evt_win.c, cardmgr.c): 0x10 `unk10`
-  -> `selectedIdx` (johoya_keti_*_makelabel and winmgr's kind-17/18 select store the chosen index; the four
-  *_setreadflag functions mark info[selectedIdx]); 0x14 `InformantUnknown unk14` -> `InformantReadFlags readFlags` (the
-  keti/perfect/luigi read-flag bitsets johoya_get/set index by storyId, copied to and from CardData.informant); its
-  0x27 bytes `field_0x27` (copied with the card, no other access); 0x3F `pad_0x3F`. InformantInfo 0xA `unkA` ->
-  `price`: makelabel returns it in args[4], which tik_00's script compares with evt_pouch_get_coin and takes with
-  evt_pouch_add_coin(-LW(5)); winmgr's kind-17 select prints it `%3d` beside unread rumours and returns it in LW(4)
-  (0 once read); johoya_data_make sets 5. 0xE `pad_0xE`.
+- InformantWork and FieldBattleData 0x20 keep the names #1147 gave them (`curIdx`, `InformantUnknown readFlags`,
+  `price`, `field_0xE`; `info`); this branch adds only the InformantUnknown comment and winmgr's kind-17/18 local `unk`
+  -> `readFlag` (the read-flag list it passes to johoya_get).
 - WinMgrSelect 0x2 `u16 pad_2` -> `u8 pad_0x2[2]` (memset with the struct, never read); its allocations use
   `sizeof(WinMgrSelect)` / `sizeof(WinMgrSelectItem)`. shadowdrv.h's `pad29`/`padAC` spelled `pad_0x29`/`pad_0xAC`.
 - Locals named from what they hold: evt_mobj's `f29..f31` position arguments are `x`/`y`/`z` where they go to
@@ -8762,9 +8756,7 @@ n2rels; none of their files was touched.
   envGlare's 8-byte tap walk as a typed `EnvironmentGlareTexCoord*` (6 lines, as recorded) or `&tap->coords[1]` (+36,
   wrong) stays `(void*)((u32)tap + 8)`.
 - Not named: KusaAccessEntry 0x0 (only the `== 4` terminator), FileEntry 0x8/0x60 (no access; #1138 kept the names),
-  MapObjectHitEntry's `unk4` (mobjdrv.c's MapFileJoint copy; another file's struct), the other FieldBattleData
-  `field_N` words (their readers are tou_03 and battle_seq_end).
+  MapObjectHitEntry's `unk4` (mobjdrv.c's MapFileJoint copy; another file's struct).
 - **For a reviewer.** `eventCode2` is a numbered name for a real pair (two script pointers, both run by mobjRunEvent);
   `depthThreshold`/`blurRadius` index by pass number rather than by an interpretation of the passes as near/far.
-  `fbatInfo` takes BattleWork's name for the same object. The consumer edits outside the task's files: npcdrv.c,
-  seq_battle.c (fbatInfo), evt_johoya.c, evt_win.c, cardmgr.c, cardmgr.h (InformantWork), evtmgr.h (union members only).
+  Outside the task's files only evtmgr.h (union members) and evt_johoya.h (a comment) change.
