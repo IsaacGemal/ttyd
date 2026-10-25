@@ -615,8 +615,8 @@ void BattleAudienceCtrlProcessKinopioJoyRaiseArm(s32 index, s32 kind) {
 		if (member->counter > 0x1e) {
 			f32 one = 1.0f;
 			f32 zero = 0.0f;
-			member->field_0xC = member->field_0xC - one;
-			if (member->field_0xC <= zero) {
+			member->repeatCount = member->repeatCount - one;
+			if (member->repeatCount <= zero) {
 				BattleAudience_ChangeStatus(index, 0);
 			}
 			else {
@@ -781,8 +781,8 @@ void BattleAudienceCtrlProcessKinopioBooing(s32 index) {
 		if (member->counter > 0x1e) {
 			f32 one = 1.0f;
 			f32 zero = 0.0f;
-			member->field_0xC = member->field_0xC - one;
-			if (member->field_0xC <= zero) {
+			member->repeatCount = member->repeatCount - one;
+			if (member->repeatCount <= zero) {
 				BattleAudience_ChangeStatus(index, 0);
 			}
 			else {
@@ -913,15 +913,15 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 				member->velocity.x = ten * (dx / len);
 				member->velocity.y = zero;
 				member->velocity.z = ten * (dz / len);
-				member->field_0xC = ten;
-				member->field_0x10 = ten;
-				member->field_0x14 = len;
+				member->enterDist = ten;
+				member->enterSpeed = ten;
+				member->enterLength = len;
 				member->step++;
 			}
 			break;
 		case 2:
-			member->field_0xC += member->field_0x10;
-			if (member->field_0xC >= member->field_0x14) {
+			member->enterDist += member->enterSpeed;
+			if (member->enterDist >= member->enterLength) {
 				member->position.x = member->mHomePosition.x;
 				member->position.y = member->mHomePosition.y;
 				member->position.z = member->mHomePosition.z;
@@ -1017,12 +1017,12 @@ void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind) {
 			member->baseSize.y += 0.0025f;
 		}
 		member->motionTimer++;
-		member->colorB = member->colorB + member->field_0x18;
+		member->colorB = member->colorB + member->colorBStep;
 		if (member->colorB >= 0xc8) {
-			member->field_0x18 = -4;
+			member->colorBStep = -4;
 		}
 		else if (member->colorB <= 5) {
-			member->field_0x18 = 4;
+			member->colorBStep = 4;
 		}
 	}
 	switch (member->step) {
@@ -1072,13 +1072,13 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 	switch (member->step) {
 	case 0:
 		BattleAudience_SetAnim(index, 1, 0);
-		member->field_0xEC = BattleAudienceDetectTargetAll();
+		member->targetUnit = BattleAudienceDetectTargetAll();
 		member->counter = 0;
 		psndSFXOn_3D(str_SFX_AUDIENCE_TELESA_MOVE1, &member->position);
 		member->step = 5;
 		// fallthrough
 	case 5:
-		unit = member->field_0xEC;
+		unit = member->targetUnit;
 		part = BattleGetUnitPartsPtr(BtlUnit_GetUnitId(unit), BtlUnit_GetBodyPartsId(unit));
 		member->counter++;
 		member->position.x = intplGetValue(5, member->counter, 0x3c,
@@ -1098,7 +1098,7 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 			}
 			member->step = 0xa;
 			member->counter = 0;
-			unit = member->field_0xEC;
+			unit = member->targetUnit;
 			part = BattleGetUnitPartsPtr(BtlUnit_GetUnitId(unit), BtlUnit_GetBodyPartsId(unit));
 			BtlUnit_GetHitPos(unit, part, &x_873, &y_874, &z_875);
 			psndSFXOn_3D(str_SFX_AUDIENCE_TELESA_MOVE1, &member->position);
@@ -1113,7 +1113,7 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 		member->position.z =
 		    intplGetValue(0, member->counter, 0x1e, 100.0f, z_875);
 		if (member->counter == 0x1e) {
-			unit = member->field_0xEC;
+			unit = member->targetUnit;
 			part = BattleGetUnitPartsPtr(BtlUnit_GetUnitId(unit), BtlUnit_GetBodyPartsId(unit));
 			BtlUnit_GetStatus(unit, 0x12, &turns, &strength);
 			if (turns < 1 && !BtlUnit_CheckShadowGuard(unit)) {
@@ -1148,10 +1148,10 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	switch (member->step) {
 	case 0:
 		if (irand(2) == 0) {
-			member->field_0xC = 1.0f;
+			member->intrudeDir = 1.0f;
 		}
 		else {
-			member->field_0xC = -1.0f;
+			member->intrudeDir = -1.0f;
 		}
 		if (pouch->rank == 0) {
 			member->step = 3;
@@ -1167,7 +1167,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		f32 dz;
 		f32 dx;
 		member->step = 5;
-		dir = member->field_0xC;
+		dir = member->intrudeDir;
 		t = 25.0f * dir;
 		dx = t - member->position.x;
 		dz = 110.0f - member->position.z;
@@ -1202,7 +1202,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 			member->position.y = zero;
 			member->velocity.y = zero;
 			member->accel.y = zero;
-			dir = member->field_0xC;
+			dir = member->intrudeDir;
 			t = 300.0f * dir;
 			dx = t - member->position.x;
 			dz = zero - member->position.z;
@@ -1213,7 +1213,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 			member->velocity.y = zero;
 			member->velocity.z = vz;
 			btl_camera_set_mode(0, 3);
-			btl_camera_set_moveto(0, 0x1e, 4, 698.0f * member->field_0xC,
+			btl_camera_set_moveto(0, 0x1e, 4, 698.0f * member->intrudeDir,
 			    100.0f, zero, zero,
 			    60.0f, zero);
 			intrudeSound = psndSFXOn(str_SFX_AUDIENCE_HEIHO_MOVE1);
@@ -1249,7 +1249,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 			member->step = 0x13;
 			member->counter = 0x3c;
 			btl_camera_set_moveSpeedLv(0, 1);
-			effSmallStarEntry(0, 4, 185.0f * member->field_0xC,
+			effSmallStarEntry(0, 4, 185.0f * member->intrudeDir,
 			    20.0f, 40.0f, 0.0f,
 			    -1.0f, 0.0f);
 		}
@@ -1278,7 +1278,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		f32 dz;
 		f32 dx;
 		member->step = 0x37;
-		dir = member->field_0xC;
+		dir = member->intrudeDir;
 		t = 25.0f * dir;
 		dx = t - member->position.x;
 		dz = 110.0f - member->position.z;
@@ -1322,19 +1322,19 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	case 0x43: {
 		f32 one = 1.0f;
 		member->counter++;
-		if (one == member->field_0xC) {
+		if (one == member->intrudeDir) {
 			member->yaw = 270.0f;
 		}
-		if (-1.0f == member->field_0xC) {
+		if (-1.0f == member->intrudeDir) {
 			member->yaw = 90.0f;
 		}
 		if (member->counter <= 5) {
 			member->position.x = member->position.x -
-			                     5.0f * member->field_0xC;
+			                     5.0f * member->intrudeDir;
 		}
 		else if (member->counter <= 0xa) {
 			member->position.x = member->position.x +
-			                     5.0f * member->field_0xC;
+			                     5.0f * member->intrudeDir;
 		}
 		if (member->counter == 0xa) {
 			if (member->step == 0x43) {
@@ -1354,7 +1354,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		BattleStage_NozzleWorkCheck(1);
 		member->evtId = work->field_180C0.nozzleWorkEventId;
 		member->step = 0x4b;
-		dir = member->field_0xC;
+		dir = member->intrudeDir;
 		t = 300.0f * dir;
 		dx = t - member->position.x;
 		dz = zero - member->position.z;
@@ -1456,7 +1456,7 @@ void BattleAudienceCtrlProcessKinopioSingSub(s32 index) {
 	}
 	else if (member->status != 0x11) {
 		BattleAudience_ChangeStatus(index, 0xd);
-		member->field_0xF4 = 3;
+		member->singCount = 3;
 	}
 }
 
@@ -1662,8 +1662,8 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	case 0:
 		found = BattleAudienceDetectPakkunEatTarget(index);
 		if (found != -1) {
-			member->field_0xF0 = found;
-			target = BattleAudienceGetPtr(member->field_0xF0);
+			member->eatTargetId = found;
+			target = BattleAudienceGetPtr(member->eatTargetId);
 			if (member->position.x >= target->position.x) {
 				member->yaw = 270.0f;
 			}
@@ -1680,7 +1680,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 		member->step++;
 		// fallthrough
 	case 1:
-		target = BattleAudienceGetPtr(member->field_0xF0);
+		target = BattleAudienceGetPtr(member->eatTargetId);
 		if (member->counter > 0) {
 			member->counter--;
 		}
@@ -1691,7 +1691,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 		}
 		break;
 	case 3:
-		target = BattleAudienceGetPtr(member->field_0xF0);
+		target = BattleAudienceGetPtr(member->eatTargetId);
 		if (member->position.x >= target->position.x) {
 			member->drawOffset.x -= 6.0f;
 		}
@@ -1704,7 +1704,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 		}
 		break;
 	case 4:
-		target = BattleAudienceGetPtr(member->field_0xF0);
+		target = BattleAudienceGetPtr(member->eatTargetId);
 		target->flags = 0;
 		audience->mTargetAudienceCount -= 1.0f;
 		BattleAudienceSoundPakkunEat(index);

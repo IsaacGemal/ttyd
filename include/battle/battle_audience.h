@@ -40,15 +40,19 @@ typedef struct BattleAudienceMember {
     s32 flags;                     // 0x0
     s32 step;                      // 0x4, case of the current status's ctrl-process switch (kinopio); 0 after ChangeStatus
     s32 counter;                   // 0x8, per-status count: repeats left, or frames into an intplGetValue move (kinopio)
-    f32 field_0xC;                 // 0xC, per status: repeats left (status 4), walk direction +-1, distance walked
-    f32 field_0x10;                // 0x10, per status: distance per frame of the walk home
-    f32 field_0x14;                // 0x14, per status: length of the walk home
-    s8 field_0x18;                 // 0x18, colorB step, +4 or -4 (kinopio)
+    union {
+        f32 repeatCount;           // 0xC, raise-arm/booing cycles left (KinopioJoyRaiseArm, KinopioBooing); 2 or 3
+        f32 enterDist;             // 0xC, distance walked home so far (KinopioEnter)
+        f32 intrudeDir;            // 0xC, +1 or -1, the side the intruder heads to (KinopioIntrude)
+    };
+    f32 enterSpeed;                // 0x10, distance per frame of the walk home (KinopioEnter)
+    f32 enterLength;               // 0x14, length of the walk home (KinopioEnter)
+    s8 colorBStep;                 // 0x18, added to colorB each frame, +4 or -4 (KinopioSleep)
     u8 status;                     // 0x19
     u8 texIndex;                   // 0x1A, texture index for the current animation frame (TEXGetGXTexObjFromPalette)
     u8 type;                       // 0x1B, AudienceMemberType
     s16 itemId;                    // 0x1C, -1 is invalid
-    u8 field_0x1E[0x20 - 0x1E];    // 0x1E
+    u8 pad_0x1E[0x20 - 0x1E];      // 0x1E
     s32** animTable;               // 0x20, set in BattleAudience_Entry_Sub
     s32* animCur;                  // 0x24, animation in use (BattleAudience_SetAnim)
     s32* animPos;                  // 0x28, cursor in the command list of animCur
@@ -60,7 +64,7 @@ typedef struct BattleAudienceMember {
     u8 colorG;                     // 0x42
     u8 colorB;                     // 0x43
     u8 colorA;                     // 0x44, 0xFF after a reset
-    u8 field_0x45[0x48 - 0x45];    // 0x45
+    u8 pad_0x45[0x48 - 0x45];      // 0x45
     Vec position;                  // 0x48
     Vec scale;                     // 0x54, drawn scale: baseSize times the texture size (BattleAudienceDispAudience)
     Vec baseSize;                  // 0x60, reset to 1; kinopio squashes and stretches x and y
@@ -79,10 +83,11 @@ typedef struct BattleAudienceMember {
     f32 jumpAccelY;                // 0xE4, added to jumpVelY each frame
     f32 yaw;                       // 0xE8, degrees, the draw code flips the sprite for (0, 180]; kinopio and bakugame set
                                    //       90/270 from the x direction, evt_audience's moves 180/0; 270 after Entry_Sub
-    BattleUnit* field_0xEC;        // 0xEC
-    s16 field_0xF0;                // 0xF0
-    u8 field_0xF2[0xF4 - 0xF2];    // 0xF2
-    s32 field_0xF4;                // 0xF4
+    BattleUnit* targetUnit;        // 0xEC, the unit a Boo flies at (BattleAudienceDetectTargetAll, KinopioTransEvt)
+    s16 eatTargetId;               // 0xF0, member a Piranha Plant eats (BattleAudienceDetectPakkunEatTarget, KinopioEat)
+    u8 pad_0xF2[0xF4 - 0xF2];      // 0xF2
+    s32 singCount;                 // 0xF4, phases left to sing: KinopioSingSub sets 3, the phase reaction counts it
+                                   // down for status 0xD and switches to status 3 at 0
     s32 interpFramesLeft;          // 0xF8
     s32 interpFramesTotal;         // 0xFC
     f32 startPosX;                 // 0x100
@@ -133,7 +138,7 @@ typedef struct BattleAudienceStar {
     f32 angle;                  // 0x54, radians
     f32 angleStep;              // 0x58, radians per frame
     u8 alpha;                   // 0x5C
-    u8 field_0x5D[0x60 - 0x5D]; // 0x5D
+    u8 pad_0x5D[0x60 - 0x5D];   // 0x5D
 } BattleAudienceStar;
 
 // TODO: verify variable names
@@ -141,7 +146,7 @@ typedef struct BattleAudienceSound {
     s32 flags;                     // 0x0, bit 0 set while the sound is in use
     s32 sfxId;                     // 0x4, from BattleAudienceSound1/2, -1 when it failed to start
     u8 variant;                    // 0x8, 1-8, chosen by the caller before the sound starts
-    u8 field_0x9[0xC - 0x9];       // 0x9
+    u8 pad_0x9[0xC - 0x9];         // 0x9
     s32 timeLeft;                  // 0xC, frames left, -1 when untimed; fades over the last mFadeoutTime frames
     s32 mFadeoutTime;              // 0x10
     s32 mForceFadeTimer;           // 0x14
@@ -151,7 +156,7 @@ typedef struct BattleAudienceSound {
     u8 mVolumeMultiplier;          // 0x1E
     u8 mFadeStartVolumeMultiplier; // 0x1F
     u8 mFadeEndVolumeMultiplier;   // 0x20
-    u8 field_0x21[3];              // 0x21, TODO verify padding
+    u8 pad_0x21[3];                // 0x21
 } BattleAudienceSound;
 
 typedef struct BattleAudienceWindow {
@@ -163,43 +168,6 @@ typedef struct BattleAudienceWindow {
     s32 slide;                  // 0x14, 0-15, moves toward open while mActive
     f32 count;                  // 0x18, number to display for audience count
 } BattleAudienceWindow;
-
-/*
-typedef struct BattleAudience {
-        s32 flags; //0x0
-        EventEntry* evt; //0x4
-        u8 field_0x8[0xC - 0x8]; //0x8
-        FileEntry* normalTex; //0xC
-        FileEntry* guestTex[2]; //0x10
-        AudienceMemberType guestType[2]; //0x18
-        u8 field_20[0x1BC - 0x20]; //0x20
-        BattleAudienceMember members[200]; //0x1BC
-        BattleAudienceItem items[100]; //0xF25C
-        BattleAudienceStar starpower[100]; //0x10E7C
-        BattleAudienceSound sounds[24]; //0x133FC
-        BattleAudienceWindow window; //0x1375C
-        f32 mAudienceDeltaMultiplier; //0x13778
-        f32 mTargetAudienceCount; //0x1377C
-        f32 mAddedAudienceCount; //013780
-        s32 mCurrentAudienceIntCount; //0x13784, TODO verify name
-        s32 mCurrentAudienceIntCountRight; //0x13788, TODO verify name
-        s32 mCurrentAudienceIntCountLeft; //0x1378C, TODO verify name
-        s32 mMaxAudience; //0x13790
-        u8 field_0x13794[0x137C8 - 0x13794]; //0x13794
-        StarPowerInfo* impendingBonuses; //0x137C8
-        s32 crowdPleasedStreak; //0x137CC
-        s32 crowdDispleasedStreak; //0x137D0
-        s32 mNumStylishCommandsThisAttack; //0x137D4
-        u8 field_0x137D8[0x137DC - 0x137D8]; //0x137D8
-        s32 mCheckPhaseReactionState; //0x137DC, TODO: rename
-        u8 field_0x137E0[0x138BC - 0x137E0]; //0x137E0
-        s32 mItemOnMemberId; //0x138BC, TODO better name
-        Vec mItemOnMemberPos; //0x138C0, TODO better name?
-        u8 field_0x138CC[0x13908 - 0x138CC]; //0x138CC
-        s32 mTurnEndPhaseEventChance; //0x13908, TODO verify name
-        u8 field_0x1390C[0x13910 - 0x1390C]; //0x1390C
-        BOOL excited; //0x13910, if toads are cheering
-} BattleAudience;*/
 
 typedef struct BattleAudience {
     s32 flags;                         // 0x0

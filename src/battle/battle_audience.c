@@ -1246,10 +1246,10 @@ u8 BattleAudience_CheckReactionPerPhase(void) {
 		for (i = 0; i < 200; i++) {
 			member = BattleAudienceGetPtr(i);
 			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->status == 0xD) {
-				member->field_0xF4 -= 1;
-				if (member->field_0xF4 <= 0) {
+				member->singCount -= 1;
+				if (member->singCount <= 0) {
 					BattleAudience_ChangeStatus(i, 3);
-					member->field_0xF4 = 0;
+					member->singCount = 0;
 				}
 			}
 		}
@@ -3329,9 +3329,9 @@ void BattleAudience_ChangeStatus(s32 index, s32 status) {
 			member->motionTimer = zero;
 			member->step = zero;
 			member->counter = zero;
-			member->field_0x14 = zeroF;
-			member->field_0x10 = zeroF;
-			member->field_0xC = zeroF;
+			member->enterLength = zeroF;
+			member->enterSpeed = zeroF;
+			member->repeatCount = zeroF;
 			member->status = status;
 		}
 	}
@@ -4013,10 +4013,10 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 			if (member->type == AUDIENCE_PIRANHA_PLANT) {
 				BattleAudience_ChangeStatus(i, 4);
 				if (d == 3) {
-					member->field_0xC = 3.0f;
+					member->repeatCount = 3.0f;
 				}
 				else {
-					member->field_0xC = 2.0f;
+					member->repeatCount = 2.0f;
 				}
 			}
 			else {
@@ -4025,10 +4025,10 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 				if (r < limit) {
 					BattleAudience_ChangeStatus(i, 4);
 					if (d == 3) {
-						member->field_0xC = 3.0f;
+						member->repeatCount = 3.0f;
 					}
 					else {
-						member->field_0xC = 2.0f;
+						member->repeatCount = 2.0f;
 					}
 				}
 				else {
