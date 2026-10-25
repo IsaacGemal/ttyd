@@ -8056,3 +8056,69 @@ pattern and MarioWork's precedent, not a reader), party_yoshi's case 0x33 now re
 yoshiFlutterY` (what the code does; it was spelled `spinSpeed += field_0x2A4`), yoshiInertiaZ's axis (it reaches
 L_yoshiFlyMove negated as angleABf's z), and envdrv's dirYaw/dirPitch (from the direction vector they build; a light
 direction, but nothing names the light).
+
+## Pointer casts in src/effect, src/window and src/manager typed away (2026-10-25, Claude Opus 5.5, n9-q-fcasts)
+
+Task (Isaac): the prim_ptr_cast, struct_ptr_cast, deref_cast and raw_offset sites `tools/cleanup_index.py` counts in
+src/effect/**, src/window/**, src/manager/** and src/win*/ (there is no src/win* directory other than src/window),
+removed by typing the thing honestly, never by moving the cast; no new MUST_MATCH, pragmas, gotos or PAD_STACK; data
+definitions out of scope. Parallel branches: fsrcmisc (event/party/seq/mario/driver), funk (placeholder spellings).
+
+- **Counts** (`tools/cleanup_index.py`, d0f4bd7d -> this branch, same script). These directories, prim / struct /
+  deref / raw: effect 36/127/75/12 -> 35/110/74/7 (250 -> 226), window 93/24/6/4 -> 88/13/6/4 (127 -> 111), manager
+  46/22/13/0 -> 45/18/13/0 (81 -> 76); 458 -> 413 sites. Index **11.974 -> 11.902** per kLOC (8364 -> 8313 weighted):
+  prim_ptr_cast 1880 -> 1873, struct_ptr_cast 1224 -> 1192, deref_cast 483 -> 482, raw_offset 145 -> 140; every other
+  category unchanged.
+- **One record type for an effect's userdata array.** eff_gareki_n64 and eff_akari_pose_n64 allocate effect->count
+  equal records and step one pointer over them; the head and the parts were two structs, so every part access cast
+  the cursor (`((GarekiChild*)data)->vy`). Each is now one struct carrying both roles' fields (no offset is used
+  differently by the two roles). A separate typed part cursor was tried first in gareki and moves `li r29,1` and two
+  sdata loads (DIFF), as the file's comments already said for akari_pose. Names, GarekiData: the fragments' existing
+  vx/offsetX/offsetY/angleX/angleZ (0x10-0x1C, 0x2C, 0x34) and the head's timer/state/alpha keep their names; the
+  head's 0x30 `angleZ` -> `angleY` (effGarekiDisp: `PSMTXRotRad(rot, 'y', deg2rad * data->angleY)`), its 0x34
+  `field_34` -> `angleZ` (effGarekiDisp: the 'z' rotation, as the fragments' 0x34), its 0x3C `angleVelZ` ->
+  `angleVelY` (effGarekiMain adds it to 0x30). effAkariPoseData: the union of the two structs' existing names.
+- **win_log's band is WindowWork's own.** LogWin was a view of the whole WindowWork (its header fields again, then
+  win_log's band 0xD68-0x1204); win_log's functions began with `(LogWin*)work` (9 casts) and win_root read the band
+  through a LOGWIN(work) cast macro (76 uses). The band's fields are now WindowWork members, laid out like the other submenus' bands,
+  and LogWin, LOGWIN and winLogMain2's WinLogWork view go. The #1089 objection (names that collide or read wrongly in
+  the flat struct) is met with the band prefix the other bands use: state/sel/count/rows -> logState/logSel/logCount/
+  logRows, the badge page's fourteen fields badge* -> logBadge*, chars -> logChars (WindowWork's existing name for
+  it); every other name is unchanged. Tried first: a nested `LogWin log` member; every function matches except
+  winLogDisp, whose prologue moves the idx*20 temp from r3 to r6 and reorders the colour stores, with or without an
+  alias local. winLogDisp now takes `void* param` with `WindowWork* work = param;`, the signature winMarioDisp,
+  winPartyDisp, winItemDisp and winBadgeDisp already have (win_root calls all five the same way); in the flat layout
+  that matches, and without the second variable the prologue moves as above (the original's `LogWin* w` alias, cast
+  or `(void*)`, was the same second variable).
+- **Smaller ones.** cardmgr's read_main and read_all_main read the save time through a `CardSaveSlot* save` local
+  (four casts). DVDEntry.address is DVDMgrMain's read cursor, advanced by each chunk: `u8*`, and
+  `entry->address += size` replaces the s32 round trip. win_mario gets `-char signed` on its Object line (the per-file
+  setting #1129 allows): winZenkakuStr/winZenkakuPadStr's sprintf buffers become `char` and the five `(char*)` casts
+  go; the object is identical. eff_splash and eff_funemizu hold their packed colour words in local unions (u32 and an
+  a/r/g/b struct for GXPeekARGB's pixel; u32 and GXColor for FunemizuMapEntry.value, as unk_80224298 returns it)
+  instead of `((u8*)&word)[n]` and `*(GXColor*)&colorVal`.
+- **Left, and why** (413 sites). Sound ids passed as names, 89 (#1129 decision). Effect userdata re-read after stores
+  and calls, 73 (`((effStarStoneData*)e->userdata)->camId`: the original reloads; typed locals DIFF, #1123; no userdata
+  union, #1129); eff_damage_star's `&((DamageStarData*)effect->userdata)[2]` is one of them (the function's `data`
+  already holds the pointer; `&data[2]` reuses the register, DIFF). The MSL `__fpclassifyf`/`NAN` copies, 46 (the SDK's
+  idiom, standing rules). MUST_MATCH arms, 35. fontmgr/filemgr variable-length parsing and pointer relocation, 34.
+  evtmgr_cmd's event-ABI conversions (evtGetValue, script words), 25. Views of data defined in the unit (vertex and
+  display-list tables as u32/u8 words, colour words, anim tables, chuchu_dt; flame alone is 24), about 75: data
+  definitions were out of scope. Int/pointer sentinels: eff_fukidashi's target (-1/-2/-3), winmgr's negative `kind`
+  list pointer, win_item's fileAsyncf result (fileAsync returns a FileEntry*, 0 or -1). win_log's six row-phase walks
+  (12): an indexed `logRows[i].phase` loop swaps the cursor and counter registers (r4/r5), so the original had an
+  explicit byte cursor, as #1089 found; the WinLogEntry view at 0xD78 (a 4-byte-shifted row). winBadgeDisp's entry walk
+  (#1089). cardmgr's checksum byte views of the save (5). eff_sstar's `(s16*)dst` (`dst->pos` addresses through the
+  outer base, DIFF). eff_fall's vertex row (`v = address; v += j * 5` DIFF). eff_particle's particle array after the
+  head records. win_item's two `(void*)` in a data initialiser.
+- **Leads.** effWhirlwindN64Entry's `s32 mario` is a MarioWork* (both of its casts go), but evt_eff.c's caller passes
+  an event word and would need the conversion (fsrcmisc's file). eff_akari_charge_n64 could take the same one-record
+  merge as akari_pose (one cast, and EffAkariChargeParticle goes), but the head's 0x38 and the particles' 0x34 are both
+  `scale` now and one needs a new name. The eleven `__fpclassifyf`/`sqrtf` copies could share one header; that moves
+  the puns rather than removing them, so it was not done.
+- **Checks.** Every commit: `tools/ci.py` PASS on exactly that commit's tree (tools/tests stubbed for the same nine
+  environment errors as before, test_wave_launch's systemd scopes and test_reloc_value_check's elftools import, which
+  fail on the clean HEAD too; the worktree had no baseline, so `--init` ran on the clean d0f4bd7d first);
+  `build/G8MJ01/ok` recreated and `obj_equiv --tree` over build/G8MJ01/src equal to a snapshot of d0f4bd7d's objects;
+  every changed C file compiled under `configure.py --non-matching`, then a normal reconfigure and rebuild to `ok`.
+  fncast_lint and local_prototypes clean. configure.py changed only win_mario's Object line (`--allow-configure`).
