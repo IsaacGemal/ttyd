@@ -287,8 +287,8 @@ void cardCopy2Main(s32 slot) {
     gp->rumbleEnabled = backup5;
     gp->lastFileSlot = backup6;
     gp->mapAlloc = backup2;
-    gp->unk8 = 0;
-    gp->field_C = 0;
+    gp->field_0x8 = 0;
+    gp->debugBattleFlag = 0;
     if (backup3 != 0) {
         gp->flags |= 8;
     }

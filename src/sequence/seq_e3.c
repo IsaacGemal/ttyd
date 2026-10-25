@@ -68,10 +68,10 @@ void alarm_handler(OSAlarm* alarm, OSContext* context) {
 
 void seq_e3Init(SequenceWork* seq) {
     wp->handle = fileAllocf(FILE_TYPE_TPL, "%s/monthry.tpl", getMarioStDvdRoot());
-    wp->field_4 = 0;
-    wp->field_8 = 0;
+    wp->showMenu = 0;
+    wp->nextShowMenu = 0;
     wp->scenario = 0;
-    wp->field_64 = 270.0f;
+    wp->field_0x64 = 270.0f;
     OSCreateAlarm(&wp->alarm);
     OSSetAlarm(&wp->alarm, (OSTime)OS_TIMER_CLOCK * 600, alarm_handler);
     wp->initTime = OSGetTime();
@@ -120,7 +120,7 @@ void seq_e3Main(SequenceWork* seq) {
                 psndSFXOn("SFX_PRESS_START1");
                 fadeEntry(MARIO_HEAD_FADE_IN, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
                 fadeSetOffscreenCallback(e3DispOffscreen, wp);
-                wp->field_8 = 1;
+                wp->nextShowMenu = 1;
                 seq->state++;
             }
             break;
@@ -177,7 +177,7 @@ void seq_e3Main(SequenceWork* seq) {
                 psndSFXOn((char*)19);
                 fadeEntry(MARIO_HEAD_FADE_IN, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
                 fadeSetOffscreenCallback(e3DispOffscreen, seq);
-                wp->field_8 = 0;
+                wp->nextShowMenu = 0;
                 seq->state++;
             } else if (keyGetButtonTrg(0) & PAD_BUTTON_A) {
                 psndSFXOn((char*)18);
@@ -334,9 +334,9 @@ void e3Disp(CameraId cameraId, void* param) {
     f32 t, dx, dy;
     s32 mode;
 
-    active = wp->field_4;
+    active = wp->showMenu;
     if (cameraId == CAMERA_OFFSCREEN2) {
-        active = 1 - wp->field_4;
+        active = 1 - wp->showMenu;
     }
 
     // Backup camera and GX params so we can use them in calculating all this
@@ -445,7 +445,7 @@ f32 forceSdata(void) {
 void e3DispOffscreen(CameraId cameraId, void* param) {
     u16 left, top, right, bottom;
 
-    wp->field_4 = wp->field_8;
+    wp->showMenu = wp->nextShowMenu;
     sysWaitDrawSync();
     GXClearBoundingBox();
     e3Disp(cameraId, param);

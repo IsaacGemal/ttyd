@@ -210,7 +210,7 @@ s32 nameMain(void) {
 	switch (wp->step) {
 	case 0:
 		if (wp->flags & 1) {
-			if (gp->unk8 == 0) {
+			if (gp->field_0x8 == 0) {
 				if (keyGetButtonTrg(0) & 0x100) {
 					s32 f10 = wp->cursorCol;
 

@@ -547,7 +547,7 @@ void btlseqEnd(BattleWork* wp) {
             if (!BattleWaitAllActiveEvtEnd(wp)) {
                 break;
             }
-            if (fbat->field_44 != 0) {
+            if (fbat->field_0x44 != 0) {
                 BattleSetSeq(wp, SEQ_TURN, 0x03000001);
                 BattleSetSeq(wp, SEQ_UNKNOWN, 2);
                 return;

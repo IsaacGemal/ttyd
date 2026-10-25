@@ -38,7 +38,7 @@ void seq_battleInit(SequenceWork* work) {
     NpcEntry* target;
     s32 mode;
 
-    debug_battle_flag = gp->field_C;
+    debug_battle_flag = gp->debugBattleFlag;
 
     target = fbatGetPointer()->target;
 
@@ -129,7 +129,7 @@ void seq_battleMain(SequenceWork* work) {
                     break;
             }
             fbat = fbatGetPointer();
-            fbat->field_570 = 0;
+            fbat->firstStrikeWaitFrames = 0;
             work->state++;
             // fall through
 
@@ -158,8 +158,8 @@ void seq_battleMain(SequenceWork* work) {
                                 break;
                         }
                         if (loadMap == 0) {
-                            fbat->field_570++;
-                            if (fbat->field_570 < 0xC8) {
+                            fbat->firstStrikeWaitFrames++;
+                            if (fbat->firstStrikeWaitFrames < 0xC8) {
                                 skip = TRUE;
                                 break;
                             }
@@ -190,7 +190,7 @@ void seq_battleMain(SequenceWork* work) {
                 if (battleSeqEndCheck()) {
                     work->frameCount = 0;
                     work->state++;
-                    if (gp->field_C != 0) {
+                    if (gp->debugBattleFlag != 0) {
                         work->state = 0xB;
                     }
                 }
@@ -224,7 +224,7 @@ void seq_battleMain(SequenceWork* work) {
 
         case 11:
             if (fadeIsFinish()) {
-                gp->field_C = 0;
+                gp->debugBattleFlag = 0;
                 seqSetSeq(SEQ_GAME_OVER, (char*)1, 0);
             }
             break;
@@ -266,7 +266,7 @@ BOOL battle_init(void) {
 
     camSetMode(CAMERA_3D, 2);
 
-    if (gp->field_C != 0) {
+    if (gp->debugBattleFlag != 0) {
         const char* msg = DbgBtlSel_GetMsgDataPtr();
         if (msg != NULL) {
             msgLoad(msg, 0);
@@ -284,7 +284,7 @@ BOOL battle_init(void) {
     evtmgrReInit();
     psndSetFlag(0x10);
 
-    info = &fbat->field_20;
+    info = &fbat->info;
     BattleInformationInit(info);
     BattleInformationSetMode(info, 0);
 
@@ -299,7 +299,7 @@ BOOL battle_init(void) {
         }
     }
 
-    if (fbat->field_1C & 1) {
+    if (fbat->firstAttackFlags & 1) {
         BattleInformationSetFirstAttack(info, 0);
     } else {
         switch (fbat->firstAttackKind) {
@@ -328,7 +328,7 @@ BOOL battle_init(void) {
                 BattleInformationSetFirstAttack(info, 8);
                 break;
             case 0x10000000:
-                BattleInformationSetFirstAttack(info, fbat->field_14);
+                BattleInformationSetFirstAttack(info, fbat->firstAttackArg);
                 break;
             default:
                 BattleInformationSetFirstAttack(info, 0);

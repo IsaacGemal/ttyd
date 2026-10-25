@@ -842,7 +842,7 @@ static inline void npcKoopaAttackCheck(void) {
         npcKoopaJumpScore(data, mario);
     }
     if (!fire) {
-        data->field_574 = 0;
+        data->fireComboCount = 0;
     }
 }
 
@@ -2360,7 +2360,7 @@ void fbatBattleMode(void) {
 
                 fbatData->target->interruptFlags &= 0xF00;
                 evtStopID(fbatData->target->regularEvtId);
-                info0 = &fbatData->field_20;
+                info0 = &fbatData->info;
                 if (!(entry->battleInfo.flags & NPC_BATTLE_NO_FIRST_STRIKE_WIN)) {
                     if (pouchEquipCheckBadge(ITEM_BUMP_ATTACK) &&
                         entry->battleInfo.groupSetup->enemyData->mUnitKindParams->mLevel < pouch->level) {
@@ -2417,7 +2417,7 @@ void fbatBattleMode(void) {
                 s32 total2;
                 s32 i2;
                 fbatData->majinaiCoinBonus = 0;
-                info2 = &fbatData->field_20;
+                info2 = &fbatData->info;
                 result = BattleInformationGetResult(info2);
                 if (pouch->mMerleeNextCurseType == 4 && result == 1) {
                     fbatData->state = 3;
@@ -2469,7 +2469,7 @@ void fbatBattleMode(void) {
                 s32 hasStolen;
                 s32 mult;
 
-                info4 = &fbatData->field_20;
+                info4 = &fbatData->info;
                 result = BattleInformationGetResult(info4);
                 hasStolen = FALSE;
                 for (i = 0; i < sizeof(entry->battleInfo.stolenItems); i += sizeof(ItemType)) {
@@ -3812,12 +3812,12 @@ s32 npcCalcScore(NpcEntry* entry) {
             score += 0x64;
         }
         if (entry->koopaEncounterType == 2) {
-            fbatData->field_574++;
-            score *= fbatData->field_574;
+            fbatData->fireComboCount++;
+            score *= fbatData->fireComboCount;
         }
         if (entry->koopaEncounterType == 1) {
-            fbatData->field_578++;
-            fbatData->field_57C += score;
+            fbatData->jumpComboCount++;
+            fbatData->jumpComboScore += score;
         }
         if (score > 0x270F) {
             score = 0x2710;
@@ -3830,14 +3830,14 @@ s32 npcCalcScore(NpcEntry* entry) {
 }
 
 void npcKoopaJumpScore(FieldBattleData* data, MarioWork* mario) {
-    if (data->field_57C > 0 && data->field_578 >= 2) {
+    if (data->jumpComboScore > 0 && data->jumpComboCount >= 2) {
         Vec pos = mario->position;
 
         pos.y += 60.0f;
-        kpaAddScorePos(data->field_57C, &pos);
+        kpaAddScorePos(data->jumpComboScore, &pos);
     }
-    data->field_578 = 0;
-    data->field_57C = 0;
+    data->jumpComboCount = 0;
+    data->jumpComboScore = 0;
 }
 
 // The original copies entry->position into a shared `position` temp and from there into one Vec per
