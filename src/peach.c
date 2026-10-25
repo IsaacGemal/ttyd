@@ -311,7 +311,7 @@ s32 peachMain(void) {
         mario_kemuri_80130474();
         partyMain();
         marioCamMain();
-        mp->field_0x34 += 1;
+        mp->frameCount += 1;
         return 1;
     }
     if (mp->flags & 0x40000) {
@@ -356,7 +356,7 @@ s32 peachMain(void) {
     marioCamMain();
     {
         f32 zero = *(const f32*)&float_0_80420250;
-        mp->field_0x34 += 1;
+        mp->frameCount += 1;
         mp->prevPosition = mp->position;
         mp->riderDelta.x = zero;
         mp->riderDelta.y = zero;
@@ -409,12 +409,12 @@ void peach_stay(void) {
                 marioChgPose(str_P_N_1);
                 mp->multiTimer = 0;
                 mp->currSubMotionId = 0x14;
-                mp->peachStayTimer = 0;
+                mp->sleepTimer = 0;
             }
             break;
         case 0x14:
-            if ((++mp->peachStayTimer) >= sysMsec2Frame(0x2710)) {
-                mp->peachStayTimer = sysMsec2Frame(0x2710);
+            if ((++mp->sleepTimer) >= sysMsec2Frame(0x2710)) {
+                mp->sleepTimer = sysMsec2Frame(0x2710);
             }
             if ((++mp->multiTimer) >= 0x64) {
                 mp->multiTimer = 0;

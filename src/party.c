@@ -1654,7 +1654,7 @@ s32 partyDokanInit(PartyEntry* party) {
     char* pose;
 
     party->flags2 |= 0x10;
-    switch (player->field_0x3E) {
+    switch (player->dokanType) {
         case 2:
         case 3:
             partyPaperOn(party, "p_dokan_y");

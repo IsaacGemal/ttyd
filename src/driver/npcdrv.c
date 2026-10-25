@@ -877,7 +877,7 @@ void npcMain(void) {
     Vec feet;
 
     npcwork = gp->inBattle ? &work.battle : &work.field;
-    marioGetPtr()->field_0x1D8 = 0;
+    marioGetPtr()->sideHitNpc = NULL;
     total = npcwork->total;
     npcMainCount++;
     fallSfx = "SFX_KUPPA_3RD_WATER_FALL1";
@@ -1615,7 +1615,7 @@ s32 npcCheckHitMarioSide(NpcEntry* entry) {
     if (d2 > radius) {
         return 0;
     }
-    mario->field_0x1D8 = (s32)entry;
+    mario->sideHitNpc = entry;
     angle = angleABf(mario->position.x, mario->position.z, entry->position.x, entry->position.z);
     if (__fabsf(compAngle(angle, mario->directionView)) < 40.0f) {
         viewT = 6.2831855f * mario->directionView;

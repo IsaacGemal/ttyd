@@ -50,8 +50,8 @@ void cloudResetAt() {
     mario->dispFlags &= ~(1 << 8); //kDisableMakeDispDir
     mario->dispFlags &= ~(1 << 2); //kForceFrontPose
     marioAdjustMoveDir();
-    mario->unk150.x = 0.01f;
-    mario->unk138 = 0.0f;
+    mario->camShiftRate.x = 0.01f;
+    mario->camShiftSideTarget = 0.0f;
 }
 
 u8 cloudGetStatus() {
@@ -395,8 +395,8 @@ void N__cloud_use(PartyEntry* party) {
         party->partyCloud->breathDist = 0.0f;
         party->partyCloud->unk4 = mario->dispDir;
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
-            mario->unk150.x = 0.03f;
-            mario->unk138 = 70.0f * ((revise360(270.0f - mario->dispReqDir) <= 180.0f) ? -1.0f : 1.0f);
+            mario->camShiftRate.x = 0.03f;
+            mario->camShiftSideTarget = 70.0f * ((revise360(270.0f - mario->dispReqDir) <= 180.0f) ? -1.0f : 1.0f);
         }
         if (party->useStruct != NULL && party->partyCloud->sfxId == 0xFFFFFFFFu) {
             party->partyCloud->sfxId = psndSFXOn_3D((char*)0x930, &party->playerPtr->position);
@@ -518,8 +518,8 @@ void N__cloud_use(PartyEntry* party) {
         partyChgMoveMode(party, 2);
         partyChgMot(party, 1);
         if ((party->flags & PARTY_FLAG_IS_EVT_USE) == 0) {
-            mario->unk150.x = 0.01f;
-            mario->unk138 = 0.0f;
+            mario->camShiftRate.x = 0.01f;
+            mario->camShiftSideTarget = 0.0f;
         }
         party->flags &= 0x7FFFFFFF;
         if (party->useStruct != NULL) {
@@ -555,8 +555,8 @@ void cloud_exit(PartyEntry* party) {
     mario->dispFlags &= ~(1 << 2);
     marioAdjustMoveDir();
     marioChgMot(0);
-    mario->unk150.x = 0.01f;
-    mario->unk138 = 0.0f;
+    mario->camShiftRate.x = 0.01f;
+    mario->camShiftSideTarget = 0.0f;
 }
 
 // Reading the mode through an inline gives the original's register allocation
@@ -707,12 +707,12 @@ void cloudSetMarioSpeed(s32 dir) {
     MarioWork* mario = marioGetPtr();
     f32 angle;
 
-    mario->unk138 = 0.0f;
+    mario->camShiftSideTarget = 0.0f;
     if (dir >= 0) {
         angle = revise360((f32)dir);
-        mario->unk138 = 70.0f;
+        mario->camShiftSideTarget = 70.0f;
         if (angle <= 180.0f) {
-            mario->unk138 = -mario->unk138;
+            mario->camShiftSideTarget = -mario->camShiftSideTarget;
         }
     }
 }

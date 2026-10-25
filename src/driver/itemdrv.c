@@ -176,7 +176,7 @@ s32 itemGetCheck(ItemEntry* entry) {
     }
 
     if (mario->characterId == 2) {
-        if (!(mario->field_0x14 & 1)) {
+        if (!(mario->kpaStageFlags & 1)) {
             if (marioStGetSystemLevel() != 0) {
                 return 0;
             }

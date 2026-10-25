@@ -203,10 +203,10 @@ BOOL marioRollCancel(void) {
 static inline void rollSetCamParam(f32 a, f32 b, f32 c) {
     MarioWork* m = marioGetPtr();
 
-    m->unk148 = a;
-    m->unk150.z = b;
-    m->field_68 = c;
-    m->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
+    m->camZoomWeightTarget = a;
+    m->camShiftRate.z = b;
+    m->camZoom = c;
+    m->camZoomFocusOfs = (Vec){ 0.0f, 40.0f, 0.0f };
 }
 #endif
 
@@ -220,8 +220,8 @@ void mot_roll_post(void) {
     }
     {
         MarioWork* m3 = marioGetPtr();
-        m3->unk148 = 0.0f;
-        m3->unk150.z = 0.004f;
+        m3->camZoomWeightTarget = 0.0f;
+        m3->camShiftRate.z = 0.004f;
     }
     if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
         mario->dispDir = 0.0f;
@@ -264,8 +264,8 @@ void marioRollForceCancel(void) {
         }
         {
             MarioWork* m3 = marioGetPtr();
-            m3->unk148 = 0.0f;
-            m3->unk150.z = 0.004f;
+            m3->camZoomWeightTarget = 0.0f;
+            m3->camShiftRate.z = 0.004f;
         }
         if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
             mario->dispDir = 0.0f;
@@ -683,10 +683,10 @@ void mot_roll(void) {
 #ifdef MUST_MATCH
         rollSetCamParam(0.4f, 0.01f, 2.0f);
 #else
-        mario->unk148 = 0.4f;
-        mario->unk150.z = 0.01f;
-        mario->field_68 = 2.0f;
-        mario->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
+        mario->camZoomWeightTarget = 0.4f;
+        mario->camShiftRate.z = 0.01f;
+        mario->camZoom = 2.0f;
+        mario->camZoomFocusOfs = (Vec){ 0.0f, 40.0f, 0.0f };
 #endif
         marioGetPtr()->motRoll->unk8 = 0;
         marioGetPtr()->motRoll->state = 0;
@@ -733,8 +733,8 @@ void mot_roll(void) {
         }
         {
             MarioWork* m = marioGetPtr();
-            m->unk148 = 0.0f;
-            m->unk150.z = 0.004f;
+            m->camZoomWeightTarget = 0.0f;
+            m->camShiftRate.z = 0.004f;
         }
         marioChgPaper("PM_R_1C");
         marioPaperLightOff();
@@ -907,7 +907,7 @@ void mot_roll(void) {
             mario->hitobjJumpFrom = mario->hitobjStandOn;
             mario->hitobjStandOn = NULL;
             mario->lastGroundPos = mario->position;
-            mario->field_0x11C = mario->position;
+            mario->jumpFromPos = mario->position;
             camFollowYOff();
         }
         marioUpdateCamCollision(mario->position);
@@ -930,7 +930,7 @@ void mot_roll(void) {
                 camFollowYOn();
             }
         }
-        if (mario->position.y < mario->field_0x11C.y) {
+        if (mario->position.y < mario->jumpFromPos.y) {
             camFollowYOn();
         }
         mario->airTimer = mario->airTimer + 1;
@@ -1017,7 +1017,7 @@ void mot_roll(void) {
         }
     }
 
-    if ((u32)mario->field_0x1D8 != 0) {
+    if (mario->sideHitNpc != NULL) {
         if (!marioChkBero(mario->hitobjFront)) {
             f29 = f29 + 0.05f * (-f29);
             f28 = f28 + 0.05f * (-f28);
@@ -1296,8 +1296,8 @@ void mot_roll(void) {
     }
     if (mario->baseSpeed) {
         MarioWork* m = marioGetPtr();
-        m->unk148 = 0.0f;
-        m->unk150.z = 0.004f;
+        m->camZoomWeightTarget = 0.0f;
+        m->camShiftRate.z = 0.004f;
     }
     rollSlopeOffset();
 }
@@ -1318,7 +1318,7 @@ void roll_upstairs_on(void) {
     {
         u32 t = mario->multiTimer;
         mario->jumpVelY =
-            (mario->field_0x1C4 - mario->position.y) / (f32)(s32)t;
+            (mario->stepUpY - mario->position.y) / (f32)(s32)t;
     }
     mario->jumpVelY = 4.0f;
     mario->jumpAccelY = -0.42f;

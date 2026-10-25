@@ -597,10 +597,10 @@ void yoshi_use(PartyEntry* party) {
         party->position.x = mario->position.x;
         party->position.y = mario->position.y;
         party->position.z = mario->position.z;
-        mario->field_EC.x = party->position.x;
-        mario->field_EC.z = party->position.z;
+        mario->camFollowPos.x = party->position.x;
+        mario->camFollowPos.z = party->position.z;
         party->useMotionId = 0xC;
-        mario->field_0x11C = party->position;
+        mario->jumpFromPos = party->position;
         break;
     case 0xC:
         party->playerPtr->poseTime = 0;
@@ -630,14 +630,14 @@ void yoshi_use(PartyEntry* party) {
             }
 #endif
             checkWall(party, f31, f30);
-            mario->field_EC.x = party->position.x;
-            mario->field_EC.z = party->position.z;
+            mario->camFollowPos.x = party->position.x;
+            mario->camFollowPos.z = party->position.z;
             mario->position.x = party->position.x;
             mario->position.z = party->position.z;
             mario->dispDir = party->dispDir;
             mario->dispReqDir = party->field_110;
             party_ride_yoshi_force_move();
-            mario->field_0x11C = party->position;
+            mario->jumpFromPos = party->position;
             searchGround(party);
             if (--mario->forceMoveTimer <= 0) {
                 mario->forceMoveTimer = 0;
@@ -714,8 +714,8 @@ void yoshi_use(PartyEntry* party) {
                 }
 #endif
                 checkWall(party, f31, f30);
-                mario->field_EC.x = party->position.x;
-                mario->field_EC.z = party->position.z;
+                mario->camFollowPos.x = party->position.x;
+                mario->camFollowPos.z = party->position.z;
                 mario->position.x = party->position.x;
                 mario->position.z = party->position.z;
                 mario->dispDir = party->dispDir;
@@ -823,7 +823,7 @@ void yoshi_use(PartyEntry* party) {
             (mario->dispDir >= 90.0f && mario->dispDir <= 270.0f) ? 1 : -1;
         mario->hitobjJumpFrom = mario->hitobjStandOn;
         mario->hitobjStandOn = NULL;
-        mario->field_0x11C = party->position;
+        mario->jumpFromPos = party->position;
         partyChgPose(party, YOSHI_F_1);
         marioChgPose("M_Y_3");
         mario->airTimer = 0;
@@ -935,8 +935,8 @@ void yoshi_use(PartyEntry* party) {
             }
             party->partyYoshiUse->direction = 0;
         }
-        mario->field_EC.x = party->position.x;
-        mario->field_EC.z = party->position.z;
+        mario->camFollowPos.x = party->position.x;
+        mario->camFollowPos.z = party->position.z;
         mario->position.x = party->position.x;
         mario->position.z = party->position.z;
         mario->dispDir = party->dispDir;
@@ -1003,7 +1003,7 @@ void yoshi_use(PartyEntry* party) {
         party->field_0x13C = party->groundHit;
         L_sweatEntry(party, NULL);
         mario->hitobjStandOn = NULL;
-        mario->field_0x11C = mario->position;
+        mario->jumpFromPos = mario->position;
         jumpheight = 100.0f;
         mario->field_0x128 = 0.0f;
         party->useMotionId = 0x3D;
@@ -1213,8 +1213,8 @@ void yoshi_use(PartyEntry* party) {
         party->position.y += party->moveDelta.y;
         party->position.z += party->moveDelta.z;
     }
-    mario->field_EC.x = party->position.x;
-    mario->field_EC.z = party->position.z;
+    mario->camFollowPos.x = party->position.x;
+    mario->camFollowPos.z = party->position.z;
     mario->dispDir = party->dispDir;
     mario->dispReqDir = party->field_110;
     mario->position = party->position;

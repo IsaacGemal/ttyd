@@ -246,7 +246,7 @@ void kpa_walk(void) {
         } else {
             kpaChgPose("KPA_W_2", "KPA2_W_1");
         }
-        mario->field_0x2A0 = 0;
+        mario->kpaPoseCounter = 0;
         mario->field_0x2A2 = 0;
         KPA(mario)->field_0x10 = float_0p02_80420dd4;
         KPA(mario)->field_0x14 = float_neg0p02_80420e4c;
@@ -273,11 +273,11 @@ void kpa_walk(void) {
         return;
     }
     if (kpaGetBodyStatus() == 2) {
-        mario->field_0x2A0++;
-        if (mario->field_0x2A0 > 0x50) {
-            mario->field_0x2A0 = 0;
+        mario->kpaPoseCounter++;
+        if (mario->kpaPoseCounter > 0x50) {
+            mario->kpaPoseCounter = 0;
         }
-        mario->poseTime = (mario->field_0x2A0 >> 1) & 0xFFFF;
+        mario->poseTime = (mario->kpaPoseCounter >> 1) & 0xFFFF;
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)mario->poseTime);
         if (kpaGetBodyStatus() == 0) {
             if (mario->multiTimer % 0x28 == 0) {
@@ -347,7 +347,7 @@ void kpa_dash(void) {
         kpaChgPose("KPA_R_1", "KPA2_R_1");
         mario->currSubMotionId = 0;
         mario->multiTimer = 0;
-        mario->field_0x2A0 = 0;
+        mario->kpaPoseCounter = 0;
     }
     m2 = marioGetPtr();
     flag = 0;
@@ -371,14 +371,14 @@ void kpa_dash(void) {
         return;
     }
     if (kpaGetBodyStatus() == 2) {
-        mario->field_0x2A0++;
-        if (mario->field_0x2A0 > 0x50) {
-            mario->field_0x2A0 = 0;
+        mario->kpaPoseCounter++;
+        if (mario->kpaPoseCounter > 0x50) {
+            mario->kpaPoseCounter = 0;
         }
 #ifdef MUST_MATCH
-        mario->poseTime = (mario->field_0x2A0 >> 1) & 0xFFFF; // mask forces extrwi like the original
+        mario->poseTime = (mario->kpaPoseCounter >> 1) & 0xFFFF; // mask forces extrwi like the original
 #else
-        mario->poseTime = mario->field_0x2A0 >> 1;
+        mario->poseTime = mario->kpaPoseCounter >> 1;
 #endif
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)mario->poseTime);
     }
@@ -446,7 +446,7 @@ void kpa_jump(void) {
         if (mario->airTimer == 0) {
             mario->lastGroundPos = mario->position;
         }
-        mario->field_0x2A0 = 0;
+        mario->kpaPoseCounter = 0;
     }
     mario->airTimer++;
     if (mario->currMotionId != MARIO_MOTION_JUMP_3) {
@@ -496,7 +496,7 @@ void kpa_fall_80213C38(void) {
     }
     switch (mario->currSubMotionId) {
     case 0:
-        if (mario->position.y <= mario->field_0x11C.y) {
+        if (mario->position.y <= mario->jumpFromPos.y) {
             if (mario->position.y <= float_75_80420e44) {
                 if ((u32)(mario->dispFlags |= 0x00020000) != 0) {
                     camFollowYOn();
@@ -717,7 +717,7 @@ void kpa_powup(void) {
             m3->wPlayerCollisionBox.y = float_222_80420e2c;
         }
         marioResetCamShiftRate();
-        m2->unk138 = float_20_80420e30 * (f32)(-KPA(m2)->level);
+        m2->camShiftSideTarget = float_20_80420e30 * (f32)(-KPA(m2)->level);
         mario->flags &= ~0x10000000;
         marioChgMot(MARIO_MOTION_STAY);
         mario->mutekiTime = 0;
@@ -788,7 +788,7 @@ void kpa_powdown(void) {
             m3->wPlayerCollisionBox.y = float_222_80420e2c;
         }
         marioResetCamShiftRate();
-        m2->unk138 = float_20_80420e30 * (f32)(-KPA(m2)->level);
+        m2->camShiftSideTarget = float_20_80420e30 * (f32)(-KPA(m2)->level);
         mario->flags &= ~0x10000000;
         marioChgMot(MARIO_MOTION_STAY);
     }

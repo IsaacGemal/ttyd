@@ -111,15 +111,15 @@ void mot_hammer(void) {
             } else {
                 ang2 = revise360(off);
             }
-            mario->field_0x2A4 = ang2;
+            mario->hammerDir = ang2;
         }
         mario->multiTimer = 0;
         mario->airTimer = 0;
         mario->currSubMotionId = 0;
         mario->baseSpeed = float_0_8041a9a8;
-        mario->field_0x200 = NULL;
+        mario->hitobjEstimate = NULL;
         hit = hitEstimate(&type);
-        mario->field_0x200 = hit;
+        mario->hitobjEstimate = hit;
         if (hit != NULL) {
             f30 = mario->dispDir;
             {
@@ -149,7 +149,7 @@ void mot_hammer(void) {
                 } else {
                     ang2 = revise360(off);
                 }
-                mario->field_0x2A4 = ang2;
+                mario->hammerDir = ang2;
             }
         }
         if (hitGetAttr(hit) & 0x80000000) {
@@ -215,13 +215,13 @@ void mot_hammer(void) {
             break;
         }
         psndSFXOn_3D((const char*)sound, &mario2->position);
-        mario->field_0x2A8 = type;
+        mario->hammerSwingType = type;
     }
-    mario->dispDir = (mario->field_0x2A4 >= 90.f && mario->field_0x2A4 <= 270.f)
+    mario->dispDir = (mario->hammerDir >= 90.f && mario->hammerDir <= 270.f)
                               ? 180.f
                               : float_0_8041a9a8;
     mario->dispReqDir = mario->dispDir;
-    mario->moveDir = toMovedir(mario->field_0x2A4);
+    mario->moveDir = toMovedir(mario->hammerDir);
     mario->directionView = mario->moveDir;
     rp = 0;
     if (mario->flags & 0x800) {
@@ -256,13 +256,13 @@ void mot_hammer(void) {
             evtEntry(lv3quake_evt, 0, 0);
         }
         mario->currSubMotionId = 1;
-        mario->hitobjHammer = mario->field_0x200;
+        mario->hitobjHammer = mario->hitobjEstimate;
         px = mario->position.x;
         f30 = mario->position.y;
         pz = mario->position.z;
         if (!(mario->dispFlags & 0x80000000)) {
             eff = -1;
-            switch (mario->field_0x2A8) {
+            switch (mario->hammerSwingType) {
             case 7:
                 movePos(&px, &pz, 16.0f, toMovedir2(mario->dispReqDir, float_0_8041a9a8));
                 f31 = 53.0f;
@@ -287,7 +287,7 @@ void mot_hammer(void) {
             }
         } else {
             eff = -1;
-            switch (mario->field_0x2A8) {
+            switch (mario->hammerSwingType) {
             case 7:
                 movePos(&px, &pz, 16.0f, toMovedir2(mario->dispReqDir, -2.0f));
                 f31 = 53.0f;
@@ -329,17 +329,17 @@ void mot_hammer(void) {
         }
         i = 0;
         while (i < 10) {
-            if (pouchEquipCheckBadge(se_data[mario3->field_0x3A]) != 0) {
-                sound = se_data[mario3->field_0x3A + 1];
-                mario3->field_0x3A += 2;
-                if (mario3->field_0x3A >= 0xA) {
-                    mario3->field_0x3A -= 0xA;
+            if (pouchEquipCheckBadge(se_data[mario3->hammerSfxIdx]) != 0) {
+                sound = se_data[mario3->hammerSfxIdx + 1];
+                mario3->hammerSfxIdx += 2;
+                if (mario3->hammerSfxIdx >= 0xA) {
+                    mario3->hammerSfxIdx -= 0xA;
                 }
                 break;
             } else {
-                mario3->field_0x3A += 2;
-                if (mario3->field_0x3A >= 0xA) {
-                    mario3->field_0x3A -= 0xA;
+                mario3->hammerSfxIdx += 2;
+                if (mario3->hammerSfxIdx >= 0xA) {
+                    mario3->hammerSfxIdx -= 0xA;
                 }
                 i++;
             }
@@ -429,7 +429,7 @@ void mot_hammer2(void) {
     if (mario->trigFlags & 1) {
         mario->trigFlags &= ~1;
         mario->flags &= ~0x000F0000;
-        mario->field_0x2B4 = 0;
+        mario->hammer2Flags = 0;
         mario->currSubMotionId = 0;
         mario->motionSfxId2 = -1;
     }
@@ -437,15 +437,15 @@ void mot_hammer2(void) {
     case 0:
         mario->flags |= 0x80;
         mario->dispFlags |= 4;
-        mario->field_0x41 = 0;
-        mario->field_0x42 = 0;
+        mario->jabaraRubCount = 0;
+        mario->chargeLevel = 0;
         mario->baseSpeed = float_0_8041a9a8;
         mario->airTimer = 0;
         mario->currSubMotionId = 1;
         mario->multiTimer = 0x1E;
-        if (mario->field_0x42 == 3) {
+        if (mario->chargeLevel == 3) {
             mario->wCamVal1 = 38.0f;
-        } else if (mario->field_0x42 <= 2) {
+        } else if (mario->chargeLevel <= 2) {
             mario->wCamVal1 = 15.0f;
         } else {
             mario->wCamVal1 = 10.f;
@@ -461,7 +461,7 @@ void mot_hammer2(void) {
             marioChgPose("M_H_9");
             break;
         }
-        mario->field_0x200 = NULL;
+        mario->hitobjEstimate = NULL;
         mario->currSubMotionId = 1;
         mario->multiTimer = 1;
         break;
@@ -479,146 +479,146 @@ void mot_hammer2(void) {
         marioChgPaper("P_H_1C");
         marioPaperLightOff();
         mario->motionSfxId2 = psndSFXOn_3D((const char*)0x162, &mario->position);
-        mario->field_0x2B0 = float_0_8041a9a8;
+        mario->hammer2AnimTime = float_0_8041a9a8;
         mario->poseTime = 0;
-        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], mario->field_0x2B0);
+        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], mario->hammer2AnimTime);
         mario->currSubMotionId = 0xA;
         mario->multiTimer = 0x1E;
         /* fallthrough to case 0xA */
     case 0xA:
         if (marioGetRub(0x200, &rub1, &rub2, &rub3) == 1) {
-            mario->field_0x2B4 &= ~1;
-            mario->field_0x41++;
-            if (mario->field_0x41 >= 0x14) {
-                mario->field_0x41 = 0x14;
+            mario->hammer2Flags &= ~1;
+            mario->jabaraRubCount++;
+            if (mario->jabaraRubCount >= 0x14) {
+                mario->jabaraRubCount = 0x14;
             }
         }
-        if (mario->field_0x41 >= 4) {
-            mario->field_0x2B0 += 6.0f;
-            if (mario->field_0x2B0 >= 72.0f) {
-                mario->field_0x2B0 = 72.0f;
+        if (mario->jabaraRubCount >= 4) {
+            mario->hammer2AnimTime += 6.0f;
+            if (mario->hammer2AnimTime >= 72.0f) {
+                mario->hammer2AnimTime = 72.0f;
             }
             mario->currSubMotionId = 0xB;
             marioChgPaper("P_H_1B");
-            mario->field_0x42 = 3;
+            mario->chargeLevel = 3;
             m2 = marioGetPtr();
-            m2->unk148 = 0.4f;
-            m2->unk150.z = 0.005f;
+            m2->camZoomWeightTarget = 0.4f;
+            m2->camShiftRate.z = 0.005f;
 #ifdef MUST_MATCH
-            *(volatile f32*)&m2->field_68 = 1.7f;
-            *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+            *(volatile f32*)&m2->camZoom = 1.7f;
+            *(volatile Vec*)&m2->camZoomFocusOfs = *(volatile Vec*)&vec3_802c5a80;
 #else
-            m2->field_68 = 1.7f;
-            m2->field_6C = vec3_802c5a80;
+            m2->camZoom = 1.7f;
+            m2->camZoomFocusOfs = vec3_802c5a80;
 #endif
-            mario->field_0x2B4 |= 0x1000;
-        } else if (mario->field_0x41 >= 3) {
+            mario->hammer2Flags |= 0x1000;
+        } else if (mario->jabaraRubCount >= 3) {
             marioChgPaper("P_H_1A");
-            level = mario->field_0x2B4;
+            level = mario->hammer2Flags;
             if (!(level & 1)) {
-                mario->field_0x2B0 += 6.0f;
-                if (mario->field_0x2B0 >= 54.0f) {
-                    mario->field_0x2B0 = 54.0f;
-                    mario->field_0x2B4 |= 1;
-                    mario->field_0x42 = 3;
+                mario->hammer2AnimTime += 6.0f;
+                if (mario->hammer2AnimTime >= 54.0f) {
+                    mario->hammer2AnimTime = 54.0f;
+                    mario->hammer2Flags |= 1;
+                    mario->chargeLevel = 3;
                     m2 = marioGetPtr();
-                    m2->unk148 = 0.4f;
-                    m2->unk150.z = 0.005f;
+                    m2->camZoomWeightTarget = 0.4f;
+                    m2->camShiftRate.z = 0.005f;
 #ifdef MUST_MATCH
-                    *(volatile f32*)&m2->field_68 = 1.7f;
-                    *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+                    *(volatile f32*)&m2->camZoom = 1.7f;
+                    *(volatile Vec*)&m2->camZoomFocusOfs = *(volatile Vec*)&vec3_802c5a80;
 #else
-                    m2->field_68 = 1.7f;
-                    m2->field_6C = vec3_802c5a80;
+                    m2->camZoom = 1.7f;
+                    m2->camZoomFocusOfs = vec3_802c5a80;
 #endif
-                    mario->field_0x2B4 |= 0x1000;
+                    mario->hammer2Flags |= 0x1000;
                 }
             } else if (!(level & 0x10)) {
-                mario->field_0x2B0 += 1.0f;
-                if (mario->field_0x2B0 >= 54.0f) {
-                    mario->field_0x2B0 = 54.0f;
-                    mario->field_0x2B4 |= 0x10;
+                mario->hammer2AnimTime += 1.0f;
+                if (mario->hammer2AnimTime >= 54.0f) {
+                    mario->hammer2AnimTime = 54.0f;
+                    mario->hammer2Flags |= 0x10;
                 }
             } else {
-                mario->field_0x2B0 -= 1.0f;
-                if (mario->field_0x2B0 <= 42.0f) {
-                    mario->field_0x2B0 = 42.0f;
-                    mario->field_0x2B4 &= ~0x10;
+                mario->hammer2AnimTime -= 1.0f;
+                if (mario->hammer2AnimTime <= 42.0f) {
+                    mario->hammer2AnimTime = 42.0f;
+                    mario->hammer2Flags &= ~0x10;
                 }
             }
-        } else if (mario->field_0x41 >= 2) {
+        } else if (mario->jabaraRubCount >= 2) {
             marioChgPaper("P_H_1A");
-            level = mario->field_0x2B4;
+            level = mario->hammer2Flags;
             if (!(level & 1)) {
-                mario->field_0x2B0 += 6.0f;
-                if (mario->field_0x2B0 >= 36.0f) {
-                    mario->field_0x2B0 = 36.0f;
-                    mario->field_0x2B4 |= 1;
-                    mario->field_0x42 = 2;
+                mario->hammer2AnimTime += 6.0f;
+                if (mario->hammer2AnimTime >= 36.0f) {
+                    mario->hammer2AnimTime = 36.0f;
+                    mario->hammer2Flags |= 1;
+                    mario->chargeLevel = 2;
                     m2 = marioGetPtr();
-                    m2->unk148 = 0.3f;
-                    m2->unk150.z = 0.005f;
+                    m2->camZoomWeightTarget = 0.3f;
+                    m2->camShiftRate.z = 0.005f;
 #ifdef MUST_MATCH
-                    *(volatile f32*)&m2->field_68 = 1.6f;
-                    *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+                    *(volatile f32*)&m2->camZoom = 1.6f;
+                    *(volatile Vec*)&m2->camZoomFocusOfs = *(volatile Vec*)&vec3_802c5a80;
 #else
-                    m2->field_68 = 1.6f;
-                    m2->field_6C = vec3_802c5a80;
+                    m2->camZoom = 1.6f;
+                    m2->camZoomFocusOfs = vec3_802c5a80;
 #endif
-                    mario->field_0x2B4 |= 0x1000;
+                    mario->hammer2Flags |= 0x1000;
                 }
             } else if (!(level & 0x10)) {
-                mario->field_0x2B0 += 1.0f;
-                if (mario->field_0x2B0 >= 36.0f) {
-                    mario->field_0x2B0 = 36.0f;
-                    mario->field_0x2B4 |= 0x10;
+                mario->hammer2AnimTime += 1.0f;
+                if (mario->hammer2AnimTime >= 36.0f) {
+                    mario->hammer2AnimTime = 36.0f;
+                    mario->hammer2Flags |= 0x10;
                 }
             } else {
-                mario->field_0x2B0 -= 1.0f;
-                if (mario->field_0x2B0 <= 30.f) {
-                    mario->field_0x2B0 = 30.f;
-                    mario->field_0x2B4 &= ~0x10;
+                mario->hammer2AnimTime -= 1.0f;
+                if (mario->hammer2AnimTime <= 30.f) {
+                    mario->hammer2AnimTime = 30.f;
+                    mario->hammer2Flags &= ~0x10;
                 }
             }
         } else {
             marioChgPaper("P_H_1A");
-            level = mario->field_0x2B4;
+            level = mario->hammer2Flags;
             if (!(level & 1)) {
-                mario->field_0x2B0 += 6.0f;
-                if (mario->field_0x2B0 >= 18.0f) {
-                    mario->field_0x2B0 = 18.0f;
-                    mario->field_0x2B4 |= 1;
-                    mario->field_0x42 = 1;
+                mario->hammer2AnimTime += 6.0f;
+                if (mario->hammer2AnimTime >= 18.0f) {
+                    mario->hammer2AnimTime = 18.0f;
+                    mario->hammer2Flags |= 1;
+                    mario->chargeLevel = 1;
                     m2 = marioGetPtr();
-                    m2->unk148 = 0.2f;
-                    m2->unk150.z = 0.005f;
+                    m2->camZoomWeightTarget = 0.2f;
+                    m2->camShiftRate.z = 0.005f;
 #ifdef MUST_MATCH
-                    *(volatile f32*)&m2->field_68 = 1.5f;
-                    *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+                    *(volatile f32*)&m2->camZoom = 1.5f;
+                    *(volatile Vec*)&m2->camZoomFocusOfs = *(volatile Vec*)&vec3_802c5a80;
 #else
-                    m2->field_68 = 1.5f;
-                    m2->field_6C = vec3_802c5a80;
+                    m2->camZoom = 1.5f;
+                    m2->camZoomFocusOfs = vec3_802c5a80;
 #endif
-                    mario->field_0x2B4 |= 0x1000;
+                    mario->hammer2Flags |= 0x1000;
                 }
             } else if (!(level & 0x10)) {
-                mario->field_0x2B0 += 1.0f;
-                if (mario->field_0x2B0 >= 24.0f) {
-                    mario->field_0x2B0 = 24.0f;
-                    mario->field_0x2B4 |= 0x10;
+                mario->hammer2AnimTime += 1.0f;
+                if (mario->hammer2AnimTime >= 24.0f) {
+                    mario->hammer2AnimTime = 24.0f;
+                    mario->hammer2Flags |= 0x10;
                 }
             } else {
-                mario->field_0x2B0 -= 1.0f;
-                if (mario->field_0x2B0 <= 18.0f) {
-                    mario->field_0x2B0 = 18.0f;
-                    mario->field_0x2B4 &= ~0x10;
+                mario->hammer2AnimTime -= 1.0f;
+                if (mario->hammer2AnimTime <= 18.0f) {
+                    mario->hammer2AnimTime = 18.0f;
+                    mario->hammer2Flags &= ~0x10;
                 }
             }
         }
-        if (mario->field_0x2B4 & 0x1000) {
-            mario->field_0x2B4 &= ~0x1000;
-            if (!(mario->field_0x2B4 & 0x2000)) {
-                mario->field_0x2B4 |= 0x2000;
+        if (mario->hammer2Flags & 0x1000) {
+            mario->hammer2Flags &= ~0x1000;
+            if (!(mario->hammer2Flags & 0x2000)) {
+                mario->hammer2Flags |= 0x2000;
                 switch (pouchGetHammerLv()) {
                 case 1:
                     marioChgPose("M_H_3A");
@@ -633,7 +633,7 @@ void mot_hammer2(void) {
             }
         }
         if (strcmp(mario->paperAnimName, "P_H_1A") == 0) {
-            animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], mario->field_0x2B0 / 6.0f);
+            animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], mario->hammer2AnimTime / 6.0f);
         }
     /* fallthrough to case 0xB */
     case 0xB:
@@ -645,8 +645,8 @@ void mot_hammer2(void) {
             mario->motionSfxId2 = -1;
         }
         m2 = marioGetPtr();
-        m2->unk148 = float_0_8041a9a8;
-        m2->unk150.z = 0.01f;
+        m2->camZoomWeightTarget = float_0_8041a9a8;
+        m2->camShiftRate.z = 0.01f;
         switch (pouchGetHammerLv()) {
         case 1:
             marioChgPose("M_H_3B");
@@ -660,19 +660,19 @@ void mot_hammer2(void) {
         }
         marioChgPaper("P_H_1C");
         mario->currSubMotionId = 0x14;
-        if (mario->field_0x42 == 3) {
+        if (mario->chargeLevel == 3) {
             mario->multiTimer = 0x30;
-        } else if (mario->field_0x42 == 2) {
+        } else if (mario->chargeLevel == 2) {
             mario->multiTimer = 0x42;
         } else {
             mario->multiTimer = 0x48;
         }
         M_S16(mario, 0x2A4) = 0;
-        if (mario->field_0x42 == 3) {
+        if (mario->chargeLevel == 3) {
             mario->wCamVal1 = 38.0f;
-        } else if (mario->field_0x42 == 2) {
+        } else if (mario->chargeLevel == 2) {
             mario->wCamVal1 = 22.0f;
-        } else if (mario->field_0x42 <= 1) {
+        } else if (mario->chargeLevel <= 1) {
             mario->wCamVal1 = 15.0f;
         }
 #ifdef MUST_MATCH
@@ -738,7 +738,7 @@ void mot_hammer2(void) {
             psndSFXOn_3D((const char*)0x163, &mario->position);
         }
         mario->multiTimer--;
-        if (mario->field_0x42 > 2 && mario->multiTimer == 0xA) {
+        if (mario->chargeLevel > 2 && mario->multiTimer == 0xA) {
             marioPaperOff();
             marioPaperLightOn();
             marioChgPose("M_S_1");
@@ -749,7 +749,7 @@ void mot_hammer2(void) {
         if (mario->multiTimer > 0) {
             break;
         }
-        if (mario->field_0x42 <= 2) {
+        if (mario->chargeLevel <= 2) {
             mario->multiTimer = sysMsec2Frame(0x12C);
         } else {
             mario->dispDir = revise360(mario->dispDir);
@@ -762,7 +762,7 @@ void mot_hammer2(void) {
         if (--mario->multiTimer > 0) {
             break;
         }
-        if (mario->field_0x42 <= 2) {
+        if (mario->chargeLevel <= 2) {
             marioPaperOff();
             marioPaperLightOn();
             marioChgPose("M_S_1");
@@ -817,8 +817,8 @@ void mot_ham2_post(void) {
         marioPaperOff();
     }
     mario2 = marioGetPtr();
-    mario2->unk148 = float_0_8041a9a8;
-    mario2->unk150.z = 0.01f;
+    mario2->camZoomWeightTarget = float_0_8041a9a8;
+    mario2->camShiftRate.z = 0.01f;
     marioPaperOff();
     marioPaperLightOn();
     mario->dispFlags &= ~0x100;

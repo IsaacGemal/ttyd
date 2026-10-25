@@ -102,11 +102,11 @@ void mot_dokan(void) {
         mario->multiTimer = 0;
         mario->airTimer = 0;
         mario->baseSpeed = 0.0f;
-        if (mario->field_0x3E == 2) {
+        if (mario->dokanType == 2) {
             mario->currSubMotionId = 0xA;
-        } else if (mario->field_0x3E == 3) {
+        } else if (mario->dokanType == 3) {
             mario->currSubMotionId = 0xA;
-        } else if (mario->field_0x3E == 1) {
+        } else if (mario->dokanType == 1) {
             marioPaperOn("p_dokan_y");
             marioChgPaper("PM_D_1A");
             marioChgPose("M_Z_1");
@@ -119,10 +119,10 @@ void mot_dokan(void) {
             mario->spinSpeed = 30.0f;
             mario->scale = (Vec){ 0.0f, 0.0f, 0.0f };
             _partyEntry(1);
-        } else if (mario->field_0x3E == 0) {
+        } else if (mario->dokanType == 0) {
             _partyEntry(0);
             mario->currSubMotionId = 0x1E;
-        } else if (mario->field_0x3E == 5) {
+        } else if (mario->dokanType == 5) {
             mario->dispFlags |= 0x1000;
             if ((party = partyGetPtr(0)) != NULL) {
                 partyShadowOff(party);
@@ -143,7 +143,7 @@ void mot_dokan(void) {
             mario->spinSpeed = 30.0f;
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0;
-        } else if (mario->field_0x3E == 4) {
+        } else if (mario->dokanType == 4) {
             mario->scale = (Vec){ 0.0f, 0.0f, 0.0f };
             mario->dispOfs = (Vec){ 0.0f, 0.0f, 0.0f };
             mario->dispOfs2 = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -249,22 +249,22 @@ void mot_dokan(void) {
             party->dispOffset.y = mario->dispOfs.y;
             party->dispOffset.z = mario->dispOfs.z;
         }
-        mario->field_EC.y = mario->position.y;
+        mario->camFollowPos.y = mario->position.y;
         break;
     case 0x64:
-        if (mario->field_0x3E == 1) {
+        if (mario->dokanType == 1) {
             mario->currSubMotionId = 0x6E;
-        } else if (mario->field_0x3E == 4) {
+        } else if (mario->dokanType == 4) {
             marioUpdateCamPos();
             mario->dispRot.x = 0.0f;
             marioChgPaper("PM_D_1B");
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0x66;
-            partyDokanEnd(marioGetPartyId(), mario->field_0x3E);
-            partyDokanEnd(marioGetExtraPartyId(), mario->field_0x3E);
-        } else if (mario->field_0x3E == 1) {
+            partyDokanEnd(marioGetPartyId(), mario->dokanType);
+            partyDokanEnd(marioGetExtraPartyId(), mario->dokanType);
+        } else if (mario->dokanType == 1) {
             mario->currSubMotionId = 0x65;
-        } else if (mario->field_0x3E == 0) {
+        } else if (mario->dokanType == 0) {
             marioUpdateCamPos();
             mario->currSubMotionId = 0x65;
         } else {
@@ -282,8 +282,8 @@ void mot_dokan(void) {
             mario->dispDir = mario->dispReqDir;
             mario->directionView = toMovedirSimple(mario->dispDir);
             mario->moveDir = mario->directionView;
-            partyDokanEnd(marioGetPartyId(), mario->field_0x3E);
-            partyDokanEnd(marioGetExtraPartyId(), mario->field_0x3E);
+            partyDokanEnd(marioGetPartyId(), mario->dokanType);
+            partyDokanEnd(marioGetExtraPartyId(), mario->dokanType);
         }
         break;
     case 0x66:
@@ -304,9 +304,9 @@ void mot_dokan(void) {
         mario->dispReqDir = mario->dispDir;
         mario->directionView = toMovedirSimple(mario->dispDir);
         mario->moveDir = mario->directionView;
-        if (mario->field_0x3E == 4) {
+        if (mario->dokanType == 4) {
             camFollowYOn();
-            mario->field_EC.y = mario->position.y;
+            mario->camFollowPos.y = mario->position.y;
         }
         mario->flags &= ~0x100;
         break;
@@ -317,7 +317,7 @@ void mot_dokan(void) {
     switch (mario->currSubMotionId) {
     case 0x6E:
         if (!(mario->flags & 0x02000000)) {
-            mario->field_EC.y = mario->position.y;
+            mario->camFollowPos.y = mario->position.y;
         }
         marioUpdateCamPos();
         camFollowYOff();
@@ -337,8 +337,8 @@ void mot_dokan(void) {
             mario->dispDir = mario->dispReqDir;
             mario->directionView = toMovedirSimple(mario->dispDir);
             mario->moveDir = mario->directionView;
-            partyDokanEnd(marioGetPartyId(), mario->field_0x3E);
-            partyDokanEnd(marioGetExtraPartyId(), mario->field_0x3E);
+            partyDokanEnd(marioGetPartyId(), mario->dokanType);
+            partyDokanEnd(marioGetExtraPartyId(), mario->dokanType);
         }
         break;
     case 0x70:

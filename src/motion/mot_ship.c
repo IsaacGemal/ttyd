@@ -473,7 +473,7 @@ void mot_ship(void) {
                 m->hitobjStandOn = hit;
                 m->position.y = sp0C;
                 m->flags &= ~0x000F0000;
-                dist = distABf(m->position.x, m->position.z, m->field_0x11C.x, m->field_0x11C.z);
+                dist = distABf(m->position.x, m->position.z, m->jumpFromPos.x, m->jumpFromPos.z);
                 m->field_0x128 = __fabsf(dist);
                 m->flags &= ~0x80;
                 m->airTimer = 0;
@@ -557,7 +557,7 @@ void mot_ship(void) {
                 mario->jumpJerkStepY = 0.0f;
                 mario->multiTimer = (s16)(s32)(0.5f + f6);
                 mario->currSubMotionId = 0x29;
-                mario->field_0x2B0 = __fabsf(mario->dispOfs.y / (f32)(mario->multiTimer + 0x58));
+                mario->shipDispStepY = __fabsf(mario->dispOfs.y / (f32)(mario->multiTimer + 0x58));
                 effDelete(marioGetPtr()->motionShipData->eff);
             }
         }
@@ -567,7 +567,7 @@ void mot_ship(void) {
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         mario->position.y += mario->jumpVelY;
         marioMakeJumpPara();
-        mario->dispOfs.y += mario->field_0x2B0;
+        mario->dispOfs.y += mario->shipDispStepY;
         if (mario->dispOfs.y > 0.0f) {
             mario->dispOfs.y = 0.0f;
         }
@@ -591,7 +591,7 @@ void mot_ship(void) {
         break;
     }
     case 43: {
-        mario->dispOfs.y += mario->field_0x2B0;
+        mario->dispOfs.y += mario->shipDispStepY;
         if (mario->dispOfs.y > 0.0f) {
             mario->dispOfs.y = 0.0f;
         }
@@ -616,7 +616,7 @@ void mot_ship(void) {
         break;
     }
     case 44:
-        mario->dispOfs.y += mario->field_0x2B0;
+        mario->dispOfs.y += mario->shipDispStepY;
         if (mario->dispOfs.y > 0.0f) {
             mario->dispOfs.y = 0.0f;
         }
@@ -771,7 +771,7 @@ void mot_ship(void) {
                     m->hitobjStandOn = hit;
                     m->position.y = sp08;
                     m->flags &= ~0x000F0000;
-                    dist = distABf(m->position.x, m->position.z, m->field_0x11C.x, m->field_0x11C.z);
+                    dist = distABf(m->position.x, m->position.z, m->jumpFromPos.x, m->jumpFromPos.z);
                     m->field_0x128 = __fabsf(dist);
                     m->flags &= ~0x80;
                     m->airTimer = 0;
