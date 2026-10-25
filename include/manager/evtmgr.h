@@ -174,7 +174,12 @@ struct EventEntry {
         s32 userdata[3];
         f32 userdataf[3];
     }; // 0x78, TODO check
-    u32 field_0x84;            // 0x84, a scratch word user functions use in their own ways
+    union {
+        u32 field_0x84;            // 0x84, a scratch word user functions use in their own ways
+        u32 savedNpcFlags;         // 0x84, evt_npc_jump_position_nohit: npc->flags & 0x80000, cleared for the jump and
+                                   //       ORed back when it lands
+        s32 winId;                 // 0x84, evt_sub's coin-get function: the winMgrEntry id it opens, closes and waits on
+    };
     union {
         OSTime wInterpRelatedTime; // 0x88
         s32 userdataEx[2];         // 0x88, two more scratch words for user functions (after userdata, field_0x84)
