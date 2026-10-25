@@ -832,17 +832,6 @@ static EVT_BEGIN(renzoku_attack_event_sub_last)
     RETURN
 EVT_END()
 
-typedef struct HammerBrosSamplingEntry {
-    s16 unitId; // 0x0
-    s16 partId; // 0x2
-    u8 pad[0x24 - 4];
-} HammerBrosSamplingEntry;
-
-typedef struct HammerBrosSampling {
-    u8 pad_0x0[4];
-    HammerBrosSamplingEntry entries[1]; // 0x4
-} HammerBrosSampling;
-
 static USER_FUNC(hammer_bros_nagemakuri_set_target) {
     BattleWork* wp = _battleWorkPointer;
     EventEntry* evt = event;
