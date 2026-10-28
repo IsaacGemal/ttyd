@@ -6,7 +6,7 @@ Paper Mario: The Thousand-Year Door
 A complete matching decompilation of *Paper Mario: The Thousand-Year Door* (GameCube, Japanese release `G8MJ01`).
 
 **Status: 100% matched.** All 9,770 functions in the main executable and its REL modules match, and the build
-links into a DOL and RELs that are byte-for-byte identical to the original game. Seven of them stay in
+links into a DOL and RELs that are byte-for-byte identical to the original game. Six of them stay in
 assembly because the original was hand-written assembly or uses instructions the compiler can't produce from C;
 each is listed with its evidence in `tools/asm_exceptions.json`.
 

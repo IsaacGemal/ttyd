@@ -2704,7 +2704,7 @@ effect/eff_ultra_hammer.c:
 	.sdata      start:0x80417EC0 end:0x80418198
 	.sdata2     start:0x804225E0 end:0x80422600
 
-unk_0x8025de70.c:
+error_handler.c:
 	.text       start:0x80257EF4 end:0x8025854C
 	.rodata     start:0x803019E0 end:0x80301B78
 	.sdata2     start:0x80422600 end:0x80422620

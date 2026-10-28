@@ -8844,3 +8844,15 @@ data_check). The ratchet reads the six REL functions as renames at 100%.
 Index (`tools/cleanup_index.py`, same script both sides), c4a2b397 -> this branch: 11.609 -> 11.564 per kLOC (8109
 -> 8077 weighted over 698500 -> 698459 code lines); address_name 1077 -> 1059, unk_name 305 -> 291, pool_constant
 (weight 0) 4937 -> 4924; every other category unchanged.
+
+## The error handler's dead upstream copy removed; unk_0x8025de70.c renamed error_handler.c (2026-10-28, Claude Opus 5.5)
+
+Someone reading the public repo asked why the error handler was in it twice. `src/error_handler.c` was upstream's
+(doldecomp, before the fork, written against `setupErrorHandler`/`systemErrorHandler`): `NonMatching` in
+`configure.py`, absent from `config/G8MJ01/splits.txt`, built in neither configuration. The code the game links is
+`N_setupErrorHandler`/`N_systemErrorHandler` (the G8MJ01 symbol names), which lived in `src/unk_0x8025de70.c`.
+
+- Deleted the upstream copy, renamed `unk_0x8025de70.c` to `error_handler.c` (splits and `configure.py` follow), and
+  moved the `N_` prototypes from `eff/eff_ultra_hammer.h` to `error_handler.h`.
+- `tools/asm_exceptions.json` drops the dead `systemErrorHandler` entry, so the README's count of functions kept in
+  assembly is six, not seven.

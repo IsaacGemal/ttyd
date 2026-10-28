@@ -877,7 +877,7 @@ config.libs = [
             Object(Matching, "cam_shift.c"),
             Object(Matching, "countdown.c"),
             Object(NonMatching, "database.c"),
-            Object(NonMatching, "error_handler.c"),
+            Object(Matching, "error_handler.c", extra_cflags=["-char signed"]),
             Object(Matching, "event.c"),
             Object(Matching, "gxsub.c"),
             Object(Matching, "himo.c"),
@@ -900,7 +900,6 @@ config.libs = [
             Object(Matching, "data/database.c"),
             Object(Matching, "data/battle/battle_item_data.c"),
             Object(Matching, "system.c"),
-            Object(Matching, "unk_0x8025de70.c", extra_cflags=["-char signed"]),
         ],
     },
     DolphinLib(

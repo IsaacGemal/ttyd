@@ -4,7 +4,7 @@ Budget: at most 30 build experiments. Existing MSR asm is unchanged. No tools/ f
 
 ## Setup and baseline
 - Read CODEX_TASK.md, docs/AGENT_BRIEF.md, relevant CONTEXT and Codex pool recipes, original handler assembly, and the build/check scripts.
-- Existing source object has byte-identical .rodata (48 bytes) and .sdata2 (32 bytes). Error strings and unsigned conversion double are in the separate `unk_0x8025de70.c` data unit.
+- Existing source object has byte-identical .rodata (48 bytes) and .sdata2 (32 bytes). Error strings and unsigned conversion double are in the separate `error_handler.c` unit.
 - Pool-plan probe and baseline checks failed before compilation: absent Ninja log makes installed tools look unbuilt and triggers unavailable network downloads. Configured explicit paths to the installed local tools. These pre-compilation failures are setup checks, not source build experiments.
 
 ## Experiment 1: unsigned font conversion + pool_data

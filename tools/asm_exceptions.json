@@ -17,17 +17,9 @@
   },
   {
     "file": "src/error_handler.c",
-    "function": "systemErrorHandler",
-    "class": "original-asm",
-    "reason": "The SDK error screen's inline MSR block (mfmsr/ori 0x8000/ori 2/mtmsr/isync) re-enabling FP and recoverable interrupts; MWCC 2.6 has no mfmsr/mtmsr intrinsic.",
-    "approved_by": "pre-existing (before the exception policy)",
-    "date": "2026-10-04"
-  },
-  {
-    "file": "src/unk_0x8025de70.c",
     "function": "N_systemErrorHandler",
     "class": "original-asm",
-    "reason": "The same inline MSR block as systemErrorHandler (mfmsr/ori 0x8000/ori 2/mtmsr/isync); MWCC 2.6 has no mfmsr/mtmsr intrinsic (a scan of its builtin table finds none). MUST_MATCH only; the natural build calls PPCMtmsr(PPCMfmsr() | 0x8002).",
+    "reason": "The SDK error screen's inline MSR block (mfmsr/ori 0x8000/ori 2/mtmsr/isync) re-enabling FP and recoverable interrupts; MWCC 2.6 has no mfmsr/mtmsr intrinsic (a scan of its builtin table finds none). MUST_MATCH only; the natural build calls PPCMtmsr(PPCMfmsr() | 0x8002).",
     "approved_by": "Isaac (relayed by the orchestrator)",
     "date": "2026-10-04"
   },
