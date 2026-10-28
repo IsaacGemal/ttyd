@@ -1,6 +1,8 @@
 Paper Mario: The Thousand-Year Door
 ===================================
 
+<img src="docs/images/header.jpg" alt="A papercraft Mario die mid-fold on a cutting mat, tagged with MarioWork fields dispRot, jumpVelY and poseTime" width="100%"/>
+
 A complete matching decompilation of *Paper Mario: The Thousand-Year Door* (GameCube, Japanese release `G8MJ01`).
 
 **Status: 100% matched.** All 9,770 functions in the main executable and its REL modules match, and the build
