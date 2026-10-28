@@ -1,33 +1,34 @@
-/* This file is only in retail, filename is unknown, "error_handler" for convenience */
-#include "error_handler.h"
-#include "sdk/DEMOInit.h"
-#include "seq/seq_title.h"
+#include "driver/dispdrv.h"
 #include "memory.h"
+#include "system.h"
+#include "seq/seq_title.h"
 #include "pmario_sound.h"
-#include <dolphin/mtx.h>
+#include <demo/DEMOInit.h>
 #include <dolphin/os.h>
+#include <dolphin/base/PPCArch.h>
 #include <dolphin/vi.h>
 #include <string.h>
 #include <stdio.h>
+#include "error_handler.h"
+#pragma force_active on
 
-extern void* DemoCurrentBuffer, * DemoFrameBuffer1, * DemoFrameBuffer2;
 
-//local prototypes
+#pragma force_active reset
 
-void setupErrorHandler(void) {
-	OSSetErrorHandler(OS_ERROR_DSI, (OSErrorHandler)systemErrorHandler);
-	OSSetErrorHandler(OS_ERROR_ISI, (OSErrorHandler)systemErrorHandler);
-	OSSetErrorHandler(OS_ERROR_PROGRAM, (OSErrorHandler)systemErrorHandler);
+void N_setupErrorHandler(void) {
+	OSSetErrorHandler(OS_ERROR_DSI, (OSErrorHandler)N_systemErrorHandler);
+	OSSetErrorHandler(OS_ERROR_ISI, (OSErrorHandler)N_systemErrorHandler);
+	OSSetErrorHandler(OS_ERROR_PROGRAM, (OSErrorHandler)N_systemErrorHandler);
 }
 
-void systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
-	//registers
-	OSFontHeader* fontHeader;
-	char* loop_newline;
-	char* loop_zero;
-	u16 width2, height2;
+// 100%: the text loop indexes print_buffer by i; the two byte pointers the original walks are the compiler's
+// strength-reduced induction variables, and &print_buffer[i] is its hoisted loop invariant.
+void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
+	u32 count;
 	int i;
-	u32 count, stack;
+	OSFontHeader* fontHeader;
+	s32 width2, height2;
+	u32 stack;
 	u16 w1, w2, h1, h2, x1, x2, y1, y2;
 	//stack vars
 	char print_buffer2[0x400]; // 0x10E0
@@ -41,7 +42,7 @@ void systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 	s32 y; // 0x14
 	s32 width; // 0x10
 
-	if (getDebugMode() >= 0) {
+	if (N_getDebugMode() >= 0) {
 		psndExit();
 		while (1) {} //softlock
 	}
@@ -87,14 +88,19 @@ void systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 	strcat(print_buffer, print_buffer2);
 	psndExit();
 	OSFillFPUContext(context);
-#ifdef __MWERKS__
-	asm{
+	// The original re-enables FP and recoverable interrupts here with an inline asm block (the same one
+	// src/error_handler.c's systemErrorHandler has); MWCC 2.6 has no mfmsr/mtmsr intrinsic, so the matching
+	// build keeps the asm (tools/asm_exceptions.json, original-asm) and the natural build the equivalent call.
+#ifdef MUST_MATCH
+	asm {
 		mfmsr	r5
 		ori		r5, r5, 0x8000
 		ori		r5, r5, 2
 		mtmsr	r5
 		isync
 	};
+#else
+	PPCMtmsr(PPCMfmsr() | 0x8002);
 #endif
 	L_smartReInit();
 	if (OSGetFontEncode() == OS_FONT_ENCODE_SJIS) {
@@ -104,8 +110,8 @@ void systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 		fontHeader = smartAlloc(OS_FONT_SIZE_ANSI, 0)->address;
 	}
 	OSInitFont(fontHeader);
-	GXSetCopyClear((GXColor) { 0, 0, 0, 0xFF }, 0xFFFFFF);
-	GXCopyDisp(DEMOGetCurrentBuffer(), 1);
+	GXSetCopyClear((GXColor){0, 0, 0, 0xFF}, 0xFFFFFF);
+	GXCopyDisp((void*)DEMOGetCurrentBuffer(), 1);
 	GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
 	GXSetScissor(0, 0, 608, 480);
 	MTXOrtho(projection, 0.0f, 608.0f, 0.0f, 480.0f, 0.0f, 1.0f);
@@ -128,35 +134,31 @@ void systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, 1, 3, 0);
 	while (1) {
 		count = VIGetRetraceCount();
-		loop_newline = (char*)&print_buffer;
 		width2 = 50;
 		height2 = 50;
 		i = 0;
-		loop_zero = loop_newline;
-		while (*loop_zero != '\0') {
-			if (*loop_newline == '\n') {
+		while (print_buffer[i] != '\0') {
+			if (print_buffer[i] == '\n') {
 				width2 = 50;
 				height2 += 24;
 				i++;
-				loop_zero++;
-				loop_newline++;
 			}
 			else {
-				OSGetFontTexture((const char*)&print_buffer[i], &image, &x, &y, &width);
+				OSGetFontTexture(&print_buffer[i], &image, &x, &y, &width);
 				GXInitTexObj(&texObj, image, fontHeader->sheetWidth, fontHeader->sheetHeight,
 					(GXTexFmt)fontHeader->sheetFormat, GX_CLAMP, GX_CLAMP, GX_FALSE);
 				GXLoadTexObj(&texObj, GX_TEXMAP0);
-				MTXScale(matrix2, (float)fontHeader->sheetWidth, (float)fontHeader->sheetHeight, 1.0f);
+				MTXScale(matrix2, 1.0f / fontHeader->sheetWidth, 1.0f / fontHeader->sheetHeight, 1.0f);
 				GXLoadTexMtxImm(matrix2, 0x1E, GX_MTX2x4);
 				GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 				w1 = width2;
-				w2 = (u16)(w1 + fontHeader->cellWidth);
+				w2 = (s16)width2 + fontHeader->cellWidth;
 				h1 = height2;
-				h2 = (u16)(h1 + fontHeader->cellHeight);
-				x1 = (u16)x;
-				x2 = (u16)(x1 + fontHeader->cellWidth);
-				y1 = (u16)y;
-				y2 = (u16)(y1 + fontHeader->cellHeight);
+				h2 = (s16)height2 + fontHeader->cellHeight;
+				x1 = x;
+				x2 = x + fontHeader->cellWidth;
+				y1 = y;
+				y2 = y + fontHeader->cellHeight;
 
 				GXPosition1x16(w1);
 				GXPosition1x16(h1);
@@ -183,8 +185,6 @@ void systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 				GXPosition1x16(y2);
 
 				i++;
-				loop_zero++;
-				loop_newline++;
 				width2 += width;
 			}
 		}
