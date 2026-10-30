@@ -8856,3 +8856,13 @@ Someone reading the public repo asked why the error handler was in it twice. `sr
   moved the `N_` prototypes from `eff/eff_ultra_hammer.h` to `error_handler.h`.
 - `tools/asm_exceptions.json` drops the dead `systemErrorHandler` entry, so the README's count of functions kept in
   assembly is six, not seven.
+
+## Four more dead upstream objects removed from configure.py (2026-10-28, Claude Opus 5.5)
+
+Same pattern as the error handler: `configure.py` listed four upstream objects as `NonMatching` that no splits entry
+covers, so neither configuration built them. Their code lives in the linked `data/` units: `database.c`
+(`setupDataLoad`, in `data/database.c`), `battle/battle_item_data.c` (`_full_ap_recover`, in
+`data/battle/battle_item_data.c`), `battle/battle_audience_kind_data.c` (the audience animation tables, in
+`data/battle/battle_audience_kind_data.c`), and `battle/battle_database_common.c`, which had no file at all.
+Removed the three files, the four `configure.py` lines, and `include/battle/battle_item_data.h`, which only the dead
+file included. `configure.py` has no `NonMatching` objects left.
